@@ -4,7 +4,7 @@ module template_array_05_m
     private
     public :: vector_t, matrix_t
 
-    requirement op(t, plus_t)
+    requirement op {t, plus_t}
         deferred type :: t
         pure elemental function plus_t(l, r) result(rs)
             type(t), intent(in) :: l, r
@@ -13,7 +13,7 @@ module template_array_05_m
     end requirement
 
     template vector_t(t, plus_t, n)
-        require :: op(t, plus_t)
+        require :: op {t, plus_t}
         integer :: n
         
         private
@@ -31,7 +31,7 @@ module template_array_05_m
     end template
 
     template matrix_t(t, plus_t, n)
-        require :: op(t, plus_t)
+        require :: op {t, plus_t}
         integer :: n
         
         private

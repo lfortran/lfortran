@@ -3,12 +3,12 @@ module template_struct_01_m
   private
   public :: struct_t, test_template
 
-  requirement r(t)
+  requirement r {t}
       deferred type :: t
   end requirement
 
   template struct_t(t)
-      require :: r(t)
+      require :: r {t}
       private
       public :: tuple
 

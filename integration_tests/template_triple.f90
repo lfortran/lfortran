@@ -94,7 +94,7 @@ module triple_m
   private
   public :: triple_tmpl
 
-  requirement magma_r(T, plus_T)
+  requirement magma_r {T, plus_T}
     deferred type :: T
 
     pure function plus_T(l, r) result(total)
@@ -104,7 +104,7 @@ module triple_m
   end requirement
 
   template triple_tmpl(T, plus_T)
-    require :: magma_r(T, plus_T)
+    require :: magma_r {T, plus_T}
     private
     public :: triple_l, triple_r
   contains

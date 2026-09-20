@@ -22,7 +22,7 @@ end function
 As we can see here, we need to define the functions associated with the deferred type `T`. To do so in LFortran, we use *requirements* to define both deferred types and their associated functions.
 
 ```fortran
-requirement number_type(T, add_element, set_to_zero)
+requirement number_type {T, add_element, set_to_zero}
   deferred type :: T
   function add_element(x, y) result(z)
     type(T), intent(in) :: x, y
@@ -72,7 +72,7 @@ Then to connect the parameters with the functions defined in the requirement, we
 
 ```fortran
 template array_t(T, add_element, set_to_zero)
-  require :: number_type(T, add_element, set_to_zero)
+  require :: number_type {T, add_element, set_to_zero}
   public :: array_sum
 contains
   function array_sum(arr) result(r)
@@ -91,13 +91,13 @@ contains
 end template
 ```
 
-`require :: number_type(T, add_element, set_to_zero)` sets the type signature for the parameters within the scope of the template. This makes it possible for the LFortran compiler to type check the computations associated with the deferred type `T`.
+`require :: number_type {T, add_element, set_to_zero}` sets the type signature for the parameters within the scope of the template. This makes it possible for the LFortran compiler to type check the computations associated with the deferred type `T`.
 
 A template can also contains multiple functions that may depend on each other.
 
 ```fortran
 template array_t(T, add_element, set_to_zero)
-  require :: number_type(T, add_element, set_to_zero)
+  require :: number_type {T, add_element, set_to_zero}
   public :: array_sum
 contains
   function array_sum(arr) result(r)
@@ -184,7 +184,7 @@ The template notation can be cumbersome for defining a single generic function. 
 
 ```fortran
 function generic_sum {T, add_element, set_to_zero} (arr) result(r)
-  require :: number_type(T, add_element, set_to_zero)
+  require :: number_type {T, add_element, set_to_zero}
   type(T), intent(in) :: arr(:)
   type(T) :: r
   integer :: n, i
@@ -205,7 +205,7 @@ This is merely a syntax sugar for the original templated function. Inside the co
 
 ```fortran
 template generic_sum(T, add_element, set_to_zero)
-  require :: number_type(T, add_element, set_to_zero)
+  require :: number_type {T, add_element, set_to_zero}
   public :: generic_sum
 contains
   function generic_sum(arr) result(r)

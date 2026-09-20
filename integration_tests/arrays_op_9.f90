@@ -16,11 +16,18 @@ subroutine verify(array_a, array_b, result, size)
     real(4), intent(in) :: array_a(:), array_b(:), result(:)
     integer, intent(in) :: size
     integer :: i
-    real(4) :: eps
-    eps = 1e-6
+    real(4) :: eps, expected
+    ! --fast lets the backend approximate sqrt, and it does so only in the
+    ! array expression: there sqrt is vectorised and lowered to a reciprocal
+    ! square root estimate, while the scalar sqrt below stays exact. The two
+    ! then disagree by a fraction of an ulp, which an absolute tolerance
+    ! cannot express here because the results span 3.4 to 65552. Compare
+    ! relative to the expected value instead.
+    eps = 1e-5
 
     do i = 1, size
-        if ( abs(array_a(i) * array_a(i) + sqrt(array_b(i)) - result(i)) > eps )  error stop
+        expected = array_a(i) * array_a(i) + sqrt(array_b(i))
+        if ( abs(expected - result(i)) > eps * abs(expected) )  error stop
     end do
 
 end subroutine

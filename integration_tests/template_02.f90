@@ -1,7 +1,7 @@
 module template_02_m
   implicit none
 
-  requirement eq(t, ne)
+  requirement eq {t, ne}
     deferred type :: t
     function ne(lhs, rhs)
       type(t), intent(in) :: lhs, rhs
@@ -10,7 +10,7 @@ module template_02_m
   end requirement
 
   template change_positions_tmpl(t, ne)
-    require :: eq(t, ne)
+    require :: eq {t, ne}
     private
     public :: change_positions_t
   contains
