@@ -2741,8 +2741,14 @@ semantic error: the value given for the parent component 'pck_base_t' must be a 
 1700 |     ee = [ (pck_e_t(pck_base_t=pck_make(i), z=i), i = 1, 2) ]  ! {Error} the value given for the parent component 'pck_base_t' must be a constant or a variable inside an implied do loop, it would otherwise be evaluated once for every component of 'pck_base_t'
      |                                ^^^^^^^^^^^ help: assign it to a variable before the array constructor and give that variable here
 
-semantic error: NULL() is not permitted as the TARGET= argument to 'associated'
-    --> tests/errors/continue_compilation_1.f90:1715:9
+semantic error: Allocating unlimited polymorphic 'u' requires a type-spec, SOURCE=, or MOLD=
+    --> tests/errors/continue_compilation_1.f90:1714:14
      |
-1715 |     if (associated(a, null())) print *, "bad"  ! {Error} NULL() is not permitted as the TARGET= argument to 'associated'
+1714 |     allocate(u(2))  ! {Error} Allocating unlimited polymorphic 'u' requires a type-spec, SOURCE=, or MOLD=
+     |              ^^^^ 
+
+semantic error: NULL() is not permitted as the TARGET= argument to 'associated'
+    --> tests/errors/continue_compilation_1.f90:1723:9
+     |
+1723 |     if (associated(a, null())) print *, "bad"  ! {Error} NULL() is not permitted as the TARGET= argument to 'associated'
      |         ^^^^^^^^^^^^^^^^^^^^^ 

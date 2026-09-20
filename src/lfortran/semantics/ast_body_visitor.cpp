@@ -4065,6 +4065,22 @@ public:
                     throw SemanticAbort();
                 }
             }
+
+            // Allocating an unlimited polymorphic (class(*)) variable without
+            // a type-spec, SOURCE=, or MOLD= leaves the runtime type unknown.
+            ASR::ttype_t* alloc_type_ = ASRUtils::type_get_past_allocatable_pointer(alloc_type);
+            if (!source_cond && !mold_cond && alloc_args_vec.p[i].m_type == nullptr &&
+                    ASRUtils::is_unlimited_polymorphic_type(alloc_type_)) {
+                ASR::symbol_t* sym = get_allocate_expr_sym(alloc_expr);
+                std::string var_name = sym ? ASRUtils::symbol_name(sym) : "variable";
+                diag.add(Diagnostic(
+                    "Allocating unlimited polymorphic '" + var_name + "' requires "
+                    "a type-spec, SOURCE=, or MOLD=",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {alloc_expr->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
         }
         
         if (source) {
