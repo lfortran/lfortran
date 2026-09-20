@@ -6563,6 +6563,12 @@ semantic error: Variable 'cc1_cvae_undeclared' is not declared
 5318 |     cc1_cvae_i = cc1_cvae_undeclared  ! {Error} Variable 'cc1_cvae_undeclared' is not declared
      |                  ^^^^^^^^^^^^^^^^^^^ 'cc1_cvae_undeclared' is undeclared
 
+semantic error: 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
+    --> tests/errors/continue_compilation_1.f90:5328:9
+     |
+5328 |     if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
+     |         ^^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

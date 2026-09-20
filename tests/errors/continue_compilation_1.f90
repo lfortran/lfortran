@@ -5318,3 +5318,12 @@ subroutine cc1_compiler_version_after_error()
     cc1_cvae_i = cc1_cvae_undeclared  ! {Error} Variable 'cc1_cvae_undeclared' is not declared
     print *, compiler_version()
 end subroutine
+
+! The `target` argument of `associated` must be a pointer or target
+! variable or function, not an arbitrary expression.
+subroutine associated_target_not_variable_in_continue_compilation_1()
+    implicit none
+    integer, pointer :: a(:)
+    a => null()
+    if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
+end subroutine
