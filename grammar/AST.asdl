@@ -57,6 +57,7 @@ interface_header
     | InterfaceHeaderOperator(intrinsicop op)
     | InterfaceHeaderDefinedOperator(string operator_name)
     | AbstractInterfaceHeader()
+    | DeferredInterfaceHeader()
     | InterfaceHeaderWrite(identifier id)
     | InterfaceHeaderRead(identifier id)
 
