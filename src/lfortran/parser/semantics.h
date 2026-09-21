@@ -2934,11 +2934,10 @@ ast_t* REQUIRE2(Allocator &al, const Location &l, ast_t* a_req) {
 
 ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         arg_t* a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
-        program_unit_t** a_funcs, size_t n_funcs,
         LCompilers::diag::Diagnostics &diag) {
     check_decl_order(decl_stmts, DeclContext::Template, diag);
     return make_Requirement_t(al, l, a_name, a_namelist, n_namelist,
-        DECLS(decl_stmts), decl_stmts.size(), a_funcs, n_funcs);
+        DECLS(decl_stmts), decl_stmts.size(), nullptr, 0);
 }
 
 #define TEMPLATE(name, namelist, decl_stmts, contains, l) \
@@ -2946,10 +2945,10 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size(), p.diag)
-#define REQUIREMENT(name, namelist, decl_stmts, funcs, l) \
+#define REQUIREMENT(name, namelist, decl_stmts, l) \
         REQUIREMENT2(p.m_a, l, name2char(name), \
         ARGS(p.m_a, namelist), namelist.size(), \
-        decl_stmts, CONTAINS(funcs), funcs.size(), p.diag)
+        decl_stmts, p.diag)
 #define REQUIRE(req, l) REQUIRE2(p.m_a, l, req)
 #define UNIT_REQUIRE(name, namelist, l) \
         make_UnitRequire_t(p.m_a, l, name2char(name), \

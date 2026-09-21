@@ -2,7 +2,7 @@
     "basename": "asr-template_travel_02-4448a71",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/template_travel_02.f90",
-    "infile_hash": "5c99680fb058771807e57d53cd7e7e788b806af8b404bc1786b3a089",
+    "infile_hash": "e176fef040943e034746f92e7973cb85c398c9eec59f6409d5320de8",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-template_travel_02-4448a71.stdout",
