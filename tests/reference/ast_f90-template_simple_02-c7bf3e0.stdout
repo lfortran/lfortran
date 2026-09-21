@@ -12,14 +12,14 @@ type(T), intent(in) :: lhs
 type(U), intent(in) :: rhs
 type(V) :: res
 end function binary_func
-end requirement
+end requirement operator_r
 requirement cast_r {T, cast}
 deferred type :: T
 pure elemental function cast(arg) result(res)
 integer, intent(in) :: arg
 type(T) :: res
 end function cast
-end requirement
+end requirement cast_r
 
 contains
 
@@ -38,7 +38,8 @@ end function cast_real
 
 
 pure function generic_sum {T, add, cast}(arr) result(res)
-require :: operator_r {T, T, T, add}, cast_r {T, cast}
+require :: operator_r {T, T, T, add}
+require :: cast_r {T, cast}
 type(T), intent(in) :: arr(:)
 type(T) :: res
 integer :: n, i

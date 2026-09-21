@@ -1,0 +1,13 @@
+{
+    "basename": "ast-template_end_name_1-94fbf8b",
+    "cmd": "lfortran --continue-compilation --show-ast --no-color {infile}",
+    "infile": "tests/errors/template_end_name_1.f90",
+    "infile_hash": "f9d4d58a534a987608b263ff80515d68c74c922dff9029f2276ba542",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-template_end_name_1-94fbf8b.stdout",
+    "stdout_hash": "c0ac857e65b0f82812bf177ba45c37b38462ccf53df25e4515f4cc74",
+    "stderr": "ast-template_end_name_1-94fbf8b.stderr",
+    "stderr_hash": "36707651ecb172786e7b7601581e74871c93e7b948d9752558ae4922",
+    "returncode": 1
+}

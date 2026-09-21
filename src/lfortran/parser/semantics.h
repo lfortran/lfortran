@@ -2819,6 +2819,7 @@ ast_t* BLOCKDATA2(Allocator &al, const Location &l, char* a_name,
 #define INTERFACE_HEADER_DEFOP(op, l) make_InterfaceHeaderDefinedOperator_t( \
         p.m_a, l, def_op_to_str(p.m_a, op))
 #define ABSTRACT_INTERFACE_HEADER(l) make_AbstractInterfaceHeader_t(p.m_a, l)
+#define DEFERRED_INTERFACE_HEADER(l) make_DeferredInterfaceHeader_t(p.m_a, l)
 #define INTERFACE_HEADER_WRITE(x, l) make_InterfaceHeaderWrite_t(p.m_a, l, name2char(x))
 #define INTERFACE_HEADER_READ(x, l) make_InterfaceHeaderRead_t(p.m_a, l, name2char(x))
 
@@ -2931,6 +2932,15 @@ ast_t* INSTANTIATE_SUBP2(Allocator &al, const Location &l, char* a_name,
         VEC_CAST(syms, use_symbol), syms.size());
 }
 
+// R1636 takes exactly one requirement-name, but AST::Require stores a list of
+// them, so wrap the single requirement into a one element list.
+ast_t* REQUIRE2(Allocator &al, const Location &l, ast_t* a_req) {
+    Vec<ast_t*> reqs;
+    reqs.reserve(al, 1);
+    reqs.push_back(al, a_req);
+    return make_Require_t(al, l, VEC_CAST(reqs, unit_require), reqs.size());
+}
+
 ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         arg_t* a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
         program_unit_t** a_funcs, size_t n_funcs,
@@ -2940,18 +2950,18 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         DECLS(decl_stmts), decl_stmts.size(), a_funcs, n_funcs);
 }
 
-#define TEMPLATE(name, namelist, decl_stmts, contains, l) \
-        TEMPLATE2(p.m_a, l, name2char(name), \
+#define TEMPLATE(name, namelist, decl_stmts, contains, name_opt, l) \
+        TEMPLATE2(p.m_a, l, \
+        name2char_with_check(name, name_opt, l, "template", p.diag), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size(), p.diag)
-#define REQUIREMENT(name, namelist, decl_stmts, funcs, l) \
-        REQUIREMENT2(p.m_a, l, name2char(name), \
+#define REQUIREMENT(name, namelist, decl_stmts, funcs, name_opt, l) \
+        REQUIREMENT2(p.m_a, l, \
+        name2char_with_check(name, name_opt, l, "requirement", p.diag), \
         ARGS(p.m_a, namelist), namelist.size(), \
         decl_stmts, CONTAINS(funcs), funcs.size(), p.diag)
-#define REQUIRE(require_list, l) \
-        make_Require_t(p.m_a, l, \
-        VEC_CAST(require_list, unit_require), require_list.size())
+#define REQUIRE(req, l) REQUIRE2(p.m_a, l, req)
 #define UNIT_REQUIRE(name, namelist, l) \
         make_UnitRequire_t(p.m_a, l, name2char(name), \
         VEC_CAST(namelist, decl_attribute), namelist.size())
