@@ -232,8 +232,7 @@ private:
                 ASRUtils::symbol_get_past_external(v->m_v));
             // A temporary an ASR pass introduced does not appear in the user's
             // source, so leave the message unnamed rather than print it.
-            if (name.rfind("__libasr_created__", 0) == 0 ||
-                name.rfind("__lcompilers_", 0) == 0) {
+            if (ASRUtils::is_compiler_generated_name(name)) {
                 return "";
             }
             return name;
