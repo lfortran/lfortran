@@ -2100,10 +2100,6 @@ class PRIFInterface {
         void allocate_coarrays(SymbolTable *scope, SymbolTable *body_scope, const Location &loc,
                                     Vec<ASR::stmt_t*> &new_body) {
             ASRUtils::ASRBuilder b(al, loc);
-            bool initialized = false;
-            ASR::ttype_t *i64 = nullptr;
-            ASR::symbol_t *handle_struct = nullptr;
-            ASR::symbol_t *alloc_sub = nullptr;
             for (auto &item : scope->get_scope()) {
                 ASR::symbol_t *sym = item.second;
                 if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
@@ -2113,7 +2109,6 @@ class PRIFInterface {
                 if (ASRUtils::is_allocatable(orig_type)) continue;
 
                 auto companions = get_coarray_companions(sym);
-                ASR::symbol_t *hsym_orig = companions.first;
                 ASR::symbol_t *dsym_orig = companions.second;
 
                 if (has_save_attribute(var)) {
@@ -2130,38 +2125,20 @@ class PRIFInterface {
                     continue;
                 }
 
-                if (!initialized) {
-                    i64 = int64;
-                    handle_struct = get_or_create_prif_coarray_handle_struct(loc);
-                    alloc_sub = get_or_create_prif_allocate_coarray_sub(loc);
-                    initialized = true;
+                // Nothing is left for this pass to do here. A coarray that is
+                // neither allocatable nor saved has no storage to refer to, and
+                // allocating one at this point would put a PRIF collective in a
+                // procedure body: after startup the only coarray allocations are
+                // the ones an ALLOCATE statement lowers to. Emitting one here
+                // would miscompile the program rather than merely under-implement
+                // it, so stop instead.
+                if (var->m_intent != ASR::intentType::Local) {
+                    throw LCompilersException(
+                        "coarray dummy arguments are not implemented yet");
                 }
-
-                ASR::symbol_t *hsym_use = get_symbol_in_scope(ASRUtils::symbol_parent_symtab(hsym_orig), body_scope, hsym_orig, loc);
-                ASR::symbol_t *dsym_use = get_symbol_in_scope(ASRUtils::symbol_parent_symtab(dsym_orig), body_scope, dsym_orig, loc);
-                ASR::symbol_t *sym_use = get_symbol_in_scope(scope, body_scope, sym, loc);
-
-                ASR::expr_t *hexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, hsym_use));
-                ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym_use));
-
-                emit_allocate_call(var, nullptr, 0, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body);
-
-                ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_use));
-                ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
-                ASR::expr_t *lbound_expr = create_lbound_expr(loc, orig_type);
-                ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
-                    ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, lbound_expr));
-                new_body.push_back(al, cfp_stmt);
-
-                if (var->m_value) {
-                    ASR::stmt_t *assign = ASRUtils::STMT(ASR::make_Assignment_t(
-                        al, loc, var_expr, var->m_value, nullptr, false, false));
-                    new_body.push_back(al, assign);
-                    var->m_value = nullptr;
-                }
-                if (var->m_symbolic_value) {
-                    var->m_symbolic_value = nullptr;
-                }
+                throw LCompilersException(
+                    "a coarray must be a dummy argument or have the allocatable "
+                    "or save attribute; this is not yet diagnosed during semantics");
             }
         }
 
