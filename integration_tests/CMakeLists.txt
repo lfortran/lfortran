@@ -2713,6 +2713,7 @@ RUN(NAME derived_types_178 LABELS gfortran llvm EXTRAFILES derived_types_178_m.f
 RUN(NAME derived_types_181 LABELS gfortran llvm)
 RUN(NAME derived_types_185 LABELS gfortran llvm)
 RUN(NAME derived_types_186 LABELS gfortran llvm)
+RUN(NAME derived_types_187 LABELS gfortran llvm)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
