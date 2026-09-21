@@ -24,6 +24,8 @@
                           :storage :Default
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :type_declaration nil
                           :abi :Source
@@ -49,6 +51,8 @@
                           :storage :Default
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :type_declaration nil
                           :abi :Source
@@ -71,10 +75,14 @@
                       :arg_types [
                         (TypeParameter
                           :param "t"
+                          :deferred_attr :NonExtensible
+                          :is_class false
                         )
                       ]
                       :return_var_type (TypeParameter
                         :param "t"
+                        :deferred_attr :NonExtensible
+                        :is_class false
                       )
                       :abi :Source
                       :deftype :Implementation
@@ -113,6 +121,8 @@
                           ]
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :value nil
                           :dt nil
@@ -144,6 +154,8 @@
                           :storage :Default
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :type_declaration nil
                           :abi :Source
@@ -169,6 +181,8 @@
                           :storage :Default
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :type_declaration nil
                           :abi :Source
@@ -191,10 +205,14 @@
                       :arg_types [
                         (TypeParameter
                           :param "t"
+                          :deferred_attr :NonExtensible
+                          :is_class false
                         )
                       ]
                       :return_var_type (TypeParameter
                         :param "t"
+                        :deferred_attr :NonExtensible
+                        :is_class false
                       )
                       :abi :Source
                       :deftype :Implementation
@@ -233,6 +251,8 @@
                     :storage :Default
                     :type (TypeParameter
                       :param "t"
+                      :deferred_attr :NonExtensible
+                      :is_class false
                     )
                     :type_declaration nil
                     :abi :Source
@@ -283,6 +303,8 @@
                           :storage :Default
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :type_declaration nil
                           :abi :Source
@@ -308,6 +330,8 @@
                           :storage :Default
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :type_declaration nil
                           :abi :Source
@@ -330,10 +354,14 @@
                       :arg_types [
                         (TypeParameter
                           :param "t"
+                          :deferred_attr :NonExtensible
+                          :is_class false
                         )
                       ]
                       :return_var_type (TypeParameter
                         :param "t"
+                        :deferred_attr :NonExtensible
+                        :is_class false
                       )
                       :abi :Source
                       :deftype :Implementation
@@ -372,6 +400,8 @@
                     :storage :Default
                     :type (TypeParameter
                       :param "t"
+                      :deferred_attr :NonExtensible
+                      :is_class false
                     )
                     :type_declaration nil
                     :abi :Source
