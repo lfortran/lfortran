@@ -52,6 +52,7 @@ use derived_types_186_mod
 implicit none
 
 type(outer) :: v(3)
+integer :: c(4)
 
 call read_assumed_shape(v)
 
@@ -70,6 +71,14 @@ v%nest%ii = 9
 v%nest%d%dd = 7
 call read_assumed_shape(v(1:2))
 call read_assumed_shape(v(1:3:2))
+
+! a nested member of an array inside an array constructor
+v%nest%ii = 9
+v%nest%d%dd = 7
+c = [v%nest%ii, 99]
+if (any(c /= [9, 9, 9, 99])) error stop "array constructor: two levels"
+if (sum([v%nest%d%dd]) /= 21) error stop "array constructor: three levels"
+print *, [v%nest%ii, 99]
 
 print *, v%nest%ii
 print *, v%nest%d%dd
