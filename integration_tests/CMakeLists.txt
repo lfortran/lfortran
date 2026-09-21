@@ -2709,6 +2709,7 @@ RUN(NAME derived_types_174 LABELS gfortran llvm EXTRAFILES derived_types_174_m.f
 RUN(NAME derived_types_175 LABELS gfortran llvm EXTRAFILES derived_types_175_m.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME derived_types_176 LABELS gfortran llvm EXTRAFILES derived_types_176_m.f90)
 RUN(NAME derived_types_177 LABELS gfortran llvm)
+RUN(NAME derived_types_178 LABELS gfortran llvm EXTRAFILES derived_types_178_m.f90)
 RUN(NAME derived_types_181 LABELS gfortran llvm)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
