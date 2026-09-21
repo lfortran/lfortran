@@ -3344,6 +3344,58 @@ public:
         return element_size * array_size;
     }
 
+    // Same logic used by `use`: body visitor patches Module.m_dependencies
+    // in place; symbol-table visitor accumulates on current_module_dependencies.
+    void append_module_dependency(char *m_name) {
+        if (!m_name || m_name[0] == '\0') return;
+        // We are in body visitor
+        // Add the module `m` to current module dependencies
+        if (current_module) {
+            SetChar vec;
+            vec.from_pointer_n_copy(al, current_module->m_dependencies,
+                        current_module->n_dependencies);
+            vec.push_back(al, m_name);
+            current_module->m_dependencies = vec.p;
+            current_module->n_dependencies = vec.size();
+        } else {
+            // We are in the symtab visitor or body visitor (the
+            // current_module_dependencies is not used in body visitor)
+            current_module_dependencies.push_back(al, m_name);
+        }
+    }
+
+    // Record that the enclosing user module depends on a synthetic file_common_block_* module.
+    void add_common_block_module_dependency(const std::string &module_name) {
+        if (module_name.empty() || in_block_data) return;
+        if (!in_module && !current_module) return;
+        if (current_module && module_name == current_module->m_name) return;
+        append_module_dependency(s2c(al, module_name));
+    }
+
+    // Import a COMMON-module symbol into `scope` only (like use), not via
+    // resolve_symbol which would reuse a TU-level ExternalSymbol and not process
+    // the Var pointing outside the using module (asr_verify / save_mod_files).
+    ASR::symbol_t* import_common_external_symbol(SymbolTable *scope, const Location &loc,
+            const std::string &local_name, ASR::symbol_t *target,
+            const std::string &module_name, const std::string &original_name) {
+        if (!scope || !target) return nullptr;
+        ASR::symbol_t *target_past = ASRUtils::symbol_get_past_external(target);
+        ASR::symbol_t *existing = scope->get_symbol(local_name);
+        if (existing && ASRUtils::symbol_get_past_external(existing) == target_past) {
+            return existing;
+        }
+        std::string name = local_name;
+        if (existing) {
+            name = scope->get_unique_name("1_" + local_name);
+        }
+        ASR::symbol_t *ext = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_ExternalSymbol_t(al, loc, scope, s2c(al, name),
+                target_past, s2c(al, module_name), nullptr, 0,
+                s2c(al, original_name), ASR::accessType::Public));
+        scope->add_symbol(name, ext);
+        return ext;
+    }
+
     ASR::asr_t* create_StructInstanceMember(ASR::expr_t* target, ASR::Variable_t* target_var,
             SymbolTable* use_scope = nullptr) {
         uint64_t hash = get_hash((ASR::asr_t*) target_var);
@@ -3356,22 +3408,18 @@ public:
             ASR::Struct_t *struct_type = ASR::down_cast<ASR::Struct_t>(curr_struct);
             std::string ext_sym_name = std::string(struct_type->m_name);
             std::string module_name = "file_common_block_" + std::string(struct_type->m_name);
-            ASR::symbol_t* ext_sym_struct = scope->resolve_symbol(ext_sym_name);
-            if (!ext_sym_struct) {
-                ext_sym_struct = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, curr_struct->base.loc, scope,
-                                                struct_type->m_name, curr_struct, s2c(al, module_name), nullptr, 0, struct_type->m_name, ASR::accessType::Public));
-                scope->add_symbol(ext_sym_name, ext_sym_struct);
-            }
+            add_common_block_module_dependency(module_name);
+            // Import the COMMON struct type into the using scope, like `use`.
+            import_common_external_symbol(
+                scope, curr_struct->base.loc, ext_sym_name, curr_struct,
+                module_name, ext_sym_name);
 
             SymbolTable* module_scope = ASR::down_cast<ASR::Struct_t>(curr_struct)->m_symtab->parent;
             std::string struct_var_name = "struct_instance_"+std::string(struct_type->m_name);
             ASR::symbol_t* module_var_sym = module_scope->resolve_symbol(struct_var_name);
-            ASR::symbol_t* struct_sym = scope->resolve_symbol(struct_var_name);
-            if (!struct_sym) {
-                struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, curr_struct->base.loc, scope,
-                                                s2c(al, struct_var_name), module_var_sym, s2c(al, module_name), nullptr, 0, s2c(al, struct_var_name), ASR::accessType::Public));
-                scope->add_symbol(struct_var_name, struct_sym);
-            }
+            ASR::symbol_t* struct_sym = import_common_external_symbol(
+                scope, curr_struct->base.loc, struct_var_name, module_var_sym,
+                module_name, struct_var_name);
 
             ASR::asr_t* struct_var_ = ASR::make_Var_t(al, target_var->base.base.loc, struct_sym);
 
@@ -3417,12 +3465,11 @@ public:
             LCOMPILERS_ASSERT(struct_member_sym != nullptr);
 
             std::string member_name = "1_"+std::string(struct_type->m_name)+"_"+actual_member_name;
-            ASR::symbol_t* member_sym = scope->resolve_symbol(member_name);
-            if (!member_sym) {
-                member_sym = ASR::down_cast<ASR::symbol_t>(make_ExternalSymbol_t(al, target_var->base.base.loc, scope, s2c(al, member_name),
-                                                        struct_member_sym, s2c(al, ext_sym_name), nullptr, 0, s2c(al, actual_member_name), ASR::accessType::Public));
-                scope->add_symbol(member_name, member_sym);
-            }
+            // m_module_name is the struct name: the member's owner is the
+            // COMMON Struct, matching visit_ExternalSymbol in asr_verify.
+            ASR::symbol_t* member_sym = import_common_external_symbol(
+                scope, target_var->base.base.loc, member_name, struct_member_sym,
+                ext_sym_name, actual_member_name);
 
             // Use local variable's type for COMMON block access. This preserves
             // the local view of the storage (e.g., integer array vs real array).
@@ -4951,9 +4998,11 @@ public:
             ASR::symbol_t* current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
             global_scope->add_symbol(to_lower(module_name), current_module_sym);
             current_scope = parent_scope;
+            add_common_block_module_dependency(module_name);
             return struct_symbol;
         } else {
             ASR::symbol_t* current_module_sym = global_scope->resolve_symbol(module_name);
+            add_common_block_module_dependency(module_name);
             return ASR::down_cast<ASR::Module_t>(current_module_sym)->m_symtab->resolve_symbol(common_block_name);
         }
     }
@@ -20559,20 +20608,7 @@ public:
 
         current_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(fn);
-        if (current_module) {
-            // We are in body visitor
-            // Add the module `m` to current module dependencies
-            SetChar vec;
-            vec.from_pointer_n_copy(al, current_module->m_dependencies,
-                        current_module->n_dependencies);
-            vec.push_back(al, m->m_name);
-            current_module->m_dependencies = vec.p;
-            current_module->n_dependencies = vec.size();
-        } else {
-            // We are in the symtab visitor or body visitor (the
-            // current_module_dependencies is not used in body visitor)
-            current_module_dependencies.push_back(al, m->m_name);
-        }
+        append_module_dependency(m->m_name);
         return v;
     }
 
