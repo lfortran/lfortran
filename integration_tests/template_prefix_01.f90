@@ -1,12 +1,13 @@
 ! Tests R1611 and R1612: the standard spelling of a templated subprogram, with
-! a TEMPLATE prefix (C1609) and the deferred argument list and the dummy
-! argument list written as two consecutive parenthesised lists.
+! a TEMPLATE prefix (C1609), the deferred argument list in braces and the dummy
+! argument list in parentheses. J3/26-158 corrected both rules to braces; the
+! parenthesised deferred argument list that 26-007r1 showed is not accepted.
 module template_prefix_01_m
     implicit none
 
 contains
 
-    template subroutine swap(t) (x, y)
+    template subroutine swap{t} (x, y)
         deferred type :: t
         type(t), intent(inout) :: x, y
         type(t) :: tmp
@@ -15,14 +16,14 @@ contains
         y = tmp
     end subroutine swap
 
-    pure template function pick_second(t) (x, y) result(res)
+    pure template function pick_second{t} (x, y) result(res)
         deferred type :: t
         type(t), intent(in) :: x, y
         type(t) :: res
         res = y
     end function pick_second
 
-    template pure function pick_first(t) (x, y) result(res)
+    template pure function pick_first{t} (x, y) result(res)
         deferred type :: t
         type(t), intent(in) :: x, y
         type(t) :: res

@@ -1046,7 +1046,7 @@ subroutine
     sep decl_statements end_subroutine sep {
             LLOC(@$, @11); $$ = TEMPLATED_SUBROUTINE1($1, $3, $5, $7, $8,
                 TRIVIA($9, $12, @$), $10, $11, @$); }
-    | template_sub_prefix id "(" id_list ")" sub_args bind_opt
+    | template_sub_prefix id "{" id_list "}" sub_args bind_opt
     sep decl_statements end_subroutine sep {
             LLOC(@$, @10); $$ = TEMPLATED_SUBROUTINE1($1, $2, $4, $6, $7,
                 TRIVIA($8, $11, @$), $9, $10, @$); }
@@ -1054,7 +1054,9 @@ subroutine
 
 // prefix of a templated subroutine statement; TEMPLATE is mandatory (C1609)
 // and the keyword is consumed together with SUBROUTINE so that it cannot be
-// confused with the name of a TEMPLATE construct
+// confused with the name of a TEMPLATE construct. The deferred argument list
+// is bracketed with braces, not parentheses: J3/26-158 corrects R1611 and
+// R1612, which 26-007r1 still spelled with parentheses.
 template_sub_prefix
     : KW_TEMPLATE KW_SUBROUTINE { LIST_NEW($$); }
     | KW_TEMPLATE fn_mod_plus KW_SUBROUTINE { $$ = $2; }
@@ -1129,7 +1131,7 @@ function
         end_function sep {
             LLOC(@$, @14); $$ = TEMPLATED_FUNCTION($1, $3, $5, $8, $10, $11,
                 TRIVIA($12, $15, @$), $13, $14, @$); }
-    | template_fn_prefix id "(" id_list ")" "(" id_list_opt ")"
+    | template_fn_prefix id "{" id_list "}" "(" id_list_opt ")"
         result_opt
         bind_opt
         sep decl_statements
