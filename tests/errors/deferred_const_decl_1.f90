@@ -16,7 +16,8 @@
 !     C1621 An array-spec in a deferred-const-decl-stmt shall be an
 !           implied-shape-spec, assumed-implied-spec, explicit-shape-spec-list,
 !           or explicit-shape-bounds-spec. It shall not explicitly specify any
-!           lower bound.
+!           lower bound. The lower bound clause is not diagnosed separately;
+!           see the note on c1621_lbound below.
 !
 ! See integration_tests/template_deferred_const_01.f90 for the accepted forms.
 
@@ -53,13 +54,17 @@ module deferred_const_decl_1
         deferred integer, parameter :: f  ! {Error} 'f' is not a deferred argument of this template or requirement
     end requirement
 
-    ! C1621: an explicit lower bound is not allowed, in any of its spellings.
+    ! C1621 forbids an explicit lower bound, in any of its spellings. That
+    ! clause is not diagnosed on its own: `array_comp_decl` synthesizes the
+    ! implicit lower bound, so `(3)` and `(1:3)` are the same by the time the
+    ! semantic stage sees them. Both are still rejected, as an array deferred
+    ! constant is not implemented, which is what these two pin.
     requirement c1621_lbound {g}
-        deferred integer, parameter :: g(1:3)  ! {Error} a `deferred` constant array must not specify a lower bound; its lower bounds are always one
+        deferred integer, parameter :: g(1:3)  ! {Error} a `deferred` constant that is an array is not supported yet
     end requirement
 
     requirement c1621_lbound_star {h}
-        deferred integer, parameter :: h(2:*)  ! {Error} a `deferred` constant array must not specify a lower bound; its lower bounds are always one
+        deferred integer, parameter :: h(2:*)  ! {Error} a `deferred` constant that is an array is not supported yet
     end requirement
 
     ! C1621: an assumed- or deferred-shape spec is not one of the four allowed

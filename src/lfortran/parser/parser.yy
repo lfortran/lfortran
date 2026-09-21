@@ -414,11 +414,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> deferred_const_decl
 %type <ast> deferred_const_attr
 %type <vec_ast> deferred_const_attr_list
-%type <vec_ast> deferred_const_attr_list_opt
-%type <var_sym> deferred_const_entity_decl
-%type <vec_var_sym> deferred_const_entity_decl_list
-%type <dim> deferred_const_array_spec
-%type <vec_dim> deferred_const_array_spec_list
 %type <ast> template_decl
 %type <ast> requirement_decl
 %type <ast> require_decl
@@ -787,82 +782,44 @@ deferred_type_decl
 // F2028 R1618: DEFERRED declaration-type-spec, deferred-const-attr-spec-list
 //                  :: deferred-const-entity-decl-list
 //
-// The type specifier is the general `declaration-type-spec` and the attribute
-// list is allowed to be empty, even though F2028 C1619 restricts the type to
-// integer, logical or character and C1618 requires the PARAMETER attribute: both
-// are diagnosed in the semantic stage, where the message can name the offending
-// type or attribute instead of being a bare syntax error. `procedure(...)` is
-// deliberately not accepted here: `DEFERRED PROCEDURE ( interface-name )` is the
-// separate deferred-proc-decl-stmt of R1622, which LFortran does not implement
-// yet, and it should get its own rule rather than a type error from this one.
-deferred_const_decl
-    : KW_DEFERRED declaration_type_spec deferred_const_attr_list_opt "::"
-      deferred_const_entity_decl_list sep {
-            LLOC(@$, @5); $$ = DEFERRED_CONST_DECL(p.m_a, $2, $3, $5,
-                TRIVIA_AFTER($6, @$), @$); }
-    ;
-
-deferred_const_attr_list_opt
-    : %empty { LIST_NEW($$); }
-    | deferred_const_attr_list { $$ = $1; }
-    ;
-
-deferred_const_attr_list
-    : deferred_const_attr_list "," deferred_const_attr { $$ = $1; LIST_ADD($$, $3); }
-    | "," deferred_const_attr { LIST_NEW($$); LIST_ADD($$, $2); }
-    ;
-
-// F2028 R1619 deferred-const-attr-spec
+// The statement is an ordinary type declaration statement with a DEFERRED
+// keyword in front, so it reuses `var_type`, `var_modifier_list` and
+// `var_sym_decl_list` rather than restating them. The attributes of R1619 are
+// PARAMETER, DIMENSION and a rank-clause, all of which are `var_modifier`, and
+// the entities of R1620 are `var_sym_decl`. The `::` is mandatory, which R1618
+// makes it and the ordinary statement does not, so that much is spelled here.
+//
+// The attribute list is allowed to be empty and the type is the general
+// `declaration-type-spec`, even though C1618 requires PARAMETER and C1619
+// restricts the type to integer, logical or character: both are diagnosed in
+// the semantic stage, where the message can name the offending type or
+// attribute instead of being a bare syntax error. `procedure(...)` is
+// deliberately not accepted here: `DEFERRED PROCEDURE ( interface-name )` is
+// the separate deferred-proc-decl-stmt of R1622.
+// R1619 allows PARAMETER, DIMENSION and a rank-clause. The first two are
+// `var_modifier`, so only the rank-clause is added here. It is not put into
+// `var_modifier` itself, even though F2018 R821 makes a rank-clause a general
+// declaration attribute: reachable after any comma of any declaration it costs
+// a shift/reduce conflict, and supporting it everywhere is more than R1619 asks
+// for. Behind KW_DEFERRED the state is distinct and the grammar stays at 195.
 deferred_const_attr
-    : KW_PARAMETER { $$ = SIMPLE_ATTR(Parameter, @$); }
-    | KW_DIMENSION "(" deferred_const_array_spec_list ")" { $$ = DIMENSION($3, @$); }
+    : var_modifier { $$ = $1; }
     | KW_RANK "(" expr_list ")" { $$ = ATTR_RANK($3, @$); }
     ;
 
-// F2028 R1620 deferred-const-entity-decl is
-//                 deferred-const-name [ ( array-spec ) ]
-//
-// R1620 has no place for an initializer, but `= expr` is accepted here so that
-// `deferred integer, parameter :: n = 3` gets a diagnostic that says a deferred
-// constant takes its value from the instantiation argument, rather than a bare
-// syntax error.
-deferred_const_entity_decl_list
-    : deferred_const_entity_decl_list "," deferred_const_entity_decl {
-            $$ = $1; PLIST_ADD($$, $3); }
-    | deferred_const_entity_decl { LIST_NEW($$); PLIST_ADD($$, $1); }
+deferred_const_attr_list
+    : deferred_const_attr_list "," deferred_const_attr {
+            $$ = $1; LIST_ADD($$, $3); }
+    | "," deferred_const_attr { LIST_NEW($$); LIST_ADD($$, $2); }
     ;
 
-deferred_const_entity_decl
-    : id { $$ = VAR_SYM_NAME($1, None, @$); }
-    | id "(" deferred_const_array_spec_list ")" {
-            $$ = VAR_SYM_DIM($1, $3.p, $3.n, None, @$); }
-    | id "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Equal, @$); }
-    | id "(" deferred_const_array_spec_list ")" "=" expr {
-            $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $6, Equal, @$); }
-    ;
-
-// The array-spec of a deferred constant has its own rule instead of reusing
-// `array_comp_decl`, because that rule fills in the implicit lower bound of an
-// upper-bound-only spec -- `(3)` becomes `1:3` in the AST -- which would make
-// `(3)` and `(1:3)` indistinguishable afterwards. F2028 C1621 forbids the
-// second and allows the first, so the two must stay apart: `DEFERRED_CONST_DIM`
-// below leaves the lower bound unset, and a lower bound in the AST therefore
-// means the source spelled one. The forms C1621 rejects are kept in the rule so
-// that the semantic stage can name what is wrong with them.
-deferred_const_array_spec_list
-    : deferred_const_array_spec_list "," deferred_const_array_spec {
-            $$ = $1; PLIST_ADD($$, $3); }
-    | deferred_const_array_spec { LIST_NEW($$); PLIST_ADD($$, $1); }
-    ;
-
-deferred_const_array_spec
-    : expr           { $$ = DEFERRED_CONST_DIM($1, @$); }
-    | "*"            { $$ = ARRAY_COMP_DECL6d(@$); }
-    | TK_DBL_DOT     { $$ = ARRAY_COMP_DECL8d(@$); }
-    | expr ":" expr  { $$ = ARRAY_COMP_DECL2d($1, $3, @$); }
-    | expr ":" "*"   { $$ = ARRAY_COMP_DECL7d($1, @$); }
-    | expr ":"       { $$ = ARRAY_COMP_DECL3d($1, @$); }
-    | ":"            { $$ = ARRAY_COMP_DECL5d(@$); }
+deferred_const_decl
+    : KW_DEFERRED var_type deferred_const_attr_list "::" var_sym_decl_list sep {
+            LLOC(@$, @5); $$ = DEFERRED_CONST_DECL(p.m_a, $2, $3, $5,
+                TRIVIA_AFTER($6, @$), @$); }
+    | KW_DEFERRED var_type "::" var_sym_decl_list sep {
+            LLOC(@$, @4); $$ = DEFERRED_CONST_DECL_NOATTR(p.m_a, $2, $4,
+                TRIVIA_AFTER($5, @$), @$); }
     ;
 
 

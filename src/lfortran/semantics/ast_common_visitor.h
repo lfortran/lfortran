@@ -6123,21 +6123,23 @@ public:
     //     (F2028 C835 allows it only here).
     // Everything else is either an assumed- or deferred-shape spec, which a
     // named constant cannot have, or an assumed-size spec, which C840 restricts
-    // to dummy arguments. A lower bound is `m_start`, and NOTE 1 of 16.4.1.3
-    // says an array deferred constant always has the default lower bound of
-    // one, so a lower bound cannot be spelled at all -- not even `(1:3)`.
+    // to dummy arguments.
+    //
+    // The clause of C1621 that forbids an explicit lower bound -- NOTE 1 of
+    // 16.4.1.3 says the lower bounds are always one, so not even `(1:3)` may be
+    // spelled -- is not checked here. `array_comp_decl` synthesizes the implicit
+    // lower bound, so `(3)` reaches the semantic stage as `1:3` and the two
+    // cannot be told apart without either restating the whole array-spec rule
+    // for this one statement or stopping the synthesis for every array
+    // declaration in the language. Nothing is accepted that should not be: an
+    // array deferred constant of any shape is rejected below as unimplemented,
+    // so `(1:3)` is rejected too, only with a less specific message. The check
+    // belongs with the implementation of array deferred constants, which has to
+    // represent an implied-shape entity properly in any case.
     void check_deferred_const_array_spec(AST::dimension_t *dim, size_t n_dim,
             const Location &loc) {
         bool all_star = true, all_explicit = true;
         for (size_t i = 0; i < n_dim; i++) {
-            if (dim[i].m_start != nullptr) {
-                diag.add(Diagnostic(
-                    "a `deferred` constant array must not specify a lower"
-                    " bound; its lower bounds are always one",
-                    Level::Error, Stage::Semantic, {
-                        Label("", {dim[i].loc})}));
-                throw SemanticAbort();
-            }
             if (dim[i].m_end_star == AST::dimension_typeType::AssumedRank) {
                 if (n_dim != 1) {
                     diag.add(Diagnostic(

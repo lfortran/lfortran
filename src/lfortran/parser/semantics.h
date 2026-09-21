@@ -2441,13 +2441,6 @@ static inline void drop_trailing_matching_continue(
 #define ARRAY_COMP_DECL7d(a, l)       DIM1d_type(p.m_a, l, EXPR(a), DimensionStar)
 #define ARRAY_COMP_DECL8d(l)          DIM1d_type(p.m_a, l, nullptr, AssumedRank)
 
-// The upper-bound-only dimension of a deferred constant array-spec (F2028
-// R1620). Unlike ARRAY_COMP_DECL1d it does not synthesize the implicit lower
-// bound of one, so that a lower bound in the AST means the source spelled one,
-// which F2028 C1621 forbids. NOTE 1 of 16.4.1.3 says the lower bounds of an
-// array deferred constant are always one, so nothing is lost by leaving it out.
-#define DEFERRED_CONST_DIM(a, l)      DIM1d(p.m_a, l, nullptr, EXPR(a))
-
 #define COARRAY_COMP_DECL1d(a, l)       CODIM1d(p.m_a, l, EXPR(INT1(l)), EXPR(a))
 #define COARRAY_COMP_DECL2d(a, b, l)    CODIM1d(p.m_a, l, EXPR(a), EXPR(b))
 #define COARRAY_COMP_DECL3d(a, l)       CODIM1d(p.m_a, l, EXPR(a), nullptr)
@@ -2925,6 +2918,19 @@ ast_t* DEFERRED_CONST_DECL(Allocator &al,
     }
     return make_Declaration_t(al, l, down_cast<decl_attribute_t>(vartype),
         v.p, v.size(), syms.p, syms.size(), trivia_cast(trivia));
+}
+
+// The same statement with no attribute list at all, `deferred integer :: n`.
+// C1618 requires the PARAMETER attribute, so this always ends in a diagnostic,
+// but it is parsed so that the message can say which attribute is missing.
+ast_t* DEFERRED_CONST_DECL_NOATTR(Allocator &al,
+        ast_t *vartype,
+        const Vec<var_sym_t> &syms,
+        ast_t *trivia,
+        Location &l) {
+    Vec<ast_t*> empty;
+    empty.reserve(al, 0);
+    return DEFERRED_CONST_DECL(al, vartype, empty, syms, trivia, l);
 }
 
 // Appends all `items` at the end of `list`; used by declaration statements
