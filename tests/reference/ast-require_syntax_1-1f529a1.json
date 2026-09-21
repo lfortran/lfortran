@@ -1,0 +1,13 @@
+{
+    "basename": "ast-require_syntax_1-1f529a1",
+    "cmd": "lfortran --continue-compilation --show-ast --no-color {infile}",
+    "infile": "tests/errors/require_syntax_1.f90",
+    "infile_hash": "169b1ddc39bcbe3590234f6653d55102ded86ce88941ae30486a662a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-require_syntax_1-1f529a1.stdout",
+    "stdout_hash": "787fd9fc7d15342648cfbc5da2070991d26e9c63fe1a84fd2fd916f4",
+    "stderr": "ast-require_syntax_1-1f529a1.stderr",
+    "stderr_hash": "e77773fbaf381a7126c257cdfcefd631c909f6aa0f77d5887e7a0e49",
+    "returncode": 1
+}
