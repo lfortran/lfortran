@@ -559,6 +559,10 @@ filename = "errors/requirement_syntax_1.f90"
 syntax_only_cc = true
 
 [[test]]
+filename = "errors/template_end_name_1.f90"
+syntax_only_cc = true
+
+[[test]]
 filename = "errors/requirement_scope_1.f90"
 semantics_only_cc = true
 
