@@ -2774,6 +2774,13 @@ public:
         bool is_abstract = false;
         bool is_deferred = false;
         bool is_bindc = false;
+        // Counted rather than flagged so that C1614 and C1615 of the Fortran
+        // 2028 working draft (J3/26-007r1, 16.4.1.2) can be checked for the
+        // deferred-type-attr-list (R1617) of a `deferred type` declaration.
+        // `bad_attr_loc` is the deferred-type-attr that made the list violate
+        // one of them, so the diagnostic points at the offending attribute.
+        size_t n_abstract_attr = 0, n_extensible_attr = 0;
+        Location bad_attr_loc = x.base.base.loc;
         AST::AttrExtends_t *attr_extend = nullptr;
         for( size_t i = 0; i < x.n_attrtype; i++ ) {
             switch( x.m_attrtype[i]->type ) {
@@ -2795,14 +2802,45 @@ public:
                 case AST::decl_attributeType::SimpleAttribute: {
                     AST::SimpleAttribute_t* simple_attr =
                         AST::down_cast<AST::SimpleAttribute_t>(x.m_attrtype[i]);
-                    if (!is_abstract) is_abstract = simple_attr->m_attr == AST::simple_attributeType::AttrAbstract;
-                    if (!is_deferred) is_deferred = simple_attr->m_attr == AST::simple_attributeType::AttrDeferred;
+                    if (simple_attr->m_attr == AST::simple_attributeType::AttrAbstract) {
+                        is_abstract = true;
+                        if (n_abstract_attr++ > 0 || n_extensible_attr > 0) {
+                            bad_attr_loc = simple_attr->base.base.loc;
+                        }
+                    } else if (simple_attr->m_attr == AST::simple_attributeType::AttrExtensible) {
+                        if (n_extensible_attr++ > 0 || n_abstract_attr > 0) {
+                            bad_attr_loc = simple_attr->base.base.loc;
+                        }
+                    } else if (simple_attr->m_attr == AST::simple_attributeType::AttrDeferred) {
+                        is_deferred = true;
+                    }
+                    break;
                 }
                 default:
                     break;
             }
         }
         if ((is_requirement || is_template) && is_deferred) {
+            // C1614: "A deferred-type-attr-list shall not specify both ABSTRACT
+            // and EXTENSIBLE." (F2028 draft J3/26-007r1, 16.4.1.2)
+            if (n_abstract_attr > 0 && n_extensible_attr > 0) {
+                diag.add(diag::Diagnostic(
+                    "a deferred type cannot be declared both abstract and extensible",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {bad_attr_loc})}));
+                throw SemanticAbort();
+            }
+            // C1615: "A deferred-type-attr-list shall contain at most one of
+            // each deferred-type-attr."
+            if (n_abstract_attr > 1 || n_extensible_attr > 1) {
+                std::string repeated = n_abstract_attr > 1 ? "abstract" : "extensible";
+                diag.add(diag::Diagnostic(
+                    "the '" + repeated + "' attribute is repeated in a deferred "
+                    "type declaration",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {bad_attr_loc})}));
+                throw SemanticAbort();
+            }
             ASR::symbol_t *orig_decl = current_scope->get_symbol(dt_name);
             if (orig_decl != nullptr) {
                 // add_symbol asserts the name is free, so report the duplicate
@@ -2815,7 +2853,16 @@ public:
                     }));
                 throw SemanticAbort();
             }
-            ASR::asr_t *tp = ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, dt_name));
+            // 16.4.1.2 paragraph 2: "A deferred type with the ABSTRACT
+            // attribute implicitly has the EXTENSIBLE attribute.", so ABSTRACT
+            // subsumes EXTENSIBLE in the stored attribute.
+            ASR::deferred_type_attrType deferred_attr = n_abstract_attr > 0
+                ? ASR::deferred_type_attrType::Abstract
+                : (n_extensible_attr > 0
+                    ? ASR::deferred_type_attrType::Extensible
+                    : ASR::deferred_type_attrType::NonExtensible);
+            ASR::asr_t *tp = ASR::make_TypeParameter_t(al, x.base.base.loc,
+                s2c(al, dt_name), deferred_attr, false);
             tmp = ASRUtils::make_Variable_t_util(al, x.base.base.loc, current_scope, s2c(al, dt_name),
                 nullptr, 0, ASRUtils::intent_in, nullptr, nullptr, ASR::storage_typeType::Default,
                 ASRUtils::TYPE(tp), nullptr, ASR::abiType::Source, dflt_access, ASR::presenceType::Required, false);
@@ -2833,6 +2880,19 @@ public:
                 throw SemanticAbort();
             }
             parent_sym = current_scope->get_symbol(parent_sym_name);
+            // C1616: "The name of a deferred type shall not appear as a
+            // parent-type-name in a type-attr-spec." (16.4.1.2), restated by
+            // NOTE 1 there: "A deferred type cannot be extended, even if it has
+            // the EXTENSIBLE attribute."
+            if (ASR::is_a<ASR::Variable_t>(*parent_sym)
+                    && ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::type_get_past_array(
+                        ASR::down_cast<ASR::Variable_t>(parent_sym)->m_type))) {
+                diag.add(diag::Diagnostic(
+                    "deferred type '" + parent_sym_name + "' cannot be extended",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {attr_extend->base.base.loc})}));
+                throw SemanticAbort();
+            }
         }
 
         // Parameterized Derived Type: store as template for later monomorphization
@@ -4930,6 +4990,19 @@ public:
                     attr, false, false, dims, nullptr, type_declaration, current_procedure_abi_type);
 
                 req_arg = ASRUtils::type_to_str_fortran_symbol(ttype, type_declaration);
+                // A REQUIRE statement passes instantiation arguments too
+                // (16.5.5.1), so C1628 applies to them as well.
+                ASR::symbol_t *req_param_sym = (req->m_symtab)->get_symbol(req_param);
+                ASR::ttype_t *req_param_type = req_param_sym
+                    ? ASRUtils::symbol_type(req_param_sym) : nullptr;
+                if (req_param_type) {
+                    ASR::symbol_t *arg_decl = nullptr;
+                    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ttype))) {
+                        arg_decl = type_declaration;
+                    }
+                    check_instantiation_arg_type(req_param_type, req_param, ttype,
+                        arg_decl, attr->base.loc);
+                }
                 type_subs[req_param].first = ttype;
             } else {
                 diag.add(diag::Diagnostic(
@@ -5060,6 +5133,54 @@ public:
         is_template = false;
     }
 
+    // C1628 of the Fortran 2028 working draft (J3/26-007r1, 16.5.5.2): "A
+    // type-spec that is a instantiation-arg shall specify an extensible type if
+    // its corresponding deferred type has the EXTENSIBLE attribute. It shall not
+    // specify an abstract type unless its corresponding deferred type has the
+    // ABSTRACT attribute." `deferred_attr` is the effective attribute of the
+    // deferred type, in which Abstract already implies Extensible (16.4.1.2
+    // paragraph 2). `arg_decl` is the derived type the instantiation argument
+    // names, or nullptr when the argument is not of derived type.
+    void check_instantiation_arg_type(ASR::ttype_t *param_type,
+            const std::string &param, ASR::ttype_t *arg_type,
+            ASR::symbol_t *arg_decl, const Location &loc) {
+        if (!param_type || !ASRUtils::is_type_parameter(*param_type)) return;
+        ASR::deferred_type_attrType deferred_attr = ASR::down_cast<ASR::TypeParameter_t>(
+            ASRUtils::get_type_parameter(
+                ASRUtils::type_get_past_pointer(param_type)))->m_deferred_attr;
+        ASR::Struct_t *st = nullptr;
+        if (arg_decl) {
+            ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_decl);
+            if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
+                st = ASR::down_cast<ASR::Struct_t>(arg_sym);
+            }
+        }
+        // 7.5.7 paragraph 1: a derived type that has neither the BIND attribute
+        // nor the SEQUENCE attribute is an extensible type. Nothing else is, so
+        // an intrinsic type never satisfies the EXTENSIBLE requirement.
+        bool arg_is_extensible = st != nullptr && !st->m_is_sequence
+            && st->m_abi != ASR::abiType::BindC;
+        std::string arg_str = ASRUtils::type_to_str_fortran_symbol(arg_type, arg_decl);
+        if (deferred_attr != ASR::deferred_type_attrType::NonExtensible
+                && !arg_is_extensible) {
+            diag.add(diag::Diagnostic(
+                "deferred type '" + param + "' is extensible, so its instantiation "
+                "argument must be an extensible derived type, not " + arg_str,
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
+        }
+        if (deferred_attr != ASR::deferred_type_attrType::Abstract
+                && st != nullptr && st->m_is_abstract) {
+            diag.add(diag::Diagnostic(
+                "deferred type '" + param + "' is not abstract, so its "
+                "instantiation argument must not be the abstract type " + arg_str,
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     void visit_Instantiate(const AST::Instantiate_t &x) {
         std::string template_name = x.m_name;
 
@@ -5117,9 +5238,15 @@ public:
                             diag::Label("", {x.m_args[i]->base.loc})}));
                     throw SemanticAbort();
                 }
-                type_subs[param].first = arg_type;
+                ASR::symbol_t *arg_decl = nullptr;
                 if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
-                    type_subs[param].second = type_declaration;
+                    arg_decl = type_declaration;
+                }
+                check_instantiation_arg_type(param_type, param, arg_type,
+                    arg_decl, x.m_args[i]->base.loc);
+                type_subs[param].first = arg_type;
+                if (arg_decl) {
+                    type_subs[param].second = arg_decl;
                 }
             } else if (AST::is_a<AST::AttrName_t>(*x.m_args[i])) {
                 AST::AttrName_t *attr_name = AST::down_cast<AST::AttrName_t>(x.m_args[i]);
@@ -5256,6 +5383,8 @@ public:
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
                         }
+                        check_instantiation_arg_type(param_type, param, arg_type,
+                            type_subs[param].second, x.m_args[i]->base.loc);
                         type_subs[param].first = ASRUtils::duplicate_type(al, arg_type);
                     } else {
                         // Handling local variables passed as instantiate's arguments
@@ -5530,7 +5659,8 @@ public:
                             tp->base.base.loc, compiler_options.po.default_integer_kind));
                     } else {
                         t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
-                            tp->base.base.loc, s2c(al, name)));
+                            tp->base.base.loc, s2c(al, name),
+                            tp->m_deferred_attr, tp->m_is_class));
                     }
                     t = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                         t, tp_m_dims, tp_n_dims);
@@ -5567,7 +5697,8 @@ public:
                                     tp->base.base.loc, compiler_options.po.default_integer_kind));
                             } else {
                                 param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param]),
+                                    tp->m_deferred_attr, tp->m_is_class));
                             }
                             if( tp_n_dims > 0 ) {
                                 param_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
@@ -5620,7 +5751,8 @@ public:
                                     tp->base.base.loc, compiler_options.po.default_integer_kind));
                             } else {
                                 return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param]),
+                                    tp->m_deferred_attr, tp->m_is_class));
                             }
                             if( tp_n_dims > 0 ) {
                                 return_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,

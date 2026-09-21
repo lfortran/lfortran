@@ -2855,26 +2855,35 @@ ast_t* BLOCKDATA2(Allocator &al, const Location &l, char* a_name,
 
 ast_t* TYPEPARAMETER0(Allocator &al,
         const ast_t *attr,
+        ast_t **extra_attrs,
+        size_t n_extra_attrs,
         const ast_t *id,
         const ast_t *trivia,
         Location &l) {
     Vec<decl_attribute_t*> v;
-    v.reserve(al, 1);
+    v.reserve(al, 1 + n_extra_attrs);
     v.push_back(al, down_cast<decl_attribute_t>(attr));
+    for (size_t i = 0; i < n_extra_attrs; i++) {
+        v.push_back(al, down_cast<decl_attribute_t>(extra_attrs[i]));
+    }
     return make_DerivedType_t(al, l,
         name2char(id), nullptr, 0, trivia_cast(trivia), v.p, v.size(),
         nullptr, 0, nullptr, 0);
 }
 
-// A `deferred type :: t1, t2` statement (F2028 R1616) declares one deferred
-// type argument per name, each of which becomes its own DerivedType node with
-// the `deferred` attribute. Each node is located at its own name, so that
-// diagnostics about one declared type (a redeclaration, for example) point at
-// that name only, exactly like the individual names of an `integer :: a, b`
-// declaration. The `deferred` attribute and the trivia (the comments following
-// the statement) belong to the statement as a whole: the attribute keeps the
-// statement location and the trivia is attached to the last node only.
+// A `deferred type [, deferred-type-attr-list] :: t1, t2` statement (F2028
+// R1616) declares one deferred type argument per name, each of which becomes
+// its own DerivedType node whose first attribute is `deferred`, followed by the
+// deferred-type-attrs (R1617: `abstract` or `extensible`) of the statement.
+// Each node is located at its own name, so that diagnostics about one declared
+// type (a redeclaration, for example) point at that name only, exactly like the
+// individual names of an `integer :: a, b` declaration. The attributes and the
+// trivia (the comments following the statement) belong to the statement as a
+// whole: the `deferred` attribute keeps the statement location and the trivia
+// is attached to the last node only.
 Vec<ast_t*> DEFERRED_TYPES(Allocator &al,
+        ast_t **attrs,
+        size_t n_attrs,
         const Vec<ast_t*> &names,
         const ast_t *trivia,
         Location &l) {
@@ -2884,7 +2893,7 @@ Vec<ast_t*> DEFERRED_TYPES(Allocator &al,
         const ast_t *t = (i + 1 == names.size()) ? trivia : nullptr;
         types.push_back(al, TYPEPARAMETER0(al,
             make_SimpleAttribute_t(al, l, simple_attributeType::AttrDeferred),
-            names[i], t, names[i]->loc));
+            attrs, n_attrs, names[i], t, names[i]->loc));
     }
     return types;
 }

@@ -546,10 +546,11 @@ public:
         s = r;
     }
 
-    // `deferred type :: t` (F2028 R1616) is stored as a DerivedType that
-    // carries the `deferred` attribute and nothing else.
+    // `deferred type [, deferred-type-attr-list] :: t` (F2028 R1616) is stored
+    // as a DerivedType whose first attribute is `deferred`, optionally followed
+    // by the deferred-type-attrs of the statement (R1617).
     bool is_deferred_type(const DerivedType_t &x) {
-        return x.n_attrtype == 1 && x.n_namelist == 0 && x.n_items == 0
+        return x.n_attrtype >= 1 && x.n_namelist == 0 && x.n_items == 0
             && x.n_contains == 0
             && is_a<SimpleAttribute_t>(*x.m_attrtype[0])
             && down_cast<SimpleAttribute_t>(x.m_attrtype[0])->m_attr
@@ -562,6 +563,11 @@ public:
             r += syn(gr::UnitHeader);
             r.append("deferred type");
             r += syn();
+            for (size_t i=1; i<x.n_attrtype; i++) {
+                r.append(", ");
+                this->visit_decl_attribute(*x.m_attrtype[i]);
+                r.append(s);
+            }
             r.append(" :: ");
             r.append(x.m_name);
             if (x.m_trivia) {
@@ -1614,6 +1620,7 @@ public:
             ATTRTYPE(Deferred)
             ATTRTYPE(Elemental)
             ATTRTYPE(Enumerator)
+            ATTRTYPE(Extensible)
             ATTRTYPE(External)
             ATTRTYPE(Impure)
             ATTRTYPE(Intrinsic)

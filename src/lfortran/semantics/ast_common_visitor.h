@@ -10903,8 +10903,26 @@ public:
                   && ASR::is_a<ASR::TypeParameter_t>(*
                     ASRUtils::type_get_past_array(
                         ASR::down_cast<ASR::Variable_t>(v)->m_type))) {
+                ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(
+                    ASRUtils::type_get_past_array(
+                        ASR::down_cast<ASR::Variable_t>(v)->m_type));
+                // C707: "In a declaration-type-spec, TYPE(derived-type-spec) or
+                // TYPE ( deferred-type-name ) shall not specify an abstract
+                // type." (Fortran 2028 working draft J3/26-007r1, 7.3.2.1);
+                // NOTE 4 of 16.4.1.2 spells out that `TYPE(t)` is invalid for a
+                // deferred type declared with the ABSTRACT attribute.
+                if (tp->m_deferred_attr == ASR::deferred_type_attrType::Abstract) {
+                    diag.add(Diagnostic(
+                        "deferred type '" + derived_type_name + "' is abstract, "
+                        "so it cannot be used in a type declaration",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
                 type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
-                                        s2c(al, derived_type_name)));
+                                        s2c(al, derived_type_name),
+                                        tp->m_deferred_attr, false));
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
             } else if (v && ASRUtils::is_iso_c_ptr_type_symbol(current_scope, v)) {
@@ -11019,6 +11037,50 @@ public:
                 derived_type_name = to_lower(sym_type->m_name);
             }
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
+            // A deferred type argument of a template or a requirement is stored
+            // as an ASR::Variable_t whose type is an ASR::TypeParameter_t, so it
+            // is not an ASR::Struct_t and must be handled before the code below
+            // resolves `derived_type_name` to one.
+            if( v && ASR::is_a<ASR::Variable_t>(*v)
+                  && ASR::is_a<ASR::TypeParameter_t>(*
+                        ASRUtils::type_get_past_array(
+                            ASR::down_cast<ASR::Variable_t>(v)->m_type)) ) {
+                ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(
+                    ASRUtils::type_get_past_array(
+                        ASR::down_cast<ASR::Variable_t>(v)->m_type));
+                // C706: "In a declaration-type-spec, CLASS ( derived-type-spec )
+                // or CLASS ( deferred-type-name ) shall specify an extensible
+                // type." (Fortran 2028 working draft J3/26-007r1, 7.3.2.1). A
+                // deferred type is extensible exactly when it was declared
+                // EXTENSIBLE or ABSTRACT, because ABSTRACT implicitly implies
+                // EXTENSIBLE (16.4.1.2 paragraph 2 and its NOTE 4).
+                if( tp->m_deferred_attr == ASR::deferred_type_attrType::NonExtensible ) {
+                    diag.add(Diagnostic(
+                        "deferred type '" + derived_type_name + "' is not extensible, "
+                        "so it cannot be used in a class declaration",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                // The concrete type only becomes known at instantiation, so
+                // there is no derived type symbol to declare here.
+                type_declaration = nullptr;
+                type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
+                                        s2c(al, derived_type_name),
+                                        tp->m_deferred_attr, true));
+                type = ASRUtils::make_Array_t_util(
+                    al, loc, type, dims.p, dims.size(), abi, is_argument);
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
+                if (is_allocatable) {
+                    type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
+                return type;
+            }
             if( !v ) {
                 if( derived_type_name != "~unlimited_polymorphic_type" ) {
                     if (this->is_derived_type && (is_pointer || is_allocatable)) {
