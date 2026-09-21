@@ -2,12 +2,12 @@
     "basename": "asr-template_save_common_1-4caa70c",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/template_save_common_1.f90",
-    "infile_hash": "1eb5b022dcd743996e5101e97c47cee3afca870da3db4ec55f3c083d",
+    "infile_hash": "173cfb2a120e95111cdba8ba14cb2294f8819d8b14f78da9a17bfb33",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-template_save_common_1-4caa70c.stderr",
-    "stderr_hash": "e61d4dd83e6db4699d5a685a393231e92e9b4d122276ab03715efa52",
+    "stderr_hash": "193cdc420bb85236379f987e7a93bd08f2323b0d381fdac98df7842b",
     "returncode": 1
 }

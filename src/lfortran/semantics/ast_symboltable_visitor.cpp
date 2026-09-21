@@ -5261,6 +5261,63 @@ public:
         context_map.clear();
     }
 
+    // C1603 and C1604 (J3/26-007r1, 16.1.1): if a template-specification is a
+    // type declaration statement it shall specify the PARAMETER attribute, and
+    // if it is a procedure declaration statement it shall not specify the
+    // POINTER attribute. A template specification part can therefore not
+    // declare a variable or a procedure pointer.
+    //
+    // Only the items between the `template` statement and `contains` are
+    // template-specifications (R1606); the contained procedures are ordinary
+    // subprogram bodies and may declare locals, so this is called from the loop
+    // over the specification part only.
+    //
+    // A deferred argument declaration (R1615) is not a template-specification
+    // either. `deferred type :: t` and `require ::` are their own AST nodes, so
+    // they never reach here, but a deferred constant is currently spelled as a
+    // plain type declaration of one of the template's own deferred arguments
+    // (`integer :: n` for `template tmpl(..., n)`), which is left alone.
+    void check_template_specification(AST::decl_stmt_t *item,
+            const std::vector<std::string> &deferred_args) {
+        if (!AST::is_a<AST::Declaration_t>(*item)) return;
+        AST::Declaration_t &decl = *AST::down_cast<AST::Declaration_t>(item);
+        // An access statement such as `private` or `public :: s` carries no
+        // type, and is allowed by R1606.
+        if (decl.m_vartype == nullptr) return;
+        AST::AttrType_t *type = AST::is_a<AST::AttrType_t>(*decl.m_vartype)
+            ? AST::down_cast<AST::AttrType_t>(decl.m_vartype) : nullptr;
+        bool is_procedure_decl = type
+            && type->m_type == AST::decl_typeType::TypeProcedure;
+        bool has_parameter = false;
+        bool has_pointer = false;
+        for (size_t i = 0; i < decl.n_attributes; i++) {
+            if (!AST::is_a<AST::SimpleAttribute_t>(*decl.m_attributes[i])) continue;
+            AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(
+                decl.m_attributes[i]);
+            if (sa->m_attr == AST::simple_attributeType::AttrParameter) {
+                has_parameter = true;
+            } else if (sa->m_attr == AST::simple_attributeType::AttrPointer) {
+                has_pointer = true;
+            }
+        }
+        if (is_procedure_decl ? !has_pointer : has_parameter) return;
+        for (size_t i = 0; i < decl.n_syms; i++) {
+            std::string name = to_lower(decl.m_syms[i].m_name);
+            if (std::find(deferred_args.begin(), deferred_args.end(), name)
+                    != deferred_args.end()) continue;
+            std::string msg = is_procedure_decl
+                ? "a template specification part cannot declare a procedure"
+                  " pointer, so '" + name + "' must not have the pointer"
+                  " attribute"
+                : "a template specification part cannot declare a variable,"
+                  " so '" + name + "' must have the parameter attribute";
+            diag.add(diag::Diagnostic(msg, diag::Level::Error,
+                diag::Stage::Semantic, {
+                    diag::Label("", {decl.m_syms[i].loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     void visit_Template(const AST::Template_t &x){
         // C1601 (J3/26-007r1, 16.1.1): a template construct shall only appear
         // in the specification part of a main program, a module or a template
@@ -5288,8 +5345,13 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
+        // The template's own deferred arguments (R1614); a declaration of one
+        // of them is a deferred argument declaration rather than a
+        // template-specification, see check_template_specification().
+        std::vector<std::string> deferred_args;
         for (size_t i=0; i<x.n_namelist; i++) {
-            current_procedure_args.push_back(to_lower(x.m_namelist[i]));
+            deferred_args.push_back(to_lower(x.m_namelist[i]));
+            current_procedure_args.push_back(deferred_args.back());
         }
 
         std::map<std::string, std::vector<std::pair<std::string, Location>>> ext_overloaded_op_procs;
@@ -5310,6 +5372,7 @@ public:
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             try {
+                check_template_specification(x.m_items[i], deferred_args);
                 if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
                     AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_items[i]);
                     for (size_t i=0; i<r->n_reqs; i++) {

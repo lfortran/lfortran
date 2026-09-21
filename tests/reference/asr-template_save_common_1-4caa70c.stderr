@@ -35,37 +35,31 @@ semantic error: variable 'counter' in a template or templated procedure cannot h
    |                        ^^^^^^^ 
 
 semantic error: variable 'counter' in a template or templated procedure cannot have the save attribute
-  --> tests/errors/template_save_common_1.f90:61:26
+  --> tests/errors/template_save_common_1.f90:73:34
    |
-61 |         integer, save :: counter
-   |                          ^^^^^^^ 
-
-semantic error: variable 'counter' in a template or templated procedure cannot have the save attribute
-  --> tests/errors/template_save_common_1.f90:78:34
-   |
-78 |                 integer, save :: counter
+73 |                 integer, save :: counter
    |                                  ^^^^^^^ 
 
 semantic error: a common statement is not allowed in a template or templated procedure
-  --> tests/errors/template_save_common_1.f90:97:13
+  --> tests/errors/template_save_common_1.f90:92:13
    |
-97 |             common /blk/ a
+92 |             common /blk/ a
    |             ^^^^^^^^^^^^^^ 
 
 semantic error: an equivalence statement is not allowed in a template or templated procedure
-   --> tests/errors/template_save_common_1.f90:105:13
+   --> tests/errors/template_save_common_1.f90:100:13
     |
-105 |             equivalence (a, b)
+100 |             equivalence (a, b)
     |             ^^^^^^^^^^^^^^^^^^ 
 
 semantic error: variable 'counter' in a template or templated procedure cannot have the save attribute
-   --> tests/errors/template_save_common_1.f90:117:26
+   --> tests/errors/template_save_common_1.f90:112:26
     |
-117 |         integer, save :: counter
+112 |         integer, save :: counter
     |                          ^^^^^^^ 
 
 semantic error: a common statement is not allowed in a template or templated procedure
-   --> tests/errors/template_save_common_1.f90:127:9
+   --> tests/errors/template_save_common_1.f90:122:9
     |
-127 |         common /blk2/ a
+122 |         common /blk2/ a
     |         ^^^^^^^^^^^^^^^ 

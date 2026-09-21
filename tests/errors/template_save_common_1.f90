@@ -55,17 +55,12 @@ module template_save_common_1_m
         end subroutine
     end template
 
-    ! C1610, in the specification part of the template itself
-    template save_in_template_tmpl(t)
-        deferred type :: t
-        integer, save :: counter
-    contains
-        subroutine bump(x)
-            type(t), intent(in) :: x
-            counter = counter + 1
-            print *, x, counter
-        end subroutine
-    end template
+    ! C1610 is not reachable in the specification part of a template itself.
+    ! C1603 allows only a PARAMETER declaration there, and a named constant
+    ! cannot have the SAVE attribute, so such a declaration is rejected as a
+    ! C1603 violation before SAVE is ever considered. C1610 is still reachable,
+    ! and is covered above and below, in a procedure of a template's CONTAINS
+    ! section, in a scoping unit nested in one, and in a templated procedure.
 
     ! C1610, in a template nested in a template
     template outer_tmpl(t)
