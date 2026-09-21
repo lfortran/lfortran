@@ -2651,22 +2651,20 @@ public:
                     // expressions, recursively handling nested structs.
                     // Appends the expanded (leaf) expressions to `expanded`.
                     std::function<void(ASR::expr_t*, Vec<ASR::expr_t*>&)> expand_struct_expr;
-                    expand_struct_expr = [&](ASR::expr_t* struct_expr,
-                                             Vec<ASR::expr_t*>& expanded) {
-                        ASR::ttype_t* stype = ASRUtils::expr_type(struct_expr);
-                        stype = ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(stype));
-                        if (!ASR::is_a<ASR::StructType_t>(*stype)) {
-                            expanded.push_back(al, struct_expr);
-                            return;
-                        }
-                        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
-                            ASRUtils::get_struct_sym_from_struct_expr(struct_expr));
-                        ASR::Struct_t *struct_def = ASR::down_cast<ASR::Struct_t>(struct_sym);
-
-                        if (struct_def->n_members == 0) {
-                            expanded.push_back(al, struct_expr);
-                            return;
+                    // Appends the components of `struct_def` held by
+                    // `struct_expr`. The inherited components of an extended
+                    // type come first in component order (F2023 7.5.7.2), so
+                    // the parent is expanded before the type's own members.
+                    std::function<void(ASR::expr_t*, ASR::Struct_t*, Vec<ASR::expr_t*>&)>
+                        expand_struct_components;
+                    expand_struct_components = [&](ASR::expr_t* struct_expr,
+                                                   ASR::Struct_t* struct_def,
+                                                   Vec<ASR::expr_t*>& expanded) {
+                        if (struct_def->m_parent != nullptr) {
+                            ASR::symbol_t *parent_sym = ASRUtils::symbol_get_past_external(
+                                struct_def->m_parent);
+                            expand_struct_components(struct_expr,
+                                ASR::down_cast<ASR::Struct_t>(parent_sym), expanded);
                         }
                         for (size_t j = 0; j < struct_def->n_members; j++) {
                             char *member_name = struct_def->m_members[j];
@@ -2682,6 +2680,25 @@ public:
                             // Recursively expand if the member is itself a struct
                             expand_struct_expr(member_expr, expanded);
                         }
+                    };
+                    expand_struct_expr = [&](ASR::expr_t* struct_expr,
+                                             Vec<ASR::expr_t*>& expanded) {
+                        ASR::ttype_t* stype = ASRUtils::expr_type(struct_expr);
+                        stype = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(stype));
+                        if (!ASR::is_a<ASR::StructType_t>(*stype)) {
+                            expanded.push_back(al, struct_expr);
+                            return;
+                        }
+                        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(struct_expr));
+                        ASR::Struct_t *struct_def = ASR::down_cast<ASR::Struct_t>(struct_sym);
+
+                        if (struct_def->n_members == 0 && struct_def->m_parent == nullptr) {
+                            expanded.push_back(al, struct_expr);
+                            return;
+                        }
+                        expand_struct_components(struct_expr, struct_def, expanded);
                     };
 
                     Vec<ASR::expr_t*> new_values_vec;

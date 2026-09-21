@@ -840,33 +840,62 @@ namespace LCompilers {
             }
             LCOMPILERS_ASSERT(constructor_arg_syms.size() == x->n_args);
 
+            // A reference to `member` of `base`. `base` is the object this
+            // constructor writes into, or, for a nested constructor argument,
+            // the object that encloses it.
+            auto member_ref = [&](ASR::expr_t* base, ASR::symbol_t* member) {
+                ASR::symbol_t* base_sym = nullptr;
+                if (ASR::is_a<ASR::Var_t>(*base)) {
+                    base_sym = ASR::down_cast<ASR::Var_t>(base)->m_v;
+                }
+                return ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(
+                    replacer->al, x->base.base.loc, (ASR::asr_t*) base,
+                    base_sym, member, replacer->current_scope));
+            };
+
+            // F2018 7.5.10: a component with no corresponding
+            // component-data-source has, in the value the constructor builds,
+            // the status of an unallocated allocatable. The target of an
+            // assignment takes that value, so such a component must not keep
+            // whatever the target held before. The components are collected
+            // here and released after the ones this constructor gives a value
+            // to, so an argument can still read the target's previous value.
+            // That holds within one constructor; an argument that is itself a
+            // constructor releases its own omitted components when it is
+            // lowered, which is before the arguments after it are assigned.
+            Vec<ASR::expr_t*> omitted_components;
+            omitted_components.reserve(replacer->al, x->n_args);
+
             for( size_t i = 0; i < x->n_args; i++ ) {
+                ASR::symbol_t* member = constructor_arg_syms[i];
                 if( x->m_args[i].m_value == nullptr ) {
+                    // A variable's initializer is stored, not assigned, so
+                    // there is no previous value to reset there. A component
+                    // that is not allocatable reaches this lowering with a
+                    // value: the frontend requires a data source or a default
+                    // for it (a pointer component's `=> null()` counts) and
+                    // fills the default in. See #13304 — a derived-type
+                    // component whose own components are all allocatable would
+                    // need this guard revisited.
+                    if( inside_symtab || !ASRUtils::is_allocatable(
+                            ASRUtils::symbol_type(member)) ) {
+                        continue ;
+                    }
+                    omitted_components.push_back(replacer->al,
+                        member_ref(replacer->result_var, member));
                     continue ;
                 }
-                ASR::symbol_t* member = constructor_arg_syms[i];
                 if( ASR::is_a<ASR::StructConstructor_t>(*x->m_args[i].m_value) ) {
                     ASR::expr_t* result_var_copy = replacer->result_var;
-                    ASR::symbol_t *v = nullptr;
-                    if (ASR::is_a<ASR::Var_t>(*result_var_copy)) {
-                        v = ASR::down_cast<ASR::Var_t>(result_var_copy)->m_v;
-                    }
-                    replacer->result_var = ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(replacer->al,
-                                                x->base.base.loc, (ASR::asr_t*) result_var_copy, v,
-                                                member, replacer->current_scope));
+                    replacer->result_var = member_ref(result_var_copy, member);
                     ASR::expr_t** current_expr_copy = replacer->current_expr;
                     replacer->current_expr = &(x->m_args[i].m_value);
                     replacer->replace_expr(x->m_args[i].m_value);
                     replacer->current_expr = current_expr_copy;
                     replacer->result_var = result_var_copy;
                 } else {
-                    ASR::symbol_t *v = nullptr;
-                    if (ASR::is_a<ASR::Var_t>(*replacer->result_var)) {
-                        v = ASR::down_cast<ASR::Var_t>(replacer->result_var)->m_v;
-                    }
-                    ASR::expr_t* derived_ref = ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(replacer->al,
-                                                    x->base.base.loc, (ASR::asr_t*) replacer->result_var, v,
-                                                    member, replacer->current_scope));
+                    ASR::expr_t* derived_ref = member_ref(
+                        replacer->result_var, member);
                     ASR::expr_t* x_m_args_i = x->m_args[i].m_value;
                     if( perform_cast ) {
                         LCOMPILERS_ASSERT(casted_type != nullptr);
@@ -886,6 +915,12 @@ namespace LCompilers {
                     }
                     result_vec->push_back(replacer->al, assign);
                 }
+            }
+            if( omitted_components.size() > 0 ) {
+                result_vec->push_back(replacer->al, ASRUtils::STMT(
+                    ASR::make_ImplicitDeallocate_t(replacer->al,
+                        x->base.base.loc, omitted_components.p,
+                        omitted_components.size())));
             }
             replacer->result_var = nullptr;
         }
