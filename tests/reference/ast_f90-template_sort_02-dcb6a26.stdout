@@ -34,7 +34,7 @@ deferred interface
     type(V) :: res
     end function op_func
 end interface
-end requirement
+end requirement op_r
 
 contains
 

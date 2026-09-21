@@ -783,16 +783,16 @@ union_type_decl
 
 template_decl
     : KW_TEMPLATE id "(" id_list_opt ")" sep decl_statements
-        contains_block_opt KW_END KW_TEMPLATE sep {
-            $$ = TEMPLATE($2, $4, $7, $8, @$); }
+        contains_block_opt KW_END KW_TEMPLATE id_opt sep {
+            $$ = TEMPLATE($2, $4, $7, $8, $11, @$); }
     ;
 
 // F2028 R1632 / R1634: a requirement-specification is a deferred-arg-decl-stmt
 // or an interface-block; a bare subprogram body is not one of them.
 requirement_decl
     : KW_REQUIREMENT id "{" id_list_opt "}" sep decl_statements
-        KW_END KW_REQUIREMENT sep {
-            $$ = REQUIREMENT($2, $4, $7, @$); }
+        KW_END KW_REQUIREMENT id_opt sep {
+            $$ = REQUIREMENT($2, $4, $7, $10, @$); }
     ;
 
 require_decl

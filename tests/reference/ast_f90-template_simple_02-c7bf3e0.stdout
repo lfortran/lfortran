@@ -14,7 +14,7 @@ deferred interface
     type(V) :: res
     end function binary_func
 end interface
-end requirement
+end requirement operator_r
 requirement cast_r {T, cast}
 deferred type :: T
 deferred interface
@@ -23,7 +23,7 @@ deferred interface
     type(T) :: res
     end function cast
 end interface
-end requirement
+end requirement cast_r
 
 contains
 
