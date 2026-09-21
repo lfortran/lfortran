@@ -26104,6 +26104,16 @@ public:
             // This argument should be checked strictly. It's size must be exactly equal to the expected size, it cannot be larger
             // It is also not an argument the user wrote: it is the target of
             // `target = f(...)`, and is reported as such when it is unallocated.
+            //
+            // "the result is the last argument" holds for how the passes are
+            // ordered today, not as an invariant of ASR. A pass that appends
+            // arguments after the result breaks it and the call falls back to
+            // the ordinary actual-argument report: `pass_array_by_data` does
+            // exactly that to `_lcompilers_matmul`, which is also never
+            // flagged in the first place because the `intrinsic_function`
+            // pass builds its SubroutineCall without strict_bounds_checking.
+            // Recording the result argument's index in ASR would make this
+            // exact rather than positional.
             bool is_return_value = subroutinecall_was_functioncall && i == (x.n_args - 1);
             if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
                 ASR::ArrayPhysicalCast_t* arr_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);

@@ -6169,3 +6169,7 @@ run = true
 [[test]]
 filename = "errors/realloc_lhs_fn_result_01.f90"
 run = true
+
+[[test]]
+filename = "errors/realloc_lhs_fn_result_02.f90"
+run = true
