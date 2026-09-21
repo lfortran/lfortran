@@ -4128,6 +4128,7 @@ RUN(NAME common_39 LABELS gfortran llvm)
 RUN(NAME common_40 LABELS gfortran llvm)
 RUN(NAME common_41 LABELS gfortran llvm)
 RUN(NAME common_42 LABELS gfortran llvm)
+RUN(NAME common_43 LABELS gfortran llvm)
 RUN(NAME common_substring_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_substring_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
