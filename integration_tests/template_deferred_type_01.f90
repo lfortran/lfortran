@@ -19,7 +19,8 @@ module template_deferred_type_01_m
 
     template double_tmpl(t, u, add_t, add_u)
         deferred type :: t, u
-        require :: add_r {t, add_t}, add_r {u, add_u}
+        require :: add_r {t, add_t}
+        require :: add_r {u, add_u}
         private
         public :: double_both
       contains
