@@ -72,6 +72,14 @@ v%nest%d%dd = 7
 call read_assumed_shape(v(1:2))
 call read_assumed_shape(v(1:3:2))
 
+! a section passed to a dummy that writes its argument back
+call write_assumed_shape(v(1:3:2), 8)
+if (v(1)%nest%ii /= 8) error stop "section copy-out: element 1 is in the section"
+if (v(3)%nest%ii /= 8) error stop "section copy-out: element 3 is in the section"
+if (v(2)%nest%ii /= 9) error stop "section copy-out: element 2 is outside the section"
+if (v(1)%nest%d%dd /= 9) error stop "section copy-out: three levels in the section"
+if (v(2)%nest%d%dd /= 7) error stop "section copy-out: three levels outside the section"
+
 ! a nested member of an array inside an array constructor
 v%nest%ii = 9
 v%nest%d%dd = 7
