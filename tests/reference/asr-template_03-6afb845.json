@@ -2,7 +2,7 @@
     "basename": "asr-template_03-6afb845",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/template_03.f90",
-    "infile_hash": "58b6ec4d6cf448b1aabceb4447e834d0d2e8f5a98058e37b48e86976",
+    "infile_hash": "622031e6beaa188fb6eae398fd0efdcf2f104457a6972e222d48e2d8",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-template_03-6afb845.stdout",

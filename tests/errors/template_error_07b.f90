@@ -3,8 +3,8 @@ module template_01_m
     private
     public :: op_t
 
-    requirement semigroup(t, combine)
-        type, deferred :: t
+    requirement semigroup {t, combine}
+        deferred type :: t
     end requirement
 
   contains

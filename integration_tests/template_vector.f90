@@ -4,7 +4,7 @@ module template_vector_m
     public :: vector_t, main
 
     template vector_t(T)
-        type, deferred :: T
+        deferred type :: T
         public :: Vector
 
         type :: Vector
@@ -58,7 +58,7 @@ module template_vector_m
 contains
 
     subroutine main()
-        instantiate vector_t(integer), only: IntVector => Vector
+        instantiate vector_t {integer}, only: IntVector => Vector
         type(IntVector) :: v
         call v%push_back(10)
         if (v%elements(1) /= 10) error stop

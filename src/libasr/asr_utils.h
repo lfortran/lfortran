@@ -106,6 +106,34 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr);
 
 ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression);
 void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struct_sym);
+ASR::cptr_kindType get_cptr_kind_from_type(ASR::ttype_t* type);
+ASR::symbol_t* get_cptr_type_declaration_from_expr(ASR::expr_t* expression);
+ASR::symbol_t* get_iso_c_binding_symbol(SymbolTable* scope,
+        const std::string &original_name);
+bool is_iso_c_binding_symbol(SymbolTable* scope, ASR::symbol_t* sym,
+        const std::string &original_name);
+bool is_iso_c_null_symbol(SymbolTable* scope, ASR::symbol_t* sym);
+bool is_iso_c_ptr_type_symbol(SymbolTable* scope, ASR::symbol_t* sym);
+bool is_iso_c_funptr_type_symbol(SymbolTable* scope, ASR::symbol_t* sym);
+ASR::cptr_kindType cptr_kind_from_type_declaration(SymbolTable* scope,
+        ASR::symbol_t* type_decl);
+ASR::ttype_t* make_cptr_type(Allocator& al, const Location& loc,
+        SymbolTable* scope, ASR::symbol_t* type_decl);
+ASR::expr_t* make_iso_c_null_constant(Allocator& al, const Location& loc,
+        SymbolTable* scope, ASR::symbol_t* null_sym);
+void anchor_cptr_null_constant_to_type_declaration(Allocator& al,
+        ASR::expr_t* expr, ASR::Variable_t* var);
+ASR::Variable_t* get_variable_from_symbol(ASR::symbol_t* sym);
+ASR::FunctionType_t* get_procedure_type_from_expr(ASR::expr_t* expr);
+ASR::FunctionType_t* get_procedure_pointer_component_type(
+        ASR::Variable_t* member_var);
+bool is_procedure_pointer_value(ASR::Variable_t* member_var,
+        ASR::expr_t* value);
+bool is_valid_pointer_assignment_target(ASR::expr_t* expr);
+void set_null_context_from_variable(Allocator& al, const Location& loc,
+        SymbolTable* scope, ASR::Variable_t* var,
+        ASR::ttype_t*& current_variable_type,
+        ASR::expr_t*& current_struct_type_var_expr);
 
 // Resolve type-bound assignment(=) (~assign) on a struct or its ancestors.
 // Returns the CustomOperator symbol, or nullptr if none is found.
@@ -1308,6 +1336,18 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
                         const_cast<ASR::ttype_t*>(t)), struct_sym, show_kind) + " allocatable";
         }
         case ASR::ttypeType::CPtr: {
+            ASR::cptr_kindType kind = ASRUtils::get_cptr_kind_from_type(
+                const_cast<ASR::ttype_t*>(t));
+            if (kind == ASR::cptr_kindType::CFunPointer) {
+                return "type(c_funptr)";
+            }
+            if (kind == ASR::cptr_kindType::CPointer) {
+                return "type(c_ptr)";
+            }
+            if (struct_sym != nullptr) {
+                return "type(" + std::string(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(struct_sym))) + ")";
+            }
             return "type(c_ptr)";
         }
         case ASR::ttypeType::SymbolicExpression: {
@@ -1352,6 +1392,12 @@ static inline std::string type_to_str_fortran_expr(const ASR::ttype_t* t, ASR::e
     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(const_cast<ASR::ttype_t*>(t)))) {
         LCOMPILERS_ASSERT_MSG(expr != nullptr, "`expr` should be non-null for `StructType`");
         struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+    } else if (ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(
+                   const_cast<ASR::ttype_t*>(t)))) {
+        if (ASRUtils::get_cptr_kind_from_type(const_cast<ASR::ttype_t*>(t))
+                == ASR::cptr_kindType::CPtrUnspecified && expr != nullptr) {
+            struct_sym = ASRUtils::get_cptr_type_declaration_from_expr(expr);
+        }
     }
 
     return type_to_str_fortran_symbol(t, struct_sym);
@@ -1367,6 +1413,12 @@ static inline std::string type_to_str_with_kind(const ASR::ttype_t* t, ASR::expr
     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(const_cast<ASR::ttype_t*>(t)))) {
         if (expr != nullptr) {
             struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+        }
+    } else if (ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(
+                   const_cast<ASR::ttype_t*>(t)))) {
+        if (ASRUtils::get_cptr_kind_from_type(const_cast<ASR::ttype_t*>(t))
+                == ASR::cptr_kindType::CPtrUnspecified && expr != nullptr) {
+            struct_sym = ASRUtils::get_cptr_type_declaration_from_expr(expr);
         }
     }
 
@@ -1673,6 +1725,24 @@ static inline ASR::symbol_t *get_asr_owner(const ASR::symbol_t *sym) {
     return ASR::down_cast<ASR::symbol_t>(s->asr_owner);
 }
 
+// True if this scope belongs to a procedure of a Template, i.e. a templated
+// reference written here is being compiled as part of the template itself
+// rather than instantiating it.
+//
+// Every link in the chain is optional. A scope owned by a Program has the
+// TranslationUnit as its parent, which is not a symbol, so the walk stops
+// there and the answer is false -- a templated reference in a main program
+// instantiates, it is not inside a template.
+static inline bool is_owned_by_template(const SymbolTable *scope) {
+    if( scope == nullptr || scope->asr_owner == nullptr ||
+        !ASR::is_a<ASR::symbol_t>(*scope->asr_owner) ) {
+        return false;
+    }
+    ASR::symbol_t *owner = get_asr_owner(
+        ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
+    return owner != nullptr && ASR::is_a<ASR::Template_t>(*owner);
+}
+
 // True if this scope belongs to a TranslationUnit.
 //
 // Interactive evaluation chains one TranslationUnit per cell, each scope
@@ -1752,36 +1822,6 @@ static inline ASR::Module_t *get_sym_module0(const ASR::symbol_t *sym) {
         s = s->parent;
     }
     return nullptr;
-}
-
-static inline bool is_c_ptr(ASR::symbol_t* v, std::string v_name="") {
-    if( v_name == "" ) {
-        v_name = ASRUtils::symbol_name(v);
-    }
-    ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
-    if( ASR::is_a<ASR::Struct_t>(*v_orig) ) {
-        ASR::Module_t* der_type_module = ASRUtils::get_sym_module0(v_orig);
-        return (der_type_module && std::string(der_type_module->m_name) ==
-                "lfortran_intrinsic_iso_c_binding" &&
-                der_type_module->m_intrinsic &&
-                v_name == "c_ptr");
-    }
-    return false;
-}
-
-static inline bool is_c_funptr(ASR::symbol_t* v, std::string v_name="") {
-    if( v_name == "" ) {
-        v_name = ASRUtils::symbol_name(v);
-    }
-    ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
-    if( ASR::is_a<ASR::Struct_t>(*v_orig) ) {
-        ASR::Module_t* der_type_module = ASRUtils::get_sym_module0(v_orig);
-        return (der_type_module && std::string(der_type_module->m_name) ==
-                "lfortran_intrinsic_iso_c_binding" &&
-                der_type_module->m_intrinsic &&
-                v_name == "c_funptr");
-    }
-    return false;
 }
 
 // Returns true if the Function is intrinsic, otherwise false
@@ -2558,6 +2598,13 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
                                            encode_dimensions_, set_dimensional_hint) + "]";
         }
         case ASR::ttypeType::CPtr: {
+            ASR::cptr_kindType kind = ASRUtils::get_cptr_kind_from_type(
+                const_cast<ASR::ttype_t*>(t));
+            if (kind != ASR::cptr_kindType::CPtrUnspecified) {
+                std::string name = kind == ASR::cptr_kindType::CFunPointer
+                    ? "c_funptr" : "c_ptr";
+                return use_underscore_sep ? "CPtr_" + name + "_" : "CPtr[" + name + "]";
+            }
             return "CPtr";
         }
         case ASR::ttypeType::StructType: {
@@ -2730,6 +2777,12 @@ static inline std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::
             return "list[" + type_to_str_python_symbol(l->m_type, nullptr) + "]";
         }
         case ASR::ttypeType::CPtr: {
+            ASR::cptr_kindType kind = ASRUtils::get_cptr_kind_from_type(
+                const_cast<ASR::ttype_t*>(t));
+            if (kind != ASR::cptr_kindType::CPtrUnspecified) {
+                return kind == ASR::cptr_kindType::CFunPointer
+                    ? "CPtr[c_funptr]" : "CPtr[c_ptr]";
+            }
             return "CPtr";
         }
         case ASR::ttypeType::StructType: {
@@ -4188,6 +4241,26 @@ static inline ASR::symbol_t* import_type_declaration(Allocator &al,
     return imported;
 }
 
+static inline void set_cptr_type_declaration(ASR::ttype_t* type,
+        ASR::symbol_t* type_declaration) {
+    if (type == nullptr || type_declaration == nullptr) {
+        return;
+    }
+    ASR::ttype_t* scalar = ASRUtils::extract_type(type);
+    if (ASR::is_a<ASR::CPtr_t>(*scalar)) {
+        ASR::CPtr_t* cptr = ASR::down_cast<ASR::CPtr_t>(scalar);
+        if (cptr->m_kind == ASR::cptr_kindType::CPtrUnspecified) {
+            std::string name = ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(type_declaration));
+            if (name == "c_funptr") {
+                cptr->m_kind = ASR::cptr_kindType::CFunPointer;
+            } else if (name == "c_ptr") {
+                cptr->m_kind = ASR::cptr_kindType::CPointer;
+            }
+        }
+    }
+}
+
 inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     SymbolTable* a_parent_symtab, char* a_name, char** a_dependencies, size_t n_dependencies,
     ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
@@ -4199,6 +4272,7 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
 ) {
     a_type_declaration = import_type_declaration(
         al, a_type_declaration, a_parent_symtab);
+    set_cptr_type_declaration(a_type, a_type_declaration);
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
         a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
@@ -4497,7 +4571,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         }
         case ASR::ttypeType::CPtr: {
             ASR::CPtr_t* ptr = ASR::down_cast<ASR::CPtr_t>(t);
-            return ASRUtils::TYPE(ASR::make_CPtr_t(al, ptr->base.base.loc));
+            return ASRUtils::TYPE(ASR::make_CPtr_t(al, ptr->base.base.loc, ptr->m_kind));
         }
         case ASR::ttypeType::List: {
             ASR::List_t* l = ASR::down_cast<ASR::List_t>(t);
@@ -4844,7 +4918,8 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
             return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc, tp->m_param));
         }
         case ASR::ttypeType::CPtr: {
-            return ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            ASR::CPtr_t* ptr = ASR::down_cast<ASR::CPtr_t>(t);
+            return ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ptr->m_kind));
         }
         default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
@@ -5300,6 +5375,26 @@ inline bool dimensions_compatible(ASR::dimension_t* dims_a, size_t n_dims_a,
     return (total_a == -1) || (total_b == -1) || (total_a >= total_b);
 }
 
+static inline bool cptr_type_declarations_match(ASR::ttype_t* left_type,
+        ASR::ttype_t* right_type, ASR::expr_t* left_expr,
+        ASR::expr_t* right_expr) {
+    ASR::cptr_kindType left_kind = ASRUtils::get_cptr_kind_from_type(left_type);
+    ASR::cptr_kindType right_kind = ASRUtils::get_cptr_kind_from_type(right_type);
+    if (left_kind != ASR::cptr_kindType::CPtrUnspecified
+            && right_kind != ASR::cptr_kindType::CPtrUnspecified) {
+        return left_kind == right_kind;
+    }
+    ASR::symbol_t* left = left_expr != nullptr
+        ? ASRUtils::get_cptr_type_declaration_from_expr(left_expr) : nullptr;
+    ASR::symbol_t* right = right_expr != nullptr
+        ? ASRUtils::get_cptr_type_declaration_from_expr(right_expr) : nullptr;
+    if (left == nullptr || right == nullptr) {
+        return true;
+    }
+    return ASRUtils::symbol_get_past_external(left)
+        == ASRUtils::symbol_get_past_external(right);
+}
+
 // Compares two ASR types for structural equality.
 //
 // Parameters:
@@ -5385,7 +5480,7 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 return (a2->m_kind == b2->m_kind);
             }
             case ASR::ttypeType::CPtr: {
-                return true;
+                return cptr_type_declarations_match(a, b, a_expr, b_expr);
             }
             case ASR::ttypeType::SymbolicExpression: {
                 return true;
@@ -5589,7 +5684,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 return (a2->m_kind == b2->m_kind);
             }
             case ASR::ttypeType::CPtr: {
-                return true;
+                return cptr_type_declarations_match(a, b, a_expr, b_expr);
             }
             case ASR::ttypeType::SymbolicExpression: {
                 return true;
@@ -6255,25 +6350,28 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
             ext_sym, new_args.p, new_args.size(), new_type, new_value));
     } else if (ASR::is_a<ASR::PointerNullConstant_t>(*init_expr)) {
         ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(init_expr);
+        ASR::ttype_t* pnc_type = pnc->m_type;
         if (pnc->m_var_expr != nullptr) {
-            // The var_expr references a symbol in the struct's scope which may
-            // not be accessible from the current scope. Replace it with the
-            // struct type symbol resolved from the current scope.
+            // The var_expr references a type-identity symbol in another scope
+            // which may not be accessible from the current scope. Replace it
+            // with that symbol as imported or otherwise visible here.
             ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(pnc->m_var_expr);
             if (struct_sym != nullptr) {
-                std::string struct_name = ASRUtils::symbol_name(
-                    ASRUtils::symbol_get_past_external(struct_sym));
-                ASR::symbol_t* resolved = scope->resolve_symbol(struct_name);
+                ASR::symbol_t* resolved = ASRUtils::import_type_declaration(
+                    al, struct_sym, scope);
                 if (resolved != nullptr) {
                     ASR::expr_t* new_var_expr = ASRUtils::EXPR(
                         ASR::make_Var_t(al, init_expr->base.loc, resolved));
                     return ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
-                        al, init_expr->base.loc, pnc->m_type, new_var_expr));
+                        al, init_expr->base.loc, pnc_type, new_var_expr));
                 }
             }
             // If we can't resolve, strip var_expr to avoid scope violations
             return ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
-                al, init_expr->base.loc, pnc->m_type, nullptr));
+                al, init_expr->base.loc, pnc_type, nullptr));
+        } else if (pnc_type != pnc->m_type) {
+            return ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
+                al, init_expr->base.loc, pnc_type, nullptr));
         }
     }
 
@@ -6821,6 +6919,18 @@ class SymbolDuplicator {
                 new_symbol_name = namelist->m_group_name;
                 break;
             }
+            case ASR::symbolType::Requirement: {
+                ASR::Requirement_t* requirement = ASR::down_cast<ASR::Requirement_t>(symbol);
+                new_symbol = duplicate_Requirement(requirement, destination_symtab);
+                new_symbol_name = requirement->m_name;
+                break;
+            }
+            case ASR::symbolType::Template: {
+                ASR::Template_t* template_sym = ASR::down_cast<ASR::Template_t>(symbol);
+                new_symbol = duplicate_Template(template_sym, destination_symtab);
+                new_symbol_name = template_sym->m_name;
+                break;
+            }
             default: {
                 throw LCompilersException("Duplicating ASR::symbolType::" +
                         std::to_string(symbol->type) + " is not supported yet.");
@@ -7087,6 +7197,34 @@ class SymbolDuplicator {
             module_t->m_name, module_t->m_parent_module, module_t->m_dependencies,
             module_t->n_dependencies, module_t->m_loaded_from_mod, module_t->m_intrinsic,
             module_t->m_has_submodules, module_t->m_start_name, module_t->m_end_name
+        ));
+    }
+
+    // A Requirement and a Template are a scope plus the deferred argument names
+    // and the requirements they pull in. The names and the require_instantiation
+    // nodes hold identifiers only, no symbols, so they are carried over as they
+    // are -- the same way duplicate_Module carries m_dependencies.
+    ASR::symbol_t* duplicate_Requirement(ASR::Requirement_t* requirement_t,
+        SymbolTable* destination_symtab) {
+        SymbolTable* requirement_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(requirement_t->m_symtab, requirement_symtab);
+
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_Requirement_t(
+            al, requirement_t->base.base.loc, requirement_symtab,
+            requirement_t->m_name, requirement_t->m_args, requirement_t->n_args,
+            requirement_t->m_requires, requirement_t->n_requires
+        ));
+    }
+
+    ASR::symbol_t* duplicate_Template(ASR::Template_t* template_t,
+        SymbolTable* destination_symtab) {
+        SymbolTable* template_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(template_t->m_symtab, template_symtab);
+
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_Template_t(
+            al, template_t->base.base.loc, template_symtab,
+            template_t->m_name, template_t->m_args, template_t->n_args,
+            template_t->m_requires, template_t->n_requires
         ));
     }
 
@@ -9046,7 +9184,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
 
                         ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, arg->base.loc, arg, pointer_type_, nullptr);
 
-                        ASR::ttype_t* cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, arg->base.loc));
+                        ASR::ttype_t* cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, arg->base.loc, ASR::cptr_kindType::CPtrUnspecified));
 
                         ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, arg->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
 

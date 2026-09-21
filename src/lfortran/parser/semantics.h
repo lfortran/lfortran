@@ -2846,9 +2846,6 @@ ast_t* BLOCKDATA2(Allocator &al, const Location &l, char* a_name,
         VEC_CAST(attr, decl_attribute), attr.size(),  \
         DECLS(decl), decl.size(), \
         VEC_CAST(contains, procedure_decl), contains.size())
-#define DERIVED_TYPE2(name, attr, trivia, l) \
-        TYPEPARAMETER0(p.m_a, attr, name, trivia, l)
-
 
 #define UNION_TYPE(attr, name, trivia, decl, l) make_Union_t(p.m_a, l, \
         name2char(name), \
@@ -2869,6 +2866,39 @@ ast_t* TYPEPARAMETER0(Allocator &al,
         nullptr, 0, nullptr, 0);
 }
 
+// A `deferred type :: t1, t2` statement (F2028 R1616) declares one deferred
+// type argument per name, each of which becomes its own DerivedType node with
+// the `deferred` attribute. Each node is located at its own name, so that
+// diagnostics about one declared type (a redeclaration, for example) point at
+// that name only, exactly like the individual names of an `integer :: a, b`
+// declaration. The `deferred` attribute and the trivia (the comments following
+// the statement) belong to the statement as a whole: the attribute keeps the
+// statement location and the trivia is attached to the last node only.
+Vec<ast_t*> DEFERRED_TYPES(Allocator &al,
+        const Vec<ast_t*> &names,
+        const ast_t *trivia,
+        Location &l) {
+    Vec<ast_t*> types;
+    types.reserve(al, names.size());
+    for (size_t i = 0; i < names.size(); i++) {
+        const ast_t *t = (i + 1 == names.size()) ? trivia : nullptr;
+        types.push_back(al, TYPEPARAMETER0(al,
+            make_SimpleAttribute_t(al, l, simple_attributeType::AttrDeferred),
+            names[i], t, names[i]->loc));
+    }
+    return types;
+}
+
+// Appends all `items` at the end of `list`; used by declaration statements
+// that expand into more than one AST node.
+Vec<ast_t*> LIST_EXTEND(Allocator &al, Vec<ast_t*> list,
+        const Vec<ast_t*> &items) {
+    for (size_t i = 0; i < items.size(); i++) {
+        list.push_back(al, items[i]);
+    }
+    return list;
+}
+
 ast_t* TEMPLATE2(Allocator &al, const Location &l, char* a_name,
         char** a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
         program_unit_t** a_contains, size_t n_contains,
@@ -2877,6 +2907,28 @@ ast_t* TEMPLATE2(Allocator &al, const Location &l, char* a_name,
     return make_Template_t(al, l, a_name, a_namelist, n_namelist,
         /*items*/ DECLS(decl_stmts), /*n_items*/ decl_stmts.size(),
         /*contains*/ a_contains, /*n_contains*/ n_contains);
+}
+
+// R1626 `instantiate :: local-name => templated-subp-name {args}`. A templated
+// subprogram is held in an implicit template of the same name, so instantiating
+// it under a local name is the same as instantiating that template while
+// renaming its single subprogram, i.e. `{args}, only: local-name => name`.
+ast_t* INSTANTIATE_SUBP2(Allocator &al, const Location &l, char* a_name,
+        char* a_local_name, decl_attribute_t** a_args, size_t n_args) {
+    Vec<ast_t*> syms;
+    syms.reserve(al, 1);
+    syms.push_back(al, make_UseSymbol_t(al, l, a_name, a_local_name));
+    return make_Instantiate_t(al, l, a_name, a_args, n_args,
+        VEC_CAST(syms, use_symbol), syms.size());
+}
+
+// R1636 takes exactly one requirement-name, but AST::Require stores a list of
+// them, so wrap the single requirement into a one element list.
+ast_t* REQUIRE2(Allocator &al, const Location &l, ast_t* a_req) {
+    Vec<ast_t*> reqs;
+    reqs.reserve(al, 1);
+    reqs.push_back(al, a_req);
+    return make_Require_t(al, l, VEC_CAST(reqs, unit_require), reqs.size());
 }
 
 ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
@@ -2897,9 +2949,7 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         REQUIREMENT2(p.m_a, l, name2char(name), \
         ARGS(p.m_a, namelist), namelist.size(), \
         decl_stmts, CONTAINS(funcs), funcs.size(), p.diag)
-#define REQUIRE(require_list, l) \
-        make_Require_t(p.m_a, l, \
-        VEC_CAST(require_list, unit_require), require_list.size())
+#define REQUIRE(req, l) REQUIRE2(p.m_a, l, req)
 #define UNIT_REQUIRE(name, namelist, l) \
         make_UnitRequire_t(p.m_a, l, name2char(name), \
         VEC_CAST(namelist, decl_attribute), namelist.size())
@@ -2911,6 +2961,9 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         make_Instantiate_t(p.m_a, l, name2char(name), \
         VEC_CAST(args, decl_attribute), args.size(), \
         USE_SYMBOLS(syms), syms.size())
+#define INSTANTIATE_SUBP(name, local_name, args, l) \
+        INSTANTIATE_SUBP2(p.m_a, l, name2char(name), name2char(local_name), \
+        VEC_CAST(args, decl_attribute), args.size())
 
 #define DERIVED_TYPE_PROC(attr, syms, trivia, l) make_DerivedTypeProc_t(p.m_a, l, \
         nullptr, VEC_CAST(attr, decl_attribute), attr.size(), \

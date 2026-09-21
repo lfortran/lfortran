@@ -3,8 +3,8 @@ module template_error_07_m
     private
     public :: tmp
 
-    requirement r(t, f)
-        type, deferred :: t
+    requirement r {t, f}
+        deferred type :: t
         function f(x, y) result(z)
             type(t), intent(in) :: x, y
             type(t) :: z
@@ -12,7 +12,7 @@ module template_error_07_m
     end requirement
 
     template tmp(t, f)
-        require :: r(t)
+        require :: r {t}
     end template
 
 contains

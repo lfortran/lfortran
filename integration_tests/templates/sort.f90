@@ -3,8 +3,8 @@ module sort_m
     private
     public :: sort_tmpl
 
-    requirement comparable(T, lt, gt)
-        type, deferred :: T
+    requirement comparable {T, lt, gt}
+        deferred type :: T
         elemental function lt(lhs, rhs)
             type(T), intent(in) :: lhs, rhs
             logical :: lt
@@ -19,7 +19,7 @@ module sort_m
         private
         public :: sorted_order, sorted, sort
 
-        require :: comparable(T, lt, gt)
+        require :: comparable {T, lt, gt}
 
         generic :: operator(<) => lt
         generic :: operator(>) => gt
@@ -91,9 +91,9 @@ program test_sort
 
     implicit none
 
-    instantiate sort_tmpl(real, operator(<), operator(>)), only: sorted_order
-    instantiate sort_tmpl(integer, operator(<), operator(>)), only: sorted_order
-    instantiate sort_tmpl(real, operator(>), operator(<)), only: reverse_sorted_order => sorted_order
+    instantiate sort_tmpl {real, operator(<), operator(>)}, only: sorted_order
+    instantiate sort_tmpl {integer, operator(<), operator(>)}, only: sorted_order
+    instantiate sort_tmpl {real, operator(>), operator(<)}, only: reverse_sorted_order => sorted_order
 
     associate(real_order => sorted_order([3.0, 2.0, 2.0, 1.0]))
         if (.not.all(real_order == [4, 2, 3, 1])) then

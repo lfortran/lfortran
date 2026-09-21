@@ -406,16 +406,17 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> end_submodule
 %type <ast> submodule
 %type <ast> block_data
-%type <ast> instantiate
+%type <vec_ast> instantiate
 %type <ast> interface_decl
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
+%type <vec_ast> deferred_type_decl
 %type <ast> template_decl
 %type <ast> requirement_decl
 %type <ast> require_decl
-%type <vec_ast> unit_require_plus
 %type <ast> unit_require
 %type <vec_ast> instantiate_symbol_list
+%type <vec_ast> instantiate_symbol_list_opt
 %type <ast> instantiate_symbol
 %type <ast> enum_decl
 %type <ast> program
@@ -760,14 +761,18 @@ enum_var_modifiers
     ;
 
 derived_type_decl
-    : KW_TYPE "," KW_DEFERRED "::" id sep {
-            $$ = DERIVED_TYPE2($5, SIMPLE_ATTR(Deferred, @$), TRIVIA_AFTER($6, @$), @$); }
-    | KW_TYPE var_modifiers id sep var_decl_star
+    : KW_TYPE var_modifiers id sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE($2, $3, TRIVIA($4, $8, @$), $5, $6, @$); }
     | KW_TYPE var_modifiers id "(" id_list ")" sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
+    ;
+
+// F2028 R1616: DEFERRED TYPE :: deferred-arg-name-list
+deferred_type_decl
+    : KW_DEFERRED KW_TYPE "::" id_list sep {
+            $$ = DEFERRED_TYPES(p.m_a, $4, TRIVIA_AFTER($5, @$), @$); }
     ;
 
 
@@ -777,41 +782,54 @@ union_type_decl
     ;
 
 template_decl
-    : KW_TEMPLATE id "(" id_list ")" sep decl_statements
+    : KW_TEMPLATE id "(" id_list_opt ")" sep decl_statements
         contains_block_opt KW_END KW_TEMPLATE sep {
             $$ = TEMPLATE($2, $4, $7, $8, @$); }
     ;
 
 requirement_decl
-    : KW_REQUIREMENT id "(" id_list ")" sep decl_statements
+    : KW_REQUIREMENT id "{" id_list_opt "}" sep decl_statements
         sub_or_func_star KW_END KW_REQUIREMENT sep {
             $$ = REQUIREMENT($2, $4, $7, $8, @$); }
     ;
 
 require_decl
-    : KW_REQUIRE "::" unit_require_plus sep {
+    : KW_REQUIRE "::" unit_require sep {
         $$ = REQUIRE($3, @$); }
-    ;
-
-unit_require_plus
-    : unit_require_plus "," unit_require { $$ = $1; LIST_ADD($$, $3); }
-    | unit_require { LIST_NEW($$); LIST_ADD($$, $1); }
+    | KW_REQUIRE unit_require sep {
+        $$ = REQUIRE($2, @$); }
     ;
 
 unit_require
-    : id "(" instantiate_symbol_list ")" { $$ = UNIT_REQUIRE($1, $3, @$); }
+    : id "{" instantiate_symbol_list_opt "}" { $$ = UNIT_REQUIRE($1, $3, @$); }
     ;
 
 instantiate
-    : KW_INSTANTIATE id "(" instantiate_symbol_list ")" sep {
-        $$ = INSTANTIATE1($2, $4, @$); }
-    | KW_INSTANTIATE id "(" instantiate_symbol_list ")" "," KW_ONLY ":" use_symbol_list sep {
-        $$ = INSTANTIATE2($2, $4, $9, @$); }
+    : KW_INSTANTIATE id "{" instantiate_symbol_list_opt "}" sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE1($2, $4, @$)); }
+    | KW_INSTANTIATE id "{" instantiate_symbol_list_opt "}" "," KW_ONLY ":" use_symbol_list sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE2($2, $4, $9, @$)); }
+    | KW_INSTANTIATE id "{" instantiate_symbol_list_opt "}" "," use_symbol_list sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE2($2, $4, $7, @7));
+        LIST_ADD($$, INSTANTIATE1($2, $4, @$)); }
+    | KW_INSTANTIATE "::" id "{" instantiate_symbol_list_opt "}" sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE1($3, $5, @$)); }
+    | KW_INSTANTIATE "::" id "{" instantiate_symbol_list_opt "}" "," KW_ONLY ":" use_symbol_list sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE2($3, $5, $10, @$)); }
+    | KW_INSTANTIATE "::" id "{" instantiate_symbol_list_opt "}" "," use_symbol_list sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE2($3, $5, $8, @8));
+        LIST_ADD($$, INSTANTIATE1($3, $5, @$)); }
+    | KW_INSTANTIATE "::" id "=>" id "{" instantiate_symbol_list_opt "}" sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE_SUBP($5, $3, $7, @$)); }
     ;
 
 instantiate_symbol_list
     : instantiate_symbol_list "," instantiate_symbol { $$ = $1; LIST_ADD($$, $3); }
     | instantiate_symbol { LIST_NEW($$); LIST_ADD($$, $1); }
+
+instantiate_symbol_list_opt
+    : instantiate_symbol_list
+    | %empty { LIST_NEW($$); }
 
 instantiate_symbol
     : var_type %dprec 2 { $$ = $1; }
@@ -1722,6 +1740,8 @@ sep_one
 
 decl_statements
     : decl_statements decl_statement { $$ = $1; LIST_ADD($$, $2); }
+    | decl_statements deferred_type_decl { $$ = LIST_EXTEND(p.m_a, $1, $2); }
+    | decl_statements instantiate { $$ = LIST_EXTEND(p.m_a, $1, $2); }
     | %empty { LIST_NEW($$); }
     | decl_statements error sep_one { $$ = $1; }
     ;
@@ -1735,7 +1755,6 @@ decl_statement
     | statement
     | template_decl
     | requirement_decl
-    | instantiate
     | require_decl
     | use_statement
     | import_statement

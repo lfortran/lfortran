@@ -391,6 +391,7 @@ public:
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
     int64_t global_array_count;
+    int64_t null_array_descriptor_count;
     int64_t global_deep_count;
 
     CompilerOptions &compiler_options;
@@ -458,6 +459,12 @@ public:
     };
     std::vector<to_be_allocated_array> allocatable_array_details;
     std::vector<std::pair<ASR::symbol_t*, llvm::Value*>> allocatable_struct_array_members_details;
+    struct struct_array_global { /* A module level array of a derived type, whose elements' members are set up once, inside `program` */
+        ASR::expr_t* expr; // The module variable.
+        llvm::Value* ptr; // Corresponds to variable `expr` in llvm IR.
+        ASR::ttype_t* var_type; // The array type of `expr`.
+    };
+    std::vector<struct_array_global> struct_array_global_members_details;
     struct variable_inital_value { /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
         ASR::Variable_t* v;
         llvm::Value* target_var; // Corresponds to variable `v` in llvm IR.
@@ -568,6 +575,7 @@ public:
     lookup_enum_value_for_nonints(false),
     is_assignment_target(false),
     global_array_count(0),
+    null_array_descriptor_count(0),
     global_deep_count(0),
     compiler_options(compiler_options_),
     location_manager{lm},
@@ -1049,19 +1057,22 @@ public:
         the callee sees the right data pointer and length. Returns `value`
         unchanged when it is not such a member.
 
-        Only scalar members are wrapped: a whole inline character *array*
-        member is passed as an array, not as one string descriptor.
+        A whole inline character *array* member is wrapped the same way: an
+        array of strings is represented by a single descriptor whose data
+        points at the contiguous element bytes and whose length is the
+        element length, which is exactly the blob's layout.
     */
     llvm::Value* inline_char_member_as_string_descriptor(ASR::expr_t* arg,
             llvm::Value* value, std::string name) {
-        if (!ASRUtils::is_string_only(expr_type(arg))
-                || ASRUtils::get_string_type(expr_type(arg))->m_physical_type
+        ASR::ttype_t* arg_type = expr_type(arg);
+        if (!ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))
+                || ASRUtils::get_string_type(arg_type)->m_physical_type
                     != ASR::DescriptorString
                 || !ASRUtils::is_inline_character_struct_member(arg)) {
             return value;
         }
         int64_t len = 1;
-        ASR::String_t* str_type = ASRUtils::get_string_type(expr_type(arg));
+        ASR::String_t* str_type = ASRUtils::get_string_type(arg_type);
         if (str_type->m_len) {
             ASRUtils::extract_value(str_type->m_len, len);
         }
@@ -2138,7 +2149,8 @@ public:
                 } else if(ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Real_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
-                          ASR::is_a<ASR::Logical_t>(*curr_arg_m_a_type)) {
+                          ASR::is_a<ASR::Logical_t>(*curr_arg_m_a_type) ||
+                          ASR::is_a<ASR::CPtr_t>(*curr_arg_m_a_type)) {
                     llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, curr_arg_m_a_type, module.get());
                     auto do_scalar_alloc = [&]() {
                         llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4),
@@ -2621,11 +2633,17 @@ public:
                         llvm_utils->init_mold_upoly_array_data(
                             wrapper, mold_wrapper, class_type, num_elements);
                     }
+                    ASR::Struct_t* allocated_subclass = nullptr;
+                    if (curr_arg.m_sym_subclass
+                            && ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))) {
+                        allocated_subclass = ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(curr_arg.m_sym_subclass));
+                    }
                     if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
-                        && !ASRUtils::is_unlimited_polymorphic_type(tmp_expr) ) {
+                        && (!ASRUtils::is_unlimited_polymorphic_type(tmp_expr) || allocated_subclass) ) {
                         llvm::Value* x_arr_ = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
                         allocate_array_members_of_struct_arrays(tmp_expr, x_arr_,
-                            ASRUtils::expr_type(tmp_expr));
+                            ASRUtils::expr_type(tmp_expr), allocated_subclass);
                     }
                 };
                 if (m_stat && !realloc && is_allocated != nullptr) {
@@ -5461,6 +5479,54 @@ public:
         current_der_type_name = get_type_key(x.m_dt_sym);
     }
 
+    // A descriptor array pointer is represented at run time as a pointer to an
+    // array descriptor, and that pointer is never null: an unassociated pointer
+    // points at a valid descriptor whose data pointer is null, because every
+    // reader of it dereferences the descriptor pointer unconditionally. Static
+    // data cannot run the usual runtime descriptor setup, so it gets a zeroed
+    // companion descriptor global instead. This is the single place that builds
+    // one; `desc_type` is the descriptor structure type of the array. The
+    // descriptor is mutable storage, so exactly one object may point at the
+    // result; see `create_single_use_null_array_descriptor_global` below for
+    // what that rules out.
+    llvm::GlobalVariable* create_null_array_descriptor_global(
+            llvm::Type* desc_type, const std::string& name) {
+        return new llvm::GlobalVariable(*module, desc_type, false,
+            llvm::GlobalVariable::InternalLinkage,
+            llvm::ConstantAggregateZero::get(desc_type), name);
+    }
+
+    // The same, for a `null()` value of type `array_type` appearing inside a
+    // static initializer, where no variable global exists to name it after.
+    //
+    // A fresh descriptor is minted on every call, and the returned constant is
+    // valid for ONE object only. A descriptor is mutable: pointer assignment
+    // writes the target's data pointer and bounds into it. So a constant
+    // holding this descriptor must not be used to initialize more than one
+    // object; broadcasting it over an array of structures, for example, would
+    // give every element the same descriptor, and a pointer assignment to one
+    // element would silently associate all of them. A caller that needs one
+    // descriptor per element must call this once per element. The emitted
+    // global is named `..._single_use_<n>` to keep that contract visible in the
+    // IR.
+    llvm::Constant* create_single_use_null_array_descriptor_global(
+            ASR::expr_t* var_expr, ASR::ttype_t* array_type) {
+        // `var_expr` names the variable the null belongs to, and it is what
+        // makes the descriptor type match that variable's own type: without it
+        // a StructType element is laid out as an anonymous struct, which keys a
+        // different `%array.N`, and that is an element type mismatch in the
+        // enclosing constant. It is required, so the caller must pass a
+        // resolved expression rather than an optional one straight out of ASR.
+        LCOMPILERS_ASSERT(var_expr != nullptr);
+        llvm::Type* el_type = llvm_utils->get_el_type(var_expr,
+            ASRUtils::extract_type(array_type), module.get());
+        llvm::Type* desc_type = llvm_utils->arr_api->get_array_type(var_expr,
+            ASRUtils::type_get_past_allocatable_pointer(array_type), el_type, false);
+        return create_null_array_descriptor_global(desc_type,
+            "null_array_descriptor_single_use_"
+                + std::to_string(null_array_descriptor_count++));
+    }
+
     // Builds the constant of type `struct_` from `args`, which hold the
     // members of its parent types first and then its own members. The
     // parent type is the first element of the LLVM structure, so the
@@ -5490,9 +5556,11 @@ public:
             llvm::Constant* initializer = nullptr;
             llvm::Type* type = nullptr;
             ASR::symbol_t* member_sym = struct_->m_symtab->get_symbol(struct_->m_members[i]);
+            // The member's declared type, when the member resolves to a
+            // variable. Null for the rare member kinds that do not.
+            ASR::ttype_t* member_type = nullptr;
             if (member_sym && ASR::is_a<ASR::Variable_t>(*member_sym)) {
-                ASR::ttype_t* member_type =
-                    ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
+                member_type = ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
                 if (ASRUtils::is_inline_character_struct_member(
                         struct_, member_type)) {
                     // Inline character member: flat [count*len x i8] byte blob.
@@ -5546,6 +5614,35 @@ public:
                 } else {
                     throw CodeGenError("Non-constant value found in struct initialization");
                 }
+            } else if (member_type != nullptr &&
+                       ASR::is_a<ASR::PointerNullConstant_t>(*value) &&
+                       ASRUtils::is_array(member_type) &&
+                       ASRUtils::extract_physical_type(member_type) ==
+                           ASR::array_physical_typeType::DescriptorArray) {
+                // Both the guard and the descriptor use the member's own
+                // declared type, never the null constant's: this constant
+                // initializes the member's field, and `getStructType` laid
+                // that field out from `member->m_type` with the same synthetic
+                // `Var(member)`, so that is the type that has to match. For
+                // conforming Fortran the two types agree -- `null()` takes the
+                // component's type and a `null(mold)` mold has to match it --
+                // so this only decides which type is authoritative when they
+                // do not.
+                //
+                // `PointerNullConstant::var_expr` cannot be used for this. It
+                // is optional and frequently absent: every path that builds a
+                // structure constructor's arguments fills it in only for a
+                // `StructType` or `FunctionType` element type, so it is null
+                // by construction for every intrinsic element type that
+                // reaches here, and `externalize_struct_refs_in_init` strips
+                // it whenever the struct symbol it names cannot be imported
+                // into the scope being initialized. Without it a derived type
+                // element is laid out as an anonymous struct, which keys a
+                // different descriptor type than the field already has.
+                ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(member_sym);
+                initializer = create_single_use_null_array_descriptor_global(
+                    ASRUtils::EXPR(ASR::make_Var_t(al, member->base.base.loc, &member->base)),
+                    member->m_type);
             } else {
                 visit_expr_wrapper(value);
                 initializer = llvm::dyn_cast<llvm::Constant>(tmp);
@@ -5772,6 +5869,83 @@ public:
         return nullptr;
     }
 
+    // Whether a member of `s`, of one of its parents, or of one of its
+    // derived type members, cannot be described by an all zero static
+    // initializer and so has to be set up at run time by
+    // `allocate_array_members_of_struct`: an array member needs a descriptor
+    // of its own or its dimensions filled in, a string member its data, and a
+    // class member its type pointer. A scalar of an intrinsic type, and a
+    // pointer or allocatable scalar, are fully described by zeros and need
+    // nothing. `visited` stops a type that refers to itself, directly or
+    // through another type, from being examined twice.
+    bool struct_needs_member_init(ASR::Struct_t* s,
+            std::set<ASR::Struct_t*>& visited) {
+        if (!visited.insert(s).second) {
+            return false;
+        }
+        for (ASR::Struct_t* c = s; c != nullptr;
+                c = c->m_parent == nullptr ? nullptr
+                    : ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(c->m_parent))) {
+            for (size_t i = 0; i < c->n_members; i++) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    c->m_symtab->get_symbol(c->m_members[i]));
+                if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                    continue;
+                }
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                if (ASRUtils::is_array(v->m_type)) {
+                    return true;
+                }
+                if (ASRUtils::is_character(*v->m_type) &&
+                        !ASRUtils::is_inline_character_struct_member(c, v->m_type)) {
+                    return true;
+                }
+                ASR::ttype_t* member_type = ASRUtils::extract_type(v->m_type);
+                if (ASRUtils::is_class_type(member_type)) {
+                    return true;
+                }
+                // A pointer or allocatable member holds the address of
+                // another object, whose members are not set up from here.
+                if (ASR::is_a<ASR::StructType_t>(*member_type) &&
+                        !LLVM::is_llvm_pointer(*v->m_type)) {
+                    ASR::symbol_t* member_struct = ASRUtils::symbol_get_past_external(
+                        v->m_type_declaration);
+                    if (member_struct != nullptr &&
+                            ASR::is_a<ASR::Struct_t>(*member_struct) &&
+                            struct_needs_member_init(ASR::down_cast<ASR::Struct_t>(
+                                member_struct), visited)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // Whether `type` is an array of a (non class) derived type that has a
+    // member needing run time setup, so that the elements' members have to be
+    // set up by `allocate_array_members_of_struct_arrays`. An array of a type
+    // whose members are all described by zeros needs no such loop.
+    bool needs_struct_array_member_init(ASR::expr_t* expr, ASR::ttype_t* type) {
+        if (!ASRUtils::is_array(type)) {
+            return false;
+        }
+        ASR::ttype_t* el_type = ASRUtils::type_get_past_array(type);
+        if (!ASR::is_a<ASR::StructType_t>(*el_type) ||
+                ASRUtils::is_class_type(el_type)) {
+            return false;
+        }
+        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(expr));
+        if (struct_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+            return false;
+        }
+        std::set<ASR::Struct_t*> visited;
+        return struct_needs_member_init(
+            ASR::down_cast<ASR::Struct_t>(struct_sym), visited);
+    }
+
     ASR::ArrayConstant_t* get_struct_array_constant(ASR::expr_t* expr) {
         if (expr == nullptr) {
             return nullptr;
@@ -5927,6 +6101,14 @@ public:
             module.get());
         llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "entry", init_fn);
         builder->SetInsertPoint(entry);
+        // Set the elements' members up before broadcasting into them, as is
+        // done for a save variable of the same shape. The static initializer
+        // zeroed the global, so an array descriptor member of an element has
+        // no descriptor to be copied into yet; this gives each element one of
+        // its own, which also keeps the elements independent of each other.
+        if (needs_struct_array_member_init(target_expr, target_type)) {
+            allocate_array_members_of_struct_arrays(target_expr, global, target_type);
+        }
         store_array_broadcast_to_target(broadcast, global, target_expr,
             target_type, false);
         builder->CreateRetVoid();
@@ -6147,6 +6329,26 @@ public:
                 }
             }
             llvm_symtab[h] = ptr;
+            // A zeroed static initializer leaves every element's members in a
+            // state that cannot be described statically: an array descriptor
+            // member needs a descriptor of its own to point at, a string
+            // member its descriptor, and so on. Set them up once at the start
+            // of the program, as is done for a module level scalar of a
+            // derived type. Like the scalar, this is queued whether or not the
+            // global is external here: under separate compilation the
+            // definition and the program are in different translation units,
+            // and only the one that has the program can emit the setup. A
+            // variable that has an initializer is left alone: its members are
+            // either already described by the static initializer, or set up by
+            // the broadcast constructor above.
+            if (x.m_symbolic_value == nullptr && x.m_value == nullptr) {
+                ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+                    x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base)));
+                if (needs_struct_array_member_init(var_expr, x.m_type)) {
+                    struct_array_global_members_details.push_back(
+                        { var_expr, ptr, x.m_type });
+                }
+            }
         } else if (x.m_type->type == ASR::ttypeType::Logical) {
             int a_kind = down_cast<ASR::Logical_t>(x.m_type)->m_kind;
             llvm::Type *logical_type = llvm_utils->getIntType(a_kind);
@@ -6233,46 +6435,27 @@ public:
                 init_value = llvm::ConstantStruct::get(llvm_struct_type, field_values);
             }
             if (!is_class) {
-                if( x.m_type_declaration && ASRUtils::is_c_ptr(x.m_type_declaration) ) {
-                    llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
-                    llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
-                        void_ptr);
-                    if (!external) {
-                        if (init_value) {
-                            module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                    init_value);
-                        } else {
-                            module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                    llvm::ConstantPointerNull::get(
-                                        static_cast<llvm::PointerType*>(void_ptr))
-                                    );
-                            set_global_variable_linkage_as_common(ptr, x);
-                        }
-                    }
-                    llvm_symtab[h] = ptr;
-                } else {
-                    llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
+                llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
                     ASR::make_Var_t(al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))), x.m_type, module.get());
-                    llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
-                        type);
-                    if (!external) {
-                        if (init_value) {
-                            module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                    init_value);
-                            // For common blocks (structs with zeroinitializer), use CommonLinkage
-                            // to allow multiple definitions across compilation units to be merged.
-                            if (init_value->isNullValue()) {
-                                set_global_variable_linkage_as_common(ptr, x);
-                            }
-                        } else {
-                            module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                    llvm::Constant::getNullValue(type)
-                                );
+                llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
+                    type);
+                if (!external) {
+                    if (init_value) {
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
+                                init_value);
+                        // For common blocks (structs with zeroinitializer), use CommonLinkage
+                        // to allow multiple definitions across compilation units to be merged.
+                        if (init_value->isNullValue()) {
                             set_global_variable_linkage_as_common(ptr, x);
                         }
+                    } else {
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
+                                llvm::Constant::getNullValue(type)
+                            );
+                        set_global_variable_linkage_as_common(ptr, x);
                     }
-                    llvm_symtab[h] = ptr;
                 }
+                llvm_symtab[h] = ptr;
             } else {
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, x.m_type_declaration)),
@@ -6365,14 +6548,9 @@ public:
                     // In separate compilation, main() cannot initialize
                     // submodule-private variables, so we need a valid
                     // descriptor from the start.
-                    std::string desc_name = llvm_var_name + "_descriptor__";
-                    llvm::GlobalVariable *desc_global = new llvm::GlobalVariable(
-                        *module, type_, false,
-                        llvm::GlobalVariable::InternalLinkage,
-                        llvm::ConstantAggregateZero::get(type_),
-                        desc_name);
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
-                            desc_global);
+                            create_null_array_descriptor_global(type_,
+                                llvm_var_name + "_descriptor__"));
                 } else {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantPointerNull::get(
@@ -6895,6 +7073,10 @@ public:
                 st.second, ASRUtils::symbol_type(st.first), false, true);
         }
         allocatable_struct_array_members_details.clear();
+        for(struct_array_global& st : struct_array_global_members_details) {
+            allocate_array_members_of_struct_arrays(st.expr, st.ptr, st.var_type);
+        }
+        struct_array_global_members_details.clear();
         declare_vars(x);
         for(variable_inital_value var_to_initalize : variable_inital_value_vec){
             set_VariableInital_value(var_to_initalize.v, var_to_initalize.target_var);
@@ -7225,11 +7407,14 @@ public:
                 // Inline character members (bind(C)/SEQUENCE/COMMON) are stored
                 // as a flat [count*len x i8] blob in place: there is no string
                 // descriptor to allocate or initialize at runtime (scalars and
-                // arrays alike), so skip all per-member setup for them.
+                // arrays alike), so skip all per-member setup for them. Only
+                // the initial value is stored: either the constructor default
+                // of the enclosing member or, for a plain variable, the
+                // component's own default.
                 if (ASR::is_a<ASR::Variable_t>(*sym)
                         && ASRUtils::is_inline_character_struct_member(
                             struct_type_t, symbol_type)) {
-                    if (init_sc && member_init) {
+                    if (apply_init && member_init) {
                         builder->CreateStore(
                             get_inline_char_member_constant(symbol_type, member_init),
                             llvm_utils->create_gep2(name2dertype[struct_type_name], ptr,
@@ -7531,7 +7716,8 @@ public:
         }
     }
 
-    void allocate_array_members_of_struct_arrays(ASR::expr_t* expr, llvm::Value* ptr, ASR::ttype_t* v_m_type) {
+    void allocate_array_members_of_struct_arrays(ASR::expr_t* expr, llvm::Value* ptr, ASR::ttype_t* v_m_type,
+            ASR::Struct_t* allocated_subclass = nullptr) {
         ASR::array_physical_typeType phy_type = ASRUtils::extract_physical_type(v_m_type);
         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::extract_type(v_m_type), module.get());
@@ -7598,8 +7784,22 @@ public:
                                 ASRUtils::extract_type(v_m_type));
                             llvm::Value* class_wrapper = llvm_utils->CreateLoad2(el_type->getPointerTo(),
                                 arr_descr->get_pointer_to_data(ptr_i_type, ptr));
-                            ptr_i = llvm_utils->get_class_element_from_array(struct_sym, struct_type,
-                                class_wrapper, llvm_utils->CreateLoad2(t, llvmi));
+                            if (allocated_subclass) {
+                                // Every element has the dynamic type given in the
+                                // ALLOCATE type-spec, stored consecutively.
+                                llvm::Type* data_ptr_type = struct_type->m_is_unlimited_polymorphic
+                                    ? llvm_utils->i8_ptr
+                                    : llvm_utils->getStructType(struct_sym, module.get(), true);
+                                llvm::Value* data = llvm_utils->CreateLoad2(data_ptr_type,
+                                    llvm_utils->create_gep2(llvm_utils->getClassType(struct_sym), class_wrapper, 1));
+                                llvm::Type* subclass_type = llvm_utils->getStructType(allocated_subclass, module.get());
+                                data = builder->CreateBitCast(data, subclass_type->getPointerTo());
+                                ptr_i = llvm_utils->create_ptr_gep2(subclass_type, data,
+                                    llvm_utils->CreateLoad2(t, llvmi));
+                            } else {
+                                ptr_i = llvm_utils->get_class_element_from_array(struct_sym, struct_type,
+                                    class_wrapper, llvm_utils->CreateLoad2(t, llvmi));
+                            }
                         } else {
                             ptr_i = llvm_utils->create_ptr_gep2(el_type,
                                 llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(ptr_i_type, ptr)),
@@ -7615,9 +7815,14 @@ public:
                         LCOMPILERS_ASSERT(false);
                     }
                 }
-                allocate_array_members_of_struct(
-                    ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))),
-                        ptr_i, ASRUtils::extract_type(v_m_type), false, true, true);
+                if (allocated_subclass) {
+                    allocate_array_members_of_struct(allocated_subclass, ptr_i,
+                        ASRUtils::symbol_type(&allocated_subclass->base), false, true, true);
+                } else {
+                    allocate_array_members_of_struct(
+                        ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))),
+                            ptr_i, ASRUtils::extract_type(v_m_type), false, true, true);
+                }
                 LLVM::CreateStore(*builder,
                     builder->CreateAdd(llvm_utils->CreateLoad2(t, llvmi),
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1))),
@@ -9980,14 +10185,44 @@ public:
                 ptr = llvm_utils->get_string_data(ASRUtils::get_string_type(p_type), ptr);
             }
         } else if (!ASR::is_a<ASR::PointerNullConstant_t>(*x.m_ptr)) {
+            if (ASRUtils::is_allocatable(p_type)
+                    && ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(p_type))) {
+                llvm::Type* cptr_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_ptr, ASRUtils::extract_type(p_type), module.get());
+                llvm::Type* cptr_storage_type = cptr_llvm_type->getPointerTo();
+                llvm::Value* cptr_storage = llvm_utils->CreateLoad2(
+                    cptr_storage_type, ptr);
+                llvm::Value* cptr_value = llvm_utils->CreateAlloca(
+                    cptr_llvm_type, nullptr, "cptr_associated_value");
+                builder->CreateStore(
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(cptr_llvm_type)),
+                    cptr_value);
+                llvm::Value* storage_not_null = builder->CreateICmpNE(
+                    cptr_storage,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(cptr_storage_type)));
+                llvm_utils->create_if_else(storage_not_null, [&]() {
+                    builder->CreateStore(
+                        llvm_utils->CreateLoad2(cptr_llvm_type, cptr_storage),
+                        cptr_value);
+                }, [](){});
+                ptr = llvm_utils->CreateLoad2(cptr_llvm_type, cptr_value);
+            } else {
             llvm::Type* p_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr, p_type, module.get());
             bool load_cptr = true;
             if (ASR::is_a<ASR::CPtr_t>(*p_type) && ASR::is_a<ASR::Var_t>(*x.m_ptr)) {
                 ASR::Variable_t* p_var = ASRUtils::EXPR2VAR(x.m_ptr);
-                load_cptr = !is_cptr_dummy_passed_by_value(p_var);
+                load_cptr = !is_cptr_dummy_passed_by_value(p_var)
+                    && !(p_var->m_storage == ASR::storage_typeType::Parameter
+                        && p_var->m_value != nullptr);
+            } else if (ASR::is_a<ASR::CPtr_t>(*p_type)
+                    && ASRUtils::expr_value(x.m_ptr) != nullptr) {
+                load_cptr = false;
             }
             if (load_cptr) {
                 ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
+            }
             }
         }
         if( ASRUtils::is_array(p_type) &&
@@ -10924,6 +11159,11 @@ public:
                     ASRUtils::type_get_past_allocatable(value_type)));
             llvm::Type *i64 = llvm::Type::getInt64Ty(context);
             if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
+                if (ASRUtils::is_allocatable(target_type)
+                        && !ASRUtils::is_array(target_type)) {
+                    check_and_allocate_scalar(x.m_target, x.m_value,
+                        ASRUtils::type_get_past_allocatable(target_type));
+                }
                 if(ASRUtils::is_array(target_type) ){ // Fetch data ptr
                     LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(target_type) ==
                         ASR::array_physical_typeType::DescriptorArray);
@@ -12226,6 +12466,13 @@ public:
 
         llvm::Type* asr_target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target_type, module.get());
 
+        if (ASRUtils::is_allocatable(asr_target_type) &&
+                !ASRUtils::is_array(asr_target_type) &&
+                ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(asr_target_type)) &&
+                ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(asr_value_type))) {
+            check_and_allocate_scalar(x.m_target, x.m_value,
+                ASRUtils::type_get_past_allocatable(asr_target_type));
+        }
 
         // When assigning to a StructInstanceMember, whose instance is allocatable
         // Check if the underlying struct instance is allocated, if not allocate
@@ -22844,6 +23091,17 @@ public:
     std::string serialize_structType_symbols(ASR::symbol_t* sym){
         std::string res {};
         ASR::Struct_t* StructSymbol = ASR::down_cast<ASR::Struct_t>(sym);
+        // An extended type stores its parent as the 0th member of the LLVM
+        // struct (see LLVMUtils::getStructType), so the inherited components
+        // are serialized first, as a nested struct.
+        if( StructSymbol->m_parent != nullptr ) {
+            ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
+                StructSymbol->m_parent);
+            res += "(" + serialize_structType_symbols(parent) + ")";
+            if( StructSymbol->n_members > 0 ) {
+                res += ",";
+            }
+        }
         for(size_t i=0; i < StructSymbol->n_members; i++){
             ASR::symbol_t* StructMember = StructSymbol->m_symtab->
                                             get_symbol(StructSymbol->m_members[i]);
