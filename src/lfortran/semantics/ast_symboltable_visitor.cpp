@@ -3426,6 +3426,48 @@ public:
             for (size_t i = 0; i < x.n_items; i++) {
                 visit_interface_item(*x.m_items[i]);
             }
+        } else if (AST::is_a<AST::DeferredInterfaceHeader_t>(*x.m_header)) {
+            // DEFERRED INTERFACE (R1503, J3/26-007r1): each interface body of
+            // the block declares a deferred procedure (16.4.1.4), which is a
+            // deferred argument, so the block only has a meaning in a scoping
+            // unit that has deferred arguments: a requirement, a template or a
+            // templated procedure.
+            if (!is_requirement && !is_template) {
+                diag.add(diag::Diagnostic(
+                    "a deferred interface can only appear in a requirement, "
+                    "a template or a templated procedure",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_header->base.loc})}));
+                throw SemanticAbort();
+            }
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (!AST::is_a<AST::InterfaceProc_t>(*x.m_items[i])) {
+                    // A procedure statement names procedures that are already
+                    // declared; it cannot declare a deferred one. The
+                    // offending item is skipped rather than aborting the
+                    // enclosing requirement or template, so that the rest of
+                    // it is still checked.
+                    diag.add(diag::Diagnostic(
+                        "a deferred interface block can only contain "
+                        "interface bodies",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_items[i]->base.loc})}));
+                    continue;
+                }
+                AST::InterfaceProc_t *proc
+                    = AST::down_cast<AST::InterfaceProc_t>(x.m_items[i]);
+                // Unlike an ordinary interface body, this declares a deferred
+                // procedure, so it is visited the same way as the subprogram
+                // that a requirement currently uses to declare one: with
+                // is_interface left unset, so that the resulting Function is
+                // identical to the one that spelling produces.
+                bool old_in_Subroutine = in_Subroutine;
+                std::vector<std::string> old_procedure_args
+                    = current_procedure_args;
+                visit_program_unit(*proc->m_proc);
+                in_Subroutine = old_in_Subroutine;
+                current_procedure_args = old_procedure_args;
+            }
         } else if (AST::is_a<AST::InterfaceHeaderOperator_t>(*x.m_header)) {
             std::string op = intrinsic2str[AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op];
             std::vector<std::pair<std::string, Location>> proc_names;
