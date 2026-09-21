@@ -11832,6 +11832,24 @@ public:
                     || ASRUtils::is_array(ASRUtils::expr_type(arg))) {
                 continue;
             }
+            // An empty array constant of a derived type takes the whole
+            // lowered assignment with it (#13382), so a derived type
+            // component with no elements, which has nothing to spread
+            // anyway, is left as it is.
+            if (ASR::is_a<ASR::StructType_t>(*element_type)
+                    && ASRUtils::get_fixed_size_of_array(member_type) == 0) {
+                continue;
+            }
+            if (value == nullptr && ASR::is_a<ASR::StructConstructor_t>(*arg)
+                    && ASRUtils::is_value_constant(arg)
+                    && ASRUtils::is_byte_representable_struct(
+                        ASR::down_cast<ASR::StructConstructor_t>(arg)->m_dt_sym)) {
+                // A derived type constructor is folded into a StructConstant
+                // only once the whole constructor is known to be constant, so
+                // a nested one has no value of its own yet. Fold it here, as
+                // the shape it is given below is the component's.
+                value = fold_struct_constant_arg(arg);
+            }
             if (value == nullptr) {
                 continue;
             }
@@ -11846,11 +11864,21 @@ public:
                     || ASR::is_a<ASR::ComplexConstant_t>(*value)
                     || ASR::is_a<ASR::LogicalConstant_t>(*value)
                     || ASR::is_a<ASR::StringConstant_t>(*value)
+                    || ASR::is_a<ASR::StructConstant_t>(*value)
                     || is_c_pointer_null)) {
                 continue;
             }
+            // The broadcast stores its elements as raw bytes, so a derived
+            // type value is spread only when every component of its type is
+            // stored inline.
+            if (ASR::is_a<ASR::StructConstant_t>(*value)
+                    && !ASRUtils::is_byte_representable_struct(
+                        ASR::down_cast<ASR::StructConstant_t>(value)->m_dt_sym)) {
+                continue;
+            }
             // Case: `t(5.0)` for `real :: x(3)`, like `real :: x(3) = 5.0`,
-            // and `t(c_null_ptr)` for `type(c_ptr) :: p(2)`.
+            // `t(c_null_ptr)` for `type(c_ptr) :: p(2)`, and `t(u(5))` for
+            // `type(u) :: c(2)`.
             ASR::expr_t* broadcast = ASRUtils::broadcast_scalar_constant_to_array(
                 al, arg->base.loc, value, member_type);
             if (broadcast != nullptr) {
