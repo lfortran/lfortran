@@ -5273,31 +5273,48 @@ public:
                     }
                 } else {
                     ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
+                    ASR::symbol_t *arg_sym0 = current_scope->resolve_symbol(arg);
+                    if (!arg_sym0) {
+                        diag.add(diag::Diagnostic(
+                            "the instantiation argument '" + arg + "' for '"
+                            + param + "' is not declared",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("'" + arg + "' is undeclared",
+                                    {x.m_args[i]->base.loc})}));
+                        throw SemanticAbort();
+                    }
                     if (ASRUtils::is_type_parameter(*param_type)) {
                         // Handling types passed as instantiate's arguments
-                        ASR::symbol_t *arg_sym0 = current_scope->resolve_symbol(arg);
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
                             arg_type = ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0, true);
                             type_subs[param].second = arg_sym0;
-                        } else {
+                        } else if (ASR::is_a<ASR::Variable_t>(*arg_sym)
+                                && ASRUtils::is_type_parameter(*ASRUtils::symbol_type(arg_sym))) {
+                            // A deferred type of an enclosing template, passed on
                             arg_type = ASRUtils::symbol_type(arg_sym);
+                        } else {
+                            diag.add(diag::Diagnostic(
+                                "the instantiation argument '" + arg + "' for the deferred type '"
+                                + param + "' is not a type",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {x.m_args[i]->base.loc})}));
+                            throw SemanticAbort();
                         }
                         type_subs[param].first = ASRUtils::duplicate_type(al, arg_type);
                     } else {
                         // Handling local variables passed as instantiate's arguments
-                        ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
-                        ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
+                        ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym0);
                         if (!ASRUtils::check_equal_type(arg_type, param_type, ASRUtils::get_expr_from_sym(
-                            al, arg_sym), ASRUtils::get_expr_from_sym(al, param_sym))) {
+                            al, arg_sym0), ASRUtils::get_expr_from_sym(al, param_sym))) {
                             diag.add(diag::Diagnostic(
                                 "The type of " + arg + " does not match the type of " + param,
                                 diag::Level::Error, diag::Stage::Semantic, {
                                     diag::Label("", {x.m_args[i]->base.loc})}));
                             throw SemanticAbort();
                         }
-                        symbol_subs[param] = arg_sym;
+                        symbol_subs[param] = arg_sym0;
                     }
                 }
             } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*x.m_args[i])) {

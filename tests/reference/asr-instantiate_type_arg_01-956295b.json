@@ -1,0 +1,13 @@
+{
+    "basename": "asr-instantiate_type_arg_01-956295b",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/instantiate_type_arg_01.f90",
+    "infile_hash": "80453c27fbce21bc19ec2d7274fbae87bc6c22cafb18b5b84f2dd939",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-instantiate_type_arg_01-956295b.stderr",
+    "stderr_hash": "cdde003de2638421e3b74411d8683d2232c46fb7ae0fe1e587560d83",
+    "returncode": 2
+}
