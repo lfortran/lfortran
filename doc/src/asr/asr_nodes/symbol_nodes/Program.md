@@ -109,8 +109,19 @@ ASR statement calls.
 
 Putting those calls in is a second pass, `global_init_wire`, because a pass
 that runs later than `global_init` can create an initializer too — `coarray`
-does, for the saved coarrays of a module or a program — and an initializer
-nothing calls would never run.
+does, for saved coarrays — and an initializer nothing calls would never run.
+
+Which unit's initializer a saved coarray goes into is not decided by where it
+is declared but by which program unit encloses that declaration, because
+allocating a coarray is collective and so cannot wait until control first
+reaches the procedure that declares it. The `coarray` pass walks outwards from
+the declaration to the first enclosing **Program** or [Module](Module.md) and
+uses that unit's initializer, so a saved coarray of a module procedure is
+allocated by the module's and one of an internal procedure by the program's,
+exactly as if it had been declared in that unit directly. Only a saved coarray
+of an *external* procedure, which no program unit encloses, is left on the
+[TranslationUnit](../unit_nodes/TranslationUnit.md) — which is why that one
+case still needs the target's startup hook.
 
 ## Examples
 
