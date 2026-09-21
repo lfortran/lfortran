@@ -8323,6 +8323,36 @@ public:
                     }
                 }
                 if (corank > 0) {
+                    // C1617 (F2028 draft J3/26-007r1, 16.4.1.2): a variable of
+                    // deferred type shall not be a coarray. NOTE 5 explains
+                    // why: coindexing a variable that has a polymorphic
+                    // potential subobject component is invalid, and such a type
+                    // is a permitted instantiation argument. The check
+                    // therefore belongs here, where the declaration inside the
+                    // template is processed, and cannot be postponed to
+                    // instantiation: a template is verified once, for every
+                    // instantiation argument the standard permits.
+                    if (x.m_vartype && AST::is_a<AST::AttrType_t>(*x.m_vartype)) {
+                        AST::AttrType_t *deferred_check_type =
+                            AST::down_cast<AST::AttrType_t>(x.m_vartype);
+                        if (deferred_check_type->m_type == AST::decl_typeType::TypeType
+                                && deferred_check_type->m_name) {
+                            std::string type_name = to_lower(deferred_check_type->m_name);
+                            ASR::symbol_t *type_sym = current_scope->resolve_symbol(type_name);
+                            if (type_sym && ASR::is_a<ASR::Variable_t>(*type_sym)
+                                    && ASR::is_a<ASR::TypeParameter_t>(
+                                        *ASRUtils::type_get_past_array(
+                                            ASR::down_cast<ASR::Variable_t>(type_sym)->m_type))) {
+                                diag.add(Diagnostic(
+                                    "A variable of deferred type must not be a coarray",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("`" + std::string(s.m_name) + "` has deferred type `"
+                                            + type_name + "`", {s.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
+                    }
                     // C827: A coarray with the ALLOCATABLE attribute shall have
                     // a coarray-spec that is a deferred-coshape-spec-list (i.e.
                     // every codimension is a bare ':', no explicit bounds or '*').
