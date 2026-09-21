@@ -343,6 +343,10 @@ static inline Vec<kind_item_t> a2kind_list(Allocator &al,
 #define DIMENSION(x, l) make_AttrDimension_t( \
             p.m_a, l, \
             x.p, x.size())
+// F2028 R1619 rank-clause: `RANK ( rank-spec-list )`
+#define ATTR_RANK(x, l) make_AttrRank_t( \
+            p.m_a, l, \
+            EXPRS(x), x.size())
 #define DIMENSION0(l) make_AttrDimension_t( \
             p.m_a, l, \
             nullptr, 0)
@@ -2437,6 +2441,13 @@ static inline void drop_trailing_matching_continue(
 #define ARRAY_COMP_DECL7d(a, l)       DIM1d_type(p.m_a, l, EXPR(a), DimensionStar)
 #define ARRAY_COMP_DECL8d(l)          DIM1d_type(p.m_a, l, nullptr, AssumedRank)
 
+// The upper-bound-only dimension of a deferred constant array-spec (F2028
+// R1620). Unlike ARRAY_COMP_DECL1d it does not synthesize the implicit lower
+// bound of one, so that a lower bound in the AST means the source spelled one,
+// which F2028 C1621 forbids. NOTE 1 of 16.4.1.3 says the lower bounds of an
+// array deferred constant are always one, so nothing is lost by leaving it out.
+#define DEFERRED_CONST_DIM(a, l)      DIM1d(p.m_a, l, nullptr, EXPR(a))
+
 #define COARRAY_COMP_DECL1d(a, l)       CODIM1d(p.m_a, l, EXPR(INT1(l)), EXPR(a))
 #define COARRAY_COMP_DECL2d(a, b, l)    CODIM1d(p.m_a, l, EXPR(a), EXPR(b))
 #define COARRAY_COMP_DECL3d(a, l)       CODIM1d(p.m_a, l, EXPR(a), nullptr)
@@ -2887,6 +2898,32 @@ Vec<ast_t*> DEFERRED_TYPES(Allocator &al,
             names[i], t, names[i]->loc));
     }
     return types;
+}
+
+// A `deferred <type>, <attrs> :: <entities>` statement (F2028 R1618) declares
+// deferred constants. It is an ordinary type declaration statement carrying one
+// extra attribute, so it reuses the `Declaration` node: the only difference from
+// `integer, parameter :: x` is the `deferred` attribute, which is prepended to
+// the attribute list so that the semantic stage recognises the statement from
+// the attributes alone, exactly as `deferred type ::` is recognised by the
+// `deferred` attribute on a `DerivedType` node. Keeping one node type means the
+// statement ordering rules (F2018 R508), the declaration visitors and the
+// `--show-ast` output need no special case for it.
+ast_t* DEFERRED_CONST_DECL(Allocator &al,
+        ast_t *vartype,
+        const Vec<ast_t*> &attrs,
+        const Vec<var_sym_t> &syms,
+        ast_t *trivia,
+        Location &l) {
+    Vec<decl_attribute_t*> v;
+    v.reserve(al, attrs.size() + 1);
+    v.push_back(al, down_cast<decl_attribute_t>(
+        make_SimpleAttribute_t(al, l, simple_attributeType::AttrDeferred)));
+    for (size_t i=0; i < attrs.size(); i++) {
+        v.push_back(al, down_cast<decl_attribute_t>(attrs[i]));
+    }
+    return make_Declaration_t(al, l, down_cast<decl_attribute_t>(vartype),
+        v.p, v.size(), syms.p, syms.size(), trivia_cast(trivia));
 }
 
 // Appends all `items` at the end of `list`; used by declaration statements

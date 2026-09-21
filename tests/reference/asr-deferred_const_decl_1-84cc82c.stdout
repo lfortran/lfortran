@@ -1,0 +1,21 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            deferred_const_decl_1:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    deferred_const_decl_1
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

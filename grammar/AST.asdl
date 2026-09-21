@@ -286,6 +286,7 @@ decl_attribute
     | AttrAssignment()
     | AttrIntrinsicOperator(intrinsicop op)
     | AttrDefinedOperator(string op_name)
+    | AttrRank(expr* rank)
 
 simple_attribute
     = AttrAbstract
