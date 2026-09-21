@@ -705,6 +705,7 @@ interface_stmt
     | KW_INTERFACE KW_OPERATOR "(" TK_DEF_OP ")" {
         $$ = INTERFACE_HEADER_DEFOP($4, @$); }
     | KW_ABSTRACT KW_INTERFACE { $$ = ABSTRACT_INTERFACE_HEADER(@$); }
+    | KW_DEFERRED KW_INTERFACE { $$ = DEFERRED_INTERFACE_HEADER(@$); }
     | KW_INTERFACE KW_WRITE "(" id ")" { $$ = INTERFACE_HEADER_WRITE($4, @$); }
     | KW_INTERFACE KW_READ "(" id ")" { $$ = INTERFACE_HEADER_READ($4, @$); }
     ;
@@ -784,14 +785,14 @@ union_type_decl
 
 template_decl
     : KW_TEMPLATE id "(" id_list_opt ")" sep decl_statements
-        contains_block_opt KW_END KW_TEMPLATE sep {
-            $$ = TEMPLATE($2, $4, $7, $8, @$); }
+        contains_block_opt KW_END KW_TEMPLATE id_opt sep {
+            $$ = TEMPLATE($2, $4, $7, $8, $11, @$); }
     ;
 
 requirement_decl
     : KW_REQUIREMENT id "{" id_list_opt "}" sep decl_statements
-        sub_or_func_star KW_END KW_REQUIREMENT sep {
-            $$ = REQUIREMENT($2, $4, $7, $8, @$); }
+        sub_or_func_star KW_END KW_REQUIREMENT id_opt sep {
+            $$ = REQUIREMENT($2, $4, $7, $8, $11, @$); }
     ;
 
 require_decl

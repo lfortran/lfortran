@@ -32,7 +32,7 @@ type(T), intent(in) :: lhs
 type(T), intent(in) :: rhs
 type(V) :: res
 end function op_func
-end requirement
+end requirement op_r
 
 contains
 
