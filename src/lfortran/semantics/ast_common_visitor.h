@@ -11019,6 +11019,27 @@ public:
                 derived_type_name = to_lower(sym_type->m_name);
             }
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
+            // A deferred type argument of a template or a requirement may only
+            // appear in a CLASS declaration when it is extensible (Fortran 2028
+            // working draft J3/26-007r1, 16.4.1.2 and its NOTE 4). A deferred
+            // type is extensible only through the EXTENSIBLE or ABSTRACT
+            // attribute, and neither attribute is supported yet
+            // (lfortran/lfortran#13285), so no deferred type is extensible
+            // today and every such declaration is rejected here. When those
+            // attributes are implemented, narrow this to the deferred types
+            // that carry neither of them.
+            if( v && ASR::is_a<ASR::Variable_t>(*v)
+                  && ASR::is_a<ASR::TypeParameter_t>(*
+                        ASRUtils::type_get_past_array(
+                            ASR::down_cast<ASR::Variable_t>(v)->m_type)) ) {
+                diag.add(Diagnostic(
+                    "deferred type '" + derived_type_name + "' is not extensible, "
+                    "so it cannot be used in a class declaration",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+                throw SemanticAbort();
+            }
             if( !v ) {
                 if( derived_type_name != "~unlimited_polymorphic_type" ) {
                     if (this->is_derived_type && (is_pointer || is_allocatable)) {
