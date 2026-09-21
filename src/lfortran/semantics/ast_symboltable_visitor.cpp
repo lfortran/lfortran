@@ -110,6 +110,24 @@ public:
         }
     };
     ScopingUnitKind scoping_unit_kind = ScopingUnitKind::Other;
+    // Marks a template construct or a templated procedure, so that the
+    // restrictions of clause 16.3 also apply to every scoping unit nested in
+    // it. The enclosing value is restored on exit, including when a diagnostic
+    // aborts the visit, so a template does not leak the state into the program
+    // units that follow it.
+    struct TemplateDefinitionScope {
+        SymbolTableVisitor &v;
+        bool enclosing;
+
+        TemplateDefinitionScope(SymbolTableVisitor &v_, bool is_definition) : v(v_) {
+            enclosing = v.in_template_definition;
+            v.in_template_definition = v.in_template_definition || is_definition;
+        }
+
+        ~TemplateDefinitionScope() {
+            v.in_template_definition = enclosing;
+        }
+    };
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     std::map<std::string, std::vector<std::pair<std::string, Location>>> overloaded_op_procs;
@@ -645,6 +663,60 @@ public:
             }
             default_storage_save = false;
         }
+    }
+
+    // C1610 (J3/26-007r1, 16.3): within a template or templated procedure, or a
+    // scoping unit nested therein, an entity that is not accessed by host or
+    // use association shall not have the SAVE attribute. Each instantiation of
+    // a template generates its own procedure, so a saved local has no defined
+    // meaning: the standard does not say whether the state is shared between
+    // instantiations or private to each one.
+    //
+    // The attribute arrives by several spellings -- an explicit SAVE attribute,
+    // a SAVE statement naming the entity, a bare SAVE statement, and the
+    // implicit SAVE of an initialized local -- which all end up as `Save`
+    // storage on the variable. The template is therefore checked once it is
+    // complete, rather than at each of those spellings, and the nested scoping
+    // units are reached by walking into the contained procedures. Only entities
+    // declared in the template are visited: one accessed by host association
+    // lives in an enclosing scope, and a use-associated one is an external
+    // symbol.
+    void check_no_save_in_template(const SymbolTable *scope) {
+        if (report_save_in_template(scope)) {
+            throw SemanticAbort();
+        }
+    }
+
+    // Reports every offending entity, rather than only the first, so that one
+    // template does not have to be compiled repeatedly to find them all.
+    // Returns whether anything was reported.
+    bool report_save_in_template(const SymbolTable *scope) {
+        bool found = false;
+        for (auto &item: scope->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                // A dummy argument or a function result cannot have the SAVE
+                // attribute anywhere, so only a local is diagnosed here.
+                if (var->m_intent != ASR::intentType::Local) continue;
+                if (var->m_storage != ASR::storage_typeType::Save) continue;
+                diag.add(diag::Diagnostic(
+                    "variable '" + std::string(var->m_name) + "' in a template "
+                    "or templated procedure cannot have the save attribute",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {var->base.base.loc})}));
+                found = true;
+            } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                // A procedure of the template, and in turn a procedure
+                // contained in one, is a scoping unit nested in the template.
+                // A nested template is left to its own visit, which reports it
+                // before this walk runs.
+                bool found_nested = report_save_in_template(
+                    ASR::down_cast<ASR::Function_t>(sym)->m_symtab);
+                found = found || found_nested;
+            }
+        }
+        return found;
     }
 
     void visit_Program(const AST::Program_t &x) {
@@ -1430,6 +1502,7 @@ public:
         }
         DeferredArgScope deferred_arg_scope(*this, sym_name, subroutine_temp_args,
             x.n_temp_args > 0);
+        TemplateDefinitionScope template_definition_scope(*this, x.n_temp_args > 0);
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated subroutines
@@ -1891,6 +1964,11 @@ public:
         is_template = false;
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
+        // A templated subroutine is complete; `parent_scope` is the Template
+        // built for it. Checked last, once the enclosing context has been
+        // restored, so that an abort here leaves the visitor in the same state
+        // as a clean return.
+        if (x.n_temp_args > 0) check_no_save_in_template(parent_scope);
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -1997,6 +2075,7 @@ public:
         }
         DeferredArgScope deferred_arg_scope(*this, sym_name, function_temp_args,
             x.n_temp_args > 0);
+        TemplateDefinitionScope template_definition_scope(*this, x.n_temp_args > 0);
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated functions
@@ -2718,6 +2797,11 @@ public:
         in_Subroutine = false;
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
+        // A templated function is complete; `parent_scope` is the Template
+        // built for it. Checked last, once the enclosing context has been
+        // restored, so that an abort here leaves the visitor in the same state
+        // as a clean return.
+        if (x.n_temp_args > 0) check_no_save_in_template(parent_scope);
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -5193,6 +5277,7 @@ public:
         }
         is_template = true;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Template);
+        TemplateDefinitionScope template_definition_scope(*this, true);
         std::string template_name = to_lower(std::string(x.m_name));
         std::vector<std::string> template_args;
         for (size_t i=0; i<x.n_namelist; i++) {
@@ -5275,12 +5360,17 @@ public:
             current_scope, s2c(al, template_name), args.p, args.size(), reqs.p, reqs.size());
 
         parent_scope->add_symbol(template_name, ASR::down_cast<ASR::symbol_t>(temp));
+        SymbolTable *template_scope = current_scope;
         current_scope = parent_scope;
 
         // needs to rebuild the context prior to visiting template
         class_procedures.clear();
         dflt_access = dflt_access_copy;
         is_template = false;
+        // The specification part of the template itself, checked once the
+        // enclosing context has been restored so that an abort here leaves the
+        // visitor in the same state as a clean return.
+        check_no_save_in_template(template_scope);
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {

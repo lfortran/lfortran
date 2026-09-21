@@ -2226,6 +2226,21 @@ public:
     bool is_body_visitor = false;
     bool is_requirement = false;
     bool is_template = false;
+    // True while a template or a templated procedure, or any scoping unit
+    // nested in one, is being visited. Clause 16.3 of J3/26-007r1 forbids
+    // static and storage-associated state there (C1610, C1611), and that
+    // question cannot be answered from `current_scope`: a Template, a Function
+    // and a Subroutine symbol is only created once its specification part has
+    // been visited, so while a procedure contained in a template is being
+    // declared neither its own symbol table nor the template's has an owner yet
+    // and `ASRUtils::is_owned_by_template` reports false. It answers true only
+    // for a templated procedure, whose Template symbol is built before its
+    // specification part. The nesting is therefore tracked explicitly, with a
+    // guard that restores the enclosing value even when a diagnostic aborts the
+    // visit. `is_template` is deliberately not reused: it is not restored on
+    // exit, so it reads false again in the scoping units that follow a nested
+    // template.
+    bool in_template_definition = false;
     bool is_current_procedure_templated = false;
     bool is_Function = false;
     bool in_Subroutine = false;
@@ -5920,6 +5935,23 @@ public:
         );
     }
 
+    // C1611 (J3/26-007r1, 16.3): a COMMON or EQUIVALENCE statement shall not
+    // appear within a template or templated procedure, or a scoping unit
+    // nested therein. Storage association ties the entity to a fixed layout
+    // shared with other entities, but each instantiation of a template
+    // generates its own procedure, so the standard leaves undefined whether
+    // that storage would be shared between instantiations or private to each.
+    void check_no_storage_association_in_template(const std::string &stmt,
+            const Location &loc) {
+        if (!in_template_definition) return;
+        diag.add(Diagnostic(
+            stmt + " statement is not allowed in a template or templated "
+            "procedure",
+            Level::Error, Stage::Semantic, {
+                Label("", {loc})}));
+        throw SemanticAbort();
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         _declaring_variable = true;
         current_variable_type_ = nullptr;
@@ -6517,6 +6549,8 @@ public:
                 dimension_variable(s, x.base.base.loc);
             }
         } else if (AST::is_a<AST::AttrCommon_t>(*x.m_attributes[i])) {
+            check_no_storage_association_in_template("a common",
+                x.m_attributes[i]->base.loc);
             AST::AttrCommon_t const & common_stmt =
             *AST::down_cast<AST::AttrCommon_t>(x.m_attributes[i]);
             constexpr char BLANK_BLOCK[] = "blank#block";
@@ -6541,6 +6575,8 @@ public:
 		    }
 		    populate_common_dictionary(x, objs_by_blk);
 		} else if (AST::is_a<AST::AttrEquivalence_t>(*x.m_attributes[i])) {
+                    check_no_storage_association_in_template("an equivalence",
+                        x.m_attributes[i]->base.loc);
                     AST::AttrEquivalence_t *eq = AST::down_cast<AST::AttrEquivalence_t>(x.m_attributes[i]);
 
                     // --- Equivalence helper lambdas ---
