@@ -39,7 +39,7 @@ module template_array_02_m
     private
     public :: test_template
 
-    requirement operations(t, plus_t, zero_t)
+    requirement operations {t, plus_t, zero_t}
         deferred type :: t
 
         pure function plus_t(l, r) result(rs)
@@ -54,7 +54,7 @@ module template_array_02_m
     end requirement
 
     template array_tmpl(t, plus_t, zero_t)
-        require :: operations(t, plus_t, zero_t)
+        require :: operations {t, plus_t, zero_t}
         private
         public :: mysum_t
     contains
@@ -83,7 +83,7 @@ module template_array_02_m
 contains
 
     subroutine test_template()
-        instantiate array_tmpl(integer, add_integer, zero_integer), only: &
+        instantiate array_tmpl {integer, add_integer, zero_integer}, only: &
             mysum_integer => mysum_t, mysum_integer_n => mysum_t_n
         integer :: a(10), b(10), i, sa, sb
         do i = 1, size(a)

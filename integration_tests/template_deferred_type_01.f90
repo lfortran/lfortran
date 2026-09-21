@@ -8,7 +8,7 @@ module template_deferred_type_01_m
     private
     public :: test_deferred_type
 
-    requirement add_r(t, add)
+    requirement add_r {t, add}
         deferred type :: t
         pure function add(lhs, rhs) result(res)
             type(t), intent(in) :: lhs
@@ -19,7 +19,8 @@ module template_deferred_type_01_m
 
     template double_tmpl(t, u, add_t, add_u)
         deferred type :: t, u
-        require :: add_r(t, add_t), add_r(u, add_u)
+        require :: add_r {t, add_t}
+        require :: add_r {u, add_u}
         private
         public :: double_both
       contains
@@ -34,7 +35,7 @@ module template_deferred_type_01_m
 contains
 
     subroutine test_deferred_type()
-        instantiate double_tmpl(integer, real, operator(+), operator(+)), &
+        instantiate double_tmpl {integer, real, operator(+), operator(+)}, &
             only: double_both_ir => double_both
         integer :: i
         real :: r

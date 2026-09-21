@@ -3,7 +3,7 @@ module semigroup_m
     private
     public :: semigroup, extended_semigroup, derive_extended_semigroup
 
-    requirement semigroup(T, combine)
+    requirement semigroup {T, combine}
         deferred type :: T
         elemental function combine(x, y) result(combined)
             type(T), intent(in) :: x, y
@@ -11,8 +11,8 @@ module semigroup_m
         end function
     end requirement
 
-    requirement extended_semigroup(T, combine, sconcat, stimes)
-        require :: semigroup(T, combine)
+    requirement extended_semigroup {T, combine, sconcat, stimes}
+        require :: semigroup {T, combine}
         pure function sconcat(list) result(combined)
             type(T), intent(in) :: list(:) !! Must contain at least one element
             type(T) :: combined
@@ -25,7 +25,7 @@ module semigroup_m
     end requirement
 
     template derive_extended_semigroup(T, combine)
-        require :: semigroup(T, combine)
+        require :: semigroup {T, combine}
         private
         public :: sconcat, stimes
     contains

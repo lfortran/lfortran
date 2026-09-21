@@ -2,7 +2,7 @@ module template_interface_01_m
     implicit none
     public :: test_template
 
-    requirement operator_r(T, U, V, binary_func)
+    requirement operator_r {T, U, V, binary_func}
         deferred type :: T
         deferred type :: U
         deferred type :: V
@@ -13,7 +13,7 @@ module template_interface_01_m
         end function
     end requirement
 
-    requirement cast_r(T, cast)
+    requirement cast_r {T, cast}
         deferred type :: T
         pure elemental function cast(arg) result(res)
             integer, intent(in) :: arg
@@ -22,7 +22,8 @@ module template_interface_01_m
     end requirement
 
     template sum_t(T, add, cast)
-        require :: operator_r(T, T, T, add), cast_r(T, cast)
+        require :: operator_r {T, T, T, add}
+        require :: cast_r {T, cast}
         private
         public :: generic_sum
 
@@ -60,7 +61,8 @@ contains
     end function
 
     pure function simple_generic_sum {T, add, cast} (arr) result(res)
-        require :: operator_r(T, T, T, add), cast_r(T, cast)
+        require :: operator_r {T, T, T, add}
+        require :: cast_r {T, cast}
         interface operator(+)
             procedure add
         end interface
@@ -78,8 +80,8 @@ contains
     end function
 
     subroutine test_template()
-        instantiate sum_t(integer, operator(+), cast_integer), only: generic_sum_integer => generic_sum
-        instantiate sum_t(real, operator(+), cast_real), only: generic_sum_real => generic_sum
+        instantiate sum_t {integer, operator(+), cast_integer}, only: generic_sum_integer => generic_sum
+        instantiate sum_t {real, operator(+), cast_real}, only: generic_sum_real => generic_sum
         integer :: ai(10), i, ri
         real :: ar(10), rr
         do i = 1, 10

@@ -2,7 +2,7 @@
     "basename": "asr-template_vector-140858c",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/template_vector.f90",
-    "infile_hash": "0516b4ef489886a4ba08a4de1a1cfd0fcab61ff687ac4200ca653856",
+    "infile_hash": "a5912e9f1fe95087c898b2ab3005ec4ff8336227ee9ee09029506b70",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-template_vector-140858c.stdout",

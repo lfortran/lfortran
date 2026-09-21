@@ -1,0 +1,13 @@
+{
+    "basename": "ast-instantiate_syntax_1-603fe9d",
+    "cmd": "lfortran --continue-compilation --show-ast --no-color {infile}",
+    "infile": "tests/errors/instantiate_syntax_1.f90",
+    "infile_hash": "5add096b81bea04e29bc1150b493f54721dc3ac653d3edcf0787fbd3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-instantiate_syntax_1-603fe9d.stdout",
+    "stdout_hash": "a89394bb8bede003973d67d4a0d7d1a043fb0001606cba5b0f9aa95d",
+    "stderr": "ast-instantiate_syntax_1-603fe9d.stderr",
+    "stderr_hash": "224099d1c58c533b5b665fdc56b581eb38b684128dca3331365fa06a",
+    "returncode": 1
+}

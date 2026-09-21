@@ -1057,19 +1057,22 @@ public:
         the callee sees the right data pointer and length. Returns `value`
         unchanged when it is not such a member.
 
-        Only scalar members are wrapped: a whole inline character *array*
-        member is passed as an array, not as one string descriptor.
+        A whole inline character *array* member is wrapped the same way: an
+        array of strings is represented by a single descriptor whose data
+        points at the contiguous element bytes and whose length is the
+        element length, which is exactly the blob's layout.
     */
     llvm::Value* inline_char_member_as_string_descriptor(ASR::expr_t* arg,
             llvm::Value* value, std::string name) {
-        if (!ASRUtils::is_string_only(expr_type(arg))
-                || ASRUtils::get_string_type(expr_type(arg))->m_physical_type
+        ASR::ttype_t* arg_type = expr_type(arg);
+        if (!ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))
+                || ASRUtils::get_string_type(arg_type)->m_physical_type
                     != ASR::DescriptorString
                 || !ASRUtils::is_inline_character_struct_member(arg)) {
             return value;
         }
         int64_t len = 1;
-        ASR::String_t* str_type = ASRUtils::get_string_type(expr_type(arg));
+        ASR::String_t* str_type = ASRUtils::get_string_type(arg_type);
         if (str_type->m_len) {
             ASRUtils::extract_value(str_type->m_len, len);
         }
@@ -2630,11 +2633,17 @@ public:
                         llvm_utils->init_mold_upoly_array_data(
                             wrapper, mold_wrapper, class_type, num_elements);
                     }
+                    ASR::Struct_t* allocated_subclass = nullptr;
+                    if (curr_arg.m_sym_subclass
+                            && ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))) {
+                        allocated_subclass = ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(curr_arg.m_sym_subclass));
+                    }
                     if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
-                        && !ASRUtils::is_unlimited_polymorphic_type(tmp_expr) ) {
+                        && (!ASRUtils::is_unlimited_polymorphic_type(tmp_expr) || allocated_subclass) ) {
                         llvm::Value* x_arr_ = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
                         allocate_array_members_of_struct_arrays(tmp_expr, x_arr_,
-                            ASRUtils::expr_type(tmp_expr));
+                            ASRUtils::expr_type(tmp_expr), allocated_subclass);
                     }
                 };
                 if (m_stat && !realloc && is_allocated != nullptr) {
@@ -7398,11 +7407,14 @@ public:
                 // Inline character members (bind(C)/SEQUENCE/COMMON) are stored
                 // as a flat [count*len x i8] blob in place: there is no string
                 // descriptor to allocate or initialize at runtime (scalars and
-                // arrays alike), so skip all per-member setup for them.
+                // arrays alike), so skip all per-member setup for them. Only
+                // the initial value is stored: either the constructor default
+                // of the enclosing member or, for a plain variable, the
+                // component's own default.
                 if (ASR::is_a<ASR::Variable_t>(*sym)
                         && ASRUtils::is_inline_character_struct_member(
                             struct_type_t, symbol_type)) {
-                    if (init_sc && member_init) {
+                    if (apply_init && member_init) {
                         builder->CreateStore(
                             get_inline_char_member_constant(symbol_type, member_init),
                             llvm_utils->create_gep2(name2dertype[struct_type_name], ptr,
@@ -7704,7 +7716,8 @@ public:
         }
     }
 
-    void allocate_array_members_of_struct_arrays(ASR::expr_t* expr, llvm::Value* ptr, ASR::ttype_t* v_m_type) {
+    void allocate_array_members_of_struct_arrays(ASR::expr_t* expr, llvm::Value* ptr, ASR::ttype_t* v_m_type,
+            ASR::Struct_t* allocated_subclass = nullptr) {
         ASR::array_physical_typeType phy_type = ASRUtils::extract_physical_type(v_m_type);
         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::extract_type(v_m_type), module.get());
@@ -7771,8 +7784,22 @@ public:
                                 ASRUtils::extract_type(v_m_type));
                             llvm::Value* class_wrapper = llvm_utils->CreateLoad2(el_type->getPointerTo(),
                                 arr_descr->get_pointer_to_data(ptr_i_type, ptr));
-                            ptr_i = llvm_utils->get_class_element_from_array(struct_sym, struct_type,
-                                class_wrapper, llvm_utils->CreateLoad2(t, llvmi));
+                            if (allocated_subclass) {
+                                // Every element has the dynamic type given in the
+                                // ALLOCATE type-spec, stored consecutively.
+                                llvm::Type* data_ptr_type = struct_type->m_is_unlimited_polymorphic
+                                    ? llvm_utils->i8_ptr
+                                    : llvm_utils->getStructType(struct_sym, module.get(), true);
+                                llvm::Value* data = llvm_utils->CreateLoad2(data_ptr_type,
+                                    llvm_utils->create_gep2(llvm_utils->getClassType(struct_sym), class_wrapper, 1));
+                                llvm::Type* subclass_type = llvm_utils->getStructType(allocated_subclass, module.get());
+                                data = builder->CreateBitCast(data, subclass_type->getPointerTo());
+                                ptr_i = llvm_utils->create_ptr_gep2(subclass_type, data,
+                                    llvm_utils->CreateLoad2(t, llvmi));
+                            } else {
+                                ptr_i = llvm_utils->get_class_element_from_array(struct_sym, struct_type,
+                                    class_wrapper, llvm_utils->CreateLoad2(t, llvmi));
+                            }
                         } else {
                             ptr_i = llvm_utils->create_ptr_gep2(el_type,
                                 llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(ptr_i_type, ptr)),
@@ -7788,9 +7815,14 @@ public:
                         LCOMPILERS_ASSERT(false);
                     }
                 }
-                allocate_array_members_of_struct(
-                    ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))),
-                        ptr_i, ASRUtils::extract_type(v_m_type), false, true, true);
+                if (allocated_subclass) {
+                    allocate_array_members_of_struct(allocated_subclass, ptr_i,
+                        ASRUtils::symbol_type(&allocated_subclass->base), false, true, true);
+                } else {
+                    allocate_array_members_of_struct(
+                        ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))),
+                            ptr_i, ASRUtils::extract_type(v_m_type), false, true, true);
+                }
                 LLVM::CreateStore(*builder,
                     builder->CreateAdd(llvm_utils->CreateLoad2(t, llvmi),
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1))),
@@ -23059,6 +23091,17 @@ public:
     std::string serialize_structType_symbols(ASR::symbol_t* sym){
         std::string res {};
         ASR::Struct_t* StructSymbol = ASR::down_cast<ASR::Struct_t>(sym);
+        // An extended type stores its parent as the 0th member of the LLVM
+        // struct (see LLVMUtils::getStructType), so the inherited components
+        // are serialized first, as a nested struct.
+        if( StructSymbol->m_parent != nullptr ) {
+            ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
+                StructSymbol->m_parent);
+            res += "(" + serialize_structType_symbols(parent) + ")";
+            if( StructSymbol->n_members > 0 ) {
+                res += ",";
+            }
+        }
         for(size_t i=0; i < StructSymbol->n_members; i++){
             ASR::symbol_t* StructMember = StructSymbol->m_symtab->
                                             get_symbol(StructSymbol->m_members[i]);

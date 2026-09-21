@@ -3,12 +3,12 @@ module template_error_06_m
   private
   public :: struct_t
 
-  requirement r(t)
+  requirement r {t}
       deferred type :: t
   end requirement
 
   template struct_t(t)
-      require :: r(t)
+      require :: r {t}
       private
       public :: tuple
 

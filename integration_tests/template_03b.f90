@@ -1,6 +1,6 @@
 program template_03
 
-    requirement op(T, U, V, op)
+    requirement op {T, U, V, op}
         deferred type :: T
         deferred type :: U
         deferred type :: V
@@ -13,8 +13,8 @@ program template_03
 
     template axpy_tmpl(T, U, V, W, plus, times)
         public :: axpy
-        require :: op(V, W, V, plus)
-        require :: op(T, U, W, times)
+        require :: op {V, W, V, plus}
+        require :: op {T, U, W, times}
     contains
         subroutine axpy(a, x, y)
             type(T), intent(in) :: a
@@ -54,7 +54,7 @@ contains
 
     subroutine f()
         integer, parameter :: sp = kind(1.0), dp = kind(1.d0)
-        instantiate axpy_tmpl(real(sp), integer, real(dp), real(sp), operator(+), operator(*))
+        instantiate axpy_tmpl {real(sp), integer, real(dp), real(sp), operator(+), operator(*)}
         real(sp) :: a
         integer :: x(3)
         real(dp) :: y(3)
