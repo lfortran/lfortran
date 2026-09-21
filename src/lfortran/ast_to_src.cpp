@@ -1005,6 +1005,8 @@ public:
         std::string r;
         if(x.m_header->type == AbstractInterfaceHeader) {
             r += "abstract ";
+        } else if(x.m_header->type == DeferredInterfaceHeader) {
+            r += "deferred ";
         }
         r += syn(gr::UnitHeader);
         r.append("interface");
@@ -1065,6 +1067,11 @@ public:
 
     void visit_AbstractInterfaceHeader
             (const AbstractInterfaceHeader_t &/* x */) {
+        s = "";
+    }
+
+    void visit_DeferredInterfaceHeader
+            (const DeferredInterfaceHeader_t &/* x */) {
         s = "";
     }
 
