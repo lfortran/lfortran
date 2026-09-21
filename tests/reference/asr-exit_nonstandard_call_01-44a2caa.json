@@ -1,0 +1,13 @@
+{
+    "basename": "asr-exit_nonstandard_call_01-44a2caa",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/exit_nonstandard_call_01.f90",
+    "infile_hash": "8574b968884a4da24ede95650c1df954db22774cdfddb70337e519bc",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-exit_nonstandard_call_01-44a2caa.stderr",
+    "stderr_hash": "689d6cea19f0c8907d002d01b2c4090b4248fbcdfd15391694a4d3b7",
+    "returncode": 0
+}
