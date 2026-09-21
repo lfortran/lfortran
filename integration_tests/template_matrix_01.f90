@@ -13,7 +13,8 @@ module template_matrix_01_m
     end requirement
 
     template matrix_t(t, plus, times, n)
-        require :: elemental_op {t, plus}, elemental_op {t, times}
+        require :: elemental_op {t, plus}
+        require :: elemental_op {t, times}
         integer :: n
         
         private

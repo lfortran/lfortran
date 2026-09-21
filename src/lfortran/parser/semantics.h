@@ -2926,6 +2926,15 @@ ast_t* INSTANTIATE_SUBP2(Allocator &al, const Location &l, char* a_name,
         VEC_CAST(syms, use_symbol), syms.size());
 }
 
+// R1636 takes exactly one requirement-name, but AST::Require stores a list of
+// them, so wrap the single requirement into a one element list.
+ast_t* REQUIRE2(Allocator &al, const Location &l, ast_t* a_req) {
+    Vec<ast_t*> reqs;
+    reqs.reserve(al, 1);
+    reqs.push_back(al, a_req);
+    return make_Require_t(al, l, VEC_CAST(reqs, unit_require), reqs.size());
+}
+
 ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         arg_t* a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
         program_unit_t** a_funcs, size_t n_funcs,
@@ -2944,9 +2953,7 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         REQUIREMENT2(p.m_a, l, name2char(name), \
         ARGS(p.m_a, namelist), namelist.size(), \
         decl_stmts, CONTAINS(funcs), funcs.size(), p.diag)
-#define REQUIRE(require_list, l) \
-        make_Require_t(p.m_a, l, \
-        VEC_CAST(require_list, unit_require), require_list.size())
+#define REQUIRE(req, l) REQUIRE2(p.m_a, l, req)
 #define UNIT_REQUIRE(name, namelist, l) \
         make_UnitRequire_t(p.m_a, l, name2char(name), \
         VEC_CAST(namelist, decl_attribute), namelist.size())
