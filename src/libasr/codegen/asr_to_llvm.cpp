@@ -10935,9 +10935,13 @@ public:
         llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
             ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array_section->m_v))), module.get());
+        // A character array component is stored inline in the struct as a
+        // %string_descriptor, so selecting it already yields the address of
+        // its storage. Only an allocatable or pointer component keeps the
+        // address of its descriptor in the field, so only that one has to be
+        // loaded to reach the descriptor.
         if( ASR::is_a<ASR::StructInstanceMember_t>(*array_section->m_v) &&
-            ASRUtils::extract_physical_type(value_array_type) !=
-                ASR::array_physical_typeType::FixedSizeArray ) {
+            LLVM::is_llvm_pointer(*value_array_type) ) {
             value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
         }
         llvm::Type *value_el_type = llvm_utils->get_el_type(array_section->m_v,
