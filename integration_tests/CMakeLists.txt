@@ -2711,6 +2711,7 @@ RUN(NAME derived_types_176 LABELS gfortran llvm EXTRAFILES derived_types_176_m.f
 RUN(NAME derived_types_177 LABELS gfortran llvm)
 RUN(NAME derived_types_178 LABELS gfortran llvm EXTRAFILES derived_types_178_m.f90)
 RUN(NAME derived_types_181 LABELS gfortran llvm)
+RUN(NAME derived_types_183 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
