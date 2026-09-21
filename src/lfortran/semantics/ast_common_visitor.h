@@ -24053,11 +24053,24 @@ public:
                 ASRUtils::is_array(member->m_type) ) {
                 continue;
             }
-            member->m_type = ASRUtils::TYPE(ASR::make_Array_t(al,
-                member->base.base.loc,
-                ASRUtils::type_get_past_allocatable_pointer(member->m_type),
-                shape_array->m_dims, shape_array->n_dims,
-                shape_array->m_physical_type, shape_array->m_memory_space));
+            // An `allocatable` or `pointer` intermediate cannot be given the
+            // base's shape: what it denotes is an array of indirections,
+            // which this type representation cannot express, and reshaping
+            // it would silently drop the indirection and make the backend
+            // read the component's storage as if it held the value inline.
+            // Fortran forbids such a reference anyway (C919), so leave the
+            // declared type alone instead of replacing it with a wrong one.
+            if( ASR::is_a<ASR::Allocatable_t>(*member->m_type) ||
+                ASR::is_a<ASR::Pointer_t>(*member->m_type) ) {
+                continue;
+            }
+            // Rebuild through `duplicate_type` rather than `make_Array_t`, so
+            // the member gets its own copy of the dimensions instead of
+            // aliasing the base array's.
+            Vec<ASR::dimension_t> dims;
+            dims.from_pointer_n_copy(al, shape_array->m_dims, shape_array->n_dims);
+            member->m_type = ASRUtils::duplicate_type(al, member->m_type, &dims,
+                shape_array->m_physical_type, true);
         }
     }
 
