@@ -2941,13 +2941,15 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         DECLS(decl_stmts), decl_stmts.size(), a_funcs, n_funcs);
 }
 
-#define TEMPLATE(name, namelist, decl_stmts, contains, l) \
-        TEMPLATE2(p.m_a, l, name2char(name), \
+#define TEMPLATE(name, namelist, decl_stmts, contains, name_opt, l) \
+        TEMPLATE2(p.m_a, l, \
+        name2char_with_check(name, name_opt, l, "template", p.diag), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size(), p.diag)
-#define REQUIREMENT(name, namelist, decl_stmts, funcs, l) \
-        REQUIREMENT2(p.m_a, l, name2char(name), \
+#define REQUIREMENT(name, namelist, decl_stmts, funcs, name_opt, l) \
+        REQUIREMENT2(p.m_a, l, \
+        name2char_with_check(name, name_opt, l, "requirement", p.diag), \
         ARGS(p.m_a, namelist), namelist.size(), \
         decl_stmts, CONTAINS(funcs), funcs.size(), p.diag)
 #define REQUIRE(req, l) REQUIRE2(p.m_a, l, req)
