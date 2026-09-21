@@ -9815,6 +9815,13 @@ public:
 
     }
 
+    // A `deferred procedure (iface) :: p` statement (F2028 R1622) declares a
+    // deferred argument, which the symbol table visitor does in full; there is
+    // nothing left for the body visitor to do.
+    void visit_DeferredProcedure(const AST::DeferredProcedure_t &/*x*/) {
+
+    }
+
     void visit_Enum(const AST::Enum_t &/*x*/) {
 
     }

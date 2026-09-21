@@ -49,6 +49,39 @@ public:
             class_deferred_procedures.swap(v.class_deferred_procedures);
         }
     };
+    // A statement that declares a deferred argument -- DEFERRED PROCEDURE
+    // (C1622, J3/26-007r1 16.4.1.4) among them -- is only valid in a scoping
+    // unit that has a deferred-argument list, that is a requirement, a
+    // template or a templated procedure, and may only declare one of those
+    // arguments. This guard records the list (and the name of the scoping unit
+    // that owns it) while such a unit is visited, and restores the enclosing
+    // unit's list afterwards. A nested scoping unit that has no deferred
+    // arguments of its own therefore gets an empty list, not its host's.
+    struct DeferredArgScope {
+        SymbolTableVisitor &v;
+        std::vector<std::string> args;
+        std::string owner;
+        bool has_args;
+
+        DeferredArgScope(SymbolTableVisitor &v_, const std::string &owner_,
+                const std::vector<std::string> &args_, bool has_args_) : v(v_) {
+            args.swap(v.deferred_args);
+            owner.swap(v.deferred_args_owner);
+            has_args = v.has_deferred_args;
+            v.deferred_args = args_;
+            v.deferred_args_owner = owner_;
+            v.has_deferred_args = has_args_;
+        }
+
+        ~DeferredArgScope() {
+            v.deferred_args.swap(args);
+            v.deferred_args_owner.swap(owner);
+            v.has_deferred_args = has_args;
+        }
+    };
+    std::vector<std::string> deferred_args;
+    std::string deferred_args_owner;
+    bool has_deferred_args = false;
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     std::map<std::string, std::vector<std::pair<std::string, Location>>> overloaded_op_procs;
@@ -1355,6 +1388,15 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
+        // The braces of a templated subprogram hold its deferred arguments;
+        // an ordinary subprogram has none, and must not inherit the list of a
+        // host template (C1613).
+        std::vector<std::string> subroutine_temp_args;
+        for (size_t i=0; i<x.n_temp_args; i++) {
+            subroutine_temp_args.push_back(to_lower(x.m_temp_args[i]));
+        }
+        DeferredArgScope deferred_arg_scope(*this, sym_name, subroutine_temp_args,
+            x.n_temp_args > 0);
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated subroutines
@@ -1397,6 +1439,13 @@ public:
                                   to_lower(dt->m_name)) != current_procedure_args.end()) {
                         visit_decl_stmt(*x.m_items[i]);
                     }
+                }
+
+                // A `deferred procedure` statement declares deferred
+                // arguments, so it belongs to the Template of the templated
+                // subprogram, exactly like a `deferred type` statement.
+                if (AST::is_a<AST::DeferredProcedure_t>(*x.m_items[i])) {
+                    visit_decl_stmt(*x.m_items[i]);
                 }
             }
 
@@ -1457,6 +1506,14 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
             if (is_common_declaration(x.m_items[i])) continue;
+            // The deferred procedures of a templated subprogram belong to its
+            // Template, where they were declared above; declaring them here as
+            // well would shadow them with a symbol that instantiation never
+            // substitutes.
+            if (x.n_temp_args > 0
+                    && AST::is_a<AST::DeferredProcedure_t>(*x.m_items[i])) {
+                continue;
+            }
             is_Function = true;
             if(x.m_items[i]->type == AST::decl_stmtType::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_items[i];
@@ -1912,6 +1969,15 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
+        // The braces of a templated subprogram hold its deferred arguments;
+        // an ordinary subprogram has none, and must not inherit the list of a
+        // host template (C1613).
+        std::vector<std::string> function_temp_args;
+        for (size_t i=0; i<x.n_temp_args; i++) {
+            function_temp_args.push_back(to_lower(x.m_temp_args[i]));
+        }
+        DeferredArgScope deferred_arg_scope(*this, sym_name, function_temp_args,
+            x.n_temp_args > 0);
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated functions
@@ -1960,6 +2026,13 @@ public:
                                   to_lower(dt->m_name)) != current_procedure_args.end()) {
                         visit_decl_stmt(*x.m_items[i]);
                     }
+                }
+
+                // A `deferred procedure` statement declares deferred
+                // arguments, so it belongs to the Template of the templated
+                // subprogram, exactly like a `deferred type` statement.
+                if (AST::is_a<AST::DeferredProcedure_t>(*x.m_items[i])) {
+                    visit_decl_stmt(*x.m_items[i]);
                 }
             }
 
@@ -2013,6 +2086,14 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
             if (is_common_declaration(x.m_items[i])) continue;
+            // The deferred procedures of a templated subprogram belong to its
+            // Template, where they were declared above; declaring them here as
+            // well would shadow them with a symbol that instantiation never
+            // substitutes.
+            if (x.n_temp_args > 0
+                    && AST::is_a<AST::DeferredProcedure_t>(*x.m_items[i])) {
+                continue;
+            }
             is_Function = true;
             if(x.m_items[i]->type == AST::decl_stmtType::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_items[i];
@@ -4762,8 +4843,118 @@ public:
         }
     }
 
+    // Declares one deferred procedure named `name`, whose interface is the
+    // already declared procedure `iface_fn`. R1622 borrows an interface instead
+    // of defining one, so the interface is duplicated into this scope under the
+    // declared name and then given the flags that the spellings which define
+    // the interface in place (a bare subprogram of a requirement, or an
+    // interface body) give a deferred procedure: an Implementation, because the
+    // deferred procedure is not itself an interface to some other procedure,
+    // and deterministic and side effect free, because every instantiation
+    // argument it can be bound to is.
+    void declare_deferred_procedure(const std::string &name,
+            ASR::Function_t *iface_fn, const Location &loc) {
+        ASRUtils::SymbolDuplicator duplicator(al);
+        ASR::symbol_t *proc = duplicator.duplicate_Function(iface_fn,
+            current_scope);
+        if (!proc) {
+            diag.add(diag::Diagnostic(
+                "the interface of the deferred procedure '" + name
+                + "' is too complex to be copied",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
+        }
+        ASR::Function_t *proc_fn = ASR::down_cast<ASR::Function_t>(proc);
+        proc_fn->base.base.loc = loc;
+        proc_fn->m_name = s2c(al, name);
+        proc_fn->m_access = dflt_access;
+        proc_fn->m_deterministic = true;
+        proc_fn->m_side_effect_free = true;
+        ASR::FunctionType_t *proc_type = ASRUtils::get_FunctionType(proc_fn);
+        proc_type->m_deftype = ASR::deftypeType::Implementation;
+        proc_type->m_is_restriction = is_requirement;
+        current_scope->add_symbol(name, proc);
+    }
+
+    // F2028 R1622 (J3/26-007r1, 16.4.1.4):
+    //     deferred-proc-decl-stmt is DEFERRED PROCEDURE ( interface-name )
+    //                                [ :: ] deferred-proc-name-list
+    // Every name of the list is declared as a deferred procedure with the
+    // interface that interface-name names, instead of one spelled out in place.
+    void visit_DeferredProcedure(const AST::DeferredProcedure_t &x) {
+        // A deferred procedure is a deferred argument, so the statement only
+        // has a meaning in a scoping unit that has deferred arguments: a
+        // requirement, a template or a templated procedure.
+        if (!has_deferred_args) {
+            diag.add(diag::Diagnostic(
+                "a deferred procedure can only be declared in a requirement, "
+                "a template or a templated procedure",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        std::string iface_name = to_lower(x.m_interface_name);
+        ASR::symbol_t *iface_sym = current_scope->resolve_symbol(iface_name);
+        if (!iface_sym) {
+            diag.add(diag::Diagnostic(
+                "the interface '" + iface_name + "' is not declared",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        ASR::symbol_t *iface = ASRUtils::symbol_get_past_external(iface_sym);
+        if (!iface || !ASR::is_a<ASR::Function_t>(*iface)) {
+            // A name that is not a procedure with an explicit interface, or
+            // that is a generic name, cannot serve as an interface-name.
+            diag.add(diag::Diagnostic(
+                "'" + iface_name + "' is not an interface",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc}),
+                    diag::Label("declared here", {iface_sym->base.loc}, false)
+                }));
+            throw SemanticAbort();
+        }
+        ASR::Function_t *iface_fn = ASR::down_cast<ASR::Function_t>(iface);
+        for (size_t i=0; i<x.n_names; i++) {
+            std::string name = to_lower(x.m_names[i].m_arg);
+            // C1622: a deferred-proc-name shall be the name of a deferred
+            // procedure, that is a deferred argument of the scoping unit.
+            if (std::find(deferred_args.begin(), deferred_args.end(), name)
+                    == deferred_args.end()) {
+                diag.add(diag::Diagnostic(
+                    "'" + name + "' is not a deferred argument of '"
+                    + deferred_args_owner + "'",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_names[i].loc})}));
+                throw SemanticAbort();
+            }
+            ASR::symbol_t *orig_decl = current_scope->get_symbol(name);
+            if (orig_decl != nullptr) {
+                // add_symbol asserts the name is free, so report the duplicate
+                // here rather than letting invalid input reach the assertion.
+                diag.add(diag::Diagnostic(
+                    "Symbol is already declared in the same scope",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("redeclaration", {x.m_names[i].loc}),
+                        diag::Label("original declaration",
+                            {orig_decl->base.loc}, false)
+                    }));
+                throw SemanticAbort();
+            }
+            declare_deferred_procedure(name, iface_fn, x.m_names[i].loc);
+        }
+    }
+
     void visit_Requirement(const AST::Requirement_t &x) {
         is_requirement = true;
+
+        std::vector<std::string> requirement_args;
+        for (size_t i=0; i<x.n_namelist; i++) {
+            requirement_args.push_back(to_lower(x.m_namelist[i].m_arg));
+        }
+        DeferredArgScope deferred_arg_scope(*this, to_lower(x.m_name),
+            requirement_args, true);
 
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -4976,6 +5167,11 @@ public:
     void visit_Template(const AST::Template_t &x){
         is_template = true;
         std::string template_name = to_lower(std::string(x.m_name));
+        std::vector<std::string> template_args;
+        for (size_t i=0; i<x.n_namelist; i++) {
+            template_args.push_back(to_lower(x.m_namelist[i]));
+        }
+        DeferredArgScope deferred_arg_scope(*this, template_name, template_args, true);
         ASR::accessType dflt_access_copy = dflt_access;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);

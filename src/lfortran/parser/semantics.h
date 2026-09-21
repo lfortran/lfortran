@@ -2889,6 +2889,25 @@ Vec<ast_t*> DEFERRED_TYPES(Allocator &al,
     return types;
 }
 
+// A `deferred procedure (iface) :: p, q` statement (F2028 R1622) declares one
+// deferred procedure argument per name, all sharing the interface named by
+// `iface`. The names are stored as an `arg` list, like the deferred-arg-name-list
+// of a REQUIREMENT, so that each name keeps its own location and a diagnostic
+// about one declared name points at that name only.
+// The location a statement's rule reports spans the statement separator that
+// closes it too; SPAN() narrows a diagnostic to the statement itself.
+static inline Location SPAN(const Location &first, const Location &last) {
+    Location l;
+    l.first = first.first;
+    l.last = last.last;
+    return l;
+}
+
+#define DEFERRED_PROCEDURE(iface, names, trivia, l) \
+        make_DeferredProcedure_t(p.m_a, l, \
+        name2char(iface), ARGS(p.m_a, names), names.size(), \
+        trivia_cast(trivia))
+
 // Appends all `items` at the end of `list`; used by declaration statements
 // that expand into more than one AST node.
 Vec<ast_t*> LIST_EXTEND(Allocator &al, Vec<ast_t*> list,
