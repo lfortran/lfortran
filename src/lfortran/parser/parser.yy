@@ -414,7 +414,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> template_decl
 %type <ast> requirement_decl
 %type <ast> require_decl
-%type <vec_ast> unit_require_plus
 %type <ast> unit_require
 %type <vec_ast> instantiate_symbol_list
 %type <vec_ast> instantiate_symbol_list_opt
@@ -795,15 +794,10 @@ requirement_decl
     ;
 
 require_decl
-    : KW_REQUIRE "::" unit_require_plus sep {
+    : KW_REQUIRE "::" unit_require sep {
         $$ = REQUIRE($3, @$); }
-    | KW_REQUIRE unit_require_plus sep {
+    | KW_REQUIRE unit_require sep {
         $$ = REQUIRE($2, @$); }
-    ;
-
-unit_require_plus
-    : unit_require_plus "," unit_require { $$ = $1; LIST_ADD($$, $3); }
-    | unit_require { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
 unit_require

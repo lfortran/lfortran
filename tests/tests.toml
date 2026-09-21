@@ -519,12 +519,20 @@ filename = "errors/template_error_09.f90"
 asr = true
 
 [[test]]
+filename = "errors/instantiate_type_arg_01.f90"
+asr = true
+
+[[test]]
 filename = "errors/deferred_type_syntax_1.f90"
 syntax_only_cc = true
 
 [[test]]
 filename = "errors/deferred_type_duplicate_1.f90"
 asr = true
+
+[[test]]
+filename = "errors/deferred_type_scope_1.f90"
+semantics_only_cc = true
 
 [[test]]
 filename = "errors/requirement_syntax_1.f90"
@@ -536,6 +544,10 @@ syntax_only_cc = true
 
 [[test]]
 filename = "errors/instantiate_syntax_1.f90"
+syntax_only_cc = true
+
+[[test]]
+filename = "errors/require_syntax_1.f90"
 syntax_only_cc = true
 
 
@@ -5826,6 +5838,10 @@ semantics_only_cc = true
 
 [[test]]
 filename = "errors/continue_compilation_instantiate_01.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/continue_compilation_instantiate_02.f90"
 semantics_only_cc = true
 
 [[test]]
