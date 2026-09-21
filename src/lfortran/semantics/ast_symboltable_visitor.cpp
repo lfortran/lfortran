@@ -4903,6 +4903,17 @@ public:
         SetChar args;
         args.reserve(al, x.n_namelist);
 
+        // The arguments are renamed in two passes. A deferred type of the
+        // requirement may be referenced by any of its deferred procedures,
+        // no matter where that type sits in the argument list, so every type
+        // argument has to be bound into `type_subs` before the first
+        // procedure argument is renamed. Doing both in a single pass leaves
+        // `type_subs` incomplete for a procedure that precedes a type it
+        // uses.
+        std::vector<std::string> req_args(x.n_namelist);
+        std::vector<ASR::symbol_t*> param_syms(x.n_namelist);
+        std::vector<bool> is_type_arg(x.n_namelist, false);
+
         for (size_t i=0; i<x.n_namelist; i++) {
             AST::decl_attribute_t *attr = x.m_namelist[i];
 
@@ -4940,9 +4951,26 @@ public:
             }
 
             ASR::symbol_t *param_sym = (req->m_symtab)->get_symbol(req_param);
-            rename_symbol(al, type_subs, current_scope, req_arg, param_sym);
+            req_args[i] = req_arg;
+            param_syms[i] = param_sym;
+            is_type_arg[i] = param_sym && ASR::is_a<ASR::Variable_t>(*param_sym);
             context_map[req_param] = req_arg;
             args.push_back(al, s2c(al, req_arg));
+        }
+
+        // Pass 1: the deferred types, completing `type_subs`.
+        for (size_t i=0; i<x.n_namelist; i++) {
+            if (is_type_arg[i]) {
+                rename_symbol(al, type_subs, current_scope, req_args[i], param_syms[i]);
+            }
+        }
+
+        // Pass 2: the deferred procedures, whose signatures may mention any
+        // of the types bound above.
+        for (size_t i=0; i<x.n_namelist; i++) {
+            if (!is_type_arg[i]) {
+                rename_symbol(al, type_subs, current_scope, req_args[i], param_syms[i]);
+            }
         }
 
         // adding custom operators
