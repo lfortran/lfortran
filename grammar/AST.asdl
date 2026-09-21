@@ -286,6 +286,11 @@ decl_attribute
     | AttrAssignment()
     | AttrIntrinsicOperator(intrinsicop op)
     | AttrDefinedOperator(string op_name)
+-- R1630: an instantiation argument prefixed by an argument keyword, i.e.
+-- `keyword = instantiation-arg`. Only appears in an instantiation-argument
+-- list (INSTANTIATE, REQUIRE and inline instantiation), where `value` is the
+-- instantiation argument itself.
+    | AttrKeyword(identifier name, decl_attribute value)
 
 simple_attribute
     = AttrAbstract

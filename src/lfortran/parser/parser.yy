@@ -419,6 +419,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> instantiate_symbol_list
 %type <vec_ast> instantiate_symbol_list_opt
 %type <ast> instantiate_symbol
+%type <ast> instantiate_arg_spec
 %type <ast> enum_decl
 %type <ast> program
 %type <end_stmt> end_program
@@ -830,13 +831,19 @@ instantiate
     ;
 
 instantiate_symbol_list
-    : instantiate_symbol_list "," instantiate_symbol { $$ = $1; LIST_ADD($$, $3); }
-    | instantiate_symbol { LIST_NEW($$); LIST_ADD($$, $1); }
+    : instantiate_symbol_list "," instantiate_arg_spec { $$ = $1; LIST_ADD($$, $3); }
+    | instantiate_arg_spec { LIST_NEW($$); LIST_ADD($$, $1); }
 
 instantiate_symbol_list_opt
     : instantiate_symbol_list
     | %empty { LIST_NEW($$); }
 
+// R1630 instantiation-arg-spec is [ keyword = ] instantiation-arg
+instantiate_arg_spec
+    : instantiate_symbol { $$ = $1; }
+    | id "=" instantiate_symbol { $$ = ATTR_KEYWORD($1, $3, @$); }
+
+// R1631 instantiation-arg
 instantiate_symbol
     : var_type %dprec 2 { $$ = $1; }
     | KW_OPERATOR "(" operator_type ")" { $$ = DECL_OP($3, @$); }

@@ -1743,6 +1743,14 @@ public:
         s = std::string(x.m_name);
     }
 
+    void visit_AttrKeyword(const AttrKeyword_t &x) {
+        std::string r = std::string(x.m_name);
+        r += " = ";
+        this->visit_decl_attribute(*x.m_value);
+        r += s;
+        s = r;
+    }
+
     void visit_AttrIntent(const AttrIntent_t &x) {
         std::string r;
         r += syn(gr::Type);
