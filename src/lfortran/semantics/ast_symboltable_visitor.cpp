@@ -83,15 +83,15 @@ public:
     std::string deferred_args_owner;
     bool has_deferred_args = false;
 
-    // C1601 (J3/26-007r1, 16.1.1) allows a template construct only in the
-    // specification part of a main program, a module or another template
-    // construct. Which of those is being visited cannot be read back from
-    // `current_scope->asr_owner` at that point: a Program, a Template, a
-    // Function and a Subroutine symbol is only created once its specification
-    // part has been visited, so its symbol table still has no owner while the
-    // specification part is being built. The kind of the scoping unit being
-    // visited is therefore tracked explicitly, with a guard that restores the
-    // enclosing kind even when a diagnostic aborts the visit.
+    // Which kind of scoping unit's specification part is being visited. It
+    // cannot be read back from `current_scope->asr_owner`: a Program, a
+    // Template, a Function and a Subroutine symbol is only created once its
+    // specification part has been visited, so its symbol table still has no
+    // owner while that part is being built, and a main program, a nested
+    // template and a subprogram are indistinguishable there. Track it
+    // explicitly instead, with a guard that restores the enclosing kind even
+    // when a diagnostic aborts the visit. C1601 (16.1.1) needs it to place a
+    // TEMPLATE construct and C1636 (16.6.1) to place a REQUIREMENT construct.
     enum class ScopingUnitKind {
         Other, Module, Submodule, Program, Template,
     };
@@ -4911,6 +4911,26 @@ public:
     }
 
     void visit_Requirement(const AST::Requirement_t &x) {
+        // The Fortran 2028 working draft (J3/26-007r1) contradicts itself
+        // here, so this is a deliberate choice, not a settled rule. R1605
+        // lists `requirement-construct` as one of the things a template
+        // construct may contain, while C1636 (16.6.1) says a requirement
+        // construct shall only appear in the specification part of a main
+        // program or module. The two cannot both hold. C1636 is followed
+        // because rejecting is reversible, whereas accepting code the
+        // standard may forbid creates a compatibility burden if J3 resolves
+        // it the other way. A submodule and a subprogram are not in C1636's
+        // list either, so a requirement is rejected there as well. If J3
+        // resolves in favour of R1605, allow ScopingUnitKind::Template here.
+        if (scoping_unit_kind != ScopingUnitKind::Module
+                && scoping_unit_kind != ScopingUnitKind::Program) {
+            diag.add(diag::Diagnostic(
+                "a requirement can only be declared in the specification part "
+                "of a main program or a module",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
         is_requirement = true;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
 
