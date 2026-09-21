@@ -228,7 +228,15 @@ private:
 
         if (ASR::is_a<ASR::Var_t>(*expr)) {
             ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(expr);
-            return ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(v->m_v));
+            std::string name = ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(v->m_v));
+            // A temporary an ASR pass introduced does not appear in the user's
+            // source, so leave the message unnamed rather than print it.
+            if (name.rfind("__libasr_created__", 0) == 0 ||
+                name.rfind("__lcompilers_", 0) == 0) {
+                return "";
+            }
+            return name;
         }
 
         if (ASR::is_a<ASR::IntegerConstant_t>(*expr)) {
@@ -26092,12 +26100,14 @@ public:
             ASR::expr_t* arg_expr = x.m_args[i].m_value;
             if (arg_expr == nullptr) continue;
             ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(x.m_args[i].m_value);
+            // Use strict bounds checking if SubroutineCall was a FunctionCall before getting converted by subroutine_from_function
+            // Last argument of converted subroutine is the return value of the FunctionCall
+            // This argument should be checked strictly. It's size must be exactly equal to the expected size, it cannot be larger
+            // It is also not an argument the user wrote: it is the target of
+            // `target = f(...)`, and is reported as such when it is unallocated.
+            bool is_return_value = subroutinecall_was_functioncall && i == (x.n_args - 1);
             if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
                 ASR::ArrayPhysicalCast_t* arr_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
-                // Use strict bounds checking if SubroutineCall was a FunctionCall before getting converted by subroutine_from_function
-                // Last argument of converted subroutine is the return value of the FunctionCall
-                // This argument should be checked strictly. It's size must be exactly equal to the expected size, it cannot be larger
-                bool is_return_value = subroutinecall_was_functioncall && i == (x.n_args - 1);
 
                 llvm::Value* is_present_flag = nullptr;
                 llvm::BasicBlock *optional_check_mergeBB = nullptr;
@@ -26139,13 +26149,18 @@ public:
 
                     // Throw error if descriptor array is not allocated
                     llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(arg, arr_cast->m_arg);
-                    llvm_utils->generate_runtime_error(builder->CreateNot(is_allocated),
-                            "Argument %d of subroutine %s is unallocated.",
-                            {LLVMUtils::RuntimeLabel("This is unallocated", {arg_expr->base.loc}, {})},
-                            infile,
-                            location_manager,
-                            llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
-                            LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)));
+                    if (is_return_value) {
+                        generate_unallocated_array_runtime_error(
+                            builder->CreateNot(is_allocated), arr_cast->m_arg);
+                    } else {
+                        llvm_utils->generate_runtime_error(builder->CreateNot(is_allocated),
+                                "Argument %d of subroutine %s is unallocated.",
+                                {LLVMUtils::RuntimeLabel("This is unallocated", {arg_expr->base.loc}, {})},
+                                infile,
+                                location_manager,
+                                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)));
+                    }
 
                     // Throw error if shapes don't match
                     ASR::dimension_t* m_dims = nullptr;
@@ -26300,17 +26315,21 @@ public:
                     if (!ASRUtils::is_allocatable(ft->m_arg_types[i]) &&
                         ASRUtils::symbol_intent((ASR::symbol_t *)func_arg_variable) != ASRUtils::intent_out) {
                         llvm::Value* is_unallocated = expr_is_unallocated(alloc_check_expr);
-                        llvm::Value* arg_number = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1));
-                        llvm::Value* subroutine_name = LCompilers::create_global_string_ptr(
-                            context, *module, *builder, ASRUtils::symbol_name(x.m_name));
-                        llvm_utils->generate_runtime_error(is_unallocated,
-                                "Argument %d of subroutine %s is unallocated.",
-                                {LLVMUtils::RuntimeLabel("This is unallocated", {arg_expr->base.loc})},
-                                infile,
-                                // arg_expr->base.loc,
-                                location_manager,
-                                arg_number,
-                                subroutine_name);
+                        if (is_return_value && ASRUtils::is_array(alloc_check_type)) {
+                            generate_unallocated_array_runtime_error(
+                                is_unallocated, alloc_check_expr);
+                        } else {
+                            llvm::Value* arg_number = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1));
+                            llvm::Value* subroutine_name = LCompilers::create_global_string_ptr(
+                                context, *module, *builder, ASRUtils::symbol_name(x.m_name));
+                            llvm_utils->generate_runtime_error(is_unallocated,
+                                    "Argument %d of subroutine %s is unallocated.",
+                                    {LLVMUtils::RuntimeLabel("This is unallocated", {arg_expr->base.loc})},
+                                    infile,
+                                    location_manager,
+                                    arg_number,
+                                    subroutine_name);
+                        }
                     }
                 }
             }
