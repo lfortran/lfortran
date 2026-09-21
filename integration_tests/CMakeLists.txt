@@ -2708,6 +2708,8 @@ RUN(NAME derived_types_173 LABELS gfortran llvm EXTRAFILES derived_types_173_m.f
 RUN(NAME derived_types_174 LABELS gfortran llvm EXTRAFILES derived_types_174_m.f90)
 RUN(NAME derived_types_175 LABELS gfortran llvm EXTRAFILES derived_types_175_m.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME derived_types_176 LABELS gfortran llvm EXTRAFILES derived_types_176_m.f90)
+RUN(NAME derived_types_177 LABELS gfortran llvm)
+RUN(NAME derived_types_178 LABELS gfortran llvm EXTRAFILES derived_types_178_m.f90)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
@@ -3610,6 +3612,7 @@ RUN(NAME template_intrinsic_func_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_intrinsic_op_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_subp_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_rename_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_require_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_end_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4762,6 +4765,7 @@ RUN(NAME structure_constructor_args_09 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_10 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_11 LABELS llvm flang) # `pdt(k)(...)` constructors are not accepted by every supported gfortran
 RUN(NAME structure_constructor_args_12 LABELS gfortran llvm)
+RUN(NAME structure_constructor_args_13 LABELS gfortran llvm)
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
@@ -4946,6 +4950,8 @@ RUN(NAME intent_out_module_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_nested_allocatable_01 LABELS gfortran llvm)
 RUN(NAME intent_out_array_structs_01 LABELS gfortran llvm)
 RUN(NAME intent_out_array_of_struct_dealloc LABELS gfortran llvm)
+RUN(NAME intent_out_array_default_init_01 LABELS gfortran llvm)
+RUN(NAME intent_out_array_default_init_02 LABELS gfortran llvm)
 RUN(NAME array_shape_func_call LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_neg_extent_01 LABELS gfortran llvm)
 
