@@ -14,10 +14,10 @@ export PATH="$PWD/src/bin:$PATH"
 which lfortran
 lfortran --version
 
-micromamba install -c conda-forge fpm=0.12.0
-
-which fpm
-fpm --version
+# FPM disabled to speed up the build
+#micromamba install -c conda-forge fpm=0.12.0
+#which fpm
+#fpm --version
 
 if [ $LINUX ] ; then
 
@@ -66,21 +66,8 @@ fi # LINUX
 git clone -b main https://github.com/BerkeleyLab/caffeine.git
 cd caffeine
 
-# Release 0.8.0
-git checkout 9a4a818d9617bc88890a9fdc9fd6e66959c7fad0
-
-# Cherry-pick a recent fix to -DCAF_IMPORT_TEAM_CONSTANTS
-git config user.email "nobody@nowhere.com"
-git config user.name  "Nobody"
-git cherry-pick 736130c4af77b4ab33e4341e6dcd32ab4c8b7f4a
-
-# Cherry-pick recent fixes to assertion reporting for LFortran (Caffeine PR #353)
-git cherry-pick 4ccb611328908c9fdee05d0bab587baa4ac679db
-# Sadly git-merge lacks the ability to ignore irrelevant changes
-# on adjacenet lines, so this critical one-line commit doesn't apply cleanly:
-#git cherry-pick 34652e1e215ab08eabac2642b6db82c9beac944f
-# Apply it manually instead:
-sed -i.bak '\|assert\.git|s/3\.1\.0/3.1.2/' manifest/fpm.toml.template
+# Release 0.8.2
+git checkout 6cdf2eafb139ccb40a9a0f2a1b74750b34a9a1ac
 
 # Toolchain setup
 
@@ -94,19 +81,9 @@ echo "CXX=${CXX}"
 which clang
 clang --version
 
-# inject ISO_Fortran_binding.h into the C include path
-export CPPFLAGS="-I$(lfortran --print-c-include-dir)"
-
-# instruct Caffeine to import the iso_fortran_env constants from LFortran
-CPPFLAGS+=" -DCAF_IMPORT_CONSTANTS"
-
-# GASNet debug options
-
-export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug"
-
 # Build caffeine
 
-./install.sh --yes --prefix=$PWD/inst --verbose
+./install.sh --yes --prefix=$PWD/inst --verbose --enable-rpath --enable-debug --disable-fpm
 
 # Output Caffeine configuration information
 
@@ -117,6 +94,18 @@ cd ..
 # Make caffeine launcher available
 
 export PATH="$PWD/caffeine/inst/bin:$PATH"
+
+(set +x 
+ echo "##[endgroup]"
+ echo "##[group] Caffeine smoke test"
+
+)
+
+# Ensure Caffeine we just built can pass its own end-to-end smoke test
+# Note this activates LFortran's coarray pass, so failures here can indicate an LFortran regression
+
+make -C caffeine/app prif
+
 
 (set +x 
  echo "##[endgroup]"
