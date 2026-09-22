@@ -547,6 +547,10 @@ filename = "errors/requirement_syntax_1.f90"
 syntax_only_cc = true
 
 [[test]]
+filename = "errors/template_end_name_1.f90"
+syntax_only_cc = true
+
+[[test]]
 filename = "errors/instantiate_syntax_1.f90"
 syntax_only_cc = true
 
@@ -5849,6 +5853,10 @@ filename = "errors/continue_compilation_instantiate_02.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/instantiate_kwargs_01.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "coarray_collectives_01.f90"
 fortran = true
 pass = "coarray"   
@@ -6165,3 +6173,15 @@ asr = true
 [[test]]
 filename = "asr/verify/gpu_kernel_launch_polymorphic_array_argument.asr"
 asr = true
+
+[[test]]
+filename = "../integration_tests/derived_types_188.f90"
+run = true
+
+[[test]]
+filename = "errors/realloc_lhs_fn_result_01.f90"
+run = true
+
+[[test]]
+filename = "errors/realloc_lhs_fn_result_02.f90"
+run = true

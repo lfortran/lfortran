@@ -1,0 +1,13 @@
+{
+    "basename": "run-derived_types_188-b9d6693",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/derived_types_188.f90",
+    "infile_hash": "4cf97c476a912352f0c9a25da8f85832be1be31d24524b0e6aadd946",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-derived_types_188-b9d6693.stderr",
+    "stderr_hash": "0a040f52964a4078f6130702f71eee649e90f35cb96eb506f1ae7045",
+    "returncode": 1
+}

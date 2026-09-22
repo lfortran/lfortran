@@ -908,6 +908,8 @@ public:
         r += syn(gr::UnitHeader);
         r.append("end template");
         r += syn();
+        r += " ";
+        r.append(x.m_name);
         r.append("\n");
         s = r;
     }
@@ -943,6 +945,8 @@ public:
         r += syn(gr::UnitHeader);
         r.append("end requirement");
         r += syn();
+        r += " ";
+        r.append(x.m_name);
         r.append("\n");
         s = r;
     }
@@ -1748,6 +1752,14 @@ public:
 
     void visit_AttrName(const AttrName_t &x) {
         s = std::string(x.m_name);
+    }
+
+    void visit_AttrKeyword(const AttrKeyword_t &x) {
+        std::string r = std::string(x.m_name);
+        r += " = ";
+        this->visit_decl_attribute(*x.m_value);
+        r += s;
+        s = r;
     }
 
     void visit_AttrIntent(const AttrIntent_t &x) {
