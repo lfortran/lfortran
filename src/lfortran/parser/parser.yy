@@ -795,8 +795,11 @@ deferred_type_decl
 // restricts the type to integer, logical or character: both are diagnosed in
 // the semantic stage, where the message can name the offending type or
 // attribute instead of being a bare syntax error. `procedure(...)` is
-// deliberately not accepted here: `DEFERRED PROCEDURE ( interface-name )` is
-// the separate deferred-proc-decl-stmt of R1622.
+// The type is `declaration_type_spec`, which is what R1618 names, rather than
+// `var_type`. The two differ by exactly the eight `procedure(...)`
+// alternatives, and those must not be reachable here: `DEFERRED PROCEDURE (
+// interface-name )` is the separate deferred-proc-decl-stmt of R1622, and
+// letting this rule match it too makes the two statements ambiguous.
 // R1619 allows PARAMETER, DIMENSION and a rank-clause. The first two are
 // `var_modifier`, so only the rank-clause is added here. It is not put into
 // `var_modifier` itself, even though F2018 R821 makes a rank-clause a general
@@ -815,10 +818,11 @@ deferred_const_attr_list
     ;
 
 deferred_const_decl
-    : KW_DEFERRED var_type deferred_const_attr_list "::" var_sym_decl_list sep {
+    : KW_DEFERRED declaration_type_spec deferred_const_attr_list "::"
+      var_sym_decl_list sep {
             LLOC(@$, @5); $$ = DEFERRED_CONST_DECL(p.m_a, $2, $3, $5,
                 TRIVIA_AFTER($6, @$), @$); }
-    | KW_DEFERRED var_type "::" var_sym_decl_list sep {
+    | KW_DEFERRED declaration_type_spec "::" var_sym_decl_list sep {
             LLOC(@$, @4); $$ = DEFERRED_CONST_DECL_NOATTR(p.m_a, $2, $4,
                 TRIVIA_AFTER($5, @$), @$); }
     ;
