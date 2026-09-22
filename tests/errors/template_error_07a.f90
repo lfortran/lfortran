@@ -5,10 +5,12 @@ module template_01_m
 
     requirement semigroup {t}
         deferred type :: t
-        elemental function combine(x, y) result(combined)
-            type(t), intent(in) :: x, y
-            type(t) :: combined
-        end function
+        deferred interface
+            elemental function combine(x, y) result(combined)
+                type(t), intent(in) :: x, y
+                type(t) :: combined
+            end function
+        end interface
     end requirement
 
   contains

@@ -9881,6 +9881,13 @@ public:
 
     }
 
+    // A `deferred procedure (iface) :: p` statement (F2028 R1622) declares a
+    // deferred argument, which the symbol table visitor does in full; there is
+    // nothing left for the body visitor to do.
+    void visit_DeferredProcedure(const AST::DeferredProcedure_t &/*x*/) {
+
+    }
+
     void visit_Enum(const AST::Enum_t &/*x*/) {
 
     }
@@ -21040,6 +21047,109 @@ public:
 
     }
 
+    // Establishes the correspondence between an instantiation-argument list
+    // (R1630) and the deferred-argument list of the referenced template or
+    // requirement, and returns the arguments in the deferred order, with any
+    // `keyword =` prefix stripped (16.5.5.1 para 2).
+    //
+    // Reported here: C1625 (a positional argument after a keyword one), C1626
+    // (a keyword that is not the name of a deferred argument), a deferred
+    // argument that two instantiation arguments correspond to, and one that
+    // none corresponds to. `count_mismatch_msg` keeps each caller's existing
+    // wording for an all-positional list, where a plain count check is the
+    // clearer diagnostic.
+    Vec<AST::decl_attribute_t*> match_instantiation_args(
+            AST::decl_attribute_t** args, size_t n_args,
+            char** deferred, size_t n_deferred,
+            const std::string &count_mismatch_msg, const Location &loc) {
+        bool has_keyword = false;
+        for (size_t i = 0; i < n_args; i++) {
+            if (AST::is_a<AST::AttrKeyword_t>(*args[i])) {
+                has_keyword = true;
+                break;
+            }
+        }
+
+        if (!has_keyword) {
+            if (n_args != n_deferred) {
+                diag.add(Diagnostic(count_mismatch_msg, Level::Error,
+                    Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            Vec<AST::decl_attribute_t*> ordered;
+            ordered.reserve(al, n_args);
+            for (size_t i = 0; i < n_args; i++) {
+                ordered.push_back(al, args[i]);
+            }
+            return ordered;
+        }
+
+        Vec<AST::decl_attribute_t*> ordered;
+        ordered.reserve(al, n_deferred);
+        for (size_t j = 0; j < n_deferred; j++) {
+            ordered.push_back(al, nullptr);
+        }
+
+        bool seen_keyword = false;
+        for (size_t i = 0; i < n_args; i++) {
+            AST::decl_attribute_t *arg = args[i];
+            const Location &arg_loc = arg->base.loc;
+            size_t pos = i;
+            if (AST::is_a<AST::AttrKeyword_t>(*arg)) {
+                AST::AttrKeyword_t *kw = AST::down_cast<AST::AttrKeyword_t>(arg);
+                std::string keyword = to_lower(kw->m_name);
+                bool found = false;
+                for (size_t j = 0; j < n_deferred; j++) {
+                    if (to_lower(deferred[j]) == keyword) {
+                        pos = j;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    diag.add(Diagnostic("'" + keyword + "' is not a deferred"
+                        " argument of the referenced template or requirement",
+                        Level::Error, Stage::Semantic,
+                        {Label("", {arg_loc})}));
+                    throw SemanticAbort();
+                }
+                arg = kw->m_value;
+                seen_keyword = true;
+            } else {
+                if (seen_keyword) {
+                    diag.add(Diagnostic("a positional instantiation argument"
+                        " cannot follow a keyword one", Level::Error,
+                        Stage::Semantic, {Label("", {arg_loc})}));
+                    throw SemanticAbort();
+                }
+                if (pos >= n_deferred) {
+                    diag.add(Diagnostic(count_mismatch_msg, Level::Error,
+                        Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
+            }
+            if (ordered[pos] != nullptr) {
+                diag.add(Diagnostic("more than one instantiation argument"
+                    " corresponds to the deferred argument '"
+                    + to_lower(deferred[pos]) + "'", Level::Error,
+                    Stage::Semantic, {Label("", {arg_loc})}));
+                throw SemanticAbort();
+            }
+            ordered.p[pos] = arg;
+        }
+
+        for (size_t j = 0; j < n_deferred; j++) {
+            if (ordered[j] == nullptr) {
+                diag.add(Diagnostic("no instantiation argument corresponds to"
+                    " the deferred argument '" + to_lower(deferred[j]) + "'",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+        }
+
+        return ordered;
+    }
+
     // TODO: extract commonality with visit_Instantiate
     std::string handle_templated(std::string name, bool is_nested,
             AST::decl_attribute_t** args, size_t n_args, const Location &loc) {
@@ -21061,25 +21171,24 @@ public:
 
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
 
-        if (temp->n_args != n_args) {
-            diag.add(Diagnostic("Number of templated function arguments don't match",
-                Level::Error, Stage::Semantic, {Label("", {loc})}));
-            throw SemanticAbort();
-        }
+        Vec<AST::decl_attribute_t*> ordered_args = match_instantiation_args(
+            args, n_args, temp->m_args, temp->n_args,
+            "Number of templated function arguments don't match", loc);
 
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
         std::map<std::string, ASR::symbol_t*> symbol_subs;
 
-        for (size_t i=0; i<n_args; i++) {
+        for (size_t i=0; i<ordered_args.size(); i++) {
             std::string param = temp->m_args[i];
+            AST::decl_attribute_t *arg_attr = ordered_args[i];
             ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(param);
-            if (AST::is_a<AST::AttrType_t>(*args[i])) {
+            if (AST::is_a<AST::AttrType_t>(*arg_attr)) {
                 // Handling types as instantiate's arguments
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 0);
                 ASR::symbol_t *type_declaration;
-                ASR::ttype_t *arg_type = determine_type(args[i]->base.loc, param,
-                    args[i], false, false, dims, nullptr, type_declaration, current_procedure_abi_type);
+                ASR::ttype_t *arg_type = determine_type(arg_attr->base.loc, param,
+                    arg_attr, false, false, dims, nullptr, type_declaration, current_procedure_abi_type);
                 ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                 if (!ASRUtils::is_type_parameter(*param_type)) {
                     diag.add(Diagnostic("The type " + ASRUtils::type_to_str_fortran_symbol(arg_type, type_declaration) +
@@ -21090,8 +21199,8 @@ public:
                 if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
                     type_subs[param].second = type_declaration;
                 }
-            } else if (AST::is_a<AST::AttrName_t>(*args[i])) {
-                AST::AttrName_t *attr_name = AST::down_cast<AST::AttrName_t>(args[i]);
+            } else if (AST::is_a<AST::AttrName_t>(*arg_attr)) {
+                AST::AttrName_t *attr_name = AST::down_cast<AST::AttrName_t>(arg_attr);
                 std::string arg = to_lower(attr_name->m_name);
                 if (ASR::is_a<ASR::Function_t>(*param_sym)) {
                     // Handling functions passed as instantiate's arguments
@@ -21099,13 +21208,13 @@ public:
                     ASR::symbol_t *f_arg0 = current_scope->resolve_symbol(arg);
                     if (!f_arg0) {
                         diag.add(Diagnostic("The function argument " + arg + " is not found",
-                            Level::Error, Stage::Semantic, {Label("", {args[i]->base.loc})}));
+                            Level::Error, Stage::Semantic, {Label("", {arg_attr->base.loc})}));
                         throw SemanticAbort();
                     }
                     ASR::symbol_t *f_arg = ASRUtils::symbol_get_past_external(f_arg0);
                     if (!ASR::is_a<ASR::Function_t>(*f_arg)) {
                         diag.add(Diagnostic("The argument for " + param + " must be a function",
-                            Level::Error, Stage::Semantic, {Label("", {args[i]->base.loc})}));
+                            Level::Error, Stage::Semantic, {Label("", {arg_attr->base.loc})}));
                         throw SemanticAbort();
                     }
                     check_restriction(type_subs,
@@ -21118,7 +21227,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::make_StructType_t_util(al, args[i]->base.loc, arg_sym0, true);
+                            arg_type = ASRUtils::make_StructType_t_util(al, arg_attr->base.loc, arg_sym0, true);
                             type_subs[param].second = arg_sym0;
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
@@ -21137,9 +21246,9 @@ public:
                         symbol_subs[param] = arg_sym;
                     }
                 }
-            } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*args[i])) {
+            } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*arg_attr)) {
                 AST::AttrIntrinsicOperator_t *intrinsic_op
-                    = AST::down_cast<AST::AttrIntrinsicOperator_t>(args[i]);
+                    = AST::down_cast<AST::AttrIntrinsicOperator_t>(arg_attr);
                 ASR::binopType binop = ASR::Add;
                 ASR::cmpopType cmpop = ASR::Eq;
                 bool is_binop = false, is_cmpop = false;
@@ -21169,7 +21278,7 @@ public:
                         is_cmpop = true; cmpop = ASR::GtE; op_name = "~gte"; break;
                     default:
                         diag.add(Diagnostic("Unsupported binary operator",
-                            Level::Error, Stage::Semantic, {Label("", {args[i]->base.loc})}));
+                            Level::Error, Stage::Semantic, {Label("", {arg_attr->base.loc})}));
                         throw SemanticAbort();
                 }
 

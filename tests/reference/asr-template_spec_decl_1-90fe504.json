@@ -2,12 +2,12 @@
     "basename": "asr-template_spec_decl_1-90fe504",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/template_spec_decl_1.f90",
-    "infile_hash": "ebee3dd2699d51fce4f2ba2056843930380a29eaba48be563df6022e",
+    "infile_hash": "dbc775dee109b543f721c69b2cfe1705e698ef7e33a2a4492ea9cc6e",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-template_spec_decl_1-90fe504.stderr",
-    "stderr_hash": "dcf5a258ec50358e1ea937e2cf62ed08ede767b1467fbf72a5154fe8",
+    "stderr_hash": "55093223de1d838d9a68a336248d985af1dd70b1b0dafcb08a42b59f",
     "returncode": 1
 }

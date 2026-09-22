@@ -42,15 +42,17 @@ module template_array_02_m
     requirement operations {t, plus_t, zero_t}
         deferred type :: t
 
-        pure function plus_t(l, r) result(rs)
-            type(t), intent(in) :: l, r
-            type(t) :: rs
-        end function
+        deferred interface
+            pure function plus_t(l, r) result(rs)
+                type(t), intent(in) :: l, r
+                type(t) :: rs
+            end function
 
-        pure function zero_t(l) result(rs)
-            type(t), intent(in) :: l
-            type(t) :: rs
-        end function
+            pure function zero_t(l) result(rs)
+                type(t), intent(in) :: l
+                type(t) :: rs
+            end function
+        end interface
     end requirement
 
     template array_tmpl(t, plus_t, zero_t)

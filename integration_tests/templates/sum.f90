@@ -4,13 +4,15 @@ module sum_m
 
     requirement R {T, Tadd, Tzero}
         type :: T; end type
-        function Tadd(x, y) result(z)
-            type(T), intent(in) :: x, y
-            type(T) :: z
-        end function
-        function Tzero() result(z)
-            type(T) :: z
-        end function
+        deferred interface
+            function Tadd(x, y) result(z)
+                type(T), intent(in) :: x, y
+                type(T) :: z
+            end function
+            function Tzero() result(z)
+                type(T) :: z
+            end function
+        end interface
     end requirement
 
     template sum_t(T, Tadd, Tzero)

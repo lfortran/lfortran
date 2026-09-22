@@ -24,10 +24,12 @@ module template_spec_decl_1_mod
 
     requirement plus_r {t, plus_t}
         deferred type :: t
-        function plus_t(x, y) result(z)
-            type(t), intent(in) :: x, y
-            type(t) :: z
-        end function
+        deferred interface
+            function plus_t(x, y) result(z)
+                type(t), intent(in) :: x, y
+                type(t) :: z
+            end function
+        end interface
     end requirement
 
     template tmpl(t, plus_t, n)
