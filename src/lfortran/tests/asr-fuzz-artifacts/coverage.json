@@ -1,0 +1,79 @@
+{
+  "cases": 12,
+  "constructors": [
+    "Allocatable",
+    "Array",
+    "Assignment",
+    "ExternalSymbol",
+    "Function",
+    "FunctionType",
+    "Integer",
+    "IntegerConstant",
+    "Module",
+    "Pointer",
+    "Program",
+    "Real",
+    "Struct",
+    "StructInstanceMember",
+    "StructMethodDeclaration",
+    "StructType",
+    "SubroutineCall",
+    "TranslationUnit",
+    "Var",
+    "Variable",
+    "call_arg",
+    "dimension"
+  ],
+  "enums": [
+    "Decimal",
+    "Default",
+    "FixedSizeArray",
+    "Global",
+    "Host",
+    "Implementation",
+    "In",
+    "InOut",
+    "Interface",
+    "Local",
+    "NotMethod",
+    "Optional",
+    "Public",
+    "Required",
+    "Source"
+  ],
+  "mutations": [
+    "schema-invalid call kind mismatch",
+    "schema-invalid component of an unrelated derived type",
+    "schema-invalid derived type declared by a procedure",
+    "schema-invalid method call argument rank mismatch",
+    "schema-invalid nonallocatable actual to allocatable dummy",
+    "schema-invalid nonpointer actual to pointer dummy",
+    "schema-invalid override argument allocatable mismatch",
+    "schema-invalid override argument optional mismatch",
+    "schema-invalid separate module procedure argument type",
+    "schema-invalid type-bound procedure naming a derived type",
+    "schema-invalid type-bound procedure naming a variable"
+  ],
+  "outcomes": [
+    "verify"
+  ],
+  "passes": [],
+  "phases": [
+    "initial-verify"
+  ],
+  "sources": [
+    "schema-invalid"
+  ],
+  "verifier_rules": [
+    "asr.verify.binding_override.argument_allocatable_matches",
+    "asr.verify.binding_override.argument_presence_matches",
+    "asr.verify.call.actual_allocatable_matches_formal",
+    "asr.verify.call.actual_pointer_matches_formal",
+    "asr.verify.call.actual_rank_matches_formal",
+    "asr.verify.call.actual_type_matches_formal",
+    "asr.verify.module_procedure.argument_type_matches",
+    "asr.verify.struct_member.belongs_to_struct",
+    "asr.verify.struct_method.proc_is_procedure",
+    "asr.verify.variable.type_declaration_is_type"
+  ]
+}
