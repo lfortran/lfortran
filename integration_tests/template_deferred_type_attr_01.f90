@@ -40,20 +40,24 @@ module template_deferred_type_attr_01_m
     ! an extensible, nonabstract derived type.
     requirement area_ext_r {u, area}
         deferred type, extensible :: u
-        pure function area(s) result(a)
-            class(u), intent(in) :: s
-            real :: a
-        end function
+        deferred interface
+            pure function area(s) result(a)
+                class(u), intent(in) :: s
+                real :: a
+            end function
+        end interface
     end requirement
 
     ! `u` is abstract, and hence also extensible, so its instantiation argument
     ! has to be extensible and is permitted to be abstract.
     requirement area_abs_r {u, area}
         deferred type, abstract :: u
-        pure function area(s) result(a)
-            class(u), intent(in) :: s
-            real :: a
-        end function
+        deferred interface
+            pure function area(s) result(a)
+                class(u), intent(in) :: s
+                real :: a
+            end function
+        end interface
     end requirement
 
     template scaled_ext_tmpl(t, area_t)
