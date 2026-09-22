@@ -2,11 +2,11 @@
     "basename": "ast-template_travel_01-7f304df",
     "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/template_travel_01.f90",
-    "infile_hash": "1363fe52097b6fd69b08cd496892fdb285804ef55732dd2c660b80fe",
+    "infile_hash": "b12c19e839c85aa1354cc20647ad7c931dda551f4fd82ed24df4ab7c",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-template_travel_01-7f304df.stdout",
-    "stdout_hash": "c18426004edbd954dfa5bffa4ed6c1eebca3f732efb94a2113da60e3",
+    "stdout_hash": "982f4504c4c419fd46e621beec2d92ab52f2a078d011ecc7dcf711df",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

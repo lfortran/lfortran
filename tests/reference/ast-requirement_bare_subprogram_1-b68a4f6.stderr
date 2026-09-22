@@ -1,0 +1,23 @@
+syntax error: Token 'f' (of type 'identifier') is unexpected here
+  --> tests/errors/requirement_bare_subprogram_1.f90:20:18
+   |
+20 |         function f(x) result(z)  ! {Error} Token 'f' (of type 'identifier') is unexpected here
+   |                  ^ 
+
+syntax error: Token 'end function' is unexpected here
+  --> tests/errors/requirement_bare_subprogram_1.f90:23:9
+   |
+23 |         end function  ! {Error} Token 'end function' is unexpected here
+   |         ^^^^^^^^^^^^ 
+
+syntax error: Token 's' (of type 'identifier') is unexpected here
+  --> tests/errors/requirement_bare_subprogram_1.f90:28:20
+   |
+28 |         subroutine s(x)  ! {Error} Token 's' (of type 'identifier') is unexpected here
+   |                    ^ 
+
+syntax error: Token 'end subroutine' is unexpected here
+  --> tests/errors/requirement_bare_subprogram_1.f90:30:9
+   |
+30 |         end subroutine  ! {Error} Token 'end subroutine' is unexpected here
+   |         ^^^^^^^^^^^^^^ 

@@ -55,20 +55,22 @@ module template_array_03_m
 
         deferred type :: t
 
-        pure function plus_t(l, r) result(result)
-            type(t), intent(in) :: l, r
-            type(t) :: result
-        end function
+        deferred interface
+            pure function plus_t(l, r) result(result)
+                type(t), intent(in) :: l, r
+                type(t) :: result
+            end function
 
-        pure function zero_t(x) result(result)
-            type(t), intent(in) :: x
-            type(t) :: result
-        end function
+            pure function zero_t(x) result(result)
+                type(t), intent(in) :: x
+                type(t) :: result
+            end function
 
-        pure function mult_t(l, r) result(result)
-            type(t), intent(in) :: l, r
-            type(t) :: result
-        end function
+            pure function mult_t(l, r) result(result)
+                type(t), intent(in) :: l, r
+                type(t) :: result
+            end function
+        end interface
 
     end requirement
 !

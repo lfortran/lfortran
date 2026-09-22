@@ -1824,6 +1824,21 @@ static inline ASR::Module_t *get_sym_module0(const ASR::symbol_t *sym) {
     return nullptr;
 }
 
+// Returns true if `name` was produced by the compiler itself (an ASR pass or
+// an intrinsic lowering) rather than written by the user. Such names must not
+// appear in diagnostics, and symbols carrying them are exempt from checks that
+// only make sense for user-written code.
+// The spellings in use today are `__libasr_created_*`, `__libasr_created__*`,
+// `__libasr__created__var__*`, `__libasr_index_*`, `__libasr_omp_arg_*`,
+// `_lcompilers_*` and `__lcompilers*`, so the two families are matched by
+// their common prefix. Matching is anchored at the start on purpose: a
+// user-written name that merely contains one of these is not generated.
+static inline bool is_compiler_generated_name(const std::string &name) {
+    return startswith(name, "__libasr")
+        || startswith(name, "_lcompilers_")
+        || startswith(name, "__lcompilers");
+}
+
 // Returns true if the Function is intrinsic, otherwise false
 template <typename T>
 static inline bool is_intrinsic_procedure(const T *fn) {

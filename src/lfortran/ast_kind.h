@@ -38,6 +38,7 @@ static inline DeclStmtKind decl_stmt_kind(const decl_stmt_t &x) {
         case decl_stmtType::Instantiate:
         case decl_stmtType::Requirement:
         case decl_stmtType::Require:
+        case decl_stmtType::DeferredProcedure:
         case decl_stmtType::Union:
             return DeclStmtKind::Declaration;
         case decl_stmtType::Allocate:

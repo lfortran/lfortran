@@ -396,12 +396,10 @@ public:
         // Skip compiler-generated intrinsic implementations
         // These functions handle their own intent(out) allocatable deallocation internally
         // We identify them by:
-        // 1. Function name starts with "_lcompilers_" or "__libasr_created__", OR
+        // 1. Function name carries a compiler-generated prefix, OR
         // 2. deftype == Implementation AND parent module is lfortran_intrinsic_*
         std::string func_name = x.m_name;
-        bool is_compiler_generated =
-            func_name.rfind("_lcompilers_", 0) == 0 ||
-            func_name.rfind("__libasr_created__", 0) == 0;
+        bool is_compiler_generated = ASRUtils::is_compiler_generated_name(func_name);
         if (!is_compiler_generated && func_type->m_deftype == ASR::deftypeType::Implementation) {
             ASR::asr_t* parent = x.m_symtab->parent->asr_owner;
             if (parent && ASR::is_a<ASR::symbol_t>(*parent) &&
