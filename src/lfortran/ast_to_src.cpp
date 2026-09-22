@@ -908,6 +908,8 @@ public:
         r += syn(gr::UnitHeader);
         r.append("end template");
         r += syn();
+        r += " ";
+        r.append(x.m_name);
         r.append("\n");
         s = r;
     }
@@ -943,7 +945,33 @@ public:
         r += syn(gr::UnitHeader);
         r.append("end requirement");
         r += syn();
+        r += " ";
+        r.append(x.m_name);
         r.append("\n");
+        s = r;
+    }
+
+    // F2028 R1622: DEFERRED PROCEDURE ( interface-name ) [ :: ]
+    //              deferred-proc-name-list
+    // The `::` is optional in the source; it is always printed.
+    void visit_DeferredProcedure(const DeferredProcedure_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("deferred procedure");
+        r += syn();
+        r.append(" (");
+        r.append(x.m_interface_name);
+        r.append(") :: ");
+        for (size_t i=0; i<x.n_names; i++) {
+            this->visit_arg(x.m_names[i]);
+            r.append(s);
+            if (i < x.n_names-1) r.append(", ");
+        }
+        if (x.m_trivia) {
+            r += print_trivia_after(*x.m_trivia);
+        } else {
+            r.append("\n");
+        }
         s = r;
     }
 
@@ -1748,6 +1776,14 @@ public:
 
     void visit_AttrName(const AttrName_t &x) {
         s = std::string(x.m_name);
+    }
+
+    void visit_AttrKeyword(const AttrKeyword_t &x) {
+        std::string r = std::string(x.m_name);
+        r += " = ";
+        this->visit_decl_attribute(*x.m_value);
+        r += s;
+        s = r;
     }
 
     void visit_AttrIntent(const AttrIntent_t &x) {

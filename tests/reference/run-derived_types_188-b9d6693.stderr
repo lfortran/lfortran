@@ -1,0 +1,5 @@
+runtime error: Array 't' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.
+  --> tests/../integration_tests/derived_types_188.f90:52:5
+   |
+52 |     t = mkarr()
+   |     ^ not allocated here

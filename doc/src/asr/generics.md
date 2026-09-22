@@ -16,14 +16,16 @@ Requirements declare deferred types (generic types) and its associated functions
 requirement monoid {T, op}
   ! declaring a deferred type (generic type)
   deferred type :: T
-  ! declaring a function associated with the deferred type
-  function op(x, y) result(z)
-    type(T), intent(in) :: x, y
-    type(T) :: z
-  end function
-  function empty() result(z)
-    type(T) :: z
-  end function
+  ! declaring the functions associated with the deferred type
+  deferred interface
+    function op(x, y) result(z)
+      type(T), intent(in) :: x, y
+      type(T) :: z
+    end function
+    function empty() result(z)
+      type(T) :: z
+    end function
+  end interface
 end requirement
 ```
 

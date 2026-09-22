@@ -482,6 +482,10 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
 #define ATTR_NAME(x, l) make_AttrName_t \
             (p.m_a, l, name2char(x))
 
+// R1630 `keyword = instantiation-arg`
+#define ATTR_KEYWORD(kw, arg, l) make_AttrKeyword_t \
+            (p.m_a, l, name2char(kw), down_cast<decl_attribute_t>(arg))
+
 #define ATTR_TYPE_LIST(x, attr_list, l) make_AttrTypeList_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
@@ -2890,6 +2894,25 @@ Vec<ast_t*> DEFERRED_TYPES(Allocator &al,
     return types;
 }
 
+// A `deferred procedure (iface) :: p, q` statement (F2028 R1622) declares one
+// deferred procedure argument per name, all sharing the interface named by
+// `iface`. The names are stored as an `arg` list, like the deferred-arg-name-list
+// of a REQUIREMENT, so that each name keeps its own location and a diagnostic
+// about one declared name points at that name only.
+// The location a statement's rule reports spans the statement separator that
+// closes it too; SPAN() narrows a diagnostic to the statement itself.
+static inline Location SPAN(const Location &first, const Location &last) {
+    Location l;
+    l.first = first.first;
+    l.last = last.last;
+    return l;
+}
+
+#define DEFERRED_PROCEDURE(iface, names, trivia, l) \
+        make_DeferredProcedure_t(p.m_a, l, \
+        name2char(iface), ARGS(p.m_a, names), names.size(), \
+        trivia_cast(trivia))
+
 // Appends all `items` at the end of `list`; used by declaration statements
 // that expand into more than one AST node.
 Vec<ast_t*> LIST_EXTEND(Allocator &al, Vec<ast_t*> list,
@@ -2934,22 +2957,23 @@ ast_t* REQUIRE2(Allocator &al, const Location &l, ast_t* a_req) {
 
 ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         arg_t* a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
-        program_unit_t** a_funcs, size_t n_funcs,
         LCompilers::diag::Diagnostics &diag) {
     check_decl_order(decl_stmts, DeclContext::Template, diag);
     return make_Requirement_t(al, l, a_name, a_namelist, n_namelist,
-        DECLS(decl_stmts), decl_stmts.size(), a_funcs, n_funcs);
+        DECLS(decl_stmts), decl_stmts.size(), nullptr, 0);
 }
 
-#define TEMPLATE(name, namelist, decl_stmts, contains, l) \
-        TEMPLATE2(p.m_a, l, name2char(name), \
+#define TEMPLATE(name, namelist, decl_stmts, contains, name_opt, l) \
+        TEMPLATE2(p.m_a, l, \
+        name2char_with_check(name, name_opt, l, "template", p.diag), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size(), p.diag)
-#define REQUIREMENT(name, namelist, decl_stmts, funcs, l) \
-        REQUIREMENT2(p.m_a, l, name2char(name), \
+#define REQUIREMENT(name, namelist, decl_stmts, name_opt, l) \
+        REQUIREMENT2(p.m_a, l, \
+        name2char_with_check(name, name_opt, l, "requirement", p.diag), \
         ARGS(p.m_a, namelist), namelist.size(), \
-        decl_stmts, CONTAINS(funcs), funcs.size(), p.diag)
+        decl_stmts, p.diag)
 #define REQUIRE(req, l) REQUIRE2(p.m_a, l, req)
 #define UNIT_REQUIRE(name, namelist, l) \
         make_UnitRequire_t(p.m_a, l, name2char(name), \
