@@ -411,6 +411,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
 %type <vec_ast> deferred_type_decl
+%type <ast> deferred_proc_decl
 %type <ast> template_decl
 %type <ast> requirement_decl
 %type <ast> require_decl
@@ -775,6 +776,18 @@ derived_type_decl
 deferred_type_decl
     : KW_DEFERRED KW_TYPE "::" id_list sep {
             $$ = DEFERRED_TYPES(p.m_a, $4, TRIVIA_AFTER($5, @$), @$); }
+    ;
+
+// F2028 R1622: DEFERRED PROCEDURE ( interface-name ) [ :: ]
+//              deferred-proc-name-list
+// The `::` is optional, so both spellings are accepted.
+deferred_proc_decl
+    : KW_DEFERRED KW_PROCEDURE "(" id ")" "::" id_list sep {
+            $$ = DEFERRED_PROCEDURE($4, $7, TRIVIA_AFTER($8, @$),
+                SPAN(@1, @7)); }
+    | KW_DEFERRED KW_PROCEDURE "(" id ")" id_list sep {
+            $$ = DEFERRED_PROCEDURE($4, $6, TRIVIA_AFTER($7, @$),
+                SPAN(@1, @6)); }
     ;
 
 
@@ -1758,6 +1771,7 @@ decl_statement
     : var_decl
     | interface_decl
     | derived_type_decl
+    | deferred_proc_decl
     | union_type_decl
     | enum_decl
     | statement
