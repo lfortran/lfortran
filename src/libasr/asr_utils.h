@@ -10160,6 +10160,85 @@ inline std::set<ASR::Function_t*> get_called_functions(ASR::stmt_t **body,
     return collector.callees;
 }
 
+// Whether a member of `s`, of one of its parents, or of one of its derived
+// type members, cannot be described by static data and so has to be set up by
+// executable code: an array member needs a descriptor of its own or its
+// dimensions filled in, a string member its data, and a class member its type
+// pointer. A scalar of an intrinsic type, and a pointer or allocatable scalar,
+// are fully described by a constant.
+//
+// It decides two things that have to agree: whether the `global_init` pass
+// turns a declaration initializer of such an array into a statement, and
+// whether a backend lays that initializer out as static data. Laying an
+// element out statically when this is true would give every element the one
+// descriptor the constant holds, so a write through one element would be seen
+// through all of them.
+static inline bool struct_needs_member_init(ASR::Struct_t* s,
+        std::set<ASR::Struct_t*>& visited) {
+    if (!visited.insert(s).second) {
+        return false;
+    }
+    for (ASR::Struct_t* c = s; c != nullptr;
+            c = c->m_parent == nullptr ? nullptr
+                : ASR::down_cast<ASR::Struct_t>(
+                    symbol_get_past_external(c->m_parent))) {
+        for (size_t i = 0; i < c->n_members; i++) {
+            ASR::symbol_t* sym = symbol_get_past_external(
+                c->m_symtab->get_symbol(c->m_members[i]));
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                continue;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (is_array(v->m_type)) {
+                return true;
+            }
+            if (is_character(*v->m_type)
+                    && !is_inline_character_struct_member(c, v->m_type)) {
+                return true;
+            }
+            ASR::ttype_t* member_type = extract_type(v->m_type);
+            if (is_class_type(member_type)) {
+                return true;
+            }
+            // A pointer or allocatable member holds the address of another
+            // object, whose members are not set up from here.
+            if (ASR::is_a<ASR::StructType_t>(*member_type)
+                    && !is_pointer(v->m_type) && !is_allocatable(v->m_type)) {
+                ASR::symbol_t* member_struct = symbol_get_past_external(
+                    v->m_type_declaration);
+                if (member_struct != nullptr
+                        && ASR::is_a<ASR::Struct_t>(*member_struct)
+                        && struct_needs_member_init(
+                            ASR::down_cast<ASR::Struct_t>(member_struct), visited)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+// `struct_needs_member_init` for the element type of the array `type`, which
+// `expr` denotes. False for anything that is not an array of a derived type.
+static inline bool needs_struct_array_member_init(ASR::expr_t* expr,
+        ASR::ttype_t* type) {
+    if (!is_array(type)) {
+        return false;
+    }
+    ASR::ttype_t* el_type = type_get_past_array(type);
+    if (!ASR::is_a<ASR::StructType_t>(*el_type) || is_class_type(el_type)) {
+        return false;
+    }
+    ASR::symbol_t* struct_sym = symbol_get_past_external(
+        get_struct_sym_from_struct_expr(expr));
+    if (struct_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+        return false;
+    }
+    std::set<ASR::Struct_t*> visited;
+    return struct_needs_member_init(
+        ASR::down_cast<ASR::Struct_t>(struct_sym), visited);
+}
+
 } // namespace ASRUtils
 
 } // namespace LCompilers

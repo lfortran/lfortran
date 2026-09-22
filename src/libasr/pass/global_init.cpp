@@ -222,8 +222,22 @@ class GlobalInitVisitor {
             }
             if (!ASR::is_a<ASR::ArrayBroadcast_t>(*init)) return false;
             ASR::ttype_t *type = ASRUtils::expr_type(init);
-            return ASRUtils::is_array(type) &&
-                ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(type));
+            if (!ASRUtils::is_array(type) ||
+                    !ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::type_get_past_array(type))) {
+                return false;
+            }
+            // An element a backend can describe with static data is left on
+            // the declaration for it to lay out. That is what lets a
+            // specification expression of a later variable read the value:
+            // bounds are evaluated while the variable is laid out, before any
+            // statement of the body runs. Only an element that needs
+            // executable code of its own — a string, array or class member —
+            // becomes a statement here.
+            ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(
+                al, v.base.base.loc,
+                const_cast<ASR::symbol_t*>(&v.base)));
+            return ASRUtils::needs_struct_array_member_init(var_expr, v.m_type);
         }
 
         // The variables of `scope` that need executable initialization, in

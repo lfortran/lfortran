@@ -6202,3 +6202,15 @@ filename = "../integration_tests/coarrays_51.f90"
 extrafiles = "../integration_tests/coarrays_51_m.f90"
 options = "--coarray=true --separate-compilation"
 pass = "coarray,global_init_wire"
+
+[[test]]
+filename = "../integration_tests/global_init_07.f90"
+# The declaration initializer of an array of a derived type whose elements are
+# static data stays on the declaration, so a backend lays it out while it lays
+# the variable out and a specification expression of a later variable can read
+# it. Only an element needing executable code of its own becomes a statement.
+# The reference is what catches a regression: turning these back into
+# statements is not observable at run time, because the compiler folds `size`
+# from the initializer it knows while the storage is sized from the value the
+# generated code has at that point.
+pass = "global_init"

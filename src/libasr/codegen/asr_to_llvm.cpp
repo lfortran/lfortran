@@ -5872,6 +5872,57 @@ public:
         }
     }
 
+    // The declaration initializer of an array of a derived type, as static
+    // data. A Fortran declaration initializer is a constant expression, so
+    // every element is known here: `type(t) :: a(3) = t(5)` is an
+    // `ArrayBroadcast` of one constant over a fixed-size array, and an
+    // element-by-element initializer an `ArrayConstant`. Laying either out
+    // statically is what lets a specification expression of a later variable
+    // read the value, because the backend evaluates those bounds while it
+    // lays the procedure out, before any statement of the body runs.
+    //
+    // Returns nullptr when `v` has no such initializer, leaving the caller's
+    // own handling in place.
+    bool has_static_struct_array_initializer(ASR::Variable_t* v) {
+        return get_static_struct_array_value(v) != nullptr;
+    }
+
+    // The initializer `v` can be laid out as static data, or nullptr.
+    ASR::expr_t* get_static_struct_array_value(ASR::Variable_t* v) {
+        if (!ASRUtils::is_array(v->m_type)) return nullptr;
+        if (ASRUtils::extract_physical_type(v->m_type)
+                != ASR::array_physical_typeType::FixedSizeArray) return nullptr;
+        if (!ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::type_get_past_array(v->m_type))) return nullptr;
+        ASR::expr_t* value = v->m_value ? v->m_value : v->m_symbolic_value;
+        if (value == nullptr) return nullptr;
+        if (!ASR::is_a<ASR::ArrayBroadcast_t>(*value)
+                && !ASR::is_a<ASR::ArrayConstant_t>(*value)) return nullptr;
+        if (ASRUtils::get_fixed_size_of_array(v->m_type) < 0) return nullptr;
+        // An element whose members cannot be described by static data — a
+        // string, an array or a class member — must not be laid out this way:
+        // every element would share the one descriptor the constant holds, so
+        // writing through one element would be seen through all of them.
+        // Those are broadcast element by element instead.
+        ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(
+            al, v->base.base.loc, &v->base));
+        if (ASRUtils::needs_struct_array_member_init(var_expr, v->m_type)) {
+            return nullptr;
+        }
+        return value;
+    }
+
+    llvm::Constant* get_static_struct_array_initializer(ASR::Variable_t* v,
+            llvm::Type* type) {
+        ASR::expr_t* value = get_static_struct_array_value(v);
+        if (value == nullptr) return nullptr;
+        if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+            return get_const_array(value, type->getArrayElementType());
+        }
+        return llvm::dyn_cast<llvm::Constant>(
+            create_llvm_constant_from_asr_expr(value, v->m_type));
+    }
+
     ASR::ArrayBroadcast_t* get_struct_array_broadcast(ASR::expr_t* expr) {
         if (expr == nullptr || !ASR::is_a<ASR::ArrayBroadcast_t>(*expr)) {
             return nullptr;
@@ -5894,74 +5945,6 @@ public:
     // pointer or allocatable scalar, are fully described by zeros and need
     // nothing. `visited` stops a type that refers to itself, directly or
     // through another type, from being examined twice.
-    bool struct_needs_member_init(ASR::Struct_t* s,
-            std::set<ASR::Struct_t*>& visited) {
-        if (!visited.insert(s).second) {
-            return false;
-        }
-        for (ASR::Struct_t* c = s; c != nullptr;
-                c = c->m_parent == nullptr ? nullptr
-                    : ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(c->m_parent))) {
-            for (size_t i = 0; i < c->n_members; i++) {
-                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                    c->m_symtab->get_symbol(c->m_members[i]));
-                if (!ASR::is_a<ASR::Variable_t>(*sym)) {
-                    continue;
-                }
-                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
-                if (ASRUtils::is_array(v->m_type)) {
-                    return true;
-                }
-                if (ASRUtils::is_character(*v->m_type) &&
-                        !ASRUtils::is_inline_character_struct_member(c, v->m_type)) {
-                    return true;
-                }
-                ASR::ttype_t* member_type = ASRUtils::extract_type(v->m_type);
-                if (ASRUtils::is_class_type(member_type)) {
-                    return true;
-                }
-                // A pointer or allocatable member holds the address of
-                // another object, whose members are not set up from here.
-                if (ASR::is_a<ASR::StructType_t>(*member_type) &&
-                        !LLVM::is_llvm_pointer(*v->m_type)) {
-                    ASR::symbol_t* member_struct = ASRUtils::symbol_get_past_external(
-                        v->m_type_declaration);
-                    if (member_struct != nullptr &&
-                            ASR::is_a<ASR::Struct_t>(*member_struct) &&
-                            struct_needs_member_init(ASR::down_cast<ASR::Struct_t>(
-                                member_struct), visited)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    // Whether `type` is an array of a (non class) derived type that has a
-    // member needing run time setup, so that the elements' members have to be
-    // set up by `allocate_array_members_of_struct_arrays`. An array of a type
-    // whose members are all described by zeros needs no such loop.
-    bool needs_struct_array_member_init(ASR::expr_t* expr, ASR::ttype_t* type) {
-        if (!ASRUtils::is_array(type)) {
-            return false;
-        }
-        ASR::ttype_t* el_type = ASRUtils::type_get_past_array(type);
-        if (!ASR::is_a<ASR::StructType_t>(*el_type) ||
-                ASRUtils::is_class_type(el_type)) {
-            return false;
-        }
-        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
-            ASRUtils::get_struct_sym_from_struct_expr(expr));
-        if (struct_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
-            return false;
-        }
-        std::set<ASR::Struct_t*> visited;
-        return struct_needs_member_init(
-            ASR::down_cast<ASR::Struct_t>(struct_sym), visited);
-    }
-
     ASR::ArrayConstant_t* get_struct_array_constant(ASR::expr_t* expr) {
         if (expr == nullptr) {
             return nullptr;
@@ -6296,6 +6279,11 @@ public:
                          if (ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
                              module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 llvm::ConstantArray::getNullValue(type));
+                          } else if (llvm::Constant* struct_arr_init =
+                                  get_static_struct_array_initializer(
+                                      const_cast<ASR::Variable_t*>(&x), type)) {
+                             module->getNamedGlobal(llvm_var_name)->setInitializer(
+                                struct_arr_init);
                           } else {
                              llvm::Constant* initializer = get_const_array(value, type->getArrayElementType());
                              module->getNamedGlobal(llvm_var_name)->setInitializer(initializer);
@@ -6322,7 +6310,7 @@ public:
             if (x.m_symbolic_value == nullptr && x.m_value == nullptr) {
                 ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
                     x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base)));
-                if (needs_struct_array_member_init(var_expr, x.m_type)) {
+                if (ASRUtils::needs_struct_array_member_init(var_expr, x.m_type)) {
                     struct_array_global_members_details.push_back(
                         { var_expr, ptr, x.m_type });
                 }
@@ -8454,6 +8442,9 @@ public:
                         } else {
                             init_value = llvm::Constant::getNullValue(type);
                         }
+                    } else if (llvm::Constant* struct_arr_init =
+                            get_static_struct_array_initializer(v, type)) {
+                        init_value = struct_arr_init;
                     } else {
                         init_value = llvm::Constant::getNullValue(type);
                     }
@@ -8633,8 +8624,13 @@ public:
                     // For DescriptorArray, the array descriptor (ndim, dim_desc, data
                     // ptr) is not initialized yet at this point. Defer the member
                     // initialization until after fill_array_details_ sets it up.
+                    //
+                    // An initializer already laid out as static data describes
+                    // every element completely, and the component defaults
+                    // this would apply would overwrite it.
                     if (ASRUtils::extract_physical_type(v->m_type) !=
-                            ASR::array_physical_typeType::DescriptorArray) {
+                            ASR::array_physical_typeType::DescriptorArray
+                            && !has_static_struct_array_initializer(v)) {
                         allocate_array_members_of_struct_arrays(var_expr, ptr, v->m_type);
                     }
                 } else {
