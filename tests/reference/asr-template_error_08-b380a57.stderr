@@ -1,5 +1,5 @@
 semantic error: Operator `+` undefined for the types in the expression `t + t`
-  --> tests/errors/template_error_08.f90:22:17
+  --> tests/errors/template_error_08.f90:24:17
    |
-22 |             z = x + y
+24 |             z = x + y
    |                 ^^^^^ 

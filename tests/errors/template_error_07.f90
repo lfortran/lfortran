@@ -5,10 +5,12 @@ module template_error_07_m
 
     requirement r {t, f}
         deferred type :: t
-        function f(x, y) result(z)
-            type(t), intent(in) :: x, y
-            type(t) :: z
-        end function
+        deferred interface
+            function f(x, y) result(z)
+                type(t), intent(in) :: x, y
+                type(t) :: z
+            end function
+        end interface
     end requirement
 
     template tmp(t, f)

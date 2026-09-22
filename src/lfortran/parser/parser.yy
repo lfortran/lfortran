@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    195 // shift/reduce conflicts
+%expect    194 // shift/reduce conflicts
 %expect-rr 185 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -411,6 +411,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
 %type <vec_ast> deferred_type_decl
+%type <ast> deferred_proc_decl
 %type <ast> deferred_const_decl
 %type <ast> deferred_const_attr
 %type <vec_ast> deferred_const_attr_list
@@ -555,7 +556,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> contains_block
 %type <vec_ast> contains_block_opt
 %type <vec_ast> sub_or_func_plus
-%type <vec_ast> sub_or_func_star
 %type <ast> result_opt
 %type <ast> result
 %type <string> inout
@@ -823,6 +823,18 @@ deferred_const_decl
                 TRIVIA_AFTER($5, @$), @$); }
     ;
 
+// F2028 R1622: DEFERRED PROCEDURE ( interface-name ) [ :: ]
+//              deferred-proc-name-list
+// The `::` is optional, so both spellings are accepted.
+deferred_proc_decl
+    : KW_DEFERRED KW_PROCEDURE "(" id ")" "::" id_list sep {
+            $$ = DEFERRED_PROCEDURE($4, $7, TRIVIA_AFTER($8, @$),
+                SPAN(@1, @7)); }
+    | KW_DEFERRED KW_PROCEDURE "(" id ")" id_list sep {
+            $$ = DEFERRED_PROCEDURE($4, $6, TRIVIA_AFTER($7, @$),
+                SPAN(@1, @6)); }
+    ;
+
 
 union_type_decl
     : KW_UNION_TYPE var_modifiers id sep var_decl_star lf_end_union_type sep {
@@ -835,10 +847,12 @@ template_decl
             $$ = TEMPLATE($2, $4, $7, $8, $11, @$); }
     ;
 
+// F2028 R1632 / R1634: a requirement-specification is a deferred-arg-decl-stmt
+// or an interface-block; a bare subprogram body is not one of them.
 requirement_decl
     : KW_REQUIREMENT id "{" id_list_opt "}" sep decl_statements
-        sub_or_func_star KW_END KW_REQUIREMENT id_opt sep {
-            $$ = REQUIREMENT($2, $4, $7, $8, $11, @$); }
+        KW_END KW_REQUIREMENT id_opt sep {
+            $$ = REQUIREMENT($2, $4, $7, $10, @$); }
     ;
 
 require_decl
@@ -1197,10 +1211,6 @@ contains_block
     : KW_CONTAINS sep sub_or_func_plus { $$ = $3; }
     | KW_CONTAINS sep { LIST_NEW($$); }
     ;
-
-sub_or_func_star
-    : sub_or_func_plus
-    | %empty { LIST_NEW($$); }
 
 sub_or_func_plus
     : sub_or_func_plus sub_or_func { LIST_ADD($$, $2); }
@@ -1805,6 +1815,7 @@ decl_statement
     | deferred_const_decl
     | interface_decl
     | derived_type_decl
+    | deferred_proc_decl
     | union_type_decl
     | enum_decl
     | statement

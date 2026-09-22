@@ -10,11 +10,13 @@ module template_deferred_type_01_m
 
     requirement add_r {t, add}
         deferred type :: t
-        pure function add(lhs, rhs) result(res)
-            type(t), intent(in) :: lhs
-            type(t), intent(in) :: rhs
-            type(t) :: res
-        end function
+        deferred interface
+            pure function add(lhs, rhs) result(res)
+                type(t), intent(in) :: lhs
+                type(t), intent(in) :: rhs
+                type(t) :: res
+            end function
+        end interface
     end requirement
 
     template double_tmpl(t, u, add_t, add_u)
