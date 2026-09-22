@@ -16,10 +16,12 @@ module template_program_01_m
 
     requirement r {t, f}
         deferred type :: t
-        pure function f(x, y) result(z)
-            type(t), intent(in) :: x, y
-            type(t) :: z
-        end function
+        deferred interface
+            pure function f(x, y) result(z)
+                type(t), intent(in) :: x, y
+                type(t) :: z
+            end function
+        end interface
     end requirement
 
 contains

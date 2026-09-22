@@ -1,57 +1,78 @@
-module derived_types_188_mod
-implicit none
+module derived_types_188_m
+    implicit none
 
-type :: leaf
-    integer :: v = 0
-end type leaf
-
-type :: twig
-    type(leaf) :: l = leaf(0)
-    real :: r = 0.0
-end type twig
-
-type :: bunch
-    type(leaf) :: a(2)
-    type(twig) :: t(2)
-    integer :: h = 0
-end type bunch
-
-end module derived_types_188_mod
-
-
-program derived_types_188
-use derived_types_188_mod
-implicit none
-
-type(bunch) :: b
-
-! An array constructor of a derived type is lowered into a temporary of that
-! type, and that temporary is declared by the type's symbol
-b = bunch(a=[leaf(1), leaf(2)], t=[twig(leaf(3), 1.5), twig(leaf(4), 2.5)], h=5)
-call check(b, 1, 2, 3, 1.5, 4, 2.5, 5)
-
-call in_a_procedure()
+    type :: item
+        integer, allocatable :: v(:)
+    end type item
 
 contains
 
-    subroutine in_a_procedure()
-    type(bunch) :: c
-    c = bunch(a=[leaf(11), leaf(12)], &
-              t=[twig(leaf(13), 3.5), twig(leaf(14), 4.5)], h=15)
-    call check(c, 11, 12, 13, 3.5, 14, 4.5, 15)
-    end subroutine in_a_procedure
+    function mkarr() result(r)
+        type(item) :: r(3)
+        integer :: i
+        do i = 1, 3
+            allocate(r(i)%v(i))
+            r(i)%v = i
+        end do
+    end function mkarr
 
-    subroutine check(x, a1, a2, t1, r1, t2, r2, hv)
-    type(bunch), intent(in) :: x
-    integer, intent(in) :: a1, a2, t1, t2, hv
-    real, intent(in) :: r1, r2
-    if (x%a(1)%v /= a1) error stop "a(1)%v"
-    if (x%a(2)%v /= a2) error stop "a(2)%v"
-    if (x%t(1)%l%v /= t1) error stop "t(1)%l%v"
-    if (x%t(1)%r /= r1) error stop "t(1)%r"
-    if (x%t(2)%l%v /= t2) error stop "t(2)%l%v"
-    if (x%t(2)%r /= r2) error stop "t(2)%r"
-    if (x%h /= hv) error stop "h"
-    end subroutine check
+    function mkarr_n(n) result(r)
+        integer, intent(in) :: n
+        type(item) :: r(n)
+        integer :: i
+        do i = 1, n
+            allocate(r(i)%v(i))
+            r(i)%v = i
+        end do
+    end function mkarr_n
 
+    function mkarr_2d(n) result(r)
+        integer, intent(in) :: n
+        type(item) :: r(n, 2)
+        integer :: i, j
+        do j = 1, 2
+            do i = 1, n
+                allocate(r(i, j)%v(i))
+                r(i, j)%v = i*j
+            end do
+        end do
+    end function mkarr_2d
+
+end module derived_types_188_m
+
+program derived_types_188
+    use derived_types_188_m, only: item, mkarr, mkarr_n, mkarr_2d
+    implicit none
+
+    type(item), allocatable :: t(:)
+    type(item), allocatable :: u(:, :)
+    type(item) :: fixed(3)
+
+    ! Unallocated allocatable LHS, constant-shape function result.
+    t = mkarr()
+    if (size(t) /= 3) error stop
+    if (size(t(3)%v) /= 3) error stop
+    if (sum(t(3)%v) /= 9) error stop
+
+    ! Already allocated LHS of the wrong size, explicit-shape result.
+    deallocate(t)
+    allocate(t(1))
+    t = mkarr_n(4)
+    if (size(t) /= 4) error stop
+    if (size(t(4)%v) /= 4) error stop
+    if (sum(t(4)%v) /= 16) error stop
+
+    ! Unallocated allocatable LHS, rank-2 result.
+    u = mkarr_2d(3)
+    if (size(u, 1) /= 3) error stop
+    if (size(u, 2) /= 2) error stop
+    if (sum(u(3, 2)%v) /= 18) error stop
+    if (sum(u(2, 1)%v) /= 4) error stop
+
+    ! Non-allocatable LHS keeps working.
+    fixed = mkarr()
+    if (size(fixed(3)%v) /= 3) error stop
+    if (sum(fixed(3)%v) /= 9) error stop
+
+    print *, "ok"
 end program derived_types_188

@@ -4,11 +4,13 @@ module std_prop_m
 
     requirement magma_r {T, bin}
         deferred type :: T
-        pure elemental function bin(x, y) result(bin)
-            type(T), intent(in) :: x
-            type(T), intent(in) :: y
-            type(T) :: bin
-        end function
+        deferred interface
+            pure elemental function bin(x, y) result(bin)
+                type(T), intent(in) :: x
+                type(T), intent(in) :: y
+                type(T) :: bin
+            end function
+        end interface
     end requirement
 
     template commutative_prop(T,bin)
