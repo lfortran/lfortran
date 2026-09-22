@@ -916,6 +916,7 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
 
+        current_procedure_name = function_name;
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
 
@@ -1127,6 +1128,7 @@ public:
         current_function_dependencies = current_function_dependencies_copy;
         external_procedures = copy_external_procedure;
         current_procedure_args.clear();
+        current_procedure_name.clear();
     }
 
     template <typename T>
@@ -1384,6 +1386,7 @@ public:
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         std::string sym_name = to_lower(x.m_name);
+        current_procedure_name = sym_name;
 
         SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
@@ -1579,7 +1582,9 @@ public:
             default_storage_save = false;
             std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
+            std::string current_procedure_name_copy = current_procedure_name;
             current_procedure_args.clear();
+            current_procedure_name.clear();
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
@@ -1587,6 +1592,7 @@ public:
             }
             implicit_dictionary = implicit_dictionary_copy;
             current_procedure_args = current_procedure_args_copy;
+            current_procedure_name = current_procedure_name_copy;
             default_storage_save = current_storage_save;
         }
         Vec<ASR::expr_t*> args;
@@ -1857,6 +1863,7 @@ public:
            in nested functions, and also in callback.f90 test, but it may not
            matter since we would have already checked the intent */
         current_procedure_args.clear();
+        current_procedure_name.clear();
         current_procedure_abi_type = ASR::abiType::Source;
 
         // print_implicit_dictionary(implicit_dictionary);
@@ -1965,6 +1972,7 @@ public:
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         std::string sym_name = to_lower(x.m_name);
+        current_procedure_name = sym_name;
 
         SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
@@ -2473,13 +2481,16 @@ public:
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
+            std::string current_procedure_name_copy = current_procedure_name;
             current_procedure_args.clear();
+            current_procedure_name.clear();
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
             current_procedure_args = current_procedure_args_copy;
+            current_procedure_name = current_procedure_name_copy;
             default_storage_save = current_storage_save;
         }
 
@@ -2700,6 +2711,7 @@ public:
             current_scope = parent_scope;
         }
         current_procedure_args.clear();
+        current_procedure_name.clear();
         current_procedure_abi_type = ASR::abiType::Source;
         current_symbol = -1;
         // print_implicit_dictionary(implicit_dictionary);
@@ -3338,11 +3350,13 @@ public:
         bool old_is_interface = is_interface;
         bool old_in_Subroutine = in_Subroutine;
         std::vector<std::string> old_procedure_args = current_procedure_args;
+        std::string old_procedure_name = current_procedure_name;
         is_interface = true;
         visit_program_unit(*x.m_proc);
         is_interface = old_is_interface;
         in_Subroutine = old_in_Subroutine;
         current_procedure_args = old_procedure_args;
+        current_procedure_name = old_procedure_name;
         return;
     }
 
@@ -5120,6 +5134,7 @@ public:
 
         current_scope = parent_scope;
         current_procedure_args.clear();
+        current_procedure_name.clear();
         is_requirement = false;
     }
 

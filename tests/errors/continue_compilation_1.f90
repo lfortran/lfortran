@@ -1714,3 +1714,9 @@ subroutine associated_null_target_in_continue_compilation_1()
     a => null()
     if (associated(a, null())) print *, "bad"  ! {Error} NULL() is not permitted as the TARGET= argument to 'associated'
 end subroutine
+
+subroutine non_dummy_intent_statement(x)
+    implicit none
+    integer :: x, y
+    intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+end subroutine non_dummy_intent_statement
