@@ -7,6 +7,16 @@
                     (SymbolTable
                         5
                         {
+                            1_b:
+                                (ExternalSymbol
+                                    5
+                                    1_b
+                                    6 b
+                                    file_common_block_b
+                                    []
+                                    b
+                                    Public
+                                ),
                             1_b_e:
                                 (ExternalSymbol
                                     5

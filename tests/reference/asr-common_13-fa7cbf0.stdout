@@ -37,6 +37,26 @@
                     (SymbolTable
                         6
                         {
+                            1_arrblock_myarr:
+                                (ExternalSymbol
+                                    6
+                                    1_arrblock_myarr
+                                    3 myarr
+                                    arrblock
+                                    []
+                                    myarr
+                                    Public
+                                ),
+                            1_myblock_myint:
+                                (ExternalSymbol
+                                    6
+                                    1_myblock_myint
+                                    5 myint
+                                    myblock
+                                    []
+                                    myint
+                                    Public
+                                ),
                             1_myblock_myzero:
                                 (ExternalSymbol
                                     6
@@ -46,6 +66,46 @@
                                     []
                                     myzero
                                     Public
+                                ),
+                            arrblock:
+                                (ExternalSymbol
+                                    6
+                                    arrblock
+                                    2 arrblock
+                                    file_common_block_arrblock
+                                    []
+                                    arrblock
+                                    Public
+                                ),
+                            myblock:
+                                (ExternalSymbol
+                                    6
+                                    myblock
+                                    4 myblock
+                                    file_common_block_myblock
+                                    []
+                                    myblock
+                                    Public
+                                ),
+                            struct_instance_arrblock:
+                                (ExternalSymbol
+                                    6
+                                    struct_instance_arrblock
+                                    2 struct_instance_arrblock
+                                    file_common_block_arrblock
+                                    []
+                                    struct_instance_arrblock
+                                    Public
+                                ),
+                            struct_instance_myblock:
+                                (ExternalSymbol
+                                    6
+                                    struct_instance_myblock
+                                    4 struct_instance_myblock
+                                    file_common_block_myblock
+                                    []
+                                    struct_instance_myblock
+                                    Public
                                 )
                         })
                     common_13
@@ -54,8 +114,8 @@
                         ()
                         (IntegerCompare
                             (StructInstanceMember
-                                (Var 1 struct_instance_myblock)
-                                1 1_myblock_myint
+                                (Var 6 struct_instance_myblock)
+                                6 1_myblock_myint
                                 (Integer 4)
                                 ()
                             )
@@ -73,7 +133,7 @@
                         ()
                         (IntegerCompare
                             (StructInstanceMember
-                                (Var 1 struct_instance_myblock)
+                                (Var 6 struct_instance_myblock)
                                 6 1_myblock_myzero
                                 (Integer 4)
                                 ()
@@ -95,8 +155,8 @@
                             [(ArrayPhysicalCast
                                 (IntegerCompare
                                     (StructInstanceMember
-                                        (Var 1 struct_instance_arrblock)
-                                        1 1_arrblock_myarr
+                                        (Var 6 struct_instance_arrblock)
+                                        6 1_arrblock_myarr
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
