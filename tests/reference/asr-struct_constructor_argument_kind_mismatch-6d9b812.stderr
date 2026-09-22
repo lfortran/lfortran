@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.struct_constructor.argument_type_matches_member]: StructConstructor argument type i64 does not match member 'i' of type i32
-   --> tests/asr/verify/struct_constructor_argument_kind_mismatch.asr:111:20
-    |
-111 |                   (IntegerConstant
-    |                    ^^^^^^^^^^^^^^^ failed here
+ASR syntax error: 'Struct' expects 16 positional fields or exactly 16 named fields
+  --> tests/asr/verify/struct_constructor_argument_kind_mismatch.asr:9:21 - 65:13
+   |
+ 9 |                "point" (Struct
+   |                        ^^^^^^^...
+...
+   |
+65 |                )
+   | ...^^^^^^^^^^^^^ invalid ASR text here

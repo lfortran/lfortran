@@ -12,7 +12,7 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
     identifier* member_functions, abi abi, access access,
     bool is_packed, bool is_abstract, bool is_sequence,
     call_arg* initializers, expr? alignment, symbol? parent,
-    identifier* kind_params)
+    identifier* kind_params, symbol? original_declaration)
 ```
 
 ### Arguments
@@ -34,6 +34,7 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
 | `alignment` | an explicit alignment in bytes, or `nil`. |
 | `parent` | the type this one extends, or `nil`. |
 | `kind_params` | the names of the kind type parameters of the type. |
+| `original_declaration` | the [Struct](Struct.md) this declaration is a duplicate of, or `nil`. |
 
 ### Return values
 
@@ -49,6 +50,13 @@ holds the component types.
 `members` is authoritative for layout. The symbol table is a mapping and says
 nothing about order, so a backend that walks components must walk `members` and
 look each name up, never iterate the symbol table.
+
+A `sequence` or `bind(c)` type may be declared again, identically, in another
+scope, and the standard says those declarations name the same type. Semantics
+records that by pointing `original_declaration` of every such declaration at a
+single one of them, which points at itself; every other type leaves it `nil`.
+A backend that keys its types by symbol must follow `original_declaration`
+first, so the repeated declarations share one type.
 
 A component is read with
 [StructInstanceMember](../expression_nodes/StructInstanceMember.md) and a whole

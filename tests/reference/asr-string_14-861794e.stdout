@@ -308,6 +308,7 @@
                                     ()
                                     ()
                                     []
+                                    2 string_type
                                 ),
                             write_formatted:
                                 (Function

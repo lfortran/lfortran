@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.variable.array_struct_initializer_is_array]: Variable 'cz' is an array of derived type, so its initializer must be an array expression
- --> tests/asr/verify/struct_array_scalar_constructor_initializer.asr:9:19
-  |
-9 |             "cz" (Variable
-  |                   ^^^^^^^^ failed here
+ASR syntax error: 'Struct' expects 16 positional fields or exactly 16 named fields
+   --> tests/asr/verify/struct_array_scalar_constructor_initializer.asr:87:17 - 155:13
+    |
+ 87 |                "t" (Struct
+    |                    ^^^^^^^...
+...
+    |
+155 |                )
+    | ...^^^^^^^^^^^^^ invalid ASR text here

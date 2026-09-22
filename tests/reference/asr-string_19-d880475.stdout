@@ -427,6 +427,7 @@
                                     ()
                                     ()
                                     []
+                                    2 string_type
                                 )
                         })
                     string_19_stdlib_string_type

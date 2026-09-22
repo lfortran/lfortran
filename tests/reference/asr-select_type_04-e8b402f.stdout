@@ -86,6 +86,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             toml_stat:
                                 (Variable
@@ -631,6 +632,7 @@
                                     ()
                                     4 toml_value
                                     []
+                                    ()
                                 ),
                             toml_value:
                                 (Struct
@@ -707,6 +709,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     class_default_select_type_user

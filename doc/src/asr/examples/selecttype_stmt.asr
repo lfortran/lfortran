@@ -62,6 +62,7 @@
               :alignment nil
               :parent (SymbolRef 1 "shape")
               :kind_params []
+              :original_declaration nil
             )
             "shape" (Struct
               :symtab (SymbolTable
@@ -87,6 +88,7 @@
               :alignment nil
               :parent nil
               :kind_params []
+              :original_declaration nil
             )
           }
         )
