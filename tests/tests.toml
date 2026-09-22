@@ -6196,7 +6196,9 @@ filename = "../integration_tests/coarrays_51.f90"
 # has to name the initializer its own object file defines rather than define
 # a second one here, and must leave the module's coarrays bound to the
 # companions that object file allocated. Checked as ASR because running it
-# needs the coarray runtime, which only the Caffeine CI jobs have.
+# needs the coarray runtime, which only the Caffeine CI jobs have -- and
+# `ci/test_caffeine.sh` cannot run a multi-file or separately compiled coarray
+# test today, which is issue #11941.
 extrafiles = "../integration_tests/coarrays_51_m.f90"
 options = "--coarray=true --separate-compilation"
 pass = "coarray,global_init_wire"

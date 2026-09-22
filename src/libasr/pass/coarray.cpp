@@ -1855,6 +1855,32 @@ class PRIFInterface {
                 ASR::is_a<ASR::Program_t>(*owner));
         }
 
+        // The link name of the companions of a saved coarray owned by a
+        // module. They are hoisted into the translation unit's scope, and
+        // every unit that uses the module derives the same name for them, so
+        // a unit that only uses the module refers to the very storage the
+        // module's own object file allocated. A name unique to the compiling
+        // unit, which is what these would otherwise get under separate
+        // compilation, would name storage nothing ever allocates.
+        //
+        // The scopes between the module and the declaration are part of the
+        // name: two procedures of one module may each declare a saved coarray
+        // of the same name.
+        std::string module_companion_basename(ASR::Variable_t *var) {
+            std::vector<std::string> path;
+            ASR::symbol_t *owner = ASRUtils::get_asr_owner(&var->base);
+            while (owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner)) {
+                path.push_back(ASRUtils::symbol_name(owner));
+                owner = ASRUtils::get_asr_owner(owner);
+            }
+            LCOMPILERS_ASSERT(owner != nullptr && ASR::is_a<ASR::Module_t>(*owner));
+            std::string name = get_mangled_name(ASRUtils::symbol_name(owner), "");
+            for (auto it = path.rbegin(); it != path.rend(); it++) {
+                name += *it + "_";
+            }
+            return name + var->m_name;
+        }
+
         void declare_coarray_companions(SymbolTable *scope, const Location &loc) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *cptr = b.CPtr();
@@ -1874,22 +1900,42 @@ class PRIFInterface {
                 SymbolTable *companion_scope = scope;
                 std::string hname = vname + "__coarray_handle";
                 std::string dname = vname + "__coarray_data";
+                ASR::abiType companion_abi = ASR::abiType::Source;
 
                 if (is_save && scope != unit.m_symtab) {
                     companion_scope = unit.m_symtab;
-                    hname = companion_scope->get_unique_name(vname + "__coarray_handle");
-                    dname = companion_scope->get_unique_name(vname + "__coarray_data");
+                    ASR::asr_t *sc_owner = saved_coarray_owner(var);
+                    bool module_owned = sc_owner != (ASR::asr_t*)&unit
+                        && ASR::is_a<ASR::Module_t>(
+                            *ASR::down_cast<ASR::symbol_t>(sc_owner));
+                    if (module_owned) {
+                        // Deterministic, so the name matches the one the
+                        // module's own object file gave these.
+                        std::string base = module_companion_basename(var);
+                        hname = companion_scope->get_unique_name(
+                            base + "__coarray_handle", false);
+                        dname = companion_scope->get_unique_name(
+                            base + "__coarray_data", false);
+                        if (coarrays_defined_elsewhere(sc_owner)) {
+                            // That object file defines and allocates them;
+                            // here they are only referred to.
+                            companion_abi = ASR::abiType::ExternalUndefined;
+                        }
+                    } else {
+                        hname = companion_scope->get_unique_name(vname + "__coarray_handle");
+                        dname = companion_scope->get_unique_name(vname + "__coarray_data");
+                    }
                 }
 
                 ASR::ttype_t *ht = ASRUtils::make_StructType_t_util(al, loc, handle_struct, true);
                 ASR::symbol_t *handle_sym = declare_variable(
                     companion_scope, loc, hname, ht, ASR::intentType::Local, handle_struct,
-                    ASR::abiType::Source, ASR::accessType::Public,
+                    companion_abi, ASR::accessType::Public,
                     ASR::presenceType::Required, false);
 
                 ASR::symbol_t *data_sym = declare_variable(
                     companion_scope, loc, dname, cptr, ASR::intentType::Local, nullptr,
-                    ASR::abiType::Source, ASR::accessType::Public,
+                    companion_abi, ASR::accessType::Public,
                     ASR::presenceType::Required, false);
 
                 coarray_companions[sym] = {handle_sym, data_sym};

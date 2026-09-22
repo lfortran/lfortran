@@ -2,6 +2,120 @@
     (SymbolTable
         1
         {
+            __module_coarrays_51_a_ca__coarray_data:
+                (Variable
+                    1
+                    __module_coarrays_51_a_ca__coarray_data
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (CPtr
+                        CPtrUnspecified
+                    )
+                    ()
+                    ExternalUndefined
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                    NotMethod
+                    ()
+                    []
+                ),
+            __module_coarrays_51_a_ca__coarray_handle:
+                (Variable
+                    1
+                    __module_coarrays_51_a_ca__coarray_handle
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (StructType
+                        [(CPtr
+                            CPtrUnspecified
+                        )]
+                        []
+                        .true.
+                        .false.
+                    )
+                    1 prif_coarray_handle
+                    ExternalUndefined
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                    NotMethod
+                    ()
+                    []
+                ),
+            __module_coarrays_51_b_cb__coarray_data:
+                (Variable
+                    1
+                    __module_coarrays_51_b_cb__coarray_data
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (CPtr
+                        CPtrUnspecified
+                    )
+                    ()
+                    ExternalUndefined
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                    NotMethod
+                    ()
+                    []
+                ),
+            __module_coarrays_51_b_cb__coarray_handle:
+                (Variable
+                    1
+                    __module_coarrays_51_b_cb__coarray_handle
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (StructType
+                        [(CPtr
+                            CPtrUnspecified
+                        )]
+                        []
+                        .true.
+                        .false.
+                    )
+                    1 prif_coarray_handle
+                    ExternalUndefined
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                    NotMethod
+                    ()
+                    []
+                ),
             __module_prif_prif_dummy_team_descriptor:
                 (Struct
                     (SymbolTable
@@ -889,120 +1003,6 @@
                     .false.
                     ()
                 ),
-            ca__coarray_data_ERQGTfvYPGZvBzA1679CNa:
-                (Variable
-                    1
-                    ca__coarray_data_ERQGTfvYPGZvBzA1679CNa
-                    []
-                    Local
-                    ()
-                    ()
-                    Default
-                    (CPtr
-                        CPtrUnspecified
-                    )
-                    ()
-                    Source
-                    Public
-                    Required
-                    .false.
-                    .false.
-                    .false.
-                    ()
-                    .false.
-                    .false.
-                    NotMethod
-                    ()
-                    []
-                ),
-            ca__coarray_handle_ERQGTfvYPGZvBzA1679CNa:
-                (Variable
-                    1
-                    ca__coarray_handle_ERQGTfvYPGZvBzA1679CNa
-                    []
-                    Local
-                    ()
-                    ()
-                    Default
-                    (StructType
-                        [(CPtr
-                            CPtrUnspecified
-                        )]
-                        []
-                        .true.
-                        .false.
-                    )
-                    1 prif_coarray_handle
-                    Source
-                    Public
-                    Required
-                    .false.
-                    .false.
-                    .false.
-                    ()
-                    .false.
-                    .false.
-                    NotMethod
-                    ()
-                    []
-                ),
-            cb__coarray_data_ERQGTfvYPGZvBzA1679CNa:
-                (Variable
-                    1
-                    cb__coarray_data_ERQGTfvYPGZvBzA1679CNa
-                    []
-                    Local
-                    ()
-                    ()
-                    Default
-                    (CPtr
-                        CPtrUnspecified
-                    )
-                    ()
-                    Source
-                    Public
-                    Required
-                    .false.
-                    .false.
-                    .false.
-                    ()
-                    .false.
-                    .false.
-                    NotMethod
-                    ()
-                    []
-                ),
-            cb__coarray_handle_ERQGTfvYPGZvBzA1679CNa:
-                (Variable
-                    1
-                    cb__coarray_handle_ERQGTfvYPGZvBzA1679CNa
-                    []
-                    Local
-                    ()
-                    ()
-                    Default
-                    (StructType
-                        [(CPtr
-                            CPtrUnspecified
-                        )]
-                        []
-                        .true.
-                        .false.
-                    )
-                    1 prif_coarray_handle
-                    Source
-                    Public
-                    Required
-                    .false.
-                    .false.
-                    .false.
-                    ()
-                    .false.
-                    .false.
-                    NotMethod
-                    ()
-                    []
-                ),
             coarrays_51:
                 (Program
                     (SymbolTable
@@ -1416,7 +1416,7 @@
                             (FunctionCall
                                 1 lcompilers_prif_get_integer(4)
                                 1 lcompilers_prif_get_integer(4)
-                                [((Var 1 ca__coarray_handle_ERQGTfvYPGZvBzA1679CNa))
+                                [((Var 1 __module_coarrays_51_a_ca__coarray_handle))
                                 ((ArrayConstructor
                                     [(Cast
                                         (IntegerConstant 1 (Integer 4) Decimal)
@@ -1474,7 +1474,7 @@
                             (FunctionCall
                                 1 lcompilers_prif_get_integer(4)
                                 1 lcompilers_prif_get_integer(4)
-                                [((Var 1 cb__coarray_handle_ERQGTfvYPGZvBzA1679CNa))
+                                [((Var 1 __module_coarrays_51_b_cb__coarray_handle))
                                 ((ArrayConstructor
                                     [(Cast
                                         (IntegerConstant 1 (Integer 4) Decimal)
