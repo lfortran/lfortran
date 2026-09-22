@@ -1,0 +1,2239 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            __module_prif_prif_dummy_team_descriptor:
+                (Struct
+                    (SymbolTable
+                        17
+                        {
+                            
+                        })
+                    __module_prif_prif_dummy_team_descriptor
+                    (StructType
+                        []
+                        []
+                        .true.
+                        .false.
+                    )
+                    []
+                    []
+                    []
+                    Source
+                    Public
+                    .false.
+                    .false.
+                    .false.
+                    []
+                    ()
+                    ()
+                    []
+                ),
+            __module_prif_prif_get:
+                (Function
+                    (SymbolTable
+                        19
+                        {
+                            coarray_handle:
+                                (Variable
+                                    19
+                                    coarray_handle
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        [(CPtr
+                                            CPtrUnspecified
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    1 prif_coarray_handle
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            current_image_buffer:
+                                (Variable
+                                    19
+                                    current_image_buffer
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (CPtr
+                                        CPtrUnspecified
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            errmsg:
+                                (Variable
+                                    19
+                                    errmsg
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 () AssumedLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Optional
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            errmsg_alloc:
+                                (Variable
+                                    19
+                                    errmsg_alloc
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (String 1 () DeferredLength DescriptorString)
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Optional
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            image_num:
+                                (Variable
+                                    19
+                                    image_num
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            offset:
+                                (Variable
+                                    19
+                                    offset
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            size_in_bytes:
+                                (Variable
+                                    19
+                                    size_in_bytes
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            stat:
+                                (Variable
+                                    19
+                                    stat
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Optional
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    __module_prif_prif_get
+                    (FunctionType
+                        [(Integer 4)
+                        (StructType
+                            [(CPtr
+                                CPtrUnspecified
+                            )]
+                            []
+                            .true.
+                            .false.
+                        )
+                        (Integer 8)
+                        (CPtr
+                            CPtrUnspecified
+                        )
+                        (Integer 8)
+                        (Integer 4)
+                        (String 1 () AssumedLength DescriptorString)
+                        (Allocatable
+                            (String 1 () DeferredLength DescriptorString)
+                        )]
+                        ()
+                        Source
+                        Interface
+                        "__module_prif_prif_get"
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 19 image_num)
+                    (Var 19 coarray_handle)
+                    (Var 19 offset)
+                    (Var 19 current_image_buffer)
+                    (Var 19 size_in_bytes)
+                    (Var 19 stat)
+                    (Var 19 errmsg)
+                    (Var 19 errmsg_alloc)]
+                    []
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            __module_prif_prif_init:
+                (Function
+                    (SymbolTable
+                        9
+                        {
+                            stat:
+                                (Variable
+                                    9
+                                    stat
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    __module_prif_prif_init
+                    (FunctionType
+                        [(Integer 4)]
+                        ()
+                        Source
+                        Interface
+                        "__module_prif_prif_init"
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 9 stat)]
+                    []
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            __module_prif_prif_initial_team_index:
+                (Function
+                    (SymbolTable
+                        20
+                        {
+                            coarray_handle:
+                                (Variable
+                                    20
+                                    coarray_handle
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        [(CPtr
+                                            CPtrUnspecified
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    1 prif_coarray_handle
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            initial_team_index:
+                                (Variable
+                                    20
+                                    initial_team_index
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            stat:
+                                (Variable
+                                    20
+                                    stat
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Optional
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            sub:
+                                (Variable
+                                    20
+                                    sub
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 8)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    __module_prif_prif_initial_team_index
+                    (FunctionType
+                        [(StructType
+                            [(CPtr
+                                CPtrUnspecified
+                            )]
+                            []
+                            .true.
+                            .false.
+                        )
+                        (Array
+                            (Integer 8)
+                            [(()
+                            ())]
+                            DescriptorArray
+                            Global
+                        )
+                        (Integer 4)
+                        (Integer 4)]
+                        ()
+                        Source
+                        Interface
+                        "__module_prif_prif_initial_team_index"
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 20 coarray_handle)
+                    (Var 20 sub)
+                    (Var 20 initial_team_index)
+                    (Var 20 stat)]
+                    []
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            __module_prif_prif_stop:
+                (Function
+                    (SymbolTable
+                        11
+                        {
+                            quiet:
+                                (Variable
+                                    11
+                                    quiet
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 1)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            stop_code_char:
+                                (Variable
+                                    11
+                                    stop_code_char
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 () AssumedLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Optional
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            stop_code_int:
+                                (Variable
+                                    11
+                                    stop_code_int
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Optional
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    __module_prif_prif_stop
+                    (FunctionType
+                        [(Logical 1)
+                        (Integer 4)
+                        (String 1 () AssumedLength DescriptorString)]
+                        ()
+                        Source
+                        Interface
+                        "__module_prif_prif_stop"
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 11 quiet)
+                    (Var 11 stop_code_int)
+                    (Var 11 stop_code_char)]
+                    []
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            __module_prif_prif_sync_all:
+                (Function
+                    (SymbolTable
+                        10
+                        {
+                            errmsg:
+                                (Variable
+                                    10
+                                    errmsg
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 () AssumedLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Optional
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            errmsg_alloc:
+                                (Variable
+                                    10
+                                    errmsg_alloc
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (String 1 () DeferredLength DescriptorString)
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Optional
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            stat:
+                                (Variable
+                                    10
+                                    stat
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Optional
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    __module_prif_prif_sync_all
+                    (FunctionType
+                        [(Integer 4)
+                        (String 1 () AssumedLength DescriptorString)
+                        (Allocatable
+                            (String 1 () DeferredLength DescriptorString)
+                        )]
+                        ()
+                        Source
+                        Interface
+                        "__module_prif_prif_sync_all"
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 10 stat)
+                    (Var 10 errmsg)
+                    (Var 10 errmsg_alloc)]
+                    []
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            __module_prif_prif_team_type:
+                (Struct
+                    (SymbolTable
+                        16
+                        {
+                            info:
+                                (Variable
+                                    16
+                                    info
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (StructType
+                                            []
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                    )
+                                    1 __module_prif_prif_dummy_team_descriptor
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    __module_prif_prif_team_type
+                    (StructType
+                        [(Pointer
+                            (StructType
+                                []
+                                []
+                                .true.
+                                .false.
+                            )
+                        )]
+                        []
+                        .true.
+                        .false.
+                    )
+                    []
+                    [info]
+                    []
+                    Source
+                    Public
+                    .false.
+                    .false.
+                    .false.
+                    []
+                    ()
+                    ()
+                    []
+                ),
+            __module_prif_prif_this_image_no_coarray:
+                (Function
+                    (SymbolTable
+                        15
+                        {
+                            team:
+                                (Variable
+                                    15
+                                    team
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        [(Pointer
+                                            (StructType
+                                                []
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    1 __module_prif_prif_team_type
+                                    Source
+                                    Public
+                                    Optional
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            this_image:
+                                (Variable
+                                    15
+                                    this_image
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    __module_prif_prif_this_image_no_coarray
+                    (FunctionType
+                        [(StructType
+                            [(Pointer
+                                (StructType
+                                    []
+                                    []
+                                    .true.
+                                    .false.
+                                )
+                            )]
+                            []
+                            .true.
+                            .false.
+                        )
+                        (Integer 4)]
+                        ()
+                        Source
+                        Interface
+                        "__module_prif_prif_this_image_no_coarray"
+                        .false.
+                        .false.
+                        .true.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 15 team)
+                    (Var 15 this_image)]
+                    []
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            ca__coarray_data_ERQGTfvYPGZvBzA1679CNa:
+                (Variable
+                    1
+                    ca__coarray_data_ERQGTfvYPGZvBzA1679CNa
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (CPtr
+                        CPtrUnspecified
+                    )
+                    ()
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                    NotMethod
+                    ()
+                    []
+                ),
+            ca__coarray_handle_ERQGTfvYPGZvBzA1679CNa:
+                (Variable
+                    1
+                    ca__coarray_handle_ERQGTfvYPGZvBzA1679CNa
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (StructType
+                        [(CPtr
+                            CPtrUnspecified
+                        )]
+                        []
+                        .true.
+                        .false.
+                    )
+                    1 prif_coarray_handle
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                    NotMethod
+                    ()
+                    []
+                ),
+            cb__coarray_data_ERQGTfvYPGZvBzA1679CNa:
+                (Variable
+                    1
+                    cb__coarray_data_ERQGTfvYPGZvBzA1679CNa
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (CPtr
+                        CPtrUnspecified
+                    )
+                    ()
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                    NotMethod
+                    ()
+                    []
+                ),
+            cb__coarray_handle_ERQGTfvYPGZvBzA1679CNa:
+                (Variable
+                    1
+                    cb__coarray_handle_ERQGTfvYPGZvBzA1679CNa
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (StructType
+                        [(CPtr
+                            CPtrUnspecified
+                        )]
+                        []
+                        .true.
+                        .false.
+                    )
+                    1 prif_coarray_handle
+                    Source
+                    Public
+                    Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
+                    .false.
+                    NotMethod
+                    ()
+                    []
+                ),
+            coarrays_51:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            1_point_x:
+                                (ExternalSymbol
+                                    2
+                                    1_point_x
+                                    7 x
+                                    coarrays_51_b
+                                    [point]
+                                    x
+                                    Public
+                                ),
+                            __lfortran_global_init_coarrays_51:
+                                (Function
+                                    (SymbolTable
+                                        21
+                                        {
+                                            __lfortran_global_init_coarrays_51_a:
+                                                (ExternalSymbol
+                                                    21
+                                                    __lfortran_global_init_coarrays_51_a
+                                                    4 __lfortran_global_init_coarrays_51_a
+                                                    coarrays_51_a
+                                                    []
+                                                    __lfortran_global_init_coarrays_51_a
+                                                    Private
+                                                ),
+                                            __lfortran_global_init_coarrays_51_b:
+                                                (ExternalSymbol
+                                                    21
+                                                    __lfortran_global_init_coarrays_51_b
+                                                    6 __lfortran_global_init_coarrays_51_b
+                                                    coarrays_51_b
+                                                    []
+                                                    __lfortran_global_init_coarrays_51_b
+                                                    Private
+                                                ),
+                                            __lfortran_global_init_done:
+                                                (Variable
+                                                    21
+                                                    __lfortran_global_init_done
+                                                    []
+                                                    Local
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    Save
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __lfortran_global_init_coarrays_51
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    [(If
+                                        ()
+                                        (LogicalNot
+                                            (Var 21 __lfortran_global_init_done)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 21 __lfortran_global_init_done)
+                                            (LogicalConstant
+                                                .true.
+                                                (Logical 4)
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )
+                                        (SubroutineCall
+                                            21 __lfortran_global_init_coarrays_51_a
+                                            21 __lfortran_global_init_coarrays_51_a
+                                            []
+                                            ()
+                                            .false.
+                                        )
+                                        (SubroutineCall
+                                            21 __lfortran_global_init_coarrays_51_b
+                                            21 __lfortran_global_init_coarrays_51_b
+                                            []
+                                            ()
+                                            .false.
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            ca:
+                                (ExternalSymbol
+                                    2
+                                    ca
+                                    4 ca
+                                    coarrays_51_a
+                                    []
+                                    ca
+                                    Public
+                                ),
+                            cb:
+                                (ExternalSymbol
+                                    2
+                                    cb
+                                    6 cb
+                                    coarrays_51_b
+                                    []
+                                    cb
+                                    Public
+                                ),
+                            me:
+                                (Variable
+                                    2
+                                    me
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            p:
+                                (ExternalSymbol
+                                    2
+                                    p
+                                    6 p
+                                    coarrays_51_b
+                                    []
+                                    p
+                                    Public
+                                ),
+                            point:
+                                (ExternalSymbol
+                                    2
+                                    point
+                                    6 point
+                                    coarrays_51_b
+                                    []
+                                    point
+                                    Public
+                                ),
+                            pts:
+                                (ExternalSymbol
+                                    2
+                                    pts
+                                    6 pts
+                                    coarrays_51_b
+                                    []
+                                    pts
+                                    Public
+                                ),
+                            stat:
+                                (Variable
+                                    2
+                                    stat
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    coarrays_51
+                    [coarrays_51_a
+                    coarrays_51_b]
+                    [(SubroutineCall
+                        2 __lfortran_global_init_coarrays_51
+                        2 __lfortran_global_init_coarrays_51
+                        []
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        1 __module_prif_prif_init
+                        ()
+                        [((Var 2 stat))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        1 __module_prif_prif_sync_all
+                        ()
+                        [(())
+                        (())
+                        (())]
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 me)
+                        (FunctionCall
+                            1 lcompilers_prif_this_image
+                            1 lcompilers_prif_this_image
+                            []
+                            (Integer 4)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 ca)
+                            NotEq
+                            (IntegerConstant 11 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 cb)
+                            NotEq
+                            (IntegerConstant 22 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (ArrayItem
+                                    (Var 2 pts)
+                                    [(()
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ColMajor
+                                    ()
+                                )
+                                2 1_point_x
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (ArrayItem
+                                    (Var 2 pts)
+                                    [(()
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ColMajor
+                                    ()
+                                )
+                                2 1_point_x
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (PointerAssociated
+                            (Var 2 p)
+                            ()
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 ca)
+                        (IntegerBinOp
+                            (IntegerConstant 11 (Integer 4) Decimal)
+                            Add
+                            (Var 2 me)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 cb)
+                        (IntegerBinOp
+                            (IntegerConstant 22 (Integer 4) Decimal)
+                            Add
+                            (Var 2 me)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (SubroutineCall
+                        1 __module_prif_prif_sync_all
+                        ()
+                        [(())
+                        (())
+                        (())]
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (FunctionCall
+                                1 lcompilers_prif_get_integer(4)
+                                1 lcompilers_prif_get_integer(4)
+                                [((Var 1 ca__coarray_handle_ERQGTfvYPGZvBzA1679CNa))
+                                ((ArrayConstructor
+                                    [(Cast
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        ()
+                                    )]
+                                    (Array
+                                        (Integer 8)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    (ArrayConstant
+                                        8
+                                        [1]
+                                        (Array
+                                            (Integer 8)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 1 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                            Global
+                                        )
+                                        ColMajor
+                                    )
+                                    ColMajor
+                                    ()
+                                ))
+                                ((Cast
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    (IntegerConstant 0 (Integer 8) Decimal)
+                                    ()
+                                ))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 12 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 6 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (FunctionCall
+                                1 lcompilers_prif_get_integer(4)
+                                1 lcompilers_prif_get_integer(4)
+                                [((Var 1 cb__coarray_handle_ERQGTfvYPGZvBzA1679CNa))
+                                ((ArrayConstructor
+                                    [(Cast
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        ()
+                                    )]
+                                    (Array
+                                        (Integer 8)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    (ArrayConstant
+                                        8
+                                        [1]
+                                        (Array
+                                            (Integer 8)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 1 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                            Global
+                                        )
+                                        ColMajor
+                                    )
+                                    ColMajor
+                                    ()
+                                ))
+                                ((Cast
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    (IntegerConstant 0 (Integer 8) Decimal)
+                                    ()
+                                ))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 23 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (SubroutineCall
+                        1 __module_prif_prif_stop
+                        ()
+                        [((LogicalConstant
+                            .false.
+                            (Logical 1)
+                        ))
+                        (())
+                        (())]
+                        ()
+                        .false.
+                    )]
+                    __lfortran_global_init_coarrays_51
+                ),
+            coarrays_51_a:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            __lfortran_global_init_coarrays_51_a:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            __lfortran_global_init_done:
+                                                (Variable
+                                                    12
+                                                    __lfortran_global_init_done
+                                                    []
+                                                    Local
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    Save
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __lfortran_global_init_coarrays_51_a
+                                    (FunctionType
+                                        []
+                                        ()
+                                        ExternalUndefined
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            ca:
+                                (Variable
+                                    4
+                                    ca
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Save
+                                    (Pointer
+                                        (Integer 4)
+                                    )
+                                    ()
+                                    ExternalUndefined
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    [(()
+                                    ()
+                                    CodimensionStar)]
+                                )
+                        })
+                    coarrays_51_a
+                    ()
+                    []
+                    .true.
+                    .false.
+                    .false.
+                    __lfortran_global_init_coarrays_51_a
+                ),
+            coarrays_51_b:
+                (Module
+                    (SymbolTable
+                        6
+                        {
+                            __lfortran_global_init_coarrays_51_b:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            __lfortran_global_init_done:
+                                                (Variable
+                                                    13
+                                                    __lfortran_global_init_done
+                                                    []
+                                                    Local
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    Save
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __lfortran_global_init_coarrays_51_b
+                                    (FunctionType
+                                        []
+                                        ()
+                                        ExternalUndefined
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            cb:
+                                (Variable
+                                    6
+                                    cb
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Save
+                                    (Pointer
+                                        (Integer 4)
+                                    )
+                                    ()
+                                    ExternalUndefined
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    [(()
+                                    ()
+                                    CodimensionStar)]
+                                ),
+                            p:
+                                (Variable
+                                    6
+                                    p
+                                    []
+                                    Local
+                                    (PointerNullConstant
+                                        (Pointer
+                                            (Integer 4)
+                                        )
+                                        ()
+                                    )
+                                    (PointerNullConstant
+                                        (Pointer
+                                            (Integer 4)
+                                        )
+                                        ()
+                                    )
+                                    Save
+                                    (Pointer
+                                        (Integer 4)
+                                    )
+                                    ()
+                                    ExternalUndefined
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            point:
+                                (Struct
+                                    (SymbolTable
+                                        7
+                                        {
+                                            x:
+                                                (Variable
+                                                    7
+                                                    x
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    Save
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    point
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [x]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
+                                ),
+                            pts:
+                                (Variable
+                                    6
+                                    pts
+                                    []
+                                    Local
+                                    (ArrayBroadcast
+                                        (StructConstant
+                                            6 point
+                                            [((IntegerConstant 5 (Integer 4) Decimal))]
+                                            (StructType
+                                                [(Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )
+                                        (ArrayConstant
+                                            4
+                                            [2]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 1 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                                Global
+                                            )
+                                            ColMajor
+                                        )
+                                        (Array
+                                            (StructType
+                                                [(Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                            Global
+                                        )
+                                        ()
+                                    )
+                                    ()
+                                    Save
+                                    (Array
+                                        (StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    6 point
+                                    ExternalUndefined
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    coarrays_51_b
+                    ()
+                    []
+                    .true.
+                    .false.
+                    .false.
+                    __lfortran_global_init_coarrays_51_b
+                ),
+            lcompilers_prif_get_integer(4):
+                (Function
+                    (SymbolTable
+                        18
+                        {
+                            coarray_handle:
+                                (Variable
+                                    18
+                                    coarray_handle
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        [(CPtr
+                                            CPtrUnspecified
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    1 prif_coarray_handle
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            image_num:
+                                (Variable
+                                    18
+                                    image_num
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            offset:
+                                (Variable
+                                    18
+                                    offset
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .true.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            result:
+                                (Variable
+                                    18
+                                    result
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .true.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            sub:
+                                (Variable
+                                    18
+                                    sub
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 8)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .true.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    lcompilers_prif_get_integer(4)
+                    (FunctionType
+                        [(StructType
+                            [(CPtr
+                                CPtrUnspecified
+                            )]
+                            []
+                            .true.
+                            .false.
+                        )
+                        (Array
+                            (Integer 8)
+                            [(()
+                            ())]
+                            DescriptorArray
+                            Global
+                        )
+                        (Integer 8)]
+                        (Integer 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    [__module_prif_prif_initial_team_index
+                    __module_prif_prif_get]
+                    [(Var 18 coarray_handle)
+                    (Var 18 sub)
+                    (Var 18 offset)]
+                    [(SubroutineCall
+                        1 __module_prif_prif_initial_team_index
+                        ()
+                        [((Var 18 coarray_handle))
+                        ((Var 18 sub))
+                        ((Var 18 image_num))
+                        (())]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        1 __module_prif_prif_get
+                        ()
+                        [((Var 18 image_num))
+                        ((Var 18 coarray_handle))
+                        ((Var 18 offset))
+                        ((PointerToCPtr
+                            (GetPointer
+                                (Var 18 result)
+                                (Pointer
+                                    (Integer 4)
+                                )
+                                ()
+                            )
+                            (CPtr
+                                CPtrUnspecified
+                            )
+                            ()
+                        ))
+                        ((IntegerConstant 4 (Integer 8) Decimal))]
+                        ()
+                        .false.
+                    )]
+                    (Var 18 result)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            lcompilers_prif_this_image:
+                (Function
+                    (SymbolTable
+                        14
+                        {
+                            lcompilers_prif_this_image:
+                                (Variable
+                                    14
+                                    lcompilers_prif_this_image
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    lcompilers_prif_this_image
+                    (FunctionType
+                        []
+                        (Integer 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    [__module_prif_prif_this_image_no_coarray]
+                    []
+                    [(SubroutineCall
+                        1 __module_prif_prif_this_image_no_coarray
+                        1 __module_prif_prif_this_image_no_coarray
+                        [(())
+                        ((Var 14 lcompilers_prif_this_image))]
+                        ()
+                        .false.
+                    )]
+                    (Var 14 lcompilers_prif_this_image)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            prif_coarray_handle:
+                (Struct
+                    (SymbolTable
+                        8
+                        {
+                            info:
+                                (Variable
+                                    8
+                                    info
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (CPtr
+                                        CPtrUnspecified
+                                    )
+                                    ()
+                                    BindC
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    prif_coarray_handle
+                    (StructType
+                        [(CPtr
+                            CPtrUnspecified
+                        )]
+                        []
+                        .true.
+                        .false.
+                    )
+                    []
+                    [info]
+                    []
+                    BindC
+                    Public
+                    .false.
+                    .false.
+                    .false.
+                    []
+                    ()
+                    ()
+                    []
+                )
+        })
+    []
+    ()
+)

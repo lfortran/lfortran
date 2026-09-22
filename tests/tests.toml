@@ -6189,3 +6189,14 @@ filename = "../integration_tests/global_init_01.f90"
 # place: the run-once guard, the dependency call, the initialization and the
 # program's single call into the chain.
 pass = "global_init,global_init_wire"
+
+[[test]]
+filename = "../integration_tests/coarrays_51.f90"
+# Separate compilation, so `coarrays_51_m` is read from a modfile: the pass
+# has to name the initializer its own object file defines rather than define
+# a second one here, and must leave the module's coarrays bound to the
+# companions that object file allocated. Checked as ASR because running it
+# needs the coarray runtime, which only the Caffeine CI jobs have.
+extrafiles = "../integration_tests/coarrays_51_m.f90"
+options = "--coarray=true --separate-compilation"
+pass = "coarray,global_init_wire"
