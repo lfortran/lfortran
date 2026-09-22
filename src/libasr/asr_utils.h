@@ -8143,6 +8143,12 @@ inline bool is_byte_representable_struct(ASR::Struct_t* st,
     }
     if( st->m_parent ) {
         ASR::symbol_t* parent = symbol_get_past_external(st->m_parent);
+        // `m_parent` names the inherited type, so it resolves to a Struct.
+        // The assert states that invariant; the test below is still kept
+        // because this function only gates a constant fold, so on a malformed
+        // symbol it should decline to fold rather than down_cast through the
+        // wrong type, which a -DNDEBUG build would do with the assert gone.
+        LCOMPILERS_ASSERT(parent && ASR::is_a<ASR::Struct_t>(*parent))
         if( !parent || !ASR::is_a<ASR::Struct_t>(*parent) ||
             !is_byte_representable_struct(
                 ASR::down_cast<ASR::Struct_t>(parent), visited) ) {
