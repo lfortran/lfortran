@@ -75,6 +75,7 @@ class PRIFInterface {
     private:
         Allocator &al;
         ASR::TranslationUnit_t &unit;
+        bool separate_compilation;
 
         ASR::symbol_t* get_or_create_dummy_struct(const Location &loc, std::string &struct_name) {
             SymbolTable *global_scope = unit.m_symtab;
@@ -772,10 +773,26 @@ class PRIFInterface {
             return {hsym, dsym};
         }
 
-        PRIFInterface(Allocator &al_, ASR::TranslationUnit_t &unit_)
-            : al(al_), unit(unit_) {
+        PRIFInterface(Allocator &al_, ASR::TranslationUnit_t &unit_,
+                bool separate_compilation_)
+            : al(al_), unit(unit_),
+              separate_compilation(separate_compilation_) {
                 saved_coarrays.reserve(al, 0);
             }
+
+        // A module read from a `.mod` file is compiled into an object file of
+        // its own. That object file allocates the module's saved coarrays and
+        // binds them, so this translation unit only names that initializer
+        // and must not allocate or rebind anything of the module itself: the
+        // companions it would bind to are its own, not the ones the defining
+        // object file allocated.
+        bool coarrays_defined_elsewhere(ASR::asr_t *owner) {
+            if (!separate_compilation) return false;
+            if (owner == (ASR::asr_t*)&unit) return false;
+            ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(owner);
+            if (!ASR::is_a<ASR::Module_t>(*sym)) return false;
+            return ASR::down_cast<ASR::Module_t>(sym)->m_loaded_from_mod;
+        }
 
         std::string get_mangled_name(const std::string& module_name, const std::string& symbol_name) {
             return "__module_" + module_name + "_" + symbol_name;
@@ -2278,6 +2295,13 @@ class PRIFInterface {
                     generate_tu_init_function(loc, by_owner[owner]);
                     continue;
                 }
+                if (coarrays_defined_elsewhere(owner)) {
+                    // Name the initializer the defining object file emits, so
+                    // the call the global-init pass adds to the program
+                    // resolves to that one definition, and leave it bodyless.
+                    ASRUtils::get_or_create_global_init(al, unit, owner, true);
+                    continue;
+                }
                 ASR::Function_t *fn = ASRUtils::get_or_create_global_init(
                     al, unit, owner);
                 Vec<ASR::stmt_t*> body;
@@ -3379,6 +3403,8 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
             for (auto &item : prif.get_global_scope()->get_scope()) {
                 if (ASR::is_a<ASR::Module_t>(*item.second)) {
                     ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(item.second);
+                    if (prif.coarrays_defined_elsewhere(
+                            (ASR::asr_t*)&mod->base)) continue;
                     prif.allocate_coarrays(mod->m_symtab, xx.m_symtab, loc, new_body);
                 }
             }
@@ -3443,7 +3469,7 @@ void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
     if (po.coarray != true) {
         return;
     }
-    PRIFInterface prif(al, unit);
+    PRIFInterface prif(al, unit, po.separate_compilation);
     // Phase 1: Declare coarray companion variables
     CoarrayCompanionVisitor comp_v(prif);
     comp_v.visit_TranslationUnit(unit);

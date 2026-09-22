@@ -123,6 +123,18 @@ of an *external* procedure, which no program unit encloses, is left on the
 [TranslationUnit](../unit_nodes/TranslationUnit.md) — which is why that one
 case still needs the target's startup hook.
 
+Under separate compilation a saved coarray follows the same rule as an
+ordinary declaration initializer. A module read from a `.mod` file was
+compiled into an object file of its own, and that object file allocates the
+module's saved coarrays and binds each one to its companions. A translation
+unit that only *uses* such a module therefore names that initializer without
+defining a second one — defining one would clash at link time with the
+definition already there — and leaves the coarrays themselves alone. Binding
+them again here would point the module's coarrays at companions this unit
+allocated rather than at the storage every image agreed on, which is why the
+two go together: skipping the definition without skipping the binding would
+replace a good association with a private one.
+
 ## Examples
 
 An ASR text document that uses it:
