@@ -1,91 +1,41 @@
-module derived_types_162_m
+module derived_types_162_mod
+implicit none
 
-    implicit none
+type :: inner_t
+    integer :: handle = 0
+end type inner_t
 
-    public :: matrix
-    public :: rcurve
+type(inner_t), parameter :: inner_null = inner_t(5)
 
-    type :: matrix
-        sequence
-        real :: array(4,4)
-    end type matrix
+type :: outer_t
+    type(inner_t) :: part = inner_null
+end type outer_t
 
-    interface
-        subroutine rcurve_f(geom)
-            implicit none
+type(inner_t) :: module_var = inner_null
 
-            type :: matrix
-                sequence
-                real :: array(4,4)
-            end type matrix
-
-            type(matrix), intent(in) :: geom
-        end subroutine rcurve_f
-    end interface
-
-contains
-
-    subroutine rcurve(geom)
-        implicit none
-
-        type :: matrix
-            sequence
-            real :: array(4,4)
-        end type matrix
-
-        real, intent(in) :: geom(4,4)
-
-        type(matrix) :: geom_matrix
-
-        geom_matrix%array = geom
-
-        call rcurve_f(geom_matrix)
-
-    end subroutine rcurve
-
-end module derived_types_162_m
-
-
-! Actual implementation
-subroutine rcurve_f(geom)
-    implicit none
-
-    type :: matrix
-        sequence
-        real :: array(4,4)
-    end type matrix
-
-    type(matrix), intent(in) :: geom
-
-    integer :: i, j
-
-    do i = 1, 4
-        do j = 1, 4
-            if (geom%array(i, j) /= real(i + 10 * j)) then
-                error stop "rcurve_f received wrong data through the SEQUENCE-associated struct"
-            end if
-        end do
-    end do
-
-end subroutine rcurve_f
-
+end module derived_types_162_mod
 
 program derived_types_162
+use derived_types_162_mod, only: outer_t, module_var
+implicit none
 
-    use derived_types_162_m
+type :: a_t
+    integer :: h
+end type a_t
 
-    implicit none
+type(a_t), parameter :: z = a_t(7)
 
-    real :: a(4,4)
-    integer :: i, j
+type :: b_t
+    type(a_t) :: p = z
+end type b_t
 
-    do i = 1, 4
-        do j = 1, 4
-            a(i, j) = real(i + 10 * j)
-        end do
-    end do
+type(outer_t) :: v
+type(b_t) :: w
+type(a_t) :: local_var = z
 
-    call rcurve(a)
-
+print *, v%part%handle, w%p%h, module_var%handle, local_var%h
+if (v%part%handle /= 5) error stop
+if (w%p%h /= 7) error stop
+if (module_var%handle /= 5) error stop
+if (local_var%h /= 7) error stop
 end program derived_types_162
-

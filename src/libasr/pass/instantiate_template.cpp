@@ -1049,9 +1049,14 @@ public:
             }
         }
 
-        // check current scope
-        if (target_scope->get_symbol(sym_name) != nullptr) {
-            return target_scope->get_symbol(sym_name);
+        // Already instantiated into this scope? The new symbol is always added
+        // under new_sym_name, so that is the name to look for. Looking for the
+        // template's own name instead would match whatever else happens to carry
+        // it in this scope -- in a main program that uses the module, the name is
+        // use-associated to the Template itself, and returning that hands back a
+        // Template where a Function is expected.
+        if (target_scope->get_symbol(new_sym_name) != nullptr) {
+            return target_scope->get_symbol(new_sym_name);
         }
 
         switch (sym->type) {

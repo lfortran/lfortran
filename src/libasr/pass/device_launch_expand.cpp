@@ -84,10 +84,6 @@ class DeviceLaunchExpandVisitor :
 
         ASR::TranslationUnit_t &unit;
         std::map<ASR::Function_t*, ASR::symbol_t*> scalar_arg_structs;
-        // Size of the first element of a decomposed struct member. A
-        // member sized at run time from another one, and a workspace sized
-        // from a member, both read it.
-        std::map<GpuStructMemberKey, ASR::expr_t*> member_first_sizes;
         // Sizes buffer of a decomposed member, so a workspace can be
         // counted from the same element the device strides by.
         std::map<GpuStructMemberKey, ASR::expr_t*> member_sizes_bufs;
@@ -95,8 +91,8 @@ class DeviceLaunchExpandVisitor :
         // A launch this pass cannot lay out, found once the loop it came
         // from is gone. `gpu_offload` answers the same question while the
         // loop is still there and leaves it on the host; there is nothing
-        // left to leave it on here, so this is an error whether or not the
-        // CPU fallback was asked for. The wording is the one every decline
+        // left to leave it on here, so this is an error whatever the reason
+        // for the decline. The wording is the one every decline
         // is phrased in, so that the two stages cannot describe the same
         // limitation differently.
 
@@ -303,11 +299,6 @@ class DeviceLaunchExpandVisitor :
                 ASRUtils::get_struct_sym_from_struct_expr(arg));
             if (!st) return;
             std::string arg_name = ASRUtils::symbol_name(parameter);
-            std::map<GpuStructMemberKey, int64_t> write_sizes =
-                find_struct_member_vla_write_sizes(kernel,
-                    gpu_kernel_workspaces(kernel));
-            std::map<GpuStructMemberKey, GpuStructMemberKey> runtime_sources =
-                find_struct_member_vla_runtime_sources(kernel);
             // A member inherited from a type this one extends is stored
             // and handed over exactly like one of its own.
             for (const GpuComponentLayout &component :
@@ -321,21 +312,13 @@ class DeviceLaunchExpandVisitor :
                     : ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc,
                         element_type, int64, nullptr));
 
-                // The kernel writes into a member the caller never allocated,
-                // so the host has to give it storage first.
                 GpuStructMemberKey key{arg_name, member_name};
-                ASR::expr_t *missing_size = nullptr;
-                auto write_size = write_sizes.find(key);
-                if (write_size != write_sizes.end()) {
-                    missing_size = b.i32(write_size->second);
-                } else {
-                    auto source = runtime_sources.find(key);
-                    if (source != runtime_sources.end()) {
-                        auto first = member_first_sizes.find(source->second);
-                        missing_size = first != member_first_sizes.end()
-                            ? first->second : b.i32(1);
-                    }
-                }
+                // The component of an element may not be allocated: the
+                // offload pass gave storage only to those the loop writes
+                // (see build_component_fit). One that is not holds nothing
+                // to hand over.
+                bool may_be_unallocated = ASRUtils::is_allocatable(
+                    ASRUtils::symbol_type(member));
 
                 ASR::expr_t *n = declare_local(loc, "gpu_struct_count", int32);
                 ASR::expr_t *total = declare_local(loc, "gpu_member_total",
@@ -372,33 +355,29 @@ class DeviceLaunchExpandVisitor :
                     size_dims.n));
                 out.push_back(al, b.Assignment(total, b.i32(0)));
                 std::vector<ASR::stmt_t*> measure;
-                if (missing_size) {
-                    Vec<ASR::dimension_t> member_dims;
-                    member_dims.reserve(al, 1);
-                    ASR::dimension_t member_dim;
-                    member_dim.loc = loc;
-                    member_dim.m_start = b.i32(1);
-                    member_dim.m_length = missing_size;
-                    member_dims.push_back(al, member_dim);
-                    measure.push_back(b.If(b.Not(is_allocated(loc,
-                        struct_member(loc, arg, k, member))),
-                        {b.Allocate(struct_member(loc, arg, k, member),
-                            member_dims.p, member_dims.n)}, {}));
-                }
                 measure.push_back(b.Assignment(b.ArrayItem_01(offsets, {k}),
                     total));
+                std::vector<ASR::stmt_t*> extents, no_extents;
                 for (size_t d = 0; d < rank; d++) {
-                    measure.push_back(b.Assignment(
+                    extents.push_back(b.Assignment(
                         member_extent(loc, sizes, k, rank, d),
                         b.ArraySize(struct_member(loc, arg, k, member),
                             rank > 1 ? b.i32((int)d + 1) : nullptr,
                             int32)));
+                    no_extents.push_back(b.Assignment(
+                        member_extent(loc, sizes, k, rank, d), b.i32(0)));
+                }
+                if (may_be_unallocated) {
+                    measure.push_back(b.If(is_allocated(loc,
+                        struct_member(loc, arg, k, member)), extents,
+                        no_extents));
+                } else {
+                    measure.insert(measure.end(), extents.begin(),
+                        extents.end());
                 }
                 measure.push_back(b.Assignment(total, b.Add(total,
                     member_element_count(loc, sizes, k, rank))));
                 out.push_back(al, b.DoLoop(k, b.i32(1), n, measure));
-                member_first_sizes[key] = member_element_count(loc, sizes,
-                    b.i32(1), rank);
                 member_sizes_bufs[key] = sizes;
                 // A member that is allocated but holds no elements in any
                 // of them -- `allocate(x%m(0,3))` -- leaves nothing to hand
@@ -414,13 +393,15 @@ class DeviceLaunchExpandVisitor :
                 out.push_back(al, allocate_bytes(loc, data, data_bytes));
                 if (!element_is_empty) {
                     out.push_back(al, b.DoLoop(k, b.i32(1), n, {
-                        memcpy_call(loc,
-                            member_data_address(loc, data, offsets, k,
-                                element_bytes),
-                            address_of(loc,
-                                struct_member(loc, arg, k, member)),
-                            member_byte_size(loc, sizes, k, rank,
-                                element_bytes))}));
+                        copy_if_allocated(loc, may_be_unallocated,
+                            struct_member(loc, arg, k, member),
+                            memcpy_call(loc,
+                                member_data_address(loc, data, offsets, k,
+                                    element_bytes),
+                                address_of(loc,
+                                    struct_member(loc, arg, k, member)),
+                                member_byte_size(loc, sizes, k, rank,
+                                    element_bytes)))}));
                 }
 
                 ASR::expr_t *index_bytes = b.Mul(b.i2i_t(n, int64), b.i64(4));
@@ -435,18 +416,29 @@ class DeviceLaunchExpandVisitor :
 
                 if (!element_is_empty) {
                     writebacks.push_back(b.DoLoop(k, b.i32(1), n, {
-                        memcpy_call(loc,
-                            address_of(loc,
-                                struct_member(loc, arg, k, member)),
-                            member_data_address(loc, data, offsets, k,
-                                element_bytes),
-                            member_byte_size(loc, sizes, k, rank,
-                                element_bytes))}));
+                        copy_if_allocated(loc, may_be_unallocated,
+                            struct_member(loc, arg, k, member),
+                            memcpy_call(loc,
+                                address_of(loc,
+                                    struct_member(loc, arg, k, member)),
+                                member_data_address(loc, data, offsets, k,
+                                    element_bytes),
+                                member_byte_size(loc, sizes, k, rank,
+                                    element_bytes)))}));
                 }
                 writebacks.push_back(b.Deallocate(data));
                 writebacks.push_back(b.Deallocate(offsets));
                 writebacks.push_back(b.Deallocate(sizes));
             }
+        }
+
+        // `copy`, only when `component` is allocated if it may not be.
+        ASR::stmt_t* copy_if_allocated(const Location &loc,
+                bool may_be_unallocated, ASR::expr_t *component,
+                ASR::stmt_t *copy) {
+            if (!may_be_unallocated) return copy;
+            ASRUtils::ASRBuilder b(al, loc);
+            return b.If(is_allocated(loc, component), {copy}, {});
         }
 
         ASR::expr_t* is_allocated(const Location &loc, ASR::expr_t *x) {

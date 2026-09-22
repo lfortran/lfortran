@@ -2,19 +2,21 @@ module sum_m
     private
     public :: sum_t
 
-    requirement R(T, Tadd, Tzero)
+    requirement R {T, Tadd, Tzero}
         type :: T; end type
-        function Tadd(x, y) result(z)
-            type(T), intent(in) :: x, y
-            type(T) :: z
-        end function
-        function Tzero() result(z)
-            type(T) :: z
-        end function
+        deferred interface
+            function Tadd(x, y) result(z)
+                type(T), intent(in) :: x, y
+                type(T) :: z
+            end function
+            function Tzero() result(z)
+                type(T) :: z
+            end function
+        end interface
     end requirement
 
     template sum_t(T, Tadd, Tzero)
-        require :: R(T, Tadd, Tzero)
+        require :: R {T, Tadd, Tzero}
         private
         public :: sum_generic
     contains
@@ -52,8 +54,8 @@ contains
     end function
 
     subroutine test_template()
-    instantiate sum_t(real, real_add, real_zero), only: sum_real => sum_generic
-    instantiate sum_t(integer, int_add, int_zero), only: sum_integer => sum_generic
+    instantiate sum_t {real, real_add, real_zero}, only: sum_real => sum_generic
+    instantiate sum_t {integer, int_add, int_zero}, only: sum_integer => sum_generic
     real :: x(10)
     integer :: y(10)
     x = 1

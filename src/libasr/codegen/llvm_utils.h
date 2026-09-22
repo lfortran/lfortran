@@ -810,6 +810,11 @@ class ASRToLLVMVisitor;
 
             llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
 
+            // Pointer to a function of the opaque procedure type `x`: no
+            // parameters, returning the explicit result type or void.
+            llvm::PointerType* get_opaque_procedure_ptr_type(const ASR::FunctionType_t &x,
+                llvm::Module* module);
+
             // Convert complex return value from platform ABI to internal representation
             // (\<2 x float\>, i64 on Windows, etc.) to the internal complex_4 struct.
             llvm::Value* complex_function_return_abi_to_internal(llvm::Value* abi_val,
@@ -2277,6 +2282,9 @@ class ASRToLLVMVisitor;
                     }
                     if (ASR::is_a<ASR::StructType_t>(*base_t)
                             && v->m_symbolic_value != nullptr) {
+                        if (ASR::is_a<ASR::ArrayBroadcast_t>(*v->m_symbolic_value)) {
+                            return false;
+                        }
                         return true;
                     }
                 }
@@ -2634,6 +2642,26 @@ class ASRToLLVMVisitor;
                 }
             }
             LCOMPILERS_ASSERT([&]() { check_all_caches_done_properly(); return true;}());
+        }
+
+        /**
+         * Finalize a save variable of struct type at program exit.
+         *
+         * A procedure's save variable outlives every call, so
+         * `not_finalizable_variable` keeps it out of that procedure's own
+         * scope finalization. Its struct members may still own heap storage
+         * that the procedure allocated on its first call (string buffers,
+         * array descriptors), and the program is what owns it, so the caller
+         * finalizes it here when the program ends.
+         *
+         * @param v the save variable
+         * @param ptr llvm global holding it
+         */
+        void finalize_saved_struct_variable(ASR::Variable_t* const v, llvm::Value* const ptr){
+            ASR::Struct_t* const struct_sym = get_struct_sym(v);
+            if(!is_finalizable_type(v->m_type, struct_sym, false)) { return; }
+            insert_BB_for_readability((std::string("Finalize_Saved_Variable_") + v->m_name).c_str());
+            check_userDefinedFinalizer_then_finalize(ptr, v->m_type, struct_sym, false);
         }
 
         // Wrapper to the `get_UPoly_finalize_fn(ASR::ttype_t*, ASR::Struct_t*)` below 

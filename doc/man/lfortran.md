@@ -57,6 +57,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--show-wat`: Show WAT (WebAssembly Text Format) and exit
 - `--show-julia`: Show Julia translation source for the given file and exit
 - `--show-gpu-kernel-source`: Show the GPU kernel source for the backend selected by `--gpu` and exit
+- `--gpu-allow-cpu-fallback`: Run a parallel loop that uses a construct the selected GPU does not support (`real(8)` on Metal, `real(10)` or `real(16)`, input/output, or `stop` and `error stop` on Metal) on the CPU with a warning, instead of failing compilation. A loop the GPU offloading pipeline cannot lower is still an error
 - `--show-fortran`: Show Fortran translation source for the given file and exit
 - `--show-stacktrace`: Show internal stacktrace on compiler errors
 - `--symtab-only`: Only create symbol tables in ASR (skip executable stmt)

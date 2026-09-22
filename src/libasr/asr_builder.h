@@ -176,7 +176,7 @@ class ASRBuilder {
     }
 
     ASR::ttype_t* CPtr() {
-        return TYPE(ASR::make_CPtr_t(al, loc));
+        return TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
     }
 
     // Expressions -------------------------------------------------------------
@@ -1035,8 +1035,8 @@ class ASRBuilder {
         ASR::expr_t *arr_constant;
         if (elements.size() == 0) {
             // Zero-size array: create an empty ArrayConstant directly
-            arr_constant = EXPR(ASR::make_ArrayConstant_t(al, loc,
-                0, nullptr, fixed_size_type, ASR::arraystorageType::ColMajor));
+            arr_constant = EXPR(ASRUtils::make_ArrayConstant_t_util(al, loc,
+                nullptr, fixed_size_type, ASR::arraystorageType::ColMajor));
         } else {
             arr_constant = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
                 m_eles.p, m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));

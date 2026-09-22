@@ -51,30 +51,32 @@ module template_array_03_m
     private
     public :: test_template
 
-    requirement operations(t, plus_t, zero_t, mult_t)
+    requirement operations {t, plus_t, zero_t, mult_t}
 
-        type, deferred :: t
+        deferred type :: t
 
-        pure function plus_t(l, r) result(result)
-            type(t), intent(in) :: l, r
-            type(t) :: result
-        end function
+        deferred interface
+            pure function plus_t(l, r) result(result)
+                type(t), intent(in) :: l, r
+                type(t) :: result
+            end function
 
-        pure function zero_t(x) result(result)
-            type(t), intent(in) :: x
-            type(t) :: result
-        end function
+            pure function zero_t(x) result(result)
+                type(t), intent(in) :: x
+                type(t) :: result
+            end function
 
-        pure function mult_t(l, r) result(result)
-            type(t), intent(in) :: l, r
-            type(t) :: result
-        end function
+            pure function mult_t(l, r) result(result)
+                type(t), intent(in) :: l, r
+                type(t) :: result
+            end function
+        end interface
 
     end requirement
 !
     template array_tmpl(t, plus_t, zero_t, mult_t)
 
-        require :: operations(t, plus_t, zero_t, mult_t)
+        require :: operations {t, plus_t, zero_t, mult_t}
         private
         public :: mymatmul_t
 
@@ -108,7 +110,7 @@ contains
         arr(1,2) = 1
         arr(2,1) = 0
         arr(2,2) = 1
-        instantiate array_tmpl(integer, add_integer, zero_integer, mult_integer), &
+        instantiate array_tmpl {integer, add_integer, zero_integer, mult_integer}, &
             only: mymatmul_int => mymatmul_t
         call mymatmul_int(2, 2, 2, arr, arr, r)
         print *, r(1,1)

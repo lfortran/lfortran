@@ -27,36 +27,38 @@ module travel
     private 
     public :: travel_tmpl
 
-    requirement operations(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
-        type, deferred :: D
-        type, deferred :: T
-        type, deferred :: S
+    requirement operations {D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}
+        deferred type :: D
+        deferred type :: T
+        deferred type :: S
 
-        pure function plus_D(l, r) result(total)
-            type(D), intent(in) :: l, R
-            type(D) :: total
-        end function
+        deferred interface
+            pure function plus_D(l, r) result(total)
+                type(D), intent(in) :: l, R
+                type(D) :: total
+            end function
 
-        pure function plus_T(l, r) result(total)
-            type(T), intent(in) :: l, R
-            type(T) :: total
-        end function
+            pure function plus_T(l, r) result(total)
+                type(T), intent(in) :: l, R
+                type(T) :: total
+            end function
 
-        pure function D_divided_by_T(n, d) result(quotient)
-            type(D), intent(in) :: n
-            type(T), intent(in) :: d
-            type(S) :: quotient
-        end function
+            pure function D_divided_by_T(n, d) result(quotient)
+                type(D), intent(in) :: n
+                type(T), intent(in) :: d
+                type(S) :: quotient
+            end function
 
-        pure function D_divided_by_S(n, d) result(quotient)
-            type(D), intent(in) :: n
-            type(S), intent(in) :: d
-            type(T) :: quotient
-        end function
+            pure function D_divided_by_S(n, d) result(quotient)
+                type(D), intent(in) :: n
+                type(S), intent(in) :: d
+                type(T) :: quotient
+            end function
+        end interface
     end requirement
 
     template travel_tmpl(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
-        require :: operations(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
+        require :: operations {D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}
         private
         public :: avg_S_from_T
     contains
@@ -86,9 +88,9 @@ module template_error_01_m
 contains
 
     subroutine test_template()
-        instantiate travel_tmpl(real, real, real, add_real, add_real, slash_real, slash_real), &
+        instantiate travel_tmpl {real, real, real, add_real, add_real, slash_real, slash_real}, &
             only: avg_real_S_from_T => avg_S_from_T
-        instantiate travel_tmpl(real, real, real, add_real, add_real, slash_real, slash_real), &
+        instantiate travel_tmpl {real, real, real, add_real, add_real, slash_real, slash_real}, &
             only: avg_real_S_from_S => avg_S_from_S
         real :: s1, s2
         s1 = avg_real_S_from_T(1.0, 3.0, 1.5, 4.0)

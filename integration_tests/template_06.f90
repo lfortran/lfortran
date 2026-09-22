@@ -4,8 +4,8 @@ module mod_template_06
     public :: error_T
 
     template error_T(T, U)
-        type, deferred :: T
-        type, deferred :: U
+        deferred type :: T
+        deferred type :: U
         private
         public :: mycopy
       contains

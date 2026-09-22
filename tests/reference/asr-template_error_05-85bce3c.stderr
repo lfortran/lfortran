@@ -1,19 +1,19 @@
 semantic error: Restriction type mismatch with provided function argument
-  --> tests/errors/template_error_05.f90:34:33
+  --> tests/errors/template_error_05.f90:36:34
    |
-34 |         instantiate add_t(real, func_arg_real), only: add_real => add_generic
-   |                                 ^^^^^^^^^^^^^ 
+36 |         instantiate add_t {real, func_arg_real}, only: add_real => add_generic
+   |                                  ^^^^^^^^^^^^^ 
    |
- 8 |            function F(x, y) result(z)
-   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+ 9 |                function F(x, y) result(z)
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-11 |            end function
-   | ...^^^^^^^^^^^^^^^^^^^^ Requirement's return type real
+12 |                end function
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^ Requirement's return type real
    |
-28 |        integer function func_arg_real(x, y) result(z)
+30 |        integer function func_arg_real(x, y) result(z)
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-31 |        end function
+33 |        end function
    | ...^^^^^^^^^^^^^^^^ Function's return type integer

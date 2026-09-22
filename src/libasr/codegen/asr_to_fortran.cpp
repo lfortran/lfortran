@@ -1916,21 +1916,6 @@ public:
         src = r;
     }
 
-    void visit_GpuOffload(const ASR::GpuOffload_t &x) {
-        std::string r = indent + "! gpu offload candidate\n";
-        for (size_t i = 0; i < x.n_body; i++) {
-            visit_stmt(*x.m_body[i]);
-            r += src;
-        }
-        r += indent + "! cpu alternative\n";
-        for (size_t i = 0; i < x.n_fallback; i++) {
-            visit_stmt(*x.m_fallback[i]);
-            r += src;
-        }
-        r += indent + "! end gpu offload candidate\n";
-        src = r;
-    }
-
     void visit_Where(const ASR::Where_t &x) {
         std::string r;
         r = indent;
@@ -2549,6 +2534,18 @@ public:
         src = r;
     }
 
+    void visit_StructConstant(const ASR::StructConstant_t &x) {
+        std::string r = ASRUtils::symbol_name(x.m_dt_sym);
+        r += "(";
+        for(size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i].m_value);
+            r += src;
+            if (i < x.n_args - 1) r += ", ";
+        }
+        r += ")";
+        src = r;
+    }
+
     // void visit_EnumConstructor(const ASR::EnumConstructor_t &x) {}
 
     // void visit_UnionConstructor(const ASR::UnionConstructor_t &x) {}
@@ -2896,8 +2893,16 @@ public:
             r += "[" + get_array_constructor_type_spec(x.m_type) + " :: ]";
         } else {
             r += "[";
+            bool use_element_visitor = ASR::is_a<ASR::StructType_t>(*elem_type)
+                || ASR::is_a<ASR::CPtr_t>(*elem_type);
             for(size_t i = 0; i < fixed_size; i++) {
-                r += ASRUtils::fetch_ArrayConstant_value(x, i) + kind_suffix;
+                if (use_element_visitor) {
+                    ASR::expr_t* value = ASRUtils::fetch_ArrayConstant_value(al, x, i);
+                    visit_expr(*value);
+                    r += src;
+                } else {
+                    r += ASRUtils::fetch_ArrayConstant_value(x, i) + kind_suffix;
+                }
                 if (i < fixed_size - 1) r += ", ";
             }
             r += "]";

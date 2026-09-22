@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-template_struct_01-ca5fdee",
+    "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/../integration_tests/template_struct_01.f90",
+    "infile_hash": "13a0289c624661560e93a73f2524586d0e182f33acdc3bbc667d5764",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-template_struct_01-ca5fdee.stdout",
+    "stdout_hash": "cc3f2f8c31b5e27c5e79b45570f6365b1af6af47ab50d13eb5cd51dc",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

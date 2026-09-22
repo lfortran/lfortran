@@ -24,21 +24,29 @@ end module
 module template_apply_m_template_07
     implicit none
     private
-    public :: apply_t
+    public :: apply_t, no_args_t
 
-    requirement op_r(T, U, V, op_func)
-        type, deferred :: T
-        type, deferred :: U
-        type, deferred :: V
-        pure elemental function op_func(lhs, rhs) result(res)
-            type(T), intent(in) :: lhs
-            type(U), intent(in) :: rhs
-            type(V) :: res
-        end function
+    ! R1633: the deferred-arg-name-list of a REQUIREMENT is optional
+    requirement no_args_r {}
+    end requirement
+
+    requirement op_r {T, U, V, op_func}
+        deferred type :: T
+        deferred type :: U
+        deferred type :: V
+        deferred interface
+            pure elemental function op_func(lhs, rhs) result(res)
+                type(T), intent(in) :: lhs
+                type(U), intent(in) :: rhs
+                type(V) :: res
+            end function
+        end interface
     end requirement
 
     template apply_t(T, lt)
-        require :: op_r(T, T, logical, lt)
+        ! R1636: the :: is optional and the instantiation-arg-spec-list may be empty
+        require no_args_r {}
+        require op_r {T, T, logical, lt}
         private
         public :: apply_lt
     contains
@@ -49,13 +57,26 @@ module template_apply_m_template_07
             res = all ( lt(lhs,rhs) )
         end function
     end template
+
+    ! R1602: the deferred-arg-name-list of a TEMPLATE is optional
+    template no_args_t()
+        private
+        public :: answer
+    contains
+        pure function answer() result(res)
+            integer :: res
+            res = 42
+        end function
+    end template
 end module
 
 program template_07
         use lt_m_template_07
         use template_apply_m_template_07
 
-        instantiate apply_t(my_type,operator(<)), only : my_apply => apply_lt
+        ! R1625: the :: is optional and the instantiation-arg-spec-list may be empty
+        instantiate :: apply_t {my_type,operator(<)}, only : my_apply => apply_lt
+        instantiate :: no_args_t {}
 
 
         type(my_type) :: a(5), b(5)
@@ -75,4 +96,7 @@ program template_07
 
         print *, my_apply(a,b)
         if (.not. my_apply(a, b)) error stop
+
+        print *, answer()
+        if (answer() /= 42) error stop
 end program

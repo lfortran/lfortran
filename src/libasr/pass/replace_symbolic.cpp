@@ -175,26 +175,26 @@ public:
 
     ASR::stmt_t *basic_new_stack(const Location &loc, ASR::expr_t *x) {
         ASR::symbol_t* basic_new_stack_sym = create_bindc_function(loc, "basic_new_stack",
-            {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc))});
+            {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified))});
         return SubroutineCall(loc, basic_new_stack_sym, {x});
     }
 
     ASR::stmt_t *basic_free_stack(const Location &loc, ASR::expr_t *x) {
         ASR::symbol_t* basic_free_stack_sym = create_bindc_function(loc, "basic_free_stack",
-            {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc))});
+            {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified))});
         return SubroutineCall(loc, basic_free_stack_sym, {x});
     }
 
     ASR::expr_t *basic_new_heap(const Location& loc) {
         ASR::symbol_t* basic_new_heap_sym = create_bindc_function(loc,
-            "basic_new_heap", {}, ASRUtils::TYPE((ASR::make_CPtr_t(al, loc))));
+            "basic_new_heap", {}, ASRUtils::TYPE((ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified))));
         Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 1);
         return FunctionCall(loc, basic_new_heap_sym, {},
-            ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)));
+            ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified)));
     }
 
     ASR::stmt_t* basic_get_args(const Location& loc, ASR::expr_t *x, ASR::expr_t *y) {
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
         ASR::symbol_t* basic_get_args_sym = create_bindc_function(loc,
             "basic_get_args", {type, type});
         return SubroutineCall(loc, basic_get_args_sym, {x, y});
@@ -202,14 +202,14 @@ public:
 
     ASR::expr_t *vecbasic_new(const Location& loc) {
         ASR::symbol_t* vecbasic_new_sym = create_bindc_function(loc,
-            "vecbasic_new", {}, ASRUtils::TYPE((ASR::make_CPtr_t(al, loc))));
+            "vecbasic_new", {}, ASRUtils::TYPE((ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified))));
         Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 1);
         return FunctionCall(loc, vecbasic_new_sym, {},
-            ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)));
+            ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified)));
     }
 
     ASR::stmt_t* vecbasic_get(const Location& loc, ASR::expr_t *x, ASR::expr_t *y, ASR::expr_t *z) {
-        ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+        ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
         ASR::symbol_t* vecbasic_get_sym = create_bindc_function(loc, "vecbasic_get",
             {cptr_type, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), cptr_type});
         return SubroutineCall(loc, vecbasic_get_sym, {x, y, z});
@@ -217,7 +217,7 @@ public:
 
     ASR::expr_t *vecbasic_size(const Location& loc, ASR::expr_t *x) {
         ASR::symbol_t* vecbasic_size_sym = create_bindc_function(loc,
-            "vecbasic_size", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc))},
+            "vecbasic_size", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified))},
             ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
         return FunctionCall(loc, vecbasic_size_sym, {x},
             ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
@@ -225,7 +225,7 @@ public:
 
     ASR::stmt_t* basic_assign(const Location& loc,
             ASR::expr_t *target, ASR::expr_t *value) {
-        ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+        ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
         ASR::symbol_t* basic_assign_sym = create_bindc_function(loc, "basic_assign",
             {cptr_type, cptr_type});
         return SubroutineCall(loc, basic_assign_sym, {target, value});
@@ -233,7 +233,7 @@ public:
 
     ASR::expr_t* basic_str(const Location& loc, ASR::expr_t *x) {
         ASR::symbol_t* basic_str_sym = create_bindc_function(loc,
-            "basic_str", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc))},
+            "basic_str", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified))},
             ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 
              ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, 
                     ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
@@ -249,7 +249,7 @@ public:
 
     ASR::expr_t* basic_get_type(const Location& loc, ASR::expr_t* value) {
         ASR::symbol_t* basic_get_type_sym = create_bindc_function(loc,
-            "basic_get_type", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc))},
+            "basic_get_type", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified))},
             ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
         return FunctionCall(loc, basic_get_type_sym, {handle_argument(al, loc, value)},
             ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
@@ -258,7 +258,7 @@ public:
     ASR::expr_t* basic_compare(const Location& loc,
             std::string fn_name, ASR::expr_t *left, ASR::expr_t *right) {
         ASR::symbol_t* basic_compare_sym = create_bindc_function(loc,
-            fn_name, {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASRUtils::TYPE(ASR::make_CPtr_t(al, loc))},
+            fn_name, {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified)), ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified))},
             ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
         return FunctionCall(loc, basic_compare_sym, {handle_argument(al, loc, left),
             handle_argument(al, loc, right)}, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
@@ -267,14 +267,14 @@ public:
     ASR::stmt_t* integer_set_si(const Location& loc, ASR::expr_t *target,
             ASR::expr_t *value) {
         ASR::symbol_t* integer_set_si_sym = create_bindc_function(loc,
-            "integer_set_si", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)),
+            "integer_set_si", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified)),
             ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8))});
         return SubroutineCall(loc, integer_set_si_sym, {target, value});
     }
 
     ASR::stmt_t *symbol_set(const Location &loc, ASR::expr_t *target, ASR::expr_t *value) {
         ASR::symbol_t* symbol_set_sym = create_bindc_function(loc, "symbol_set",
-            {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASRUtils::TYPE(
+            {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified)), ASRUtils::TYPE(
             ASR::make_String_t(al, loc, 1, 
                 ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, 
                     ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
@@ -286,13 +286,13 @@ public:
     ASR::stmt_t *basic_const(const Location &loc,
             const std::string &fn_name, ASR::expr_t* value) {
         ASR::symbol_t* basic_const_sym = create_bindc_function(loc, fn_name,
-            {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc))});
+            {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified))});
         return SubroutineCall(loc, basic_const_sym, {value});
     }
 
     ASR::stmt_t *basic_binop(const Location &loc, const std::string &fn_name,
             ASR::expr_t* target, ASR::expr_t* op_01, ASR::expr_t* op_02) {
-        ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+        ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
         ASR::symbol_t* basic_binop_sym = create_bindc_function(loc, fn_name,
             {cptr_type, cptr_type, cptr_type});
         return SubroutineCall(loc, basic_binop_sym, {target,
@@ -302,15 +302,15 @@ public:
     ASR::stmt_t *basic_unaryop(const Location &loc, const std::string &fn_name,
             ASR::expr_t* target, ASR::expr_t* op_01) {
         ASR::symbol_t* basic_unaryop_sym = create_bindc_function(loc, fn_name,
-            {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASRUtils::TYPE(
-            ASR::make_CPtr_t(al, loc))});
+            {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified)), ASRUtils::TYPE(
+            ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified))});
         return SubroutineCall(loc, basic_unaryop_sym, {target,
             handle_argument(al, loc, op_01)});
     }
 
     ASR::expr_t *basic_has_symbol(const Location &loc, ASR::expr_t *value_01, ASR::expr_t *value_02) {
         ASR::symbol_t* basic_has_symbol_sym = create_bindc_function(loc,
-            "basic_has_symbol", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASRUtils::TYPE(ASR::make_CPtr_t(al, loc))},
+            "basic_has_symbol", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified)), ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified))},
             ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
         return FunctionCall(loc, basic_has_symbol_sym,
             {handle_argument(al, loc, value_01), handle_argument(al, loc, value_02)},
@@ -346,7 +346,7 @@ public:
 
         ASR::ttype_t* f_signature= xx.m_function_signature;
         ASR::FunctionType_t *f_type = ASR::down_cast<ASR::FunctionType_t>(f_signature);
-        ASR::ttype_t *CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, xx.base.base.loc));
+        ASR::ttype_t *CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, xx.base.base.loc, ASR::cptr_kindType::CPtrUnspecified));
         for (size_t i = 0; i < f_type->n_arg_types; ++i) {
             if (f_type->m_arg_types[i]->type == ASR::ttypeType::SymbolicExpression) {
                 f_type->m_arg_types[i] = CPtr_type;
@@ -399,7 +399,7 @@ public:
             std::string var_name = xx.m_name;
             std::string placeholder = "_" + std::string(var_name);
 
-            ASR::ttype_t *CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, xx.base.base.loc));
+            ASR::ttype_t *CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, xx.base.base.loc, ASR::cptr_kindType::CPtrUnspecified));
             xx.m_type = CPtr_type;
             if (xx.m_intent == ASR::intentType::Local) {
                 symbolic_vars_to_free.insert(ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&xx));
@@ -456,7 +456,7 @@ public:
         } else if (xx.m_type->type == ASR::ttypeType::List) {
             ASR::List_t* list = ASR::down_cast<ASR::List_t>(xx.m_type);
             if (list->m_type->type == ASR::ttypeType::SymbolicExpression){
-                ASR::ttype_t *CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, xx.base.base.loc));
+                ASR::ttype_t *CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, xx.base.base.loc, ASR::cptr_kindType::CPtrUnspecified));
                 ASR::ttype_t* list_type = ASRUtils::TYPE(ASR::make_List_t(al, xx.base.base.loc, CPtr_type));
                 xx.m_type = list_type;
             }
@@ -504,7 +504,7 @@ public:
                 ASR::expr_t* value1 = handle_argument(al, loc, x->m_args[0]);
 
                 // Define necessary variables
-                ASR::ttype_t* CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+                ASR::ttype_t* CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
                 std::string args_str = current_scope->get_unique_name("_lcompilers_symbolic_argument_container");
                 ASR::symbol_t* args_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
                     al, loc, current_scope, s2c(al, args_str), nullptr, 0, ASR::intentType::Local,
@@ -638,7 +638,7 @@ public:
                         if (ASR::is_a<ASR::Variable_t>(*v)) {
                             // Step1: Add the placeholder for the list variable to the scope
                             ASRUtils::ASRBuilder b(al, x.base.base.loc);
-                            ASR::ttype_t* CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
+                            ASR::ttype_t* CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc, ASR::cptr_kindType::CPtrUnspecified));
                             ASR::ttype_t* list_type = ASRUtils::TYPE(ASR::make_List_t(al, x.base.base.loc, CPtr_type));
                             ASR::Variable_t *list_variable = ASR::down_cast<ASR::Variable_t>(v);
                             std::string list_name = list_variable->m_name;
@@ -726,7 +726,7 @@ public:
             if (list_item->m_type->type == ASR::ttypeType::SymbolicExpression) {
                 ASR::expr_t *value = ASRUtils::EXPR(ASR::make_ListItem_t(al,
                     x.base.base.loc, list_item->m_a, list_item->m_pos,
-                    ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), nullptr));
+                    ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc, ASR::cptr_kindType::CPtrUnspecified)), nullptr));
                 pass_result.push_back(al, basic_assign(x.base.base.loc, x.m_target, value));
             }
         } else if (ASR::is_a<ASR::SymbolicCompare_t>(*x.m_value)) {
@@ -1014,7 +1014,7 @@ public:
     //             if (list_item->m_type->type == ASR::ttypeType::SymbolicExpression) {
     //                 ASR::expr_t *value = ASRUtils::EXPR(ASR::make_ListItem_t(al,
     //                     x.base.base.loc, list_item->m_a, list_item->m_pos,
-    //                     ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), nullptr));
+    //                     ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc, ASR::cptr_kindType::CPtrUnspecified)), nullptr));
     //                 print_tmp.push_back(basic_str(x.base.base.loc, value));
     //             } else {
     //                 print_tmp.push_back(val);

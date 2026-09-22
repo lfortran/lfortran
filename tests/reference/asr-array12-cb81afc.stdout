@@ -143,8 +143,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -210,7 +212,9 @@
                                                 ()
                                             ))
                                             ((Var 14 buffersize))]
-                                            (CPtr)
+                                            (CPtr
+                                                CPointer
+                                            )
                                             ()
                                             ()
                                         )
@@ -317,8 +321,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -343,7 +349,9 @@
                                             Global
                                         )
                                         (Integer 4)]
-                                        (CPtr)
+                                        (CPtr
+                                            CPointer
+                                        )
                                         BindC
                                         Interface
                                         "getcwd"

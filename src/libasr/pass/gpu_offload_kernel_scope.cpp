@@ -9,7 +9,6 @@
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
-#include <libasr/pass/gpu_offload_undo.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/parallel_canonicalize.h>
 
@@ -198,16 +197,10 @@ void GpuOffloadVisitor::migrate_inlined_assoc_symbols(
 // when every write to the object lands inside that one element --
 // a write anywhere else, `allocate` of the array the element comes
 // from included, would be undone by the copy back.
-//
-// `undo` records every slot that was overwritten and `temp_names`
-// every symbol that was added, so `GpuGatherGuard` can put the loop
-// back exactly as it was if the offload is declined further down.
 bool GpuOffloadVisitor::hoist_struct_element_gathers(
         const ParallelLoopNest &nest,
         Vec<ASR::stmt_t*> &gather_stmts,
-        Vec<ASR::stmt_t*> &scatter_stmts,
-        std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo,
-        std::vector<std::string> &temp_names) {
+        Vec<ASR::stmt_t*> &scatter_stmts) {
     GpuStructElementGatherCollector collector;
     for (size_t i = 0; i < nest.n_body; i++) {
         collector.visit_stmt(*nest.body[i]);
@@ -316,7 +309,6 @@ bool GpuOffloadVisitor::hoist_struct_element_gathers(
             name, ASRUtils::duplicate_type(al,
                 ASRUtils::expr_type(g.chain)), ASR::intentType::Local,
             ASRUtils::get_struct_sym_from_struct_expr(g.chain));
-        temp_names.push_back(name);
         g.temp = temp;
         ASRUtils::ExprStmtDuplicator dup(al);
         dup.success = true;
@@ -337,7 +329,7 @@ bool GpuOffloadVisitor::hoist_struct_element_gathers(
                 nullptr, false, false)));
     }
 
-    GpuStructElementGatherVisitor sub(al, gathers, undo);
+    GpuStructElementGatherVisitor sub(al, gathers);
     for (size_t i = 0; i < nest.n_body; i++) {
         sub.visit_stmt(*nest.body[i]);
     }
@@ -355,13 +347,13 @@ bool GpuOffloadVisitor::host_nameable(ASR::symbol_t *sym) {
         && ASRUtils::symbol_get_past_external(found) == sym;
 }
 
-// Copies a loop nest so that the pass can rewrite it without touching
-// the loop the host would run if the offload is declined.
+// Copies a loop nest for the kernel to be built from, so that the
+// rewrites on the way to the kernel, several of which change nodes in
+// place, cannot reach a node the loop shares with the rest of the
+// program.
 //
 // A BLOCK or ASSOCIATE is copied along with it, including one nested
-// in `if` or `while`. The kernel takes the copy and the host keeps
-// its own, so no rewrite on the way to a kernel can reach the host,
-// and a decline has nothing to put back.
+// in `if` or `while`, and the kernel takes the copy.
 ASR::stmt_t* GpuOffloadVisitor::copy_loop_stmt(ASR::stmt_t *stmt,
         ASRUtils::ExprStmtDuplicator &dup) {
     if (stmt == nullptr) return nullptr;

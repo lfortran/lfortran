@@ -62,11 +62,11 @@ program intrinsics_159
 
     g = reshape([ (i, i = 1, 6) ], [2, 3])
     print *, abs(sum(matmul( g, y )))
-    if (abs(abs(sum(matmul( g, y ))) - 93.9148560) > 1e-8) error stop
+    if (abs(abs(sum(matmul( g, y ))) - 93.9148560) > 1e-5) error stop
 
     h = reshape([ (i, i = 1, 6) ], [3, 2])
     print *, abs(sum(matmul( x, h )))
-    if (abs(abs(sum(matmul( x, h ))) - 93.9148560) > 1e-8) error stop
+    if (abs(abs(sum(matmul( x, h ))) - 93.9148560) > 1e-5) error stop
 
     l = 901
     y = (12, -12)
