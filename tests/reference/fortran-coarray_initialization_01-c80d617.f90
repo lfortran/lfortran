@@ -51,12 +51,6 @@ integer(4) :: me
 integer(4) :: stat
 call __lfortran_global_init_coarray_initialization_01()
 call __module_prif_prif_init(stat)
-call c_f_pointer(__module_coarray_saved_mod_x__coarray_data, x)
-call c_f_pointer(__module_coarray_saved_mod_y__coarray_data, y, [10], [1])
-call c_f_pointer(a__coarray_data, a)
-call c_f_pointer(b__coarray_data, b, [10], [1])
-call c_f_pointer(c__coarray_data, c)
-call c_f_pointer(d__coarray_data, d, [10], [1])
 call __module_prif_prif_sync_all()
 me = lcompilers_prif_this_image()
 call mod_sub()

@@ -7,7 +7,6 @@ implicit none
 integer(4) :: stat
 integer(4), pointer :: x
 call __module_prif_prif_init(stat)
-call c_f_pointer(x__coarray_data, x)
 call __module_prif_prif_sync_all()
 if (Any(lcompilers_prif_coshape_corank1_k8(x__coarray_handle) /= [2_8])) then
     error stop

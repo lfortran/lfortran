@@ -2160,8 +2160,16 @@ class PRIFInterface {
             new_body.push_back(al, nullify_stmt);
         }
 
+        // `bind_saved` says whether this scope still has to bind a saved
+        // coarray's pointer to the storage its companion holds. A saved coarray
+        // of a module or a program is bound by that unit's initializer, which
+        // runs before anything can observe it, so binding it again in the
+        // program body would only repeat work already done. A saved coarray of
+        // a procedure is not: the initializer cannot reach a procedure-local
+        // pointer, so it binds a temporary of its own to write the initial
+        // value, and the procedure is what binds the real one.
         void allocate_coarrays(SymbolTable *scope, SymbolTable *body_scope, const Location &loc,
-                                    Vec<ASR::stmt_t*> &new_body) {
+                                    Vec<ASR::stmt_t*> &new_body, bool bind_saved=true) {
             ASRUtils::ASRBuilder b(al, loc);
             for (auto &item : scope->get_scope()) {
                 ASR::symbol_t *sym = item.second;
@@ -2175,6 +2183,7 @@ class PRIFInterface {
                 ASR::symbol_t *dsym_orig = companions.second;
 
                 if (has_save_attribute(var)) {
+                    if (!bind_saved) continue;
                     ASR::symbol_t *dsym_use = get_symbol_in_scope(ASRUtils::symbol_parent_symtab(dsym_orig), body_scope, dsym_orig, loc);
                     ASR::symbol_t *sym_use = get_symbol_in_scope(scope, body_scope, sym, loc);
                     ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym_use));
@@ -3451,12 +3460,12 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
                     ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(item.second);
                     if (prif.coarrays_defined_elsewhere(
                             (ASR::asr_t*)&mod->base)) continue;
-                    prif.allocate_coarrays(mod->m_symtab, xx.m_symtab, loc, new_body);
+                    prif.allocate_coarrays(mod->m_symtab, xx.m_symtab, loc, new_body, false);
                 }
             }
 
             // Allocate coarrays in Program scope
-            prif.allocate_coarrays(xx.m_symtab, xx.m_symtab, loc, new_body);
+            prif.allocate_coarrays(xx.m_symtab, xx.m_symtab, loc, new_body, false);
 
             // Need to synchronize all the images after completing 
             // initialization of any save coarrays allocated above,

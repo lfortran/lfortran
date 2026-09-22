@@ -15,7 +15,6 @@ integer(4), pointer :: a
 integer(4) :: me
 integer(4) :: stat
 call __module_prif_prif_init(stat)
-call c_f_pointer(a__coarray_data, a)
 call __module_prif_prif_sync_all()
 me = lcompilers_prif_this_image()
 a = me

@@ -11,7 +11,6 @@ integer(4) :: stat
 integer(4), dimension(1) :: uc
 integer(4), dimension(:), pointer :: x
 call __module_prif_prif_init(stat)
-call c_f_pointer(x__coarray_data, x, [5], [1])
 call __module_prif_prif_sync_all()
 a = lcompilers_prif_lcobound_with_dim_k4(x__coarray_handle, 1)
 b = lcompilers_prif_ucobound_with_dim_k4(x__coarray_handle, 1)
