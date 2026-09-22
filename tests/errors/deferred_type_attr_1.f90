@@ -53,18 +53,22 @@ module deferred_type_attr_1
 
     requirement r_class_plain {t, f}
         deferred type :: t
-        function f(x) result(z)
-            class(t), intent(in) :: x  ! {Error} deferred type 't' is not extensible, so it cannot be used in a class declaration
-            integer :: z
-        end function
+        deferred interface
+            function f(x) result(z)
+                class(t), intent(in) :: x  ! {Error} deferred type 't' is not extensible, so it cannot be used in a class declaration
+                integer :: z
+            end function
+        end interface
     end requirement
 
     requirement r_type_abstract {t, f}
         deferred type, abstract :: t
-        function f(x) result(z)
-            type(t), intent(in) :: x  ! {Error} deferred type 't' is abstract, so it cannot be used in a type declaration
-            integer :: z
-        end function
+        deferred interface
+            function f(x) result(z)
+                type(t), intent(in) :: x  ! {Error} deferred type 't' is abstract, so it cannot be used in a type declaration
+                integer :: z
+            end function
+        end interface
     end requirement
 
     template t_extensible(t)

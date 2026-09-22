@@ -23,37 +23,37 @@ semantic error: deferred type 't' cannot be extended
    |               ^^^^^^^^^^ 
 
 semantic error: deferred type 't' is not extensible, so it cannot be used in a class declaration
-  --> tests/errors/deferred_type_attr_1.f90:57:13
+  --> tests/errors/deferred_type_attr_1.f90:58:17
    |
-57 |             class(t), intent(in) :: x  ! {Error} deferred type 't' is not extensible, so it cannot be used in a class declaration
-   |             ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+58 |                 class(t), intent(in) :: x  ! {Error} deferred type 't' is not extensible, so it cannot be used in a class declaration
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: deferred type 't' is abstract, so it cannot be used in a type declaration
-  --> tests/errors/deferred_type_attr_1.f90:65:13
+  --> tests/errors/deferred_type_attr_1.f90:68:17
    |
-65 |             type(t), intent(in) :: x  ! {Error} deferred type 't' is abstract, so it cannot be used in a type declaration
-   |             ^^^^^^^^^^^^^^^^^^^^^^^^ 
+68 |                 type(t), intent(in) :: x  ! {Error} deferred type 't' is abstract, so it cannot be used in a type declaration
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: deferred type 't' is extensible, so its instantiation argument must be an extensible derived type, not integer
-   --> tests/errors/deferred_type_attr_1.f90:101:35
+   --> tests/errors/deferred_type_attr_1.f90:105:35
     |
-101 |         instantiate t_extensible {integer}, only: n1 => nothing_ext  ! {Error} deferred type 't' is extensible, so its instantiation argument must be an extensible derived type, not integer
+105 |         instantiate t_extensible {integer}, only: n1 => nothing_ext  ! {Error} deferred type 't' is extensible, so its instantiation argument must be an extensible derived type, not integer
     |                                   ^^^^^^^ 
 
 semantic error: deferred type 't' is extensible, so its instantiation argument must be an extensible derived type, not bindc_t
-   --> tests/errors/deferred_type_attr_1.f90:103:33
+   --> tests/errors/deferred_type_attr_1.f90:107:33
     |
-103 |         instantiate t_abstract {bindc_t}, only: n2 => nothing_abs  ! {Error} deferred type 't' is extensible, so its instantiation argument must be an extensible derived type, not bindc_t
+107 |         instantiate t_abstract {bindc_t}, only: n2 => nothing_abs  ! {Error} deferred type 't' is extensible, so its instantiation argument must be an extensible derived type, not bindc_t
     |                                 ^^^^^^^ 
 
 semantic error: deferred type 't' is not abstract, so its instantiation argument must not be the abstract type abstract_t
-   --> tests/errors/deferred_type_attr_1.f90:106:35
+   --> tests/errors/deferred_type_attr_1.f90:110:35
     |
-106 |         instantiate t_extensible {abstract_t}, only: n3 => nothing_ext  ! {Error} deferred type 't' is not abstract, so its instantiation argument must not be the abstract type abstract_t
+110 |         instantiate t_extensible {abstract_t}, only: n3 => nothing_ext  ! {Error} deferred type 't' is not abstract, so its instantiation argument must not be the abstract type abstract_t
     |                                   ^^^^^^^^^^ 
 
 semantic error: deferred type 't' is not abstract, so its instantiation argument must not be the abstract type abstract_t
-   --> tests/errors/deferred_type_attr_1.f90:107:30
+   --> tests/errors/deferred_type_attr_1.f90:111:30
     |
-107 |         instantiate t_plain {abstract_t}, only: n4 => nothing_plain  ! {Error} deferred type 't' is not abstract, so its instantiation argument must not be the abstract type abstract_t
+111 |         instantiate t_plain {abstract_t}, only: n4 => nothing_plain  ! {Error} deferred type 't' is not abstract, so its instantiation argument must not be the abstract type abstract_t
     |                              ^^^^^^^^^^ 
