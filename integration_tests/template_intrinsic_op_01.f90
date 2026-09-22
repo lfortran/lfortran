@@ -4,11 +4,13 @@ module template_intrinsic_op_01_m
     requirement op_R {T, V, op_func}
         deferred type :: T
         deferred type :: V
-        pure elemental function op_func(lhs, rhs) result(res)
-            type(T), intent(in) :: lhs
-            type(T), intent(in) :: rhs
-            type(V) :: res
-        end function
+        deferred interface
+            pure elemental function op_func(lhs, rhs) result(res)
+                type(T), intent(in) :: lhs
+                type(T), intent(in) :: rhs
+                type(V) :: res
+            end function
+        end interface
     end requirement
 
     template op_t(T, V, op_func)

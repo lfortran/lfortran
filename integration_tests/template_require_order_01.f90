@@ -15,11 +15,13 @@ module template_require_order_01_m
         deferred type :: t
         deferred type :: u
         deferred type :: v
-        pure function op_func(lhs, rhs) result(res)
-            type(t), intent(in) :: lhs
-            type(t), intent(in) :: rhs
-            type(v) :: res
-        end function
+        deferred interface
+            pure function op_func(lhs, rhs) result(res)
+                type(t), intent(in) :: lhs
+                type(t), intent(in) :: rhs
+                type(v) :: res
+            end function
+        end interface
     end requirement
 
     ! two procedures before every type
@@ -27,16 +29,18 @@ module template_require_order_01_m
         deferred type :: t
         deferred type :: u
         deferred type :: v
-        pure function op_func(lhs, rhs) result(res)
-            type(t), intent(in) :: lhs
-            type(t), intent(in) :: rhs
-            type(v) :: res
-        end function
-        pure function op_func2(lhs, rhs) result(res)
-            type(u), intent(in) :: lhs
-            type(u), intent(in) :: rhs
-            type(u) :: res
-        end function
+        deferred interface
+            pure function op_func(lhs, rhs) result(res)
+                type(t), intent(in) :: lhs
+                type(t), intent(in) :: rhs
+                type(v) :: res
+            end function
+            pure function op_func2(lhs, rhs) result(res)
+                type(u), intent(in) :: lhs
+                type(u), intent(in) :: rhs
+                type(u) :: res
+            end function
+        end interface
     end requirement
 
     ! procedure in the middle, with v (which it uses) still to come
@@ -44,11 +48,13 @@ module template_require_order_01_m
         deferred type :: t
         deferred type :: u
         deferred type :: v
-        pure function op_func(lhs, rhs) result(res)
-            type(t), intent(in) :: lhs
-            type(t), intent(in) :: rhs
-            type(v) :: res
-        end function
+        deferred interface
+            pure function op_func(lhs, rhs) result(res)
+                type(t), intent(in) :: lhs
+                type(t), intent(in) :: rhs
+                type(v) :: res
+            end function
+        end interface
     end requirement
 
     ! procedure in the middle, with both types it uses already given
@@ -56,11 +62,13 @@ module template_require_order_01_m
         deferred type :: t
         deferred type :: u
         deferred type :: v
-        pure function op_func(lhs, rhs) result(res)
-            type(t), intent(in) :: lhs
-            type(t), intent(in) :: rhs
-            type(v) :: res
-        end function
+        deferred interface
+            pure function op_func(lhs, rhs) result(res)
+                type(t), intent(in) :: lhs
+                type(t), intent(in) :: rhs
+                type(v) :: res
+            end function
+        end interface
     end requirement
 
     ! procedure last
@@ -68,11 +76,13 @@ module template_require_order_01_m
         deferred type :: t
         deferred type :: u
         deferred type :: v
-        pure function op_func(lhs, rhs) result(res)
-            type(t), intent(in) :: lhs
-            type(t), intent(in) :: rhs
-            type(v) :: res
-        end function
+        deferred interface
+            pure function op_func(lhs, rhs) result(res)
+                type(t), intent(in) :: lhs
+                type(t), intent(in) :: rhs
+                type(v) :: res
+            end function
+        end interface
     end requirement
 
     template tmpl_a(t, u, v, f)
