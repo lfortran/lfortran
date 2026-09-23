@@ -3611,7 +3611,7 @@ public:
             // deferred argument, so the block only has a meaning in a scoping
             // unit that has deferred arguments: a requirement, a template or a
             // templated procedure.
-            if (!is_requirement && !is_template) {
+            if (!has_deferred_args) {
                 diag.add(diag::Diagnostic(
                     "a deferred interface can only appear in a requirement, "
                     "a template or a templated procedure",
