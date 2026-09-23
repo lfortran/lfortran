@@ -16,7 +16,7 @@ module continue_compilation_instantiate_01_mod
 
     requirement add_r {T, op}
         deferred type :: T
-        interface
+        deferred interface
             function op(x, y) result(z)
                 type(T), intent(in) :: x, y
                 type(T) :: z

@@ -5,9 +5,6 @@ module template_add_01b_m
 
     requirement R {T, F}
         deferred type :: T
-        interface operator (+)
-            procedure F
-        end interface
         deferred interface
             function F(x, y) result(z)
                 type(T), intent(in) :: x, y
@@ -18,6 +15,12 @@ module template_add_01b_m
 
     template add_t(T, F)
         require :: R {T, F}
+        ! C1637 (J3/26-007r1) allows only a deferred or an abstract interface
+        ! in a requirement, so the operator is bound to the deferred procedure
+        ! here, in the template that uses it, rather than in the requirement.
+        interface operator (+)
+            procedure F
+        end interface
         private
         public :: add_generic
     contains

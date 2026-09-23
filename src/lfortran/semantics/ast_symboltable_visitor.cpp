@@ -3705,6 +3705,22 @@ public:
     }
 
     void visit_Interface(const AST::Interface_t &x) {
+        // C1637 (J3/26-007r1): the interface-stmt of an interface-block that
+        // is a requirement-specification shall specify ABSTRACT or DEFERRED.
+        // Any other interface block declares procedures that already exist
+        // (an external procedure with an explicit interface, or a generic
+        // set built from procedures declared elsewhere), which is not what a
+        // requirement states: a requirement only declares deferred arguments.
+        if (is_requirement
+                && !AST::is_a<AST::AbstractInterfaceHeader_t>(*x.m_header)
+                && !AST::is_a<AST::DeferredInterfaceHeader_t>(*x.m_header)) {
+            diag.add(diag::Diagnostic(
+                "an interface block in a requirement must be a deferred or "
+                "an abstract interface",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.m_header->base.loc})}));
+            throw SemanticAbort();
+        }
         if (AST::is_a<AST::InterfaceHeaderName_t>(*x.m_header)) {
             std::string generic_name = to_lower(AST::down_cast<AST::InterfaceHeaderName_t>(x.m_header)->m_name);
             interface_name = generic_name;

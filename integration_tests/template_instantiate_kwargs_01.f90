@@ -12,7 +12,7 @@ module template_instantiate_kwargs_01_m
     requirement pair_r {a, b, g}
         deferred type :: a
         deferred type :: b
-        interface
+        deferred interface
             function g(x, y) result(z)
                 type(a), intent(in) :: x
                 type(b), intent(in) :: y

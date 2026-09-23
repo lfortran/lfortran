@@ -4,7 +4,7 @@ module continue_compilation_templates_01_mod
     ! Duplicate parameter name in requirement's namelist
     requirement dup_param_req {T, T, op_func}
         deferred type :: T
-        interface
+        deferred interface
             function op_func(x) result(y)
                 type(T), intent(in) :: x
                 type(T) :: y
@@ -18,7 +18,7 @@ module continue_compilation_templates_01_mod
     requirement dup_param_req2 {V, V, W, comp_func}
         deferred type :: V
         deferred type :: W
-        interface
+        deferred interface
             function comp_func(x, y) result(z)
                 type(V), intent(in) :: x
                 type(V), intent(in) :: y
@@ -41,6 +41,36 @@ module continue_compilation_templates_01_mod
         real, parameter :: n = 1.0
         integer, parameter :: bad = "abc"
     end template
+
+    ! C1637: the interface-stmt of an interface block that is a
+    ! requirement-specification shall specify ABSTRACT or DEFERRED. A plain
+    ! interface block declares an external procedure with an explicit
+    ! interface, which is not a deferred-argument declaration.
+    requirement plain_interface_req {T2, plain_func}
+        deferred type :: T2
+        interface
+            function plain_func(x) result(y)
+                type(T2), intent(in) :: x
+                type(T2) :: y
+            end function
+        end interface
+    end requirement
+
+    ! A generic interface block is rejected for the same reason: it builds a
+    ! generic set out of procedures declared elsewhere instead of declaring a
+    ! deferred argument. A second one, to show compilation continues.
+    requirement operator_interface_req {U, plus_u}
+        deferred type :: U
+        interface operator (+)
+            procedure plus_u
+        end interface
+        deferred interface
+            function plus_u(x, y) result(z)
+                type(U), intent(in) :: x, y
+                type(U) :: z
+            end function
+        end interface
+    end requirement
 
 end module continue_compilation_templates_01_mod
 

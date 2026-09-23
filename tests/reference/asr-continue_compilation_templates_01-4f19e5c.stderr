@@ -30,3 +30,15 @@ semantic error: type mismatch in initialization: `string` cannot be assigned to 
    |
 42 |         integer, parameter :: bad = "abc"
    |                                     ^^^^^ 
+
+semantic error: an interface block in a requirement must be a deferred or an abstract interface
+  --> tests/errors/continue_compilation_templates_01.f90:51:9
+   |
+51 |         interface
+   |         ^^^^^^^^^ 
+
+semantic error: an interface block in a requirement must be a deferred or an abstract interface
+  --> tests/errors/continue_compilation_templates_01.f90:64:9
+   |
+64 |         interface operator (+)
+   |         ^^^^^^^^^^^^^^^^^^^^^^ 

@@ -2,7 +2,7 @@
     "basename": "asr-instantiate_kwargs_01-ed1d35e",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/instantiate_kwargs_01.f90",
-    "infile_hash": "9751cca3bcd60dc7127ffe9c448f71f3293379cdbb38c165a95db341",
+    "infile_hash": "56f0fad63ea25e0e432dde21358b343e54c0bff4155ea745c393e687",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

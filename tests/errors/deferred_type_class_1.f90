@@ -25,7 +25,7 @@ module deferred_type_class_1
 
     requirement r {t, s1}
         deferred type :: t
-        interface
+        deferred interface
             subroutine s1(x)
                 class(t), intent(in) :: x  ! {Error} deferred type 't' is not extensible, so it cannot be used in a class declaration
             end subroutine
