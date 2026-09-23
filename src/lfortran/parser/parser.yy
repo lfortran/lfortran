@@ -412,6 +412,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> derived_type_decl
 %type <vec_ast> deferred_type_decl
 %type <ast> deferred_proc_decl
+%type <ast> deferred_const_decl
+%type <ast> deferred_const_attr
+%type <vec_ast> deferred_const_attr_list
 %type <ast> template_decl
 %type <ast> requirement_decl
 %type <ast> require_decl
@@ -777,6 +780,53 @@ derived_type_decl
 deferred_type_decl
     : KW_DEFERRED KW_TYPE "::" id_list sep {
             $$ = DEFERRED_TYPES(p.m_a, $4, TRIVIA_AFTER($5, @$), @$); }
+    ;
+
+// F2028 R1618: DEFERRED declaration-type-spec, deferred-const-attr-spec-list
+//                  :: deferred-const-entity-decl-list
+//
+// The statement is an ordinary type declaration statement with a DEFERRED
+// keyword in front, so it reuses `var_type`, `var_modifier_list` and
+// `var_sym_decl_list` rather than restating them. The attributes of R1619 are
+// PARAMETER, DIMENSION and a rank-clause, all of which are `var_modifier`, and
+// the entities of R1620 are `var_sym_decl`. The `::` is mandatory, which R1618
+// makes it and the ordinary statement does not, so that much is spelled here.
+//
+// The attribute list is allowed to be empty and the type is the general
+// `declaration-type-spec`, even though C1618 requires PARAMETER and C1619
+// restricts the type to integer, logical or character: both are diagnosed in
+// the semantic stage, where the message can name the offending type or
+// attribute instead of being a bare syntax error. `procedure(...)` is
+// The type is `declaration_type_spec`, which is what R1618 names, rather than
+// `var_type`. The two differ by exactly the eight `procedure(...)`
+// alternatives, and those must not be reachable here: `DEFERRED PROCEDURE (
+// interface-name )` is the separate deferred-proc-decl-stmt of R1622, and
+// letting this rule match it too makes the two statements ambiguous.
+// R1619 allows PARAMETER, DIMENSION and a rank-clause. The first two are
+// `var_modifier`, so only the rank-clause is added here. It is not put into
+// `var_modifier` itself, even though F2018 R821 makes a rank-clause a general
+// declaration attribute: reachable after any comma of any declaration it costs
+// a shift/reduce conflict, and supporting it everywhere is more than R1619 asks
+// for. Behind KW_DEFERRED the state is distinct and the grammar stays at 195.
+deferred_const_attr
+    : var_modifier { $$ = $1; }
+    | KW_RANK "(" expr_list ")" { $$ = ATTR_RANK($3, @$); }
+    ;
+
+deferred_const_attr_list
+    : deferred_const_attr_list "," deferred_const_attr {
+            $$ = $1; LIST_ADD($$, $3); }
+    | "," deferred_const_attr { LIST_NEW($$); LIST_ADD($$, $2); }
+    ;
+
+deferred_const_decl
+    : KW_DEFERRED declaration_type_spec deferred_const_attr_list "::"
+      var_sym_decl_list sep {
+            LLOC(@$, @5); $$ = DEFERRED_CONST_DECL(p.m_a, $2, $3, $5,
+                TRIVIA_AFTER($6, @$), @$); }
+    | KW_DEFERRED declaration_type_spec "::" var_sym_decl_list sep {
+            LLOC(@$, @4); $$ = DEFERRED_CONST_DECL_NOATTR(p.m_a, $2, $4,
+                TRIVIA_AFTER($5, @$), @$); }
     ;
 
 // F2028 R1622: DEFERRED PROCEDURE ( interface-name ) [ :: ]
@@ -1801,6 +1851,7 @@ decl_statements
 
 decl_statement
     : var_decl
+    | deferred_const_decl
     | interface_decl
     | derived_type_decl
     | deferred_proc_decl

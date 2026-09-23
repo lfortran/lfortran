@@ -343,6 +343,10 @@ static inline Vec<kind_item_t> a2kind_list(Allocator &al,
 #define DIMENSION(x, l) make_AttrDimension_t( \
             p.m_a, l, \
             x.p, x.size())
+// F2028 R1619 rank-clause: `RANK ( rank-spec-list )`
+#define ATTR_RANK(x, l) make_AttrRank_t( \
+            p.m_a, l, \
+            EXPRS(x), x.size())
 #define DIMENSION0(l) make_AttrDimension_t( \
             p.m_a, l, \
             nullptr, 0)
@@ -2921,6 +2925,45 @@ static inline Location SPAN(const Location &first, const Location &last) {
         make_DeferredProcedure_t(p.m_a, l, \
         name2char(iface), ARGS(p.m_a, names), names.size(), \
         trivia_cast(trivia))
+
+// A `deferred <type>, <attrs> :: <entities>` statement (F2028 R1618) declares
+// deferred constants. It is an ordinary type declaration statement carrying one
+// extra attribute, so it reuses the `Declaration` node: the only difference from
+// `integer, parameter :: x` is the `deferred` attribute, which is prepended to
+// the attribute list so that the semantic stage recognises the statement from
+// the attributes alone, exactly as `deferred type ::` is recognised by the
+// `deferred` attribute on a `DerivedType` node. Keeping one node type means the
+// statement ordering rules (F2018 R508), the declaration visitors and the
+// `--show-ast` output need no special case for it.
+ast_t* DEFERRED_CONST_DECL(Allocator &al,
+        ast_t *vartype,
+        const Vec<ast_t*> &attrs,
+        const Vec<var_sym_t> &syms,
+        ast_t *trivia,
+        Location &l) {
+    Vec<decl_attribute_t*> v;
+    v.reserve(al, attrs.size() + 1);
+    v.push_back(al, down_cast<decl_attribute_t>(
+        make_SimpleAttribute_t(al, l, simple_attributeType::AttrDeferred)));
+    for (size_t i=0; i < attrs.size(); i++) {
+        v.push_back(al, down_cast<decl_attribute_t>(attrs[i]));
+    }
+    return make_Declaration_t(al, l, down_cast<decl_attribute_t>(vartype),
+        v.p, v.size(), syms.p, syms.size(), trivia_cast(trivia));
+}
+
+// The same statement with no attribute list at all, `deferred integer :: n`.
+// C1618 requires the PARAMETER attribute, so this always ends in a diagnostic,
+// but it is parsed so that the message can say which attribute is missing.
+ast_t* DEFERRED_CONST_DECL_NOATTR(Allocator &al,
+        ast_t *vartype,
+        const Vec<var_sym_t> &syms,
+        ast_t *trivia,
+        Location &l) {
+    Vec<ast_t*> empty;
+    empty.reserve(al, 0);
+    return DEFERRED_CONST_DECL(al, vartype, empty, syms, trivia, l);
+}
 
 // Appends all `items` at the end of `list`; used by declaration statements
 // that expand into more than one AST node.
