@@ -4418,6 +4418,20 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                                  ASR::symbol_t* derived_type_sym,
                                                  bool is_cstruct);
 
+// A `class(t)` declaration of a deferred type argument (C706 of the Fortran 2028
+// working draft J3/26-007r1) is recorded as an ASR::TypeParameter_t whose
+// `is_class` is set. Substituting such a type parameter with a derived type has
+// to yield the polymorphic ASR::StructType_t that `class(x)` yields for a
+// concrete type `x`; otherwise the instantiated entity would be a
+// non-polymorphic variable of a possibly abstract type. `subs` is the
+// substituted type and `subs_sym` the derived type symbol it names; both are
+// returned unchanged when the type parameter was not used in a CLASS
+// declaration or when the substituted type is not of derived type.
+ASR::ttype_t* substitute_class_type_parameter(Allocator& al,
+                                                 ASR::TypeParameter_t* param,
+                                                 ASR::ttype_t* subs,
+                                                 ASR::symbol_t* subs_sym);
+
 // Sets the dimension member of `ttype_t`. Returns `true` if dimensions set.
 // Returns `false` if the `ttype_t` does not have a dimension member.
 inline bool ttype_set_dimensions(ASR::ttype_t** x,
@@ -4642,7 +4656,8 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-            t_ = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc, tp->m_param));
+            t_ = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc,
+                tp->m_param, tp->m_deferred_attr, tp->m_is_class));
             break;
         }
         case ASR::ttypeType::FunctionType: {
@@ -4969,7 +4984,8 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-            return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc, tp->m_param));
+            return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
+                tp->m_param, tp->m_deferred_attr, tp->m_is_class));
         }
         case ASR::ttypeType::CPtr: {
             ASR::CPtr_t* ptr = ASR::down_cast<ASR::CPtr_t>(t);

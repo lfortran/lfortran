@@ -59,7 +59,8 @@ public:
             } else {
                 t = ASRUtils::make_Array_t_util(al, tp->base.base.loc, ASRUtils::TYPE(
                     ASR::make_TypeParameter_t(al, tp->base.base.loc,
-                    s2c(al, new_sym_name))), tp_m_dims, tp_n_dims);
+                    s2c(al, new_sym_name), tp->m_deferred_attr,
+                    tp->m_is_class)), tp_m_dims, tp_n_dims);
                 type_subs[tp->m_param] = t;
             }
         }
@@ -700,7 +701,8 @@ public:
                     }
                     case ASR::ttypeType::TypeParameter: {
                         ASR::TypeParameter_t* tnew = ASR::down_cast<ASR::TypeParameter_t>(t);
-                        t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc, tnew->m_param));
+                        t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc,
+                            tnew->m_param, tnew->m_deferred_attr, tnew->m_is_class));
                         break;
                     }
                     default: {
@@ -889,7 +891,8 @@ public:
             } else {
                 t = ASRUtils::make_Array_t_util(al, tp->base.base.loc, ASRUtils::TYPE(
                     ASR::make_TypeParameter_t(al, tp->base.base.loc,
-                    s2c(al, new_sym_name))), tp_m_dims, tp_n_dims);
+                    s2c(al, new_sym_name), tp->m_deferred_attr,
+                    tp->m_is_class)), tp_m_dims, tp_n_dims);
                 type_subs[tp->m_param].first = t;
             }
         }
@@ -981,7 +984,9 @@ public:
                 ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(ttype);
                 LCOMPILERS_ASSERT(type_subs.find(tp->m_param) != type_subs.end());
                 // TODO: StructType - set the symbol here
-                return ASRUtils::duplicate_type(al, type_subs[tp->m_param].first);
+                return ASRUtils::substitute_class_type_parameter(al, tp,
+                    ASRUtils::duplicate_type(al, type_subs[tp->m_param].first),
+                    type_subs[tp->m_param].second);
             }
             case (ASR::ttypeType::Array) : {
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
@@ -1350,7 +1355,9 @@ public:
         switch (ttype->type) {
             case (ASR::ttypeType::TypeParameter) : {
                 ASR::TypeParameter_t *param = ASR::down_cast<ASR::TypeParameter_t>(ttype);
-                return ASRUtils::duplicate_type(al, type_subs[param->m_param].first);
+                return ASRUtils::substitute_class_type_parameter(al, param,
+                    ASRUtils::duplicate_type(al, type_subs[param->m_param].first),
+                    type_subs[param->m_param].second);
             } 
             case (ASR::ttypeType::List) : {
                 ASR::List_t *tlist = ASR::down_cast<ASR::List_t>(ttype);
@@ -1779,7 +1786,9 @@ public:
         switch (ttype->type) {
             case (ASR::ttypeType::TypeParameter) : {
                 ASR::TypeParameter_t *param = ASR::down_cast<ASR::TypeParameter_t>(ttype);
-                return ASRUtils::duplicate_type(al, type_subs[param->m_param].first);
+                return ASRUtils::substitute_class_type_parameter(al, param,
+                    ASRUtils::duplicate_type(al, type_subs[param->m_param].first),
+                    type_subs[param->m_param].second);
             }
             case (ASR::ttypeType::List) : {
                 ASR::List_t *tlist = ASR::down_cast<ASR::List_t>(ttype);
