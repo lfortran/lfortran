@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    194 // shift/reduce conflicts
+%expect    196 // shift/reduce conflicts
 %expect-rr 185 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -415,6 +415,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> deferred_proc_decl
 %type <vec_ast> deferred_type_attr_list
 %type <ast> deferred_type_attr
+%type <ast> deferred_const_decl
+%type <ast> deferred_const_attr
+%type <vec_ast> deferred_const_attr_list
 %type <ast> template_decl
 %type <ast> requirement_decl
 %type <ast> require_decl
@@ -466,6 +469,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> var_type
 %type <ast> fn_mod
 %type <vec_ast> fn_mod_plus
+%type <vec_ast> template_sub_prefix
+%type <vec_ast> template_fn_prefix
 %type <vec_ast> var_modifiers
 %type <vec_ast> enum_var_modifiers
 %type <vec_ast> var_modifier_list
@@ -796,6 +801,53 @@ deferred_type_attr
     | KW_EXTENSIBLE { $$ = SIMPLE_ATTR(Extensible, @$); }
     ;
 
+// F2028 R1618: DEFERRED declaration-type-spec, deferred-const-attr-spec-list
+//                  :: deferred-const-entity-decl-list
+//
+// The statement is an ordinary type declaration statement with a DEFERRED
+// keyword in front, so it reuses `var_type`, `var_modifier_list` and
+// `var_sym_decl_list` rather than restating them. The attributes of R1619 are
+// PARAMETER, DIMENSION and a rank-clause, all of which are `var_modifier`, and
+// the entities of R1620 are `var_sym_decl`. The `::` is mandatory, which R1618
+// makes it and the ordinary statement does not, so that much is spelled here.
+//
+// The attribute list is allowed to be empty and the type is the general
+// `declaration-type-spec`, even though C1618 requires PARAMETER and C1619
+// restricts the type to integer, logical or character: both are diagnosed in
+// the semantic stage, where the message can name the offending type or
+// attribute instead of being a bare syntax error. `procedure(...)` is
+// The type is `declaration_type_spec`, which is what R1618 names, rather than
+// `var_type`. The two differ by exactly the eight `procedure(...)`
+// alternatives, and those must not be reachable here: `DEFERRED PROCEDURE (
+// interface-name )` is the separate deferred-proc-decl-stmt of R1622, and
+// letting this rule match it too makes the two statements ambiguous.
+// R1619 allows PARAMETER, DIMENSION and a rank-clause. The first two are
+// `var_modifier`, so only the rank-clause is added here. It is not put into
+// `var_modifier` itself, even though F2018 R821 makes a rank-clause a general
+// declaration attribute: reachable after any comma of any declaration it costs
+// a shift/reduce conflict, and supporting it everywhere is more than R1619 asks
+// for. Behind KW_DEFERRED the state is distinct and the grammar stays at 195.
+deferred_const_attr
+    : var_modifier { $$ = $1; }
+    | KW_RANK "(" expr_list ")" { $$ = ATTR_RANK($3, @$); }
+    ;
+
+deferred_const_attr_list
+    : deferred_const_attr_list "," deferred_const_attr {
+            $$ = $1; LIST_ADD($$, $3); }
+    | "," deferred_const_attr { LIST_NEW($$); LIST_ADD($$, $2); }
+    ;
+
+deferred_const_decl
+    : KW_DEFERRED declaration_type_spec deferred_const_attr_list "::"
+      var_sym_decl_list sep {
+            LLOC(@$, @5); $$ = DEFERRED_CONST_DECL(p.m_a, $2, $3, $5,
+                TRIVIA_AFTER($6, @$), @$); }
+    | KW_DEFERRED declaration_type_spec "::" var_sym_decl_list sep {
+            LLOC(@$, @4); $$ = DEFERRED_CONST_DECL_NOATTR(p.m_a, $2, $4,
+                TRIVIA_AFTER($5, @$), @$); }
+    ;
+
 // F2028 R1622: DEFERRED PROCEDURE ( interface-name ) [ :: ]
 //              deferred-proc-name-list
 // The `::` is optional, so both spellings are accepted.
@@ -1084,6 +1136,23 @@ subroutine
     sep decl_statements end_subroutine sep {
             LLOC(@$, @11); $$ = TEMPLATED_SUBROUTINE1($1, $3, $5, $7, $8,
                 TRIVIA($9, $12, @$), $10, $11, @$); }
+    | template_sub_prefix id "{" id_list "}" sub_args bind_opt
+    sep decl_statements end_subroutine sep {
+            LLOC(@$, @10); $$ = TEMPLATED_SUBROUTINE1($1, $2, $4, $6, $7,
+                TRIVIA($8, $11, @$), $9, $10, @$); }
+    ;
+
+// prefix of a templated subroutine statement; TEMPLATE is mandatory (C1609)
+// and the keyword is consumed together with SUBROUTINE so that it cannot be
+// confused with the name of a TEMPLATE construct. The deferred argument list
+// is bracketed with braces, not parentheses: J3/26-158 corrects R1611 and
+// R1612, which 26-007r1 still spelled with parentheses.
+template_sub_prefix
+    : KW_TEMPLATE KW_SUBROUTINE { LIST_NEW($$); }
+    | KW_TEMPLATE fn_mod_plus KW_SUBROUTINE { $$ = $2; }
+    | fn_mod_plus KW_TEMPLATE KW_SUBROUTINE { $$ = $1; }
+    | fn_mod_plus KW_TEMPLATE fn_mod_plus KW_SUBROUTINE {
+            $$ = concat_prefix(p.m_a, $1, $3); }
     ;
 
 subroutine_contains_end
@@ -1152,6 +1221,22 @@ function
         end_function sep {
             LLOC(@$, @14); $$ = TEMPLATED_FUNCTION($1, $3, $5, $8, $10, $11,
                 TRIVIA($12, $15, @$), $13, $14, @$); }
+    | template_fn_prefix id "{" id_list "}" "(" id_list_opt ")"
+        result_opt
+        bind_opt
+        sep decl_statements
+        end_function sep {
+            LLOC(@$, @13); $$ = TEMPLATED_FUNCTION($1, $2, $4, $7, $9, $10,
+                TRIVIA($11, $14, @$), $12, $13, @$); }
+    ;
+
+// prefix of a templated function statement; see template_sub_prefix
+template_fn_prefix
+    : KW_TEMPLATE KW_FUNCTION { LIST_NEW($$); }
+    | KW_TEMPLATE fn_mod_plus KW_FUNCTION { $$ = $2; }
+    | fn_mod_plus KW_TEMPLATE KW_FUNCTION { $$ = $1; }
+    | fn_mod_plus KW_TEMPLATE fn_mod_plus KW_FUNCTION {
+            $$ = concat_prefix(p.m_a, $1, $3); }
     ;
 
 function_contains_end
@@ -1785,6 +1870,7 @@ decl_statements
 
 decl_statement
     : var_decl
+    | deferred_const_decl
     | interface_decl
     | derived_type_decl
     | deferred_proc_decl

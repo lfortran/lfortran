@@ -1851,6 +1851,23 @@ public:
         s = r;
     }
 
+    // F2028 R831 rank-clause, `RANK ( rank-spec-list )`, which only a deferred
+    // constant declaration accepts so far (R1619).
+    void visit_AttrRank(const AttrRank_t &x) {
+        std::string r;
+        r += syn(gr::Type);
+        r += "rank";
+        r += syn();
+        r += "(";
+        for (size_t i=0; i<x.n_rank; i++) {
+            visit_expr(*x.m_rank[i]);
+            r += s;
+            if (i < x.n_rank-1) r.append(", ");
+        }
+        r += ")";
+        s = r;
+    }
+
     void visit_AttrCodimension(const AttrCodimension_t &x) {
         std::string r;
         r += syn(gr::Type);
