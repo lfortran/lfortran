@@ -6797,6 +6797,14 @@ public:
         current_scope = x.m_symtab;
         mangle_prefix = ASRUtils::cell_prefix(x.m_symtab) + "__module_" + std::string(x.m_name) + "_";
 
+        // Where each queue of run time set up stood before this module's own
+        // variables were visited, so that what they add below can be told
+        // apart from what the translation unit and the modules before it
+        // added. See `emit_module_startup_ctor`.
+        size_t arrays_mark = allocatable_array_details.size();
+        size_t structs_mark = allocatable_struct_array_members_details.size();
+        size_t struct_arrays_mark = struct_array_global_members_details.size();
+
         // Declaring a module's variables emits no instructions. Leave the
         // builder pointing at nothing, so that an instruction emitted here by
         // mistake belongs to no function, where the verifier rejects any use
@@ -6849,8 +6857,133 @@ public:
         }
 
         visit_procedures(x);
+        emit_module_startup_ctor(x, arrays_mark, structs_mark, struct_arrays_mark);
         mangle_prefix = ASRUtils::cell_prefix(current_scope_copy);
         current_scope = current_scope_copy;
+    }
+
+    // The global that `ptr` stands for is defined by this translation unit,
+    // rather than only declared here for a definition in another object file.
+    // A variable is set up by the object file that defines it, so a
+    // translation unit that merely names one emits nothing for it.
+    static bool global_defined_here(llvm::Value *ptr) {
+        if (ptr == nullptr) return false;
+        llvm::GlobalVariable *gv = llvm::dyn_cast<llvm::GlobalVariable>(
+            ptr->stripPointerCasts());
+        return gv != nullptr && gv->hasInitializer();
+    }
+
+    // Everything that has to have happened before any code can read one of
+    // `x`'s variables: the members a zeroed static initializer cannot
+    // describe — an array member needs a descriptor of its own, a string
+    // member its data — and then the module's startup initializer, which
+    // holds the declaration initializers no target can lay out as static
+    // data.
+    //
+    // Both used to be reached only from the **Program**: the member set up
+    // was emitted into `main`, and the initializer is called from the chain
+    // the `global_init_wire` pass roots there. Neither is reached when a
+    // Fortran main program is not what runs the code — a C driver calling a
+    // `bind(c)` module procedure, this output used as a library — and
+    // neither is reached when a program cannot observe the module at all, as
+    // one that reaches it only through a separately compiled external
+    // procedure cannot.
+    //
+    // So run them from the target's own startup as well, in the object file
+    // that *defines* the module's storage. That object file is linked
+    // wherever the storage is, which is what makes it the one place this can
+    // go. The call chain stays as it is: it is what orders the initializers
+    // the way Fortran requires when a main program is there, and every
+    // initializer is guarded to run once, so being reached both ways is one
+    // initialization.
+    void emit_module_startup_ctor(const ASR::Module_t &x, size_t arrays_mark,
+            size_t structs_mark, size_t struct_arrays_mark) {
+        // A module an earlier interactive cell declared was set up when that
+        // cell was compiled; this one only names it.
+        if (prototype_only) return;
+
+        // An array pointer or an allocatable array of the module is given a
+        // companion descriptor that is a frame slot of `main` itself, so it
+        // has to be filled in there and cannot move here: a constructor's
+        // frame is gone by the time anything reads it. That descriptor is
+        // also what the module's initializer associates an array pointer
+        // into, so running the initializer before `main` fills it in would
+        // associate into a descriptor `main` then replaces. Such a module is
+        // left entirely to the Program, exactly as before, until the
+        // descriptor of a module level array is a global of its own.
+        if (allocatable_array_details.size() > arrays_mark) return;
+
+        std::vector<std::pair<ASR::symbol_t*, llvm::Value*>> structs;
+        std::vector<struct_array_global> struct_arrays;
+        for (size_t i = structs_mark;
+                i < allocatable_struct_array_members_details.size(); i++) {
+            if (global_defined_here(allocatable_struct_array_members_details[i].second)) {
+                structs.push_back(allocatable_struct_array_members_details[i]);
+            }
+        }
+        for (size_t i = struct_arrays_mark;
+                i < struct_array_global_members_details.size(); i++) {
+            if (global_defined_here(struct_array_global_members_details[i].ptr)) {
+                struct_arrays.push_back(struct_array_global_members_details[i]);
+            }
+        }
+        // A module variable's members are now set up here and nowhere else,
+        // so take the whole of what this module queued back out: what is left
+        // is what the translation unit itself declares, which the program
+        // still sets up.
+        allocatable_struct_array_members_details.resize(structs_mark);
+        struct_array_global_members_details.resize(struct_arrays_mark);
+
+        llvm::Function *init_fn = nullptr;
+        if (x.m_global_init != nullptr) {
+            ASR::symbol_t *sym = x.m_symtab->get_symbol(x.m_global_init);
+            if (sym != nullptr && ASR::is_a<ASR::Function_t>(*sym)) {
+                uint32_t h = get_hash((ASR::asr_t*)sym);
+                auto it = llvm_symtab_fn.find(h);
+                // An initializer another object file defines is registered
+                // with the startup there, next to that one definition.
+                if (it != llvm_symtab_fn.end() && !it->second->isDeclaration()) {
+                    init_fn = it->second;
+                }
+            }
+        }
+
+        if (structs.empty() && struct_arrays.empty() && init_fn == nullptr) {
+            return;
+        }
+
+        llvm::BasicBlock *saved_block = builder->GetInsertBlock();
+        llvm::DebugLoc saved_debug_loc = builder->getCurrentDebugLocation();
+        llvm::FunctionType *ctor_type = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context), {}, false);
+        llvm::Function *ctor_fn = llvm::Function::Create(ctor_type,
+            llvm::Function::InternalLinkage,
+            mangle_prefix + "__lfortran_module_startup", module.get());
+        builder->SetInsertPoint(
+            llvm::BasicBlock::Create(context, ".entry", ctor_fn));
+        // The constructor belongs to no Fortran source construct, so nothing
+        // here carries a location of the function that was being emitted.
+        builder->SetCurrentDebugLocation(llvm::DebugLoc());
+
+        for (auto &st : structs) {
+            allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.first),
+                st.second, ASRUtils::symbol_type(st.first), false, true);
+        }
+        for (struct_array_global &st : struct_arrays) {
+            allocate_array_members_of_struct_arrays(st.expr, st.ptr, st.var_type);
+        }
+        // Last, because a declaration initializer can read a member that the
+        // set up above is what gives a descriptor of its own.
+        if (init_fn != nullptr) {
+            builder->CreateCall(init_fn, {});
+        }
+        builder->CreateRetVoid();
+        llvm::appendToGlobalCtors(*module, ctor_fn, 65535);
+
+        if (saved_block != nullptr) {
+            builder->SetInsertPoint(saved_block);
+            builder->SetCurrentDebugLocation(saved_debug_loc);
+        }
     }
 
 #ifdef HAVE_TARGET_WASM

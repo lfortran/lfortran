@@ -530,11 +530,18 @@ void pass_global_init(Allocator &al, ASR::TranslationUnit_t &unit,
 
 namespace {
 
-// Under `--fast` the run-once guard of an initializer *function* is dead
-// weight: the program calls every module and program initializer exactly
-// once, in the order this pass just put in, and the translation unit's own is
-// called once by the target's startup hook. Unwrap it, so the body is the
-// initialization statements themselves.
+// Under `--fast` the run-once guard of a *program* initializer is dead
+// weight, and so is the guard of the translation unit's own: the first is
+// called once from the program body, the second once by the target's startup
+// hook. Unwrap those, so the body is the initialization statements
+// themselves.
+//
+// A module initializer keeps its guard in every mode. It is reached twice by
+// construction: once from the chain this pass roots at the program, and once
+// from the startup constructor the backend registers in the object file that
+// defines the module, which is what initializes the module when no Fortran
+// main program exists to root that chain. The guard is what makes those two
+// into one initialization.
 //
 // The guard at the top of a procedure or block body is a different thing —
 // it is what gives an initialized local the save attribute Fortran requires,
@@ -566,10 +573,7 @@ void strip_run_once_guards(ASR::TranslationUnit_t &unit, Allocator &al) {
     };
     strip_of(unit.m_global_init, unit.m_symtab);
     for (auto &item : unit.m_symtab->get_scope()) {
-        if (ASR::is_a<ASR::Module_t>(*item.second)) {
-            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(item.second);
-            strip_of(m->m_global_init, m->m_symtab);
-        } else if (ASR::is_a<ASR::Program_t>(*item.second)) {
+        if (ASR::is_a<ASR::Program_t>(*item.second)) {
             ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(item.second);
             strip_of(p->m_global_init, p->m_symtab);
         }

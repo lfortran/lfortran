@@ -99,13 +99,41 @@ module dependency order, before the program's first statement — which is the
 single call the program body gains. That list is complete rather than a list
 of the program's direct dependencies: a module the program reaches only
 through another module is in it too, so no module initializer needs to call
-any other. Neither link order nor a constructor priority can
-change the order Fortran requires, and an initializer defined in another
-object file is called through an [ExternalSymbol](ExternalSymbol.md) like any
-other module procedure. A backend therefore needs no support at all for module
-and program initializers — only for
+any other. An initializer defined in another object file is called through an
+[ExternalSymbol](ExternalSymbol.md) like any other module procedure.
+
+That chain is rooted at the program, so it reaches nothing at all when no
+program is linked — a C driver calling a `bind(c)` module procedure,
+LFortran's output used as a library — and it cannot reach a module the
+program is unable to observe, as it cannot reach one that only a separately
+compiled external procedure uses. A backend therefore also runs a
+module's own initializer from the startup hook of the object file that
+*defines* the module, which is the one object file linked wherever the
+module's storage is. That is a second path to the same initializer, not a
+second initialization: the run-once guard above is what makes it one, which
+is why a module initializer keeps its guard even under `--fast`, where a
+program's and the translation unit's are dropped. The LLVM backend leaves one
+case out for now: a module that declares an array pointer or an allocatable
+array is still left to the call chain alone, because the companion descriptor
+of such a variable is a frame slot of `main` and the initializer has to run
+after it is filled in.
+
+The two paths cannot disagree about order. What a module initializer holds is
+a pointer association, a broadcast of constants, or the allocation of a saved
+coarray: an address and a constant in the first two, which no other
+initializer can change, and in the third a collective that every image reaches
+in the order of the one binary they all run. None of them can observe whether
+another module's initializer has run, so running them in link order rather
+than in dependency order is not something a program can tell apart. When a
+main program is there the call chain still runs, before the program's first
+statement and in dependency order, every initializer that has somehow not run
+yet.
+
+A backend therefore needs no support for *calling* module and program
+initializers — the ASR calls those where Fortran says they run — only for
 [TranslationUnit](../unit_nodes/TranslationUnit.md)`.global_init`, which no
-ASR statement calls.
+ASR statement calls, and for registering a module's own with the target's
+startup.
 
 Putting those calls in is a second pass, `global_init_wire`, because a pass
 that runs later than `global_init` can create an initializer too — `coarray`
