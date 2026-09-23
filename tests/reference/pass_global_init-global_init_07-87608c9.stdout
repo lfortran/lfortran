@@ -1,0 +1,1793 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            global_init_07:
+                (Program
+                    (SymbolTable
+                        7
+                        {
+                            1_extent_n:
+                                (ExternalSymbol
+                                    7
+                                    1_extent_n
+                                    3 n
+                                    global_init_07_m
+                                    [extent]
+                                    n
+                                    Public
+                                ),
+                            1_extent_step:
+                                (ExternalSymbol
+                                    7
+                                    1_extent_step
+                                    3 step
+                                    global_init_07_m
+                                    [extent]
+                                    step
+                                    Public
+                                ),
+                            counts:
+                                (ExternalSymbol
+                                    7
+                                    counts
+                                    2 counts
+                                    global_init_07_m
+                                    []
+                                    counts
+                                    Public
+                                ),
+                            extent:
+                                (ExternalSymbol
+                                    7
+                                    extent
+                                    2 extent
+                                    global_init_07_m
+                                    []
+                                    extent
+                                    Public
+                                ),
+                            host_bound:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            1_extent_n:
+                                                (ExternalSymbol
+                                                    9
+                                                    1_extent_n
+                                                    3 n
+                                                    global_init_07_m
+                                                    [extent]
+                                                    n
+                                                    Public
+                                                ),
+                                            1_extent_step:
+                                                (ExternalSymbol
+                                                    9
+                                                    1_extent_step
+                                                    3 step
+                                                    global_init_07_m
+                                                    [extent]
+                                                    step
+                                                    Public
+                                                ),
+                                            b:
+                                                (Variable
+                                                    9
+                                                    b
+                                                    [owned]
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (StructInstanceMember
+                                                            (ArrayItem
+                                                                (Var 7 owned)
+                                                                [(()
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                (StructType
+                                                                    [(Integer 4)
+                                                                    (Integer 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            9 1_extent_n
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        PointerArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            c:
+                                                (Variable
+                                                    9
+                                                    c
+                                                    [owned]
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (StructInstanceMember
+                                                            (ArrayItem
+                                                                (Var 7 owned)
+                                                                [(()
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                (StructType
+                                                                    [(Integer 4)
+                                                                    (Integer 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            9 1_extent_step
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        PointerArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    host_bound
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    [(If
+                                        ()
+                                        (IntegerCompare
+                                            (ArraySize
+                                                (Var 9 b)
+                                                ()
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 5 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 12 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (ArraySize
+                                                (Var 9 c)
+                                                ()
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 13 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
+                                        (Var 9 b)
+                                        (ArrayBroadcast
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            (IntrinsicArrayFunction
+                                                Shape
+                                                [(Var 9 b)]
+                                                0
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                    Global
+                                                )
+                                                ()
+                                            )
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (StructInstanceMember
+                                                    (ArrayItem
+                                                        (Var 7 owned)
+                                                        [(()
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        ())]
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (Integer 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    9 1_extent_n
+                                                    (Integer 4)
+                                                    ()
+                                                ))]
+                                                PointerArray
+                                                Global
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 9 c)
+                                        (ArrayBroadcast
+                                            (IntegerConstant 6 (Integer 4) Decimal)
+                                            (IntrinsicArrayFunction
+                                                Shape
+                                                [(Var 9 c)]
+                                                0
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                    Global
+                                                )
+                                                ()
+                                            )
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (StructInstanceMember
+                                                    (ArrayItem
+                                                        (Var 7 owned)
+                                                        [(()
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        ())]
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (Integer 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    9 1_extent_step
+                                                    (Integer 4)
+                                                    ()
+                                                ))]
+                                                PointerArray
+                                                Global
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (IntrinsicArrayFunction
+                                                Sum
+                                                [(ArrayPhysicalCast
+                                                    (Var 9 b)
+                                                    PointerArray
+                                                    DescriptorArray
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (StructInstanceMember
+                                                            (ArrayItem
+                                                                (Var 7 owned)
+                                                                [(()
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                (StructType
+                                                                    [(Integer 4)
+                                                                    (Integer 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            9 1_extent_n
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        DescriptorArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                )]
+                                                0
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 15 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 14 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (IntrinsicArrayFunction
+                                                Sum
+                                                [(ArrayPhysicalCast
+                                                    (Var 9 c)
+                                                    PointerArray
+                                                    DescriptorArray
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (StructInstanceMember
+                                                            (ArrayItem
+                                                                (Var 7 owned)
+                                                                [(()
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                (StructType
+                                                                    [(Integer 4)
+                                                                    (Integer 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            9 1_extent_step
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        DescriptorArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                )]
+                                                0
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 12 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 15 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            module_bound:
+                                (ExternalSymbol
+                                    7
+                                    module_bound
+                                    2 module_bound
+                                    global_init_07_m
+                                    []
+                                    module_bound
+                                    Public
+                                ),
+                            owned:
+                                (Variable
+                                    7
+                                    owned
+                                    []
+                                    Local
+                                    (ArrayBroadcast
+                                        (StructConstant
+                                            7 extent
+                                            [((IntegerConstant 5 (Integer 4) Decimal))
+                                            ((IntegerConstant 2 (Integer 4) Decimal))]
+                                            (StructType
+                                                [(Integer 4)
+                                                (Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )
+                                        (ArrayConstant
+                                            4
+                                            [1]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 1 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                                Global
+                                            )
+                                            ColMajor
+                                        )
+                                        (Array
+                                            (StructType
+                                                [(Integer 4)
+                                                (Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 1 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                            Global
+                                        )
+                                        ()
+                                    )
+                                    ()
+                                    Default
+                                    (Array
+                                        (StructType
+                                            [(Integer 4)
+                                            (Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    7 extent
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            shared:
+                                (ExternalSymbol
+                                    7
+                                    shared
+                                    2 shared
+                                    global_init_07_m
+                                    []
+                                    shared
+                                    Public
+                                ),
+                            use_bound:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            
+                                        })
+                                    use_bound
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    global_init_07
+                    [global_init_07_m]
+                    [(SubroutineCall
+                        7 module_bound
+                        ()
+                        []
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        7 use_bound
+                        ()
+                        []
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        7 host_bound
+                        ()
+                        []
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        7 counts
+                        ()
+                        [((IntegerConstant 10 (Integer 4) Decimal))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        7 counts
+                        ()
+                        [((IntegerConstant 11 (Integer 4) Decimal))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        7 counts
+                        ()
+                        [((IntegerConstant 12 (Integer 4) Decimal))]
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (ArrayItem
+                                    (Var 7 shared)
+                                    [(()
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ColMajor
+                                    ()
+                                )
+                                7 1_extent_n
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 8 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (ArrayItem
+                                    (Var 7 shared)
+                                    [(()
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ColMajor
+                                    ()
+                                )
+                                7 1_extent_n
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 9 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (ArrayItem
+                                    (Var 7 shared)
+                                    [(()
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ColMajor
+                                    ()
+                                )
+                                7 1_extent_step
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 10 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (ArrayItem
+                                (Var 7 shared)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (StructType
+                                    [(Integer 4)
+                                    (Integer 4)]
+                                    []
+                                    .true.
+                                    .false.
+                                )
+                                ColMajor
+                                ()
+                            )
+                            7 1_extent_n
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 99 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (ArrayItem
+                                    (Var 7 shared)
+                                    [(()
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ColMajor
+                                    ()
+                                )
+                                7 1_extent_n
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 11 (Integer 4) Decimal)
+                        )]
+                        []
+                    )]
+                    ()
+                ),
+            global_init_07_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            counts:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            1_extent_n:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_extent_n
+                                                    3 n
+                                                    global_init_07_m
+                                                    [extent]
+                                                    n
+                                                    Public
+                                                ),
+                                            e:
+                                                (Variable
+                                                    5
+                                                    e
+                                                    []
+                                                    Local
+                                                    (ArrayBroadcast
+                                                        (StructConstant
+                                                            2 extent
+                                                            [((IntegerConstant 10 (Integer 4) Decimal))
+                                                            ((IntegerConstant 1 (Integer 4) Decimal))]
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Integer 4)]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )
+                                                        (ArrayConstant
+                                                            4
+                                                            [1]
+                                                            (Array
+                                                                (Integer 4)
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (IntegerConstant 1 (Integer 4) Decimal))]
+                                                                FixedSizeArray
+                                                                Global
+                                                            )
+                                                            ColMajor
+                                                        )
+                                                        (Array
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Integer 4)]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 1 (Integer 4) Decimal))]
+                                                            FixedSizeArray
+                                                            Global
+                                                        )
+                                                        ()
+                                                    )
+                                                    ()
+                                                    Save
+                                                    (Array
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (Integer 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                        Global
+                                                    )
+                                                    2 extent
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            expected:
+                                                (Variable
+                                                    5
+                                                    expected
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    counts
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 5 expected)]
+                                    [(If
+                                        ()
+                                        (IntegerCompare
+                                            (StructInstanceMember
+                                                (ArrayItem
+                                                    (Var 5 e)
+                                                    [(()
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    ())]
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                5 1_extent_n
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            NotEq
+                                            (Var 5 expected)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
+                                        (StructInstanceMember
+                                            (ArrayItem
+                                                (Var 5 e)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                                ColMajor
+                                                ()
+                                            )
+                                            5 1_extent_n
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (IntegerBinOp
+                                            (StructInstanceMember
+                                                (ArrayItem
+                                                    (Var 5 e)
+                                                    [(()
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    ())]
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                5 1_extent_n
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            extent:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            n:
+                                                (Variable
+                                                    3
+                                                    n
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            step:
+                                                (Variable
+                                                    3
+                                                    step
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    Save
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    extent
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [n
+                                    step]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
+                                ),
+                            module_bound:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            1_extent_n:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_extent_n
+                                                    3 n
+                                                    global_init_07_m
+                                                    [extent]
+                                                    n
+                                                    Public
+                                                ),
+                                            b:
+                                                (Variable
+                                                    4
+                                                    b
+                                                    [shared]
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (StructInstanceMember
+                                                            (ArrayItem
+                                                                (Var 2 shared)
+                                                                [(()
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                (StructType
+                                                                    [(Integer 4)
+                                                                    (Integer 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            4 1_extent_n
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        PointerArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    module_bound
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    [(If
+                                        ()
+                                        (IntegerCompare
+                                            (ArraySize
+                                                (Var 4 b)
+                                                ()
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
+                                        (Var 4 b)
+                                        (ArrayBroadcast
+                                            (IntegerConstant 4 (Integer 4) Decimal)
+                                            (IntrinsicArrayFunction
+                                                Shape
+                                                [(Var 4 b)]
+                                                0
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                    Global
+                                                )
+                                                ()
+                                            )
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (StructInstanceMember
+                                                    (ArrayItem
+                                                        (Var 2 shared)
+                                                        [(()
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        ())]
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (Integer 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    4 1_extent_n
+                                                    (Integer 4)
+                                                    ()
+                                                ))]
+                                                PointerArray
+                                                Global
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (IntrinsicArrayFunction
+                                                Sum
+                                                [(ArrayPhysicalCast
+                                                    (Var 4 b)
+                                                    PointerArray
+                                                    DescriptorArray
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (StructInstanceMember
+                                                            (ArrayItem
+                                                                (Var 2 shared)
+                                                                [(()
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                (StructType
+                                                                    [(Integer 4)
+                                                                    (Integer 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            4 1_extent_n
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        DescriptorArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                )]
+                                                0
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 12 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            shared:
+                                (Variable
+                                    2
+                                    shared
+                                    []
+                                    Local
+                                    (ArrayBroadcast
+                                        (StructConstant
+                                            2 extent
+                                            [((IntegerConstant 3 (Integer 4) Decimal))
+                                            ((IntegerConstant 1 (Integer 4) Decimal))]
+                                            (StructType
+                                                [(Integer 4)
+                                                (Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )
+                                        (ArrayConstant
+                                            4
+                                            [2]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 1 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                                Global
+                                            )
+                                            ColMajor
+                                        )
+                                        (Array
+                                            (StructType
+                                                [(Integer 4)
+                                                (Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                            Global
+                                        )
+                                        ()
+                                    )
+                                    ()
+                                    Default
+                                    (Array
+                                        (StructType
+                                            [(Integer 4)
+                                            (Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    2 extent
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    global_init_07_m
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                ),
+            use_bound:
+                (Function
+                    (SymbolTable
+                        6
+                        {
+                            1_extent_n:
+                                (ExternalSymbol
+                                    6
+                                    1_extent_n
+                                    3 n
+                                    global_init_07_m
+                                    [extent]
+                                    n
+                                    Public
+                                ),
+                            1_extent_step:
+                                (ExternalSymbol
+                                    6
+                                    1_extent_step
+                                    3 step
+                                    global_init_07_m
+                                    [extent]
+                                    step
+                                    Public
+                                ),
+                            b:
+                                (Variable
+                                    6
+                                    b
+                                    [shared]
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (StructInstanceMember
+                                            (ArrayItem
+                                                (Var 6 shared)
+                                                [(()
+                                                (IntegerConstant 2 (Integer 4) Decimal)
+                                                ())]
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                                ColMajor
+                                                ()
+                                            )
+                                            6 1_extent_n
+                                            (Integer 4)
+                                            ()
+                                        ))]
+                                        PointerArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            c:
+                                (Variable
+                                    6
+                                    c
+                                    [shared]
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (StructInstanceMember
+                                            (ArrayItem
+                                                (Var 6 shared)
+                                                [(()
+                                                (IntegerConstant 2 (Integer 4) Decimal)
+                                                ())]
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                                ColMajor
+                                                ()
+                                            )
+                                            6 1_extent_step
+                                            (Integer 4)
+                                            ()
+                                        ))]
+                                        PointerArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            counts:
+                                (ExternalSymbol
+                                    6
+                                    counts
+                                    2 counts
+                                    global_init_07_m
+                                    []
+                                    counts
+                                    Public
+                                ),
+                            extent:
+                                (ExternalSymbol
+                                    6
+                                    extent
+                                    2 extent
+                                    global_init_07_m
+                                    []
+                                    extent
+                                    Public
+                                ),
+                            module_bound:
+                                (ExternalSymbol
+                                    6
+                                    module_bound
+                                    2 module_bound
+                                    global_init_07_m
+                                    []
+                                    module_bound
+                                    Public
+                                ),
+                            shared:
+                                (ExternalSymbol
+                                    6
+                                    shared
+                                    2 shared
+                                    global_init_07_m
+                                    []
+                                    shared
+                                    Public
+                                )
+                        })
+                    use_bound
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    []
+                    [(If
+                        ()
+                        (IntegerCompare
+                            (ArraySize
+                                (Var 6 b)
+                                ()
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (ArraySize
+                                (Var 6 c)
+                                ()
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 6 b)
+                        (ArrayBroadcast
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                            (IntrinsicArrayFunction
+                                Shape
+                                [(Var 6 b)]
+                                0
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ()
+                            )
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (StructInstanceMember
+                                    (ArrayItem
+                                        (Var 6 shared)
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        ())]
+                                        (StructType
+                                            [(Integer 4)
+                                            (Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        ColMajor
+                                        ()
+                                    )
+                                    6 1_extent_n
+                                    (Integer 4)
+                                    ()
+                                ))]
+                                PointerArray
+                                Global
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 6 c)
+                        (ArrayBroadcast
+                            (IntegerConstant 9 (Integer 4) Decimal)
+                            (IntrinsicArrayFunction
+                                Shape
+                                [(Var 6 c)]
+                                0
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ()
+                            )
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (StructInstanceMember
+                                    (ArrayItem
+                                        (Var 6 shared)
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        ())]
+                                        (StructType
+                                            [(Integer 4)
+                                            (Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        ColMajor
+                                        ()
+                                    )
+                                    6 1_extent_step
+                                    (Integer 4)
+                                    ()
+                                ))]
+                                PointerArray
+                                Global
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (IntrinsicArrayFunction
+                                Sum
+                                [(ArrayPhysicalCast
+                                    (Var 6 b)
+                                    PointerArray
+                                    DescriptorArray
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (StructInstanceMember
+                                            (ArrayItem
+                                                (Var 6 shared)
+                                                [(()
+                                                (IntegerConstant 2 (Integer 4) Decimal)
+                                                ())]
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                                ColMajor
+                                                ()
+                                            )
+                                            6 1_extent_n
+                                            (Integer 4)
+                                            ()
+                                        ))]
+                                        DescriptorArray
+                                        Global
+                                    )
+                                    ()
+                                )]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 21 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 6 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (IntrinsicArrayFunction
+                                Sum
+                                [(ArrayPhysicalCast
+                                    (Var 6 c)
+                                    PointerArray
+                                    DescriptorArray
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (StructInstanceMember
+                                            (ArrayItem
+                                                (Var 6 shared)
+                                                [(()
+                                                (IntegerConstant 2 (Integer 4) Decimal)
+                                                ())]
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                                ColMajor
+                                                ()
+                                            )
+                                            6 1_extent_step
+                                            (Integer 4)
+                                            ()
+                                        ))]
+                                        DescriptorArray
+                                        Global
+                                    )
+                                    ()
+                                )]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 9 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                        )]
+                        []
+                    )]
+                    ()
+                    Public
+                    .true.
+                    .true.
+                    ()
+                )
+        })
+    []
+    ()
+)

@@ -10,12 +10,7 @@ integer(4), dimension(1) :: lc
 integer(4) :: stat
 integer(4), dimension(1) :: uc
 integer(4), dimension(:), pointer :: x
-type(c_ptr) :: x__coarray_data
-type(prif_coarray_handle) :: x__coarray_handle
 call __module_prif_prif_init(stat)
-call __module_prif_prif_allocate_coarray([int(2, kind=8)], [integer(8) :: ], 4_8*int(5, kind=8), null(),&
-         x__coarray_handle, x__coarray_data)
-call c_f_pointer(x__coarray_data, x, [5], [1])
 call __module_prif_prif_sync_all()
 a = lcompilers_prif_lcobound_with_dim_k4(x__coarray_handle, 1)
 b = lcompilers_prif_ucobound_with_dim_k4(x__coarray_handle, 1)
@@ -24,6 +19,18 @@ uc = [lcompilers_prif_ucobound_with_dim_k4(x__coarray_handle, 1)]
 call __module_prif_prif_stop(.false.)
 
 contains
+
+subroutine __lfortran_global_init_cobounds_01()
+    logical(4), save :: __lfortran_global_init_done = .false.
+    integer(4) :: stat
+    if (.not. __lfortran_global_init_done) then
+        __lfortran_global_init_done = .true.
+        call __module_prif_prif_init(stat)
+        call __module_prif_prif_allocate_coarray([int(2, kind=8)], [integer(8) :: ], 4_8*int(5, kind=8), null(),&
+         x__coarray_handle, x__coarray_data)
+        call c_f_pointer(x__coarray_data, x, [5], [1])
+    end if
+end subroutine __lfortran_global_init_cobounds_01
 
 interface
     subroutine __module_prif_prif_allocate_coarray(lcobounds, ucobounds, size_in_bytes, final_proc,&

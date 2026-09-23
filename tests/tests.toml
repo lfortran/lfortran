@@ -5887,13 +5887,18 @@ options = "--coarray=true"
 [[test]]
 filename = "coarray_saved_01.f90"
 fortran = true
-pass = "coarray"
+# Through the wiring pass, so the reference shows who calls each saved
+# coarray's allocation as well as where it ended up.
+pass = "coarray,global_init_wire"
 options = "--coarray=true"
 
 [[test]]
 filename = "coarray_initialization_01.f90"
 fortran = true
-pass = "coarray"
+# Through the wiring pass as well, as coarray_saved_01 is: this test is
+# about initializers too, so the reference is easier to follow when it
+# shows who calls them.
+pass = "coarray,global_init_wire"
 options = "--coarray=true"
 
 [[test]]
@@ -6189,3 +6194,35 @@ run = true
 [[test]]
 filename = "errors/realloc_lhs_fn_result_02.f90"
 run = true
+
+[[test]]
+filename = "../integration_tests/global_init_01.f90"
+# Both halves, so the reference output documents the whole shape in one
+# place: the run-once guard, the dependency call, the initialization and the
+# program's single call into the chain.
+pass = "global_init,global_init_wire"
+
+[[test]]
+filename = "../integration_tests/coarrays_51.f90"
+# Separate compilation, so `coarrays_51_m` is read from a modfile: the pass
+# has to name the initializer its own object file defines rather than define
+# a second one here, and must leave the module's coarrays bound to the
+# companions that object file allocated. Checked as ASR because running it
+# needs the coarray runtime, which only the Caffeine CI jobs have -- and
+# `ci/test_caffeine.sh` cannot run a multi-file or separately compiled coarray
+# test today, which is issue #11941.
+extrafiles = "../integration_tests/coarrays_51_m.f90"
+options = "--coarray=true --separate-compilation"
+pass = "coarray,global_init_wire"
+
+[[test]]
+filename = "../integration_tests/global_init_07.f90"
+# The declaration initializer of an array of a derived type whose elements are
+# static data stays on the declaration, so a backend lays it out while it lays
+# the variable out and a specification expression in another scope can read it.
+# Only an element needing executable code of its own becomes a statement.
+# The reference is what catches a regression: turning these back into
+# statements is not observable at run time, because the compiler folds `size`
+# from the initializer it knows while the storage is sized from the value the
+# generated code has at that point.
+pass = "global_init"
