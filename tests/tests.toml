@@ -552,9 +552,11 @@ semantics_only_cc = true
 
 [[test]]
 filename = "errors/deferred_type_class_1.f90"
+semantics_only_cc = true
 
 [[test]]
 filename = "errors/deferred_type_coarray_1.f90"
+semantics_only_cc = true
 
 [[test]]
 filename = "errors/template_spec_decl_1.f90"

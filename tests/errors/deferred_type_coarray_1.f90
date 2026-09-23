@@ -22,11 +22,11 @@ module deferred_type_coarray_1
         integer :: a
     end type
 
-    ! Specification part of a template.
-    template spec_tmpl(t)
-        deferred type :: t
-        type(t), codimension[:], allocatable :: spec_x  ! {Error} A variable of deferred type must not be a coarray
-    end template
+    ! A coarray in a template's own specification part cannot be constructed:
+    ! C1603 admits only a declaration with the PARAMETER attribute there, and a
+    ! named constant is not a coarray, so C1617 is unreachable in that position.
+    ! The requirement below covers the specification part of a requirement,
+    ! where C1603 does not apply.
 
     ! Contains part of a template, all coarray spellings.
     template body_tmpl(t)
