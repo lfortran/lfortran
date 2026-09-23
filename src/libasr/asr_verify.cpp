@@ -430,6 +430,9 @@ public:
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
         verify_global_init(x.m_global_init, x.m_symtab, "Module",
             x.base.base.loc);
+        require(x.m_global_init != nullptr || !x.m_global_init_at_startup,
+            "Module::m_global_init_at_startup is about the initializer "
+            "Module::m_global_init names, so it cannot be set without one");
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }

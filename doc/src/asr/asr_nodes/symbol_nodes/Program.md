@@ -110,24 +110,47 @@ compiled external procedure uses. A backend therefore also runs a
 module's own initializer from the startup hook of the object file that
 *defines* the module, which is the one object file linked wherever the
 module's storage is. That is a second path to the same initializer, not a
-second initialization: the run-once guard above is what makes it one, which
-is why a module initializer keeps its guard even under `--fast`, where a
-program's and the translation unit's are dropped. The LLVM backend leaves one
-case out for now: a module that declares an array pointer or an allocatable
-array is still left to the call chain alone, because the companion descriptor
-of such a variable is a frame slot of `main` and the initializer has to run
-after it is filled in.
+second initialization: the run-once guard above is what makes it one.
 
-The two paths cannot disagree about order. What a module initializer holds is
-a pointer association, a broadcast of constants, or the allocation of a saved
-coarray: an address and a constant in the first two, which no other
-initializer can change, and in the third a collective that every image reaches
-in the order of the one binary they all run. None of them can observe whether
-another module's initializer has run, so running them in link order rather
-than in dependency order is not something a program can tell apart. When a
-main program is there the call chain still runs, before the program's first
-statement and in dependency order, every initializer that has somehow not run
-yet.
+Which initializers take that second path is stated in ASR, by
+[Module](Module.md)`.global_init_at_startup`, and not worked out by a backend
+from the shape of the body. The pass that puts a statement into an initializer
+is the one that knows what the statement is, so it is the one that says so:
+every entry point that adds to an initializer takes an `InitOrdering` beside
+the statements.
+
+`OrderInsensitive` is an assignment or an association that reads a constant or
+the address of a variable with `save` — a declaration initializer, in other
+words. Neither of those is something another initializer can change, so
+running such an initializer in link order rather than in dependency order is
+not something a program can tell apart. A module starts out with
+`global_init_at_startup` set, because an empty body is order-insensitive, and
+keeps it while only such statements go in.
+
+`Ordered` is everything else, and a call above all: where in the target's
+startup a given object file's hook runs is chosen by the linker and cannot be
+predicted from the source, so a call from there can reach a library whose own
+startup has not run yet. The allocation of a saved coarray is exactly that: it
+is a call into the PRIF implementation, which is itself built from Fortran
+modules with saved state of its own. The `coarray` pass therefore adds it as
+`Ordered`, which takes `global_init_at_startup` away for good, and the module
+keeps to the call chain, which runs after everything the target starts up.
+
+Because `global_init_at_startup` is also what says whether an initializer is
+reached twice, it is what decides whether the run-once guard survives `--fast`:
+a module the startup hook runs keeps its guard, and one only the call chain
+reaches drops it like a program's.
+
+The LLVM backend leaves out one further case, for the same reason of ordering
+but as a limit of that backend rather than a fact about the ASR: a module that
+declares an array pointer or an allocatable array, because the companion
+descriptor of such a variable is a frame slot of `main` and the initializer has
+to run after it is filled in.
+
+When a main program is there the call chain still runs, before the program's
+first statement and in dependency order, every initializer — including the two
+kinds above, which is why leaving them out of the startup hook costs nothing
+whenever a Fortran main program exists at all.
 
 A backend therefore needs no support for *calling* module and program
 initializers — the ASR calls those where Fortran says they run — only for

@@ -79,6 +79,7 @@
         false
         true
         nil
+        false
       )
       "s" (Module
         (SymbolTable
@@ -188,6 +189,7 @@
         false
         false
         nil
+        false
       )
       "generated" (Program
         (SymbolTable

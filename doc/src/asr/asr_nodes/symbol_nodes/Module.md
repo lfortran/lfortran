@@ -9,8 +9,8 @@ A Fortran module or submodule.
 ```text
 Module(symbol_table symtab, identifier name, identifier? parent_module,
     identifier* dependencies, bool loaded_from_mod, bool intrinsic,
-    bool has_submodules, identifier? global_init, location start_name,
-    location end_name)
+    bool has_submodules, identifier? global_init,
+    bool global_init_at_startup, location start_name, location end_name)
 ```
 
 ### Arguments
@@ -25,6 +25,7 @@ Module(symbol_table symtab, identifier name, identifier? parent_module,
 | `intrinsic` | `true` for a module defined by the language itself (`iso_c_binding`, `iso_fortran_env`, ...). The backends do not emit code for it. |
 | `has_submodules` | `true` when at least one submodule extends this module. A module procedure declared here may then be defined elsewhere. |
 | `global_init` | the name of this module's startup initializer in `symtab`, or `nil`. It is an argument-less procedure that runs once before any code can observe the module's variables. See [Program](Program.md). |
+| `global_init_at_startup` | `true` when the target's own startup may run the initializer `global_init` names, in the object file that defines this module, as well as the call chain rooted at the program. It is set while everything put into the initializer is order-insensitive and taken away by the first statement that is not. See [Program](Program.md). |
 | `start_name` | the source span of the name in `module name`. |
 | `end_name` | the source span of the name in `end module name`. |
 
@@ -95,6 +96,7 @@ particular **Module** came from.
   :intrinsic false
   :has_submodules false
   :global_init nil
+  :global_init_at_startup false
 )
 ```
 

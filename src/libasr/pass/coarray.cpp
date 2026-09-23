@@ -2421,7 +2421,12 @@ class PRIFInterface {
                 // ptr => co_var` does, so the storage has to exist first.
                 std::vector<ASR::stmt_t*> stmts;
                 for (size_t j = 0; j < body.n; j++) stmts.push_back(body[j]);
-                ASRUtils::global_init_prepend_stmts(al, fn, stmts);
+                // Allocating a saved coarray is a call into the PRIF
+                // implementation, which is itself built from Fortran modules
+                // with saved state of its own, so this initializer has to run
+                // where the ASR says it does and not from a target's startup.
+                ASRUtils::global_init_prepend_stmts(al, fn, stmts,
+                    ASRUtils::InitOrdering::Ordered);
             }
         }
 

@@ -6934,8 +6934,13 @@ public:
         allocatable_struct_array_members_details.resize(structs_mark);
         struct_array_global_members_details.resize(struct_arrays_mark);
 
+        // `global_init_at_startup` is the ASR saying that where in the
+        // startup this initializer runs cannot be told apart from where the
+        // call chain would have run it. An initializer that is ordered — the
+        // collective allocation of a saved coarray above all — says so there
+        // and is left to the call chain alone.
         llvm::Function *init_fn = nullptr;
-        if (x.m_global_init != nullptr) {
+        if (x.m_global_init != nullptr && x.m_global_init_at_startup) {
             ASR::symbol_t *sym = x.m_symtab->get_symbol(x.m_global_init);
             if (sym != nullptr && ASR::is_a<ASR::Function_t>(*sym)) {
                 uint32_t h = get_hash((ASR::asr_t*)sym);

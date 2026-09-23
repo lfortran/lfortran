@@ -70,6 +70,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 ),
             nested_namelist_01:
                 (Program
@@ -349,6 +350,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 )
         })
     []

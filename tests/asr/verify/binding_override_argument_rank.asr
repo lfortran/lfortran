@@ -259,6 +259,7 @@
         false
         false
         nil
+        false
       )
       "generated" (Program
         (SymbolTable

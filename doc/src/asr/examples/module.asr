@@ -50,6 +50,7 @@
         :intrinsic false
         :has_submodules false
         :global_init nil
+        :global_init_at_startup false
       )
       "main" (Program
         :symtab (SymbolTable

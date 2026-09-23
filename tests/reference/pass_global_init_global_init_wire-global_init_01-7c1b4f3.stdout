@@ -911,6 +911,7 @@
                     .false.
                     .false.
                     __lfortran_global_init_global_init_01_a
+                    .true.
                 ),
             global_init_01_b:
                 (Module
@@ -1260,6 +1261,7 @@
                     .false.
                     .false.
                     __lfortran_global_init_global_init_01_b
+                    .true.
                 )
         })
     []

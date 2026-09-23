@@ -94,6 +94,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 ),
             tomlf_build_array:
                 (Module
@@ -589,6 +590,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 ),
             tomlf_build_keyval:
                 (Module
@@ -849,6 +851,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 )
         })
     []

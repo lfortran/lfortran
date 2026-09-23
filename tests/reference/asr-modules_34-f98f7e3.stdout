@@ -25,6 +25,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 ),
             fpm_manifest_modules_34:
                 (Module
@@ -49,6 +50,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 ),
             fpm_manifest_package_modules_34:
                 (Module
@@ -179,6 +181,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 ),
             fpm_modules_34:
                 (Module
@@ -477,6 +480,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 ),
             fpm_versioning_modules_34:
                 (Module
@@ -812,6 +816,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 ),
             modules_34:
                 (Program

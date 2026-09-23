@@ -87,6 +87,28 @@ namespace {
             b.bool_t(true, ASRUtils::expr_type(guard)), nullptr, false, false));
     }
 
+    // The module `fn` initializes, when a module is what owns it. Only a
+    // module records an ordering: a program's initializer is called from the
+    // program body and the translation unit's from the target's startup, and
+    // neither of those is a choice a pass makes.
+    ASR::Module_t* owning_module(ASR::Function_t *fn) {
+        SymbolTable *scope = fn->m_symtab->parent;
+        if (scope == nullptr || scope->asr_owner == nullptr) return nullptr;
+        if (!ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) return nullptr;
+        ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+        if (!ASR::is_a<ASR::Module_t>(*sym)) return nullptr;
+        return ASR::down_cast<ASR::Module_t>(sym);
+    }
+
+    // Record what has just been put into `fn`. `global_init_at_startup` is
+    // true only while everything the initializer holds is order-insensitive,
+    // so one ordered statement takes it away for good.
+    void note_ordering(ASR::Function_t *fn, ASRUtils::InitOrdering ordering) {
+        if (ordering == ASRUtils::InitOrdering::OrderInsensitive) return;
+        ASR::Module_t *m = owning_module(fn);
+        if (m != nullptr) m->m_global_init_at_startup = false;
+    }
+
     // The guard `if` is the only statement of the body, so it is where every
     // later statement is added.
     ASR::If_t* guard_of(ASR::Function_t *fn) {
@@ -138,11 +160,20 @@ ASR::Function_t* get_or_create_global_init(Allocator &al,
         false, false, false, nullptr);
     scope->add_symbol(fn_name, ASR::down_cast<ASR::symbol_t>(fn));
     *global_init = s2c(al, fn_name);
+    // An empty body is order-insensitive, so a module starts out able to take
+    // the startup hook and loses it to the first ordered statement put in.
+    // One defined in another object file never takes it here: that object
+    // file holds the definition and registers it with its own startup.
+    if (in_module && !defined_elsewhere) {
+        ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(owner))
+            ->m_global_init_at_startup = true;
+    }
     return ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(fn));
 }
 
 void global_init_append_stmt(Allocator &al, ASR::Function_t *fn,
-        ASR::stmt_t *stmt) {
+        ASR::stmt_t *stmt, InitOrdering ordering) {
+    note_ordering(fn, ordering);
     ASR::If_t *guard = guard_of(fn);
     Vec<ASR::stmt_t*> body;
     body.from_pointer_n_copy(al, guard->m_body, guard->n_body);
@@ -152,8 +183,9 @@ void global_init_append_stmt(Allocator &al, ASR::Function_t *fn,
 }
 
 void global_init_prepend_stmts(Allocator &al, ASR::Function_t *fn,
-        const std::vector<ASR::stmt_t*> &stmts) {
+        const std::vector<ASR::stmt_t*> &stmts, InitOrdering ordering) {
     if (stmts.empty()) return;
+    note_ordering(fn, ordering);
     ASR::If_t *guard = guard_of(fn);
     Vec<ASR::stmt_t*> body;
     body.reserve(al, guard->n_body + stmts.size());
@@ -313,7 +345,11 @@ class GlobalInitVisitor {
                 if (fn == nullptr) {
                     fn = ASRUtils::get_or_create_global_init(al, unit, owner);
                 }
-                ASRUtils::global_init_append_stmt(al, fn, take_initializer(v));
+                // A declaration initializer is an assignment or an
+                // association that reads a constant or the address of a
+                // variable with `save`, and nothing else.
+                ASRUtils::global_init_append_stmt(al, fn, take_initializer(v),
+                    ASRUtils::InitOrdering::OrderInsensitive);
             }
         }
 
@@ -506,7 +542,11 @@ class GlobalInitWireVisitor {
             for (ASR::Function_t *fn : module_inits) {
                 calls.push_back(call_of(own->m_symtab, fn, loc));
             }
-            ASRUtils::global_init_prepend_stmts(al, own, calls);
+            // Calls, so `Ordered` — the program's own initializer is
+            // called from the program body and never from a startup hook,
+            // which is why this changes nothing here.
+            ASRUtils::global_init_prepend_stmts(al, own, calls,
+                ASRUtils::InitOrdering::Ordered);
 
             Vec<ASR::stmt_t*> body;
             body.reserve(al, p->n_body + 1);
@@ -536,12 +576,13 @@ namespace {
 // hook. Unwrap those, so the body is the initialization statements
 // themselves.
 //
-// A module initializer keeps its guard in every mode. It is reached twice by
-// construction: once from the chain this pass roots at the program, and once
-// from the startup constructor the backend registers in the object file that
-// defines the module, which is what initializes the module when no Fortran
-// main program exists to root that chain. The guard is what makes those two
-// into one initialization.
+// A module initializer keeps its guard when `global_init_at_startup` says the
+// target's own startup runs it too, in the object file that defines the
+// module, which is what initializes the module when no Fortran main program
+// exists to root that chain. It is then reached twice by construction, and
+// the guard is what makes those two into one initialization. A module the
+// startup does not run is called once from the chain like a program, so its
+// guard goes the same way.
 //
 // The guard at the top of a procedure or block body is a different thing —
 // it is what gives an initialized local the save attribute Fortran requires,
@@ -576,6 +617,11 @@ void strip_run_once_guards(ASR::TranslationUnit_t &unit, Allocator &al) {
         if (ASR::is_a<ASR::Program_t>(*item.second)) {
             ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(item.second);
             strip_of(p->m_global_init, p->m_symtab);
+        } else if (ASR::is_a<ASR::Module_t>(*item.second)) {
+            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(item.second);
+            if (!m->m_global_init_at_startup) {
+                strip_of(m->m_global_init, m->m_symtab);
+            }
         }
     }
 }

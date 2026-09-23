@@ -271,6 +271,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 ),
             fpm_manifest_dependency:
                 (Module
@@ -1036,6 +1037,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 ),
             modules_28:
                 (Program

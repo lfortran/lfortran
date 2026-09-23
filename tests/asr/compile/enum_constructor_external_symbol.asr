@@ -109,6 +109,7 @@
         false
         false
         nil
+        false
       )
       "main" (Program
         (SymbolTable
