@@ -6161,9 +6161,10 @@ public:
                 }
             }
             
-            // A struct array broadcast is not a constant this can emit. The
-            // `global_init` pass takes it off every variable it can, so what
-            // reaches here is a parameter, which is read through its value.
+            // A struct array broadcast is not a constant `visit_expr` can
+            // emit. One that reaches here is static data the `global_init`
+            // pass left on the declaration, and it is laid out below by
+            // `get_static_struct_array_initializer`.
             if (!alias_target && get_struct_array_broadcast(x.m_symbolic_value) == nullptr) {
                 this->visit_expr_wrapper(x.m_symbolic_value, true);
                 init_value = llvm::dyn_cast<llvm::Constant>(tmp);
@@ -8071,10 +8072,10 @@ public:
     }
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
         ASR::expr_t* initial_expr = v->m_value ? v->m_value : v->m_symbolic_value;
-        // A parameter is a named constant, so there is no variable for the
-        // `global_init` pass to assign to and its broadcast is materialised
-        // here. Every other struct array broadcast reaches codegen as an
-        // ordinary assignment and never gets this far.
+        // A struct array broadcast that reaches here is one the `global_init`
+        // pass left on the declaration: a parameter, which has no variable
+        // for the pass to assign to, or the static initializer of a saved
+        // local. Either is stored element by element.
         if (ASR::ArrayBroadcast_t* broadcast =
                 get_struct_array_broadcast(initial_expr)) {
             ASR::expr_t* target_expr = ASRUtils::EXPR(ASR::make_Var_t(
