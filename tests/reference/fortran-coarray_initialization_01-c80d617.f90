@@ -92,16 +92,14 @@ end subroutine __lfortran_global_init_coarray_initialization_01
 
 subroutine __lfortran_coarray_init_coarray_saved_sub()
     integer(4) :: stat
-    integer(4), pointer :: x__init_ptr
-    integer(4), dimension(:), pointer :: y__init_ptr
     call __module_prif_prif_init(stat)
     call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle, x__coarray_data)
-    call c_f_pointer(x__coarray_data, x__init_ptr)
-    x__init_ptr = 42
+    call c_f_pointer(x__coarray_data, x__coarray_ptr)
+    x__coarray_ptr = 42
     call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), y__coarray_handle,&
          y__coarray_data)
-    call c_f_pointer(y__coarray_data, y__init_ptr, [10], [1])
-    y__init_ptr = [43, 43, 43, 43, 43, 43, 43, 43, 43, 43]
+    call c_f_pointer(y__coarray_data, y__coarray_ptr, [10], [1])
+    y__coarray_ptr = [43, 43, 43, 43, 43, 43, 43, 43, 43, 43]
 end subroutine __lfortran_coarray_init_coarray_saved_sub
 
 interface
@@ -174,10 +172,6 @@ interface
 end interface
 
 subroutine coarray_saved_sub()
-    integer(4), pointer, save :: x
-    integer(4), dimension(:), pointer, save :: y
-    call c_f_pointer(x__coarray_data, x)
-    call c_f_pointer(y__coarray_data, y, [10], [1])
 end subroutine coarray_saved_sub
 
 integer(4) function lcompilers_prif_get_integer(4)(coarray_handle, sub, offset) result(result)

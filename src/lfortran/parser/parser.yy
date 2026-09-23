@@ -269,6 +269,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_EVENT
 %token <string> KW_EXIT
 %token <string> KW_EXTENDS
+%token <string> KW_EXTENSIBLE
 %token <string> KW_EXTERNAL
 %token <string> KW_FILE
 %token <string> KW_FINAL
@@ -412,6 +413,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> derived_type_decl
 %type <vec_ast> deferred_type_decl
 %type <ast> deferred_proc_decl
+%type <vec_ast> deferred_type_attr_list
+%type <ast> deferred_type_attr
 %type <ast> deferred_const_decl
 %type <ast> deferred_const_attr
 %type <vec_ast> deferred_const_attr_list
@@ -778,7 +781,21 @@ derived_type_decl
 
 deferred_type_decl
     : KW_DEFERRED KW_TYPE "::" id_list sep {
-            $$ = DEFERRED_TYPES(p.m_a, $4, TRIVIA_AFTER($5, @$), @$); }
+            $$ = DEFERRED_TYPES(p.m_a, nullptr, 0, $4,
+                TRIVIA_AFTER($5, @$), @$); }
+    | KW_DEFERRED KW_TYPE deferred_type_attr_list "::" id_list sep {
+            $$ = DEFERRED_TYPES(p.m_a, $3.p, $3.size(), $5,
+                TRIVIA_AFTER($6, @$), @$); }
+    ;
+
+deferred_type_attr_list
+    : deferred_type_attr_list "," deferred_type_attr { $$ = $1; LIST_ADD($$, $3); }
+    | "," deferred_type_attr { LIST_NEW($$); LIST_ADD($$, $2); }
+    ;
+
+deferred_type_attr
+    : KW_ABSTRACT { $$ = SIMPLE_ATTR(Abstract, @$); }
+    | KW_EXTENSIBLE { $$ = SIMPLE_ATTR(Extensible, @$); }
     ;
 
 deferred_const_attr
@@ -1268,6 +1285,7 @@ implicit_spec_list
     : implicit_spec_list "," implicit_spec { $$ = $1; LIST_ADD($$, $3); }
     | implicit_spec { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
+
 
 implicit_spec
     : KW_INTEGER "(" kind_arg_list ")" "(" kind_arg_list ")" {
@@ -2767,6 +2785,7 @@ id
     | KW_EVENT { $$ = SYMBOL($1, @$); }
     | KW_EXIT { $$ = SYMBOL($1, @$); }
     | KW_EXTENDS { $$ = SYMBOL($1, @$); }
+    | KW_EXTENSIBLE { $$ = SYMBOL($1, @$); }
     | KW_EXTERNAL { $$ = SYMBOL($1, @$); }
     | KW_FILE { $$ = SYMBOL($1, @$); }
     | KW_FINAL { $$ = SYMBOL($1, @$); }

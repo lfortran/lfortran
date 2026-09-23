@@ -6173,9 +6173,10 @@ public:
                 }
             }
             
-            // A struct array broadcast is not a constant this can emit. The
-            // `global_init` pass takes it off every variable it can, so what
-            // reaches here is a parameter, which is read through its value.
+            // A struct array broadcast is not a constant `visit_expr` can
+            // emit. One that reaches here is static data the `global_init`
+            // pass left on the declaration, and it is laid out below by
+            // `get_static_struct_array_initializer`.
             if (!alias_target && get_struct_array_broadcast(x.m_symbolic_value) == nullptr) {
                 this->visit_expr_wrapper(x.m_symbolic_value, true);
                 init_value = llvm::dyn_cast<llvm::Constant>(tmp);
@@ -6772,26 +6773,6 @@ public:
         }
     }
 
-    void start_module_init_function_prototype(const ASR::Module_t &x) {
-        uint32_t h = get_hash((ASR::asr_t*)&x);
-        llvm::FunctionType *function_type = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(context), {}, false);
-        LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) == llvm_symtab_fn.end());
-        std::string module_fn_name = "__lfortran_module_init_" + std::string(x.m_name);
-        llvm::Function *F = llvm::Function::Create(function_type,
-                llvm::Function::ExternalLinkage, module_fn_name, module.get());
-        llvm::BasicBlock *BB = llvm::BasicBlock::Create(context, ".entry", F);
-        builder->SetInsertPoint(BB);
-
-        llvm_symtab_fn[h] = F;
-    }
-
-    void finish_module_init_function_prototype(const ASR::Module_t &x) {
-        uint32_t h = get_hash((ASR::asr_t*)&x);
-        builder->CreateRetVoid();
-        llvm_symtab_fn[h]->removeFromParent();
-    }
-
     // Qualification for a symbol declared directly by a translation unit.
     // Interactive evaluation compiles one TranslationUnit per cell, so a
     // symbol of an earlier cell must be named the way that cell named it,
@@ -6816,7 +6797,11 @@ public:
         current_scope = x.m_symtab;
         mangle_prefix = ASRUtils::cell_prefix(x.m_symtab) + "__module_" + std::string(x.m_name) + "_";
 
-        start_module_init_function_prototype(x);
+        // Declaring a module's variables emits no instructions. Leave the
+        // builder pointing at nothing, so that an instruction emitted here by
+        // mistake belongs to no function, where the verifier rejects any use
+        // of it, instead of landing in whichever function was built last.
+        builder->ClearInsertionPoint();
         std::vector<ASR::symbol_t*> variables;
         std::vector<ASR::symbol_t*> functions;
         std::vector<ASR::symbol_t*> structs;
@@ -6862,7 +6847,6 @@ public:
                 visit_Variable(*v);
             }
         }
-        finish_module_init_function_prototype(x);
 
         visit_procedures(x);
         mangle_prefix = ASRUtils::cell_prefix(current_scope_copy);
@@ -8100,10 +8084,10 @@ public:
     }
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
         ASR::expr_t* initial_expr = v->m_value ? v->m_value : v->m_symbolic_value;
-        // A parameter is a named constant, so there is no variable for the
-        // `global_init` pass to assign to and its broadcast is materialised
-        // here. Every other struct array broadcast reaches codegen as an
-        // ordinary assignment and never gets this far.
+        // A struct array broadcast that reaches here is one the `global_init`
+        // pass left on the declaration: a parameter, which has no variable
+        // for the pass to assign to, or the static initializer of a saved
+        // local. Either is stored element by element.
         if (ASR::ArrayBroadcast_t* broadcast =
                 get_struct_array_broadcast(initial_expr)) {
             ASR::expr_t* target_expr = ASRUtils::EXPR(ASR::make_Var_t(
@@ -13831,6 +13815,22 @@ public:
             ASR::dimension_t* component_dims = nullptr;
             size_t component_rank = ASRUtils::extract_dimensions_from_ttype(
                 ASRUtils::expr_type(components[0]), component_dims);
+            // The target may be a plain variable, an array element or a
+            // derived type component; name it the way the source spells it.
+            // The message does not vary by dimension, so build it once.
+            std::string target_name = get_expr_name_for_runtime_message(x.m_target);
+            std::string message = "Array shape mismatch in assignment";
+            if (!target_name.empty()) {
+                message += " to '%s'";
+            }
+            message += ". Tried to match size %d of dimension %d of LHS"
+                " with size %d of dimension %d of RHS.";
+            if (is_allocatable_descriptor_target) {
+                // Only a target that can actually be reallocated is told
+                // about the option that would reallocate it.
+                message += " Use '--realloc-lhs-arrays' option to"
+                    " reallocate LHS automatically.";
+            }
             for (size_t dim = 0; dim < rank; dim++) {
                 if (dim < component_rank && m_dims[dim].m_length != nullptr
                         && component_dims[dim].m_length != nullptr) {
@@ -13866,60 +13866,34 @@ public:
                 visit_expr(*x_m_components_0_size);
                 llvm::Value* value_size = tmp;
 
-                ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
-                if (target_variable) {
-                    ASR::expr_t* v = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, (ASR::symbol_t *)target_variable));
-                    if (ASRUtils::is_array(target_variable->m_type) &&
-                        ASRUtils::is_allocatable(target_variable->m_type) &&
-                        ASRUtils::extract_physical_type(target_variable->m_type) == ASR::array_physical_typeType::DescriptorArray) {
-                        llvm::Value* is_not_allocated = expr_is_unallocated(v);
-                        llvm::Function *fn = builder->GetInsertBlock()->getParent();
-                        llvm::BasicBlock *thenBB = nullptr;
-                        llvm::BasicBlock *mergeBB = nullptr;
-                        thenBB = llvm::BasicBlock::Create(context, "then", fn);
-                        mergeBB = llvm::BasicBlock::Create(context, "ifcont");
-
-                        builder->CreateCondBr(is_not_allocated, mergeBB, thenBB);
-                        builder->SetInsertPoint(thenBB); {
-                            llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
-                                                                "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
-                                                                {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
-                                                                LLVMUtils::RuntimeLabel("RHS size is %d", {components[0]->base.loc}, {value_size})},
-                                                                infile,
-                                                                location_manager,
-                                                                LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
-                                                                target_size,
-                                                                dim_llvm,
-                                                                value_size,
-                                                                dim_llvm);
-                        }
-                        builder->CreateBr(mergeBB);
-
-                        start_new_block(mergeBB);
-                    } else {
-                        llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
-                                                            "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
-                                                     {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
-                                                         LLVMUtils::RuntimeLabel("RHS size is %d", {components[0]->base.loc}, {value_size})},
-                                                          infile,
-                                                        location_manager,
-                                                            LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
-                                                            target_size,
-                                                            dim_llvm,
-                                                            value_size,
-                                                            dim_llvm);
-                    }
+                std::vector<LLVMUtils::RuntimeLabel> labels = {
+                    LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
+                    LLVMUtils::RuntimeLabel("RHS size is %d", {components[0]->base.loc}, {value_size})};
+                llvm::BasicBlock* mergeBB = nullptr;
+                if (is_allocatable_descriptor_target) {
+                    // An unallocated target is reported on its own, its shape
+                    // must not be inspected here.
+                    llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
+                    llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                    llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(context, "then", fn);
+                    mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+                    builder->CreateCondBr(is_not_allocated, mergeBB, thenBB);
+                    builder->SetInsertPoint(thenBB);
+                }
+                llvm::Value* shape_mismatch = builder->CreateICmpNE(value_size, target_size);
+                if (target_name.empty()) {
+                    llvm_utils->generate_runtime_error(shape_mismatch, message, labels,
+                        infile, location_manager,
+                        target_size, dim_llvm, value_size, dim_llvm);
                 } else {
-                    llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
-                                                        "Array shape mismatch in assignment. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
-                                                   {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
-                                                       LLVMUtils::RuntimeLabel("RHS size is %d", {components[0]->base.loc}, {value_size})},
-                                                        infile,
-                                                        location_manager,
-                                                        target_size,
-                                                        dim_llvm,
-                                                        value_size,
-                                                        dim_llvm);
+                    llvm_utils->generate_runtime_error(shape_mismatch, message, labels,
+                        infile, location_manager,
+                        LCompilers::create_global_string_ptr(context, *module, *builder, target_name),
+                        target_size, dim_llvm, value_size, dim_llvm);
+                }
+                if (mergeBB != nullptr) {
+                    builder->CreateBr(mergeBB);
+                    start_new_block(mergeBB);
                 }
             }
         }

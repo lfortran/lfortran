@@ -898,6 +898,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -951,6 +953,8 @@
                                                                             (Array
                                                                                 (TypeParameter
                                                                                     t
+                                                                                    NonExtensible
+                                                                                    .false.
                                                                                 )
                                                                                 [(()
                                                                                 ())]
@@ -985,6 +989,8 @@
                                                                 (Array
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     [(()
                                                                     ())]
@@ -999,6 +1005,8 @@
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         ()
                                                         Source
@@ -1051,6 +1059,8 @@
                                                                     (Array
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
@@ -1065,6 +1075,8 @@
                                                             ())]
                                                             (TypeParameter
                                                                 t
+                                                                NonExtensible
+                                                                .false.
                                                             )
                                                             ColMajor
                                                             ()
@@ -1179,6 +1191,8 @@
                                                                             (Array
                                                                                 (TypeParameter
                                                                                     t
+                                                                                    NonExtensible
+                                                                                    .false.
                                                                                 )
                                                                                 [(()
                                                                                 ())]
@@ -1218,6 +1232,8 @@
                                                                         (Array
                                                                             (TypeParameter
                                                                                 t
+                                                                                NonExtensible
+                                                                                .false.
                                                                             )
                                                                             [(()
                                                                             ())]
@@ -1247,6 +1263,8 @@
                                                                 (Array
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     [(()
                                                                     ())]
@@ -1288,6 +1306,8 @@
                                                                         (Array
                                                                             (TypeParameter
                                                                                 t
+                                                                                NonExtensible
+                                                                                .false.
                                                                             )
                                                                             [(()
                                                                             ())]
@@ -1312,6 +1332,8 @@
                                                                     (Array
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
@@ -1387,6 +1409,8 @@
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -1399,6 +1423,8 @@
                                                                         (Array
                                                                             (TypeParameter
                                                                                 t
+                                                                                NonExtensible
+                                                                                .false.
                                                                             )
                                                                             [(()
                                                                             ())]
@@ -1413,6 +1439,8 @@
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -1431,6 +1459,8 @@
                                                                 (Array
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     [(()
                                                                     ())]
@@ -1459,6 +1489,8 @@
                                                                     (Array
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
@@ -1479,6 +1511,8 @@
                                                             (Array
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 [(()
                                                                 ())]
@@ -1509,6 +1543,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -1542,6 +1578,8 @@
                                                                         (Array
                                                                             (TypeParameter
                                                                                 t
+                                                                                NonExtensible
+                                                                                .false.
                                                                             )
                                                                             [(()
                                                                             ())]
@@ -1616,6 +1654,8 @@
                                                             (Array
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 [(()
                                                                 ())]
