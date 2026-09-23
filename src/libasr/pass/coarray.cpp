@@ -625,6 +625,14 @@ class PRIFInterface {
             ASR::symbol_t *handle_sym;
             ASR::symbol_t *data_sym;
             ASR::expr_t *init_value;
+            // The program unit whose startup initializer allocates this
+            // coarray, and the scope that declared it. Both are recorded
+            // here rather than derived from `var` later, because a coarray
+            // declared by a procedure no longer lives in that procedure by
+            // the time the initializers are generated: `hoist_saved_pointer`
+            // has moved it to the translation unit's scope.
+            ASR::asr_t *owner;
+            SymbolTable *decl_scope;
             Location loc;
         };
         Vec<SavedCoarray> saved_coarrays;
@@ -1881,11 +1889,50 @@ class PRIFInterface {
             return name + var->m_name;
         }
 
+        // A saved coarray's Fortran pointer, on its way out of the procedure
+        // that declares it and into the translation unit's scope.
+        struct HoistedPointer {
+            ASR::Variable_t *var;
+            std::string key;   // the name it is filed under where declared
+            std::string name;  // the name it takes in the global scope
+            bool use_unique_id;
+            ASR::abiType abi;
+        };
+
+        // Move a saved coarray's Fortran pointer out of the procedure that
+        // declares it and into the translation unit's scope, under a derived
+        // name. Everything that reads the coarray holds the symbol itself, in
+        // an ASR::Var_t, and the global scope encloses every procedure, so
+        // nothing has to be rewritten to follow it.
+        //
+        // What this buys: the pointer now lives where the unit's startup
+        // initializer can reach it, so that initializer binds it once, right
+        // after the allocation, and the procedure body is left with nothing to
+        // do on entry. Binding it again per call was both wasted work in the
+        // procedure's critical path and a repeated write to a `save` pointer,
+        // which is a conflicting write when the procedure is called from
+        // within `do concurrent` with offloading.
+        void hoist_saved_pointer(const HoistedPointer &h) {
+            SymbolTable *from = ASRUtils::symbol_parent_symtab(&h.var->base);
+            std::string name = unit.m_symtab->get_unique_name(
+                h.name, h.use_unique_id);
+            from->erase_symbol(h.key);
+            h.var->m_name = s2c(al, name);
+            h.var->m_parent_symtab = unit.m_symtab;
+            h.var->m_abi = h.abi;
+            h.var->m_access = ASR::accessType::Public;
+            unit.m_symtab->add_symbol(name, &h.var->base);
+        }
+
         void declare_coarray_companions(SymbolTable *scope, const Location &loc) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *cptr = b.CPtr();
             ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
-            
+
+            // Applied once the loop below is done: taking a symbol out of
+            // `scope` while iterating it would invalidate the iterator.
+            std::vector<HoistedPointer> hoists;
+
             for (auto &item : scope->get_scope()) {
                 ASR::symbol_t *sym = item.second;
                 if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
@@ -1901,13 +1948,27 @@ class PRIFInterface {
                 std::string hname = vname + "__coarray_handle";
                 std::string dname = vname + "__coarray_data";
                 ASR::abiType companion_abi = ASR::abiType::Source;
+                ASR::asr_t *sc_owner = nullptr;
+                // The name this coarray's own pointer takes in the global
+                // scope, empty when it stays where it was declared.
+                std::string pname;
+                bool pname_use_unique_id = false;
 
                 if (is_save && scope != unit.m_symtab) {
                     companion_scope = unit.m_symtab;
-                    ASR::asr_t *sc_owner = saved_coarray_owner(var);
+                    sc_owner = saved_coarray_owner(var);
                     bool module_owned = sc_owner != (ASR::asr_t*)&unit
                         && ASR::is_a<ASR::Module_t>(
                             *ASR::down_cast<ASR::symbol_t>(sc_owner));
+                    // Only a coarray a procedure declares is hoisted. One a
+                    // module or a program declares is already somewhere that
+                    // unit's initializer can see, and an allocatable one is
+                    // bound by the ALLOCATE statement rather than at startup.
+                    bool procedure_local = scope->asr_owner != nullptr
+                        && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
+                        && ASR::is_a<ASR::Function_t>(
+                            *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))
+                        && !ASRUtils::is_allocatable(var->m_type);
                     if (module_owned) {
                         // Deterministic, so the name matches the one the
                         // module's own object file gave these.
@@ -1916,6 +1977,7 @@ class PRIFInterface {
                             base + "__coarray_handle", false);
                         dname = companion_scope->get_unique_name(
                             base + "__coarray_data", false);
+                        if (procedure_local) pname = base + "__coarray_ptr";
                         if (coarrays_defined_elsewhere(sc_owner)) {
                             // That object file defines and allocates them;
                             // here they are only referred to.
@@ -1924,6 +1986,10 @@ class PRIFInterface {
                     } else {
                         hname = companion_scope->get_unique_name(vname + "__coarray_handle");
                         dname = companion_scope->get_unique_name(vname + "__coarray_data");
+                        if (procedure_local) {
+                            pname = vname + "__coarray_ptr";
+                            pname_use_unique_id = true;
+                        }
                     }
                 }
 
@@ -1953,6 +2019,8 @@ class PRIFInterface {
                     sc.handle_sym = handle_sym;
                     sc.data_sym = data_sym;
                     sc.init_value = var->m_value;
+                    sc.owner = sc_owner ? sc_owner : saved_coarray_owner(var);
+                    sc.decl_scope = scope;
                     sc.loc = loc;
                     saved_coarrays.push_back(al, sc);
                     var->m_value = nullptr;
@@ -1965,7 +2033,19 @@ class PRIFInterface {
                 ASR::ttype_t *ptr_type = ASRUtils::TYPE(
                     ASR::make_Pointer_t(al, loc, deferred_type));
                 var->m_type = ptr_type;
+
+                if (!pname.empty()) {
+                    HoistedPointer h;
+                    h.var = var;
+                    h.key = item.first;
+                    h.name = pname;
+                    h.use_unique_id = pname_use_unique_id;
+                    h.abi = companion_abi;
+                    hoists.push_back(h);
+                }
             }
+
+            for (const HoistedPointer &h : hoists) hoist_saved_pointer(h);
         }
 
         void emit_allocate_call(ASR::Variable_t *var,
@@ -2160,17 +2240,13 @@ class PRIFInterface {
             new_body.push_back(al, nullify_stmt);
         }
 
-        // `bind_saved` says whether this scope still has to bind a saved
-        // coarray's pointer to the storage its companion holds. A saved coarray
-        // of a module or a program is bound by that unit's initializer, which
-        // runs before anything can observe it, so binding it again in the
-        // program body would only repeat work already done. A saved coarray of
-        // a procedure is not: the initializer cannot reach a procedure-local
-        // pointer, so it binds a temporary of its own to write the initial
-        // value, and the procedure is what binds the real one.
-        void allocate_coarrays(SymbolTable *scope, SymbolTable *body_scope, const Location &loc,
-                                    Vec<ASR::stmt_t*> &new_body, bool bind_saved=true) {
-            ASRUtils::ASRBuilder b(al, loc);
+        // Nothing is emitted here for a saved coarray. Every one of them is
+        // bound to the storage its companion holds by the startup initializer
+        // of the unit that owns it, which runs before anything can observe it
+        // -- a coarray a procedure declares as well, since `hoist_saved_pointer`
+        // put its pointer where that initializer can reach it. Binding one
+        // again on entry to a scope would only repeat work already done.
+        void allocate_coarrays(SymbolTable *scope) {
             for (auto &item : scope->get_scope()) {
                 ASR::symbol_t *sym = item.second;
                 if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
@@ -2179,23 +2255,7 @@ class PRIFInterface {
                 ASR::ttype_t *orig_type = original_types.count(sym) ? original_types[sym] : var->m_type;
                 if (ASRUtils::is_allocatable(orig_type)) continue;
 
-                auto companions = get_coarray_companions(sym);
-                ASR::symbol_t *dsym_orig = companions.second;
-
-                if (has_save_attribute(var)) {
-                    if (!bind_saved) continue;
-                    ASR::symbol_t *dsym_use = get_symbol_in_scope(ASRUtils::symbol_parent_symtab(dsym_orig), body_scope, dsym_orig, loc);
-                    ASR::symbol_t *sym_use = get_symbol_in_scope(scope, body_scope, sym, loc);
-                    ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym_use));
-                    ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_use));
-                    ASR::ttype_t *orig_type = original_types[sym];
-                    ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
-                    ASR::expr_t *lbound_expr = create_lbound_expr(loc, orig_type);
-                    ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
-                        ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, lbound_expr));
-                    new_body.push_back(al, cfp_stmt);
-                    continue;
-                }
+                if (has_save_attribute(var)) continue;
 
                 // Nothing is left for this pass to do here. A coarray that is
                 // neither allocatable nor saved has no storage to refer to, and
@@ -2219,8 +2279,7 @@ class PRIFInterface {
             std::string fn_name = "__lfortran_coarray_init";
             std::set<std::string> parent_names;
             for (size_t i : indices) {
-                SymbolTable *var_scope = ASRUtils::symbol_parent_symtab(
-                    &saved_coarrays.p[i].var->base);
+                SymbolTable *var_scope = saved_coarrays.p[i].decl_scope;
                 if (var_scope->asr_owner &&
                     ASR::is_a<ASR::symbol_t>(*var_scope->asr_owner)) {
                     parent_names.insert(ASRUtils::symbol_name(
@@ -2296,30 +2355,19 @@ class PRIFInterface {
             emit_allocate_call(var, nullptr, 0, hexpr, dexpr, alloc_sub,
                 handle_struct, int64, loc, body);
 
-            // Bind the Fortran pointer to the storage just allocated. The
-            // coarray itself is bound when this initializer can see it — the
-            // initializer of the unit that declares it — so that anything
-            // else the same initializer runs, such as `ptr => co_var`, finds
-            // it already associated. An initializer that cannot see the
-            // variable, the translation unit's own, binds a local of its own
-            // instead and only to give the coarray its initial value.
-            bool declared_here =
-                ASRUtils::symbol_parent_symtab(&var->base) == scope->parent;
-            if (!declared_here && sc.init_value == nullptr) return;
-
-            ASR::expr_t *bound = nullptr;
-            if (declared_here) {
-                bound = ASRUtils::EXPR(ASR::make_Var_t(al, loc, &var->base));
-            } else {
-                std::string local_name = scope->get_unique_name(
-                    std::string(var->m_name) + "__init_ptr");
-                bound = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                    declare_variable(scope, loc, local_name,
-                        var->m_type, // already Pointer_t
-                        ASR::intentType::Local, nullptr,
-                        ASR::abiType::Source, ASR::accessType::Public,
-                        ASR::presenceType::Required, false)));
-            }
+            // Bind the Fortran pointer to the storage just allocated, once
+            // and for all: this is the only place a saved coarray is bound,
+            // so anything else the same initializer runs, such as
+            // `ptr => co_var`, finds it already associated, and so does every
+            // later call to the procedure that declares it. The pointer is
+            // always in reach from here -- it is declared either by the unit
+            // this initializer belongs to, or, when a procedure declares it,
+            // in the translation unit's scope, which encloses everything.
+            LCOMPILERS_ASSERT(
+                ASRUtils::symbol_parent_symtab(&var->base) == scope->parent ||
+                ASRUtils::symbol_parent_symtab(&var->base) == unit.m_symtab);
+            ASR::expr_t *bound = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, &var->base));
             ASR::ttype_t *orig_type = original_types[&var->base];
             body.push_back(al, ASRUtils::STMT(
                 ASR::make_CPtrToPointer_t(al, loc, dexpr, bound,
@@ -2341,7 +2389,7 @@ class PRIFInterface {
             std::vector<ASR::asr_t*> owners;
             std::map<ASR::asr_t*, std::vector<size_t>> by_owner;
             for (size_t i = 0; i < saved_coarrays.n; i++) {
-                ASR::asr_t *owner = saved_coarray_owner(saved_coarrays.p[i].var);
+                ASR::asr_t *owner = saved_coarrays.p[i].owner;
                 if (by_owner.find(owner) == by_owner.end()) owners.push_back(owner);
                 by_owner[owner].push_back(i);
             }
@@ -3460,12 +3508,12 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
                     ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(item.second);
                     if (prif.coarrays_defined_elsewhere(
                             (ASR::asr_t*)&mod->base)) continue;
-                    prif.allocate_coarrays(mod->m_symtab, xx.m_symtab, loc, new_body, false);
+                    prif.allocate_coarrays(mod->m_symtab);
                 }
             }
 
             // Allocate coarrays in Program scope
-            prif.allocate_coarrays(xx.m_symtab, xx.m_symtab, loc, new_body, false);
+            prif.allocate_coarrays(xx.m_symtab);
 
             // Need to synchronize all the images after completing 
             // initialization of any save coarrays allocated above,
@@ -3499,21 +3547,11 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
         }
 
         void visit_Function(const ASR::Function_t &x) {
-            ASR::Function_t &xx = const_cast<ASR::Function_t &>(x);
-
-            Vec<ASR::stmt_t*> new_body;
-            new_body.reserve(al, xx.n_body + 16);
-            
-            prif.allocate_coarrays(xx.m_symtab, xx.m_symtab, xx.base.base.loc, new_body);
-
-            // Append original body
-            for (size_t i = 0; i < xx.n_body; i++) {
-                new_body.push_back(al, xx.m_body[i]);
-            }
-
-            xx.m_body = new_body.p;
-            xx.n_body = new_body.n;
-            for (auto &item : xx.m_symtab->get_scope()) {
+            // Nothing is prepended to a procedure's body: a saved coarray it
+            // declares is allocated and bound by a startup initializer, and
+            // the rest are rejected here.
+            prif.allocate_coarrays(x.m_symtab);
+            for (auto &item : x.m_symtab->get_scope()) {
                 visit_symbol(*item.second);
             }
         }
