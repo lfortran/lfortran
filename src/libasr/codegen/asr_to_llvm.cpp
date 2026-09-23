@@ -1157,8 +1157,20 @@ public:
                     return len_value;
                 } else { // Implicit Length
                     if(ASRUtils::is_array(exp_type)){
-                        visit_expr_load_wrapper(str_expr, ASRUtils::is_allocatable_or_pointer(exp_type) ? 1 : 0);
-                        return get_string_length_in_array(str_expr, tmp);
+                        // A struct member is selected, never loaded, so asking
+                        // the visitor for a load leaves the address of the
+                        // field. Take the address here and load the descriptor
+                        // out of it explicitly, which is right for a plain
+                        // variable and for a component alike.
+                        visit_expr_load_wrapper(str_expr, 0);
+                        llvm::Value* array = tmp;
+                        if( LLVM::is_llvm_pointer(*exp_type) ) {
+                            llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
+                                str_expr, ASRUtils::type_get_past_allocatable_pointer(exp_type),
+                                module.get());
+                            array = llvm_utils->CreateLoad2(array_type->getPointerTo(), array);
+                        }
+                        return get_string_length_in_array(str_expr, array);
                     } else {
                         // Handling Logic for ArrayItem accessing empty array
                         // In this case, return length from array descriptors
@@ -10896,9 +10908,13 @@ public:
         llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
             ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array_section->m_v))), module.get());
+        // A character array component is stored inline in the struct as a
+        // %string_descriptor, so selecting it already yields the address of
+        // its storage. Only an allocatable or pointer component keeps the
+        // address of its descriptor in the field, so only that one has to be
+        // loaded to reach the descriptor.
         if( ASR::is_a<ASR::StructInstanceMember_t>(*array_section->m_v) &&
-            ASRUtils::extract_physical_type(value_array_type) !=
-                ASR::array_physical_typeType::FixedSizeArray ) {
+            LLVM::is_llvm_pointer(*value_array_type) ) {
             value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
         }
         llvm::Type *value_el_type = llvm_utils->get_el_type(array_section->m_v,
