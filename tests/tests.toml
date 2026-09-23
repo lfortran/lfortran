@@ -6203,6 +6203,20 @@ filename = "../integration_tests/global_init_01.f90"
 pass = "global_init,global_init_wire"
 
 [[test]]
+filename = "../integration_tests/coarrays_50.f90"
+fortran = true
+# Saved coarrays declared by procedures -- one a module procedure, one an
+# internal procedure of the program. Neither is somewhere its unit's
+# initializer could reach, so the pass hoists each pointer to the translation
+# unit's scope under a derived name; the reference pins that the initializer
+# then binds it once, and that the procedure bodies are left with no bind of
+# their own. Through the wiring pass, as coarray_saved_01 is, so the reference
+# shows who calls each initializer too. The runtime side of this is the
+# integration test, which needs the coarray runtime the Caffeine CI jobs have.
+pass = "coarray,global_init_wire"
+options = "--coarray=true"
+
+[[test]]
 filename = "../integration_tests/coarrays_51.f90"
 # Separate compilation, so `coarrays_51_m` is read from a modfile: the pass
 # has to name the initializer its own object file defines rather than define
