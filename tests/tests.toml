@@ -543,6 +543,10 @@ filename = "errors/deferred_proc_decl_1.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/deferred_type_attr_1.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/deferred_const_decl_1.f90"
 show_asr_with_cc = true
 

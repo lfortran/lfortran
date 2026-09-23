@@ -303,6 +303,7 @@ simple_attribute
     | AttrDeferred
     | AttrElemental
     | AttrEnumerator
+    | AttrExtensible
     | AttrExternal
     | AttrImpure
     | AttrIntrinsic
