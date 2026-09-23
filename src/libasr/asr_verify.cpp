@@ -36,6 +36,84 @@ bool valid_name(const char *s) {
     return true;
 }
 
+// The variables a startup initializer gives a value that a target could have
+// laid out as static data instead. Those are the ones the initializer moved
+// off a declaration although it did not have to: their value is executable
+// code that runs when the program starts, so nothing that runs before it can
+// read them. A value no target can lay out -- a pointer association, anything
+// computed -- is not one of these: it has to be a statement wherever it goes.
+class StartupInitializedCollector :
+    public BaseWalkVisitor<StartupInitializedCollector>
+{
+private:
+    std::set<const ASR::Variable_t*> &initialized;
+    bool inside_initializer;
+
+    void collect(SymbolTable *scope, const char *global_init) {
+        if (scope == nullptr || global_init == nullptr) return;
+        ASR::symbol_t *sym = scope->get_symbol(global_init);
+        if (sym == nullptr || !ASR::is_a<ASR::Function_t>(*sym)) return;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+        bool inside_initializer_copy = inside_initializer;
+        inside_initializer = true;
+        for (size_t i = 0; i < fn->n_body; i++) {
+            this->visit_stmt(*fn->m_body[i]);
+        }
+        inside_initializer = inside_initializer_copy;
+    }
+
+    void record(ASR::expr_t *target, ASR::expr_t *value) {
+        if (!inside_initializer) return;
+        if (!ASRUtils::is_value_constant(
+                ASRUtils::get_past_array_broadcast(value))) {
+            return;
+        }
+        ASR::Variable_t *v = ASRUtils::expr_to_variable_or_null(target);
+        if (v != nullptr) initialized.insert(v);
+    }
+
+public:
+    StartupInitializedCollector(std::set<const ASR::Variable_t*> &initialized_)
+        : initialized{initialized_}, inside_initializer{false} {}
+
+    void visit_TranslationUnit(const TranslationUnit_t &x) {
+        collect(x.m_symtab, x.m_global_init);
+        BaseWalkVisitor<StartupInitializedCollector>::visit_TranslationUnit(x);
+    }
+
+    void visit_Module(const Module_t &x) {
+        collect(x.m_symtab, x.m_global_init);
+        BaseWalkVisitor<StartupInitializedCollector>::visit_Module(x);
+    }
+
+    void visit_Program(const Program_t &x) {
+        collect(x.m_symtab, x.m_global_init);
+        BaseWalkVisitor<StartupInitializedCollector>::visit_Program(x);
+    }
+
+    void visit_Assignment(const Assignment_t &x) {
+        record(x.m_target, x.m_value);
+        BaseWalkVisitor<StartupInitializedCollector>::visit_Assignment(x);
+    }
+};
+
+// The variables an expression reads.
+class VarReadCollector : public BaseWalkVisitor<VarReadCollector>
+{
+private:
+    std::set<ASR::symbol_t*> &reads;
+
+public:
+    VarReadCollector(std::set<ASR::symbol_t*> &reads_) : reads{reads_} {}
+
+    void visit_Var(const Var_t &x) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+        if (sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)) {
+            reads.insert(sym);
+        }
+    }
+};
+
 class VerifyVisitor : public BaseWalkVisitor<VerifyVisitor>
 {
 private:
@@ -55,6 +133,16 @@ private:
     std::vector<std::string> variable_dependencies;
 
     std::set<std::pair<uint64_t, std::string>> const_assigned;
+
+    // A variable read by the bound of another variable's declaration, kept
+    // with the reader and the place to point at when the read turns out to
+    // be one no backend can serve.
+    struct SpecExprRead {
+        std::string reader;
+        const ASR::Variable_t *read;
+        Location loc;
+    };
+    std::vector<SpecExprRead> spec_expr_reads;
 
     // checks whether we've visited any `Var`, which isn't a global `Variable`
     bool non_global_symbol_visited;
@@ -138,6 +226,59 @@ public:
             "arguments", loc, diagnostics);
     }
 
+    // A bound of a variable is evaluated while that variable is laid out,
+    // which a backend does before any statement of the scope's body runs. A
+    // variable a bound reads must therefore carry its value on its own
+    // declaration, as static data the backend lays out with it. Record the
+    // reads here; which of them a startup initializer writes is only known
+    // once the whole unit has been walked.
+    void collect_spec_expr_reads(const Variable_t &x) {
+        ASR::dimension_t *dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, dims);
+        std::set<ASR::symbol_t*> reads;
+        VarReadCollector collector(reads);
+        for (size_t i = 0; i < n_dims; i++) {
+            if (dims[i].m_start != nullptr) {
+                collector.visit_expr(*dims[i].m_start);
+            }
+            if (dims[i].m_length != nullptr) {
+                collector.visit_expr(*dims[i].m_length);
+            }
+        }
+        for (ASR::symbol_t *sym : reads) {
+            if (sym == (ASR::symbol_t*)&x) continue;
+            spec_expr_reads.push_back({std::string(x.m_name),
+                ASR::down_cast<ASR::Variable_t>(sym), x.base.base.loc});
+        }
+    }
+
+    // An initializer moved into a startup initializer is executable code, so
+    // it has not run yet when a bound that reads the variable is evaluated:
+    // the bound would be taken from storage that is still zero and the
+    // variable it belongs to laid out too small. Such an initializer has to
+    // stay on the declaration instead, where a backend lays it out as static
+    // data. Nothing about the shape of a pass's output is asserted here, only
+    // that the two ways of initializing a variable are not confused for a
+    // variable somebody reads this early.
+    void verify_spec_expr_reads(const TranslationUnit_t &x) {
+        if (spec_expr_reads.empty()) return;
+        std::set<const ASR::Variable_t*> startup_initialized;
+        StartupInitializedCollector collector(startup_initialized);
+        collector.visit_TranslationUnit(x);
+        if (startup_initialized.empty()) return;
+        for (const SpecExprRead &read : spec_expr_reads) {
+            require_with_loc_id(
+                startup_initialized.find(read.read) == startup_initialized.end(),
+                "asr.verify.variable.spec_expr_reads_static_initializer",
+                "A bound of '" + read.reader + "' reads '" +
+                    std::string(read.read->m_name) + "', whose initializer is "
+                    "static data but runs at start up instead of being laid "
+                    "out with it, so the bound is evaluated before '" +
+                    std::string(read.read->m_name) + "' has its value",
+                read.loc);
+        }
+    }
+
     void visit_TranslationUnit(const TranslationUnit_t &x) {
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
@@ -172,6 +313,7 @@ public:
                 this->visit_expr(*down_cast<expr_t>(item));
             }
         }
+        verify_spec_expr_reads(x);
         current_symtab = nullptr;
     }
 
@@ -1221,6 +1363,7 @@ public:
         std::string current_name_copy = current_name;
         current_name = x.m_name;
         variable_dependencies.clear();
+        collect_spec_expr_reads(x);
         // A compile time value is stored into the variable's own storage,
         // so a value whose type disagrees with the declaration produces a
         // store LLVM rejects. The frontend casts such initializers; a graph

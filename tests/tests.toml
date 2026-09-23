@@ -6278,3 +6278,13 @@ filename = "../integration_tests/global_init_07.f90"
 # from the initializer it knows while the storage is sized from the value the
 # generated code has at that point.
 pass = "global_init"
+
+[[test]]
+filename = "asr/verify/spec_expr_reads_static_initializer.asr"
+# An initializer a target can lay out as static data, moved into a startup
+# initializer although a bound reads the variable. The bound is evaluated
+# while the variable it belongs to is laid out, before any statement of the
+# body runs, so the initializer would come too late and the variable be laid
+# out from storage that is still zero -- which no runnable test can see,
+# because the program that then writes past it still exits 0.
+asr = true
