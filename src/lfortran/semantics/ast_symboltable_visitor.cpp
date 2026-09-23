@@ -97,6 +97,24 @@ public:
         Other, Module, Submodule, Program, Template,
     };
 
+    // Restores `is_requirement` on the way out, including when a diagnostic
+    // aborts the visit part way through. Without it a requirement rejected
+    // under --continue-compilation leaves the flag set, and the next scoping
+    // unit is then checked as if it were still inside that requirement.
+    struct RequirementScope {
+        SymbolTableVisitor &v;
+        bool enclosing;
+
+        RequirementScope(SymbolTableVisitor &v_) : v(v_) {
+            enclosing = v.is_requirement;
+            v.is_requirement = true;
+        }
+
+        ~RequirementScope() {
+            v.is_requirement = enclosing;
+        }
+    };
+
     struct ScopingUnitScope {
         SymbolTableVisitor &v;
         ScopingUnitKind enclosing;
@@ -5246,7 +5264,7 @@ public:
                     diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
-        is_requirement = true;
+        RequirementScope requirement_scope(*this);
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
 
         std::vector<std::string> requirement_args;
@@ -5356,7 +5374,6 @@ public:
 
         current_scope = parent_scope;
         current_procedure_args.clear();
-        is_requirement = false;
     }
 
     void visit_Require(const AST::Require_t &x) {
