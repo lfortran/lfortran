@@ -1,3 +1,47 @@
+syntax error: End requirement name does not match requirement name
+   --> tests/errors/continue_compilation_templates_01.f90:901:5 - 904:1
+    |
+901 |        requirement r {t}
+    |        ^^^^^^^^^^^^^^^^^...
+...
+    |
+904 |    
+    | ...^ 
+
+syntax error: End template name does not match template name
+   --> tests/errors/continue_compilation_templates_01.f90:905:5 - 908:1
+    |
+905 |        template tmpl(u)
+    |        ^^^^^^^^^^^^^^^^...
+...
+    |
+908 |    
+    | ...^ 
+
+syntax error: Token '(' is unexpected here
+   --> tests/errors/continue_compilation_templates_01.f90:945:25
+    |
+945 |         instantiate tmpl(integer)  ! {Error} Token '(' is unexpected here
+    |                         ^ 
+
+syntax error: Token '(' is unexpected here
+   --> tests/errors/continue_compilation_templates_01.f90:946:25
+    |
+946 |         instantiate tmpl(real), only: id_real => id  ! {Error} Token '(' is unexpected here
+    |                         ^ 
+
+syntax error: Token ',' is unexpected here
+   --> tests/errors/continue_compilation_templates_01.f90:976:26
+    |
+976 |         require :: r1 {v}, r2 {v}  ! {Error} Token ',' is unexpected here
+    |                          ^ 
+
+syntax error: Token ',' is unexpected here
+   --> tests/errors/continue_compilation_templates_01.f90:981:23
+    |
+981 |         require r1 {v}, r2 {v}  ! {Error} Token ',' is unexpected here
+    |                       ^ 
+
 semantic error: Parameter 't' is declared more than once in requirement 'dup_param_req'
  --> tests/errors/continue_compilation_templates_01.f90:5:32
   |
@@ -30,3 +74,521 @@ semantic error: type mismatch in initialization: `string` cannot be assigned to 
    |
 39 |         integer :: bad = "abc"
    |                          ^^^^^ 
+
+semantic error: Template argument plus_t has not been declared in template specification.
+   --> tests/errors/continue_compilation_templates_01.f90:148:5 - 171:1
+    |
+148 |        template travel_tmpl(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+171 |    
+    | ...^ 
+
+semantic error: Number of arguments mismatch, restriction expects a function with 2 parameters, but a function with 3 parameters is provided
+   --> tests/errors/continue_compilation_templates_01.f90:210:34
+    |
+210 |         instantiate add_t {real, func_arg_real}, only: add_real => add_generic
+    |                                  ^^^^^^^^^^^^^ func_arg_real has 3 parameters
+    |
+204 |        real function func_arg_real(x, y, a) result(z)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+207 |        end function
+    | ...^^^^^^^^^^^^^^^^ func_arg_real has 3 parameters
+    |
+183 |                function F(x, y) result(z)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+186 |                end function
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^ f has 2 parameters
+
+semantic error: The restriction argument func_arg_real should have a return value
+   --> tests/errors/continue_compilation_templates_01.f90:249:34
+    |
+249 |         instantiate add_t {real, func_arg_real}, only: add_real => add_generic
+    |                                  ^^^^^^^^^^^^^ 
+
+semantic error: Restriction type mismatch with provided function argument
+   --> tests/errors/continue_compilation_templates_01.f90:289:34
+    |
+289 |         instantiate add_t {real, func_arg_real}, only: add_real => add_generic
+    |                                  ^^^^^^^^^^^^^ 
+    |
+262 |                function F(x, y) result(z)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+265 |                end function
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^ Restriction's parameter x of type real
+    |
+283 |        real function func_arg_real(x, y) result(z)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+286 |        end function
+    | ...^^^^^^^^^^^^^^^^ Function's parameter x of type integer
+
+semantic error: Restriction type mismatch with provided function argument
+   --> tests/errors/continue_compilation_templates_01.f90:329:34
+    |
+329 |         instantiate add_t {real, func_arg_real}, only: add_real => add_generic
+    |                                  ^^^^^^^^^^^^^ 
+    |
+302 |                function F(x, y) result(z)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+305 |                end function
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^ Requirement's return type real
+    |
+323 |        integer function func_arg_real(x, y) result(z)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+326 |        end function
+    | ...^^^^^^^^^^^^^^^^ Function's return type integer
+
+semantic error: Type parameter 'g' is not specified in any requirements
+   --> tests/errors/continue_compilation_templates_01.f90:349:11
+    |
+349 |           type(g) :: fst
+    |           ^^^^^^^^^^^^^^ 
+
+semantic error: Symbol combine is not declared in semigroup's parameters
+   --> tests/errors/continue_compilation_templates_01.f90:367:5 - 376:1
+    |
+367 |        requirement semigroup {t}
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+376 |    
+    | ...^ 
+
+warning: Parameter combine is unused in semigroup
+   --> tests/errors/continue_compilation_templates_01.f90:390:5 - 393:1
+    |
+390 |        requirement semigroup {t, combine}
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+393 |    
+    | ...^ 
+
+semantic error: Parameter 'scombine' was not declared
+   --> tests/errors/continue_compilation_templates_01.f90:418:20
+    |
+418 |         require :: semigroup {t, scombine}
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: The number of parameters passed to 'r' is not correct
+   --> tests/errors/continue_compilation_templates_01.f90:503:20
+    |
+503 |         require :: r {t}
+    |                    ^^^^^ 
+
+semantic error: the instantiation argument 'no_such_type' for 't' is not declared
+   --> tests/errors/continue_compilation_templates_01.f90:692:23
+    |
+692 |     instantiate tmpl {no_such_type}, only: s
+    |                       ^^^^^^^^^^^^ 'no_such_type' is undeclared
+
+semantic error: Use of an unspecified template 'add_unknown_t'
+   --> tests/errors/continue_compilation_templates_01.f90:701:5 - 703:37
+    |
+701 |        instantiate add_unknown_t {integer, add_int}, only: add1 => add_generic
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+703 |        ! Unknown instantiation argument
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: The function argument add_unknown is not found
+   --> tests/errors/continue_compilation_templates_01.f90:704:33
+    |
+704 |     instantiate add_t {integer, add_unknown}, only: add2 => add_generic
+    |                                 ^^^^^^^^^^^ 
+
+semantic error: Number of template arguments don't match
+   --> tests/errors/continue_compilation_templates_01.f90:707:5
+    |
+707 |     instantiate add_t {integer}, only: add3 => add_generic
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the instantiation argument 'no_such_type' for 't' is not declared
+   --> tests/errors/continue_compilation_templates_01.f90:716:28
+    |
+716 |     instantiate type_tmpl {no_such_type}, only: s1 => s
+    |                            ^^^^^^^^^^^^ 'no_such_type' is undeclared
+
+semantic error: the instantiation argument 'helper' for the deferred type 't' is not a type
+   --> tests/errors/continue_compilation_templates_01.f90:719:28
+    |
+719 |     instantiate type_tmpl {helper}, only: s2 => s
+    |                            ^^^^^^ 
+
+semantic error: the instantiation argument 'no_such_n' for 'n' is not declared
+   --> tests/errors/continue_compilation_templates_01.f90:722:38
+    |
+722 |     instantiate const_tmpl {integer, no_such_n}, only: s3 => sn
+    |                                      ^^^^^^^^^ 'no_such_n' is undeclared
+
+semantic error: a positional instantiation argument cannot follow a keyword one
+   --> tests/errors/continue_compilation_templates_01.f90:731:38
+    |
+731 |     instantiate add_t {op = add_int, integer}, only: add1 => add_generic
+    |                                      ^^^^^^^ 
+
+semantic error: 'typ' is not a deferred argument of the referenced template or requirement
+   --> tests/errors/continue_compilation_templates_01.f90:734:24
+    |
+734 |     instantiate add_t {typ = integer, op = add_int}, only: add2 => add_generic
+    |                        ^^^^^^^^^^^^^ 
+
+semantic error: more than one instantiation argument corresponds to the deferred argument 't'
+   --> tests/errors/continue_compilation_templates_01.f90:737:37
+    |
+737 |     instantiate add_t {T = integer, T = integer}, only: add3 => add_generic
+    |                                     ^^^^^^^^^^^ 
+
+semantic error: no instantiation argument corresponds to the deferred argument 'op'
+   --> tests/errors/continue_compilation_templates_01.f90:740:5
+    |
+740 |     instantiate add_t {T = integer}, only: add4 => add_generic
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a `deferred` declaration is only allowed in a requirement, a template or a templated subprogram
+   --> tests/errors/continue_compilation_templates_01.f90:775:5
+    |
+775 |     deferred integer, parameter :: n  ! {Error} a `deferred` declaration is only allowed in a requirement, a template or a templated subprogram
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a `deferred` constant declaration must specify the `parameter` attribute
+   --> tests/errors/continue_compilation_templates_01.f90:779:9
+    |
+779 |         deferred integer :: a  ! {Error} a `deferred` constant declaration must specify the `parameter` attribute
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the type of a `deferred` constant must be integer, logical or character
+   --> tests/errors/continue_compilation_templates_01.f90:784:18
+    |
+784 |         deferred real, parameter :: b  ! {Error} the type of a `deferred` constant must be integer, logical or character
+    |                  ^^^^ 
+
+semantic error: the type of a `deferred` constant must be integer, logical or character
+   --> tests/errors/continue_compilation_templates_01.f90:788:18
+    |
+788 |         deferred type(t), parameter :: c  ! {Error} the type of a `deferred` constant must be integer, logical or character
+    |                  ^^^^^^^ 
+
+semantic error: a `deferred` character constant must have assumed length, declared as `character(*)`
+   --> tests/errors/continue_compilation_templates_01.f90:793:18
+    |
+793 |         deferred character(5), parameter :: d  ! {Error} a `deferred` character constant must have assumed length, declared as `character(*)`
+    |                  ^^^^^^^^^^^^ 
+
+semantic error: 'f' is not a deferred argument of this template or requirement
+   --> tests/errors/continue_compilation_templates_01.f90:798:40
+    |
+798 |         deferred integer, parameter :: f  ! {Error} 'f' is not a deferred argument of this template or requirement
+    |                                        ^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+   --> tests/errors/continue_compilation_templates_01.f90:807:40
+    |
+807 |         deferred integer, parameter :: g(1:3)  ! {Error} a `deferred` constant that is an array is not supported yet
+    |                                        ^^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+   --> tests/errors/continue_compilation_templates_01.f90:811:40
+    |
+811 |         deferred integer, parameter :: h(2:*)  ! {Error} a `deferred` constant that is an array is not supported yet
+    |                                        ^^^^^^ 
+
+semantic error: a `deferred` constant must not have an assumed or deferred shape `:`
+   --> tests/errors/continue_compilation_templates_01.f90:817:42
+    |
+817 |         deferred integer, parameter :: i(:)  ! {Error} a `deferred` constant must not have an assumed or deferred shape `:`
+    |                                          ^ 
+
+semantic error: the dimensions of a `deferred` constant must be either all upper bounds, as in `(3,4)`, or all `*`, as in `(*,*)`
+   --> tests/errors/continue_compilation_templates_01.f90:822:40
+    |
+822 |         deferred integer, parameter :: j(3,*)  ! {Error} the dimensions of a `deferred` constant must be either all upper bounds, as in `(3,4)`, or all `*`, as in `(*,*)`
+    |                                        ^^^^^^ 
+
+semantic error: `..` must be the only dimension of a `deferred` constant
+   --> tests/errors/continue_compilation_templates_01.f90:827:42
+    |
+827 |         deferred integer, parameter :: k(.., ..)  ! {Error} `..` must be the only dimension of a `deferred` constant
+    |                                          ^^ 
+
+semantic error: a `deferred` constant must not be given a value; its value comes from the instantiation argument
+   --> tests/errors/continue_compilation_templates_01.f90:832:40
+    |
+832 |         deferred integer, parameter :: m = 3  ! {Error} a `deferred` constant must not be given a value; its value comes from the instantiation argument
+    |                                        ^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+   --> tests/errors/continue_compilation_templates_01.f90:841:40
+    |
+841 |         deferred integer, parameter :: x2(3)  ! {Error} a `deferred` constant that is an array is not supported yet
+    |                                        ^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+   --> tests/errors/continue_compilation_templates_01.f90:842:40
+    |
+842 |         deferred integer, parameter :: x3(v1)  ! {Error} a `deferred` constant that is an array is not supported yet
+    |                                        ^^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+   --> tests/errors/continue_compilation_templates_01.f90:843:40
+    |
+843 |         deferred integer, parameter :: x4(*)  ! {Error} a `deferred` constant that is an array is not supported yet
+    |                                        ^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+   --> tests/errors/continue_compilation_templates_01.f90:844:40
+    |
+844 |         deferred integer, parameter :: x5(*,*)  ! {Error} a `deferred` constant that is an array is not supported yet
+    |                                        ^^^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+   --> tests/errors/continue_compilation_templates_01.f90:845:38
+    |
+845 |         deferred integer, parameter, rank(2) :: x6  ! {Error} a `deferred` constant that is an array is not supported yet
+    |                                      ^^^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+   --> tests/errors/continue_compilation_templates_01.f90:846:40
+    |
+846 |         deferred integer, parameter :: x7(..)  ! {Error} a `deferred` constant that is an array is not supported yet
+    |                                        ^^^^^^ 
+
+semantic error: Template argument x2 has not been declared in template specification.
+   --> tests/errors/continue_compilation_templates_01.f90:839:5 - 849:71
+    |
+839 |        template note2(x2, x3, x4, x5, x6, x7)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+849 |        ! The DIMENSION attribute spelling of the same array-spec (R1619).
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+   --> tests/errors/continue_compilation_templates_01.f90:851:38
+    |
+851 |         deferred integer, parameter, dimension(3) :: p  ! {Error} a `deferred` constant that is an array is not supported yet
+    |                                      ^^^^^^^^^^^^ 
+
+semantic error: the rank of 'q' is specified twice
+   --> tests/errors/continue_compilation_templates_01.f90:856:54
+    |
+856 |         deferred integer, parameter, dimension(3) :: q(2)  ! {Error} the rank of 'q' is specified twice
+    |                                                      ^^^^ 
+    |
+856 |         deferred integer, parameter, dimension(3) :: q(2)  ! {Error} the rank of 'q' is specified twice
+    |                                      ~~~~~~~~~~~~ 
+
+semantic error: Symbol is already declared in the same scope
+   --> tests/errors/continue_compilation_templates_01.f90:879:26
+    |
+879 |         deferred type :: t  ! {Error} Symbol is already declared in the same scope
+    |                          ^ redeclaration
+    |
+878 |         deferred type :: t
+    |                          ~ original declaration
+
+semantic error: a deferred interface can only appear in a requirement, a template or a templated procedure
+   --> tests/errors/continue_compilation_templates_01.f90:992:5
+    |
+992 |     deferred interface  ! {Error} a deferred interface can only appear in a requirement, a template or a templated procedure
+    |     ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a deferred interface block can only contain interface bodies
+    --> tests/errors/continue_compilation_templates_01.f90:1007:13
+     |
+1007 |             procedure f  ! {Error} a deferred interface block can only contain interface bodies
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+warning: Parameter f is unused in r
+    --> tests/errors/continue_compilation_templates_01.f90:1004:5 - 1010:1
+     |
+1004 |        requirement r {t, f}
+     |        ^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1010 |    
+     | ...^ 
+
+semantic error: 'q' is not a deferred argument of 'r1'
+    --> tests/errors/continue_compilation_templates_01.f90:1026:42
+     |
+1026 |         deferred procedure (iface) :: p, q  ! {Error} 'q' is not a deferred argument of 'r1'
+     |                                          ^ 
+
+semantic error: the interface 'no_such_iface' is not declared
+    --> tests/errors/continue_compilation_templates_01.f90:1030:9
+     |
+1030 |         deferred procedure (no_such_iface) :: p  ! {Error} the interface 'no_such_iface' is not declared
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'not_an_interface' is not an interface
+    --> tests/errors/continue_compilation_templates_01.f90:1034:9
+     |
+1034 |         deferred procedure (not_an_interface) :: p  ! {Error} 'not_an_interface' is not an interface
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+     |
+1023 |     integer :: not_an_interface
+     |                ~~~~~~~~~~~~~~~~ declared here
+
+semantic error: Template argument p has not been declared in template specification.
+    --> tests/errors/continue_compilation_templates_01.f90:1033:5 - 1037:42
+     |
+1033 |        template t1(p)
+     |        ^^^^^^^^^^^^^^...
+...
+     |
+1037 |        ! A module has no deferred arguments.
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a deferred procedure can only be declared in a requirement, a template or a templated procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1038:5
+     |
+1038 |     deferred procedure (iface) :: p  ! {Error} a deferred procedure can only be declared in a requirement, a template or a templated procedure
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1047:22
+     |
+1047 |     deferred type :: t  ! {Error} a deferred type can only be declared in a requirement, a template or a templated procedure
+     |                      ^ 
+
+semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1052:26
+     |
+1052 |         deferred type :: u  ! {Error} a deferred type can only be declared in a requirement, a template or a templated procedure
+     |                          ^ 
+
+semantic error: 'y' is not a deferred argument of 'r'
+    --> tests/errors/continue_compilation_templates_01.f90:1062:26
+     |
+1062 |         deferred type :: y  ! {Error} 'y' is not a deferred argument of 'r'
+     |                          ^ 
+
+semantic error: 'z' is not a deferred argument of 'tmpl'
+    --> tests/errors/continue_compilation_templates_01.f90:1067:26
+     |
+1067 |         deferred type :: z  ! {Error} 'z' is not a deferred argument of 'tmpl'
+     |                          ^ 
+
+semantic error: 'w' is not a deferred argument of 'swap'
+    --> tests/errors/continue_compilation_templates_01.f90:1074:26
+     |
+1074 |         deferred type :: w  ! {Error} 'w' is not a deferred argument of 'swap'
+     |                          ^ 
+
+semantic error: a deferred type cannot be declared both abstract and extensible
+    --> tests/errors/continue_compilation_templates_01.f90:1121:34
+     |
+1121 |         deferred type, abstract, extensible :: t  ! {Error} a deferred type cannot be declared both abstract and extensible
+     |                                  ^^^^^^^^^^ 
+
+semantic error: the 'abstract' attribute is repeated in a deferred type declaration
+    --> tests/errors/continue_compilation_templates_01.f90:1125:34
+     |
+1125 |         deferred type, abstract, abstract :: t  ! {Error} the 'abstract' attribute is repeated in a deferred type declaration
+     |                                  ^^^^^^^^ 
+
+semantic error: the 'extensible' attribute is repeated in a deferred type declaration
+    --> tests/errors/continue_compilation_templates_01.f90:1129:36
+     |
+1129 |         deferred type, extensible, extensible :: t  ! {Error} the 'extensible' attribute is repeated in a deferred type declaration
+     |                                    ^^^^^^^^^^ 
+
+semantic error: deferred type 't' cannot be extended
+    --> tests/errors/continue_compilation_templates_01.f90:1134:15
+     |
+1134 |         type, extends(t) :: u  ! {Error} deferred type 't' cannot be extended
+     |               ^^^^^^^^^^ 
+
+semantic error: deferred type 't' is not extensible, so it cannot be used in a class declaration
+    --> tests/errors/continue_compilation_templates_01.f90:1143:17
+     |
+1143 |                 class(t), intent(in) :: x  ! {Error} deferred type 't' is not extensible, so it cannot be used in a class declaration
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: deferred type 't' is abstract, so it cannot be used in a type declaration
+    --> tests/errors/continue_compilation_templates_01.f90:1153:17
+     |
+1153 |                 type(t), intent(in) :: x  ! {Error} deferred type 't' is abstract, so it cannot be used in a type declaration
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: deferred type 't' is extensible, so its instantiation argument must be an extensible derived type, not integer
+    --> tests/errors/continue_compilation_templates_01.f90:1190:35
+     |
+1190 |         instantiate t_extensible {integer}, only: n1 => nothing_ext  ! {Error} deferred type 't' is extensible, so its instantiation argument must be an extensible derived type, not integer
+     |                                   ^^^^^^^ 
+
+semantic error: deferred type 't' is extensible, so its instantiation argument must be an extensible derived type, not bindc_t
+    --> tests/errors/continue_compilation_templates_01.f90:1192:33
+     |
+1192 |         instantiate t_abstract {bindc_t}, only: n2 => nothing_abs  ! {Error} deferred type 't' is extensible, so its instantiation argument must be an extensible derived type, not bindc_t
+     |                                 ^^^^^^^ 
+
+semantic error: deferred type 't' is not abstract, so its instantiation argument must not be the abstract type abstract_t
+    --> tests/errors/continue_compilation_templates_01.f90:1195:35
+     |
+1195 |         instantiate t_extensible {abstract_t}, only: n3 => nothing_ext  ! {Error} deferred type 't' is not abstract, so its instantiation argument must not be the abstract type abstract_t
+     |                                   ^^^^^^^^^^ 
+
+semantic error: deferred type 't' is not abstract, so its instantiation argument must not be the abstract type abstract_t
+    --> tests/errors/continue_compilation_templates_01.f90:1196:30
+     |
+1196 |         instantiate t_plain {abstract_t}, only: n4 => nothing_plain  ! {Error} deferred type 't' is not abstract, so its instantiation argument must not be the abstract type abstract_t
+     |                              ^^^^^^^^^^ 
+
+semantic error: a deferred interface can only appear in a requirement, a template or a templated procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1206:5
+     |
+1206 |     deferred interface  ! {Error} a deferred interface can only appear in a requirement, a template or a templated procedure
+     |     ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a deferred procedure can only be declared in a requirement, a template or a templated procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1213:5
+     |
+1213 |     deferred procedure (iface) q  ! {Error} a deferred procedure can only be declared in a requirement, a template or a templated procedure
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1216:22
+     |
+1216 |     deferred type :: v  ! {Error} a deferred type can only be declared in a requirement, a template or a templated procedure
+     |                      ^ 
+
+semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
+   --> tests/errors/continue_compilation_templates_01.f90:120:55
+    |
+120 |             avg = avg_S_from_T(d1, D_divided_by_T(d1, s1), d2, D_divided_by_S(d2, s2))
+    |                                                       ^^ type 't' expected, but 's' provided
+    |
+ 90 |                pure function D_divided_by_T(n, d) result(quotient)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+ 94 |                end function
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^ function definition has parameter type 't'
+
+semantic error: Operator `+` undefined for the types in the expression `t + t`
+   --> tests/errors/continue_compilation_templates_01.f90:463:17
+    |
+463 |             z = x + y
+    |                 ^^^^^ 
+
+semantic error: Operator `==` undefined for the types in the expression `t == t`
+   --> tests/errors/continue_compilation_templates_01.f90:533:20
+    |
+533 |             prop = bin(x,y) == bin(y,x)
+    |                    ^^^^^^^^^^^^^^^^^^^^ 
