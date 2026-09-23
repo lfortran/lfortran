@@ -1202,6 +1202,603 @@ contains
 
 end module
 
+! template_save_common_1
+! C1610 and C1611 (J3/26-007r1, 16.3): within a template or templated
+! procedure, or a scoping unit nested therein, an entity that is not accessed
+! by host or use association shall not have the SAVE attribute, and a COMMON or
+! EQUIVALENCE statement shall not appear.
+module template_save_common_1_m
+    implicit none
+
+    ! C1610, in a procedure of a template, in each spelling of SAVE
+    template save_tmpl(t)
+        deferred type :: t
+    contains
+        subroutine explicit_save(x)
+            type(t), intent(in) :: x
+            integer, save :: counter
+            counter = counter + 1
+            print *, x, counter
+        end subroutine
+
+        subroutine save_statement(x)
+            type(t), intent(in) :: x
+            integer :: counter
+            save :: counter
+            counter = counter + 1
+            print *, x, counter
+        end subroutine
+
+        subroutine bare_save_statement(x)
+            type(t), intent(in) :: x
+            integer :: counter
+            save
+            counter = counter + 1
+            print *, x, counter
+        end subroutine
+
+        ! An initialized local has an implicit SAVE attribute
+        subroutine initialized_local(x)
+            type(t), intent(in) :: x
+            integer :: counter = 0
+            counter = counter + 1
+            print *, x, counter
+        end subroutine
+
+        ! A procedure contained in a procedure of a template is a scoping unit
+        ! nested in the template
+        subroutine nested_procedure(x)
+            type(t), intent(in) :: x
+            print *, x
+            call inner()
+        contains
+            subroutine inner()
+                integer, save :: counter
+                counter = counter + 1
+                print *, counter
+            end subroutine
+        end subroutine
+    end template
+
+    ! C1610 is not reachable in the specification part of a template itself.
+    ! C1603 allows only a PARAMETER declaration there, and a named constant
+    ! cannot have the SAVE attribute, so such a declaration is rejected as a
+    ! C1603 violation before SAVE is ever considered. C1610 is still reachable,
+    ! and is covered above and below, in a procedure of a template's CONTAINS
+    ! section, in a scoping unit nested in one, and in a templated procedure.
+
+    ! C1610, in a template nested in a template
+    template outer_tmpl(t)
+        deferred type :: t
+        template inner_tmpl(u)
+            deferred type :: u
+        contains
+            subroutine inner_save(y)
+                type(u), intent(in) :: y
+                integer, save :: counter
+                counter = counter + 1
+                print *, y, counter
+            end subroutine
+        end template
+    contains
+        subroutine outer_sub(x)
+            type(t), intent(in) :: x
+            print *, x
+        end subroutine
+    end template
+
+    ! C1611, in a procedure of a template
+    template storage_tmpl(t)
+        deferred type :: t
+    contains
+        subroutine common_block(x)
+            type(t), intent(in) :: x
+            integer :: a
+            common /blk/ a
+            a = 1
+            print *, x, a
+        end subroutine
+
+        subroutine equivalenced(x)
+            type(t), intent(in) :: x
+            integer :: a, b
+            equivalence (a, b)
+            a = 1
+            print *, x, b
+        end subroutine
+    end template
+
+contains
+
+    ! C1610, in a templated procedure
+    subroutine templated_save{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer, save :: counter
+        counter = counter + 1
+        print *, x, counter
+    end subroutine
+
+    ! C1611, in a templated procedure
+    subroutine templated_common{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer :: a
+        common /blk2/ a
+        a = 1
+        print *, x, a
+    end subroutine
+
+end module
+
+! template_scope_1
+! C1601 of the Fortran 2028 working draft (J3/26-007r1, 16.1.1):
+!
+!     A template-construct shall only appear in the specification-part of a
+!     main program, module, or TEMPLATE construct.
+!
+! LFortran used to accept a template construct in any specification part, in
+! particular inside an ordinary subprogram. A submodule is deliberately not in
+! the list above, so a template in a submodule is rejected as well.
+!
+! See integration_tests/template_simple_01.f90 for a template in a module,
+! integration_tests/template_program_01.f90 for one in a main program and
+! integration_tests/template_05.f90 for a template nested in another template.
+
+module template_scope_1_mod
+    implicit none
+
+    ! A requirement is not one of the three permitted contexts.
+    requirement r {t}
+        deferred type :: t
+        template req_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+            deferred type :: u
+        end template
+    end requirement
+
+contains
+
+    subroutine s()
+        template sub_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+            deferred type :: u
+        end template
+    end subroutine
+
+    integer function f()
+        template func_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+            deferred type :: u
+        end template
+        f = 1
+    end function
+
+end module
+
+module template_scope_1_submod_mod
+    implicit none
+    interface
+        module subroutine g()
+        end subroutine
+    end interface
+end module
+
+submodule (template_scope_1_submod_mod) template_scope_1_submod
+    implicit none
+
+    ! A submodule is not a module for the purposes of C1601.
+    template submod_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+        deferred type :: u
+    end template
+
+contains
+
+    module subroutine g()
+    end subroutine
+
+end submodule
+
+! deferred_type_class_1
+! A deferred type argument of a template or a requirement may only be used in a
+! CLASS declaration if it is extensible (Fortran 2028 working draft J3/26-007r1,
+! 16.4.1.2):
+!
+!     A deferred type with the EXTENSIBLE attribute is an extensible type. A
+!     deferred type with the ABSTRACT attribute is an abstract type. A deferred
+!     type with the ABSTRACT attribute implicitly has the EXTENSIBLE attribute.
+!
+! NOTE 4 of that subclause lists the valid combinations: for a bare
+! `DEFERRED TYPE :: t1`, `TYPE(t1)` is valid and `CLASS(t1)` is not.
+!
+! CommonVisitor::determine_type resolved the CLASS type name and cast the
+! resulting symbol to a derived type without checking, so a deferred type
+! reached an internal assertion instead of a diagnostic; in a Release build,
+! where the assertion is compiled out, the bad cast was used instead.
+!
+! The EXTENSIBLE and ABSTRACT attributes are not implemented yet
+! (lfortran/lfortran#13285), so no deferred type is extensible today and every
+! CLASS declaration of one is rejected. See
+! integration_tests/template_deferred_type_01.f90 for the accepted TYPE(t)
+! spelling, which stays valid.
+
+module deferred_type_class_1
+    implicit none
+
+    requirement r {t, s1}
+        deferred type :: t
+        interface
+            subroutine s1(x)
+                class(t), intent(in) :: x  ! {Error} deferred type 't' is not extensible, so it cannot be used in a class declaration
+            end subroutine
+        end interface
+    end requirement
+
+    template tmpl(u)
+        deferred type :: u
+    contains
+        subroutine s2(y)
+            class(u), intent(in) :: y  ! {Error} deferred type 'u' is not extensible, so it cannot be used in a class declaration
+        end subroutine
+    end template
+
+end module
+
+! deferred_type_coarray_1
+! C1617 of the Fortran 2028 working draft (J3/26-007r1, 16.4.1.2):
+!
+!     C1617  A variable of deferred type shall not be a coarray.
+!
+! NOTE 5 of the same subclause gives the reason: it is invalid to coindex a
+! variable that has a polymorphic potential subobject component, and a type
+! with such a component is a permitted instantiation argument. The constraint
+! therefore has to be checked on the declaration inside the template, once,
+! rather than on each instantiation argument.
+!
+! LFortran used to accept every spelling below without a diagnostic; this test
+! pins that each of them is now a semantic error. See
+! integration_tests/template_deferred_type_01.f90 for accepted declarations of
+! a deferred type, and `ordinary_coarray` here for a coarray of an ordinary
+! type inside a template, which stays valid.
+
+module deferred_type_coarray_1
+
+    implicit none
+
+    type :: ordinary_t
+        integer :: a
+    end type
+
+    ! Specification part of a template.
+    template spec_tmpl(t)
+        deferred type :: t
+    contains
+        subroutine spec_coarray()
+        type(t), codimension[:], allocatable :: spec_x  ! {Error} A variable of deferred type must not be a coarray
+        end subroutine
+    end template
+
+    ! Contains part of a template, all coarray spellings.
+    template body_tmpl(t)
+        deferred type :: t
+    contains
+        subroutine codim_attr()
+            type(t), codimension[:], allocatable :: x  ! {Error} A variable of deferred type must not be a coarray
+        end subroutine
+        subroutine bracket_allocatable()
+            type(t), allocatable :: x[:]  ! {Error} A variable of deferred type must not be a coarray
+        end subroutine
+        subroutine bracket_explicit()
+            type(t) :: x[*]  ! {Error} A variable of deferred type must not be a coarray
+        end subroutine
+        subroutine codim_attr_explicit()
+            type(t), codimension[*] :: x  ! {Error} A variable of deferred type must not be a coarray
+        end subroutine
+        subroutine with_dimension()
+            type(t), dimension(:), codimension[:], allocatable :: x  ! {Error} A variable of deferred type must not be a coarray
+        end subroutine
+        ! A coarray of an ordinary type inside a template is unaffected by
+        ! C1617 and must keep compiling.
+        subroutine ordinary_coarray()
+            type(ordinary_t), codimension[:], allocatable :: y
+        end subroutine
+    end template
+
+    ! Specification part of a requirement.
+    requirement r {t}
+        deferred type :: t
+        type(t), codimension[:], allocatable :: req_x  ! {Error} A variable of deferred type must not be a coarray
+    end requirement
+
+contains
+
+    ! Brace-spelled templated subprogram.
+    subroutine templated_sub{t}()
+        deferred type :: t
+        type(t), codimension[:], allocatable :: x  ! {Error} A variable of deferred type must not be a coarray
+    end subroutine
+
+end module deferred_type_coarray_1
+
+! template_spec_decl_1
+! C1603 and C1604 of the Fortran 2028 working draft (J3/26-007r1, 16.1.1):
+!
+!     C1603  If a template-specification is a type declaration statement, it
+!            shall specify the PARAMETER attribute.
+!     C1604  If a template-specification is a procedure declaration statement,
+!            it shall not specify the POINTER attribute.
+!
+! with the accompanying note: a template specification part cannot declare a
+! variable or procedure pointer.
+!
+! Both constraints apply to the template-specifications only, that is to the
+! items between the `template` statement and `contains`. The contained
+! procedures are ordinary subprogram bodies and may declare locals, and a
+! deferred argument declaration (R1615) or a requirement is not a
+! template-specification either.
+
+module template_spec_decl_1_mod
+    implicit none
+
+    abstract interface
+        subroutine iface_sub()
+        end subroutine
+    end interface
+
+    requirement plus_r {t, plus_t}
+        deferred type :: t
+        deferred interface
+            function plus_t(x, y) result(z)
+                type(t), intent(in) :: x, y
+                type(t) :: z
+            end function
+        end interface
+    end requirement
+
+    template tmpl(t, plus_t, n)
+        ! Not template-specifications, and so not restricted by C1603: a
+        ! deferred type declaration, a deferred constant and a requirement.
+        deferred type :: t
+        integer :: n
+        require :: plus_r {t, plus_t}
+
+        ! A named constant is what C1603 permits.
+        integer, parameter :: repeat_count = 2
+
+        ! A procedure declaration without POINTER is what C1604 permits.
+        procedure(iface_sub) :: plain_proc
+
+        private
+        public :: add_n_times
+
+        integer :: bad_variable          ! {Error} a template specification part cannot declare a variable, so 'bad_variable' must have the parameter attribute
+        procedure(iface_sub), pointer :: bad_proc_ptr          ! {Error} a template specification part cannot declare a procedure pointer, so 'bad_proc_ptr' must not have the pointer attribute
+    contains
+        function add_n_times(x) result(z)
+            type(t), intent(in) :: x
+            type(t) :: z
+            ! A local variable in a contained procedure stays legal.
+            integer :: i
+            z = x
+            do i = 1, n * repeat_count
+                z = plus_t(z, x)
+            end do
+        end function
+    end template
+
+end module
+
+! requirement_scope_1
+! The Fortran 2028 working draft (J3/26-007r1) contradicts itself about where a
+! REQUIREMENT construct may appear:
+!
+!     R1605 template-declaration  is  template-specification
+!                                 or  deferred-arg-decl-stmt
+!                                 or  requirement-construct
+!                                 or  template-construct
+!
+!     C1636 A requirement-construct shall only appear in the specification-part
+!           of a main program or module.
+!
+! R1605 permits a requirement construct inside a TEMPLATE construct, C1636
+! forbids it. This is a drafting defect, not a settled rule; LFortran follows
+! C1636 because rejecting is reversible, while accepting code the standard may
+! forbid creates a compatibility burden if J3 resolves it the other way.
+!
+! A submodule, a subprogram and another requirement are not in C1636's list
+! either, so a requirement is rejected in those as well.
+!
+! See integration_tests/template_simple_01.f90 for a requirement in a module and
+! integration_tests/template_03b.f90 for one in a main program.
+
+module requirement_scope_1_mod
+    implicit none
+
+    ! Permitted: the specification part of a module.
+    requirement ok_r {t}
+        deferred type :: t
+    end requirement
+
+    ! R1605 would allow this, C1636 does not.
+    template tmpl(t)
+        deferred type :: t
+        requirement tmpl_r {u}  ! {Error} a requirement can only be declared in the specification part of a main program or a module
+            deferred type :: u
+        end requirement
+    contains
+        subroutine s(x)
+            type(t), intent(in) :: x
+        end subroutine
+    end template
+
+    ! A requirement is not a main program or a module either.
+    requirement outer_r {t}
+        deferred type :: t
+        requirement inner_r {u}  ! {Error} a requirement can only be declared in the specification part of a main program or a module
+            deferred type :: u
+        end requirement
+    end requirement
+
+contains
+
+    subroutine sub()
+        requirement sub_r {u}  ! {Error} a requirement can only be declared in the specification part of a main program or a module
+            deferred type :: u
+        end requirement
+    end subroutine
+
+    integer function func()
+        requirement func_r {u}  ! {Error} a requirement can only be declared in the specification part of a main program or a module
+            deferred type :: u
+        end requirement
+        func = 1
+    end function
+
+end module
+
+module requirement_scope_1_submod_mod
+    implicit none
+    interface
+        module subroutine g()
+        end subroutine
+    end interface
+end module
+
+submodule (requirement_scope_1_submod_mod) requirement_scope_1_submod
+    implicit none
+
+    ! A submodule is not a module for the purposes of C1636.
+    requirement submod_r {u}  ! {Error} a requirement can only be declared in the specification part of a main program or a module
+        deferred type :: u
+    end requirement
+
+contains
+
+    module subroutine g()
+    end subroutine
+
+end submodule
+
+! requirement_syntax_1
+! The deferred argument list of a REQUIREMENT construct and the instantiation
+! argument list of a REQUIRE statement are written with curly braces in the
+! Fortran 2028 working draft (J3/26-007r1, 16.6 and 16.7):
+!
+!     R1633 requirement-stmt  is  REQUIREMENT requirement-name
+!               { [ deferred-arg-name-list ] }
+!     R1636 require-stmt      is  REQUIRE [ :: ] requirement-name
+!               { [ instantiation-arg-spec-list ] }
+!
+! LFortran used to spell both lists with parentheses; this test pins that the
+! parenthesised spelling is now a syntax error. See
+! integration_tests/template_07.f90 for the accepted spellings.
+
+module requirement_syntax_1
+
+    requirement r {t}
+        deferred type :: t
+    end requirement
+
+    template tmpl(u)
+        deferred type :: u
+        require :: r(u)  ! {Error} Token '(' is unexpected here
+    end template
+
+    ! Placed last: the requirement statement opens a construct, so its syntax
+    ! error also leaves the matching END REQUIREMENT unexpected.
+    requirement r_paren(t)  ! {Error} Token '(' is unexpected here
+        integer :: t
+    end requirement  ! {Error} Token 'requirement' is unexpected here
+
+end module
+
+! requirement_bare_subprogram_1
+! R1634 of the Fortran 2028 working draft (J3/26-007r1, 16.6) lists exactly what
+! a REQUIREMENT construct may contain:
+!
+!     R1634 requirement-specification  is  deferred-arg-decl-stmt
+!                                      or  interface-block
+!
+! A bare subprogram body is neither, so the deferred procedures of a requirement
+! have to be declared by an interface block. LFortran used to accept the bare
+! spelling; this test pins that it is now a syntax error, for a function and for
+! a subroutine alike. See integration_tests/template_deferred_interface_01.f90
+! for the accepted spelling, a DEFERRED INTERFACE block.
+!
+! A subprogram statement opens a construct, so each syntax error below also
+! leaves the matching END statement unexpected.
+
+module requirement_bare_subprogram_1
+
+    requirement func_r {t, f}
+        deferred type :: t
+        function f(x) result(z)  ! {Error} Token 'f' (of type 'identifier') is unexpected here
+            type(t), intent(in) :: x
+            type(t) :: z
+        end function  ! {Error} Token 'end function' is unexpected here
+    end requirement
+
+    requirement sub_r {t, s}
+        deferred type :: t
+        subroutine s(x)  ! {Error} Token 's' (of type 'identifier') is unexpected here
+            type(t), intent(in) :: x
+        end subroutine  ! {Error} Token 'end subroutine' is unexpected here
+    end requirement
+
+end module
+
+! deferred_type_syntax_1
+! A deferred type argument of a template or a requirement is declared with the
+! DEFERRED TYPE statement of the Fortran 2028 working draft (J3/26-007, 16.4.1.2):
+!
+!     R1616 deferred-type-declaration-stmt  is  DEFERRED TYPE
+!               [, deferred-type-attr-list ] :: deferred-arg-name-list
+!
+! DEFERRED is not a type-attr-spec (R739 lists ABSTRACT, access-spec, BIND(C),
+! EXTENDS, PURE and SIMPLE only), so a statement beginning `TYPE ,` can only
+! open a derived-type definition and `type, deferred :: t` is not valid in any
+! context. LFortran used to accept that spelling; this test pins that it is now
+! a syntax error. See integration_tests/template_deferred_type_01.f90 for the
+! accepted spelling.
+
+module deferred_type_syntax_1
+
+    requirement r {t}
+        deferred type :: t
+        type, deferred :: t  ! {Error} Token 'deferred' is unexpected here
+    end requirement
+
+    template tmpl(u)
+        deferred type :: u
+        type, deferred :: u  ! {Error} Token 'deferred' is unexpected here
+    end template
+
+    ! Outside a template or a requirement it was never meaningful either.
+    type, deferred :: v  ! {Error} Token 'deferred' is unexpected here
+
+end module
+
+! decl_order_01
+module decl_order_mod
+implicit none
+integer :: i
+i = 1
+
+! A template accepts declarations only
+template decl_order_t(T)
+    deferred type :: T
+    use iso_fortran_env
+    implicit none
+    integer, parameter :: j = 0
+    j = 1
+end template
+end module
+
+subroutine decl_order_sub()
+implicit none
+integer :: a
+import :: y
+a = 1
+end subroutine
+
+
 program continue_compilation_templates_01
     use continue_compilation_templates_01_mod
     implicit none
@@ -1218,5 +1815,16 @@ program continue_compilation_templates_01
 
     ! deferred_type_scope_1
     deferred type :: v  ! {Error} a deferred type can only be declared in a requirement, a template or a templated procedure
+
+    ! decl_order_01 main-program cases
+import :: x
+integer :: b
+use, intrinsic :: iso_c_binding
+implicit none
+block
+implicit none
+integer :: c
+c = 1
+end block
 
 end program continue_compilation_templates_01
