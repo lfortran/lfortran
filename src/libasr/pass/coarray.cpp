@@ -1848,21 +1848,6 @@ class PRIFInterface {
                 al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
         }
 
-        // Whether `var` has the SAVE attribute. F2023 8.5.16: a variable
-        // declared in the scoping unit of a main program, a module or a
-        // submodule implicitly has it, "which may be confirmed by explicit
-        // specification". Writing `save` therefore does not change what the
-        // declaration means, so it must not change what is generated for it:
-        // every saved coarray of such a unit is allocated by that unit's
-        // initializer, whichever way it was spelled.
-        static bool has_save_attribute(ASR::Variable_t *var) {
-            if (var->m_storage == ASR::storage_typeType::Save) return true;
-            if (var->m_intent != ASR::intentType::Local) return false;
-            ASR::symbol_t *owner = ASRUtils::get_asr_owner(&var->base);
-            return owner != nullptr && (ASR::is_a<ASR::Module_t>(*owner) ||
-                ASR::is_a<ASR::Program_t>(*owner));
-        }
-
         // The link name of the companions of a saved coarray owned by a
         // module. They are hoisted into the translation unit's scope, and
         // every unit that uses the module derives the same name for them, so
@@ -1943,7 +1928,7 @@ class PRIFInterface {
                 if (ASRUtils::is_pointer(var->m_type)) continue;
 
                 std::string vname = var->m_name;
-                bool is_save = has_save_attribute(var);
+                bool is_save = var->m_storage == ASR::storage_typeType::Save;
                 SymbolTable *companion_scope = scope;
                 std::string hname = vname + "__coarray_handle";
                 std::string dname = vname + "__coarray_data";
@@ -2255,7 +2240,7 @@ class PRIFInterface {
                 ASR::ttype_t *orig_type = original_types.count(sym) ? original_types[sym] : var->m_type;
                 if (ASRUtils::is_allocatable(orig_type)) continue;
 
-                if (has_save_attribute(var)) continue;
+                if (var->m_storage == ASR::storage_typeType::Save) continue;
 
                 // Nothing is left for this pass to do here. A coarray that is
                 // neither allocatable nor saved has no storage to refer to, and
