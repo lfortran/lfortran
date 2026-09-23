@@ -7082,14 +7082,16 @@ public:
         }
         SetChar current_function_dependencies_copy = current_function_dependencies;
         SetChar current_module_dependencies_copy = current_module_dependencies;
-        tmp = nullptr;
         try {
             this->visit_expr(*x.m_value);
         } catch (const SemanticAbort &e) {
             if (!compiler_options.continue_compilation) throw e;
-            tmp = nullptr;
             current_function_dependencies = current_function_dependencies_copy;
             current_module_dependencies = current_module_dependencies_copy;
+            if (is_template || is_requirement || is_current_procedure_templated ||
+                    ASRUtils::is_owned_by_template(current_scope)) {
+                tmp = nullptr;
+            }
         }
         current_variable_type_ = temp_current_variable_type_;
         if (tmp == nullptr) {
