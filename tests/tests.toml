@@ -6269,6 +6269,16 @@ pass = "coarray,global_init_wire"
 options = "--coarray=true"
 
 [[test]]
+filename = "../integration_tests/coarrays_52.f90"
+# The linkage of what the coarray pass declares in the translation unit's
+# scope: the companions of a coarray a module owns -- a module variable or a
+# module procedure's -- are exported, since a translation unit that uses the
+# module refers to them; those of an external procedure's or the program's,
+# and the translation unit's own initializer, are internal.
+llvm = true
+options = "--coarray=true"
+
+[[test]]
 filename = "../integration_tests/coarrays_51.f90"
 # Separate compilation, so `coarrays_51_m` is read from a modfile: the pass
 # has to name the initializer its own object file defines rather than define
