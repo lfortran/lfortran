@@ -1950,9 +1950,9 @@ static inline bool is_variable(ASR::expr_t* a_value) {
 
 // `p => tgt` in a declaration associates the pointer with a designator — a
 // whole variable, an array element or section, or a component — instead of
-// giving it a value. An association is not a value, so no target can lay it
-// out as static data: the `global_init` pass turns it into the pointer
-// assignment that runs before any user code observes the pointer.
+// giving it a value. `is_static_pointer_association` says which of these a
+// backend lays out as static data; the `global_init` pass turns the rest into
+// the pointer assignment that runs before any user code observes the pointer.
 //
 // A named constant is not a valid target, so a `parameter` at the base of the
 // designator says no. `=> null()` is a value, not a designator, and is laid
@@ -10324,6 +10324,118 @@ static inline bool needs_struct_array_member_init(ASR::expr_t* expr,
     std::set<ASR::Struct_t*> visited;
     return struct_needs_member_init(
         ASR::down_cast<ASR::Struct_t>(struct_sym), visited);
+}
+
+// The zero based offset, in elements, of the array element `x` names in the
+// storage of its array, or -1 when it is not known at compile time. Fortran
+// lays an array out with its first dimension varying fastest, so the offset
+// of `a(i, j)` is `(i - lbound(a, 1)) + (j - lbound(a, 2)) * size(a, 1)`.
+static inline int64_t constant_array_item_offset(ASR::ArrayItem_t* x) {
+    ASR::dimension_t* dims = nullptr;
+    size_t n_dims = extract_dimensions_from_ttype(expr_type(x->m_v), dims);
+    if (n_dims == 0 || n_dims != x->n_args) {
+        return -1;
+    }
+    int64_t offset = 0, stride = 1;
+    for (size_t i = 0; i < n_dims; i++) {
+        if (x->m_args[i].m_right == nullptr || dims[i].m_start == nullptr
+                || dims[i].m_length == nullptr) {
+            return -1;
+        }
+        int64_t index, start, length;
+        if (!extract_value(expr_value(x->m_args[i].m_right), index)
+                || !extract_value(expr_value(dims[i].m_start), start)
+                || !extract_value(expr_value(dims[i].m_length), length)) {
+            return -1;
+        }
+        if (index < start || index >= start + length) {
+            return -1;
+        }
+        offset += (index - start) * stride;
+        stride *= length;
+    }
+    return offset;
+}
+
+// A variable a module declares. Every backend lays those out as static data
+// of the module and leaves their declaration initializers on the declaration
+// for that; a variable of a procedure, of a block or of a program is instead
+// initialized by statements of the scope that declares it, put there by the
+// `global_init` pass or by `array_struct_temporary`.
+static inline bool is_module_variable(const ASR::Variable_t &v) {
+    return v.m_parent_symtab != nullptr
+        && v.m_parent_symtab->asr_owner != nullptr
+        && ASR::is_a<ASR::symbol_t>(*v.m_parent_symtab->asr_owner)
+        && ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
+            v.m_parent_symtab->asr_owner));
+}
+
+// The designator `d` names storage whose address a linker can compute: a
+// variable of a module, an element of one at constant indices, or a component
+// of one.
+static inline bool has_link_time_address(ASR::expr_t* d) {
+    switch (d->type) {
+        case ASR::exprType::Var: {
+            ASR::symbol_t* sym = symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(d)->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                return false;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+            // A coarray's storage comes from `prif_allocate_coarray` at run
+            // time, and an allocatable's from the allocation: the global that
+            // names one holds an address the run time writes, rather than
+            // being the storage itself.
+            if (v->n_codims > 0 || is_allocatable_or_pointer(v->m_type)) {
+                return false;
+            }
+            return is_module_variable(*v);
+        }
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(d);
+            return constant_array_item_offset(item) >= 0
+                && has_link_time_address(item->m_v);
+        }
+        case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(d);
+            // A pointer or allocatable component holds an address that is
+            // read at run time rather than storage of its own.
+            if (is_allocatable_or_pointer(expr_type(member->m_v))) {
+                return false;
+            }
+            return has_link_time_address(member->m_v);
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
+// `p => tgt` in a declaration that a backend lays out as the variable's own
+// static initializer instead of assigning it with a statement: the address of
+// the target is a link-time constant, so the association needs no executable
+// code at all and the unit it is declared in needs no startup initializer
+// because of it.
+//
+// An array pointer is deliberately not one of these. It is a descriptor --
+// data pointer, bounds and strides -- rather than a bare address, and the
+// descriptor is filled in from the target by the association itself. Neither
+// is a character pointer, whose descriptor carries the length as well, nor a
+// polymorphic pointer, whose type pointer is not the target's. Nor is a
+// pointer of a procedure, of a block or of a program, whose declaration
+// initializer becomes a statement of that scope whatever shape it has, nor
+// one whose target is a coarray, whose storage the run time allocates.
+static inline bool is_static_pointer_association(const ASR::Variable_t &v) {
+    if (!is_module_variable(v) || !is_pointer(v.m_type)
+            || !is_pointer_association_initializer(v.m_symbolic_value)) {
+        return false;
+    }
+    if (v.n_codims > 0 || is_array(v.m_type) || is_character(*v.m_type)
+            || is_class_type(extract_type(v.m_type))) {
+        return false;
+    }
+    return has_link_time_address(v.m_symbolic_value);
 }
 
 } // namespace ASRUtils
