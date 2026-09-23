@@ -543,6 +543,10 @@ filename = "errors/deferred_proc_decl_1.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/deferred_type_attr_1.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/deferred_const_decl_1.f90"
 show_asr_with_cc = true
 
@@ -4722,6 +4726,14 @@ filename = "errors/array_bounds_check_15.f90"
 run = true
 
 [[test]]
+filename = "errors/array_bounds_check_16.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_17.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/statement_01.f90"
 asr_implicit_interface_and_typing = true
 
@@ -6205,6 +6217,20 @@ filename = "../integration_tests/global_init_01.f90"
 # place: the run-once guard, the dependency call, the initialization and the
 # program's single call into the chain.
 pass = "global_init,global_init_wire"
+
+[[test]]
+filename = "../integration_tests/coarrays_50.f90"
+fortran = true
+# Saved coarrays declared by procedures -- one a module procedure, one an
+# internal procedure of the program. Neither is somewhere its unit's
+# initializer could reach, so the pass hoists each pointer to the translation
+# unit's scope under a derived name; the reference pins that the initializer
+# then binds it once, and that the procedure bodies are left with no bind of
+# their own. Through the wiring pass, as coarray_saved_01 is, so the reference
+# shows who calls each initializer too. The runtime side of this is the
+# integration test, which needs the coarray runtime the Caffeine CI jobs have.
+pass = "coarray,global_init_wire"
+options = "--coarray=true"
 
 [[test]]
 filename = "../integration_tests/coarrays_51.f90"

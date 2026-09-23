@@ -234,11 +234,17 @@ ttype
     | Allocatable(ttype type)
     | CPtr(cptr_kind kind)
     | SymbolicExpression()
-    | TypeParameter(identifier param)
+    | TypeParameter(identifier param, deferred_type_attr deferred_attr, bool is_class)
     | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
 
 cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | LogicalToLogical | RealToString | IntegerToString | LogicalToString | StringToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
+-- The effective deferred-type-attr (F2028 draft J3/26-007r1 R1617) of a
+-- deferred type argument of a template or a requirement. `Abstract`
+-- subsumes `Extensible`, because a deferred type with the ABSTRACT
+-- attribute implicitly has the EXTENSIBLE attribute (16.4.1.2 paragraph 2);
+-- `NonExtensible` is a plain `deferred type ::` with no attribute.
+deferred_type_attr = NonExtensible | Extensible | Abstract
 cptr_kind = CPointer | CFunPointer | CPtrUnspecified
 storage_type = Default | Save | Parameter
 access = Public | Private

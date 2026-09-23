@@ -4821,6 +4821,23 @@ ASR::asr_t* make_ArraySize_t_util(
     return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
 }
 
+ASR::ttype_t* substitute_class_type_parameter(Allocator& al,
+                                              ASR::TypeParameter_t* param,
+                                              ASR::ttype_t* subs,
+                                              ASR::symbol_t* subs_sym)
+{
+    if (!param->m_is_class || subs_sym == nullptr) return subs;
+    if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(subs))) return subs;
+    ASR::dimension_t* m_dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(subs, m_dims);
+    ASR::ttype_t* t = ASRUtils::make_StructType_t_util(al, subs->base.loc,
+        subs_sym, false);
+    if (n_dims > 0) {
+        t = ASRUtils::make_Array_t_util(al, subs->base.loc, t, m_dims, n_dims);
+    }
+    return t;
+}
+
 ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                      Location loc,
                                      ASR::symbol_t* derived_type_sym,

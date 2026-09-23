@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in assignment to 't%v'. Tried to match size 2 of dimension 1 of LHS with size 3 of dimension 1 of RHS.
+  --> tests/errors/array_bounds_check_17.f90:13:5
+   |
+13 |     t%v = y ! t%v cannot be reallocated, so do not suggest the option
+   |     ^^^ LHS size is 2
+   |
+13 |     t%v = y ! t%v cannot be reallocated, so do not suggest the option
+   |           ^ RHS size is 3

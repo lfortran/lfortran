@@ -3160,6 +3160,205 @@ public:
         return call->n_member > 0;
     }
 
+    // The objects that a scoping unit's COMMON statements place in a common
+    // block, lower cased. A specification expression may read one of them
+    // (Fortran 2023 10.1.11), and the COMMON statements of a specification
+    // part are visited only after its other declarations, so the names are
+    // taken from the declarations up front rather than from
+    // `common_variables_hash`, which is still empty while a bound is built.
+    std::set<std::string> current_common_block_objects;
+
+    // Collects them for the specification part `items`, and restores the
+    // enclosing scoping unit's set when it goes out of scope.
+    struct CommonBlockObjectsScope {
+        CommonVisitor &v;
+        std::set<std::string> previous;
+
+        CommonBlockObjectsScope(CommonVisitor &v_, AST::decl_stmt_t **items,
+                size_t n) : v{v_}, previous{v_.current_common_block_objects} {
+            v.current_common_block_objects.clear();
+            for (size_t i = 0; i < n; i++) {
+                if (!AST::is_a<AST::Declaration_t>(*items[i])) {
+                    continue;
+                }
+                AST::Declaration_t *d = AST::down_cast<AST::Declaration_t>(items[i]);
+                for (size_t j = 0; j < d->n_attributes; j++) {
+                    if (!AST::is_a<AST::AttrCommon_t>(*d->m_attributes[j])) {
+                        continue;
+                    }
+                    AST::AttrCommon_t *c = AST::down_cast<AST::AttrCommon_t>(
+                        d->m_attributes[j]);
+                    for (size_t b = 0; b < c->n_blks; b++) {
+                        for (size_t o = 0; o < c->m_blks[b].n_objects; o++) {
+                            char *name = c->m_blks[b].m_objects[o].m_name;
+                            if (name) {
+                                v.current_common_block_objects.insert(to_lower(name));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        ~CommonBlockObjectsScope() {
+            v.current_common_block_objects = previous;
+        }
+
+        CommonBlockObjectsScope(const CommonBlockObjectsScope &) = delete;
+        CommonBlockObjectsScope &operator=(const CommonBlockObjectsScope &) = delete;
+    };
+
+    // Fortran 2023 10.1.11: a specification expression is a restricted
+    // expression, whose primaries are a closed list. An object designator is
+    // one only when its base object is a dummy argument (without OPTIONAL or
+    // INTENT(OUT)), is in a common block, or is made accessible by use or
+    // host association. A variable local to the scoping unit being compiled
+    // is none of those, so reading its value to size another local, or to
+    // give one a length, is not conforming: the bound is evaluated while the
+    // procedure is laid out, before any statement of its body has run, so
+    // what the local holds at that point is not something the standard pins
+    // down.
+    //
+    // True when `sym` designates such a local. A named constant is a
+    // permitted primary and is not one, and neither is a variable the
+    // scoping unit only reaches through an enclosing scope or a module.
+    bool is_local_of_current_scoping_unit(ASR::symbol_t *sym) {
+        if (sym == nullptr) {
+            return false;
+        }
+        // Use association reaches the variable through an ExternalSymbol.
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+            return false;
+        }
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
+        if (!ASR::is_a<ASR::Variable_t>(*s)) {
+            return false;
+        }
+        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(s);
+        // Host association: declared by an enclosing scoping unit.
+        if (var->m_parent_symtab != current_scope) {
+            return false;
+        }
+        // A named constant is a permitted primary.
+        if (var->m_storage == ASR::storage_typeType::Parameter) {
+            return false;
+        }
+        // A dummy argument is a permitted primary. One that is only named in
+        // the argument list so far, whose declaration comes later in the
+        // specification part, is still a dummy argument.
+        if (var->m_intent != ASRUtils::intent_local) {
+            return false;
+        }
+        if (std::find(current_procedure_args.begin(), current_procedure_args.end(),
+                to_lower(std::string(var->m_name))) != current_procedure_args.end()) {
+            return false;
+        }
+        // A variable in a common block is a permitted primary.
+        if (current_common_block_objects.find(to_lower(std::string(var->m_name)))
+                != current_common_block_objects.end()) {
+            return false;
+        }
+        return true;
+    }
+
+    // Finds the first local of the scoping unit being compiled whose value a
+    // specification expression reads. An inquiry such as `size`, `lbound` or
+    // `len` asks about a property of its designator rather than reading it,
+    // and 10.1.11 p2 (7) permits it, so the designator inquired about is not
+    // walked into; anything else in the inquiry still is.
+    class SpecificationExprLocalFinder :
+            public ASR::BaseWalkVisitor<SpecificationExprLocalFinder> {
+        public:
+            CommonVisitor &v;
+            ASR::symbol_t *local_sym = nullptr;
+            Location local_loc = {};
+
+            SpecificationExprLocalFinder(CommonVisitor &v_) : v{v_} {}
+
+            void visit_Var(const ASR::Var_t &x) {
+                if (local_sym != nullptr) {
+                    return;
+                }
+                if (v.is_local_of_current_scoping_unit(x.m_v)) {
+                    local_sym = x.m_v;
+                    local_loc = x.base.base.loc;
+                }
+            }
+
+            void visit_ArraySize(const ASR::ArraySize_t &x) {
+                if (x.m_dim) {
+                    this->visit_expr(*x.m_dim);
+                }
+            }
+
+            void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+                if (x.m_dim) {
+                    this->visit_expr(*x.m_dim);
+                }
+            }
+
+            void visit_StringLen(const ASR::StringLen_t &/*x*/) {
+            }
+
+            // An inquiry that folds to a constant, such as `kind`, `huge` or
+            // `len` of a fixed-length string, reads nothing at run time.
+            void visit_IntrinsicElementalFunction(
+                    const ASR::IntrinsicElementalFunction_t &x) {
+                if (x.m_value == nullptr) {
+                    ASR::BaseWalkVisitor<SpecificationExprLocalFinder>
+                        ::visit_IntrinsicElementalFunction(x);
+                }
+            }
+
+            void visit_IntrinsicArrayFunction(
+                    const ASR::IntrinsicArrayFunction_t &x) {
+                if (x.m_value == nullptr) {
+                    ASR::BaseWalkVisitor<SpecificationExprLocalFinder>
+                        ::visit_IntrinsicArrayFunction(x);
+                }
+            }
+    };
+
+    // Rejects `e`, the array bound or character length just built for
+    // `context`, when it reads a local of the scoping unit being compiled.
+    // The context is passed in rather than read from
+    // `restricted_expr_context`, because a character length is checked once
+    // its `RestrictedExprScope` has already been left.
+    void check_specification_expr(ASR::expr_t *e, RestrictedExprContext context) {
+        // A character length is also built for the type specification of an
+        // array constructor, which is an ordinary expression rather than a
+        // specification expression, so only a declaration is checked.
+        if (e == nullptr || is_derived_type || !_declaring_variable) {
+            return;
+        }
+        if (context != RestrictedExprContext::ArrayBound &&
+                context != RestrictedExprContext::CharacterLength) {
+            return;
+        }
+        SpecificationExprLocalFinder finder(*this);
+        finder.visit_expr(*e);
+        if (finder.local_sym == nullptr) {
+            return;
+        }
+        std::string name = ASRUtils::symbol_name(finder.local_sym);
+        std::string what = (context == RestrictedExprContext::CharacterLength)
+            ? "a character length" : "an array bound";
+        diag.add(Diagnostic(
+            "the variable '" + name + "' is local to this scoping unit, so it "
+            "cannot appear in a specification expression",
+            Level::Error, Stage::Semantic, {
+                Label("the value of '" + name + "' is read to give " + what,
+                    {finder.local_loc}),
+                Label("'" + name + "' is declared here", {finder.local_sym->base.loc},
+                    false),
+                Label("help: Fortran 2023 10.1.11 allows a dummy argument, a "
+                    "variable in a common block, and one made accessible by "
+                    "use or host association; a named constant, and an inquiry "
+                    "such as `size` or `len` about a local, are also allowed",
+                    {finder.local_loc}, false)}));
+        throw SemanticAbort();
+    }
+
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
         bool is_char_type, bool is_argument, char* var_name) {  
@@ -3192,6 +3391,8 @@ public:
                 } else {
                     this->visit_expr(*m_dim[i].m_start);
                     dim.m_start = ASRUtils::EXPR(tmp);
+                    check_specification_expr(dim.m_start,
+                        RestrictedExprContext::ArrayBound);
                     dimension_attribute_error_check(dim.m_start);
                     if (is_derived_type) {
                         ASR::expr_t* start_value = ASRUtils::expr_value(dim.m_start);
@@ -3214,6 +3415,8 @@ public:
                 } else {
                     this->visit_expr(*m_dim[i].m_end);
                     end = ASRUtils::EXPR(tmp);
+                    check_specification_expr(end,
+                        RestrictedExprContext::ArrayBound);
                     dimension_attribute_error_check(end);
                     if (is_derived_type) {
                         ASR::expr_t* end_value = ASRUtils::expr_value(end);
@@ -11204,8 +11407,26 @@ public:
                   && ASR::is_a<ASR::TypeParameter_t>(*
                     ASRUtils::type_get_past_array(
                         ASR::down_cast<ASR::Variable_t>(v)->m_type))) {
+                ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(
+                    ASRUtils::type_get_past_array(
+                        ASR::down_cast<ASR::Variable_t>(v)->m_type));
+                // C707: "In a declaration-type-spec, TYPE(derived-type-spec) or
+                // TYPE ( deferred-type-name ) shall not specify an abstract
+                // type." (Fortran 2028 working draft J3/26-007r1, 7.3.2.1);
+                // NOTE 4 of 16.4.1.2 spells out that `TYPE(t)` is invalid for a
+                // deferred type declared with the ABSTRACT attribute.
+                if (tp->m_deferred_attr == ASR::deferred_type_attrType::Abstract) {
+                    diag.add(Diagnostic(
+                        "deferred type '" + derived_type_name + "' is abstract, "
+                        "so it cannot be used in a type declaration",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
                 type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
-                                        s2c(al, derived_type_name)));
+                                        s2c(al, derived_type_name),
+                                        tp->m_deferred_attr, false));
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
             } else if (v && ASRUtils::is_iso_c_ptr_type_symbol(current_scope, v)) {
@@ -11320,6 +11541,50 @@ public:
                 derived_type_name = to_lower(sym_type->m_name);
             }
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
+            // A deferred type argument of a template or a requirement is stored
+            // as an ASR::Variable_t whose type is an ASR::TypeParameter_t, so it
+            // is not an ASR::Struct_t and must be handled before the code below
+            // resolves `derived_type_name` to one.
+            if( v && ASR::is_a<ASR::Variable_t>(*v)
+                  && ASR::is_a<ASR::TypeParameter_t>(*
+                        ASRUtils::type_get_past_array(
+                            ASR::down_cast<ASR::Variable_t>(v)->m_type)) ) {
+                ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(
+                    ASRUtils::type_get_past_array(
+                        ASR::down_cast<ASR::Variable_t>(v)->m_type));
+                // C706: "In a declaration-type-spec, CLASS ( derived-type-spec )
+                // or CLASS ( deferred-type-name ) shall specify an extensible
+                // type." (Fortran 2028 working draft J3/26-007r1, 7.3.2.1). A
+                // deferred type is extensible exactly when it was declared
+                // EXTENSIBLE or ABSTRACT, because ABSTRACT implicitly implies
+                // EXTENSIBLE (16.4.1.2 paragraph 2 and its NOTE 4).
+                if( tp->m_deferred_attr == ASR::deferred_type_attrType::NonExtensible ) {
+                    diag.add(Diagnostic(
+                        "deferred type '" + derived_type_name + "' is not extensible, "
+                        "so it cannot be used in a class declaration",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                // The concrete type only becomes known at instantiation, so
+                // there is no derived type symbol to declare here.
+                type_declaration = nullptr;
+                type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
+                                        s2c(al, derived_type_name),
+                                        tp->m_deferred_attr, true));
+                type = ASRUtils::make_Array_t_util(
+                    al, loc, type, dims.p, dims.size(), abi, is_argument);
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
+                if (is_allocatable) {
+                    type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
+                return type;
+            }
             if( !v ) {
                 if( derived_type_name != "~unlimited_polymorphic_type" ) {
                     if (this->is_derived_type && (is_pointer || is_allocatable)) {
@@ -12133,6 +12398,24 @@ public:
                     || ASRUtils::is_array(ASRUtils::expr_type(arg))) {
                 continue;
             }
+            // An empty array constant of a derived type takes the whole
+            // lowered assignment with it (#13382), so a derived type
+            // component with no elements, which has nothing to spread
+            // anyway, is left as it is.
+            if (ASR::is_a<ASR::StructType_t>(*element_type)
+                    && ASRUtils::get_fixed_size_of_array(member_type) == 0) {
+                continue;
+            }
+            if (value == nullptr && ASR::is_a<ASR::StructConstructor_t>(*arg)
+                    && ASRUtils::is_value_constant(arg)
+                    && ASRUtils::is_byte_representable_struct(
+                        ASR::down_cast<ASR::StructConstructor_t>(arg)->m_dt_sym)) {
+                // A derived type constructor is folded into a StructConstant
+                // only once the whole constructor is known to be constant, so
+                // a nested one has no value of its own yet. Fold it here, as
+                // the shape it is given below is the component's.
+                value = fold_struct_constant_arg(arg);
+            }
             if (value == nullptr) {
                 continue;
             }
@@ -12147,11 +12430,21 @@ public:
                     || ASR::is_a<ASR::ComplexConstant_t>(*value)
                     || ASR::is_a<ASR::LogicalConstant_t>(*value)
                     || ASR::is_a<ASR::StringConstant_t>(*value)
+                    || ASR::is_a<ASR::StructConstant_t>(*value)
                     || is_c_pointer_null)) {
                 continue;
             }
+            // The broadcast stores its elements as raw bytes, so a derived
+            // type value is spread only when every component of its type is
+            // stored inline.
+            if (ASR::is_a<ASR::StructConstant_t>(*value)
+                    && !ASRUtils::is_byte_representable_struct(
+                        ASR::down_cast<ASR::StructConstant_t>(value)->m_dt_sym)) {
+                continue;
+            }
             // Case: `t(5.0)` for `real :: x(3)`, like `real :: x(3) = 5.0`,
-            // and `t(c_null_ptr)` for `type(c_ptr) :: p(2)`.
+            // `t(c_null_ptr)` for `type(c_ptr) :: p(2)`, and `t(u(5))` for
+            // `type(u) :: c(2)`.
             ASR::expr_t* broadcast = ASRUtils::broadcast_scalar_constant_to_array(
                 al, arg->base.loc, value, member_type);
             if (broadcast != nullptr) {
@@ -24559,6 +24852,8 @@ public:
                         visit_restricted_expr(*len_item->m_value,
                             RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
+                        check_specification_expr(len_expr,
+                            RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
                         if (len_value) {
                             str->m_len = len_value;
@@ -24633,6 +24928,8 @@ public:
                         visit_restricted_expr(*var_sym->m_length,
                             RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
+                        check_specification_expr(len_expr,
+                            RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
                         if (len_value) {
                             str->m_len = len_value;
