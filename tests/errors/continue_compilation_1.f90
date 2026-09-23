@@ -1714,3 +1714,35 @@ subroutine associated_null_target_in_continue_compilation_1()
     a => null()
     if (associated(a, null())) print *, "bad"  ! {Error} NULL() is not permitted as the TARGET= argument to 'associated'
 end subroutine
+
+! Fortran 2023 10.1.11: a specification expression is a restricted expression.
+! An object designator is a permitted primary only when its base object is a
+! dummy argument, is in a common block, or is made accessible by use or host
+! association. A variable local to the same scoping unit is none of those, so
+! it may not size another local or give one a length. A named constant, and an
+! inquiry such as `size` or `len` about a local, stay permitted.
+subroutine local_in_specification_expr_in_continue_compilation_1(n, s)
+    implicit none
+    integer, intent(in) :: n
+    character(len=*), intent(in) :: s
+    integer, parameter :: lse_p = 3
+    type :: lse_t
+        integer :: x
+    end type
+    type(lse_t), save :: lse_a(1) = lse_t(4)
+    integer :: lse_m
+    integer :: lse_c
+    common /lse_blk/ lse_c
+    integer :: ok_dummy(n)
+    integer :: ok_common(lse_c)
+    integer :: ok_param(lse_p)
+    integer :: ok_inquiry(size(ok_dummy))
+    character(len=n) :: ok_str
+    character(len=len(ok_str)) :: ok_len
+    character(len=len(s)) :: ok_assumed
+    integer :: bad_member(lse_a(1)%x)  ! {Error} the variable 'lse_a' is local to this scoping unit, so it cannot appear in a specification expression
+    integer :: bad_scalar(lse_m)  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+    character(len=lse_m) :: bad_len  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+    print *, size(ok_dummy), size(ok_param), size(ok_inquiry), size(ok_common)
+    print *, len(ok_str), len(ok_len), len(ok_assumed)
+end subroutine
