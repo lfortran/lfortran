@@ -13,7 +13,6 @@ target datalayout = "..."
 @4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.2 = private unnamed_addr constant [3 x i8] c"R4\00", align 1
 @5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@main.res = internal global float 0.000000e+00
 
 define void @__module_callback_02_cb(float* %res, float* %a, float* %b, void (float*, float*)* %f) {
 .entry:
@@ -144,10 +143,12 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value1 = alloca float, align 4
   %call_arg_value = alloca float, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %res = alloca float, align 4
+  store float 0.000000e+00, float* %res, align 4
   store float 1.500000e+00, float* %call_arg_value, align 4
   store float 2.000000e+00, float* %call_arg_value1, align 4
-  %2 = call float @__module_callback_02_foo(float* %call_arg_value, float* %call_arg_value1, float* @main.res)
-  store float %2, float* @main.res, align 4
+  %2 = call float @__module_callback_02_foo(float* %call_arg_value, float* %call_arg_value1, float* %res)
+  store float %2, float* %res, align 4
   br label %return
 
 return:                                           ; preds = %.entry

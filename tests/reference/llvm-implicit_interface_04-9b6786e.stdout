@@ -34,8 +34,6 @@ target datalayout = "..."
 @25 = private unnamed_addr constant [118 x i8] c"Runtime error: Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.\00", align 1
 @26 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @27 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@main.b = internal global [3 x i32] zeroinitializer
-@main.n = internal global i32 3
 @28 = private unnamed_addr constant [2 x i8] c"b\00", align 1
 @29 = private unnamed_addr constant [53 x i8] c"tests/../integration_tests/implicit_interface_04.f90\00", align 1
 @30 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
@@ -58,6 +56,9 @@ define i32 @main(i32 %0, i8** %1) {
   %2 = call i8* @_lfortran_get_default_allocator()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %__1_k = alloca i32, align 4
+  %b = alloca [3 x i32], align 4
+  %n = alloca i32, align 4
+  store i32 3, i32* %n, align 4
   store i32 1, i32* %__1_k, align 4
   %3 = load i32, i32* %__1_k, align 4
   %4 = sext i32 %3 to i64
@@ -100,7 +101,7 @@ then:                                             ; preds = %.entry
   unreachable
 
 ifcont:                                           ; preds = %.entry
-  %27 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i64 %7
+  %27 = getelementptr [3 x i32], [3 x i32]* %b, i32 0, i64 %7
   store i32 10, i32* %27, align 4
   store i32 2, i32* %__1_k, align 4
   %28 = load i32, i32* %__1_k, align 4
@@ -144,7 +145,7 @@ then1:                                            ; preds = %ifcont
   unreachable
 
 ifcont2:                                          ; preds = %ifcont
-  %52 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i64 %32
+  %52 = getelementptr [3 x i32], [3 x i32]* %b, i32 0, i64 %32
   store i32 20, i32* %52, align 4
   store i32 3, i32* %__1_k, align 4
   %53 = load i32, i32* %__1_k, align 4
@@ -188,9 +189,9 @@ then3:                                            ; preds = %ifcont2
   unreachable
 
 ifcont4:                                          ; preds = %ifcont2
-  %77 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i64 %57
+  %77 = getelementptr [3 x i32], [3 x i32]* %b, i32 0, i64 %57
   store i32 30, i32* %77, align 4
-  %78 = load i32, i32* @main.n, align 4
+  %78 = load i32, i32* %n, align 4
   %79 = icmp slt i32 3, %78
   br i1 %79, label %then5, label %ifcont6
 
@@ -225,7 +226,8 @@ then5:                                            ; preds = %ifcont4
   unreachable
 
 ifcont6:                                          ; preds = %ifcont4
-  call void @driver(void ()* bitcast (void (i32*, i32*, i32*)* @implicit_interface_check to void ()*), i32* getelementptr inbounds ([3 x i32], [3 x i32]* @main.b, i32 0, i32 0), i32* @main.n)
+  %96 = getelementptr [3 x i32], [3 x i32]* %b, i32 0, i32 0
+  call void @driver(void ()* bitcast (void (i32*, i32*, i32*)* @implicit_interface_check to void ()*), i32* %96, i32* %n)
   br label %return
 
 return:                                           ; preds = %ifcont6
