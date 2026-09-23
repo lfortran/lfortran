@@ -8178,6 +8178,77 @@ static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
 }
 
+// Reports whether a value of the derived type `st` has a constant byte
+// representation, i.e. whether every one of its components is stored inline
+// in the type. An allocatable or a pointer component holds an array
+// descriptor or a pointer to memory owned elsewhere, and a polymorphic
+// component carries its dynamic type at run time, so a value of a type with
+// such a component has no byte representation to store. The inherited parent
+// and the type of every derived type component are checked as well.
+// `visited` guards against a cyclic parent or component chain.
+inline bool is_byte_representable_struct(ASR::Struct_t* st,
+        std::set<ASR::Struct_t*>& visited) {
+    if( !st ) {
+        return false;
+    }
+    if( !visited.insert(st).second ) {
+        // Already on the chain being checked. A type can only reach itself
+        // through a pointer or an allocatable component, and that component
+        // is rejected where it is declared.
+        return true;
+    }
+    if( st->m_parent ) {
+        ASR::symbol_t* parent = symbol_get_past_external(st->m_parent);
+        // `m_parent` names the inherited type, so it resolves to a Struct.
+        // The assert states that invariant; the test below is still kept
+        // because this function only gates a constant fold, so on a malformed
+        // symbol it should decline to fold rather than down_cast through the
+        // wrong type, which a -DNDEBUG build would do with the assert gone.
+        LCOMPILERS_ASSERT(parent && ASR::is_a<ASR::Struct_t>(*parent))
+        if( !parent || !ASR::is_a<ASR::Struct_t>(*parent) ||
+            !is_byte_representable_struct(
+                ASR::down_cast<ASR::Struct_t>(parent), visited) ) {
+            return false;
+        }
+    }
+    for( size_t i = 0; i < st->n_members; i++ ) {
+        ASR::symbol_t* mem = st->m_symtab->get_symbol(st->m_members[i]);
+        if( !mem || !ASR::is_a<ASR::Variable_t>(*mem) ) {
+            return false;
+        }
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(mem);
+        if( is_allocatable_or_pointer(var->m_type) ) {
+            return false;
+        }
+        ASR::ttype_t* element_type = type_get_past_array(var->m_type);
+        if( !ASR::is_a<ASR::StructType_t>(*element_type) ) {
+            continue;
+        }
+        if( !ASR::down_cast<ASR::StructType_t>(element_type)->m_is_cstruct ) {
+            // A `class(...)` component.
+            return false;
+        }
+        ASR::symbol_t* mem_struct = var->m_type_declaration ?
+            symbol_get_past_external(var->m_type_declaration) : nullptr;
+        if( !mem_struct || !ASR::is_a<ASR::Struct_t>(*mem_struct) ||
+            !is_byte_representable_struct(
+                ASR::down_cast<ASR::Struct_t>(mem_struct), visited) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+inline bool is_byte_representable_struct(ASR::symbol_t* struct_sym) {
+    ASR::symbol_t* sym = struct_sym ? symbol_get_past_external(struct_sym) : nullptr;
+    if( !sym || !ASR::is_a<ASR::Struct_t>(*sym) ) {
+        return false;
+    }
+    std::set<ASR::Struct_t*> visited;
+    return is_byte_representable_struct(
+        ASR::down_cast<ASR::Struct_t>(sym), visited);
+}
+
 static inline bool is_coarray(ASR::symbol_t* s) {
     s = symbol_get_past_external(s);
     if (ASR::is_a<ASR::Variable_t>(*s)) {
