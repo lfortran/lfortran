@@ -2,11 +2,11 @@
     "basename": "ast_f90-template_sort_02-dcb6a26",
     "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
     "infile": "tests/../integration_tests/template_sort_02.f90",
-    "infile_hash": "6567d90a90e2b81b028eeb4ecd959bc7952a3295c9e114006316ef6a",
+    "infile_hash": "10aea10f74b4ee5d0a53b7c22ead56e430b7b60498a005352cd5a6de",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast_f90-template_sort_02-dcb6a26.stdout",
-    "stdout_hash": "d64a872f8b89afcef534dc847100c532db7fc5d7f2065be700e90ec8",
+    "stdout_hash": "2e62a77052215f6a1f5aac1fa9f1a2397d06262b72eff37595f945db",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

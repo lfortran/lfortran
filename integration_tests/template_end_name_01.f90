@@ -5,10 +5,12 @@ module template_end_name_01_m
 
     requirement addable_r {t, add}
         deferred type :: t
-        function add(lhs, rhs) result(res)
-            type(t), intent(in) :: lhs, rhs
-            type(t) :: res
-        end function
+        deferred interface
+            function add(lhs, rhs) result(res)
+                type(t), intent(in) :: lhs, rhs
+                type(t) :: res
+            end function
+        end interface
     end requirement addable_r
 
     template sum_tmpl(t, add)

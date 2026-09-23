@@ -3580,6 +3580,7 @@ RUN(NAME template_07 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_program_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_deferred_type_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_deferred_interface_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_deferred_proc_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_add_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_add_01b LABELS llvm llvm_wasm llvm_wasm_emcc)             # FIXME: add visit_OverloadedBinOp to wasm
 RUN(NAME template_add_01c LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -3624,6 +3625,7 @@ RUN(NAME template_instantiate_subp_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_rename_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_require_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_end_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_instantiate_kwargs_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

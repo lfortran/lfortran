@@ -2452,10 +2452,12 @@ TEST_CASE("FortranEvaluator a cell declaring a requirement and a template") {
 implicit none
 requirement r {t, op}
 deferred type :: t
+deferred interface
 function op(x, y) result(z)
 type(t), intent(in) :: x, y
 type(t) :: z
 end function
+end interface
 end requirement
 template add_t(t, op)
 require r {t, op}
