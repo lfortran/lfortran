@@ -7086,10 +7086,10 @@ public:
             this->visit_expr(*x.m_value);
         } catch (const SemanticAbort &e) {
             if (!compiler_options.continue_compilation) throw e;
-            current_function_dependencies = current_function_dependencies_copy;
-            current_module_dependencies = current_module_dependencies_copy;
             if (is_template || is_requirement || is_current_procedure_templated ||
                     ASRUtils::is_owned_by_template(current_scope)) {
+                current_function_dependencies = current_function_dependencies_copy;
+                current_module_dependencies = current_module_dependencies_copy;
                 tmp = nullptr;
             }
         }
