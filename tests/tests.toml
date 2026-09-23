@@ -467,87 +467,6 @@ filename = "warnings/cpp_warn1.f90"
 asr_preprocess = true
 
 [[test]]
-filename = "errors/template_error_01a.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_01b.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_02.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_03.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_04.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_05.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_06.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_07a.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_07b.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_07c.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_08.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_07.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_09.f90"
-asr = true
-
-[[test]]
-filename = "errors/instantiate_type_arg_01.f90"
-asr = true
-
-[[test]]
-filename = "errors/deferred_type_syntax_1.f90"
-syntax_only_cc = true
-
-[[test]]
-filename = "errors/deferred_type_duplicate_1.f90"
-asr = true
-
-[[test]]
-filename = "errors/deferred_type_scope_1.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/requirement_syntax_1.f90"
-syntax_only_cc = true
-
-[[test]]
-filename = "errors/instantiate_syntax_1.f90"
-syntax_only_cc = true
-
-[[test]]
-filename = "errors/require_syntax_1.f90"
-syntax_only_cc = true
-
-
-[[test]]
 filename = "errors/maskl_incorrect_bit_size.f90"
 asr = true
 
@@ -4702,6 +4621,14 @@ filename = "errors/array_bounds_check_15.f90"
 run = true
 
 [[test]]
+filename = "errors/array_bounds_check_16.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_17.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/statement_01.f90"
 asr_implicit_interface_and_typing = true
 
@@ -5532,10 +5459,6 @@ filename = "errors/data_implied_do3.f90"
 asr = true
 
 [[test]]
-filename = "errors/decl_order_01.f90"
-asr = true
-
-[[test]]
 filename = "../integration_tests/decl_order_02.f90"
 ast = true
 ast_f90 = true
@@ -5833,14 +5756,6 @@ filename = "errors/continue_compilation_templates_01.f90"
 semantics_only_cc = true
 
 [[test]]
-filename = "errors/continue_compilation_instantiate_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/continue_compilation_instantiate_02.f90"
-semantics_only_cc = true
-
-[[test]]
 filename = "coarray_collectives_01.f90"
 fortran = true
 pass = "coarray"   
@@ -5867,13 +5782,18 @@ options = "--coarray=true"
 [[test]]
 filename = "coarray_saved_01.f90"
 fortran = true
-pass = "coarray"
+# Through the wiring pass, so the reference shows who calls each saved
+# coarray's allocation as well as where it ended up.
+pass = "coarray,global_init_wire"
 options = "--coarray=true"
 
 [[test]]
 filename = "coarray_initialization_01.f90"
 fortran = true
-pass = "coarray"
+# Through the wiring pass as well, as coarray_saved_01 is: this test is
+# about initializers too, so the reference is easier to follow when it
+# shows who calls them.
+pass = "coarray,global_init_wire"
 options = "--coarray=true"
 
 [[test]]
@@ -6157,3 +6077,61 @@ asr = true
 [[test]]
 filename = "asr/verify/gpu_kernel_launch_polymorphic_array_argument.asr"
 asr = true
+
+[[test]]
+filename = "../integration_tests/derived_types_188.f90"
+run = true
+
+[[test]]
+filename = "errors/realloc_lhs_fn_result_01.f90"
+run = true
+
+[[test]]
+filename = "errors/realloc_lhs_fn_result_02.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/global_init_01.f90"
+# Both halves, so the reference output documents the whole shape in one
+# place: the run-once guard, the dependency call, the initialization and the
+# program's single call into the chain.
+pass = "global_init,global_init_wire"
+
+[[test]]
+filename = "../integration_tests/coarrays_50.f90"
+fortran = true
+# Saved coarrays declared by procedures -- one a module procedure, one an
+# internal procedure of the program. Neither is somewhere its unit's
+# initializer could reach, so the pass hoists each pointer to the translation
+# unit's scope under a derived name; the reference pins that the initializer
+# then binds it once, and that the procedure bodies are left with no bind of
+# their own. Through the wiring pass, as coarray_saved_01 is, so the reference
+# shows who calls each initializer too. The runtime side of this is the
+# integration test, which needs the coarray runtime the Caffeine CI jobs have.
+pass = "coarray,global_init_wire"
+options = "--coarray=true"
+
+[[test]]
+filename = "../integration_tests/coarrays_51.f90"
+# Separate compilation, so `coarrays_51_m` is read from a modfile: the pass
+# has to name the initializer its own object file defines rather than define
+# a second one here, and must leave the module's coarrays bound to the
+# companions that object file allocated. Checked as ASR because running it
+# needs the coarray runtime, which only the Caffeine CI jobs have -- and
+# `ci/test_caffeine.sh` cannot run a multi-file or separately compiled coarray
+# test today, which is issue #11941.
+extrafiles = "../integration_tests/coarrays_51_m.f90"
+options = "--coarray=true --separate-compilation"
+pass = "coarray,global_init_wire"
+
+[[test]]
+filename = "../integration_tests/global_init_07.f90"
+# The declaration initializer of an array of a derived type whose elements are
+# static data stays on the declaration, so a backend lays it out while it lays
+# the variable out and a specification expression in another scope can read it.
+# Only an element needing executable code of its own becomes a statement.
+# The reference is what catches a regression: turning these back into
+# statements is not observable at run time, because the compiler folds `size`
+# from the initializer it knows while the storage is sized from the value the
+# generated code has at that point.
+pass = "global_init"

@@ -660,6 +660,15 @@ void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struc
         } 
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(expression);
+            // A component reached through an `ExternalSymbol` is declared in
+            // another scope, typically a module, and that one declaration is
+            // shared by every user of the module. Rewriting it to a symbol
+            // that is only visible here would corrupt it for everyone else,
+            // so leave it alone -- it already names its type in its own scope.
+            if( ASR::is_a<ASR::ExternalSymbol_t>(*struct_instance_member->m_m) ) {
+                return;
+            }
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*struct_instance_member->m_m));
             ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(struct_instance_member->m_m);
             variable->m_type_declaration = struct_sym;
             return;
@@ -1481,7 +1490,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     ASR::asr_t *orig_asr_owner = symtab->asr_owner;
     ASR::TranslationUnit_t *tu
         = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, loc,
-            symtab, nullptr, 0));
+            symtab, nullptr, 0, nullptr));
 
     // Load any dependent modules recursively
     bool rerun = true;
@@ -1629,7 +1638,7 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
     ASR::asr_t *orig_asr_owner = symtab->asr_owner;
     ASR::TranslationUnit_t *tu
         = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, loc,
-            symtab, nullptr, 0));
+            symtab, nullptr, 0, nullptr));
 
     // Keeps track of loaded dependent modules whose submodules are not yet loaded
     std::vector<ASR::Module_t*> dependent_modules_with_not_yet_loaded_submodules;
@@ -4810,6 +4819,23 @@ ASR::asr_t* make_ArraySize_t_util(
     }
 
     return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+}
+
+ASR::ttype_t* substitute_class_type_parameter(Allocator& al,
+                                              ASR::TypeParameter_t* param,
+                                              ASR::ttype_t* subs,
+                                              ASR::symbol_t* subs_sym)
+{
+    if (!param->m_is_class || subs_sym == nullptr) return subs;
+    if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(subs))) return subs;
+    ASR::dimension_t* m_dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(subs, m_dims);
+    ASR::ttype_t* t = ASRUtils::make_StructType_t_util(al, subs->base.loc,
+        subs_sym, false);
+    if (n_dims > 0) {
+        t = ASRUtils::make_Array_t_util(al, subs->base.loc, t, m_dims, n_dims);
+    }
+    return t;
 }
 
 ASR::ttype_t* make_StructType_t_util(Allocator& al,

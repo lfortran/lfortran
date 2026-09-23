@@ -57,6 +57,7 @@ interface_header
     | InterfaceHeaderOperator(intrinsicop op)
     | InterfaceHeaderDefinedOperator(string operator_name)
     | AbstractInterfaceHeader()
+    | DeferredInterfaceHeader()
     | InterfaceHeaderWrite(identifier id)
     | InterfaceHeaderRead(identifier id)
 
@@ -99,6 +100,7 @@ decl_stmt
     | Requirement(identifier name, arg* namelist, decl_stmt* items,
         program_unit* funcs)
     | Require(unit_require* reqs)
+    | DeferredProcedure(identifier interface_name, arg* names, trivia? trivia)
     | Union(identifier name, trivia? trivia, decl_attribute* attrtype, decl_stmt* items)
     | Import(identifier* symbols, import_modifier mod, trivia? trivia)
     | ImplicitNone(implicit_none_spec* specs, trivia? trivia)
@@ -286,6 +288,12 @@ decl_attribute
     | AttrAssignment()
     | AttrIntrinsicOperator(intrinsicop op)
     | AttrDefinedOperator(string op_name)
+-- R1630: an instantiation argument prefixed by an argument keyword, i.e.
+-- `keyword = instantiation-arg`. Only appears in an instantiation-argument
+-- list (INSTANTIATE, REQUIRE and inline instantiation), where `value` is the
+-- instantiation argument itself.
+    | AttrKeyword(identifier name, decl_attribute value)
+    | AttrRank(expr* rank)
 
 simple_attribute
     = AttrAbstract
@@ -295,6 +303,7 @@ simple_attribute
     | AttrDeferred
     | AttrElemental
     | AttrEnumerator
+    | AttrExtensible
     | AttrExternal
     | AttrImpure
     | AttrIntrinsic

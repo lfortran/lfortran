@@ -2226,6 +2226,21 @@ public:
     bool is_body_visitor = false;
     bool is_requirement = false;
     bool is_template = false;
+    // True while a template or a templated procedure, or any scoping unit
+    // nested in one, is being visited. Clause 16.3 of J3/26-007r1 forbids
+    // static and storage-associated state there (C1610, C1611), and that
+    // question cannot be answered from `current_scope`: a Template, a Function
+    // and a Subroutine symbol is only created once its specification part has
+    // been visited, so while a procedure contained in a template is being
+    // declared neither its own symbol table nor the template's has an owner yet
+    // and `ASRUtils::is_owned_by_template` reports false. It answers true only
+    // for a templated procedure, whose Template symbol is built before its
+    // specification part. The nesting is therefore tracked explicitly, with a
+    // guard that restores the enclosing value even when a diagnostic aborts the
+    // visit. `is_template` is deliberately not reused: it is not restored on
+    // exit, so it reads false again in the scoping units that follow a nested
+    // template.
+    bool in_template_definition = false;
     bool is_current_procedure_templated = false;
     bool is_Function = false;
     bool in_Subroutine = false;
@@ -3160,6 +3175,205 @@ public:
         return call->n_member > 0;
     }
 
+    // The objects that a scoping unit's COMMON statements place in a common
+    // block, lower cased. A specification expression may read one of them
+    // (Fortran 2023 10.1.11), and the COMMON statements of a specification
+    // part are visited only after its other declarations, so the names are
+    // taken from the declarations up front rather than from
+    // `common_variables_hash`, which is still empty while a bound is built.
+    std::set<std::string> current_common_block_objects;
+
+    // Collects them for the specification part `items`, and restores the
+    // enclosing scoping unit's set when it goes out of scope.
+    struct CommonBlockObjectsScope {
+        CommonVisitor &v;
+        std::set<std::string> previous;
+
+        CommonBlockObjectsScope(CommonVisitor &v_, AST::decl_stmt_t **items,
+                size_t n) : v{v_}, previous{v_.current_common_block_objects} {
+            v.current_common_block_objects.clear();
+            for (size_t i = 0; i < n; i++) {
+                if (!AST::is_a<AST::Declaration_t>(*items[i])) {
+                    continue;
+                }
+                AST::Declaration_t *d = AST::down_cast<AST::Declaration_t>(items[i]);
+                for (size_t j = 0; j < d->n_attributes; j++) {
+                    if (!AST::is_a<AST::AttrCommon_t>(*d->m_attributes[j])) {
+                        continue;
+                    }
+                    AST::AttrCommon_t *c = AST::down_cast<AST::AttrCommon_t>(
+                        d->m_attributes[j]);
+                    for (size_t b = 0; b < c->n_blks; b++) {
+                        for (size_t o = 0; o < c->m_blks[b].n_objects; o++) {
+                            char *name = c->m_blks[b].m_objects[o].m_name;
+                            if (name) {
+                                v.current_common_block_objects.insert(to_lower(name));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        ~CommonBlockObjectsScope() {
+            v.current_common_block_objects = previous;
+        }
+
+        CommonBlockObjectsScope(const CommonBlockObjectsScope &) = delete;
+        CommonBlockObjectsScope &operator=(const CommonBlockObjectsScope &) = delete;
+    };
+
+    // Fortran 2023 10.1.11: a specification expression is a restricted
+    // expression, whose primaries are a closed list. An object designator is
+    // one only when its base object is a dummy argument (without OPTIONAL or
+    // INTENT(OUT)), is in a common block, or is made accessible by use or
+    // host association. A variable local to the scoping unit being compiled
+    // is none of those, so reading its value to size another local, or to
+    // give one a length, is not conforming: the bound is evaluated while the
+    // procedure is laid out, before any statement of its body has run, so
+    // what the local holds at that point is not something the standard pins
+    // down.
+    //
+    // True when `sym` designates such a local. A named constant is a
+    // permitted primary and is not one, and neither is a variable the
+    // scoping unit only reaches through an enclosing scope or a module.
+    bool is_local_of_current_scoping_unit(ASR::symbol_t *sym) {
+        if (sym == nullptr) {
+            return false;
+        }
+        // Use association reaches the variable through an ExternalSymbol.
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+            return false;
+        }
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
+        if (!ASR::is_a<ASR::Variable_t>(*s)) {
+            return false;
+        }
+        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(s);
+        // Host association: declared by an enclosing scoping unit.
+        if (var->m_parent_symtab != current_scope) {
+            return false;
+        }
+        // A named constant is a permitted primary.
+        if (var->m_storage == ASR::storage_typeType::Parameter) {
+            return false;
+        }
+        // A dummy argument is a permitted primary. One that is only named in
+        // the argument list so far, whose declaration comes later in the
+        // specification part, is still a dummy argument.
+        if (var->m_intent != ASRUtils::intent_local) {
+            return false;
+        }
+        if (std::find(current_procedure_args.begin(), current_procedure_args.end(),
+                to_lower(std::string(var->m_name))) != current_procedure_args.end()) {
+            return false;
+        }
+        // A variable in a common block is a permitted primary.
+        if (current_common_block_objects.find(to_lower(std::string(var->m_name)))
+                != current_common_block_objects.end()) {
+            return false;
+        }
+        return true;
+    }
+
+    // Finds the first local of the scoping unit being compiled whose value a
+    // specification expression reads. An inquiry such as `size`, `lbound` or
+    // `len` asks about a property of its designator rather than reading it,
+    // and 10.1.11 p2 (7) permits it, so the designator inquired about is not
+    // walked into; anything else in the inquiry still is.
+    class SpecificationExprLocalFinder :
+            public ASR::BaseWalkVisitor<SpecificationExprLocalFinder> {
+        public:
+            CommonVisitor &v;
+            ASR::symbol_t *local_sym = nullptr;
+            Location local_loc = {};
+
+            SpecificationExprLocalFinder(CommonVisitor &v_) : v{v_} {}
+
+            void visit_Var(const ASR::Var_t &x) {
+                if (local_sym != nullptr) {
+                    return;
+                }
+                if (v.is_local_of_current_scoping_unit(x.m_v)) {
+                    local_sym = x.m_v;
+                    local_loc = x.base.base.loc;
+                }
+            }
+
+            void visit_ArraySize(const ASR::ArraySize_t &x) {
+                if (x.m_dim) {
+                    this->visit_expr(*x.m_dim);
+                }
+            }
+
+            void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+                if (x.m_dim) {
+                    this->visit_expr(*x.m_dim);
+                }
+            }
+
+            void visit_StringLen(const ASR::StringLen_t &/*x*/) {
+            }
+
+            // An inquiry that folds to a constant, such as `kind`, `huge` or
+            // `len` of a fixed-length string, reads nothing at run time.
+            void visit_IntrinsicElementalFunction(
+                    const ASR::IntrinsicElementalFunction_t &x) {
+                if (x.m_value == nullptr) {
+                    ASR::BaseWalkVisitor<SpecificationExprLocalFinder>
+                        ::visit_IntrinsicElementalFunction(x);
+                }
+            }
+
+            void visit_IntrinsicArrayFunction(
+                    const ASR::IntrinsicArrayFunction_t &x) {
+                if (x.m_value == nullptr) {
+                    ASR::BaseWalkVisitor<SpecificationExprLocalFinder>
+                        ::visit_IntrinsicArrayFunction(x);
+                }
+            }
+    };
+
+    // Rejects `e`, the array bound or character length just built for
+    // `context`, when it reads a local of the scoping unit being compiled.
+    // The context is passed in rather than read from
+    // `restricted_expr_context`, because a character length is checked once
+    // its `RestrictedExprScope` has already been left.
+    void check_specification_expr(ASR::expr_t *e, RestrictedExprContext context) {
+        // A character length is also built for the type specification of an
+        // array constructor, which is an ordinary expression rather than a
+        // specification expression, so only a declaration is checked.
+        if (e == nullptr || is_derived_type || !_declaring_variable) {
+            return;
+        }
+        if (context != RestrictedExprContext::ArrayBound &&
+                context != RestrictedExprContext::CharacterLength) {
+            return;
+        }
+        SpecificationExprLocalFinder finder(*this);
+        finder.visit_expr(*e);
+        if (finder.local_sym == nullptr) {
+            return;
+        }
+        std::string name = ASRUtils::symbol_name(finder.local_sym);
+        std::string what = (context == RestrictedExprContext::CharacterLength)
+            ? "a character length" : "an array bound";
+        diag.add(Diagnostic(
+            "the variable '" + name + "' is local to this scoping unit, so it "
+            "cannot appear in a specification expression",
+            Level::Error, Stage::Semantic, {
+                Label("the value of '" + name + "' is read to give " + what,
+                    {finder.local_loc}),
+                Label("'" + name + "' is declared here", {finder.local_sym->base.loc},
+                    false),
+                Label("help: Fortran 2023 10.1.11 allows a dummy argument, a "
+                    "variable in a common block, and one made accessible by "
+                    "use or host association; a named constant, and an inquiry "
+                    "such as `size` or `len` about a local, are also allowed",
+                    {finder.local_loc}, false)}));
+        throw SemanticAbort();
+    }
+
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
         bool is_char_type, bool is_argument, char* var_name) {  
@@ -3192,6 +3406,8 @@ public:
                 } else {
                     this->visit_expr(*m_dim[i].m_start);
                     dim.m_start = ASRUtils::EXPR(tmp);
+                    check_specification_expr(dim.m_start,
+                        RestrictedExprContext::ArrayBound);
                     dimension_attribute_error_check(dim.m_start);
                     if (is_derived_type) {
                         ASR::expr_t* start_value = ASRUtils::expr_value(dim.m_start);
@@ -3214,6 +3430,8 @@ public:
                 } else {
                     this->visit_expr(*m_dim[i].m_end);
                     end = ASRUtils::EXPR(tmp);
+                    check_specification_expr(end,
+                        RestrictedExprContext::ArrayBound);
                     dimension_attribute_error_check(end);
                     if (is_derived_type) {
                         ASR::expr_t* end_value = ASRUtils::expr_value(end);
@@ -4946,7 +5164,7 @@ public:
                         nullptr,
                         nullptr,
                         0,
-                        false, false, false);
+                        false, false, false, nullptr);
 
             ASR::symbol_t* current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
             global_scope->add_symbol(to_lower(module_name), current_module_sym);
@@ -5920,10 +6138,285 @@ public:
         );
     }
 
+    // C1611 (J3/26-007r1, 16.3): a COMMON or EQUIVALENCE statement shall not
+    // appear within a template or templated procedure, or a scoping unit
+    // nested therein. Storage association ties the entity to a fixed layout
+    // shared with other entities, but each instantiation of a template
+    // generates its own procedure, so the standard leaves undefined whether
+    // that storage would be shared between instantiations or private to each.
+    void check_no_storage_association_in_template(const std::string &stmt,
+            const Location &loc) {
+        if (!in_template_definition) return;
+        diag.add(Diagnostic(
+            stmt + " statement is not allowed in a template or templated "
+            "procedure",
+            Level::Error, Stage::Semantic, {
+                Label("", {loc})}));
+        throw SemanticAbort();
+    }
+
+    // F2028 16.4.1.3 deferred constants.
+    //
+    //   R1618  deferred-const-decl-stmt  is  DEFERRED declaration-type-spec,
+    //              deferred-const-attr-spec-list :: deferred-const-entity-decl-list
+    //
+    // The parser represents the statement as an ordinary `Declaration` node
+    // whose attribute list starts with the `deferred` attribute (see
+    // DEFERRED_CONST_DECL in parser/semantics.h), the same way `deferred type ::`
+    // is a `DerivedType` node carrying that attribute. `deferred` cannot reach a
+    // `Declaration` node any other way -- the only other place the parser
+    // accepts the keyword is a type-bound procedure declaration, which is a
+    // `DerivedTypeProc` node -- so the attribute alone identifies R1618.
+    static bool is_deferred_const_decl(const AST::Declaration_t &x) {
+        for (size_t i = 0; i < x.n_attributes; i++) {
+            if (AST::is_a<AST::SimpleAttribute_t>(*x.m_attributes[i])
+                    && AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[i])
+                        ->m_attr == AST::simple_attributeType::AttrDeferred) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // True if `t` specifies an assumed character length, i.e. `character(*)`,
+    // `character(len=*)` or `character*(*)`. The length is the first kind item
+    // without a keyword, or the one named `len`; `character` with no kind items
+    // at all has length one, which is not assumed.
+    static bool is_assumed_character_length(const AST::AttrType_t &t) {
+        if (t.n_kind == 0) {
+            return t.m_sym == AST::symbolType::DoubleAsterisk;
+        }
+        for (size_t i = 0; i < t.n_kind; i++) {
+            if (t.m_kind[i].m_id == nullptr
+                    || to_lower(t.m_kind[i].m_id) == "len") {
+                return t.m_kind[i].m_type == AST::kind_item_typeType::Star;
+            }
+        }
+        return false;
+    }
+
+    // Checks the constraints on a deferred-const-decl-stmt (F2028 C1618-C1621).
+    //
+    // They are checked here, once for the whole statement, and not in the
+    // per-entity loop of visit_DeclarationUtil: C1618 and C1619 constrain the
+    // statement, so a three-entity declaration must not report them three
+    // times, and the entity constraints (C1620, C1621) are cheaper to report
+    // together with them than to thread through that loop. Checking them before
+    // any symbol is created also means the loop below never has to cope with a
+    // declaration that the standard does not allow.
+    void check_deferred_const_decl(const AST::Declaration_t &x) {
+        // A deferred constant is a deferred argument (16.4.1.3 p1), so the
+        // statement is only meaningful where deferred arguments are declared:
+        // the specification part of a REQUIREMENT or TEMPLATE construct, or of
+        // a templated subprogram (R1615).
+        if (!(is_template || is_requirement)) {
+            diag.add(Diagnostic(
+                "a `deferred` declaration is only allowed in a requirement, a"
+                " template or a templated subprogram",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        // C1618: A deferred-const-attr-spec-list shall specify the PARAMETER
+        // attribute. R1619 allows only DIMENSION, PARAMETER and a rank-clause,
+        // which is all the parser accepts, so only PARAMETER can be missing.
+        bool has_parameter = false;
+        for (size_t i = 0; i < x.n_attributes; i++) {
+            if (AST::is_a<AST::SimpleAttribute_t>(*x.m_attributes[i])
+                    && AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[i])
+                        ->m_attr == AST::simple_attributeType::AttrParameter) {
+                has_parameter = true;
+            }
+        }
+        if (!has_parameter) {
+            diag.add(Diagnostic(
+                "a `deferred` constant declaration must specify the `parameter`"
+                " attribute",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        // C1619: the declaration-type-spec shall specify type integer, logical
+        // or character, and a character type shall have assumed length. A
+        // deferred constant is substituted by the instantiation argument, so
+        // only the types that a constant expression can be built from at
+        // instantiation time are allowed, and the length of a character
+        // constant comes from that argument rather than from the template.
+        if (x.m_vartype == nullptr
+                || !AST::is_a<AST::AttrType_t>(*x.m_vartype)) {
+            diag.add(Diagnostic(
+                "the type of a `deferred` constant must be integer, logical or"
+                " character",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        AST::AttrType_t *t = AST::down_cast<AST::AttrType_t>(x.m_vartype);
+        if (t->m_type != AST::decl_typeType::TypeInteger
+                && t->m_type != AST::decl_typeType::TypeLogical
+                && t->m_type != AST::decl_typeType::TypeCharacter) {
+            diag.add(Diagnostic(
+                "the type of a `deferred` constant must be integer, logical or"
+                " character",
+                Level::Error, Stage::Semantic, {
+                    Label("", {t->base.base.loc})}));
+            throw SemanticAbort();
+        }
+        if (t->m_type == AST::decl_typeType::TypeCharacter
+                && !is_assumed_character_length(*t)) {
+            diag.add(Diagnostic(
+                "a `deferred` character constant must have assumed length,"
+                " declared as `character(*)`",
+                Level::Error, Stage::Semantic, {
+                    Label("", {t->base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        // The array-spec of a deferred constant can come from the entity
+        // declaration (R1620), from a DIMENSION attribute or from a rank-clause
+        // (R1619); C1621 applies to all three the same way.
+        AST::dimension_t *attr_dim = nullptr;
+        size_t attr_n_dim = 0;
+        Location attr_dim_loc = x.base.base.loc;
+        bool has_rank_clause = false;
+        for (size_t i = 0; i < x.n_attributes; i++) {
+            if (AST::is_a<AST::AttrDimension_t>(*x.m_attributes[i])) {
+                AST::AttrDimension_t *ad =
+                    AST::down_cast<AST::AttrDimension_t>(x.m_attributes[i]);
+                attr_dim = ad->m_dim;
+                attr_n_dim = ad->n_dim;
+                attr_dim_loc = ad->base.base.loc;
+            } else if (AST::is_a<AST::AttrRank_t>(*x.m_attributes[i])) {
+                has_rank_clause = true;
+                attr_dim_loc = x.m_attributes[i]->base.loc;
+            }
+        }
+
+        for (size_t i = 0; i < x.n_syms; i++) {
+            AST::var_sym_t &s = x.m_syms[i];
+            // R1620 is `deferred-const-name [ ( array-spec ) ]`: there is no
+            // place for an initializer, the value comes from instantiation.
+            if (s.m_initializer != nullptr) {
+                diag.add(Diagnostic(
+                    "a `deferred` constant must not be given a value; its value"
+                    " comes from the instantiation argument",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {s.loc})}));
+                throw SemanticAbort();
+            }
+            // C1620: A deferred-const-name shall be the name of a deferred
+            // constant, i.e. of a deferred argument of the scoping unit
+            // containing the statement (16.4.1.3 p1, R1615).
+            if (std::find(current_procedure_args.begin(),
+                    current_procedure_args.end(), to_lower(s.m_name))
+                    == current_procedure_args.end()) {
+                diag.add(Diagnostic(
+                    "'" + to_lower(s.m_name) + "' is not a deferred argument of"
+                    " this template or requirement",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {s.loc})}));
+                throw SemanticAbort();
+            }
+            if (s.n_dim > 0 && (attr_n_dim > 0 || has_rank_clause)) {
+                diag.add(Diagnostic(
+                    "the rank of '" + to_lower(s.m_name) + "' is specified"
+                    " twice",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {s.loc}),
+                        Label("", {attr_dim_loc}, false)}));
+                throw SemanticAbort();
+            }
+            AST::dimension_t *dim = s.n_dim > 0 ? s.m_dim : attr_dim;
+            size_t n_dim = s.n_dim > 0 ? s.n_dim : attr_n_dim;
+            Location dim_loc = s.n_dim > 0 ? s.loc : attr_dim_loc;
+            check_deferred_const_array_spec(dim, n_dim, dim_loc);
+            if (n_dim > 0 || has_rank_clause) {
+                diag.add(Diagnostic(
+                    "a `deferred` constant that is an array is not supported"
+                    " yet",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {dim_loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
+    // C1621: An array-spec in a deferred-const-decl-stmt shall be an
+    // implied-shape-spec, assumed-implied-spec, explicit-shape-spec-list, or
+    // explicit-shape-bounds-spec. It shall not explicitly specify any lower
+    // bound.
+    //
+    // Each of those four forms maps onto one shape of the AST dimension list:
+    //   * explicit-shape-spec-list and explicit-shape-bounds-spec are every
+    //     dimension being an upper bound expression -- `(3)`, `(3,4)`, and, for
+    //     the bounds form, an upper bound that is itself an array, `(v1)`;
+    //   * assumed-implied-spec is a single `*`, and implied-shape-spec is two or
+    //     more of them -- `(*)`, `(*,*)`;
+    //   * an implied-rank-spec `(..)` is a single dimension of its own
+    //     (F2028 C835 allows it only here).
+    // Everything else is either an assumed- or deferred-shape spec, which a
+    // named constant cannot have, or an assumed-size spec, which C840 restricts
+    // to dummy arguments.
+    //
+    // The clause of C1621 that forbids an explicit lower bound -- NOTE 1 of
+    // 16.4.1.3 says the lower bounds are always one, so not even `(1:3)` may be
+    // spelled -- is not checked here. `array_comp_decl` synthesizes the implicit
+    // lower bound, so `(3)` reaches the semantic stage as `1:3` and the two
+    // cannot be told apart without either restating the whole array-spec rule
+    // for this one statement or stopping the synthesis for every array
+    // declaration in the language. Nothing is accepted that should not be: an
+    // array deferred constant of any shape is rejected below as unimplemented,
+    // so `(1:3)` is rejected too, only with a less specific message. The check
+    // belongs with the implementation of array deferred constants, which has to
+    // represent an implied-shape entity properly in any case.
+    void check_deferred_const_array_spec(AST::dimension_t *dim, size_t n_dim,
+            const Location &loc) {
+        bool all_star = true, all_explicit = true;
+        for (size_t i = 0; i < n_dim; i++) {
+            if (dim[i].m_end_star == AST::dimension_typeType::AssumedRank) {
+                if (n_dim != 1) {
+                    diag.add(Diagnostic(
+                        "`..` must be the only dimension of a `deferred`"
+                        " constant",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {dim[i].loc})}));
+                    throw SemanticAbort();
+                }
+                return;
+            }
+            bool is_star = dim[i].m_end_star
+                == AST::dimension_typeType::DimensionStar;
+            if (!is_star && dim[i].m_end == nullptr) {
+                diag.add(Diagnostic(
+                    "a `deferred` constant must not have an assumed or deferred"
+                    " shape `:`",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {dim[i].loc})}));
+                throw SemanticAbort();
+            }
+            all_star = all_star && is_star;
+            all_explicit = all_explicit && !is_star;
+        }
+        if (n_dim > 0 && !all_star && !all_explicit) {
+            diag.add(Diagnostic(
+                "the dimensions of a `deferred` constant must be either all"
+                " upper bounds, as in `(3,4)`, or all `*`, as in `(*,*)`",
+                Level::Error, Stage::Semantic, {
+                    Label("", {loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         _declaring_variable = true;
         current_variable_type_ = nullptr;
         current_struct_type_var_expr = nullptr;
+
+        if (is_deferred_const_decl(x)) {
+            check_deferred_const_decl(x);
+        }
 
         for (size_t i = 0; i < x.n_attributes; i++) {
             if (AST::is_a<AST::AttrType_t>(*x.m_attributes[i])) {
@@ -6517,6 +7010,8 @@ public:
                 dimension_variable(s, x.base.base.loc);
             }
         } else if (AST::is_a<AST::AttrCommon_t>(*x.m_attributes[i])) {
+            check_no_storage_association_in_template("a common",
+                x.m_attributes[i]->base.loc);
             AST::AttrCommon_t const & common_stmt =
             *AST::down_cast<AST::AttrCommon_t>(x.m_attributes[i]);
             constexpr char BLANK_BLOCK[] = "blank#block";
@@ -6541,6 +7036,8 @@ public:
 		    }
 		    populate_common_dictionary(x, objs_by_blk);
 		} else if (AST::is_a<AST::AttrEquivalence_t>(*x.m_attributes[i])) {
+                    check_no_storage_association_in_template("an equivalence",
+                        x.m_attributes[i]->base.loc);
                     AST::AttrEquivalence_t *eq = AST::down_cast<AST::AttrEquivalence_t>(x.m_attributes[i]);
 
                     // --- Equivalence helper lambdas ---
@@ -8119,6 +8616,12 @@ public:
                             } else if (sa->m_attr == AST::simple_attributeType::AttrProtected) {
                                 is_protected = true;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
+                            } else if (sa->m_attr == AST::simple_attributeType::AttrDeferred) {
+                                // F2028 R1618 marks a deferred constant, whose
+                                // declaration check_deferred_const_decl() has
+                                // already validated. The variable itself is an
+                                // ordinary named constant of the template, so
+                                // there is nothing more to do here.
                             } else if (sa->m_attr == AST::simple_attributeType::AttrKind) {
                                 // PDT kind parameter: treat as a Parameter variable
                                 is_kind_parameter = true;
@@ -8323,6 +8826,36 @@ public:
                     }
                 }
                 if (corank > 0) {
+                    // C1617 (F2028 draft J3/26-007r1, 16.4.1.2): a variable of
+                    // deferred type shall not be a coarray. NOTE 5 explains
+                    // why: coindexing a variable that has a polymorphic
+                    // potential subobject component is invalid, and such a type
+                    // is a permitted instantiation argument. The check
+                    // therefore belongs here, where the declaration inside the
+                    // template is processed, and cannot be postponed to
+                    // instantiation: a template is verified once, for every
+                    // instantiation argument the standard permits.
+                    if (x.m_vartype && AST::is_a<AST::AttrType_t>(*x.m_vartype)) {
+                        AST::AttrType_t *deferred_check_type =
+                            AST::down_cast<AST::AttrType_t>(x.m_vartype);
+                        if (deferred_check_type->m_type == AST::decl_typeType::TypeType
+                                && deferred_check_type->m_name) {
+                            std::string type_name = to_lower(deferred_check_type->m_name);
+                            ASR::symbol_t *type_sym = current_scope->resolve_symbol(type_name);
+                            if (type_sym && ASR::is_a<ASR::Variable_t>(*type_sym)
+                                    && ASR::is_a<ASR::TypeParameter_t>(
+                                        *ASRUtils::type_get_past_array(
+                                            ASR::down_cast<ASR::Variable_t>(type_sym)->m_type))) {
+                                diag.add(Diagnostic(
+                                    "A variable of deferred type must not be a coarray",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("`" + std::string(s.m_name) + "` has deferred type `"
+                                            + type_name + "`", {s.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
+                    }
                     // C827: A coarray with the ALLOCATABLE attribute shall have
                     // a coarray-spec that is a deferred-coshape-spec-list (i.e.
                     // every codimension is a bare ':', no explicit bounds or '*').
@@ -8928,11 +9461,28 @@ public:
                         is_local = is_local || ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
                             ASR::is_a<ASR::Block_t>(*asr_owner_sym);
                     }
+                    if (init_expr && is_local && !is_derived_type && is_pointer &&
+                            ASRUtils::is_pointer_association_initializer(init_expr) &&
+                            storage_type != ASR::storage_typeType::Parameter &&
+                            storage_type != ASR::storage_typeType::Save) {
+                        // `integer, pointer :: p => tgt` in a procedure or a
+                        // block. The association is made once, so the pointer
+                        // has the save attribute every initialized local has.
+                        implicit_save = true;
+                        storage_type = ASR::storage_typeType::Save;
+                    }
                     if (init_expr && is_local && !is_derived_type && !is_pointer &&
                             storage_type != ASR::storage_typeType::Parameter) {
                         ASR::expr_t* static_init = nullptr;
                         if (ASR::is_a<ASR::StructType_t>(*type)) {
                             static_init = get_static_struct_initializer(init_expr);
+                        } else if (ASR::is_a<ASR::StructType_t>(
+                                    *ASRUtils::type_get_past_array(type)) &&
+                                ASR::is_a<ASR::ArrayBroadcast_t>(*init_expr)) {
+                            // `type(t) :: a(3) = t(...)`, broadcast above: the
+                            // element is stored once, so the array has the
+                            // save attribute for the same reason a scalar does.
+                            static_init = init_expr;
                         } else if (ASR::is_a<ASR::CPtr_t>(*type) &&
                                 ASR::is_a<ASR::PointerNullConstant_t>(*init_expr)) {
                             static_init = init_expr;
@@ -9418,7 +9968,20 @@ public:
                         if ( init_expr && !ASR::is_a<ASR::FunctionType_t>(*
                                 ASRUtils::type_get_past_pointer(
                                     ASRUtils::expr_type(init_expr))) ) {
-                            if( ASRUtils::is_value_constant(value) ) {
+                            if (is_pointer && !is_allocatable &&
+                                    ASRUtils::is_pointer_association_initializer(
+                                        init_expr)) {
+                                // `p => tgt` in a declaration, where `tgt` is
+                                // a designator: a whole variable, an array
+                                // element or section, or a component. An
+                                // association is not a value, so no target can
+                                // lay it out as static data: the `global_init`
+                                // pass turns it into the pointer assignment
+                                // that runs before any user code observes `p`.
+                                // The target is kept as the value as well, as
+                                // the character branch above already does.
+                                value = init_expr;
+                            } else if( ASRUtils::is_value_constant(value) ) {
                             } else if( ASRUtils::is_value_constant(init_expr) ) {
                                 if (ASR::is_a<ASR::Cast_t>(*init_expr)) {
                                     ASR::Cast_t *cast = ASR::down_cast<ASR::Cast_t>(init_expr);
@@ -9812,6 +10375,13 @@ public:
     }
 
     void visit_DerivedType(const AST::DerivedType_t &/*x*/) {
+
+    }
+
+    // A `deferred procedure (iface) :: p` statement (F2028 R1622) declares a
+    // deferred argument, which the symbol table visitor does in full; there is
+    // nothing left for the body visitor to do.
+    void visit_DeferredProcedure(const AST::DeferredProcedure_t &/*x*/) {
 
     }
 
@@ -10903,8 +11473,26 @@ public:
                   && ASR::is_a<ASR::TypeParameter_t>(*
                     ASRUtils::type_get_past_array(
                         ASR::down_cast<ASR::Variable_t>(v)->m_type))) {
+                ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(
+                    ASRUtils::type_get_past_array(
+                        ASR::down_cast<ASR::Variable_t>(v)->m_type));
+                // C707: "In a declaration-type-spec, TYPE(derived-type-spec) or
+                // TYPE ( deferred-type-name ) shall not specify an abstract
+                // type." (Fortran 2028 working draft J3/26-007r1, 7.3.2.1);
+                // NOTE 4 of 16.4.1.2 spells out that `TYPE(t)` is invalid for a
+                // deferred type declared with the ABSTRACT attribute.
+                if (tp->m_deferred_attr == ASR::deferred_type_attrType::Abstract) {
+                    diag.add(Diagnostic(
+                        "deferred type '" + derived_type_name + "' is abstract, "
+                        "so it cannot be used in a type declaration",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
                 type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
-                                        s2c(al, derived_type_name)));
+                                        s2c(al, derived_type_name),
+                                        tp->m_deferred_attr, false));
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
             } else if (v && ASRUtils::is_iso_c_ptr_type_symbol(current_scope, v)) {
@@ -11019,6 +11607,50 @@ public:
                 derived_type_name = to_lower(sym_type->m_name);
             }
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
+            // A deferred type argument of a template or a requirement is stored
+            // as an ASR::Variable_t whose type is an ASR::TypeParameter_t, so it
+            // is not an ASR::Struct_t and must be handled before the code below
+            // resolves `derived_type_name` to one.
+            if( v && ASR::is_a<ASR::Variable_t>(*v)
+                  && ASR::is_a<ASR::TypeParameter_t>(*
+                        ASRUtils::type_get_past_array(
+                            ASR::down_cast<ASR::Variable_t>(v)->m_type)) ) {
+                ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(
+                    ASRUtils::type_get_past_array(
+                        ASR::down_cast<ASR::Variable_t>(v)->m_type));
+                // C706: "In a declaration-type-spec, CLASS ( derived-type-spec )
+                // or CLASS ( deferred-type-name ) shall specify an extensible
+                // type." (Fortran 2028 working draft J3/26-007r1, 7.3.2.1). A
+                // deferred type is extensible exactly when it was declared
+                // EXTENSIBLE or ABSTRACT, because ABSTRACT implicitly implies
+                // EXTENSIBLE (16.4.1.2 paragraph 2 and its NOTE 4).
+                if( tp->m_deferred_attr == ASR::deferred_type_attrType::NonExtensible ) {
+                    diag.add(Diagnostic(
+                        "deferred type '" + derived_type_name + "' is not extensible, "
+                        "so it cannot be used in a class declaration",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                // The concrete type only becomes known at instantiation, so
+                // there is no derived type symbol to declare here.
+                type_declaration = nullptr;
+                type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
+                                        s2c(al, derived_type_name),
+                                        tp->m_deferred_attr, true));
+                type = ASRUtils::make_Array_t_util(
+                    al, loc, type, dims.p, dims.size(), abi, is_argument);
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
+                if (is_allocatable) {
+                    type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+                        ASRUtils::type_get_past_allocatable(type)));
+                }
+                return type;
+            }
             if( !v ) {
                 if( derived_type_name != "~unlimited_polymorphic_type" ) {
                     if (this->is_derived_type && (is_pointer || is_allocatable)) {
@@ -11832,6 +12464,24 @@ public:
                     || ASRUtils::is_array(ASRUtils::expr_type(arg))) {
                 continue;
             }
+            // An empty array constant of a derived type takes the whole
+            // lowered assignment with it (#13382), so a derived type
+            // component with no elements, which has nothing to spread
+            // anyway, is left as it is.
+            if (ASR::is_a<ASR::StructType_t>(*element_type)
+                    && ASRUtils::get_fixed_size_of_array(member_type) == 0) {
+                continue;
+            }
+            if (value == nullptr && ASR::is_a<ASR::StructConstructor_t>(*arg)
+                    && ASRUtils::is_value_constant(arg)
+                    && ASRUtils::is_byte_representable_struct(
+                        ASR::down_cast<ASR::StructConstructor_t>(arg)->m_dt_sym)) {
+                // A derived type constructor is folded into a StructConstant
+                // only once the whole constructor is known to be constant, so
+                // a nested one has no value of its own yet. Fold it here, as
+                // the shape it is given below is the component's.
+                value = fold_struct_constant_arg(arg);
+            }
             if (value == nullptr) {
                 continue;
             }
@@ -11846,11 +12496,21 @@ public:
                     || ASR::is_a<ASR::ComplexConstant_t>(*value)
                     || ASR::is_a<ASR::LogicalConstant_t>(*value)
                     || ASR::is_a<ASR::StringConstant_t>(*value)
+                    || ASR::is_a<ASR::StructConstant_t>(*value)
                     || is_c_pointer_null)) {
                 continue;
             }
+            // The broadcast stores its elements as raw bytes, so a derived
+            // type value is spread only when every component of its type is
+            // stored inline.
+            if (ASR::is_a<ASR::StructConstant_t>(*value)
+                    && !ASRUtils::is_byte_representable_struct(
+                        ASR::down_cast<ASR::StructConstant_t>(value)->m_dt_sym)) {
+                continue;
+            }
             // Case: `t(5.0)` for `real :: x(3)`, like `real :: x(3) = 5.0`,
-            // and `t(c_null_ptr)` for `type(c_ptr) :: p(2)`.
+            // `t(c_null_ptr)` for `type(c_ptr) :: p(2)`, and `t(u(5))` for
+            // `type(u) :: c(2)`.
             ASR::expr_t* broadcast = ASRUtils::broadcast_scalar_constant_to_array(
                 al, arg->base.loc, value, member_type);
             if (broadcast != nullptr) {
@@ -20953,6 +21613,109 @@ public:
 
     }
 
+    // Establishes the correspondence between an instantiation-argument list
+    // (R1630) and the deferred-argument list of the referenced template or
+    // requirement, and returns the arguments in the deferred order, with any
+    // `keyword =` prefix stripped (16.5.5.1 para 2).
+    //
+    // Reported here: C1625 (a positional argument after a keyword one), C1626
+    // (a keyword that is not the name of a deferred argument), a deferred
+    // argument that two instantiation arguments correspond to, and one that
+    // none corresponds to. `count_mismatch_msg` keeps each caller's existing
+    // wording for an all-positional list, where a plain count check is the
+    // clearer diagnostic.
+    Vec<AST::decl_attribute_t*> match_instantiation_args(
+            AST::decl_attribute_t** args, size_t n_args,
+            char** deferred, size_t n_deferred,
+            const std::string &count_mismatch_msg, const Location &loc) {
+        bool has_keyword = false;
+        for (size_t i = 0; i < n_args; i++) {
+            if (AST::is_a<AST::AttrKeyword_t>(*args[i])) {
+                has_keyword = true;
+                break;
+            }
+        }
+
+        if (!has_keyword) {
+            if (n_args != n_deferred) {
+                diag.add(Diagnostic(count_mismatch_msg, Level::Error,
+                    Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            Vec<AST::decl_attribute_t*> ordered;
+            ordered.reserve(al, n_args);
+            for (size_t i = 0; i < n_args; i++) {
+                ordered.push_back(al, args[i]);
+            }
+            return ordered;
+        }
+
+        Vec<AST::decl_attribute_t*> ordered;
+        ordered.reserve(al, n_deferred);
+        for (size_t j = 0; j < n_deferred; j++) {
+            ordered.push_back(al, nullptr);
+        }
+
+        bool seen_keyword = false;
+        for (size_t i = 0; i < n_args; i++) {
+            AST::decl_attribute_t *arg = args[i];
+            const Location &arg_loc = arg->base.loc;
+            size_t pos = i;
+            if (AST::is_a<AST::AttrKeyword_t>(*arg)) {
+                AST::AttrKeyword_t *kw = AST::down_cast<AST::AttrKeyword_t>(arg);
+                std::string keyword = to_lower(kw->m_name);
+                bool found = false;
+                for (size_t j = 0; j < n_deferred; j++) {
+                    if (to_lower(deferred[j]) == keyword) {
+                        pos = j;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    diag.add(Diagnostic("'" + keyword + "' is not a deferred"
+                        " argument of the referenced template or requirement",
+                        Level::Error, Stage::Semantic,
+                        {Label("", {arg_loc})}));
+                    throw SemanticAbort();
+                }
+                arg = kw->m_value;
+                seen_keyword = true;
+            } else {
+                if (seen_keyword) {
+                    diag.add(Diagnostic("a positional instantiation argument"
+                        " cannot follow a keyword one", Level::Error,
+                        Stage::Semantic, {Label("", {arg_loc})}));
+                    throw SemanticAbort();
+                }
+                if (pos >= n_deferred) {
+                    diag.add(Diagnostic(count_mismatch_msg, Level::Error,
+                        Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
+            }
+            if (ordered[pos] != nullptr) {
+                diag.add(Diagnostic("more than one instantiation argument"
+                    " corresponds to the deferred argument '"
+                    + to_lower(deferred[pos]) + "'", Level::Error,
+                    Stage::Semantic, {Label("", {arg_loc})}));
+                throw SemanticAbort();
+            }
+            ordered.p[pos] = arg;
+        }
+
+        for (size_t j = 0; j < n_deferred; j++) {
+            if (ordered[j] == nullptr) {
+                diag.add(Diagnostic("no instantiation argument corresponds to"
+                    " the deferred argument '" + to_lower(deferred[j]) + "'",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+        }
+
+        return ordered;
+    }
+
     // TODO: extract commonality with visit_Instantiate
     std::string handle_templated(std::string name, bool is_nested,
             AST::decl_attribute_t** args, size_t n_args, const Location &loc) {
@@ -20974,25 +21737,24 @@ public:
 
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
 
-        if (temp->n_args != n_args) {
-            diag.add(Diagnostic("Number of templated function arguments don't match",
-                Level::Error, Stage::Semantic, {Label("", {loc})}));
-            throw SemanticAbort();
-        }
+        Vec<AST::decl_attribute_t*> ordered_args = match_instantiation_args(
+            args, n_args, temp->m_args, temp->n_args,
+            "Number of templated function arguments don't match", loc);
 
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
         std::map<std::string, ASR::symbol_t*> symbol_subs;
 
-        for (size_t i=0; i<n_args; i++) {
+        for (size_t i=0; i<ordered_args.size(); i++) {
             std::string param = temp->m_args[i];
+            AST::decl_attribute_t *arg_attr = ordered_args[i];
             ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(param);
-            if (AST::is_a<AST::AttrType_t>(*args[i])) {
+            if (AST::is_a<AST::AttrType_t>(*arg_attr)) {
                 // Handling types as instantiate's arguments
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 0);
                 ASR::symbol_t *type_declaration;
-                ASR::ttype_t *arg_type = determine_type(args[i]->base.loc, param,
-                    args[i], false, false, dims, nullptr, type_declaration, current_procedure_abi_type);
+                ASR::ttype_t *arg_type = determine_type(arg_attr->base.loc, param,
+                    arg_attr, false, false, dims, nullptr, type_declaration, current_procedure_abi_type);
                 ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                 if (!ASRUtils::is_type_parameter(*param_type)) {
                     diag.add(Diagnostic("The type " + ASRUtils::type_to_str_fortran_symbol(arg_type, type_declaration) +
@@ -21003,8 +21765,8 @@ public:
                 if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
                     type_subs[param].second = type_declaration;
                 }
-            } else if (AST::is_a<AST::AttrName_t>(*args[i])) {
-                AST::AttrName_t *attr_name = AST::down_cast<AST::AttrName_t>(args[i]);
+            } else if (AST::is_a<AST::AttrName_t>(*arg_attr)) {
+                AST::AttrName_t *attr_name = AST::down_cast<AST::AttrName_t>(arg_attr);
                 std::string arg = to_lower(attr_name->m_name);
                 if (ASR::is_a<ASR::Function_t>(*param_sym)) {
                     // Handling functions passed as instantiate's arguments
@@ -21012,13 +21774,13 @@ public:
                     ASR::symbol_t *f_arg0 = current_scope->resolve_symbol(arg);
                     if (!f_arg0) {
                         diag.add(Diagnostic("The function argument " + arg + " is not found",
-                            Level::Error, Stage::Semantic, {Label("", {args[i]->base.loc})}));
+                            Level::Error, Stage::Semantic, {Label("", {arg_attr->base.loc})}));
                         throw SemanticAbort();
                     }
                     ASR::symbol_t *f_arg = ASRUtils::symbol_get_past_external(f_arg0);
                     if (!ASR::is_a<ASR::Function_t>(*f_arg)) {
                         diag.add(Diagnostic("The argument for " + param + " must be a function",
-                            Level::Error, Stage::Semantic, {Label("", {args[i]->base.loc})}));
+                            Level::Error, Stage::Semantic, {Label("", {arg_attr->base.loc})}));
                         throw SemanticAbort();
                     }
                     check_restriction(type_subs,
@@ -21031,7 +21793,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::make_StructType_t_util(al, args[i]->base.loc, arg_sym0, true);
+                            arg_type = ASRUtils::make_StructType_t_util(al, arg_attr->base.loc, arg_sym0, true);
                             type_subs[param].second = arg_sym0;
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
@@ -21050,9 +21812,9 @@ public:
                         symbol_subs[param] = arg_sym;
                     }
                 }
-            } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*args[i])) {
+            } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*arg_attr)) {
                 AST::AttrIntrinsicOperator_t *intrinsic_op
-                    = AST::down_cast<AST::AttrIntrinsicOperator_t>(args[i]);
+                    = AST::down_cast<AST::AttrIntrinsicOperator_t>(arg_attr);
                 ASR::binopType binop = ASR::Add;
                 ASR::cmpopType cmpop = ASR::Eq;
                 bool is_binop = false, is_cmpop = false;
@@ -21082,7 +21844,7 @@ public:
                         is_cmpop = true; cmpop = ASR::GtE; op_name = "~gte"; break;
                     default:
                         diag.add(Diagnostic("Unsupported binary operator",
-                            Level::Error, Stage::Semantic, {Label("", {args[i]->base.loc})}));
+                            Level::Error, Stage::Semantic, {Label("", {arg_attr->base.loc})}));
                         throw SemanticAbort();
                 }
 
@@ -23944,7 +24706,12 @@ public:
                         ASR::dimension_t dim;
                         dim.loc = loc;
                         dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-                        dim.m_length = ASRUtils::compute_length_from_start_end(al, array_section->m_args[idx].m_left, array_section->m_args[idx].m_right);
+                        // The section is strided, so its extent is
+                        // counted with the step, rather than end - start + 1.
+                        dim.m_length = ASRUtils::compute_length_from_start_end_step(al,
+                            array_section->m_args[idx].m_left,
+                            array_section->m_args[idx].m_right,
+                            array_section->m_args[idx].m_step);
                         dims.push_back(al, dim);
                     }
                 }
@@ -24008,6 +24775,64 @@ public:
                     tmp2->m_type = array_type;
                 }
             }
+            // Only the outermost member was given the array shape above. In a
+            // reference that goes through two or more `%` levels, such as
+            // `w%nest%ii` with `w` an array, the intermediate members denote
+            // arrays too, but were built from the scalar declared type of the
+            // component. Give them the same shape as the outermost member, so
+            // that the whole chain is consistently typed and the
+            // array-operation pass can lower it element-wise.
+            set_array_type_of_intermediate_struct_members(
+                ASRUtils::EXPR(tmp), array_type);
+        }
+    }
+
+    // Walks the `StructInstanceMember` chain of `expr` from the innermost
+    // member outwards and reshapes every member that reads a component of an
+    // array base to `array_type`'s dimensions, keeping the member's own
+    // element type.
+    void set_array_type_of_intermediate_struct_members(ASR::expr_t* expr,
+        ASR::ttype_t* array_type) {
+        ASR::ttype_t* shape = ASRUtils::type_get_past_allocatable_pointer(array_type);
+        if( !ASR::is_a<ASR::Array_t>(*shape) ) {
+            return;
+        }
+        ASR::Array_t* shape_array = ASR::down_cast<ASR::Array_t>(shape);
+        Vec<ASR::StructInstanceMember_t*> members;
+        members.reserve(al, 1);
+        if( ASR::is_a<ASR::ArrayItem_t>(*expr) ) {
+            expr = ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v;
+        }
+        while( ASR::is_a<ASR::StructInstanceMember_t>(*expr) ) {
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+            members.push_back(al, member);
+            expr = member->m_v;
+        }
+        for( size_t j = members.size(); j > 0; j-- ) {
+            ASR::StructInstanceMember_t* member = members[j - 1];
+            if( !ASRUtils::is_array(ASRUtils::expr_type(member->m_v)) ||
+                ASRUtils::is_array(member->m_type) ) {
+                continue;
+            }
+            // An `allocatable` or `pointer` intermediate cannot be given the
+            // base's shape: what it denotes is an array of indirections,
+            // which this type representation cannot express, and reshaping
+            // it would silently drop the indirection and make the backend
+            // read the component's storage as if it held the value inline.
+            // Fortran forbids such a reference anyway (C919), so leave the
+            // declared type alone instead of replacing it with a wrong one.
+            if( ASR::is_a<ASR::Allocatable_t>(*member->m_type) ||
+                ASR::is_a<ASR::Pointer_t>(*member->m_type) ) {
+                continue;
+            }
+            // Rebuild through `duplicate_type` rather than `make_Array_t`, so
+            // the member gets its own copy of the dimensions instead of
+            // aliasing the base array's.
+            Vec<ASR::dimension_t> dims;
+            dims.from_pointer_n_copy(al, shape_array->m_dims, shape_array->n_dims);
+            member->m_type = ASRUtils::duplicate_type(al, member->m_type, &dims,
+                shape_array->m_physical_type, true);
         }
     }
 
@@ -24093,6 +24918,8 @@ public:
                         visit_restricted_expr(*len_item->m_value,
                             RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
+                        check_specification_expr(len_expr,
+                            RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
                         if (len_value) {
                             str->m_len = len_value;
@@ -24167,6 +24994,8 @@ public:
                         visit_restricted_expr(*var_sym->m_length,
                             RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
+                        check_specification_expr(len_expr,
+                            RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
                         if (len_value) {
                             str->m_len = len_value;

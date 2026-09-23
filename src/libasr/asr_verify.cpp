@@ -119,6 +119,25 @@ public:
         return false;
     }
 
+    // The initializer a Module, a Program or the TranslationUnit names must
+    // be a real, argument-less procedure of that owner's own scope, so that a
+    // backend can lower the link without searching or guessing.
+    void verify_global_init(const char *global_init, SymbolTable *scope,
+            const std::string &owner, const Location &loc) {
+        if (global_init == nullptr) return;
+        ASR::symbol_t *sym = scope->get_symbol(global_init);
+        ASRUtils::require_impl(sym != nullptr,
+            owner + "::m_global_init must name a symbol of " + owner +
+            "'s own symbol table, but " + std::string(global_init) +
+            " is not in it", loc, diagnostics);
+        ASRUtils::require_impl(sym != nullptr && ASR::is_a<ASR::Function_t>(*sym),
+            owner + "::m_global_init must name a Function", loc, diagnostics);
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+        ASRUtils::require_impl(fn->n_args == 0 && fn->m_return_var == nullptr,
+            owner + "::m_global_init must name a subroutine taking no "
+            "arguments", loc, diagnostics);
+    }
+
     void visit_TranslationUnit(const TranslationUnit_t &x) {
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
@@ -138,6 +157,8 @@ public:
         require(down_cast2<TranslationUnit_t>(current_symtab->asr_owner)->m_symtab == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        verify_global_init(x.m_global_init, x.m_symtab, "TranslationUnit",
+            x.base.base.loc);
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
@@ -192,6 +213,8 @@ public:
             std::string(x.m_name) + "::m_dependencies is required");
         }
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        verify_global_init(x.m_global_init, x.m_symtab, "Program",
+            x.base.base.loc);
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
@@ -405,6 +428,8 @@ public:
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        verify_global_init(x.m_global_init, x.m_symtab, "Module",
+            x.base.base.loc);
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
@@ -1936,8 +1961,11 @@ public:
     // looking for a field the type does not have.
     void visit_StructInstanceMember(const StructInstanceMember_t &x) {
         BaseWalkVisitor<VerifyVisitor>::visit_StructInstanceMember(x);
-        if (!check_external || x.m_m == nullptr || x.m_v == nullptr ||
-                diagnostics.has_error()) {
+        if (x.m_m == nullptr || x.m_v == nullptr || diagnostics.has_error()) {
+            return;
+        }
+        verify_struct_member_shape(x);
+        if (!check_external || diagnostics.has_error()) {
             return;
         }
         ASR::symbol_t *struct_sym = get_struct_from_dt_expr(x.m_v);
@@ -1957,6 +1985,60 @@ public:
             "asr.verify.struct_member.belongs_to_struct",
             "'" + std::string(struct_type->m_name) +
             "' has no member named '" + member_name + "'");
+    }
+
+    // Reading a scalar component of an array base yields an array of the
+    // base's shape. A reference left with the component's scalar declared
+    // type is malformed ASR that survives semantics and only fails much
+    // later, deep inside a pass or the backend (issue #13296).
+    void verify_struct_member_shape(const StructInstanceMember_t &x) {
+        ASR::symbol_t *member_sym = ASRUtils::symbol_get_past_external(x.m_m);
+        if (member_sym == nullptr || !ASR::is_a<ASR::Variable_t>(*member_sym)) {
+            return;
+        }
+        ASR::ttype_t *member_type =
+            ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
+        ASR::ttype_t *base_type = ASRUtils::expr_type(x.m_v);
+        if (member_type == nullptr || base_type == nullptr ||
+                x.m_type == nullptr) {
+            return;
+        }
+        if (!ASRUtils::is_array(base_type) || ASRUtils::is_array(member_type)) {
+            return;
+        }
+        // A `pointer` or `allocatable` component read from an array base
+        // denotes an array of indirections, which this type representation
+        // cannot express. Fortran forbids such a reference (C919) and
+        // LFortran does not diagnose it yet, so the scalar declared type is
+        // what survives semantics. Do not claim it is malformed until there
+        // is a type that could replace it.
+        if (ASR::is_a<ASR::Allocatable_t>(*member_type) ||
+                ASR::is_a<ASR::Pointer_t>(*member_type)) {
+            return;
+        }
+        // A zero-size base has no element to read, so the reference denotes
+        // nothing and its shape is not observable. A scalar structure
+        // constructor for such a component is deliberately left unspread
+        // for that reason, which leaves the component's own scalar type in
+        // place. That is degenerate, not malformed.
+        if (ASRUtils::get_fixed_size_of_array(base_type) == 0) {
+            return;
+        }
+        require_id(ASRUtils::is_array(x.m_type),
+            "asr.verify.struct_member.array_base",
+            "reading component '" + std::string(ASRUtils::symbol_name(x.m_m)) +
+            "' of an array is an array, but its type is not an array");
+        if (!ASRUtils::is_array(x.m_type)) {
+            return;
+        }
+        require_id(ASRUtils::extract_n_dims_from_ttype(x.m_type) ==
+                ASRUtils::extract_n_dims_from_ttype(base_type),
+            "asr.verify.struct_member.array_base_rank",
+            "reading component '" + std::string(ASRUtils::symbol_name(x.m_m)) +
+            "' of an array of rank " +
+            std::to_string(ASRUtils::extract_n_dims_from_ttype(base_type)) +
+            " has rank " +
+            std::to_string(ASRUtils::extract_n_dims_from_ttype(x.m_type)));
     }
 
     static ASR::FunctionType_t* as_procedure_type(ASR::ttype_t *t) {

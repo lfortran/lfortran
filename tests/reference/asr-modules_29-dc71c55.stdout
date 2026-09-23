@@ -270,6 +270,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_manifest_dependency1:
                 (Module
@@ -1034,6 +1035,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_manifest_executable:
                 (Module
@@ -1600,6 +1602,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             modules_29:
                 (Program
@@ -1676,7 +1679,9 @@
                             (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

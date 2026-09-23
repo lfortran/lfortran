@@ -6,11 +6,11 @@
 module ASR {
 
 unit
-    = TranslationUnit(symbol_table symtab, node* items)
+    = TranslationUnit(symbol_table symtab, node* items, identifier? global_init)
 
 symbol
-    = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, location start_name, location end_name)
-    | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, location start_name, location end_name)
+    = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, identifier? global_init, location start_name, location end_name)
+    | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, identifier? global_init, location start_name, location end_name)
     | Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file, gpu_kernel_layout? gpu, location start_name, location end_name)
     | GenericProcedure(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name, symbol* procs, access access)
@@ -234,11 +234,17 @@ ttype
     | Allocatable(ttype type)
     | CPtr(cptr_kind kind)
     | SymbolicExpression()
-    | TypeParameter(identifier param)
+    | TypeParameter(identifier param, deferred_type_attr deferred_attr, bool is_class)
     | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
 
 cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | LogicalToLogical | RealToString | IntegerToString | LogicalToString | StringToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
+-- The effective deferred-type-attr (F2028 draft J3/26-007r1 R1617) of a
+-- deferred type argument of a template or a requirement. `Abstract`
+-- subsumes `Extensible`, because a deferred type with the ABSTRACT
+-- attribute implicitly has the EXTENSIBLE attribute (16.4.1.2 paragraph 2);
+-- `NonExtensible` is a plain `deferred type ::` with no attribute.
+deferred_type_attr = NonExtensible | Extensible | Abstract
 cptr_kind = CPointer | CFunPointer | CPtrUnspecified
 storage_type = Default | Save | Parameter
 access = Public | Private

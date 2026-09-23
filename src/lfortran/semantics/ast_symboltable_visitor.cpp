@@ -49,12 +49,13 @@ public:
             class_deferred_procedures.swap(v.class_deferred_procedures);
         }
     };
-    // A DEFERRED TYPE statement is only valid in a scoping unit that has a
-    // deferred-argument list -- a requirement, a template or a templated
-    // procedure -- and may only declare one of those arguments (C1613,
-    // J3/26-007r1 16.4.1.2). This guard records the list (and the name of the
-    // scoping unit that owns it) while such a unit is visited, and restores
-    // the enclosing unit's list afterwards. A nested scoping unit that has no
+    // A statement that declares a deferred argument is only valid in a scoping
+    // unit that has a deferred-argument list -- a requirement, a template or a
+    // templated procedure -- and may only declare one of those arguments. That
+    // covers DEFERRED TYPE (C1613, J3/26-007r1 16.4.1.2) and DEFERRED PROCEDURE
+    // (C1622, 16.4.1.4). This guard records the list (and the name of the
+    // scoping unit that owns it) while such a unit is visited, and restores the
+    // enclosing unit's list afterwards. A nested scoping unit that has no
     // deferred arguments of its own therefore gets an empty list, not its
     // host's.
     struct DeferredArgScope {
@@ -82,6 +83,52 @@ public:
     std::vector<std::string> deferred_args;
     std::string deferred_args_owner;
     bool has_deferred_args = false;
+
+    // Which kind of scoping unit's specification part is being visited. It
+    // cannot be read back from `current_scope->asr_owner`: a Program, a
+    // Template, a Function and a Subroutine symbol is only created once its
+    // specification part has been visited, so its symbol table still has no
+    // owner while that part is being built, and a main program, a nested
+    // template and a subprogram are indistinguishable there. Track it
+    // explicitly instead, with a guard that restores the enclosing kind even
+    // when a diagnostic aborts the visit. C1601 (16.1.1) needs it to place a
+    // TEMPLATE construct and C1636 (16.6.1) to place a REQUIREMENT construct.
+    enum class ScopingUnitKind {
+        Other, Module, Submodule, Program, Template,
+    };
+
+    struct ScopingUnitScope {
+        SymbolTableVisitor &v;
+        ScopingUnitKind enclosing;
+
+        ScopingUnitScope(SymbolTableVisitor &v_, ScopingUnitKind kind) : v(v_) {
+            enclosing = v.scoping_unit_kind;
+            v.scoping_unit_kind = kind;
+        }
+
+        ~ScopingUnitScope() {
+            v.scoping_unit_kind = enclosing;
+        }
+    };
+    ScopingUnitKind scoping_unit_kind = ScopingUnitKind::Other;
+    // Marks a template construct or a templated procedure, so that the
+    // restrictions of clause 16.3 also apply to every scoping unit nested in
+    // it. The enclosing value is restored on exit, including when a diagnostic
+    // aborts the visit, so a template does not leak the state into the program
+    // units that follow it.
+    struct TemplateDefinitionScope {
+        SymbolTableVisitor &v;
+        bool enclosing;
+
+        TemplateDefinitionScope(SymbolTableVisitor &v_, bool is_definition) : v(v_) {
+            enclosing = v.in_template_definition;
+            v.in_template_definition = v.in_template_definition || is_definition;
+        }
+
+        ~TemplateDefinitionScope() {
+            v.in_template_definition = enclosing;
+        }
+    };
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     std::map<std::string, std::vector<std::pair<std::string, Location>>> overloaded_op_procs;
@@ -160,7 +207,7 @@ public:
         // ASRUtils::get_tu_symtab() can be used, which has an assert
         // for asr_owner.
         ASR::asr_t *tmp0 = ASR::make_TranslationUnit_t(al, x.base.base.loc,
-            current_scope, nullptr, 0);
+            current_scope, nullptr, 0, nullptr);
 
         for (size_t i=0; i<x.n_items; i++) {
             AST::astType t = x.m_items[i]->type;
@@ -370,6 +417,9 @@ public:
 
     template <typename T, typename R>
     void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="") {
+        ScopingUnitScope scoping_unit_scope(*this,
+            x.class_type == AST::modType::Submodule
+                ? ScopingUnitKind::Submodule : ScopingUnitKind::Module);
         assgn_proc_names_locations.clear();
         class_procedures.clear();
         SymbolTable *parent_scope = current_scope;
@@ -399,7 +449,7 @@ public:
                                                 m->m_name,
                                                 nullptr,
                                                 0,
-                                                false, false, false);
+                                                false, false, false, nullptr);
             std::set<std::string> submodule_proc_names;
             for (size_t i = 0; i < x.n_contains; i++) {
                 AST::program_unit_t *pu = x.m_contains[i];
@@ -446,7 +496,7 @@ public:
                                                 nullptr,
                                                 nullptr,
                                                 0,
-                                                false, false, false);
+                                                false, false, false, nullptr);
         }
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         for (size_t i=0; i<x.n_items; i++) {
@@ -616,6 +666,60 @@ public:
         }
     }
 
+    // C1610 (J3/26-007r1, 16.3): within a template or templated procedure, or a
+    // scoping unit nested therein, an entity that is not accessed by host or
+    // use association shall not have the SAVE attribute. Each instantiation of
+    // a template generates its own procedure, so a saved local has no defined
+    // meaning: the standard does not say whether the state is shared between
+    // instantiations or private to each one.
+    //
+    // The attribute arrives by several spellings -- an explicit SAVE attribute,
+    // a SAVE statement naming the entity, a bare SAVE statement, and the
+    // implicit SAVE of an initialized local -- which all end up as `Save`
+    // storage on the variable. The template is therefore checked once it is
+    // complete, rather than at each of those spellings, and the nested scoping
+    // units are reached by walking into the contained procedures. Only entities
+    // declared in the template are visited: one accessed by host association
+    // lives in an enclosing scope, and a use-associated one is an external
+    // symbol.
+    void check_no_save_in_template(const SymbolTable *scope) {
+        if (report_save_in_template(scope)) {
+            throw SemanticAbort();
+        }
+    }
+
+    // Reports every offending entity, rather than only the first, so that one
+    // template does not have to be compiled repeatedly to find them all.
+    // Returns whether anything was reported.
+    bool report_save_in_template(const SymbolTable *scope) {
+        bool found = false;
+        for (auto &item: scope->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                // A dummy argument or a function result cannot have the SAVE
+                // attribute anywhere, so only a local is diagnosed here.
+                if (var->m_intent != ASR::intentType::Local) continue;
+                if (var->m_storage != ASR::storage_typeType::Save) continue;
+                diag.add(diag::Diagnostic(
+                    "variable '" + std::string(var->m_name) + "' in a template "
+                    "or templated procedure cannot have the save attribute",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {var->base.base.loc})}));
+                found = true;
+            } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                // A procedure of the template, and in turn a procedure
+                // contained in one, is a scoping unit nested in the template.
+                // A nested template is left to its own visit, which reports it
+                // before this walk runs.
+                bool found_nested = report_save_in_template(
+                    ASR::down_cast<ASR::Function_t>(sym)->m_symtab);
+                found = found || found_nested;
+            }
+        }
+        return found;
+    }
+
     void visit_Program(const AST::Program_t &x) {
         // Check for multiple program units in the same file 
         program_count++;
@@ -631,6 +735,7 @@ public:
             ));
             return;
         }
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Program);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
@@ -673,6 +778,11 @@ public:
             }
         }
         
+        // The COMMON statements below are visited only after the other
+        // declarations, so what they place in a common block is collected
+        // here, while an array bound or a character length of this
+        // specification part may still name one of those objects.
+        CommonBlockObjectsScope common_block_objects(*this, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
@@ -758,6 +868,7 @@ public:
             current_module_dependencies.size(),
             /* a_body */ nullptr,
             /* n_body */ 0,
+            /* a_global_init */ nullptr,
             /* m_start_name */ x.m_start_name ? x.m_start_name : nullptr,
             /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr);
         std::string sym_name = to_lower(x.m_name);
@@ -1385,6 +1496,7 @@ public:
         std::string sym_name = to_lower(x.m_name);
 
         SymbolTable *grandparent_scope = current_scope;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
@@ -1397,6 +1509,7 @@ public:
         }
         DeferredArgScope deferred_arg_scope(*this, sym_name, subroutine_temp_args,
             x.n_temp_args > 0);
+        TemplateDefinitionScope template_definition_scope(*this, x.n_temp_args > 0);
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated subroutines
@@ -1439,6 +1552,13 @@ public:
                                   to_lower(dt->m_name)) != current_procedure_args.end()) {
                         visit_decl_stmt(*x.m_items[i]);
                     }
+                }
+
+                // A `deferred procedure` statement declares deferred
+                // arguments, so it belongs to the Template of the templated
+                // subprogram, exactly like a `deferred type` statement.
+                if (AST::is_a<AST::DeferredProcedure_t>(*x.m_items[i])) {
+                    visit_decl_stmt(*x.m_items[i]);
                 }
             }
 
@@ -1495,10 +1615,23 @@ public:
             }
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
+        // The COMMON statements below are visited only after the other
+        // declarations, so what they place in a common block is collected
+        // here, while an array bound or a character length of this
+        // specification part may still name one of those objects.
+        CommonBlockObjectsScope common_block_objects(*this, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
             if (is_common_declaration(x.m_items[i])) continue;
+            // The deferred procedures of a templated subprogram belong to its
+            // Template, where they were declared above; declaring them here as
+            // well would shadow them with a symbol that instantiation never
+            // substitutes.
+            if (x.n_temp_args > 0
+                    && AST::is_a<AST::DeferredProcedure_t>(*x.m_items[i])) {
+                continue;
+            }
             is_Function = true;
             if(x.m_items[i]->type == AST::decl_stmtType::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_items[i];
@@ -1858,6 +1991,11 @@ public:
         is_template = false;
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
+        // A templated subroutine is complete; `parent_scope` is the Template
+        // built for it. Checked last, once the enclosing context has been
+        // restored, so that an abort here leaves the visitor in the same state
+        // as a clean return.
+        if (x.n_temp_args > 0) check_no_save_in_template(parent_scope);
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -1951,6 +2089,7 @@ public:
         std::string sym_name = to_lower(x.m_name);
 
         SymbolTable *grandparent_scope = current_scope;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
@@ -1963,6 +2102,7 @@ public:
         }
         DeferredArgScope deferred_arg_scope(*this, sym_name, function_temp_args,
             x.n_temp_args > 0);
+        TemplateDefinitionScope template_definition_scope(*this, x.n_temp_args > 0);
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated functions
@@ -2012,6 +2152,13 @@ public:
                         visit_decl_stmt(*x.m_items[i]);
                     }
                 }
+
+                // A `deferred procedure` statement declares deferred
+                // arguments, so it belongs to the Template of the templated
+                // subprogram, exactly like a `deferred type` statement.
+                if (AST::is_a<AST::DeferredProcedure_t>(*x.m_items[i])) {
+                    visit_decl_stmt(*x.m_items[i]);
+                }
             }
 
             ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
@@ -2060,10 +2207,23 @@ public:
             }
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
+        // The COMMON statements below are visited only after the other
+        // declarations, so what they place in a common block is collected
+        // here, while an array bound or a character length of this
+        // specification part may still name one of those objects.
+        CommonBlockObjectsScope common_block_objects(*this, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
             if (is_common_declaration(x.m_items[i])) continue;
+            // The deferred procedures of a templated subprogram belong to its
+            // Template, where they were declared above; declaring them here as
+            // well would shadow them with a symbol that instantiation never
+            // substitutes.
+            if (x.n_temp_args > 0
+                    && AST::is_a<AST::DeferredProcedure_t>(*x.m_items[i])) {
+                continue;
+            }
             is_Function = true;
             if(x.m_items[i]->type == AST::decl_stmtType::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_items[i];
@@ -2684,6 +2844,11 @@ public:
         in_Subroutine = false;
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
+        // A templated function is complete; `parent_scope` is the Template
+        // built for it. Checked last, once the enclosing context has been
+        // restored, so that an abort here leaves the visitor in the same state
+        // as a clean return.
+        if (x.n_temp_args > 0) check_no_save_in_template(parent_scope);
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -2825,6 +2990,13 @@ public:
         bool is_abstract = false;
         bool is_deferred = false;
         bool is_bindc = false;
+        // Counted rather than flagged so that C1614 and C1615 of the Fortran
+        // 2028 working draft (J3/26-007r1, 16.4.1.2) can be checked for the
+        // deferred-type-attr-list (R1617) of a `deferred type` declaration.
+        // `bad_attr_loc` is the deferred-type-attr that made the list violate
+        // one of them, so the diagnostic points at the offending attribute.
+        size_t n_abstract_attr = 0, n_extensible_attr = 0;
+        Location bad_attr_loc = x.base.base.loc;
         AST::AttrExtends_t *attr_extend = nullptr;
         for( size_t i = 0; i < x.n_attrtype; i++ ) {
             switch( x.m_attrtype[i]->type ) {
@@ -2846,8 +3018,19 @@ public:
                 case AST::decl_attributeType::SimpleAttribute: {
                     AST::SimpleAttribute_t* simple_attr =
                         AST::down_cast<AST::SimpleAttribute_t>(x.m_attrtype[i]);
-                    if (!is_abstract) is_abstract = simple_attr->m_attr == AST::simple_attributeType::AttrAbstract;
-                    if (!is_deferred) is_deferred = simple_attr->m_attr == AST::simple_attributeType::AttrDeferred;
+                    if (simple_attr->m_attr == AST::simple_attributeType::AttrAbstract) {
+                        is_abstract = true;
+                        if (n_abstract_attr++ > 0 || n_extensible_attr > 0) {
+                            bad_attr_loc = simple_attr->base.base.loc;
+                        }
+                    } else if (simple_attr->m_attr == AST::simple_attributeType::AttrExtensible) {
+                        if (n_extensible_attr++ > 0 || n_abstract_attr > 0) {
+                            bad_attr_loc = simple_attr->base.base.loc;
+                        }
+                    } else if (simple_attr->m_attr == AST::simple_attributeType::AttrDeferred) {
+                        is_deferred = true;
+                    }
+                    break;
                 }
                 default:
                     break;
@@ -2875,6 +3058,26 @@ public:
                         diag::Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
+            // C1614: "A deferred-type-attr-list shall not specify both ABSTRACT
+            // and EXTENSIBLE." (F2028 draft J3/26-007r1, 16.4.1.2)
+            if (n_abstract_attr > 0 && n_extensible_attr > 0) {
+                diag.add(diag::Diagnostic(
+                    "a deferred type cannot be declared both abstract and extensible",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {bad_attr_loc})}));
+                throw SemanticAbort();
+            }
+            // C1615: "A deferred-type-attr-list shall contain at most one of
+            // each deferred-type-attr."
+            if (n_abstract_attr > 1 || n_extensible_attr > 1) {
+                std::string repeated = n_abstract_attr > 1 ? "abstract" : "extensible";
+                diag.add(diag::Diagnostic(
+                    "the '" + repeated + "' attribute is repeated in a deferred "
+                    "type declaration",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {bad_attr_loc})}));
+                throw SemanticAbort();
+            }
             ASR::symbol_t *orig_decl = current_scope->get_symbol(dt_name);
             if (orig_decl != nullptr) {
                 // add_symbol asserts the name is free, so report the duplicate
@@ -2887,7 +3090,16 @@ public:
                     }));
                 throw SemanticAbort();
             }
-            ASR::asr_t *tp = ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, dt_name));
+            // 16.4.1.2 paragraph 2: "A deferred type with the ABSTRACT
+            // attribute implicitly has the EXTENSIBLE attribute.", so ABSTRACT
+            // subsumes EXTENSIBLE in the stored attribute.
+            ASR::deferred_type_attrType deferred_attr = n_abstract_attr > 0
+                ? ASR::deferred_type_attrType::Abstract
+                : (n_extensible_attr > 0
+                    ? ASR::deferred_type_attrType::Extensible
+                    : ASR::deferred_type_attrType::NonExtensible);
+            ASR::asr_t *tp = ASR::make_TypeParameter_t(al, x.base.base.loc,
+                s2c(al, dt_name), deferred_attr, false);
             tmp = ASRUtils::make_Variable_t_util(al, x.base.base.loc, current_scope, s2c(al, dt_name),
                 nullptr, 0, ASRUtils::intent_in, nullptr, nullptr, ASR::storage_typeType::Default,
                 ASRUtils::TYPE(tp), nullptr, ASR::abiType::Source, dflt_access, ASR::presenceType::Required, false);
@@ -2905,6 +3117,19 @@ public:
                 throw SemanticAbort();
             }
             parent_sym = current_scope->get_symbol(parent_sym_name);
+            // C1616: "The name of a deferred type shall not appear as a
+            // parent-type-name in a type-attr-spec." (16.4.1.2), restated by
+            // NOTE 1 there: "A deferred type cannot be extended, even if it has
+            // the EXTENSIBLE attribute."
+            if (ASR::is_a<ASR::Variable_t>(*parent_sym)
+                    && ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::type_get_past_array(
+                        ASR::down_cast<ASR::Variable_t>(parent_sym)->m_type))) {
+                diag.add(diag::Diagnostic(
+                    "deferred type '" + parent_sym_name + "' cannot be extended",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {attr_extend->base.base.loc})}));
+                throw SemanticAbort();
+            }
         }
 
         // Parameterized Derived Type: store as template for later monomorphization
@@ -3498,6 +3723,48 @@ public:
             for (size_t i = 0; i < x.n_items; i++) {
                 visit_interface_item(*x.m_items[i]);
             }
+        } else if (AST::is_a<AST::DeferredInterfaceHeader_t>(*x.m_header)) {
+            // DEFERRED INTERFACE (R1503, J3/26-007r1): each interface body of
+            // the block declares a deferred procedure (16.4.1.4), which is a
+            // deferred argument, so the block only has a meaning in a scoping
+            // unit that has deferred arguments: a requirement, a template or a
+            // templated procedure.
+            if (!has_deferred_args) {
+                diag.add(diag::Diagnostic(
+                    "a deferred interface can only appear in a requirement, "
+                    "a template or a templated procedure",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_header->base.loc})}));
+                throw SemanticAbort();
+            }
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (!AST::is_a<AST::InterfaceProc_t>(*x.m_items[i])) {
+                    // A procedure statement names procedures that are already
+                    // declared; it cannot declare a deferred one. The
+                    // offending item is skipped rather than aborting the
+                    // enclosing requirement or template, so that the rest of
+                    // it is still checked.
+                    diag.add(diag::Diagnostic(
+                        "a deferred interface block can only contain "
+                        "interface bodies",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_items[i]->base.loc})}));
+                    continue;
+                }
+                AST::InterfaceProc_t *proc
+                    = AST::down_cast<AST::InterfaceProc_t>(x.m_items[i]);
+                // Unlike an ordinary interface body, this declares a deferred
+                // procedure, so it is visited the same way as the subprogram
+                // that a requirement currently uses to declare one: with
+                // is_interface left unset, so that the resulting Function is
+                // identical to the one that spelling produces.
+                bool old_in_Subroutine = in_Subroutine;
+                std::vector<std::string> old_procedure_args
+                    = current_procedure_args;
+                visit_program_unit(*proc->m_proc);
+                in_Subroutine = old_in_Subroutine;
+                current_procedure_args = old_procedure_args;
+            }
         } else if (AST::is_a<AST::InterfaceHeaderOperator_t>(*x.m_header)) {
             std::string op = intrinsic2str[AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op];
             std::vector<std::pair<std::string, Location>> proc_names;
@@ -3598,6 +3865,11 @@ public:
             }
         }
 
+        // The COMMON statements below are visited only after the other
+        // declarations, so what they place in a common block is collected
+        // here, while an array bound or a character length of this
+        // specification part may still name one of those objects.
+        CommonBlockObjectsScope common_block_objects(*this, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
@@ -4768,7 +5040,7 @@ public:
                 ASR::asr_t *orig_asr_owner = tu_symtab->asr_owner;
                 ASR::TranslationUnit_t *tu
                     = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, x.base.base.loc,
-                        tu_symtab, nullptr, 0));
+                        tu_symtab, nullptr, 0, nullptr));
 
                 // Fix all external symbols and update dependencies
                 ASRUtils::fix_translation_unit(al, tu, tu_symtab, true);
@@ -4834,8 +5106,132 @@ public:
         }
     }
 
+    // Declares one deferred procedure named `name`, whose interface is the
+    // already declared procedure `iface_fn`. R1622 borrows an interface instead
+    // of defining one, so the interface is duplicated into this scope under the
+    // declared name and then given the flags that the spellings which define
+    // the interface in place (a bare subprogram of a requirement, or an
+    // interface body) give a deferred procedure: an Implementation, because the
+    // deferred procedure is not itself an interface to some other procedure,
+    // and deterministic and side effect free, because every instantiation
+    // argument it can be bound to is.
+    void declare_deferred_procedure(const std::string &name,
+            ASR::Function_t *iface_fn, const Location &loc) {
+        ASRUtils::SymbolDuplicator duplicator(al);
+        ASR::symbol_t *proc = duplicator.duplicate_Function(iface_fn,
+            current_scope);
+        if (!proc) {
+            diag.add(diag::Diagnostic(
+                "the interface of the deferred procedure '" + name
+                + "' is too complex to be copied",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
+        }
+        ASR::Function_t *proc_fn = ASR::down_cast<ASR::Function_t>(proc);
+        proc_fn->base.base.loc = loc;
+        proc_fn->m_name = s2c(al, name);
+        proc_fn->m_access = dflt_access;
+        proc_fn->m_deterministic = true;
+        proc_fn->m_side_effect_free = true;
+        ASR::FunctionType_t *proc_type = ASRUtils::get_FunctionType(proc_fn);
+        proc_type->m_deftype = ASR::deftypeType::Implementation;
+        proc_type->m_is_restriction = is_requirement;
+        current_scope->add_symbol(name, proc);
+    }
+
+    // F2028 R1622 (J3/26-007r1, 16.4.1.4):
+    //     deferred-proc-decl-stmt is DEFERRED PROCEDURE ( interface-name )
+    //                                [ :: ] deferred-proc-name-list
+    // Every name of the list is declared as a deferred procedure with the
+    // interface that interface-name names, instead of one spelled out in place.
+    void visit_DeferredProcedure(const AST::DeferredProcedure_t &x) {
+        // A deferred procedure is a deferred argument, so the statement only
+        // has a meaning in a scoping unit that has deferred arguments: a
+        // requirement, a template or a templated procedure.
+        if (!has_deferred_args) {
+            diag.add(diag::Diagnostic(
+                "a deferred procedure can only be declared in a requirement, "
+                "a template or a templated procedure",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        std::string iface_name = to_lower(x.m_interface_name);
+        ASR::symbol_t *iface_sym = current_scope->resolve_symbol(iface_name);
+        if (!iface_sym) {
+            diag.add(diag::Diagnostic(
+                "the interface '" + iface_name + "' is not declared",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        ASR::symbol_t *iface = ASRUtils::symbol_get_past_external(iface_sym);
+        if (!iface || !ASR::is_a<ASR::Function_t>(*iface)) {
+            // A name that is not a procedure with an explicit interface, or
+            // that is a generic name, cannot serve as an interface-name.
+            diag.add(diag::Diagnostic(
+                "'" + iface_name + "' is not an interface",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc}),
+                    diag::Label("declared here", {iface_sym->base.loc}, false)
+                }));
+            throw SemanticAbort();
+        }
+        ASR::Function_t *iface_fn = ASR::down_cast<ASR::Function_t>(iface);
+        for (size_t i=0; i<x.n_names; i++) {
+            std::string name = to_lower(x.m_names[i].m_arg);
+            // C1622: a deferred-proc-name shall be the name of a deferred
+            // procedure, that is a deferred argument of the scoping unit.
+            if (std::find(deferred_args.begin(), deferred_args.end(), name)
+                    == deferred_args.end()) {
+                diag.add(diag::Diagnostic(
+                    "'" + name + "' is not a deferred argument of '"
+                    + deferred_args_owner + "'",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_names[i].loc})}));
+                throw SemanticAbort();
+            }
+            ASR::symbol_t *orig_decl = current_scope->get_symbol(name);
+            if (orig_decl != nullptr) {
+                // add_symbol asserts the name is free, so report the duplicate
+                // here rather than letting invalid input reach the assertion.
+                diag.add(diag::Diagnostic(
+                    "Symbol is already declared in the same scope",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("redeclaration", {x.m_names[i].loc}),
+                        diag::Label("original declaration",
+                            {orig_decl->base.loc}, false)
+                    }));
+                throw SemanticAbort();
+            }
+            declare_deferred_procedure(name, iface_fn, x.m_names[i].loc);
+        }
+    }
+
     void visit_Requirement(const AST::Requirement_t &x) {
+        // The Fortran 2028 working draft (J3/26-007r1) contradicts itself
+        // here, so this is a deliberate choice, not a settled rule. R1605
+        // lists `requirement-construct` as one of the things a template
+        // construct may contain, while C1636 (16.6.1) says a requirement
+        // construct shall only appear in the specification part of a main
+        // program or module. The two cannot both hold. C1636 is followed
+        // because rejecting is reversible, whereas accepting code the
+        // standard may forbid creates a compatibility burden if J3 resolves
+        // it the other way. A submodule and a subprogram are not in C1636's
+        // list either, so a requirement is rejected there as well. If J3
+        // resolves in favour of R1605, allow ScopingUnitKind::Template here.
+        if (scoping_unit_kind != ScopingUnitKind::Module
+                && scoping_unit_kind != ScopingUnitKind::Program) {
+            diag.add(diag::Diagnostic(
+                "a requirement can only be declared in the specification part "
+                "of a main program or a module",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
         is_requirement = true;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
 
         std::vector<std::string> requirement_args;
         for (size_t i=0; i<x.n_namelist; i++) {
@@ -4968,19 +5364,17 @@ public:
 
         ASR::Requirement_t *req = ASR::down_cast<ASR::Requirement_t>(req0);
 
-        if (x.n_namelist != req->n_args) {
-            diag.add(diag::Diagnostic(
-                "The number of parameters passed to '" +
-                require_name + "' is not correct",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
-        }
+        // R1630: the arguments may be given by keyword, so match them against
+        // the requirement's deferred-argument list before using them
+        Vec<AST::decl_attribute_t*> ordered_args = match_instantiation_args(
+            x.m_namelist, x.n_namelist, req->m_args, req->n_args,
+            "The number of parameters passed to '" + require_name
+                + "' is not correct", x.base.base.loc);
 
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
 
         SetChar args;
-        args.reserve(al, x.n_namelist);
+        args.reserve(al, ordered_args.size());
 
         // The arguments are renamed in two passes. A deferred type of the
         // requirement may be referenced by any of its deferred procedures,
@@ -4989,12 +5383,17 @@ public:
         // procedure argument is renamed. Doing both in a single pass leaves
         // `type_subs` incomplete for a procedure that precedes a type it
         // uses.
-        std::vector<std::string> req_args(x.n_namelist);
-        std::vector<ASR::symbol_t*> param_syms(x.n_namelist);
-        std::vector<bool> is_type_arg(x.n_namelist, false);
+        //
+        // Both passes walk `ordered_args`, not the namelist as written: a
+        // keyword argument list is already permuted into deferred-argument
+        // order by match_instantiation_args above, so index `i` corresponds
+        // to `req->m_args[i]` either way.
+        std::vector<std::string> req_args(ordered_args.size());
+        std::vector<ASR::symbol_t*> param_syms(ordered_args.size());
+        std::vector<bool> is_type_arg(ordered_args.size(), false);
 
-        for (size_t i=0; i<x.n_namelist; i++) {
-            AST::decl_attribute_t *attr = x.m_namelist[i];
+        for (size_t i=0; i<ordered_args.size(); i++) {
+            AST::decl_attribute_t *attr = ordered_args[i];
 
             std::string req_param = req->m_args[i];
             std::string req_arg = "";
@@ -5020,12 +5419,25 @@ public:
                     attr, false, false, dims, nullptr, type_declaration, current_procedure_abi_type);
 
                 req_arg = ASRUtils::type_to_str_fortran_symbol(ttype, type_declaration);
+                // A REQUIRE statement passes instantiation arguments too
+                // (16.5.5.1), so C1628 applies to them as well.
+                ASR::symbol_t *req_param_sym = (req->m_symtab)->get_symbol(req_param);
+                ASR::ttype_t *req_param_type = req_param_sym
+                    ? ASRUtils::symbol_type(req_param_sym) : nullptr;
+                if (req_param_type) {
+                    ASR::symbol_t *arg_decl = nullptr;
+                    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ttype))) {
+                        arg_decl = type_declaration;
+                    }
+                    check_instantiation_arg_type(req_param_type, req_param, ttype,
+                        arg_decl, attr->base.loc);
+                }
                 type_subs[req_param].first = ttype;
             } else {
                 diag.add(diag::Diagnostic(
                     "Unsupported decl_attribute for require statements.",
                     diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.m_namelist[i]->base.loc})}));
+                        diag::Label("", {attr->base.loc})}));
                 throw SemanticAbort();
             }
 
@@ -5038,7 +5450,7 @@ public:
         }
 
         // Pass 1: the deferred types, completing `type_subs`.
-        for (size_t i=0; i<x.n_namelist; i++) {
+        for (size_t i=0; i<ordered_args.size(); i++) {
             if (is_type_arg[i]) {
                 rename_symbol(al, type_subs, current_scope, req_args[i], param_syms[i]);
             }
@@ -5046,7 +5458,7 @@ public:
 
         // Pass 2: the deferred procedures, whose signatures may mention any
         // of the types bound above.
-        for (size_t i=0; i<x.n_namelist; i++) {
+        for (size_t i=0; i<ordered_args.size(); i++) {
             if (!is_type_arg[i]) {
                 rename_symbol(al, type_subs, current_scope, req_args[i], param_syms[i]);
             }
@@ -5080,8 +5492,80 @@ public:
         context_map.clear();
     }
 
+    // C1603 and C1604 (J3/26-007r1, 16.1.1): if a template-specification is a
+    // type declaration statement it shall specify the PARAMETER attribute, and
+    // if it is a procedure declaration statement it shall not specify the
+    // POINTER attribute. A template specification part can therefore not
+    // declare a variable or a procedure pointer.
+    //
+    // Only the items between the `template` statement and `contains` are
+    // template-specifications (R1606); the contained procedures are ordinary
+    // subprogram bodies and may declare locals, so this is called from the loop
+    // over the specification part only.
+    //
+    // A deferred argument declaration (R1615) is not a template-specification
+    // either. `deferred type :: t` and `require ::` are their own AST nodes, so
+    // they never reach here, but a deferred constant is currently spelled as a
+    // plain type declaration of one of the template's own deferred arguments
+    // (`integer :: n` for `template tmpl(..., n)`), which is left alone.
+    void check_template_specification(AST::decl_stmt_t *item,
+            const std::vector<std::string> &deferred_args) {
+        if (!AST::is_a<AST::Declaration_t>(*item)) return;
+        AST::Declaration_t &decl = *AST::down_cast<AST::Declaration_t>(item);
+        // An access statement such as `private` or `public :: s` carries no
+        // type, and is allowed by R1606.
+        if (decl.m_vartype == nullptr) return;
+        AST::AttrType_t *type = AST::is_a<AST::AttrType_t>(*decl.m_vartype)
+            ? AST::down_cast<AST::AttrType_t>(decl.m_vartype) : nullptr;
+        bool is_procedure_decl = type
+            && type->m_type == AST::decl_typeType::TypeProcedure;
+        bool has_parameter = false;
+        bool has_pointer = false;
+        for (size_t i = 0; i < decl.n_attributes; i++) {
+            if (!AST::is_a<AST::SimpleAttribute_t>(*decl.m_attributes[i])) continue;
+            AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(
+                decl.m_attributes[i]);
+            if (sa->m_attr == AST::simple_attributeType::AttrParameter) {
+                has_parameter = true;
+            } else if (sa->m_attr == AST::simple_attributeType::AttrPointer) {
+                has_pointer = true;
+            }
+        }
+        if (is_procedure_decl ? !has_pointer : has_parameter) return;
+        for (size_t i = 0; i < decl.n_syms; i++) {
+            std::string name = to_lower(decl.m_syms[i].m_name);
+            if (std::find(deferred_args.begin(), deferred_args.end(), name)
+                    != deferred_args.end()) continue;
+            std::string msg = is_procedure_decl
+                ? "a template specification part cannot declare a procedure"
+                  " pointer, so '" + name + "' must not have the pointer"
+                  " attribute"
+                : "a template specification part cannot declare a variable,"
+                  " so '" + name + "' must have the parameter attribute";
+            diag.add(diag::Diagnostic(msg, diag::Level::Error,
+                diag::Stage::Semantic, {
+                    diag::Label("", {decl.m_syms[i].loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     void visit_Template(const AST::Template_t &x){
+        // C1601 (J3/26-007r1, 16.1.1): a template construct shall only appear
+        // in the specification part of a main program, a module or a template
+        // construct. A submodule is deliberately not in that list.
+        if (scoping_unit_kind != ScopingUnitKind::Module
+                && scoping_unit_kind != ScopingUnitKind::Program
+                && scoping_unit_kind != ScopingUnitKind::Template) {
+            diag.add(diag::Diagnostic(
+                "a template can only be declared in the specification part of "
+                "a main program, a module or another template",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
         is_template = true;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Template);
+        TemplateDefinitionScope template_definition_scope(*this, true);
         std::string template_name = to_lower(std::string(x.m_name));
         std::vector<std::string> template_args;
         for (size_t i=0; i<x.n_namelist; i++) {
@@ -5092,8 +5576,13 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
+        // The template's own deferred arguments (R1614); a declaration of one
+        // of them is a deferred argument declaration rather than a
+        // template-specification, see check_template_specification().
+        std::vector<std::string> deferred_args;
         for (size_t i=0; i<x.n_namelist; i++) {
-            current_procedure_args.push_back(to_lower(x.m_namelist[i]));
+            deferred_args.push_back(to_lower(x.m_namelist[i]));
+            current_procedure_args.push_back(deferred_args.back());
         }
 
         std::map<std::string, std::vector<std::pair<std::string, Location>>> ext_overloaded_op_procs;
@@ -5114,6 +5603,7 @@ public:
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             try {
+                check_template_specification(x.m_items[i], deferred_args);
                 if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
                     AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_items[i]);
                     for (size_t i=0; i<r->n_reqs; i++) {
@@ -5164,12 +5654,65 @@ public:
             current_scope, s2c(al, template_name), args.p, args.size(), reqs.p, reqs.size());
 
         parent_scope->add_symbol(template_name, ASR::down_cast<ASR::symbol_t>(temp));
+        SymbolTable *template_scope = current_scope;
         current_scope = parent_scope;
 
         // needs to rebuild the context prior to visiting template
         class_procedures.clear();
         dflt_access = dflt_access_copy;
         is_template = false;
+        // The specification part of the template itself, checked once the
+        // enclosing context has been restored so that an abort here leaves the
+        // visitor in the same state as a clean return.
+        check_no_save_in_template(template_scope);
+    }
+
+    // C1628 of the Fortran 2028 working draft (J3/26-007r1, 16.5.5.2): "A
+    // type-spec that is a instantiation-arg shall specify an extensible type if
+    // its corresponding deferred type has the EXTENSIBLE attribute. It shall not
+    // specify an abstract type unless its corresponding deferred type has the
+    // ABSTRACT attribute." `deferred_attr` is the effective attribute of the
+    // deferred type, in which Abstract already implies Extensible (16.4.1.2
+    // paragraph 2). `arg_decl` is the derived type the instantiation argument
+    // names, or nullptr when the argument is not of derived type.
+    void check_instantiation_arg_type(ASR::ttype_t *param_type,
+            const std::string &param, ASR::ttype_t *arg_type,
+            ASR::symbol_t *arg_decl, const Location &loc) {
+        if (!param_type || !ASRUtils::is_type_parameter(*param_type)) return;
+        ASR::deferred_type_attrType deferred_attr = ASR::down_cast<ASR::TypeParameter_t>(
+            ASRUtils::get_type_parameter(
+                ASRUtils::type_get_past_pointer(param_type)))->m_deferred_attr;
+        ASR::Struct_t *st = nullptr;
+        if (arg_decl) {
+            ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_decl);
+            if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
+                st = ASR::down_cast<ASR::Struct_t>(arg_sym);
+            }
+        }
+        // 7.5.7 paragraph 1: a derived type that has neither the BIND attribute
+        // nor the SEQUENCE attribute is an extensible type. Nothing else is, so
+        // an intrinsic type never satisfies the EXTENSIBLE requirement.
+        bool arg_is_extensible = st != nullptr && !st->m_is_sequence
+            && st->m_abi != ASR::abiType::BindC;
+        std::string arg_str = ASRUtils::type_to_str_fortran_symbol(arg_type, arg_decl);
+        if (deferred_attr != ASR::deferred_type_attrType::NonExtensible
+                && !arg_is_extensible) {
+            diag.add(diag::Diagnostic(
+                "deferred type '" + param + "' is extensible, so its instantiation "
+                "argument must be an extensible derived type, not " + arg_str,
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
+        }
+        if (deferred_attr != ASR::deferred_type_attrType::Abstract
+                && st != nullptr && st->m_is_abstract) {
+            diag.add(diag::Diagnostic(
+                "deferred type '" + param + "' is not abstract, so its "
+                "instantiation argument must not be the abstract type " + arg_str,
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
+        }
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
@@ -5198,43 +5741,47 @@ public:
 
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
 
-        // check for number of template arguments
-        if (temp->n_args != x.n_args) {
-            diag.add(diag::Diagnostic(
-                "Number of template arguments don't match",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
-        }
+        // R1630: the arguments may be given by keyword, so match them against
+        // the template's deferred-argument list before using them
+        Vec<AST::decl_attribute_t*> ordered_args = match_instantiation_args(
+            x.m_args, x.n_args, temp->m_args, temp->n_args,
+            "Number of template arguments don't match", x.base.base.loc);
 
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
         std::map<std::string, ASR::symbol_t*> symbol_subs;
 
-        for (size_t i=0; i<x.n_args; i++) {
+        for (size_t i=0; i<ordered_args.size(); i++) {
             std::string param = temp->m_args[i];
+            AST::decl_attribute_t *arg_attr = ordered_args[i];
             ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(param);
-            if (AST::is_a<AST::AttrType_t>(*x.m_args[i])) {
+            if (AST::is_a<AST::AttrType_t>(*arg_attr)) {
                 // Handling types as instantiate's arguments
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 0);
                 ASR::symbol_t *type_declaration;
-                ASR::ttype_t *arg_type = determine_type(x.m_args[i]->base.loc, param,
-                    x.m_args[i], false, false, dims, nullptr, type_declaration, current_procedure_abi_type);
+                ASR::ttype_t *arg_type = determine_type(arg_attr->base.loc, param,
+                    arg_attr, false, false, dims, nullptr, type_declaration, current_procedure_abi_type);
                 ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                 if (!ASRUtils::is_type_parameter(*param_type)) {
                     diag.add(diag::Diagnostic(
                         "The type " + ASRUtils::type_to_str_fortran_symbol(arg_type, type_declaration) +
                         " cannot be applied to non-type parameter " + param,
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_args[i]->base.loc})}));
+                            diag::Label("", {arg_attr->base.loc})}));
                     throw SemanticAbort();
                 }
-                type_subs[param].first = arg_type;
+                ASR::symbol_t *arg_decl = nullptr;
                 if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
-                    type_subs[param].second = type_declaration;
+                    arg_decl = type_declaration;
                 }
-            } else if (AST::is_a<AST::AttrName_t>(*x.m_args[i])) {
-                AST::AttrName_t *attr_name = AST::down_cast<AST::AttrName_t>(x.m_args[i]);
+                check_instantiation_arg_type(param_type, param, arg_type,
+                    arg_decl, x.m_args[i]->base.loc);
+                type_subs[param].first = arg_type;
+                if (arg_decl) {
+                    type_subs[param].second = arg_decl;
+                }
+            } else if (AST::is_a<AST::AttrName_t>(*arg_attr)) {
+                AST::AttrName_t *attr_name = AST::down_cast<AST::AttrName_t>(arg_attr);
                 std::string arg = to_lower(attr_name->m_name);
                 if (ASR::is_a<ASR::Function_t>(*param_sym)) {
                     // Handling functions passed as instantiate's arguments
@@ -5258,7 +5805,7 @@ public:
                                 ASRUtils::get_struct_sym_from_struct_expr(f->m_args[j]);
                             std::string var_name = "arg" + std::to_string(j);
                             ASR::asr_t *v = ASRUtils::make_Variable_t_util(al,
-                                x.m_args[i]->base.loc, current_scope,
+                                arg_attr->base.loc, current_scope,
                                 s2c(al, var_name), nullptr, 0, ASR::intentType::In,
                                 nullptr, nullptr, ASR::storage_typeType::Default,
                                 var_type, var_type_decl, ASR::abiType::Source,
@@ -5267,7 +5814,7 @@ public:
                             current_scope->add_symbol(var_name,
                                 ASR::down_cast<ASR::symbol_t>(v));
                             ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
-                                x.m_args[i]->base.loc, current_scope->get_symbol(var_name)));
+                                arg_attr->base.loc, current_scope->get_symbol(var_name)));
                             wargs.push_back(al, var_expr);
                             call_args.push_back(al, var_expr);
                         }
@@ -5275,7 +5822,7 @@ public:
                         ASRUtils::create_intrinsic_function create_func =
                             ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(arg);
                         ASR::asr_t *call_value_asr = create_func(al,
-                            x.m_args[i]->base.loc, call_args, diag);
+                            arg_attr->base.loc, call_args, diag);
                         if (call_value_asr == nullptr) {
                             throw SemanticAbort();
                         }
@@ -5284,7 +5831,7 @@ public:
                         ASR::ttype_t *return_type = ASRUtils::duplicate_type(al,
                             ASRUtils::subs_expr_type(type_subs, f->m_return_var));
                         ASR::asr_t *return_v = ASRUtils::make_Variable_t_util(al,
-                            x.m_args[i]->base.loc, current_scope, s2c(al, "ret"),
+                            arg_attr->base.loc, current_scope, s2c(al, "ret"),
                             nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
                             ASR::storage_typeType::Default, return_type,
                             ASRUtils::get_struct_sym_from_struct_expr(call_value),
@@ -5293,7 +5840,7 @@ public:
                         current_scope->add_symbol("ret",
                             ASR::down_cast<ASR::symbol_t>(return_v));
                         ASR::expr_t *return_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
-                            x.m_args[i]->base.loc, current_scope->get_symbol("ret")));
+                            arg_attr->base.loc, current_scope->get_symbol("ret")));
 
                         if (!ASRUtils::check_equal_type(
                                 ASRUtils::expr_type(call_value), return_type,
@@ -5301,17 +5848,17 @@ public:
                             diag.add(diag::Diagnostic(
                                 "Unapplicable types for intrinsic function " + arg,
                                 diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {x.m_args[i]->base.loc})}));
+                                    diag::Label("", {arg_attr->base.loc})}));
                             throw SemanticAbort();
                         }
 
                         Vec<ASR::stmt_t*> body;
                         body.reserve(al, 1);
                         ASRUtils::make_ArrayBroadcast_t_util(al,
-                            x.m_args[i]->base.loc, return_expr, call_value);
+                            arg_attr->base.loc, return_expr, call_value);
                         ASR::stmt_t *assignment = ASRUtils::STMT(
                             ASRUtils::make_Assignment_t_util(al,
-                                x.m_args[i]->base.loc, return_expr, call_value,
+                                arg_attr->base.loc, return_expr, call_value,
                                 nullptr, false, false));
                         body.push_back(al, assignment);
 
@@ -5320,7 +5867,7 @@ public:
                         ASR::FunctionType_t *req_type =
                             ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
                         ASR::asr_t *op_function = ASRUtils::make_Function_t_util(
-                            al, x.m_args[i]->base.loc, current_scope,
+                            al, arg_attr->base.loc, current_scope,
                             s2c(al, func_name), nullptr, 0, wargs.p, wargs.size(),
                             body.p, body.size(), return_expr,
                             ASR::abiType::Source, ASR::accessType::Public,
@@ -5340,7 +5887,7 @@ public:
                             diag.add(diag::Diagnostic(
                                 "The function argument " + arg + " is not found",
                                 diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {x.m_args[i]->base.loc})}));
+                                    diag::Label("", {arg_attr->base.loc})}));
                             throw SemanticAbort();
                         }
                         ASR::symbol_t *f_arg = ASRUtils::symbol_get_past_external(f_arg0);
@@ -5348,11 +5895,11 @@ public:
                             diag.add(diag::Diagnostic(
                                 "The argument for " + param + " must be a function",
                                 diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {x.m_args[i]->base.loc})}));
+                                    diag::Label("", {arg_attr->base.loc})}));
                             throw SemanticAbort();
                         }
                         check_restriction(type_subs,
-                            symbol_subs, f, f_arg0, x.m_args[i]->base.loc, diag,
+                            symbol_subs, f, f_arg0, arg_attr->base.loc, diag,
                             []() { throw SemanticAbort(); });
                     }
                 } else {
@@ -5372,7 +5919,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0, true);
+                            arg_type = ASRUtils::make_StructType_t_util(al, arg_attr->base.loc, arg_sym0, true);
                             type_subs[param].second = arg_sym0;
                         } else if (ASR::is_a<ASR::Variable_t>(*arg_sym)
                                 && ASRUtils::is_type_parameter(*ASRUtils::symbol_type(arg_sym))) {
@@ -5386,6 +5933,8 @@ public:
                                     diag::Label("", {x.m_args[i]->base.loc})}));
                             throw SemanticAbort();
                         }
+                        check_instantiation_arg_type(param_type, param, arg_type,
+                            type_subs[param].second, x.m_args[i]->base.loc);
                         type_subs[param].first = ASRUtils::duplicate_type(al, arg_type);
                     } else {
                         // Handling local variables passed as instantiate's arguments
@@ -5395,15 +5944,15 @@ public:
                             diag.add(diag::Diagnostic(
                                 "The type of " + arg + " does not match the type of " + param,
                                 diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {x.m_args[i]->base.loc})}));
+                                    diag::Label("", {arg_attr->base.loc})}));
                             throw SemanticAbort();
                         }
                         symbol_subs[param] = arg_sym0;
                     }
                 }
-            } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*x.m_args[i])) {
+            } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*arg_attr)) {
                 AST::AttrIntrinsicOperator_t *intrinsic_op
-                    = AST::down_cast<AST::AttrIntrinsicOperator_t>(x.m_args[i]);
+                    = AST::down_cast<AST::AttrIntrinsicOperator_t>(arg_attr);
                 ASR::binopType binop = ASR::Add;
                 ASR::cmpopType cmpop = ASR::Eq;
                 bool is_binop = false, is_cmpop = false;
@@ -5446,7 +5995,7 @@ public:
                         diag.add(diag::Diagnostic(
                             "Unsupported binary operator",
                             diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {x.m_args[i]->base.loc})}));
+                                diag::Label("", {arg_attr->base.loc})}));
                         throw SemanticAbort();
                 }
 
@@ -5459,7 +6008,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "Must be binop or cmop",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_args[i]->base.loc})}));
+                            diag::Label("", {arg_attr->base.loc})}));
                     throw SemanticAbort();
                 }
 
@@ -5474,7 +6023,7 @@ public:
                     for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
                         ASR::symbol_t* proc = gen_proc->m_procs[i];
                         found = check_restriction(type_subs,
-                            symbol_subs, f, proc, x.m_args[i]->base.loc, diag,
+                            symbol_subs, f, proc, arg_attr->base.loc, diag,
                             []() { throw SemanticAbort(); }, false);
                     }
                 }
@@ -5604,7 +6153,7 @@ public:
                 diag.add(diag::Diagnostic(
                     "Unsupported template argument",
                     diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.m_args[i]->base.loc})}));
+                        diag::Label("", {arg_attr->base.loc})}));
                 throw SemanticAbort();
             }
         }
@@ -5659,7 +6208,8 @@ public:
                             tp->base.base.loc, compiler_options.po.default_integer_kind));
                     } else {
                         t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
-                            tp->base.base.loc, s2c(al, name)));
+                            tp->base.base.loc, s2c(al, name),
+                            tp->m_deferred_attr, tp->m_is_class));
                     }
                     t = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                         t, tp_m_dims, tp_n_dims);
@@ -5696,7 +6246,8 @@ public:
                                     tp->base.base.loc, compiler_options.po.default_integer_kind));
                             } else {
                                 param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param]),
+                                    tp->m_deferred_attr, tp->m_is_class));
                             }
                             if( tp_n_dims > 0 ) {
                                 param_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
@@ -5749,7 +6300,8 @@ public:
                                     tp->base.base.loc, compiler_options.po.default_integer_kind));
                             } else {
                                 return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param]),
+                                    tp->m_deferred_attr, tp->m_is_class));
                             }
                             if( tp_n_dims > 0 ) {
                                 return_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,

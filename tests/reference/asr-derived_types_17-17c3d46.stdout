@@ -27,6 +27,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             derived_types_17_module_1:
                 (Module
@@ -294,6 +295,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             derived_types_17_module_2:
                 (Module
@@ -404,7 +406,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

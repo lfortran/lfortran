@@ -1117,7 +1117,7 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
 
             LCompilers::Location loc;
             LCompilers::ASR::asr_t *asr = LCompilers::ASR::make_TranslationUnit_t(al, loc,
-                symtab, nullptr, 0);
+                symtab, nullptr, 0, nullptr);
             LCompilers::ASR::TranslationUnit_t *tu =
                 LCompilers::ASR::down_cast2<LCompilers::ASR::TranslationUnit_t>(asr);
             LCompilers::diag::Diagnostics diagnostics;

@@ -546,10 +546,11 @@ public:
         s = r;
     }
 
-    // `deferred type :: t` (F2028 R1616) is stored as a DerivedType that
-    // carries the `deferred` attribute and nothing else.
+    // `deferred type [, deferred-type-attr-list] :: t` (F2028 R1616) is stored
+    // as a DerivedType whose first attribute is `deferred`, optionally followed
+    // by the deferred-type-attrs of the statement (R1617).
     bool is_deferred_type(const DerivedType_t &x) {
-        return x.n_attrtype == 1 && x.n_namelist == 0 && x.n_items == 0
+        return x.n_attrtype >= 1 && x.n_namelist == 0 && x.n_items == 0
             && x.n_contains == 0
             && is_a<SimpleAttribute_t>(*x.m_attrtype[0])
             && down_cast<SimpleAttribute_t>(x.m_attrtype[0])->m_attr
@@ -562,6 +563,11 @@ public:
             r += syn(gr::UnitHeader);
             r.append("deferred type");
             r += syn();
+            for (size_t i=1; i<x.n_attrtype; i++) {
+                r.append(", ");
+                this->visit_decl_attribute(*x.m_attrtype[i]);
+                r.append(s);
+            }
             r.append(" :: ");
             r.append(x.m_name);
             if (x.m_trivia) {
@@ -908,6 +914,8 @@ public:
         r += syn(gr::UnitHeader);
         r.append("end template");
         r += syn();
+        r += " ";
+        r.append(x.m_name);
         r.append("\n");
         s = r;
     }
@@ -943,7 +951,33 @@ public:
         r += syn(gr::UnitHeader);
         r.append("end requirement");
         r += syn();
+        r += " ";
+        r.append(x.m_name);
         r.append("\n");
+        s = r;
+    }
+
+    // F2028 R1622: DEFERRED PROCEDURE ( interface-name ) [ :: ]
+    //              deferred-proc-name-list
+    // The `::` is optional in the source; it is always printed.
+    void visit_DeferredProcedure(const DeferredProcedure_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("deferred procedure");
+        r += syn();
+        r.append(" (");
+        r.append(x.m_interface_name);
+        r.append(") :: ");
+        for (size_t i=0; i<x.n_names; i++) {
+            this->visit_arg(x.m_names[i]);
+            r.append(s);
+            if (i < x.n_names-1) r.append(", ");
+        }
+        if (x.m_trivia) {
+            r += print_trivia_after(*x.m_trivia);
+        } else {
+            r.append("\n");
+        }
         s = r;
     }
 
@@ -999,6 +1033,8 @@ public:
         std::string r;
         if(x.m_header->type == AbstractInterfaceHeader) {
             r += "abstract ";
+        } else if(x.m_header->type == DeferredInterfaceHeader) {
+            r += "deferred ";
         }
         r += syn(gr::UnitHeader);
         r.append("interface");
@@ -1059,6 +1095,11 @@ public:
 
     void visit_AbstractInterfaceHeader
             (const AbstractInterfaceHeader_t &/* x */) {
+        s = "";
+    }
+
+    void visit_DeferredInterfaceHeader
+            (const DeferredInterfaceHeader_t &/* x */) {
         s = "";
     }
 
@@ -1614,6 +1655,7 @@ public:
             ATTRTYPE(Deferred)
             ATTRTYPE(Elemental)
             ATTRTYPE(Enumerator)
+            ATTRTYPE(Extensible)
             ATTRTYPE(External)
             ATTRTYPE(Impure)
             ATTRTYPE(Intrinsic)
@@ -1743,6 +1785,14 @@ public:
         s = std::string(x.m_name);
     }
 
+    void visit_AttrKeyword(const AttrKeyword_t &x) {
+        std::string r = std::string(x.m_name);
+        r += " = ";
+        this->visit_decl_attribute(*x.m_value);
+        r += s;
+        s = r;
+    }
+
     void visit_AttrIntent(const AttrIntent_t &x) {
         std::string r;
         r += syn(gr::Type);
@@ -1798,6 +1848,23 @@ public:
             }
             r += ")";
         }
+        s = r;
+    }
+
+    // F2028 R831 rank-clause, `RANK ( rank-spec-list )`, which only a deferred
+    // constant declaration accepts so far (R1619).
+    void visit_AttrRank(const AttrRank_t &x) {
+        std::string r;
+        r += syn(gr::Type);
+        r += "rank";
+        r += syn();
+        r += "(";
+        for (size_t i=0; i<x.n_rank; i++) {
+            visit_expr(*x.m_rank[i]);
+            r += s;
+            if (i < x.n_rank-1) r.append(", ");
+        }
+        r += ")";
         s = r;
     }
 

@@ -1,5 +1,11 @@
-semantic error: Expecting a scalar integer or parameter annotated integer variable 
+semantic error: the variable 'linelen' is local to this scoping unit, so it cannot appear in a specification expression
  --> tests/errors/dimension_02.f90:3:26
   |
 3 |     character, dimension(linelen) :: line
-  |                          ^^^^^^^ 
+  |                          ^^^^^^^ the value of 'linelen' is read to give an array bound
+  |
+2 |     integer :: linelen = 2
+  |                ~~~~~~~~~~~ 'linelen' is declared here
+  |
+3 |     character, dimension(linelen) :: line
+  |                          ~~~~~~~ help: Fortran 2023 10.1.11 allows a dummy argument, a variable in a common block, and one made accessible by use or host association; a named constant, and an inquiry such as `size` or `len` about a local, are also allowed

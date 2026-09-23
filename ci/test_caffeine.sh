@@ -165,7 +165,8 @@ fi
 # coarrays_34: gfortran added change team support in 16.1, but CI tests with version 13.3, so skip for now
 # coarrays_39: gfortran doesn't support coshape intrinsic with version 13.3.
 # coarrays_45, coarrays_46, coarrays_47: gfortran-13/OpenCoarrays lacks support for co_broadcast of PDT/extended/allocatable derived-type arrays (strided section)
-opencoarrays_unsupported="coarrays_06 coarrays_11 coarrays_13 coarrays_21 coarrays_27 coarrays_31 coarrays_32 coarrays_34 coarrays_39 coarrays_45 coarrays_46 coarrays_47"
+# coarrays_49: gfortran ICEs on the `ptr => co_var` declaration initializer (internal compiler error in record_reference, cgraphbuild.cc:65, with 13.3); per @bonachea 16.2 still does not run this correctly
+opencoarrays_unsupported="coarrays_06 coarrays_11 coarrays_13 coarrays_21 coarrays_27 coarrays_31 coarrays_32 coarrays_34 coarrays_39 coarrays_45 coarrays_46 coarrays_47 coarrays_49"
 
 for test_info in $tests; do
 testfile="${test_info%%:*}"

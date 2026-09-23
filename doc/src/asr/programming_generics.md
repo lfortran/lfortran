@@ -24,13 +24,15 @@ As we can see here, we need to define the functions associated with the deferred
 ```fortran
 requirement number_type {T, add_element, set_to_zero}
   deferred type :: T
-  function add_element(x, y) result(z)
-    type(T), intent(in) :: x, y
-    type(T) :: z
-  end function
-  function set_to_zero() result(z)
-    type(T) :: z
-  end function
+  deferred interface
+    function add_element(x, y) result(z)
+      type(T), intent(in) :: x, y
+      type(T) :: z
+    end function
+    function set_to_zero() result(z)
+      type(T) :: z
+    end function
+  end interface
 end requirement
 ```
 

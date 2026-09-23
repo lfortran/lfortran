@@ -1824,6 +1824,21 @@ static inline ASR::Module_t *get_sym_module0(const ASR::symbol_t *sym) {
     return nullptr;
 }
 
+// Returns true if `name` was produced by the compiler itself (an ASR pass or
+// an intrinsic lowering) rather than written by the user. Such names must not
+// appear in diagnostics, and symbols carrying them are exempt from checks that
+// only make sense for user-written code.
+// The spellings in use today are `__libasr_created_*`, `__libasr_created__*`,
+// `__libasr__created__var__*`, `__libasr_index_*`, `__libasr_omp_arg_*`,
+// `_lcompilers_*` and `__lcompilers*`, so the two families are matched by
+// their common prefix. Matching is anchored at the start on purpose: a
+// user-written name that merely contains one of these is not generated.
+static inline bool is_compiler_generated_name(const std::string &name) {
+    return startswith(name, "__libasr")
+        || startswith(name, "_lcompilers_")
+        || startswith(name, "__lcompilers");
+}
+
 // Returns true if the Function is intrinsic, otherwise false
 template <typename T>
 static inline bool is_intrinsic_procedure(const T *fn) {
@@ -1926,6 +1941,45 @@ static inline bool is_variable(ASR::expr_t* a_value) {
         case ASR::exprType::ArraySection:
         case ASR::exprType::StructInstanceMember: {
             return true;
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
+// `p => tgt` in a declaration associates the pointer with a designator — a
+// whole variable, an array element or section, or a component — instead of
+// giving it a value. An association is not a value, so no target can lay it
+// out as static data: the `global_init` pass turns it into the pointer
+// assignment that runs before any user code observes the pointer.
+//
+// A named constant is not a valid target, so a `parameter` at the base of the
+// designator says no. `=> null()` is a value, not a designator, and is laid
+// out statically as before.
+static inline bool is_pointer_association_initializer(ASR::expr_t* init) {
+    if (init == nullptr) {
+        return false;
+    }
+    switch (init->type) {
+        case ASR::exprType::Var: {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(init)->m_v);
+            return ASR::is_a<ASR::Variable_t>(*sym) &&
+                ASR::down_cast<ASR::Variable_t>(sym)->m_storage
+                    != ASR::storage_typeType::Parameter;
+        }
+        case ASR::exprType::ArrayItem: {
+            return is_pointer_association_initializer(
+                ASR::down_cast<ASR::ArrayItem_t>(init)->m_v);
+        }
+        case ASR::exprType::ArraySection: {
+            return is_pointer_association_initializer(
+                ASR::down_cast<ASR::ArraySection_t>(init)->m_v);
+        }
+        case ASR::exprType::StructInstanceMember: {
+            return is_pointer_association_initializer(
+                ASR::down_cast<ASR::StructInstanceMember_t>(init)->m_v);
         }
         default: {
             return false;
@@ -4364,6 +4418,20 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                                  ASR::symbol_t* derived_type_sym,
                                                  bool is_cstruct);
 
+// A `class(t)` declaration of a deferred type argument (C706 of the Fortran 2028
+// working draft J3/26-007r1) is recorded as an ASR::TypeParameter_t whose
+// `is_class` is set. Substituting such a type parameter with a derived type has
+// to yield the polymorphic ASR::StructType_t that `class(x)` yields for a
+// concrete type `x`; otherwise the instantiated entity would be a
+// non-polymorphic variable of a possibly abstract type. `subs` is the
+// substituted type and `subs_sym` the derived type symbol it names; both are
+// returned unchanged when the type parameter was not used in a CLASS
+// declaration or when the substituted type is not of derived type.
+ASR::ttype_t* substitute_class_type_parameter(Allocator& al,
+                                                 ASR::TypeParameter_t* param,
+                                                 ASR::ttype_t* subs,
+                                                 ASR::symbol_t* subs_sym);
+
 // Sets the dimension member of `ttype_t`. Returns `true` if dimensions set.
 // Returns `false` if the `ttype_t` does not have a dimension member.
 inline bool ttype_set_dimensions(ASR::ttype_t** x,
@@ -4588,7 +4656,8 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-            t_ = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc, tp->m_param));
+            t_ = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc,
+                tp->m_param, tp->m_deferred_attr, tp->m_is_class));
             break;
         }
         case ASR::ttypeType::FunctionType: {
@@ -4915,7 +4984,8 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-            return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc, tp->m_param));
+            return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
+                tp->m_param, tp->m_deferred_attr, tp->m_is_class));
         }
         case ASR::ttypeType::CPtr: {
             ASR::CPtr_t* ptr = ASR::down_cast<ASR::CPtr_t>(t);
@@ -7196,7 +7266,8 @@ class SymbolDuplicator {
             al, module_t->base.base.loc, module_symtab,
             module_t->m_name, module_t->m_parent_module, module_t->m_dependencies,
             module_t->n_dependencies, module_t->m_loaded_from_mod, module_t->m_intrinsic,
-            module_t->m_has_submodules, module_t->m_start_name, module_t->m_end_name
+            module_t->m_has_submodules, module_t->m_global_init,
+            module_t->m_start_name, module_t->m_end_name
         ));
     }
 
@@ -7603,6 +7674,58 @@ static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::exp
     return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, end->base.loc, diff,
                           ASR::binopType::Add, constant_one, ASRUtils::expr_type(end),
                           nullptr));
+}
+
+// Number of elements of the section `start:end:step`, that is
+// `(end - start + step)/step`, which is 0 for an empty section. Writing it as
+// `(end - start)/step + 1` instead gives 1 for a section like `2:1:2`, because
+// integer division truncates towards zero. The result is folded when all three
+// are known at compile time. A unit step is handled by
+// `compute_length_from_start_end`, which simplifies more aggressively.
+static inline ASR::expr_t* compute_length_from_start_end_step(Allocator& al,
+        ASR::expr_t* start, ASR::expr_t* end, ASR::expr_t* step) {
+    if( start == nullptr || end == nullptr ) {
+        return compute_length_from_start_end(al, start, end);
+    }
+    int64_t step_int = 1;
+    bool step_is_known = true;
+    if( step != nullptr ) {
+        ASR::expr_t* step_value = ASRUtils::expr_value(step);
+        step_is_known = step_value != nullptr &&
+            ASRUtils::extract_value(step_value, step_int);
+    }
+    if( step_is_known && step_int == 1 ) {
+        return compute_length_from_start_end(al, start, end);
+    }
+    ASR::ttype_t* int_type = ASRUtils::expr_type(end);
+    if( step_is_known && step_int == 0 ) {
+        // A zero step is not a valid section. Nothing can be computed from it,
+        // so give it no elements rather than an extent that is not a constant,
+        // which later phases require for a section with constant bounds.
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, end->base.loc,
+            0, int_type));
+    } else if( step_is_known ) {
+        ASR::expr_t* start_value = ASRUtils::expr_value(start);
+        ASR::expr_t* end_value = ASRUtils::expr_value(end);
+        int64_t start_int = 0, end_int = 0;
+        if( start_value != nullptr && end_value != nullptr &&
+            ASRUtils::extract_value(start_value, start_int) &&
+            ASRUtils::extract_value(end_value, end_int) ) {
+            int64_t size = (end_int - start_int + step_int) / step_int;
+            if( size < 0 ) {
+                size = 0;
+            }
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, end->base.loc,
+                size, int_type));
+        }
+    }
+    ASR::expr_t* end_minus_start = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+        al, end->base.loc, end, ASR::binopType::Sub, start, int_type, nullptr));
+    ASR::expr_t* plus_step = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+        al, end->base.loc, end_minus_start, ASR::binopType::Add, step, int_type,
+        nullptr));
+    return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, end->base.loc, plus_step,
+        ASR::binopType::Div, step, int_type, nullptr));
 }
 
 static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vector<size_t>& v) {
@@ -8053,6 +8176,77 @@ static inline bool is_allocatable(ASR::ttype_t* type) {
 
 static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
+}
+
+// Reports whether a value of the derived type `st` has a constant byte
+// representation, i.e. whether every one of its components is stored inline
+// in the type. An allocatable or a pointer component holds an array
+// descriptor or a pointer to memory owned elsewhere, and a polymorphic
+// component carries its dynamic type at run time, so a value of a type with
+// such a component has no byte representation to store. The inherited parent
+// and the type of every derived type component are checked as well.
+// `visited` guards against a cyclic parent or component chain.
+inline bool is_byte_representable_struct(ASR::Struct_t* st,
+        std::set<ASR::Struct_t*>& visited) {
+    if( !st ) {
+        return false;
+    }
+    if( !visited.insert(st).second ) {
+        // Already on the chain being checked. A type can only reach itself
+        // through a pointer or an allocatable component, and that component
+        // is rejected where it is declared.
+        return true;
+    }
+    if( st->m_parent ) {
+        ASR::symbol_t* parent = symbol_get_past_external(st->m_parent);
+        // `m_parent` names the inherited type, so it resolves to a Struct.
+        // The assert states that invariant; the test below is still kept
+        // because this function only gates a constant fold, so on a malformed
+        // symbol it should decline to fold rather than down_cast through the
+        // wrong type, which a -DNDEBUG build would do with the assert gone.
+        LCOMPILERS_ASSERT(parent && ASR::is_a<ASR::Struct_t>(*parent))
+        if( !parent || !ASR::is_a<ASR::Struct_t>(*parent) ||
+            !is_byte_representable_struct(
+                ASR::down_cast<ASR::Struct_t>(parent), visited) ) {
+            return false;
+        }
+    }
+    for( size_t i = 0; i < st->n_members; i++ ) {
+        ASR::symbol_t* mem = st->m_symtab->get_symbol(st->m_members[i]);
+        if( !mem || !ASR::is_a<ASR::Variable_t>(*mem) ) {
+            return false;
+        }
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(mem);
+        if( is_allocatable_or_pointer(var->m_type) ) {
+            return false;
+        }
+        ASR::ttype_t* element_type = type_get_past_array(var->m_type);
+        if( !ASR::is_a<ASR::StructType_t>(*element_type) ) {
+            continue;
+        }
+        if( !ASR::down_cast<ASR::StructType_t>(element_type)->m_is_cstruct ) {
+            // A `class(...)` component.
+            return false;
+        }
+        ASR::symbol_t* mem_struct = var->m_type_declaration ?
+            symbol_get_past_external(var->m_type_declaration) : nullptr;
+        if( !mem_struct || !ASR::is_a<ASR::Struct_t>(*mem_struct) ||
+            !is_byte_representable_struct(
+                ASR::down_cast<ASR::Struct_t>(mem_struct), visited) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+inline bool is_byte_representable_struct(ASR::symbol_t* struct_sym) {
+    ASR::symbol_t* sym = struct_sym ? symbol_get_past_external(struct_sym) : nullptr;
+    if( !sym || !ASR::is_a<ASR::Struct_t>(*sym) ) {
+        return false;
+    }
+    std::set<ASR::Struct_t*> visited;
+    return is_byte_representable_struct(
+        ASR::down_cast<ASR::Struct_t>(sym), visited);
 }
 
 static inline bool is_coarray(ASR::symbol_t* s) {
@@ -10051,6 +10245,85 @@ inline std::set<ASR::Function_t*> get_called_functions(ASR::stmt_t **body,
     Collector collector(procedure_values);
     for (size_t i = 0; i < n_body; i++) collector.visit_stmt(*body[i]);
     return collector.callees;
+}
+
+// Whether a member of `s`, of one of its parents, or of one of its derived
+// type members, cannot be described by static data and so has to be set up by
+// executable code: an array member needs a descriptor of its own or its
+// dimensions filled in, a string member its data, and a class member its type
+// pointer. A scalar of an intrinsic type, and a pointer or allocatable scalar,
+// are fully described by a constant.
+//
+// It decides two things that have to agree: whether the `global_init` pass
+// turns a declaration initializer of such an array into a statement, and
+// whether a backend lays that initializer out as static data. Laying an
+// element out statically when this is true would give every element the one
+// descriptor the constant holds, so a write through one element would be seen
+// through all of them.
+static inline bool struct_needs_member_init(ASR::Struct_t* s,
+        std::set<ASR::Struct_t*>& visited) {
+    if (!visited.insert(s).second) {
+        return false;
+    }
+    for (ASR::Struct_t* c = s; c != nullptr;
+            c = c->m_parent == nullptr ? nullptr
+                : ASR::down_cast<ASR::Struct_t>(
+                    symbol_get_past_external(c->m_parent))) {
+        for (size_t i = 0; i < c->n_members; i++) {
+            ASR::symbol_t* sym = symbol_get_past_external(
+                c->m_symtab->get_symbol(c->m_members[i]));
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                continue;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (is_array(v->m_type)) {
+                return true;
+            }
+            if (is_character(*v->m_type)
+                    && !is_inline_character_struct_member(c, v->m_type)) {
+                return true;
+            }
+            ASR::ttype_t* member_type = extract_type(v->m_type);
+            if (is_class_type(member_type)) {
+                return true;
+            }
+            // A pointer or allocatable member holds the address of another
+            // object, whose members are not set up from here.
+            if (ASR::is_a<ASR::StructType_t>(*member_type)
+                    && !is_pointer(v->m_type) && !is_allocatable(v->m_type)) {
+                ASR::symbol_t* member_struct = symbol_get_past_external(
+                    v->m_type_declaration);
+                if (member_struct != nullptr
+                        && ASR::is_a<ASR::Struct_t>(*member_struct)
+                        && struct_needs_member_init(
+                            ASR::down_cast<ASR::Struct_t>(member_struct), visited)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+// `struct_needs_member_init` for the element type of the array `type`, which
+// `expr` denotes. False for anything that is not an array of a derived type.
+static inline bool needs_struct_array_member_init(ASR::expr_t* expr,
+        ASR::ttype_t* type) {
+    if (!is_array(type)) {
+        return false;
+    }
+    ASR::ttype_t* el_type = type_get_past_array(type);
+    if (!ASR::is_a<ASR::StructType_t>(*el_type) || is_class_type(el_type)) {
+        return false;
+    }
+    ASR::symbol_t* struct_sym = symbol_get_past_external(
+        get_struct_sym_from_struct_expr(expr));
+    if (struct_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+        return false;
+    }
+    std::set<ASR::Struct_t*> visited;
+    return struct_needs_member_init(
+        ASR::down_cast<ASR::Struct_t>(struct_sym), visited);
 }
 
 } // namespace ASRUtils

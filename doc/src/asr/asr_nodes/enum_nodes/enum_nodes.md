@@ -16,6 +16,7 @@ binop
 cmpop
 codimension_type
 cptr_kind
+deferred_type_attr
 deftype
 enumtype
 exec_space
