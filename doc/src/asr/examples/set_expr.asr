@@ -207,8 +207,10 @@
             )
           )
         ]
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

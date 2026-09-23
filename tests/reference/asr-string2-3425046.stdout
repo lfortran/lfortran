@@ -359,6 +359,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_strings:
                 (Module
@@ -896,9 +897,11 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
 )

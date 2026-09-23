@@ -3060,6 +3060,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             openmp_45:
                 (Program
@@ -3545,6 +3546,7 @@
                         )]
                         ExecAuto
                     )]
+                    ()
                 ),
             openmp_45_parallel_sections:
                 (Module
@@ -3669,7 +3671,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

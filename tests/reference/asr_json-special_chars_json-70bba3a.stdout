@@ -96,7 +96,8 @@
                                     "last_column": 28
                                 }
                             }
-                        ]
+                        ],
+                        "global_init": []
                     },
                     "loc": {
                         "first": 0,
@@ -111,7 +112,8 @@
                 }
             }
         },
-        "items": []
+        "items": [],
+        "global_init": []
     },
     "loc": {
         "first": 0,

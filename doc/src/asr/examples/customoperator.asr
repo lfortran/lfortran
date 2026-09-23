@@ -168,6 +168,7 @@
         :loaded_from_mod false
         :intrinsic false
         :has_submodules false
+        :global_init nil
       )
       "main" (Program
         :symtab (SymbolTable
@@ -177,8 +178,10 @@
         :name "main"
         :dependencies []
         :body []
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

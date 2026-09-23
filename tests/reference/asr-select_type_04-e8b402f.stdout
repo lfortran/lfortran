@@ -146,6 +146,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             class_default_select_type_user:
                 (Module
@@ -715,6 +716,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             class_default_select_type_user1:
                 (Module
@@ -789,6 +791,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             select_type4:
                 (Program
@@ -805,7 +808,9 @@
                             (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )
