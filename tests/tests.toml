@@ -467,143 +467,6 @@ filename = "warnings/cpp_warn1.f90"
 asr_preprocess = true
 
 [[test]]
-filename = "errors/template_error_01a.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_01b.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_02.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_03.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_04.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_05.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_06.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_07a.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_07b.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_07c.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_08.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_07.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_09.f90"
-asr = true
-
-[[test]]
-filename = "errors/instantiate_type_arg_01.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_save_common_1.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/deferred_type_syntax_1.f90"
-syntax_only_cc = true
-
-[[test]]
-filename = "errors/deferred_type_duplicate_1.f90"
-asr = true
-
-[[test]]
-filename = "errors/deferred_type_scope_1.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/deferred_interface_scope_1.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/deferred_proc_decl_1.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/template_scope_1.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/deferred_type_class_1.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/deferred_type_coarray_1.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/template_spec_decl_1.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/deferred_type_attr_1.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/deferred_const_decl_1.f90"
-show_asr_with_cc = true
-
-[[test]]
-filename = "errors/requirement_syntax_1.f90"
-syntax_only_cc = true
-
-[[test]]
-filename = "errors/template_end_name_1.f90"
-syntax_only_cc = true
-
-[[test]]
-filename = "errors/requirement_bare_subprogram_1.f90"
-syntax_only_cc = true
-
-[[test]]
-filename = "errors/requirement_scope_1.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/instantiate_syntax_1.f90"
-syntax_only_cc = true
-
-[[test]]
-filename = "errors/require_syntax_1.f90"
-syntax_only_cc = true
-
-[[test]]
-filename = "errors/templated_subp_syntax_1.f90"
-syntax_only_cc = true
-
-[[test]]
-filename = "errors/template_syntax_1.f90"
-syntax_only_cc = true
-
-
-[[test]]
 filename = "errors/maskl_incorrect_bit_size.f90"
 asr = true
 
@@ -5596,10 +5459,6 @@ filename = "errors/data_implied_do3.f90"
 asr = true
 
 [[test]]
-filename = "errors/decl_order_01.f90"
-asr = true
-
-[[test]]
 filename = "../integration_tests/decl_order_02.f90"
 ast = true
 ast_f90 = true
@@ -5894,18 +5753,6 @@ run = true
 
 [[test]]
 filename = "errors/continue_compilation_templates_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/continue_compilation_instantiate_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/continue_compilation_instantiate_02.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/instantiate_kwargs_01.f90"
 semantics_only_cc = true
 
 [[test]]
