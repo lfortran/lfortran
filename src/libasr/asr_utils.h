@@ -9931,6 +9931,65 @@ static inline bool is_array_indexed_with_array_indices(T* x) {
     return is_array_indexed_with_array_indices(x->m_args, x->n_args);
 }
 
+// Selecting an element of an array component of an array, as in `w%u(2)` or
+// `w%nest%v(2)` with `w` an array, reads one element of the component out of
+// every element of the base. The subscripts consume the rank of the
+// component, not the rank of the base, so the reference denotes an array
+// shaped like the base although every subscript is scalar. Returns the base
+// whose shape the reference carries, or nullptr when it carries none.
+//
+// What such a reference denotes is a view of the base strided by the size of
+// an element of the base, and no `array_physical_type` says that. Giving it
+// the base's shape is therefore only sound where the lowering below knows how
+// to walk it: a whole array variable of a statically known shape, reached
+// through components that hold their value inline. A base behind a descriptor
+// or an indirection (`allocatable`, `pointer`, an assumed-shape dummy) and a
+// base that is already a section or an element are left alone, so that such a
+// reference keeps the type, and the behaviour, it has always had.
+static inline ASR::expr_t* struct_base_lending_shape(ASR::ArrayItem_t* x) {
+    if( is_array_indexed_with_array_indices(x->m_args, x->n_args) ||
+        x->m_v == nullptr ||
+        !ASR::is_a<ASR::StructInstanceMember_t>(*x->m_v) ) {
+        return nullptr;
+    }
+    ASR::expr_t* base = ASR::down_cast<ASR::StructInstanceMember_t>(x->m_v)->m_v;
+    if( base == nullptr || !ASRUtils::is_array(ASRUtils::expr_type(base)) ) {
+        return nullptr;
+    }
+    // Every component between the base array and the one being indexed must
+    // hold its value inline, or the reference denotes an array of
+    // indirections, which this type representation cannot express.
+    ASR::expr_t* root = base;
+    while( ASR::is_a<ASR::StructInstanceMember_t>(*root) ) {
+        ASR::StructInstanceMember_t* member =
+            ASR::down_cast<ASR::StructInstanceMember_t>(root);
+        if( ASRUtils::is_allocatable(member->m_type) ||
+            ASR::is_a<ASR::Pointer_t>(*member->m_type) ) {
+            return nullptr;
+        }
+        root = member->m_v;
+    }
+    // The chain has to bottom out in a whole array variable. A section or an
+    // element underneath carries an offset and a stride of its own, which the
+    // shape taken from it would not describe.
+    if( !ASR::is_a<ASR::Var_t>(*root) ) {
+        return nullptr;
+    }
+    ASR::ttype_t* root_type = ASRUtils::expr_type(root);
+    if( root_type == nullptr || ASRUtils::is_allocatable(root_type) ||
+        ASR::is_a<ASR::Pointer_t>(*root_type) ||
+        !ASRUtils::is_array(root_type) ) {
+        return nullptr;
+    }
+    // Only a statically shaped, contiguous base. Anything reached through a
+    // descriptor has neither the shape nor the stride this type would claim.
+    if( ASRUtils::extract_physical_type(root_type) !=
+            ASR::array_physical_typeType::FixedSizeArray ) {
+        return nullptr;
+    }
+    return base;
+}
+
 static inline ASR::ttype_t* create_array_type_with_empty_dims(Allocator& al,
     size_t value_n_dims, ASR::ttype_t* value_type) {
     Vec<ASR::dimension_t> empty_dims; empty_dims.reserve(al, value_n_dims);
