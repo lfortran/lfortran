@@ -106,12 +106,6 @@ semantic error: Variable 's' is not a coarray; coindex notation [..] requires a 
 17 |     s%x = s%x[1]
    |           ^^^^^^ 
 
-semantic error: Type mismatch in assignment, the types must be compatible
-  --> tests/errors/continue_compilation_coarrays.f90:17:5
-   |
-17 |     s%x = s%x[1]
-   |     ^^^   ^^^^^^ type mismatch (integer and t)
-
 semantic error: Coarray 's' has corank 2 but 1 coindices were provided
   --> tests/errors/continue_compilation_coarrays.f90:20:5
    |
