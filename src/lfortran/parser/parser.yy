@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    194 // shift/reduce conflicts
+%expect    196 // shift/reduce conflicts
 %expect-rr 185 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -463,6 +463,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> var_type
 %type <ast> fn_mod
 %type <vec_ast> fn_mod_plus
+%type <vec_ast> template_sub_prefix
+%type <vec_ast> template_fn_prefix
 %type <vec_ast> var_modifiers
 %type <vec_ast> enum_var_modifiers
 %type <vec_ast> var_modifier_list
@@ -1065,6 +1067,23 @@ subroutine
     sep decl_statements end_subroutine sep {
             LLOC(@$, @11); $$ = TEMPLATED_SUBROUTINE1($1, $3, $5, $7, $8,
                 TRIVIA($9, $12, @$), $10, $11, @$); }
+    | template_sub_prefix id "{" id_list "}" sub_args bind_opt
+    sep decl_statements end_subroutine sep {
+            LLOC(@$, @10); $$ = TEMPLATED_SUBROUTINE1($1, $2, $4, $6, $7,
+                TRIVIA($8, $11, @$), $9, $10, @$); }
+    ;
+
+// prefix of a templated subroutine statement; TEMPLATE is mandatory (C1609)
+// and the keyword is consumed together with SUBROUTINE so that it cannot be
+// confused with the name of a TEMPLATE construct. The deferred argument list
+// is bracketed with braces, not parentheses: J3/26-158 corrects R1611 and
+// R1612, which 26-007r1 still spelled with parentheses.
+template_sub_prefix
+    : KW_TEMPLATE KW_SUBROUTINE { LIST_NEW($$); }
+    | KW_TEMPLATE fn_mod_plus KW_SUBROUTINE { $$ = $2; }
+    | fn_mod_plus KW_TEMPLATE KW_SUBROUTINE { $$ = $1; }
+    | fn_mod_plus KW_TEMPLATE fn_mod_plus KW_SUBROUTINE {
+            $$ = concat_prefix(p.m_a, $1, $3); }
     ;
 
 subroutine_contains_end
@@ -1133,6 +1152,22 @@ function
         end_function sep {
             LLOC(@$, @14); $$ = TEMPLATED_FUNCTION($1, $3, $5, $8, $10, $11,
                 TRIVIA($12, $15, @$), $13, $14, @$); }
+    | template_fn_prefix id "{" id_list "}" "(" id_list_opt ")"
+        result_opt
+        bind_opt
+        sep decl_statements
+        end_function sep {
+            LLOC(@$, @13); $$ = TEMPLATED_FUNCTION($1, $2, $4, $7, $9, $10,
+                TRIVIA($11, $14, @$), $12, $13, @$); }
+    ;
+
+// prefix of a templated function statement; see template_sub_prefix
+template_fn_prefix
+    : KW_TEMPLATE KW_FUNCTION { LIST_NEW($$); }
+    | KW_TEMPLATE fn_mod_plus KW_FUNCTION { $$ = $2; }
+    | fn_mod_plus KW_TEMPLATE KW_FUNCTION { $$ = $1; }
+    | fn_mod_plus KW_TEMPLATE fn_mod_plus KW_FUNCTION {
+            $$ = concat_prefix(p.m_a, $1, $3); }
     ;
 
 function_contains_end

@@ -2106,6 +2106,15 @@ ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
 #define LIST_NEW(l) l.reserve(p.m_a, 4)
 #define LIST_ADD(l, x) l.push_back(p.m_a, x)
 #define PLIST_ADD(l, x) l.push_back(p.m_a, *x)
+
+static inline Vec<ast_t*> concat_prefix(Allocator &al, Vec<ast_t*> first,
+        Vec<ast_t*> second) {
+    for (size_t i=0; i < second.size(); i++) {
+        first.push_back(al, second[i]);
+    }
+    return first;
+}
+
 static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
         ast_t *repeat, ast_t *e) {
     if (LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::expr_t>(*repeat)) {
