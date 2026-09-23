@@ -2594,11 +2594,11 @@ public:
                     // When the mold is also unlimited polymorphic (class(*)),
                     // we need to allocate a zeroed wrapper first, then patch it
                     // with type info from the mold at runtime.
-                    bool is_mold_unlimited_poly = m_source && curr_arg.m_type
-                        && ASR::is_a<ASR::StructType_t>(*curr_arg.m_type)
-                        && ASR::down_cast<ASR::StructType_t>(curr_arg.m_type)->m_is_unlimited_polymorphic
+                    bool is_mold_unlimited_poly = m_source
                         && ASRUtils::is_unlimited_polymorphic_type(
-                            ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)));
+                            ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
+                        && curr_arg.m_type
+                        && ASR::is_a<ASR::StructType_t>(*curr_arg.m_type);
                     // For the mold case, pass nullptr as alloc_type so
                     // fill_malloc_array_details creates a zeroed wrapper.
                     ASR::ttype_t* effective_alloc_type = is_mold_unlimited_poly
@@ -2627,15 +2627,6 @@ public:
                             class_type->getPointerTo(),
                             llvm_utils->create_gep2(type, desc, 0));
 
-                        // Visit the mold expression to get mold's wrapper pointer
-                        int saved = ptr_loads;
-                        ptr_loads = 0;
-                        this->visit_expr(*m_source);
-                        llvm::Value* mold_wrapper = llvm_utils->CreateLoad2(
-                            class_type->getPointerTo(), tmp);
-                        tmp = nullptr;
-                        ptr_loads = saved;
-
                         // Compute total number of elements from dimensions
                         llvm::Value* num_elements = llvm::ConstantInt::get(
                             llvm::Type::getInt64Ty(context), 1);
@@ -2649,14 +2640,48 @@ public:
                             num_elements = builder->CreateMul(num_elements, dim_size);
                         }
 
-                        llvm_utils->init_mold_upoly_array_data(
-                            wrapper, mold_wrapper, class_type, num_elements);
+                        // MOLD= is legal on an unallocated variable, so use the
+                        // mold's static vtable when its type is known at compile
+                        // time, instead of dereferencing a possibly-null wrapper.
+                        ASR::ttype_t* mold_ttype = ASRUtils::extract_type(
+                            ASRUtils::expr_type(m_source));
+                        if (!ASRUtils::is_unlimited_polymorphic_type(mold_ttype)
+                                && ASR::is_a<ASR::StructType_t>(*mold_ttype)) {
+                            ASR::symbol_t* mold_struct_sym = ASRUtils::symbol_get_past_external(
+                                ASRUtils::get_struct_sym_from_struct_expr(m_source));
+                            llvm::Constant* mold_vptr = struct_api->get_pointer_to_method(
+                                mold_struct_sym, module.get());
+                            llvm_utils->init_mold_upoly_array_data(
+                                wrapper, mold_vptr, class_type, num_elements, true);
+                        } else {
+                            // Visit the mold expression to get mold's wrapper pointer
+                            int saved = ptr_loads;
+                            ptr_loads = 0;
+                            this->visit_expr(*m_source);
+                            llvm::Value* mold_wrapper = llvm_utils->CreateLoad2(
+                                class_type->getPointerTo(), tmp);
+                            tmp = nullptr;
+                            ptr_loads = saved;
+
+                            llvm_utils->init_mold_upoly_array_data(
+                                wrapper, mold_wrapper, class_type, num_elements, false);
+                        }
                     }
                     ASR::Struct_t* allocated_subclass = nullptr;
                     if (curr_arg.m_sym_subclass
                             && ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))) {
                         allocated_subclass = ASR::down_cast<ASR::Struct_t>(
                             ASRUtils::symbol_get_past_external(curr_arg.m_sym_subclass));
+                    } else if (is_mold_unlimited_poly) {
+                        // Same as above: default-initialize using the mold's
+                        // static type, when known.
+                        ASR::ttype_t* mold_ttype = ASRUtils::extract_type(
+                            ASRUtils::expr_type(m_source));
+                        if (!ASRUtils::is_unlimited_polymorphic_type(mold_ttype)) {
+                            allocated_subclass = ASR::down_cast<ASR::Struct_t>(
+                                ASRUtils::symbol_get_past_external(
+                                    ASRUtils::get_struct_sym_from_struct_expr(m_source)));
+                        }
                     }
                     if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
                         && (!ASRUtils::is_unlimited_polymorphic_type(tmp_expr) || allocated_subclass) ) {

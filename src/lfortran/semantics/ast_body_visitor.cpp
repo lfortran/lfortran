@@ -4122,7 +4122,8 @@ public:
                 // Fortran standard (F2018 9.7.1.2). Rank is checked separately below.
                 ASR::ttype_t* source_base_type = ASRUtils::extract_type(source_type);
                 ASR::ttype_t* var_base_type = ASRUtils::extract_type(var_type);
-                if (!ASRUtils::check_equal_type(source_base_type, var_base_type, source, alloc_args_vec.p[i].m_a)) {
+                if (!ASRUtils::is_unlimited_polymorphic_type(var_base_type) &&
+                    !ASRUtils::check_equal_type(source_base_type, var_base_type, source, alloc_args_vec.p[i].m_a)) {
                     std::string source_type_str = ASRUtils::type_to_str_fortran_expr(source_type, source);
                     std::string var_type_str = ASRUtils::type_to_str_fortran_expr(var_type, alloc_args_vec.p[i].m_a);
                     diag.add(Diagnostic(
