@@ -436,11 +436,17 @@ semantic error: The shapes of the `array` and `mask` arguments of the `MaxLoc` i
 631 |     integer :: maxloc_shape_mismatch = maxloc([2, 1, 3], 1, [.true., .false.])
     |                                               ^^^^^^^^^     ^^^^^^^^^^^^^^^^^ `array` has shape [3], but `mask` has shape [2]
 
-semantic error: variable cannot appear in character length expression
+semantic error: the variable 'char_len_var' is local to this scoping unit, so it cannot appear in a specification expression
    --> tests/errors/continue_compilation_1.f90:638:21
     |
 638 |     character(len = char_len_var) :: char_nonconst
-    |                     ^^^^^^^^^^^^ 
+    |                     ^^^^^^^^^^^^ the value of 'char_len_var' is read to give a character length
+    |
+637 |     integer :: char_len_var = 10
+    |                ~~~~~~~~~~~~~~~~~ 'char_len_var' is declared here
+    |
+638 |     character(len = char_len_var) :: char_nonconst
+    |                     ~~~~~~~~~~~~ help: Fortran 2023 10.1.11 allows a dummy argument, a variable in a common block, and one made accessible by use or host association; a named constant, and an inquiry such as `size` or `len` about a local, are also allowed
 
 semantic error: type mismatch in initialization: `string` cannot be assigned to `integer`
    --> tests/errors/continue_compilation_1.f90:643:32
@@ -807,6 +813,42 @@ semantic error: too many arguments in derived type constructor
      |
 1672 |     type(plain_t) :: pv = plain_t(1, null())  ! {Error} too many arguments in derived type constructor
      |                                      ^^^^^^ more positional arguments than components and type parameters
+
+semantic error: the variable 'lse_a' is local to this scoping unit, so it cannot appear in a specification expression
+    --> tests/errors/continue_compilation_1.f90:1743:27
+     |
+1743 |     integer :: bad_member(lse_a(1)%x)  ! {Error} the variable 'lse_a' is local to this scoping unit, so it cannot appear in a specification expression
+     |                           ^^^^^^^^^^ the value of 'lse_a' is read to give an array bound
+     |
+1732 |     type(lse_t), save :: lse_a(1) = lse_t(4)
+     |                          ~~~~~~~~~~~~~~~~~~~ 'lse_a' is declared here
+     |
+1743 |     integer :: bad_member(lse_a(1)%x)  ! {Error} the variable 'lse_a' is local to this scoping unit, so it cannot appear in a specification expression
+     |                           ~~~~~~~~~~ help: Fortran 2023 10.1.11 allows a dummy argument, a variable in a common block, and one made accessible by use or host association; a named constant, and an inquiry such as `size` or `len` about a local, are also allowed
+
+semantic error: the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+    --> tests/errors/continue_compilation_1.f90:1744:27
+     |
+1744 |     integer :: bad_scalar(lse_m)  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+     |                           ^^^^^ the value of 'lse_m' is read to give an array bound
+     |
+1733 |     integer :: lse_m
+     |                ~~~~~ 'lse_m' is declared here
+     |
+1744 |     integer :: bad_scalar(lse_m)  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+     |                           ~~~~~ help: Fortran 2023 10.1.11 allows a dummy argument, a variable in a common block, and one made accessible by use or host association; a named constant, and an inquiry such as `size` or `len` about a local, are also allowed
+
+semantic error: the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+    --> tests/errors/continue_compilation_1.f90:1745:19
+     |
+1745 |     character(len=lse_m) :: bad_len  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+     |                   ^^^^^ the value of 'lse_m' is read to give a character length
+     |
+1733 |     integer :: lse_m
+     |                ~~~~~ 'lse_m' is declared here
+     |
+1745 |     character(len=lse_m) :: bad_len  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+     |                   ~~~~~ help: Fortran 2023 10.1.11 allows a dummy argument, a variable in a common block, and one made accessible by use or host association; a named constant, and an inquiry such as `size` or `len` about a local, are also allowed
 
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9

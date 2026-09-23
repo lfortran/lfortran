@@ -674,6 +674,11 @@ public:
             }
         }
         
+        // The COMMON statements below are visited only after the other
+        // declarations, so what they place in a common block is collected
+        // here, while an array bound or a character length of this
+        // specification part may still name one of those objects.
+        CommonBlockObjectsScope common_block_objects(*this, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
@@ -1504,6 +1509,11 @@ public:
             }
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
+        // The COMMON statements below are visited only after the other
+        // declarations, so what they place in a common block is collected
+        // here, while an array bound or a character length of this
+        // specification part may still name one of those objects.
+        CommonBlockObjectsScope common_block_objects(*this, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
@@ -2084,6 +2094,11 @@ public:
             }
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
+        // The COMMON statements below are visited only after the other
+        // declarations, so what they place in a common block is collected
+        // here, while an array bound or a character length of this
+        // specification part may still name one of those objects.
+        CommonBlockObjectsScope common_block_objects(*this, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
@@ -3672,6 +3687,11 @@ public:
             }
         }
 
+        // The COMMON statements below are visited only after the other
+        // declarations, so what they place in a common block is collected
+        // here, while an array bound or a character length of this
+        // specification part may still name one of those objects.
+        CommonBlockObjectsScope common_block_objects(*this, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
