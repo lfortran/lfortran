@@ -119,6 +119,25 @@ public:
         return false;
     }
 
+    // The initializer a Module, a Program or the TranslationUnit names must
+    // be a real, argument-less procedure of that owner's own scope, so that a
+    // backend can lower the link without searching or guessing.
+    void verify_global_init(const char *global_init, SymbolTable *scope,
+            const std::string &owner, const Location &loc) {
+        if (global_init == nullptr) return;
+        ASR::symbol_t *sym = scope->get_symbol(global_init);
+        ASRUtils::require_impl(sym != nullptr,
+            owner + "::m_global_init must name a symbol of " + owner +
+            "'s own symbol table, but " + std::string(global_init) +
+            " is not in it", loc, diagnostics);
+        ASRUtils::require_impl(sym != nullptr && ASR::is_a<ASR::Function_t>(*sym),
+            owner + "::m_global_init must name a Function", loc, diagnostics);
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+        ASRUtils::require_impl(fn->n_args == 0 && fn->m_return_var == nullptr,
+            owner + "::m_global_init must name a subroutine taking no "
+            "arguments", loc, diagnostics);
+    }
+
     void visit_TranslationUnit(const TranslationUnit_t &x) {
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
@@ -138,6 +157,8 @@ public:
         require(down_cast2<TranslationUnit_t>(current_symtab->asr_owner)->m_symtab == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        verify_global_init(x.m_global_init, x.m_symtab, "TranslationUnit",
+            x.base.base.loc);
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
@@ -192,6 +213,8 @@ public:
             std::string(x.m_name) + "::m_dependencies is required");
         }
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        verify_global_init(x.m_global_init, x.m_symtab, "Program",
+            x.base.base.loc);
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
@@ -405,6 +428,8 @@ public:
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        verify_global_init(x.m_global_init, x.m_symtab, "Module",
+            x.base.base.loc);
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }

@@ -17,6 +17,7 @@
                             (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 ),
             tomlf_build:
                 (Module
@@ -92,6 +93,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_build_array:
                 (Module
@@ -586,6 +588,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_build_keyval:
                 (Module
@@ -845,7 +848,9 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

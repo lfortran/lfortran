@@ -12,6 +12,7 @@
                     derived_types_05
                     []
                     []
+                    ()
                 ),
             derived_types_07_stdlib_logger:
                 (Module
@@ -306,7 +307,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

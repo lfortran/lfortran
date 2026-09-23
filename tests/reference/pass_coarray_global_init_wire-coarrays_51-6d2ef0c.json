@@ -1,0 +1,13 @@
+{
+    "basename": "pass_coarray_global_init_wire-coarrays_51-6d2ef0c",
+    "cmd": "lfortran --pass=coarray,global_init_wire --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/coarrays_51.f90",
+    "infile_hash": "cba9d5c2796e0da4bf0bcffa65faaa7789a5e31092495c7515d723e2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_coarray_global_init_wire-coarrays_51-6d2ef0c.stdout",
+    "stdout_hash": "f90d81a2e3c4aee09473a25ca7326fad1ddcd613c640d8bd350626e0",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
