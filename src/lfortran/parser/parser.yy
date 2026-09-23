@@ -628,15 +628,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 
 %%
 
-// The order of rules does not matter in Bison (unlike in ANTLR). The
-// precedence is specified not by the order but by %left and %right directives
-// as well as with %dprec.
-
-// ----------------------------------------------------------------------------
-// Top level rules to be used for parsing.
-
-// Higher %dprec means higher precedence
-
 units
     : units script_unit  %dprec 9  { RESULT($2); }
     | script_unit        %dprec 10 { RESULT($1); }
@@ -664,13 +655,6 @@ script_unit
     | TK_LABEL KW_END_PROGRAM sep { $$ = LABELED_END($1, $2, @$); }
     | TK_LABEL KW_ENDPROGRAM sep { $$ = LABELED_END($1, $2, @$); }
     ;
-
-// ----------------------------------------------------------------------------
-// Module definitions
-//
-// * private/public blocks
-// * interface blocks
-//
 
 module
     : KW_MODULE id sep decl_statements contains_block_opt end_module sep {
@@ -776,38 +760,11 @@ derived_type_decl
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
     ;
 
-// F2028 R1616: DEFERRED TYPE :: deferred-arg-name-list
 deferred_type_decl
     : KW_DEFERRED KW_TYPE "::" id_list sep {
             $$ = DEFERRED_TYPES(p.m_a, $4, TRIVIA_AFTER($5, @$), @$); }
     ;
 
-// F2028 R1618: DEFERRED declaration-type-spec, deferred-const-attr-spec-list
-//                  :: deferred-const-entity-decl-list
-//
-// The statement is an ordinary type declaration statement with a DEFERRED
-// keyword in front, so it reuses `var_type`, `var_modifier_list` and
-// `var_sym_decl_list` rather than restating them. The attributes of R1619 are
-// PARAMETER, DIMENSION and a rank-clause, all of which are `var_modifier`, and
-// the entities of R1620 are `var_sym_decl`. The `::` is mandatory, which R1618
-// makes it and the ordinary statement does not, so that much is spelled here.
-//
-// The attribute list is allowed to be empty and the type is the general
-// `declaration-type-spec`, even though C1618 requires PARAMETER and C1619
-// restricts the type to integer, logical or character: both are diagnosed in
-// the semantic stage, where the message can name the offending type or
-// attribute instead of being a bare syntax error. `procedure(...)` is
-// The type is `declaration_type_spec`, which is what R1618 names, rather than
-// `var_type`. The two differ by exactly the eight `procedure(...)`
-// alternatives, and those must not be reachable here: `DEFERRED PROCEDURE (
-// interface-name )` is the separate deferred-proc-decl-stmt of R1622, and
-// letting this rule match it too makes the two statements ambiguous.
-// R1619 allows PARAMETER, DIMENSION and a rank-clause. The first two are
-// `var_modifier`, so only the rank-clause is added here. It is not put into
-// `var_modifier` itself, even though F2018 R821 makes a rank-clause a general
-// declaration attribute: reachable after any comma of any declaration it costs
-// a shift/reduce conflict, and supporting it everywhere is more than R1619 asks
-// for. Behind KW_DEFERRED the state is distinct and the grammar stays at 195.
 deferred_const_attr
     : var_modifier { $$ = $1; }
     | KW_RANK "(" expr_list ")" { $$ = ATTR_RANK($3, @$); }
@@ -829,9 +786,6 @@ deferred_const_decl
                 TRIVIA_AFTER($5, @$), @$); }
     ;
 
-// F2028 R1622: DEFERRED PROCEDURE ( interface-name ) [ :: ]
-//              deferred-proc-name-list
-// The `::` is optional, so both spellings are accepted.
 deferred_proc_decl
     : KW_DEFERRED KW_PROCEDURE "(" id ")" "::" id_list sep {
             $$ = DEFERRED_PROCEDURE($4, $7, TRIVIA_AFTER($8, @$),
@@ -853,8 +807,6 @@ template_decl
             $$ = TEMPLATE($2, $4, $7, $8, $11, @$); }
     ;
 
-// F2028 R1632 / R1634: a requirement-specification is a deferred-arg-decl-stmt
-// or an interface-block; a bare subprogram body is not one of them.
 requirement_decl
     : KW_REQUIREMENT id "{" id_list_opt "}" sep decl_statements
         KW_END KW_REQUIREMENT id_opt sep {
@@ -899,12 +851,10 @@ instantiate_symbol_list_opt
     : instantiate_symbol_list
     | %empty { LIST_NEW($$); }
 
-// R1630 instantiation-arg-spec is [ keyword = ] instantiation-arg
 instantiate_arg_spec
     : instantiate_symbol { $$ = $1; }
     | id "=" instantiate_symbol { $$ = ATTR_KEYWORD($1, $3, @$); }
 
-// R1631 instantiation-arg
 instantiate_symbol
     : var_type %dprec 2 { $$ = $1; }
     | KW_OPERATOR "(" operator_type ")" { $$ = DECL_OP($3, @$); }
@@ -1005,11 +955,6 @@ proc_modifier
     | KW_DEFERRED { $$ = SIMPLE_ATTR(Deferred, @$); }
     | KW_NON_OVERRIDABLE { $$ = SIMPLE_ATTR(NonDeferred, @$); }
     ;
-
-
-// ----------------------------------------------------------------------------
-// Subroutine/Procedure/functions/program definitions
-
 
 program
     : KW_PROGRAM id sep decl_statements program_contains_end sep {
@@ -1123,11 +1068,6 @@ subroutine
                 TRIVIA($8, $11, @$), $9, $10, @$); }
     ;
 
-// prefix of a templated subroutine statement; TEMPLATE is mandatory (C1609)
-// and the keyword is consumed together with SUBROUTINE so that it cannot be
-// confused with the name of a TEMPLATE construct. The deferred argument list
-// is bracketed with braces, not parentheses: J3/26-158 corrects R1611 and
-// R1612, which 26-007r1 still spelled with parentheses.
 template_sub_prefix
     : KW_TEMPLATE KW_SUBROUTINE { LIST_NEW($$); }
     | KW_TEMPLATE fn_mod_plus KW_SUBROUTINE { $$ = $2; }
@@ -1211,7 +1151,6 @@ function
                 TRIVIA($11, $14, @$), $12, $13, @$); }
     ;
 
-// prefix of a templated function statement; see template_sub_prefix
 template_fn_prefix
     : KW_TEMPLATE KW_FUNCTION { LIST_NEW($$); }
     | KW_TEMPLATE fn_mod_plus KW_FUNCTION { $$ = $2; }
@@ -1309,12 +1248,6 @@ implicit_spec_list
     | implicit_spec { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
-/*
-  We are using kind_arg_list rather than letter_spec_list to avoid conflicts
-  in the parser.  The kind_args are translated into letter_specs in the
-  IMPLICIT_SPEC macro.
-*/
-
 implicit_spec
     : KW_INTEGER "(" kind_arg_list ")" "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_KIND(Integer, $3, @$), $6, @$); }
@@ -1376,7 +1309,6 @@ implicit_spec
             $$ = IMPLICIT_SPEC(ATTR_TYPE_NAME(Class, $3, @$), $6, @$); }
     ;
 
-// IMPLICIT NONE [ ( [implicit-none-spec-list] ) ]
 implicit_none_spec_star
     : implicit_none_spec_star "," implicit_none_spec { $$ = $1; LIST_ADD($$, $3); }
     | implicit_none_spec { LIST_NEW($$); LIST_ADD($$, $1); }
@@ -1445,7 +1377,6 @@ use_modifier
     | KW_NON_INTRINSIC { $$ = SIMPLE_ATTR(Non_Intrinsic, @$); }
     ;
 
-// var_decl*
 var_decl_star
     : var_decl_star var_decl { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
@@ -1820,10 +1751,6 @@ coarray_comp_decl
     | expr ":" "*"   { $$ = COARRAY_COMP_DECL7d($1, @$); }
     ;
 
-
-// -----------------------------------------------------------------------------
-// Control flow
-
 statements
     : statements statement { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
@@ -2104,7 +2031,6 @@ end_file
     | KW_ENDFILE
     ;
 
-// sr-conflict (2x): KW_ENDIF can be an "id" or end of "if_statement"
 if_statement
     : if_block endif {}
     ;
@@ -2253,7 +2179,6 @@ select_type_body_statements
 
 select_type_body_statement
     : KW_TYPE KW_IS "(" TK_NAME ")" sep statements { $$ = TYPE_STMTNAME($4, TRIVIA_AFTER($6, @$), $7, @$); }
-    // type is (pdt(kind)) — TK_NAME keeps integer(4)/real(8) on the var_type path
     | KW_TYPE KW_IS "(" TK_NAME "(" kind_arg_list ")" ")" sep statements {
             $$ = TYPE_STMTVAR(ATTR_TYPE_NAME_KIND(Type, SYMBOL($4, @4), $6, @$),
                 TRIVIA_AFTER($9, @$), $10, @$); }
@@ -2269,7 +2194,6 @@ while_statement
                 $$ = WHILE($3, TRIVIA_AFTER($5, @$), $6, @$); }
     ;
 
-// sr-conflict (2x): "KW_DO sep" being either a do_statement or an expr
 do_statement
     : KW_DO sep statements enddo {
             $$ = DO1(TRIVIA_AFTER($2, @$), $3, $4, @$); }
@@ -2556,9 +2480,6 @@ change_team
     | KW_CHANGE_TEAM
     ;
 
-// -----------------------------------------------------------------------------
-// Fortran expression
-
 expr_list_opt
     : expr_list { $$ = $1; }
     | %empty { LIST_NEW($$); }
@@ -2612,7 +2533,6 @@ def_unary_operand
     ;
 
 expr
-// ### primary
     : designator { $$ = $1; }
     | "[" expr_list_opt rbracket { $$ = ARRAY_IN1($2, @$); }
     | "[" var_type "::" expr_list_opt rbracket %dprec 2 { $$ = ARRAY_IN2($2, $4, @$); }
@@ -2639,10 +2559,8 @@ expr
     | "(" expr "," expr "," expr_list "," id "=" expr "," expr "," expr ")" {
             $$ = IMPLIED_DO_LOOP6($2, $4, $6, $8, $10, $12, $14, @$); }
 
-// ### level-1
     | TK_DEF_OP def_unary_operand { $$ = UNARY_DEFOP($1, $2, @$); }
 
-// ### level-2
     | expr "+" expr { $$ = ADD($1, $3, @$); }
     | expr "-" expr { $$ = SUB($1, $3, @$); }
     | expr "*" expr { $$ = MUL($1, $3, @$); }
@@ -2651,10 +2569,8 @@ expr
     | "+" expr %prec UMINUS { $$ = UNARY_PLUS ($2, @$); }
     | expr "**" expr { $$ = POW($1, $3, @$); }
 
-// ### level-3
     | expr "//" expr { $$ = STRCONCAT($1, $3, @$); }
 
-// ### level-4
     | expr "==" expr { $$ = EQ($1, $3, @$); }
     | expr "/=" expr { $$ = NE($1, $3, @$); }
     | expr "<" expr { $$ = LT($1, $3, @$); }
@@ -2662,7 +2578,6 @@ expr
     | expr ">" expr { $$ = GT($1, $3, @$); }
     | expr ">=" expr { $$ = GE($1, $3, @$); }
 
-// ### level-5
     | ".not." expr { $$ = NOT($2, @$); }
     | expr ".and." expr { $$ = AND($1, $3, @$); }
     | expr ".or." expr { $$ = OR($1, $3, @$); }
@@ -2672,10 +2587,6 @@ expr
     | expr TK_DEF_OP expr { $$ = DEFOP($1, $2, $3, @$); }
     ;
 
-// The tail of a Fortran 2023 conditional expression (R1002):
-//     ( scalar-logical-expr ? expr [ : scalar-logical-expr ? expr ]... : expr )
-// Right recursion keeps the decision after `expr` to a single lookahead token:
-// `?` shifts into another arm, anything else reduces to the default arm.
 cond_expr_tail
     : cond_consequent { $$ = $1; }
     | expr "?" cond_consequent ":" cond_expr_tail { $$ = COND_EXPR($1, $3, $5, @$); }
@@ -2703,9 +2614,7 @@ fnarray_arg_list_opt
     ;
 
 fnarray_arg
-// array element / function argument
     : expr                   { $$ = ARRAY_COMP_DECL_0i0($1, @$); }
-// array section
     | ":"                    { $$ = ARRAY_COMP_DECL_001(@$); }
     | expr ":"               { $$ = ARRAY_COMP_DECL_a01($1, @$); }
     | ":" expr               { $$ = ARRAY_COMP_DECL_0b1($2, @$); }
@@ -2716,7 +2625,6 @@ fnarray_arg
     | expr ":" ":" expr      { $$ = ARRAY_COMP_DECL_a0c($1, $4, @$); }
     | ":" expr ":" expr      { $$ = ARRAY_COMP_DECL_0bc($2, $4, @$); }
     | expr ":" expr ":" expr { $$ = ARRAY_COMP_DECL_abc($1, $3, $5, @$); }
-// keyword function argument
     | id "=" expr            { $$ = ARRAY_COMP_DECL1k($1, $3, @$); }
     | "*" TK_INTEGER         { $$ = ARRAY_COMP_DECL_label($2, @$); }
     ;
@@ -2727,16 +2635,12 @@ coarray_arg_list
     ;
 
 coarray_arg
-// array element / function argument
     : expr                   { $$ = COARRAY_COMP_DECL_0i0($1, @$); }
-// array section
     | ":"                    { $$ = COARRAY_COMP_DECL_001(@$); }
     | expr ":"               { $$ = COARRAY_COMP_DECL_a01($1, @$); }
     | ":" expr               { $$ = COARRAY_COMP_DECL_0b1($2, @$); }
     | expr ":" expr          { $$ = COARRAY_COMP_DECL_ab1($1, $3, @$); }
-// keyword function argument
     | id "=" expr            { $$ = COARRAY_COMP_DECL1k($1, $3, @$); }
-// star
     | "*"                    { $$ = COARRAY_COMP_DECL_star(@$); }
     | expr ":" "*"           { $$ = COARRAY_COMP_DECL_astar($1, @$); }
     ;
@@ -2751,7 +2655,6 @@ id_list
     | id { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
-// id?
 id_opt
     : id { $$ = $1; }
     | %empty { $$ = nullptr; }
