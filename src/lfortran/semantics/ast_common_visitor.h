@@ -2226,6 +2226,21 @@ public:
     bool is_body_visitor = false;
     bool is_requirement = false;
     bool is_template = false;
+    // True while a template or a templated procedure, or any scoping unit
+    // nested in one, is being visited. Clause 16.3 of J3/26-007r1 forbids
+    // static and storage-associated state there (C1610, C1611), and that
+    // question cannot be answered from `current_scope`: a Template, a Function
+    // and a Subroutine symbol is only created once its specification part has
+    // been visited, so while a procedure contained in a template is being
+    // declared neither its own symbol table nor the template's has an owner yet
+    // and `ASRUtils::is_owned_by_template` reports false. It answers true only
+    // for a templated procedure, whose Template symbol is built before its
+    // specification part. The nesting is therefore tracked explicitly, with a
+    // guard that restores the enclosing value even when a diagnostic aborts the
+    // visit. `is_template` is deliberately not reused: it is not restored on
+    // exit, so it reads false again in the scoping units that follow a nested
+    // template.
+    bool in_template_definition = false;
     bool is_current_procedure_templated = false;
     bool is_Function = false;
     bool in_Subroutine = false;
@@ -6123,6 +6138,23 @@ public:
         );
     }
 
+    // C1611 (J3/26-007r1, 16.3): a COMMON or EQUIVALENCE statement shall not
+    // appear within a template or templated procedure, or a scoping unit
+    // nested therein. Storage association ties the entity to a fixed layout
+    // shared with other entities, but each instantiation of a template
+    // generates its own procedure, so the standard leaves undefined whether
+    // that storage would be shared between instantiations or private to each.
+    void check_no_storage_association_in_template(const std::string &stmt,
+            const Location &loc) {
+        if (!in_template_definition) return;
+        diag.add(Diagnostic(
+            stmt + " statement is not allowed in a template or templated "
+            "procedure",
+            Level::Error, Stage::Semantic, {
+                Label("", {loc})}));
+        throw SemanticAbort();
+    }
+
     // F2028 16.4.1.3 deferred constants.
     //
     //   R1618  deferred-const-decl-stmt  is  DEFERRED declaration-type-spec,
@@ -6978,6 +7010,8 @@ public:
                 dimension_variable(s, x.base.base.loc);
             }
         } else if (AST::is_a<AST::AttrCommon_t>(*x.m_attributes[i])) {
+            check_no_storage_association_in_template("a common",
+                x.m_attributes[i]->base.loc);
             AST::AttrCommon_t const & common_stmt =
             *AST::down_cast<AST::AttrCommon_t>(x.m_attributes[i]);
             constexpr char BLANK_BLOCK[] = "blank#block";
@@ -7002,6 +7036,8 @@ public:
 		    }
 		    populate_common_dictionary(x, objs_by_blk);
 		} else if (AST::is_a<AST::AttrEquivalence_t>(*x.m_attributes[i])) {
+                    check_no_storage_association_in_template("an equivalence",
+                        x.m_attributes[i]->base.loc);
                     AST::AttrEquivalence_t *eq = AST::down_cast<AST::AttrEquivalence_t>(x.m_attributes[i]);
 
                     // --- Equivalence helper lambdas ---
@@ -8790,6 +8826,36 @@ public:
                     }
                 }
                 if (corank > 0) {
+                    // C1617 (F2028 draft J3/26-007r1, 16.4.1.2): a variable of
+                    // deferred type shall not be a coarray. NOTE 5 explains
+                    // why: coindexing a variable that has a polymorphic
+                    // potential subobject component is invalid, and such a type
+                    // is a permitted instantiation argument. The check
+                    // therefore belongs here, where the declaration inside the
+                    // template is processed, and cannot be postponed to
+                    // instantiation: a template is verified once, for every
+                    // instantiation argument the standard permits.
+                    if (x.m_vartype && AST::is_a<AST::AttrType_t>(*x.m_vartype)) {
+                        AST::AttrType_t *deferred_check_type =
+                            AST::down_cast<AST::AttrType_t>(x.m_vartype);
+                        if (deferred_check_type->m_type == AST::decl_typeType::TypeType
+                                && deferred_check_type->m_name) {
+                            std::string type_name = to_lower(deferred_check_type->m_name);
+                            ASR::symbol_t *type_sym = current_scope->resolve_symbol(type_name);
+                            if (type_sym && ASR::is_a<ASR::Variable_t>(*type_sym)
+                                    && ASR::is_a<ASR::TypeParameter_t>(
+                                        *ASRUtils::type_get_past_array(
+                                            ASR::down_cast<ASR::Variable_t>(type_sym)->m_type))) {
+                                diag.add(Diagnostic(
+                                    "A variable of deferred type must not be a coarray",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("`" + std::string(s.m_name) + "` has deferred type `"
+                                            + type_name + "`", {s.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
+                    }
                     // C827: A coarray with the ALLOCATABLE attribute shall have
                     // a coarray-spec that is a deferred-coshape-spec-list (i.e.
                     // every codimension is a bare ':', no explicit bounds or '*').
@@ -24709,6 +24775,64 @@ public:
                     tmp2->m_type = array_type;
                 }
             }
+            // Only the outermost member was given the array shape above. In a
+            // reference that goes through two or more `%` levels, such as
+            // `w%nest%ii` with `w` an array, the intermediate members denote
+            // arrays too, but were built from the scalar declared type of the
+            // component. Give them the same shape as the outermost member, so
+            // that the whole chain is consistently typed and the
+            // array-operation pass can lower it element-wise.
+            set_array_type_of_intermediate_struct_members(
+                ASRUtils::EXPR(tmp), array_type);
+        }
+    }
+
+    // Walks the `StructInstanceMember` chain of `expr` from the innermost
+    // member outwards and reshapes every member that reads a component of an
+    // array base to `array_type`'s dimensions, keeping the member's own
+    // element type.
+    void set_array_type_of_intermediate_struct_members(ASR::expr_t* expr,
+        ASR::ttype_t* array_type) {
+        ASR::ttype_t* shape = ASRUtils::type_get_past_allocatable_pointer(array_type);
+        if( !ASR::is_a<ASR::Array_t>(*shape) ) {
+            return;
+        }
+        ASR::Array_t* shape_array = ASR::down_cast<ASR::Array_t>(shape);
+        Vec<ASR::StructInstanceMember_t*> members;
+        members.reserve(al, 1);
+        if( ASR::is_a<ASR::ArrayItem_t>(*expr) ) {
+            expr = ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v;
+        }
+        while( ASR::is_a<ASR::StructInstanceMember_t>(*expr) ) {
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+            members.push_back(al, member);
+            expr = member->m_v;
+        }
+        for( size_t j = members.size(); j > 0; j-- ) {
+            ASR::StructInstanceMember_t* member = members[j - 1];
+            if( !ASRUtils::is_array(ASRUtils::expr_type(member->m_v)) ||
+                ASRUtils::is_array(member->m_type) ) {
+                continue;
+            }
+            // An `allocatable` or `pointer` intermediate cannot be given the
+            // base's shape: what it denotes is an array of indirections,
+            // which this type representation cannot express, and reshaping
+            // it would silently drop the indirection and make the backend
+            // read the component's storage as if it held the value inline.
+            // Fortran forbids such a reference anyway (C919), so leave the
+            // declared type alone instead of replacing it with a wrong one.
+            if( ASR::is_a<ASR::Allocatable_t>(*member->m_type) ||
+                ASR::is_a<ASR::Pointer_t>(*member->m_type) ) {
+                continue;
+            }
+            // Rebuild through `duplicate_type` rather than `make_Array_t`, so
+            // the member gets its own copy of the dimensions instead of
+            // aliasing the base array's.
+            Vec<ASR::dimension_t> dims;
+            dims.from_pointer_n_copy(al, shape_array->m_dims, shape_array->n_dims);
+            member->m_type = ASRUtils::duplicate_type(al, member->m_type, &dims,
+                shape_array->m_physical_type, true);
         }
     }
 

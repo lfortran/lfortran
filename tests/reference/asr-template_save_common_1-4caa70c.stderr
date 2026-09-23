@@ -1,0 +1,65 @@
+warning: Assuming implicit save attribute for variable declaration
+  --> tests/errors/template_save_common_1.f90:38:24
+   |
+38 |             integer :: counter = 0
+   |                        ^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+
+semantic error: variable 'counter' in a template or templated procedure cannot have the save attribute
+  --> tests/errors/template_save_common_1.f90:29:24
+   |
+29 |             integer :: counter
+   |                        ^^^^^^^ 
+
+semantic error: variable 'counter' in a template or templated procedure cannot have the save attribute
+  --> tests/errors/template_save_common_1.f90:14:30
+   |
+14 |             integer, save :: counter
+   |                              ^^^^^^^ 
+
+semantic error: variable 'counter' in a template or templated procedure cannot have the save attribute
+  --> tests/errors/template_save_common_1.f90:38:24
+   |
+38 |             integer :: counter = 0
+   |                        ^^^^^^^^^^^ 
+
+semantic error: variable 'counter' in a template or templated procedure cannot have the save attribute
+  --> tests/errors/template_save_common_1.f90:51:34
+   |
+51 |                 integer, save :: counter
+   |                                  ^^^^^^^ 
+
+semantic error: variable 'counter' in a template or templated procedure cannot have the save attribute
+  --> tests/errors/template_save_common_1.f90:21:24
+   |
+21 |             integer :: counter
+   |                        ^^^^^^^ 
+
+semantic error: variable 'counter' in a template or templated procedure cannot have the save attribute
+  --> tests/errors/template_save_common_1.f90:73:34
+   |
+73 |                 integer, save :: counter
+   |                                  ^^^^^^^ 
+
+semantic error: a common statement is not allowed in a template or templated procedure
+  --> tests/errors/template_save_common_1.f90:92:13
+   |
+92 |             common /blk/ a
+   |             ^^^^^^^^^^^^^^ 
+
+semantic error: an equivalence statement is not allowed in a template or templated procedure
+   --> tests/errors/template_save_common_1.f90:100:13
+    |
+100 |             equivalence (a, b)
+    |             ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: variable 'counter' in a template or templated procedure cannot have the save attribute
+   --> tests/errors/template_save_common_1.f90:112:26
+    |
+112 |         integer, save :: counter
+    |                          ^^^^^^^ 
+
+semantic error: a common statement is not allowed in a template or templated procedure
+   --> tests/errors/template_save_common_1.f90:122:9
+    |
+122 |         common /blk2/ a
+    |         ^^^^^^^^^^^^^^^ 

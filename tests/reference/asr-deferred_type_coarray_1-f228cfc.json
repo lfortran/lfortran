@@ -1,0 +1,13 @@
+{
+    "basename": "asr-deferred_type_coarray_1-f228cfc",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/deferred_type_coarray_1.f90",
+    "infile_hash": "d8479c0e5cc5c9ed084097d8f18d878468a44b58233f1b4766a0be48",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-deferred_type_coarray_1-f228cfc.stderr",
+    "stderr_hash": "4d223e086492dba1886af841464c72b726dde2110f4896665f66d17e",
+    "returncode": 1
+}

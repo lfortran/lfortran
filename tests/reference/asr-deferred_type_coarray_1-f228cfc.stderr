@@ -1,0 +1,47 @@
+semantic error: A variable of deferred type must not be a coarray
+  --> tests/errors/deferred_type_coarray_1.f90:28:49
+   |
+28 |         type(t), codimension[:], allocatable :: spec_x  ! {Error} A variable of deferred type must not be a coarray
+   |                                                 ^^^^^^ `spec_x` has deferred type `t`
+
+semantic error: A variable of deferred type must not be a coarray
+  --> tests/errors/deferred_type_coarray_1.f90:36:53
+   |
+36 |             type(t), codimension[:], allocatable :: x  ! {Error} A variable of deferred type must not be a coarray
+   |                                                     ^ `x` has deferred type `t`
+
+semantic error: A variable of deferred type must not be a coarray
+  --> tests/errors/deferred_type_coarray_1.f90:39:37
+   |
+39 |             type(t), allocatable :: x[:]  ! {Error} A variable of deferred type must not be a coarray
+   |                                     ^^^^ `x` has deferred type `t`
+
+semantic error: A variable of deferred type must not be a coarray
+  --> tests/errors/deferred_type_coarray_1.f90:42:24
+   |
+42 |             type(t) :: x[*]  ! {Error} A variable of deferred type must not be a coarray
+   |                        ^^^^ `x` has deferred type `t`
+
+semantic error: A variable of deferred type must not be a coarray
+  --> tests/errors/deferred_type_coarray_1.f90:45:40
+   |
+45 |             type(t), codimension[*] :: x  ! {Error} A variable of deferred type must not be a coarray
+   |                                        ^ `x` has deferred type `t`
+
+semantic error: A variable of deferred type must not be a coarray
+  --> tests/errors/deferred_type_coarray_1.f90:48:67
+   |
+48 |             type(t), dimension(:), codimension[:], allocatable :: x  ! {Error} A variable of deferred type must not be a coarray
+   |                                                                   ^ `x` has deferred type `t`
+
+semantic error: A variable of deferred type must not be a coarray
+  --> tests/errors/deferred_type_coarray_1.f90:60:49
+   |
+60 |         type(t), codimension[:], allocatable :: req_x  ! {Error} A variable of deferred type must not be a coarray
+   |                                                 ^^^^^ `req_x` has deferred type `t`
+
+semantic error: A variable of deferred type must not be a coarray
+  --> tests/errors/deferred_type_coarray_1.f90:68:49
+   |
+68 |         type(t), codimension[:], allocatable :: x  ! {Error} A variable of deferred type must not be a coarray
+   |                                                 ^ `x` has deferred type `t`

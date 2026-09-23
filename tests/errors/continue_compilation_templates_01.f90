@@ -32,11 +32,14 @@ module continue_compilation_templates_01_mod
     ! abort escape left the module without it and the body visitor then looked
     ! it up and asserted. Two errors, to show the template keeps being processed
     ! past the first one.
+    ! C1603 restricts a template specification part to declarations with the
+    ! PARAMETER attribute, so the two erroneous declarations below are named
+    ! constants.
     template redecl_tmpl(T)
         deferred type :: T
-        integer :: n
-        real :: n
-        integer :: bad = "abc"
+        integer, parameter :: n = 1
+        real, parameter :: n = 1.0
+        integer, parameter :: bad = "abc"
     end template
 
 end module continue_compilation_templates_01_mod

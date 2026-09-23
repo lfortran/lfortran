@@ -1731,6 +1731,20 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         const std::string& name_hint) {
         ASR::StructInstanceMember_t* member =
             ASR::down_cast<ASR::StructInstanceMember_t>(designator);
+        // `ps(1::2)%nest%y` reaches the section through more than one
+        // component, so the section is not this member's own base. Bind it
+        // below and rebuild this member on top of the result, leaving the
+        // component chain above the pointer temporary unchanged.
+        if( ASR::is_a<ASR::StructInstanceMember_t>(*member->m_v) ) {
+            ASR::expr_t* base = bind_struct_member_base_to_pointer(
+                member->m_v, name_hint);
+            if( base == member->m_v ) {
+                return designator;
+            }
+            return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
+                designator->base.loc, base, member->m_m,
+                member->m_type, nullptr));
+        }
         if( !ASR::is_a<ASR::ArraySection_t>(*member->m_v) ) {
             return designator;
         }
