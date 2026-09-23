@@ -128,6 +128,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             tomlf_de_tokenizer_24:
                 (Module
@@ -446,7 +447,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -2,7 +2,7 @@
     "basename": "asr-array_constructor_element_type-32a68b6",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/array_constructor_element_type.asr",
-    "infile_hash": "bb895ce89a638dd1c4c3bc00effef0d78dee477fa97842647182f074",
+    "infile_hash": "f345fdddbeb76fef1dd6456d41a5282a8a43e39e6e43cd2825ea517b",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
