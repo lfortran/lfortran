@@ -660,6 +660,15 @@ void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struc
         } 
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(expression);
+            // A component reached through an `ExternalSymbol` is declared in
+            // another scope, typically a module, and that one declaration is
+            // shared by every user of the module. Rewriting it to a symbol
+            // that is only visible here would corrupt it for everyone else,
+            // so leave it alone -- it already names its type in its own scope.
+            if( ASR::is_a<ASR::ExternalSymbol_t>(*struct_instance_member->m_m) ) {
+                return;
+            }
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*struct_instance_member->m_m));
             ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(struct_instance_member->m_m);
             variable->m_type_declaration = struct_sym;
             return;

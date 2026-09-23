@@ -24775,6 +24775,64 @@ public:
                     tmp2->m_type = array_type;
                 }
             }
+            // Only the outermost member was given the array shape above. In a
+            // reference that goes through two or more `%` levels, such as
+            // `w%nest%ii` with `w` an array, the intermediate members denote
+            // arrays too, but were built from the scalar declared type of the
+            // component. Give them the same shape as the outermost member, so
+            // that the whole chain is consistently typed and the
+            // array-operation pass can lower it element-wise.
+            set_array_type_of_intermediate_struct_members(
+                ASRUtils::EXPR(tmp), array_type);
+        }
+    }
+
+    // Walks the `StructInstanceMember` chain of `expr` from the innermost
+    // member outwards and reshapes every member that reads a component of an
+    // array base to `array_type`'s dimensions, keeping the member's own
+    // element type.
+    void set_array_type_of_intermediate_struct_members(ASR::expr_t* expr,
+        ASR::ttype_t* array_type) {
+        ASR::ttype_t* shape = ASRUtils::type_get_past_allocatable_pointer(array_type);
+        if( !ASR::is_a<ASR::Array_t>(*shape) ) {
+            return;
+        }
+        ASR::Array_t* shape_array = ASR::down_cast<ASR::Array_t>(shape);
+        Vec<ASR::StructInstanceMember_t*> members;
+        members.reserve(al, 1);
+        if( ASR::is_a<ASR::ArrayItem_t>(*expr) ) {
+            expr = ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v;
+        }
+        while( ASR::is_a<ASR::StructInstanceMember_t>(*expr) ) {
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+            members.push_back(al, member);
+            expr = member->m_v;
+        }
+        for( size_t j = members.size(); j > 0; j-- ) {
+            ASR::StructInstanceMember_t* member = members[j - 1];
+            if( !ASRUtils::is_array(ASRUtils::expr_type(member->m_v)) ||
+                ASRUtils::is_array(member->m_type) ) {
+                continue;
+            }
+            // An `allocatable` or `pointer` intermediate cannot be given the
+            // base's shape: what it denotes is an array of indirections,
+            // which this type representation cannot express, and reshaping
+            // it would silently drop the indirection and make the backend
+            // read the component's storage as if it held the value inline.
+            // Fortran forbids such a reference anyway (C919), so leave the
+            // declared type alone instead of replacing it with a wrong one.
+            if( ASR::is_a<ASR::Allocatable_t>(*member->m_type) ||
+                ASR::is_a<ASR::Pointer_t>(*member->m_type) ) {
+                continue;
+            }
+            // Rebuild through `duplicate_type` rather than `make_Array_t`, so
+            // the member gets its own copy of the dimensions instead of
+            // aliasing the base array's.
+            Vec<ASR::dimension_t> dims;
+            dims.from_pointer_n_copy(al, shape_array->m_dims, shape_array->n_dims);
+            member->m_type = ASRUtils::duplicate_type(al, member->m_type, &dims,
+                shape_array->m_physical_type, true);
         }
     }
 
