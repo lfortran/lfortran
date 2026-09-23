@@ -6983,12 +6983,23 @@ public:
             builder->CreateCall(init_fn, {});
         }
         builder->CreateRetVoid();
-        llvm::appendToGlobalCtors(*module, ctor_fn, 65535);
 
         if (saved_block != nullptr) {
             builder->SetInsertPoint(saved_block);
             builder->SetCurrentDebugLocation(saved_debug_loc);
         }
+
+        // What the set up above queues is a member that may need code, not
+        // one that does: a COMMON block is carried as a module's struct
+        // whose members can all be scalars, and then nothing is emitted here
+        // at all. Registering a constructor that only returns would put a
+        // startup hook on an object file that has nothing to do at startup,
+        // so take it back out.
+        if (ctor_fn->size() == 1 && ctor_fn->getEntryBlock().size() == 1) {
+            ctor_fn->eraseFromParent();
+            return;
+        }
+        llvm::appendToGlobalCtors(*module, ctor_fn, 65535);
     }
 
 #ifdef HAVE_TARGET_WASM
