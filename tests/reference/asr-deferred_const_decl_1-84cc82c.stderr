@@ -1,0 +1,132 @@
+semantic error: a `deferred` declaration is only allowed in a requirement, a template or a templated subprogram
+  --> tests/errors/deferred_const_decl_1.f90:31:5
+   |
+31 |     deferred integer, parameter :: n  ! {Error} a `deferred` declaration is only allowed in a requirement, a template or a templated subprogram
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a `deferred` constant declaration must specify the `parameter` attribute
+  --> tests/errors/deferred_const_decl_1.f90:35:9
+   |
+35 |         deferred integer :: a  ! {Error} a `deferred` constant declaration must specify the `parameter` attribute
+   |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the type of a `deferred` constant must be integer, logical or character
+  --> tests/errors/deferred_const_decl_1.f90:40:18
+   |
+40 |         deferred real, parameter :: b  ! {Error} the type of a `deferred` constant must be integer, logical or character
+   |                  ^^^^ 
+
+semantic error: the type of a `deferred` constant must be integer, logical or character
+  --> tests/errors/deferred_const_decl_1.f90:44:18
+   |
+44 |         deferred type(t), parameter :: c  ! {Error} the type of a `deferred` constant must be integer, logical or character
+   |                  ^^^^^^^ 
+
+semantic error: a `deferred` character constant must have assumed length, declared as `character(*)`
+  --> tests/errors/deferred_const_decl_1.f90:49:18
+   |
+49 |         deferred character(5), parameter :: d  ! {Error} a `deferred` character constant must have assumed length, declared as `character(*)`
+   |                  ^^^^^^^^^^^^ 
+
+semantic error: 'f' is not a deferred argument of this template or requirement
+  --> tests/errors/deferred_const_decl_1.f90:54:40
+   |
+54 |         deferred integer, parameter :: f  ! {Error} 'f' is not a deferred argument of this template or requirement
+   |                                        ^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+  --> tests/errors/deferred_const_decl_1.f90:63:40
+   |
+63 |         deferred integer, parameter :: g(1:3)  ! {Error} a `deferred` constant that is an array is not supported yet
+   |                                        ^^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+  --> tests/errors/deferred_const_decl_1.f90:67:40
+   |
+67 |         deferred integer, parameter :: h(2:*)  ! {Error} a `deferred` constant that is an array is not supported yet
+   |                                        ^^^^^^ 
+
+semantic error: a `deferred` constant must not have an assumed or deferred shape `:`
+  --> tests/errors/deferred_const_decl_1.f90:73:42
+   |
+73 |         deferred integer, parameter :: i(:)  ! {Error} a `deferred` constant must not have an assumed or deferred shape `:`
+   |                                          ^ 
+
+semantic error: the dimensions of a `deferred` constant must be either all upper bounds, as in `(3,4)`, or all `*`, as in `(*,*)`
+  --> tests/errors/deferred_const_decl_1.f90:78:40
+   |
+78 |         deferred integer, parameter :: j(3,*)  ! {Error} the dimensions of a `deferred` constant must be either all upper bounds, as in `(3,4)`, or all `*`, as in `(*,*)`
+   |                                        ^^^^^^ 
+
+semantic error: `..` must be the only dimension of a `deferred` constant
+  --> tests/errors/deferred_const_decl_1.f90:83:42
+   |
+83 |         deferred integer, parameter :: k(.., ..)  ! {Error} `..` must be the only dimension of a `deferred` constant
+   |                                          ^^ 
+
+semantic error: a `deferred` constant must not be given a value; its value comes from the instantiation argument
+  --> tests/errors/deferred_const_decl_1.f90:88:40
+   |
+88 |         deferred integer, parameter :: m = 3  ! {Error} a `deferred` constant must not be given a value; its value comes from the instantiation argument
+   |                                        ^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+  --> tests/errors/deferred_const_decl_1.f90:97:40
+   |
+97 |         deferred integer, parameter :: x2(3)  ! {Error} a `deferred` constant that is an array is not supported yet
+   |                                        ^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+  --> tests/errors/deferred_const_decl_1.f90:98:40
+   |
+98 |         deferred integer, parameter :: x3(v1)  ! {Error} a `deferred` constant that is an array is not supported yet
+   |                                        ^^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+  --> tests/errors/deferred_const_decl_1.f90:99:40
+   |
+99 |         deferred integer, parameter :: x4(*)  ! {Error} a `deferred` constant that is an array is not supported yet
+   |                                        ^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+   --> tests/errors/deferred_const_decl_1.f90:100:40
+    |
+100 |         deferred integer, parameter :: x5(*,*)  ! {Error} a `deferred` constant that is an array is not supported yet
+    |                                        ^^^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+   --> tests/errors/deferred_const_decl_1.f90:101:38
+    |
+101 |         deferred integer, parameter, rank(2) :: x6  ! {Error} a `deferred` constant that is an array is not supported yet
+    |                                      ^^^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+   --> tests/errors/deferred_const_decl_1.f90:102:40
+    |
+102 |         deferred integer, parameter :: x7(..)  ! {Error} a `deferred` constant that is an array is not supported yet
+    |                                        ^^^^^^ 
+
+semantic error: Template argument x2 has not been declared in template specification.
+   --> tests/errors/deferred_const_decl_1.f90:95:5 - 105:71
+    |
+ 95 |        template note2(x2, x3, x4, x5, x6, x7)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+105 |        ! The DIMENSION attribute spelling of the same array-spec (R1619).
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a `deferred` constant that is an array is not supported yet
+   --> tests/errors/deferred_const_decl_1.f90:107:38
+    |
+107 |         deferred integer, parameter, dimension(3) :: p  ! {Error} a `deferred` constant that is an array is not supported yet
+    |                                      ^^^^^^^^^^^^ 
+
+semantic error: the rank of 'q' is specified twice
+   --> tests/errors/deferred_const_decl_1.f90:112:54
+    |
+112 |         deferred integer, parameter, dimension(3) :: q(2)  ! {Error} the rank of 'q' is specified twice
+    |                                                      ^^^^ 
+    |
+112 |         deferred integer, parameter, dimension(3) :: q(2)  ! {Error} the rank of 'q' is specified twice
+    |                                      ~~~~~~~~~~~~ 
