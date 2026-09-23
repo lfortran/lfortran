@@ -83,6 +83,52 @@ public:
     std::vector<std::string> deferred_args;
     std::string deferred_args_owner;
     bool has_deferred_args = false;
+
+    // Which kind of scoping unit's specification part is being visited. It
+    // cannot be read back from `current_scope->asr_owner`: a Program, a
+    // Template, a Function and a Subroutine symbol is only created once its
+    // specification part has been visited, so its symbol table still has no
+    // owner while that part is being built, and a main program, a nested
+    // template and a subprogram are indistinguishable there. Track it
+    // explicitly instead, with a guard that restores the enclosing kind even
+    // when a diagnostic aborts the visit. C1601 (16.1.1) needs it to place a
+    // TEMPLATE construct and C1636 (16.6.1) to place a REQUIREMENT construct.
+    enum class ScopingUnitKind {
+        Other, Module, Submodule, Program, Template,
+    };
+
+    struct ScopingUnitScope {
+        SymbolTableVisitor &v;
+        ScopingUnitKind enclosing;
+
+        ScopingUnitScope(SymbolTableVisitor &v_, ScopingUnitKind kind) : v(v_) {
+            enclosing = v.scoping_unit_kind;
+            v.scoping_unit_kind = kind;
+        }
+
+        ~ScopingUnitScope() {
+            v.scoping_unit_kind = enclosing;
+        }
+    };
+    ScopingUnitKind scoping_unit_kind = ScopingUnitKind::Other;
+    // Marks a template construct or a templated procedure, so that the
+    // restrictions of clause 16.3 also apply to every scoping unit nested in
+    // it. The enclosing value is restored on exit, including when a diagnostic
+    // aborts the visit, so a template does not leak the state into the program
+    // units that follow it.
+    struct TemplateDefinitionScope {
+        SymbolTableVisitor &v;
+        bool enclosing;
+
+        TemplateDefinitionScope(SymbolTableVisitor &v_, bool is_definition) : v(v_) {
+            enclosing = v.in_template_definition;
+            v.in_template_definition = v.in_template_definition || is_definition;
+        }
+
+        ~TemplateDefinitionScope() {
+            v.in_template_definition = enclosing;
+        }
+    };
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     std::map<std::string, std::vector<std::pair<std::string, Location>>> overloaded_op_procs;
@@ -371,6 +417,9 @@ public:
 
     template <typename T, typename R>
     void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="") {
+        ScopingUnitScope scoping_unit_scope(*this,
+            x.class_type == AST::modType::Submodule
+                ? ScopingUnitKind::Submodule : ScopingUnitKind::Module);
         assgn_proc_names_locations.clear();
         class_procedures.clear();
         SymbolTable *parent_scope = current_scope;
@@ -617,6 +666,60 @@ public:
         }
     }
 
+    // C1610 (J3/26-007r1, 16.3): within a template or templated procedure, or a
+    // scoping unit nested therein, an entity that is not accessed by host or
+    // use association shall not have the SAVE attribute. Each instantiation of
+    // a template generates its own procedure, so a saved local has no defined
+    // meaning: the standard does not say whether the state is shared between
+    // instantiations or private to each one.
+    //
+    // The attribute arrives by several spellings -- an explicit SAVE attribute,
+    // a SAVE statement naming the entity, a bare SAVE statement, and the
+    // implicit SAVE of an initialized local -- which all end up as `Save`
+    // storage on the variable. The template is therefore checked once it is
+    // complete, rather than at each of those spellings, and the nested scoping
+    // units are reached by walking into the contained procedures. Only entities
+    // declared in the template are visited: one accessed by host association
+    // lives in an enclosing scope, and a use-associated one is an external
+    // symbol.
+    void check_no_save_in_template(const SymbolTable *scope) {
+        if (report_save_in_template(scope)) {
+            throw SemanticAbort();
+        }
+    }
+
+    // Reports every offending entity, rather than only the first, so that one
+    // template does not have to be compiled repeatedly to find them all.
+    // Returns whether anything was reported.
+    bool report_save_in_template(const SymbolTable *scope) {
+        bool found = false;
+        for (auto &item: scope->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                // A dummy argument or a function result cannot have the SAVE
+                // attribute anywhere, so only a local is diagnosed here.
+                if (var->m_intent != ASR::intentType::Local) continue;
+                if (var->m_storage != ASR::storage_typeType::Save) continue;
+                diag.add(diag::Diagnostic(
+                    "variable '" + std::string(var->m_name) + "' in a template "
+                    "or templated procedure cannot have the save attribute",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {var->base.base.loc})}));
+                found = true;
+            } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                // A procedure of the template, and in turn a procedure
+                // contained in one, is a scoping unit nested in the template.
+                // A nested template is left to its own visit, which reports it
+                // before this walk runs.
+                bool found_nested = report_save_in_template(
+                    ASR::down_cast<ASR::Function_t>(sym)->m_symtab);
+                found = found || found_nested;
+            }
+        }
+        return found;
+    }
+
     void visit_Program(const AST::Program_t &x) {
         // Check for multiple program units in the same file 
         program_count++;
@@ -632,6 +735,7 @@ public:
             ));
             return;
         }
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Program);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
@@ -1392,6 +1496,7 @@ public:
         std::string sym_name = to_lower(x.m_name);
 
         SymbolTable *grandparent_scope = current_scope;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
@@ -1404,6 +1509,7 @@ public:
         }
         DeferredArgScope deferred_arg_scope(*this, sym_name, subroutine_temp_args,
             x.n_temp_args > 0);
+        TemplateDefinitionScope template_definition_scope(*this, x.n_temp_args > 0);
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated subroutines
@@ -1885,6 +1991,11 @@ public:
         is_template = false;
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
+        // A templated subroutine is complete; `parent_scope` is the Template
+        // built for it. Checked last, once the enclosing context has been
+        // restored, so that an abort here leaves the visitor in the same state
+        // as a clean return.
+        if (x.n_temp_args > 0) check_no_save_in_template(parent_scope);
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -1978,6 +2089,7 @@ public:
         std::string sym_name = to_lower(x.m_name);
 
         SymbolTable *grandparent_scope = current_scope;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
@@ -1990,6 +2102,7 @@ public:
         }
         DeferredArgScope deferred_arg_scope(*this, sym_name, function_temp_args,
             x.n_temp_args > 0);
+        TemplateDefinitionScope template_definition_scope(*this, x.n_temp_args > 0);
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated functions
@@ -2731,6 +2844,11 @@ public:
         in_Subroutine = false;
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
+        // A templated function is complete; `parent_scope` is the Template
+        // built for it. Checked last, once the enclosing context has been
+        // restored, so that an abort here leaves the visitor in the same state
+        // as a clean return.
+        if (x.n_temp_args > 0) check_no_save_in_template(parent_scope);
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -5092,7 +5210,28 @@ public:
     }
 
     void visit_Requirement(const AST::Requirement_t &x) {
+        // The Fortran 2028 working draft (J3/26-007r1) contradicts itself
+        // here, so this is a deliberate choice, not a settled rule. R1605
+        // lists `requirement-construct` as one of the things a template
+        // construct may contain, while C1636 (16.6.1) says a requirement
+        // construct shall only appear in the specification part of a main
+        // program or module. The two cannot both hold. C1636 is followed
+        // because rejecting is reversible, whereas accepting code the
+        // standard may forbid creates a compatibility burden if J3 resolves
+        // it the other way. A submodule and a subprogram are not in C1636's
+        // list either, so a requirement is rejected there as well. If J3
+        // resolves in favour of R1605, allow ScopingUnitKind::Template here.
+        if (scoping_unit_kind != ScopingUnitKind::Module
+                && scoping_unit_kind != ScopingUnitKind::Program) {
+            diag.add(diag::Diagnostic(
+                "a requirement can only be declared in the specification part "
+                "of a main program or a module",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
         is_requirement = true;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
 
         std::vector<std::string> requirement_args;
         for (size_t i=0; i<x.n_namelist; i++) {
@@ -5353,8 +5492,80 @@ public:
         context_map.clear();
     }
 
+    // C1603 and C1604 (J3/26-007r1, 16.1.1): if a template-specification is a
+    // type declaration statement it shall specify the PARAMETER attribute, and
+    // if it is a procedure declaration statement it shall not specify the
+    // POINTER attribute. A template specification part can therefore not
+    // declare a variable or a procedure pointer.
+    //
+    // Only the items between the `template` statement and `contains` are
+    // template-specifications (R1606); the contained procedures are ordinary
+    // subprogram bodies and may declare locals, so this is called from the loop
+    // over the specification part only.
+    //
+    // A deferred argument declaration (R1615) is not a template-specification
+    // either. `deferred type :: t` and `require ::` are their own AST nodes, so
+    // they never reach here, but a deferred constant is currently spelled as a
+    // plain type declaration of one of the template's own deferred arguments
+    // (`integer :: n` for `template tmpl(..., n)`), which is left alone.
+    void check_template_specification(AST::decl_stmt_t *item,
+            const std::vector<std::string> &deferred_args) {
+        if (!AST::is_a<AST::Declaration_t>(*item)) return;
+        AST::Declaration_t &decl = *AST::down_cast<AST::Declaration_t>(item);
+        // An access statement such as `private` or `public :: s` carries no
+        // type, and is allowed by R1606.
+        if (decl.m_vartype == nullptr) return;
+        AST::AttrType_t *type = AST::is_a<AST::AttrType_t>(*decl.m_vartype)
+            ? AST::down_cast<AST::AttrType_t>(decl.m_vartype) : nullptr;
+        bool is_procedure_decl = type
+            && type->m_type == AST::decl_typeType::TypeProcedure;
+        bool has_parameter = false;
+        bool has_pointer = false;
+        for (size_t i = 0; i < decl.n_attributes; i++) {
+            if (!AST::is_a<AST::SimpleAttribute_t>(*decl.m_attributes[i])) continue;
+            AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(
+                decl.m_attributes[i]);
+            if (sa->m_attr == AST::simple_attributeType::AttrParameter) {
+                has_parameter = true;
+            } else if (sa->m_attr == AST::simple_attributeType::AttrPointer) {
+                has_pointer = true;
+            }
+        }
+        if (is_procedure_decl ? !has_pointer : has_parameter) return;
+        for (size_t i = 0; i < decl.n_syms; i++) {
+            std::string name = to_lower(decl.m_syms[i].m_name);
+            if (std::find(deferred_args.begin(), deferred_args.end(), name)
+                    != deferred_args.end()) continue;
+            std::string msg = is_procedure_decl
+                ? "a template specification part cannot declare a procedure"
+                  " pointer, so '" + name + "' must not have the pointer"
+                  " attribute"
+                : "a template specification part cannot declare a variable,"
+                  " so '" + name + "' must have the parameter attribute";
+            diag.add(diag::Diagnostic(msg, diag::Level::Error,
+                diag::Stage::Semantic, {
+                    diag::Label("", {decl.m_syms[i].loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     void visit_Template(const AST::Template_t &x){
+        // C1601 (J3/26-007r1, 16.1.1): a template construct shall only appear
+        // in the specification part of a main program, a module or a template
+        // construct. A submodule is deliberately not in that list.
+        if (scoping_unit_kind != ScopingUnitKind::Module
+                && scoping_unit_kind != ScopingUnitKind::Program
+                && scoping_unit_kind != ScopingUnitKind::Template) {
+            diag.add(diag::Diagnostic(
+                "a template can only be declared in the specification part of "
+                "a main program, a module or another template",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
         is_template = true;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Template);
+        TemplateDefinitionScope template_definition_scope(*this, true);
         std::string template_name = to_lower(std::string(x.m_name));
         std::vector<std::string> template_args;
         for (size_t i=0; i<x.n_namelist; i++) {
@@ -5365,8 +5576,13 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
+        // The template's own deferred arguments (R1614); a declaration of one
+        // of them is a deferred argument declaration rather than a
+        // template-specification, see check_template_specification().
+        std::vector<std::string> deferred_args;
         for (size_t i=0; i<x.n_namelist; i++) {
-            current_procedure_args.push_back(to_lower(x.m_namelist[i]));
+            deferred_args.push_back(to_lower(x.m_namelist[i]));
+            current_procedure_args.push_back(deferred_args.back());
         }
 
         std::map<std::string, std::vector<std::pair<std::string, Location>>> ext_overloaded_op_procs;
@@ -5387,6 +5603,7 @@ public:
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             try {
+                check_template_specification(x.m_items[i], deferred_args);
                 if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
                     AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_items[i]);
                     for (size_t i=0; i<r->n_reqs; i++) {
@@ -5437,12 +5654,17 @@ public:
             current_scope, s2c(al, template_name), args.p, args.size(), reqs.p, reqs.size());
 
         parent_scope->add_symbol(template_name, ASR::down_cast<ASR::symbol_t>(temp));
+        SymbolTable *template_scope = current_scope;
         current_scope = parent_scope;
 
         // needs to rebuild the context prior to visiting template
         class_procedures.clear();
         dflt_access = dflt_access_copy;
         is_template = false;
+        // The specification part of the template itself, checked once the
+        // enclosing context has been restored so that an abort here leaves the
+        // visitor in the same state as a clean return.
+        check_no_save_in_template(template_scope);
     }
 
     // C1628 of the Fortran 2028 working draft (J3/26-007r1, 16.5.5.2): "A

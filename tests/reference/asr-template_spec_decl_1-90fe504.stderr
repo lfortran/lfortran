@@ -1,0 +1,11 @@
+semantic error: a template specification part cannot declare a variable, so 'bad_variable' must have the parameter attribute
+  --> tests/errors/template_spec_decl_1.f90:51:20
+   |
+51 |         integer :: bad_variable          ! {Error} a template specification part cannot declare a variable, so 'bad_variable' must have the parameter attribute
+   |                    ^^^^^^^^^^^^ 
+
+semantic error: a template specification part cannot declare a procedure pointer, so 'bad_proc_ptr' must not have the pointer attribute
+  --> tests/errors/template_spec_decl_1.f90:52:42
+   |
+52 |         procedure(iface_sub), pointer :: bad_proc_ptr          ! {Error} a template specification part cannot declare a procedure pointer, so 'bad_proc_ptr' must not have the pointer attribute
+   |                                          ^^^^^^^^^^^^ 

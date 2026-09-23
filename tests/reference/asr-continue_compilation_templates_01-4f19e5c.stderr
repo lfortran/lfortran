@@ -17,16 +17,16 @@ semantic error: Parameter 'v' is declared more than once in requirement 'dup_par
    |                                    ^ redeclared here
 
 semantic error: Symbol is already declared in the same scope
-  --> tests/errors/continue_compilation_templates_01.f90:38:17
+  --> tests/errors/continue_compilation_templates_01.f90:41:28
    |
-38 |         real :: n
-   |                 ^ redeclaration
+41 |         real, parameter :: n = 1.0
+   |                            ^^^^^^^ redeclaration
    |
-37 |         integer :: n
-   |                    ~ original declaration
+40 |         integer, parameter :: n = 1
+   |                               ~~~~~ original declaration
 
 semantic error: type mismatch in initialization: `string` cannot be assigned to `integer`
-  --> tests/errors/continue_compilation_templates_01.f90:39:26
+  --> tests/errors/continue_compilation_templates_01.f90:42:37
    |
-39 |         integer :: bad = "abc"
-   |                          ^^^^^ 
+42 |         integer, parameter :: bad = "abc"
+   |                                     ^^^^^ 

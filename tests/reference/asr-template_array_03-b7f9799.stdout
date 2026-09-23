@@ -491,9 +491,9 @@
                                                                     x
                                                                     []
                                                                     Local
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    Save
+                                                                    ()
+                                                                    ()
+                                                                    Default
                                                                     (Integer 4)
                                                                     ()
                                                                     Source
@@ -515,9 +515,9 @@
                                                                     y
                                                                     []
                                                                     Local
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    Save
+                                                                    ()
+                                                                    ()
+                                                                    Default
                                                                     (Integer 4)
                                                                     ()
                                                                     Source
@@ -539,9 +539,9 @@
                                                                     z
                                                                     []
                                                                     Local
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    Save
+                                                                    ()
+                                                                    ()
+                                                                    Default
                                                                     (Integer 4)
                                                                     ()
                                                                     Source
@@ -1717,9 +1717,9 @@
                                                                     x
                                                                     []
                                                                     Local
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    Save
+                                                                    ()
+                                                                    ()
+                                                                    Default
                                                                     (Integer 4)
                                                                     ()
                                                                     Source
@@ -1741,9 +1741,9 @@
                                                                     y
                                                                     []
                                                                     Local
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    Save
+                                                                    ()
+                                                                    ()
+                                                                    Default
                                                                     (Integer 4)
                                                                     ()
                                                                     Source
@@ -1765,9 +1765,9 @@
                                                                     z
                                                                     []
                                                                     Local
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    Save
+                                                                    ()
+                                                                    ()
+                                                                    Default
                                                                     (Integer 4)
                                                                     ()
                                                                     Source

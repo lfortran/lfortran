@@ -523,6 +523,10 @@ filename = "errors/instantiate_type_arg_01.f90"
 asr = true
 
 [[test]]
+filename = "errors/template_save_common_1.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/deferred_type_syntax_1.f90"
 syntax_only_cc = true
 
@@ -540,6 +544,20 @@ semantics_only_cc = true
 
 [[test]]
 filename = "errors/deferred_proc_decl_1.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/template_scope_1.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/deferred_type_class_1.f90"
+
+[[test]]
+filename = "errors/deferred_type_coarray_1.f90"
+
+[[test]]
+filename = "errors/template_spec_decl_1.f90"
 semantics_only_cc = true
 
 [[test]]
@@ -561,6 +579,10 @@ syntax_only_cc = true
 [[test]]
 filename = "errors/requirement_bare_subprogram_1.f90"
 syntax_only_cc = true
+
+[[test]]
+filename = "errors/requirement_scope_1.f90"
+semantics_only_cc = true
 
 [[test]]
 filename = "errors/instantiate_syntax_1.f90"

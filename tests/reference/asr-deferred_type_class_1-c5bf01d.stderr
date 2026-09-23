@@ -1,0 +1,31 @@
+semantic error: deferred type 't' is not extensible, so it cannot be used in a class declaration
+  --> tests/errors/deferred_type_class_1.f90:30:17
+   |
+30 |                 class(t), intent(in) :: x  ! {Error} deferred type 't' is not extensible, so it cannot be used in a class declaration
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'x' not defined
+  --> tests/errors/deferred_type_class_1.f90:29:13 - 31:26
+   |
+29 |                subroutine s1(x)
+   |                ^^^^^^^^^^^^^^^^...
+...
+   |
+31 |                end subroutine
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: deferred type 'u' is not extensible, so it cannot be used in a class declaration
+  --> tests/errors/deferred_type_class_1.f90:39:13
+   |
+39 |             class(u), intent(in) :: y  ! {Error} deferred type 'u' is not extensible, so it cannot be used in a class declaration
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'y' not defined
+  --> tests/errors/deferred_type_class_1.f90:38:9 - 40:22
+   |
+38 |            subroutine s2(y)
+   |            ^^^^^^^^^^^^^^^^...
+...
+   |
+40 |            end subroutine
+   | ...^^^^^^^^^^^^^^^^^^^^^^ 
