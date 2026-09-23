@@ -2016,6 +2016,14 @@ public:
                 ASR::is_a<ASR::Pointer_t>(*member_type)) {
             return;
         }
+        // A zero-size base has no element to read, so the reference denotes
+        // nothing and its shape is not observable. A scalar structure
+        // constructor for such a component is deliberately left unspread
+        // for that reason, which leaves the component's own scalar type in
+        // place. That is degenerate, not malformed.
+        if (ASRUtils::get_fixed_size_of_array(base_type) == 0) {
+            return;
+        }
         require_id(ASRUtils::is_array(x.m_type),
             "asr.verify.struct_member.array_base",
             "reading component '" + std::string(ASRUtils::symbol_name(x.m_m)) +
