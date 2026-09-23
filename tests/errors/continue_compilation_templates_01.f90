@@ -168,7 +168,6 @@ module template_travel_01b_m
         end function
     end template
 
-
 end module
 
 ! template_error_02
@@ -705,6 +704,7 @@ module continue_compilation_instantiate_01_checks
 
     ! Wrong number of instantiation arguments
     instantiate add_t {integer}, only: add3 => add_generic
+
 end module continue_compilation_instantiate_01_checks
 
 ! continue_compilation_instantiate_02
@@ -738,6 +738,7 @@ module instantiate_kwargs_01_checks
 
     ! No instantiation argument corresponds to the deferred argument `op`
     instantiate add_t {T = integer}, only: add4 => add_generic
+
 end module instantiate_kwargs_01_checks
 
 
