@@ -6760,26 +6760,6 @@ public:
         }
     }
 
-    void start_module_init_function_prototype(const ASR::Module_t &x) {
-        uint32_t h = get_hash((ASR::asr_t*)&x);
-        llvm::FunctionType *function_type = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(context), {}, false);
-        LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) == llvm_symtab_fn.end());
-        std::string module_fn_name = "__lfortran_module_init_" + std::string(x.m_name);
-        llvm::Function *F = llvm::Function::Create(function_type,
-                llvm::Function::ExternalLinkage, module_fn_name, module.get());
-        llvm::BasicBlock *BB = llvm::BasicBlock::Create(context, ".entry", F);
-        builder->SetInsertPoint(BB);
-
-        llvm_symtab_fn[h] = F;
-    }
-
-    void finish_module_init_function_prototype(const ASR::Module_t &x) {
-        uint32_t h = get_hash((ASR::asr_t*)&x);
-        builder->CreateRetVoid();
-        llvm_symtab_fn[h]->removeFromParent();
-    }
-
     // Qualification for a symbol declared directly by a translation unit.
     // Interactive evaluation compiles one TranslationUnit per cell, so a
     // symbol of an earlier cell must be named the way that cell named it,
@@ -6804,7 +6784,11 @@ public:
         current_scope = x.m_symtab;
         mangle_prefix = ASRUtils::cell_prefix(x.m_symtab) + "__module_" + std::string(x.m_name) + "_";
 
-        start_module_init_function_prototype(x);
+        // Declaring a module's variables emits no instructions. Leave the
+        // builder pointing at nothing, so that an instruction emitted here by
+        // mistake belongs to no function, where the verifier rejects any use
+        // of it, instead of landing in whichever function was built last.
+        builder->ClearInsertionPoint();
         std::vector<ASR::symbol_t*> variables;
         std::vector<ASR::symbol_t*> functions;
         std::vector<ASR::symbol_t*> structs;
@@ -6850,7 +6834,6 @@ public:
                 visit_Variable(*v);
             }
         }
-        finish_module_init_function_prototype(x);
 
         visit_procedures(x);
         mangle_prefix = ASRUtils::cell_prefix(current_scope_copy);
