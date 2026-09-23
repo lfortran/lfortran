@@ -907,13 +907,6 @@
                                                     NotMethod
                                                     ()
                                                     []
-                                                ),
-                                            ~add:
-                                                (CustomOperator
-                                                    3
-                                                    ~add
-                                                    [3 f]
-                                                    Public
                                                 )
                                         })
                                     r

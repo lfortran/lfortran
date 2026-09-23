@@ -77,7 +77,7 @@ contains
     end function
 
     ! A templated subprogram declares its deferred procedure the same way.
-    subroutine apply_twice{op}(x)
+    template subroutine apply_twice{op}(x)
         deferred procedure (unop) :: op
         integer, intent(inout) :: x
         x = op(op(x))

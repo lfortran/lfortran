@@ -592,6 +592,10 @@ syntax_only_cc = true
 filename = "errors/require_syntax_1.f90"
 syntax_only_cc = true
 
+[[test]]
+filename = "errors/templated_subp_syntax_1.f90"
+syntax_only_cc = true
+
 
 [[test]]
 filename = "errors/maskl_incorrect_bit_size.f90"

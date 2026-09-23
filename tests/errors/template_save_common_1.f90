@@ -106,7 +106,7 @@ module template_save_common_1_m
 contains
 
     ! C1610, in a templated procedure
-    subroutine templated_save{t}(x)
+    template subroutine templated_save{t}(x)
         deferred type :: t
         type(t), intent(in) :: x
         integer, save :: counter
@@ -115,7 +115,7 @@ contains
     end subroutine
 
     ! C1611, in a templated procedure
-    subroutine templated_common{t}(x)
+    template subroutine templated_common{t}(x)
         deferred type :: t
         type(t), intent(in) :: x
         integer :: a

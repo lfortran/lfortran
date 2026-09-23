@@ -62,8 +62,8 @@ module deferred_type_coarray_1
 
 contains
 
-    ! Brace-spelled templated subprogram.
-    subroutine templated_sub{t}()
+    ! Templated subprogram.
+    template subroutine templated_sub{t}()
         deferred type :: t
         type(t), codimension[:], allocatable :: x  ! {Error} A variable of deferred type must not be a coarray
     end subroutine

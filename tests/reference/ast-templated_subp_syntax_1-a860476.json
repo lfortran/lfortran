@@ -1,0 +1,13 @@
+{
+    "basename": "ast-templated_subp_syntax_1-a860476",
+    "cmd": "lfortran --continue-compilation --show-ast --no-color {infile}",
+    "infile": "tests/errors/templated_subp_syntax_1.f90",
+    "infile_hash": "d956f452a9d75750a4c014c2b2c6ae250b671b50c236e887578c8130",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-templated_subp_syntax_1-a860476.stdout",
+    "stdout_hash": "5369ac7429b1153cf179e65f4049f7eff0360ddf4b08061f2b0b5afa",
+    "stderr": "ast-templated_subp_syntax_1-a860476.stderr",
+    "stderr_hash": "c112aa31f9d53670c83c92e90f50d7765231e2622b7b06f802b0dc99",
+    "returncode": 1
+}

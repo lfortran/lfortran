@@ -1925,42 +1925,6 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
         /*start_name*/ &(name->loc), \
         /*end_name*/ END_NAME_LOC(end), \
         END_LABEL(end), END_LOC(end), p.diag)
-#define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, \
-        trivia, decl_stmts, end, l) \
-    FUNCTION2(p.m_a, l, \
-        /*name*/ name2char_with_check(name, END_NAME(end), l, "function", \
-            p.diag), \
-        /*args*/ ARGS(p.m_a, fn_args), \
-        /*n_args*/ fn_args.size(), \
-        /*m_attributes*/ nullptr, \
-        /*n_attributes*/ 0, \
-        /*return_var*/ EXPR_OPT(return_var), \
-        /*bind*/ bind_opt(bind), \
-        trivia_cast(trivia), \
-        decl_stmts, \
-        /*contains*/ nullptr, \
-        /*n_contains*/ 0, \
-        /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
-        /*n_temp_args*/ temp_args.size(), \
-        /*start_name*/ &(name->loc), \
-        /*end_name*/ END_NAME_LOC(end), \
-        END_LABEL(end), END_LOC(end), p.diag)
-#define TEMPLATED_SUBROUTINE(name, temp_args, fn_args, bind, trivia, \
-        decl_stmts, end, l) SUBROUTINE2(p.m_a, l, \
-        /*name*/ name2char(name), \
-        /*args*/ ARGS(p.m_a, fn_args), \
-        /*n_args*/ fn_args.size(), \
-        /*m_attributes*/ nullptr, \
-        /*n_attributes*/ 0, \
-        /*bind*/ bind_opt(bind), \
-        trivia_cast(trivia), \
-        decl_stmts, \
-        /*contains*/ nullptr, \
-        /*n_contains*/ 0, \
-        /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
-        /*n_temp_args*/ temp_args.size(), \
-        /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name->loc), END_LABEL(end), END_LOC(end), p.diag)
 #define TEMPLATED_SUBROUTINE1(fn_type, name, temp_args, fn_args, bind, \
         trivia, decl_stmts, end, l) SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char(name), \

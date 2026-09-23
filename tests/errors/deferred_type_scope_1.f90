@@ -45,7 +45,7 @@ module deferred_type_scope_1_args_mod
 
 contains
 
-    subroutine swap{t}(x, y)
+    template subroutine swap{t}(x, y)
         deferred type :: t
         deferred type :: w  ! {Error} 'w' is not a deferred argument of 'swap'
         type(t), intent(inout) :: x, y

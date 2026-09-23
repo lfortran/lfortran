@@ -57,7 +57,7 @@ contains
 
     ! Inline instantiation of a templated subprogram. The REQUIRE here also
     ! uses keyword arguments, in reverse order.
-    subroutine copy_both{T, U}(x, y, a, b)
+    template subroutine copy_both{T, U}(x, y, a, b)
         require :: two_types_r {q = U, p = T}
         type(T), intent(in) :: x
         type(U), intent(in) :: y
@@ -67,7 +67,7 @@ contains
         b = y
     end subroutine
 
-    function second_of{T, U}(x, y) result(z)
+    template function second_of{T, U}(x, y) result(z)
         require :: two_types_r {q = U, p = T}
         type(T), intent(in) :: x
         type(U), intent(in) :: y

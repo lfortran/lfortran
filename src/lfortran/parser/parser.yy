@@ -1088,18 +1088,10 @@ subroutine
         subroutine_contains_end sep {
             LLOC(@$, @7); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $8, @$),
                 $6, $7, @$); }
-    | KW_SUBROUTINE id "{" id_list "}" sub_args bind_opt
-    sep decl_statements end_subroutine sep {
-            LLOC(@$, @10); $$ = TEMPLATED_SUBROUTINE($2, $4, $6, $7,
-                TRIVIA($8, $11, @$), $9, $10, @$); }
     | fn_mod_plus KW_SUBROUTINE id sub_args bind_opt sep decl_statements
         subroutine_contains_end sep {
             LLOC(@$, @8); $$ = SUBROUTINE1($1, $3, $4, $5, TRIVIA($6, $9, @$),
                 $7, $8, @$); }
-    | fn_mod_plus KW_SUBROUTINE id "{" id_list "}" sub_args bind_opt
-    sep decl_statements end_subroutine sep {
-            LLOC(@$, @11); $$ = TEMPLATED_SUBROUTINE1($1, $3, $5, $7, $8,
-                TRIVIA($9, $12, @$), $10, $11, @$); }
     | template_sub_prefix id "{" id_list "}" sub_args bind_opt
     sep decl_statements end_subroutine sep {
             LLOC(@$, @10); $$ = TEMPLATED_SUBROUTINE1($1, $2, $4, $6, $7,
@@ -1150,13 +1142,6 @@ function
         sep decl_statements function_contains_end sep {
             LLOC(@$, @10); $$ = FUNCTION0($2, $4, $6, $7, TRIVIA($8, $11, @$),
                 $9, $10, @$); }
-    | KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
-        result_opt
-        bind_opt
-        sep decl_statements
-        end_function sep {
-            LLOC(@$, @13); $$ = TEMPLATED_FUNCTION0($2, $4, $7, $9, $10,
-                TRIVIA($11, $14, @$), $12, $13, @$); }
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
         sep decl_statements function_contains_end sep {
             LLOC(@$, @9); $$ = FUNCTION($1, $3, $5, nullptr, nullptr,
@@ -1173,13 +1158,6 @@ function
         sep decl_statements function_contains_end sep {
             LLOC(@$, @11); $$ = FUNCTION($1, $3, $5, $7, $8,
                 TRIVIA($9, $12, @$), $10, $11, @$); }
-    | fn_mod_plus KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
-        result_opt
-        bind_opt
-        sep decl_statements
-        end_function sep {
-            LLOC(@$, @14); $$ = TEMPLATED_FUNCTION($1, $3, $5, $8, $10, $11,
-                TRIVIA($12, $15, @$), $13, $14, @$); }
     | template_fn_prefix id "{" id_list "}" "(" id_list_opt ")"
         result_opt
         bind_opt

@@ -185,7 +185,7 @@ instantiate array_t {real, add_element_real, set_to_zero_real}, &
 The template notation can be cumbersome for defining a single generic function. To alleviate this, LFortran also supports a simpler syntax for declaring generic functions without having to declare an enclosing template. For example, our running `array_sum` example can be written as follows in the simpler syntax:
 
 ```fortran
-function generic_sum {T, add_element, set_to_zero} (arr) result(r)
+template function generic_sum {T, add_element, set_to_zero} (arr) result(r)
   require :: number_type {T, add_element, set_to_zero}
   type(T), intent(in) :: arr(:)
   type(T) :: r
