@@ -628,6 +628,15 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 
 %%
 
+// The order of rules does not matter in Bison (unlike in ANTLR). The
+// precedence is specified not by the order but by %left and %right directives
+// as well as with %dprec.
+
+// ----------------------------------------------------------------------------
+// Top level rules to be used for parsing.
+
+// Higher %dprec means higher precedence
+
 units
     : units script_unit  %dprec 9  { RESULT($2); }
     | script_unit        %dprec 10 { RESULT($1); }
@@ -655,6 +664,13 @@ script_unit
     | TK_LABEL KW_END_PROGRAM sep { $$ = LABELED_END($1, $2, @$); }
     | TK_LABEL KW_ENDPROGRAM sep { $$ = LABELED_END($1, $2, @$); }
     ;
+
+// ----------------------------------------------------------------------------
+// Module definitions
+//
+// * private/public blocks
+// * interface blocks
+//
 
 module
     : KW_MODULE id sep decl_statements contains_block_opt end_module sep {
@@ -955,6 +971,11 @@ proc_modifier
     | KW_DEFERRED { $$ = SIMPLE_ATTR(Deferred, @$); }
     | KW_NON_OVERRIDABLE { $$ = SIMPLE_ATTR(NonDeferred, @$); }
     ;
+
+
+// ----------------------------------------------------------------------------
+// Subroutine/Procedure/functions/program definitions
+
 
 program
     : KW_PROGRAM id sep decl_statements program_contains_end sep {
@@ -1751,6 +1772,10 @@ coarray_comp_decl
     | expr ":" "*"   { $$ = COARRAY_COMP_DECL7d($1, @$); }
     ;
 
+
+// -----------------------------------------------------------------------------
+// Control flow
+
 statements
     : statements statement { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
@@ -2480,6 +2505,9 @@ change_team
     | KW_CHANGE_TEAM
     ;
 
+// -----------------------------------------------------------------------------
+// Fortran expression
+
 expr_list_opt
     : expr_list { $$ = $1; }
     | %empty { LIST_NEW($$); }
@@ -2533,6 +2561,7 @@ def_unary_operand
     ;
 
 expr
+// ### primary
     : designator { $$ = $1; }
     | "[" expr_list_opt rbracket { $$ = ARRAY_IN1($2, @$); }
     | "[" var_type "::" expr_list_opt rbracket %dprec 2 { $$ = ARRAY_IN2($2, $4, @$); }
@@ -2559,8 +2588,10 @@ expr
     | "(" expr "," expr "," expr_list "," id "=" expr "," expr "," expr ")" {
             $$ = IMPLIED_DO_LOOP6($2, $4, $6, $8, $10, $12, $14, @$); }
 
+// ### level-1
     | TK_DEF_OP def_unary_operand { $$ = UNARY_DEFOP($1, $2, @$); }
 
+// ### level-2
     | expr "+" expr { $$ = ADD($1, $3, @$); }
     | expr "-" expr { $$ = SUB($1, $3, @$); }
     | expr "*" expr { $$ = MUL($1, $3, @$); }
@@ -2569,8 +2600,10 @@ expr
     | "+" expr %prec UMINUS { $$ = UNARY_PLUS ($2, @$); }
     | expr "**" expr { $$ = POW($1, $3, @$); }
 
+// ### level-3
     | expr "//" expr { $$ = STRCONCAT($1, $3, @$); }
 
+// ### level-4
     | expr "==" expr { $$ = EQ($1, $3, @$); }
     | expr "/=" expr { $$ = NE($1, $3, @$); }
     | expr "<" expr { $$ = LT($1, $3, @$); }
@@ -2578,6 +2611,7 @@ expr
     | expr ">" expr { $$ = GT($1, $3, @$); }
     | expr ">=" expr { $$ = GE($1, $3, @$); }
 
+// ### level-5
     | ".not." expr { $$ = NOT($2, @$); }
     | expr ".and." expr { $$ = AND($1, $3, @$); }
     | expr ".or." expr { $$ = OR($1, $3, @$); }
