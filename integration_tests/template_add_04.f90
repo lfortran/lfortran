@@ -15,7 +15,7 @@ module template_add_04_m
 
   template add_t(T, F, mult)
       require :: R {T, F}
-      integer :: mult
+      deferred integer, parameter :: mult
       private
       public :: add_generic
   contains

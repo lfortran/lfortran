@@ -262,7 +262,7 @@ module template_04_matrix
 
     template matrix_tmpl(T, plus_t, zero_t, times_t, one_t, n)
         require :: semiring {T, plus_t, zero_t, times_t, one_t}
-        integer :: n
+        deferred integer, parameter :: n
 
         private
         public :: &

@@ -36,7 +36,7 @@ module template_spec_decl_1_mod
         ! Not template-specifications, and so not restricted by C1603: a
         ! deferred type declaration, a deferred constant and a requirement.
         deferred type :: t
-        integer :: n
+        deferred integer, parameter :: n
         require :: plus_r {t, plus_t}
 
         ! A named constant is what C1603 permits.

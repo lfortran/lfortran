@@ -42,3 +42,35 @@ semantic error: an interface block in a requirement must be a deferred or an abs
    |
 64 |         interface operator (+)
    |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'n3' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n3`
+  --> tests/errors/continue_compilation_templates_01.f90:80:20
+   |
+80 |         integer :: n3
+   |                    ^^ 
+
+semantic error: Template argument n3 has not been declared in template specification.
+  --> tests/errors/continue_compilation_templates_01.f90:78:5 - 85:32
+   |
+78 |        template plain_const_tmpl(T3, n3)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+85 |        ! continues past the first.
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'n4' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n4`
+  --> tests/errors/continue_compilation_templates_01.f90:88:20
+   |
+88 |         integer :: n4(3)
+   |                    ^^^^^ 
+
+semantic error: Template argument n4 has not been declared in template specification.
+  --> tests/errors/continue_compilation_templates_01.f90:86:5 - 90:1
+   |
+86 |        template plain_const_array_tmpl(T4, n4)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+90 |    
+   | ...^ 

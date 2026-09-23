@@ -17,7 +17,7 @@ module template_matrix_01_m
     template matrix_t(t, plus, times, n)
         require :: elemental_op {t, plus}
         require :: elemental_op {t, times}
-        integer :: n
+        deferred integer, parameter :: n
         
         private
         public :: add_matrix

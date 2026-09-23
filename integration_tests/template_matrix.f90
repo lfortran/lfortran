@@ -11,7 +11,7 @@ module matrix_m
     template matrix_tmpl(T, plus_t, zero_t, times_t, one_t, n)
         require :: semiring {T, plus_t, zero_t, times_t, one_t}
         instantiate derive_extended_monoid {T, plus_t, zero_t}, only: sum => mconcat
-        integer :: n
+        deferred integer, parameter :: n
 
         private
         public :: &

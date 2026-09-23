@@ -23,7 +23,7 @@ module continue_compilation_instantiate_02_mod
 
     template const_tmpl(t, n)
         deferred type :: t
-        integer :: n
+        deferred integer, parameter :: n
     contains
         subroutine sn(x)
             type(t), intent(in) :: x

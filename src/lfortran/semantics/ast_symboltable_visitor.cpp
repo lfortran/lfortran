@@ -5520,10 +5520,12 @@ public:
     // over the specification part only.
     //
     // A deferred argument declaration (R1615) is not a template-specification
-    // either. `deferred type :: t` and `require ::` are their own AST nodes, so
-    // they never reach here, but a deferred constant is currently spelled as a
-    // plain type declaration of one of the template's own deferred arguments
-    // (`integer :: n` for `template tmpl(..., n)`), which is left alone.
+    // either: `deferred type :: t` is a DerivedType node and `require ::` is a
+    // Require node, so neither reaches here, and a deferred constant (R1618)
+    // specifies PARAMETER, which C1618 requires and which returns below. A
+    // plain declaration of a deferred argument used to be LFortran's spelling
+    // of a deferred constant; it is rejected here, with the message that names
+    // the standard spelling.
     void check_template_specification(AST::decl_stmt_t *item,
             const std::vector<std::string> &deferred_args) {
         if (!AST::is_a<AST::Declaration_t>(*item)) return;
@@ -5550,14 +5552,23 @@ public:
         if (is_procedure_decl ? !has_pointer : has_parameter) return;
         for (size_t i = 0; i < decl.n_syms; i++) {
             std::string name = to_lower(decl.m_syms[i].m_name);
-            if (std::find(deferred_args.begin(), deferred_args.end(), name)
-                    != deferred_args.end()) continue;
-            std::string msg = is_procedure_decl
-                ? "a template specification part cannot declare a procedure"
-                  " pointer, so '" + name + "' must not have the pointer"
-                  " attribute"
-                : "a template specification part cannot declare a variable,"
-                  " so '" + name + "' must have the parameter attribute";
+            bool is_deferred_arg = std::find(deferred_args.begin(),
+                deferred_args.end(), name) != deferred_args.end();
+            std::string msg;
+            if (is_deferred_arg && !is_procedure_decl) {
+                msg = "'" + name + "' is a deferred argument of the"
+                      " template, so a type declaration of it declares a"
+                      " deferred constant, which is spelled `deferred"
+                      " <type>, parameter :: " + name + "`";
+            } else if (is_procedure_decl) {
+                msg = "a template specification part cannot declare a"
+                      " procedure pointer, so '" + name + "' must not have the"
+                      " pointer attribute";
+            } else {
+                msg = "a template specification part cannot declare a"
+                      " variable, so '" + name + "' must have the parameter"
+                      " attribute";
+            }
             diag.add(diag::Diagnostic(msg, diag::Level::Error,
                 diag::Stage::Semantic, {
                     diag::Label("", {decl.m_syms[i].loc})}));
@@ -5592,9 +5603,6 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
-        // The template's own deferred arguments (R1614); a declaration of one
-        // of them is a deferred argument declaration rather than a
-        // template-specification, see check_template_specification().
         std::vector<std::string> deferred_args;
         for (size_t i=0; i<x.n_namelist; i++) {
             deferred_args.push_back(to_lower(x.m_namelist[i]));

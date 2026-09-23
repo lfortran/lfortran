@@ -16,7 +16,7 @@ module template_array_05_m
 
     template vector_t(t, plus_t, n)
         require :: op {t, plus_t}
-        integer :: n
+        deferred integer, parameter :: n
         
         private
         public :: add_array
@@ -34,7 +34,7 @@ module template_array_05_m
 
     template matrix_t(t, plus_t, n)
         require :: op {t, plus_t}
-        integer :: n
+        deferred integer, parameter :: n
         
         private
         public :: add_matrix
