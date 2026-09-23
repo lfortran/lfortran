@@ -2,7 +2,7 @@
     "basename": "asr-template_lapack_01-0d30f43",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/template_lapack_01.f90",
-    "infile_hash": "f15e3037b84a22f59e8d4af3e1fd0ce66e9cac5cad6bb7c8a2468805",
+    "infile_hash": "c2ec5f9b34ea6ade33be29217478cc7412c87a3eaa2a537bbaf5a779",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-template_lapack_01-0d30f43.stdout",

@@ -71,7 +71,7 @@ module deferred_type_attr_1
         end interface
     end requirement
 
-    template t_extensible(t)
+    template t_extensible {t}
         deferred type, extensible :: t
         private
         public :: nothing_ext
@@ -80,7 +80,7 @@ module deferred_type_attr_1
         end subroutine
     end template
 
-    template t_abstract(t)
+    template t_abstract {t}
         deferred type, abstract :: t
         private
         public :: nothing_abs
@@ -89,7 +89,7 @@ module deferred_type_attr_1
         end subroutine
     end template
 
-    template t_plain(t)
+    template t_plain {t}
         deferred type :: t
         private
         public :: nothing_plain

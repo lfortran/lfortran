@@ -38,7 +38,7 @@ module deferred_type_scope_1_args_mod
         deferred type :: y  ! {Error} 'y' is not a deferred argument of 'r'
     end requirement
 
-    template tmpl(t)
+    template tmpl {t}
         deferred type :: t
         deferred type :: z  ! {Error} 'z' is not a deferred argument of 'tmpl'
     end template

@@ -2,7 +2,7 @@
     "basename": "asr-requirement_scope_1-c06bc55",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/requirement_scope_1.f90",
-    "infile_hash": "b144ddf49375cfe567eef8e2f4f3d2569b6d760cd95f2e7913cf425f",
+    "infile_hash": "11634c39287c04203dff64b84590a5886ac06ab5170a64052ed0c3bb",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

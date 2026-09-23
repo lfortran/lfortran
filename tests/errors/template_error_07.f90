@@ -13,7 +13,7 @@ module template_error_07_m
         end interface
     end requirement
 
-    template tmp(t, f)
+    template tmp {t, f}
         require :: r {t}
     end template
 

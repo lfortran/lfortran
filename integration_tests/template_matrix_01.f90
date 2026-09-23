@@ -14,7 +14,7 @@ module template_matrix_01_m
         end interface
     end requirement
 
-    template matrix_t(t, plus, times, n)
+    template matrix_t {t, plus, times, n}
         require :: elemental_op {t, plus}
         require :: elemental_op {t, times}
         deferred integer, parameter :: n

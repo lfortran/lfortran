@@ -22,8 +22,8 @@ semantic error: 'not_an_interface' is not an interface
 semantic error: Template argument p has not been declared in template specification.
   --> tests/errors/deferred_proc_decl_1.f90:38:5 - 42:42
    |
-38 |        template t1(p)
-   |        ^^^^^^^^^^^^^^...
+38 |        template t1 {p}
+   |        ^^^^^^^^^^^^^^^...
 ...
    |
 42 |        ! A module has no deferred arguments.

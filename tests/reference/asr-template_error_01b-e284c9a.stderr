@@ -1,8 +1,8 @@
 semantic error: Template argument plus_t has not been declared in template specification.
   --> tests/errors/template_error_01b.f90:21:5 - 43:1
    |
-21 |        template travel_tmpl(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+21 |        template travel_tmpl {D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
 43 |    

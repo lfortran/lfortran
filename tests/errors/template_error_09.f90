@@ -13,7 +13,7 @@ module std_prop_m
         end interface
     end requirement
 
-    template commutative_prop(T,bin)
+    template commutative_prop {T,bin}
         require :: magma_r {T,bin}
       contains
         pure function commutative_p(x, y) result(prop)

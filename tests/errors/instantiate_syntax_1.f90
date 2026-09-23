@@ -16,7 +16,7 @@ module instantiate_syntax_1
         deferred type :: t
     end requirement
 
-    template tmpl(t)
+    template tmpl {t}
         require r {t}
         private
         public :: id

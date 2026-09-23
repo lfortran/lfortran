@@ -17,7 +17,7 @@ module requirement_syntax_1
         deferred type :: t
     end requirement
 
-    template tmpl(u)
+    template tmpl {u}
         require :: r(u)  ! {Error} Token '(' is unexpected here
     end template
 

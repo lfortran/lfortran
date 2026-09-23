@@ -2,7 +2,7 @@
     "basename": "asr-deferred_type_class_1-c5bf01d",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/deferred_type_class_1.f90",
-    "infile_hash": "045ffb8668c9fc8531ae4e52ec5b30589b4878c1defe448cf6d8277d",
+    "infile_hash": "951f46b7bd8ab462d1bbb102af91895212322d5ed06e44772be8c85a",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

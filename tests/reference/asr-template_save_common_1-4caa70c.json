@@ -2,7 +2,7 @@
     "basename": "asr-template_save_common_1-4caa70c",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/template_save_common_1.f90",
-    "infile_hash": "a23a87654db06cedf16760fb30e797f63da3c3880e73155c6791ace0",
+    "infile_hash": "bce44436fbd96e51a6ab922bccea8f75bba36efe06b87b83b98dc5d6",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

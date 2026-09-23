@@ -92,7 +92,7 @@ module deferred_const_decl_1
     ! array deferred constant is not implemented yet. This pins which spellings
     ! reach the semantic stage; the accepted-and-working forms are the scalars in
     ! integration_tests/template_deferred_const_01.f90.
-    template note2(x2, x3, x4, x5, x6, x7)
+    template note2 {x2, x3, x4, x5, x6, x7}
         integer, parameter :: v1(2) = [5,15]   ! not a deferred constant
         deferred integer, parameter :: x2(3)  ! {Error} a `deferred` constant that is an array is not supported yet
         deferred integer, parameter :: x3(v1)  ! {Error} a `deferred` constant that is an array is not supported yet

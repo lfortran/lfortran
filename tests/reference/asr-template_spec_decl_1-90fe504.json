@@ -2,7 +2,7 @@
     "basename": "asr-template_spec_decl_1-90fe504",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/template_spec_decl_1.f90",
-    "infile_hash": "84b74111be2c6aca7c1f0ab89fd057e058f12c484ffcd21061549f7a",
+    "infile_hash": "b131385e41297d8c1a5e29b6c1744007b7a6807594ed3ea4102ccba4",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

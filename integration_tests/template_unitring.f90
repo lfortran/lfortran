@@ -35,7 +35,7 @@ module unit_ring_m
         require :: unit_ring_only_negate {T, plus, zero, mult, one, negate}
     end requirement
 
-    template derive_unit_ring_from_minus(T, plus, zero, mult, one, minus)
+    template derive_unit_ring_from_minus {T, plus, zero, mult, one, minus}
         require :: unit_ring_only_minus {T, plus, zero, mult, one, minus}
 
         private
@@ -50,7 +50,7 @@ module unit_ring_m
         end function
     end template
 
-    template derive_unit_ring_from_negate(T, plus, zero, mult, one, negate)
+    template derive_unit_ring_from_negate {T, plus, zero, mult, one, negate}
         require :: unit_ring_only_negate {T, plus, zero, mult, one, negate}
 
         private

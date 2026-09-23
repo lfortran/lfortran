@@ -109,8 +109,8 @@ semantic error: a `deferred` constant that is an array is not supported yet
 semantic error: Template argument x2 has not been declared in template specification.
    --> tests/errors/deferred_const_decl_1.f90:95:5 - 105:71
     |
- 95 |        template note2(x2, x3, x4, x5, x6, x7)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+ 95 |        template note2 {x2, x3, x4, x5, x6, x7}
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
 105 |        ! The DIMENSION attribute spelling of the same array-spec (R1619).

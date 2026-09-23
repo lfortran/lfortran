@@ -2,7 +2,7 @@
     "basename": "asr-deferred_type_scope_1-2add880",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/deferred_type_scope_1.f90",
-    "infile_hash": "5c81247b2e3078aad3f881051e1998e18c11ddcefc8fe1e257b6576c",
+    "infile_hash": "05cb6a8b80b7f960b7da6e4c7cf0df564be0be46fec1548e8fa6291b",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

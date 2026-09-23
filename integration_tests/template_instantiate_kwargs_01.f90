@@ -23,7 +23,7 @@ module template_instantiate_kwargs_01_m
 
     ! Deferred arguments in the order (t, u, f). The REQUIRE below passes them
     ! to pair_r by keyword, reversing the order.
-    template pair_t(t, u, f)
+    template pair_t {t, u, f}
         require :: pair_r {g = f, b = u, a = t}
         private
         public :: combine

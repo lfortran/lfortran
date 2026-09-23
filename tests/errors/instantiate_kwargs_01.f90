@@ -18,7 +18,7 @@ module instantiate_kwargs_01_mod
         end interface
     end requirement
 
-    template add_t(T, op)
+    template add_t {T, op}
         require add_r {T, op}
     contains
         function add_generic(x, y) result(z)

@@ -29,7 +29,7 @@ module deferred_type_coarray_1
     ! where C1603 does not apply.
 
     ! Contains part of a template, all coarray spellings.
-    template body_tmpl(t)
+    template body_tmpl {t}
         deferred type :: t
     contains
         subroutine codim_attr()

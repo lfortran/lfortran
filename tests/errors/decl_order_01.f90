@@ -4,7 +4,7 @@ integer :: i
 i = 1
 
 ! A template accepts declarations only
-template decl_order_t(T)
+template decl_order_t {T}
     deferred type :: T
     use iso_fortran_env
     implicit none

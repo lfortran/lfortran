@@ -13,7 +13,7 @@
 module continue_compilation_instantiate_02_mod
     implicit none
 
-    template type_tmpl(t)
+    template type_tmpl {t}
         deferred type :: t
     contains
         subroutine s(x)
@@ -21,7 +21,7 @@ module continue_compilation_instantiate_02_mod
         end subroutine
     end template
 
-    template const_tmpl(t, n)
+    template const_tmpl {t, n}
         deferred type :: t
         deferred integer, parameter :: n
     contains

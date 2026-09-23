@@ -32,7 +32,7 @@ module template_spec_decl_1_mod
         end interface
     end requirement
 
-    template tmpl(t, plus_t, n)
+    template tmpl {t, plus_t, n}
         ! Not template-specifications, and so not restricted by C1603: a
         ! deferred type declaration, a deferred constant and a requirement.
         deferred type :: t

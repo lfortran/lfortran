@@ -6,7 +6,7 @@ module template_save_common_1_m
     implicit none
 
     ! C1610, in a procedure of a template, in each spelling of SAVE
-    template save_tmpl(t)
+    template save_tmpl {t}
         deferred type :: t
     contains
         subroutine explicit_save(x)
@@ -63,9 +63,9 @@ module template_save_common_1_m
     ! section, in a scoping unit nested in one, and in a templated procedure.
 
     ! C1610, in a template nested in a template
-    template outer_tmpl(t)
+    template outer_tmpl {t}
         deferred type :: t
-        template inner_tmpl(u)
+        template inner_tmpl {u}
             deferred type :: u
         contains
             subroutine inner_save(y)
@@ -83,7 +83,7 @@ module template_save_common_1_m
     end template
 
     ! C1611, in a procedure of a template
-    template storage_tmpl(t)
+    template storage_tmpl {t}
         deferred type :: t
     contains
         subroutine common_block(x)

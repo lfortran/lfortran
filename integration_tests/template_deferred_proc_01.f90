@@ -33,7 +33,7 @@ module template_deferred_proc_01_m
 
     ! R1622 with the `::` and a two-name deferred-proc-name-list. The third
     ! deferred procedure of the template comes in through the requirement.
-    template combine_tmpl(f, g, h)
+    template combine_tmpl {f, g, h}
         require :: binop_r {f}
         deferred procedure (binop) :: g, h
         private

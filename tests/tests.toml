@@ -598,6 +598,10 @@ syntax_only_cc = true
 filename = "errors/templated_subp_syntax_1.f90"
 syntax_only_cc = true
 
+[[test]]
+filename = "errors/template_syntax_1.f90"
+syntax_only_cc = true
+
 
 [[test]]
 filename = "errors/maskl_incorrect_bit_size.f90"

@@ -32,7 +32,7 @@ module deferred_type_class_1
         end interface
     end requirement
 
-    template tmpl(u)
+    template tmpl {u}
         deferred type :: u
     contains
         subroutine s2(y)

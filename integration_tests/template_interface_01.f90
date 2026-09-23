@@ -25,7 +25,7 @@ module template_interface_01_m
         end interface
     end requirement
 
-    template sum_t(T, add, cast)
+    template sum_t {T, add, cast}
         require :: operator_r {T, T, T, add}
         require :: cast_r {T, cast}
         private

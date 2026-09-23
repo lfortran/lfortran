@@ -17,7 +17,7 @@ module deferred_type_syntax_1
         type, deferred :: t  ! {Error} Token 'deferred' is unexpected here
     end requirement
 
-    template tmpl(u)
+    template tmpl {u}
         type, deferred :: u  ! {Error} Token 'deferred' is unexpected here
     end template
 

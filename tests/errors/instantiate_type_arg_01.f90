@@ -6,7 +6,7 @@
 module instantiate_type_arg_01_mod
     implicit none
 
-    template tmpl(t)
+    template tmpl {t}
         deferred type :: t
     contains
         subroutine s(x)

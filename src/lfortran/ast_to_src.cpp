@@ -907,12 +907,12 @@ public:
         r += syn();
         r += " ";
         r.append(x.m_name);
-        r.append("(");
+        r.append(" {");
         for (size_t i=0; i<x.n_namelist; i++) {
             r.append(x.m_namelist[i]);
             if (i < x.n_namelist-1) r.append(", ");
         }
-        r.append(")");
+        r.append("}");
         r.append("\n");
         r += format_unit_body(x, !indent_unit);
         r += indent;

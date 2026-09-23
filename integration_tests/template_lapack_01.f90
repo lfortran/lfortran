@@ -26,7 +26,7 @@ module template_lapack_01_m
         end interface
     end requirement
 
-    template external_matmul_t(T, gemm, cast_to_T)
+    template external_matmul_t {T, gemm, cast_to_T}
         require :: gemm_r {T, gemm}
         require :: cast_r {real, T, cast_to_T}
         private

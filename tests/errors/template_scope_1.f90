@@ -17,7 +17,7 @@ module template_scope_1_mod
     ! A requirement is not one of the three permitted contexts.
     requirement r {t}
         deferred type :: t
-        template req_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+        template req_tmpl {u}  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
             deferred type :: u
         end template
     end requirement
@@ -25,13 +25,13 @@ module template_scope_1_mod
 contains
 
     subroutine s()
-        template sub_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+        template sub_tmpl {u}  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
             deferred type :: u
         end template
     end subroutine
 
     integer function f()
-        template func_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+        template func_tmpl {u}  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
             deferred type :: u
         end template
         f = 1
@@ -51,7 +51,7 @@ submodule (template_scope_1_submod_mod) template_scope_1_submod
     implicit none
 
     ! A submodule is not a module for the purposes of C1601.
-    template submod_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+    template submod_tmpl {u}  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
         deferred type :: u
     end template
 

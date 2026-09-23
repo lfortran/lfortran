@@ -2,7 +2,7 @@
     "basename": "asr-continue_compilation_instantiate_01-0731bfb",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/continue_compilation_instantiate_01.f90",
-    "infile_hash": "7b907c3af9921bd2904a0fcb283891f70a38678313f9990841739ade",
+    "infile_hash": "eb49b950ef476d258eaad67830731bb8b15eb6c12d8ef9f1c7460b79",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

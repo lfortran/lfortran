@@ -20,12 +20,12 @@ module require_syntax_1
         deferred type :: u
     end requirement
 
-    template tmpl_1(v)
+    template tmpl_1 {v}
         deferred type :: v
         require :: r1 {v}, r2 {v}  ! {Error} Token ',' is unexpected here
     end template
 
-    template tmpl_2(v)
+    template tmpl_2 {v}
         deferred type :: v
         require r1 {v}, r2 {v}  ! {Error} Token ',' is unexpected here
     end template

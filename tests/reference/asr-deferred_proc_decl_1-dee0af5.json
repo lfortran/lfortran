@@ -2,12 +2,12 @@
     "basename": "asr-deferred_proc_decl_1-dee0af5",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/deferred_proc_decl_1.f90",
-    "infile_hash": "9ea3ee67b87b857df6f84523d5544e290ad254e3d9edc1726875a8bb",
+    "infile_hash": "bf9cca442bf32125e44ef0c482d121ab4e64434f8fc3e49204d845ab",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-deferred_proc_decl_1-dee0af5.stderr",
-    "stderr_hash": "09c90afdb26e2f1107ee09e520cfc9c66fcd3c6514a22c06c7ba77f6",
+    "stderr_hash": "5620f125b6dd06e444573af286ec4f39b8cb7d26f8f530be97dbcb27",
     "returncode": 1
 }

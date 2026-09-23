@@ -14,7 +14,7 @@ module template_array_05_m
         end interface
     end requirement
 
-    template vector_t(t, plus_t, n)
+    template vector_t {t, plus_t, n}
         require :: op {t, plus_t}
         deferred integer, parameter :: n
         
@@ -32,7 +32,7 @@ module template_array_05_m
         end function
     end template
 
-    template matrix_t(t, plus_t, n)
+    template matrix_t {t, plus_t, n}
         require :: op {t, plus_t}
         deferred integer, parameter :: n
         

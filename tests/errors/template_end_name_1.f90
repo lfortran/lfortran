@@ -18,7 +18,7 @@ module template_end_name_1
         deferred type :: t
     end requirement not_r  ! {Error} End requirement name does not match requirement name
 
-    template tmpl(u)
+    template tmpl {u}
         deferred type :: u
     end template not_tmpl  ! {Error} End template name does not match template name
 

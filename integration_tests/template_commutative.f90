@@ -19,7 +19,7 @@ module template_commutative_m
         end interface
     end requirement
 
-    template commutative_prop(T, bin, equal)
+    template commutative_prop {T, bin, equal}
         require :: magma_r {T, bin, equal}
       contains
         pure function commutative_p(x, y) result(prop)
@@ -33,7 +33,7 @@ module template_commutative_m
         end function
     end template
 
-    template alt_commutative_prop(bin, equal)
+    template alt_commutative_prop {bin, equal}
         require :: magma_r {integer, bin, equal}
       contains
         pure function commutative_p(x, y) result(prop)

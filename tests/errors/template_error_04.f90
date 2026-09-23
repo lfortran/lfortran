@@ -13,7 +13,7 @@ module template_error_04_m
         end interface
     end requirement
 
-    template add_t(T, F)
+    template add_t {T, F}
         require :: R {T, F}
         private
         public :: add_generic

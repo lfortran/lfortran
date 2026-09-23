@@ -29,7 +29,7 @@ module requirement_scope_1_mod
     end requirement
 
     ! R1605 would allow this, C1636 does not.
-    template tmpl(t)
+    template tmpl {t}
         deferred type :: t
         requirement tmpl_r {u}  ! {Error} a requirement can only be declared in the specification part of a main program or a module
             deferred type :: u

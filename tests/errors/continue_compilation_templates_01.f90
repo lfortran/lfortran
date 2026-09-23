@@ -35,7 +35,7 @@ module continue_compilation_templates_01_mod
     ! C1603 restricts a template specification part to declarations with the
     ! PARAMETER attribute, so the two erroneous declarations below are named
     ! constants.
-    template redecl_tmpl(T)
+    template redecl_tmpl {T}
         deferred type :: T
         integer, parameter :: n = 1
         real, parameter :: n = 1.0
@@ -75,7 +75,7 @@ module continue_compilation_templates_01_mod
     ! A deferred constant is declared by a deferred-const-decl-stmt (R1618).
     ! A plain type declaration of a deferred argument used to mean the same
     ! thing in LFortran; it is a C1603 violation and is now rejected.
-    template plain_const_tmpl(T3, n3)
+    template plain_const_tmpl {T3, n3}
         deferred type :: T3
         integer :: n3
     end template
@@ -83,7 +83,7 @@ module continue_compilation_templates_01_mod
     ! The same for an array deferred constant, to show the message does not
     ! depend on the entity's shape. A second one, to show compilation
     ! continues past the first.
-    template plain_const_array_tmpl(T4, n4)
+    template plain_const_array_tmpl {T4, n4}
         deferred type :: T4
         integer :: n4(3)
     end template

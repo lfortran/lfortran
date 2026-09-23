@@ -835,7 +835,7 @@ union_type_decl
     ;
 
 template_decl
-    : KW_TEMPLATE id "(" id_list_opt ")" sep decl_statements
+    : KW_TEMPLATE id "{" id_list_opt "}" sep decl_statements
         contains_block_opt KW_END KW_TEMPLATE id_opt sep {
             $$ = TEMPLATE($2, $4, $7, $8, $11, @$); }
     ;

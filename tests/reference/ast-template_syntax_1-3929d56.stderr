@@ -1,0 +1,23 @@
+syntax error: Token '(' is unexpected here
+  --> tests/errors/template_syntax_1.f90:22:26
+   |
+22 |     template one_arg_tmpl(u)  ! {Error} Token '(' is unexpected here
+   |                          ^ 
+
+syntax error: Token 'template' is unexpected here
+  --> tests/errors/template_syntax_1.f90:25:9
+   |
+25 |     end template
+   |         ^^^^^^^^ 
+
+syntax error: Token '(' is unexpected here
+  --> tests/errors/template_syntax_1.f90:27:25
+   |
+27 |     template no_arg_tmpl()  ! {Error} Token '(' is unexpected here
+   |                         ^ 
+
+syntax error: Token 'template' is unexpected here
+  --> tests/errors/template_syntax_1.f90:29:9
+   |
+29 |     end template
+   |         ^^^^^^^^ 

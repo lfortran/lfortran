@@ -35,7 +35,7 @@ module deferred_proc_decl_1_mod
     end requirement
 
     ! The interface-name resolves, but not to an interface.
-    template t1(p)
+    template t1 {p}
         deferred procedure (not_an_interface) :: p  ! {Error} 'not_an_interface' is not an interface
     end template
 
