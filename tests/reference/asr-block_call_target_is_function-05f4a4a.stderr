@@ -1,9 +1,5 @@
-ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
-  --> tests/asr/verify/block_call_target_is_function.asr:1:1 - 53:1
+ASR verify pass error [asr.verify.block_call.target_is_block]: BlockCall::m_m 'helper' must be a block
+  --> tests/asr/verify/block_call_target_is_function.asr:44:12
    |
- 1 |    (TranslationUnit
-   |    ^^^^^^^^^^^^^^^^...
-...
-   |
-53 |    )
-   | ...^ invalid ASR text here
+44 |           (BlockCall
+   |            ^^^^^^^^^ failed here

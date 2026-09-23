@@ -2,12 +2,12 @@
     "basename": "asr-struct_array_scalar_initializer-f0739ee",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/struct_array_scalar_initializer.asr",
-    "infile_hash": "ee13974cb907207e6eb973f704c80a0e5f673069db03b1f78482ac32",
+    "infile_hash": "1eac4af7d164322c99286e022abf1231ff63cac6cb7c782ad748bebb",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-struct_array_scalar_initializer-f0739ee.stderr",
-    "stderr_hash": "8d2f06d326d0f9d908bed9cf3f77929a5dcf626985d25bd43c051480",
+    "stderr_hash": "b2ce69383149a19b0e5e085eb74fdca781a69cb7d6a2bdf57b7a9801",
     "returncode": 2
 }

@@ -2,12 +2,12 @@
     "basename": "asr-binary_op_operand_kind_mismatch-5b1bcef",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/binary_op_operand_kind_mismatch.asr",
-    "infile_hash": "3786c2f989397e2f87f6dae881a67676b370a7097b38e417abcfb5b0",
+    "infile_hash": "9411677acec74ae83d5dc553de28afe6ba5594d7c58e7ad96b8d02de",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-binary_op_operand_kind_mismatch-5b1bcef.stderr",
-    "stderr_hash": "4e2a36c5013d4ae76658c361e605fb8017fc3b78f6f842738fd43371",
+    "stderr_hash": "76b00d6eaec5bbc08ef02027b5943669952ff768c7340303ac816124",
     "returncode": 2
 }

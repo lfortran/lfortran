@@ -2,12 +2,12 @@
     "basename": "asr-array_item_element_kind_mismatch-787860b",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/array_item_element_kind_mismatch.asr",
-    "infile_hash": "45c9941bb6d14509fdbfc06727f78169005f889f8d9030cd90040f93",
+    "infile_hash": "f4372c872dd52d4e7c168a2e02b2d0f8ea910d4f853053fe76b5af7a",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-array_item_element_kind_mismatch-787860b.stderr",
-    "stderr_hash": "d17cd829f4385155ddb1a96d33aa14fd75774034f42177cad6e16596",
+    "stderr_hash": "fd11d8e7aa7c75d116bf0f766d40a21e89c4e6734538ec3974d64711",
     "returncode": 2
 }

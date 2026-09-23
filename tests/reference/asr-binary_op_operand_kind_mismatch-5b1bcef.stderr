@@ -1,9 +1,5 @@
-ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
-  --> tests/asr/verify/binary_op_operand_kind_mismatch.asr:1:1 - 93:1
+ASR verify pass error [asr.verify.binary_op.operand_types_match]: RealBinOp operand types r64 and r32 do not match
+  --> tests/asr/verify/binary_op_operand_kind_mismatch.asr:68:14
    |
- 1 |    (TranslationUnit
-   |    ^^^^^^^^^^^^^^^^...
-...
-   |
-93 |    )
-   | ...^ invalid ASR text here
+68 |             (RealBinOp
+   |              ^^^^^^^^^ failed here

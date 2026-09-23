@@ -1,9 +1,5 @@
-ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
-  --> tests/asr/verify/assignment_realloc_nonallocatable.asr:1:1 - 59:1
+ASR verify pass error [asr.verify.assignment.realloc_lhs_requires_allocatable]: Reallocation of non allocatable variable is not allowed
+  --> tests/asr/verify/assignment_realloc_nonallocatable.asr:39:12
    |
- 1 |    (TranslationUnit
-   |    ^^^^^^^^^^^^^^^^...
-...
-   |
-59 |    )
-   | ...^ invalid ASR text here
+39 |           (Assignment
+   |            ^^^^^^^^^^ failed here

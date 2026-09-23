@@ -2,12 +2,12 @@
     "basename": "asr-abstract_type_variable-67417df",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/abstract_type_variable.asr",
-    "infile_hash": "e2bc971ebf1b246153d5c4c5716223159e9235fe2591af866eccceec",
+    "infile_hash": "78b6ad92bcc38171d0d598fc51727e165177aec761497cf0b8db2c2b",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-abstract_type_variable-67417df.stderr",
-    "stderr_hash": "1e2bd80cb894905b2c843844b9e6ac09a73dc5e6f733642a1efc4506",
+    "stderr_hash": "afbe6df8e9e2fb41e6313d87b275b7f032860bf209a5f4fe53b8b210",
     "returncode": 2
 }

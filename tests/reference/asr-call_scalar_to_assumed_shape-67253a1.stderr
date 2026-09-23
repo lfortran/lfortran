@@ -1,9 +1,5 @@
-ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
-   --> tests/asr/verify/call_scalar_to_assumed_shape.asr:1:1 - 141:1
+ASR verify pass error [asr.verify.call.actual_rank_matches_formal]: Actual argument type i32 does not match formal argument rank of type i32[:]
+   --> tests/asr/verify/call_scalar_to_assumed_shape.asr:128:18
     |
-  1 |    (TranslationUnit
-    |    ^^^^^^^^^^^^^^^^...
-...
-    |
-141 |    )
-    | ...^ invalid ASR text here
+128 |                 (Var
+    |                  ^^^ failed here

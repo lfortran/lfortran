@@ -1,9 +1,5 @@
-ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
-  --> tests/asr/verify/user_defined_type_member_missing.asr:1:1 - 57:1
-   |
- 1 |    (TranslationUnit
-   |    ^^^^^^^^^^^^^^^^...
-...
-   |
-57 |    )
-   | ...^ invalid ASR text here
+ASR verify pass error [asr.verify.user_defined_type.member_is_declared]: 'base' lists the member 'missing', which it does not declare
+ --> tests/asr/verify/user_defined_type_member_missing.asr:9:21
+  |
+9 |             "base" (Struct
+  |                     ^^^^^^ failed here

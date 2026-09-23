@@ -2,12 +2,12 @@
     "basename": "asr-struct_constructor_cyclic_parent-b184864",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/struct_constructor_cyclic_parent.asr",
-    "infile_hash": "e3dbea9154b7d7c4129fe17cea742bb00ee11f45a1429817090f47fd",
+    "infile_hash": "8749943bb27a7545761cd6a1f2309a628651580c84d72588a803e3ce",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-struct_constructor_cyclic_parent-b184864.stderr",
-    "stderr_hash": "007de4ea6a18603f2747956e22e5ab361e1ba173cc0a943e2b38353c",
+    "stderr_hash": "5fee28bd9ff3d37e51b14793283d9288f3655b718100a9d6419e8925",
     "returncode": 2
 }

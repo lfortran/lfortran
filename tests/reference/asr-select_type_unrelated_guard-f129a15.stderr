@@ -1,9 +1,5 @@
-ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
-   --> tests/asr/verify/select_type_unrelated_guard.asr:1:1 - 143:1
+ASR verify pass error [asr.verify.select_type.guard_extends_selector]: The type guard 'other' does not extend the declared type of the selector
+   --> tests/asr/verify/select_type_unrelated_guard.asr:126:12
     |
-  1 |    (TranslationUnit
-    |    ^^^^^^^^^^^^^^^^...
-...
-    |
-143 |    )
-    | ...^ invalid ASR text here
+126 |           (SelectType
+    |            ^^^^^^^^^^ failed here

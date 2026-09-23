@@ -1,9 +1,5 @@
-ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
-   --> tests/asr/verify/external_symbol_owner_is_program.asr:1:1 - 129:1
+ASR verify pass error [asr.verify.external_symbol.owner_is_importable]: ExternalSymbol::m_external 'p' is owned by the global scope, which cannot be imported from
+   --> tests/asr/verify/external_symbol_owner_is_program.asr:112:18
     |
-  1 |    (TranslationUnit
-    |    ^^^^^^^^^^^^^^^^...
-...
-    |
-129 |    )
-    | ...^ invalid ASR text here
+112 |             "p" (ExternalSymbol
+    |                  ^^^^^^^^^^^^^^ failed here

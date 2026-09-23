@@ -1,9 +1,5 @@
-ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
-   --> tests/asr/verify/bindc_string_array_physical_type.asr:1:1 - 120:1
-    |
-  1 |    (TranslationUnit
-    |    ^^^^^^^^^^^^^^^^...
-...
-    |
-120 |    )
-    | ...^ invalid ASR text here
+ASR verify pass error: Array of strings with physical type "StringArraySinglePointer" must have string physical type "CChar", not "DescriptorString"
+  --> tests/asr/verify/bindc_string_array_physical_type.asr:21:22
+   |
+21 |                     (Array
+   |                      ^^^^^ failed here

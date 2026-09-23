@@ -1,9 +1,5 @@
-ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
-   --> tests/asr/verify/implicit_interface_call_target.asr:1:1 - 122:1
+ASR verify pass error: FunctionCall::m_name f was declared external with no interface; the call must reference the signature inferred at this call site.
+   --> tests/asr/verify/implicit_interface_call_target.asr:103:14
     |
-  1 |    (TranslationUnit
-    |    ^^^^^^^^^^^^^^^^...
-...
-    |
-122 |    )
-    | ...^ invalid ASR text here
+103 |             (FunctionCall
+    |              ^^^^^^^^^^^^ failed here

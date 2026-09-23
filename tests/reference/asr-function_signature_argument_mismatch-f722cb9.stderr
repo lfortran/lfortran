@@ -1,9 +1,5 @@
-ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
-  --> tests/asr/verify/function_signature_argument_mismatch.asr:1:1 - 81:1
+ASR verify pass error [asr.verify.function.argument_type_matches_signature]: Function argument type r32 does not match signature type r64
+  --> tests/asr/verify/function_signature_argument_mismatch.asr:58:12
    |
- 1 |    (TranslationUnit
-   |    ^^^^^^^^^^^^^^^^...
-...
-   |
-81 |    )
-   | ...^ invalid ASR text here
+58 |           (Var
+   |            ^^^ failed here
