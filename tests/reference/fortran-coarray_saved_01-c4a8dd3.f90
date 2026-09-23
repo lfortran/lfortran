@@ -2,8 +2,8 @@ module coarray_saved_mod
 implicit none
 integer(4), pointer :: w
 integer(4), dimension(:), pointer :: x
-integer(4), pointer, save :: y
-integer(4), dimension(:), pointer, save :: z
+integer(4), pointer :: y
+integer(4), dimension(:), pointer :: z
 
 contains
 
@@ -44,8 +44,8 @@ use coarray_saved_mod, only: x
 use coarray_saved_mod, only: y
 use coarray_saved_mod, only: z
 implicit none
-integer(4), pointer, save :: a
-integer(4), dimension(:), pointer, save :: b
+integer(4), pointer :: a
+integer(4), dimension(:), pointer :: b
 integer(4), pointer :: c
 integer(4), dimension(:), pointer :: d
 integer(4) :: stat

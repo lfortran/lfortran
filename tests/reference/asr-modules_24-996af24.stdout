@@ -25,7 +25,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (StructType
                                         []
                                         []
@@ -54,7 +54,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Pointer
                                         (StructType
                                             [(Pointer

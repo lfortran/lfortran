@@ -175,7 +175,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Allocatable
                                         (Integer 4)
                                     )
@@ -201,7 +201,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Allocatable
                                         (Integer 4)
                                     )
@@ -227,7 +227,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Allocatable
                                         (Integer 4)
                                     )

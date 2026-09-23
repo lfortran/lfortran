@@ -15,7 +15,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -39,7 +39,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
@@ -63,7 +63,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
@@ -117,7 +117,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -147,7 +147,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -201,7 +201,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Pointer
                                         (Integer 4)
                                     )
@@ -227,7 +227,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -257,7 +257,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)

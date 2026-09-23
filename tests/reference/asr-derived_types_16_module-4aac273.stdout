@@ -65,7 +65,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Allocatable
                                         (StructType
                                             [(Integer 4)

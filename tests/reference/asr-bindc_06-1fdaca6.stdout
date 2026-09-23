@@ -85,7 +85,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Pointer
                                         (Integer 4)
                                     )
@@ -263,7 +263,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     BindC
@@ -287,7 +287,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 8)
                                     ()
                                     BindC
@@ -311,7 +311,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Logical 4)
                                     ()
                                     BindC
@@ -335,7 +335,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (CPtr
                                         CPointer
                                     )

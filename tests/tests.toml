@@ -6278,3 +6278,14 @@ filename = "../integration_tests/global_init_07.f90"
 # from the initializer it knows while the storage is sized from the value the
 # generated code has at that point.
 pass = "global_init"
+
+[[test]]
+filename = "../integration_tests/implicit_save_01.f90"
+# F2023 8.5.16: a variable declared in the scoping unit of a main program, a
+# module or a submodule implicitly has the SAVE attribute. Running the program
+# cannot tell that apart from not having it -- each of those scopes is entered
+# once, so nothing observes the persistence the attribute asks for -- and this
+# reference is therefore what guards the rule: `implied`, `sub_implied` and
+# `prog_implied` carry `Save` without `save` being written, the same storage
+# their `written` counterparts carry.
+asr = true

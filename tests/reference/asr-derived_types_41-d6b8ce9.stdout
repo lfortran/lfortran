@@ -434,7 +434,7 @@
                                             .false.
                                         )
                                     )
-                                    Default
+                                    Save
                                     (StructType
                                         [(Array
                                             (Integer 4)

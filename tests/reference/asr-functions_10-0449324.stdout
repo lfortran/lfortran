@@ -539,7 +539,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -569,7 +569,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -599,7 +599,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -629,7 +629,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -659,7 +659,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -689,7 +689,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)

@@ -6082,6 +6082,46 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             SymbolTable* current_scope, Allocator& al,
             const std::function<void (const std::string &, const Location &)> err);
 
+// F2023 8.5.16: "A variable, common block, or procedure pointer declared in
+// the scoping unit of a main program, a module, or a submodule implicitly has
+// the SAVE attribute, which may be confirmed by explicit specification."
+//
+// Whether this variable is one of those. Semantics sets the attribute on
+// exactly the variables this accepts, so `m_storage == Save` is the attribute
+// and no reader has to rediscover it; this answers the separate question of
+// where the attribute came from, which is what a reader must ask when it has
+// to tell an attribute the scope confers from one the program asked for.
+//
+// A procedure pointer, and a procedure named by `external` -- both carried as
+// a variable of function type until they are resolved -- are left out. Their
+// association is fixed once wherever they are declared, so the rule adds
+// nothing for them, and including them would change how they are generated.
+static inline bool save_implied_by_scope(const ASR::Variable_t* v) {
+    if (v->m_intent != ASR::intentType::Local) return false;
+    if (ASR::is_a<ASR::FunctionType_t>(
+            *type_get_past_allocatable_pointer(v->m_type))) {
+        return false;
+    }
+    const SymbolTable* scope = v->m_parent_symtab;
+    if (scope == nullptr || scope->asr_owner == nullptr) return false;
+    if (!ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) return false;
+    ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+    // A submodule is carried as a Module_t too.
+    return ASR::is_a<ASR::Module_t>(*owner) || ASR::is_a<ASR::Program_t>(*owner);
+}
+
+// Whether a variable needs storage that outlives an invocation of the scope
+// that declares it. A main program, a module and a submodule are entered once,
+// so although every local of one has the SAVE attribute, none of them needs
+// anything beyond the storage an ordinary local gets; only a local of a
+// procedure or of a block does. A backend picking a storage class is asking
+// this question, not the attribute question: reading the attribute there would
+// let how a declaration was spelled decide how it is generated.
+static inline bool needs_static_storage(const ASR::Variable_t* v) {
+    return v->m_storage == ASR::storage_typeType::Save
+        && !save_implied_by_scope(v);
+}
+
 static inline ASR::storage_typeType symbol_StorageType(const ASR::symbol_t* s){
     switch( s->type ) {
         case ASR::symbolType::Variable: {

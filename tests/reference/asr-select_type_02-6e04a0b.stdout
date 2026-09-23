@@ -195,7 +195,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (StructType
                                         [(Integer 4)]
                                         []
@@ -224,7 +224,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (StructType
                                         [(Real 4)
                                         (Real 4)]
@@ -254,7 +254,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (StructType
                                         [(Real 4)]
                                         []
@@ -283,7 +283,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Pointer
                                         (StructType
                                             [(Real 4)

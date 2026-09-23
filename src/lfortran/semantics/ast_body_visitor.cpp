@@ -5548,6 +5548,11 @@ public:
         starting_m_body = nullptr;
         starting_n_body =  0;
         remove_common_variable_declarations(current_scope);
+        // The symbol table visitor already did this for the program's scope,
+        // but this pass adds variables of its own to it -- an implicitly typed
+        // name first seen in the body, for one -- and they have the attribute
+        // too (F2023 8.5.16).
+        set_implicit_save_attribute();
         current_scope = old_scope;
         tmp = nullptr;
     }

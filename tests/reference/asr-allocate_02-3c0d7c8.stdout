@@ -15,7 +15,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Allocatable
                                         (Array
                                             (Integer 4)
@@ -47,7 +47,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Allocatable
                                         (Array
                                             (Integer 4)
@@ -79,7 +79,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Allocatable
                                         (Array
                                             (Integer 4)
@@ -111,7 +111,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -135,7 +135,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -159,7 +159,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source

@@ -608,6 +608,7 @@ public:
                     diag::Label("", {tmp->loc})}));
             throw SemanticAbort();
         }
+        set_implicit_save_attribute();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         initialize_has_submodules(m);
@@ -880,6 +881,7 @@ public:
             throw SemanticAbort();
         }
         handle_save();
+        set_implicit_save_attribute();
         // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
         add_generic_procedures();
         evaluate_postponed_calls_to_genericProcedure();

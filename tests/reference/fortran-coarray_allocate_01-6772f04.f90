@@ -12,7 +12,7 @@ end type prif_coarray_handle
 program coarray_allocate_01
 implicit none
 integer(4), pointer :: a
-integer(4), dimension(:), pointer, save :: b
+integer(4), dimension(:), pointer :: b
 character(len=100, kind=1) :: errmsg
 integer(4) :: stat
 integer(4) :: stat1

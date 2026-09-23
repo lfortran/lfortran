@@ -653,7 +653,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (StructType
                                         [(Real 4)
                                         (Real 4)]
@@ -683,7 +683,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (StructType
                                         [(Real 4)
                                         (Real 4)]
@@ -723,7 +723,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Real 4)
                                     ()
                                     Source
@@ -747,7 +747,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Real 4)
                                     ()
                                     Source
@@ -771,7 +771,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Real 4)
                                     ()
                                     Source
@@ -795,7 +795,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -819,7 +819,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -843,7 +843,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Real 4)
                                     ()
                                     Source

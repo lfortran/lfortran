@@ -1,7 +1,7 @@
 module coarray_saved_mod
 implicit none
-integer(4), pointer, save :: x
-integer(4), dimension(:), pointer, save :: y
+integer(4), pointer :: x
+integer(4), dimension(:), pointer :: y
 
 contains
 
@@ -43,10 +43,10 @@ use coarray_saved_mod, only: mod_sub
 use coarray_saved_mod, only: x
 use coarray_saved_mod, only: y
 implicit none
-integer(4), pointer, save :: a
-integer(4), dimension(:), pointer, save :: b
-integer(4), pointer, save :: c
-integer(4), dimension(:), pointer, save :: d
+integer(4), pointer :: a
+integer(4), dimension(:), pointer :: b
+integer(4), pointer :: c
+integer(4), dimension(:), pointer :: d
 integer(4) :: me
 integer(4) :: stat
 call __lfortran_global_init_coarray_initialization_01()

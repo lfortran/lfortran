@@ -3414,7 +3414,12 @@ class TransformVariableInitialiser:
             (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) ||
             skip_parameter_constant || (
-                x.m_storage == ASR::storage_typeType::Save &&
+                // A variable the backend initializes statically: it needs no
+                // runtime assignment here. The question is whether it gets
+                // static storage, not whether it has the save attribute --
+                // every local of a main program has that (F2023 8.5.16) yet
+                // is initialized in the program's body like any other local.
+                ASRUtils::needs_static_storage(&x) &&
                 value &&
                 ASRUtils::is_value_constant(value)
             )
@@ -3815,7 +3820,7 @@ class VerifySimplifierASROutput:
             !(check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) &&
-            !(x.m_storage == ASR::storage_typeType::Save && x.m_symbolic_value &&
+            !(ASRUtils::needs_static_storage(&x) && x.m_symbolic_value &&
                 ASRUtils::is_value_constant(x.m_symbolic_value)
             ) &&
             x.m_storage != ASR::storage_typeType::Parameter ) {

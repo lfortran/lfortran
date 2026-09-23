@@ -35,7 +35,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (CPtr
                                         CPointer
                                     )
@@ -61,7 +61,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Pointer
                                         (Integer 4)
                                     )

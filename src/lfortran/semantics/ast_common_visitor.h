@@ -2463,6 +2463,29 @@ public:
         return sub;
     }
 
+    // F2023 8.5.16: "A variable, common block, or procedure pointer declared
+    // in the scoping unit of a main program, a module, or a submodule
+    // implicitly has the SAVE attribute, which may be confirmed by explicit
+    // specification." Give it to every local of such a scope, so that
+    // `m_storage == Save` answers that question rather than the syntactic one
+    // ("was `save` spelled?"), and two readers of the field cannot disagree
+    // about the same object. Spelling `save` then only confirms what the
+    // declaration already meant, and must not change what is generated for it.
+    //
+    // This runs over the finished scope rather than at each declaration
+    // because a scope collects its variables from several places: explicit
+    // declarations, implicit typing, and the main program's second pass.
+    void set_implicit_save_attribute() {
+        for (auto &it: current_scope->get_scope()) {
+            ASR::symbol_t* sym = it.second;
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            if (var->m_storage != ASR::storage_typeType::Default) continue;
+            if (!ASRUtils::save_implied_by_scope(var)) continue;
+            var->m_storage = ASR::storage_typeType::Save;
+        }
+    }
+
     ASR::symbol_t* declare_implicit_variable(const Location &loc,
             const std::string &var_name, ASR::intentType intent, ASR::expr_t* value = nullptr) {
         ASR::ttype_t *type = nullptr;

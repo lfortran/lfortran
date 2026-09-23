@@ -316,7 +316,7 @@ public:
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }
-            if (dims.size() == 0 && v.m_storage == ASR::storage_typeType::Save && use_static) {
+            if (dims.size() == 0 && ASRUtils::needs_static_storage(&v) && use_static) {
                 sub = "static " + sub;
             }
             if (dims.size() == 0 && v.m_symbolic_value) {

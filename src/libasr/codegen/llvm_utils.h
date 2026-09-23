@@ -2246,21 +2246,12 @@ class ASRToLLVMVisitor;
                 }
                 return true;
             }
-            if (v->m_storage == ASR::Save) {
-                // Save variables in functions persist across calls and must not
-                // be finalized at function exit.  In the main Program, however,
-                // save struct variables have string members whose data is
-                // heap-allocated during struct initialization.  These must be
-                // finalized at program exit to avoid leaking that memory.
-                // (Plain save strings have static data and must NOT be freed.)
-                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
-                    v->m_parent_symtab->asr_owner);
-                if (ASR::is_a<ASR::Program_t>(*owner)) {
-                    ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
-                    if (ASR::is_a<ASR::StructType_t>(*t)) {
-                        return false;
-                    }
-                }
+            if (ASRUtils::needs_static_storage(v)) {
+                // A save local of a procedure or a block is given static
+                // storage, persists across invocations of its scope and must
+                // not be finalized when one of them ends.  A local of a main
+                // program has the save attribute too (F2023 8.5.16) but not
+                // static storage, so it is finalized like any other local.
                 return true;
             }
             // Module-scope non-allocatable, non-pointer string variables
