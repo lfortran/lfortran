@@ -10,28 +10,28 @@ subroutine __lfortran_global_init_coarrays_50_m()
         __lfortran_global_init_done = .true.
         call __module_prif_prif_init(stat)
         call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(),&
-         __module_coarrays_50_m_mod_bump_mc__coarray_handle, __module_coarrays_50_m_mod_bump_mc__coarray_data)
-        call c_f_pointer(__module_coarrays_50_m_mod_bump_mc__coarray_data, __module_coarrays_50_m_mod_bump_mc__coarray_ptr)
-        __module_coarrays_50_m_mod_bump_mc__coarray_ptr = 100
+         __module_coarrays_50_m_mod_bump_i__coarray_handle, __module_coarrays_50_m_mod_bump_i__coarray_data)
+        call c_f_pointer(__module_coarrays_50_m_mod_bump_i__coarray_data, __module_coarrays_50_m_mod_bump_i__coarray_ptr)
+        __module_coarrays_50_m_mod_bump_i__coarray_ptr = 100
         call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(),&
-         __module_coarrays_50_m_mod_remote_mr__coarray_handle, __module_coarrays_50_m_mod_remote_mr__coarray_data)
-        call c_f_pointer(__module_coarrays_50_m_mod_remote_mr__coarray_data, __module_coarrays_50_m_mod_remote_mr__coarray_ptr)
-        __module_coarrays_50_m_mod_remote_mr__coarray_ptr = 500
+         __module_coarrays_50_m_mod_remote_i__coarray_handle, __module_coarrays_50_m_mod_remote_i__coarray_data)
+        call c_f_pointer(__module_coarrays_50_m_mod_remote_i__coarray_data, __module_coarrays_50_m_mod_remote_i__coarray_ptr)
+        __module_coarrays_50_m_mod_remote_i__coarray_ptr = 500
     end if
 end subroutine __lfortran_global_init_coarrays_50_m
 
 subroutine mod_bump(v)
     integer(4), intent(out) :: v
-    __module_coarrays_50_m_mod_bump_mc__coarray_ptr = __module_coarrays_50_m_mod_bump_mc__coarray_ptr + 1
-    v = __module_coarrays_50_m_mod_bump_mc__coarray_ptr
+    __module_coarrays_50_m_mod_bump_i__coarray_ptr = __module_coarrays_50_m_mod_bump_i__coarray_ptr + 1
+    v = __module_coarrays_50_m_mod_bump_i__coarray_ptr
 end subroutine mod_bump
 
 subroutine mod_remote(v)
     integer(4), intent(out) :: v
-    __module_coarrays_50_m_mod_remote_mr__coarray_ptr = __module_coarrays_50_m_mod_remote_mr__coarray_ptr + lcompilers_p&
-        rif_this_image()
+    __module_coarrays_50_m_mod_remote_i__coarray_ptr = __module_coarrays_50_m_mod_remote_i__coarray_ptr + lcompilers_pri&
+        f_this_image()
     call __module_prif_prif_sync_all()
-    v = lcompilers_prif_get_integer(4)(__module_coarrays_50_m_mod_remote_mr__coarray_handle, [int(1, kind=8)], int(0,&
+    v = lcompilers_prif_get_integer(4)(__module_coarrays_50_m_mod_remote_i__coarray_handle, [int(1, kind=8)], int(0,&
          kind=8))
 end subroutine mod_remote
 
@@ -98,28 +98,28 @@ subroutine __lfortran_global_init_coarrays_50()
         __lfortran_global_init_done = .true.
         call __lfortran_global_init_coarrays_50_m()
         call __module_prif_prif_init(stat)
-        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), ic__coarray_handle,&
-         ic__coarray_data)
-        call c_f_pointer(ic__coarray_data, ic__coarray_ptr)
-        ic__coarray_ptr = 200
-        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), ir__coarray_handle,&
-         ir__coarray_data)
-        call c_f_pointer(ir__coarray_data, ir__coarray_ptr)
-        ir__coarray_ptr = 600
+        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), i__coarray_handle,&
+         i__coarray_data)
+        call c_f_pointer(i__coarray_data, i__coarray_ptr)
+        i__coarray_ptr = 200
+        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), i__coarray_handle1,&
+         i__coarray_data1)
+        call c_f_pointer(i__coarray_data1, i__coarray_ptr1)
+        i__coarray_ptr1 = 600
     end if
 end subroutine __lfortran_global_init_coarrays_50
 
 subroutine int_bump(v)
     integer(4), intent(out) :: v
-    ic__coarray_ptr = ic__coarray_ptr + 1
-    v = ic__coarray_ptr
+    i__coarray_ptr = i__coarray_ptr + 1
+    v = i__coarray_ptr
 end subroutine int_bump
 
 subroutine int_remote(v)
     integer(4), intent(out) :: v
-    ir__coarray_ptr = ir__coarray_ptr + lcompilers_prif_this_image()
+    i__coarray_ptr1 = i__coarray_ptr1 + lcompilers_prif_this_image()
     call __module_prif_prif_sync_all()
-    v = lcompilers_prif_get_integer(4)(ir__coarray_handle, [int(1, kind=8)], int(0, kind=8))
+    v = lcompilers_prif_get_integer(4)(i__coarray_handle1, [int(1, kind=8)], int(0, kind=8))
 end subroutine int_remote
 
 interface

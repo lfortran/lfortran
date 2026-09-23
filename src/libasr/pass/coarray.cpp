@@ -1889,13 +1889,57 @@ class PRIFInterface {
             return name + var->m_name;
         }
 
+        // Whether a scope nested in `scope` -- an internal procedure or a
+        // block, at any depth -- declares `name`.
+        static bool declared_in_nested_scope(SymbolTable *scope,
+                const std::string &name) {
+            for (auto &item : scope->get_scope()) {
+                ASR::symbol_t *sym = item.second;
+                SymbolTable *nested = nullptr;
+                if (ASR::is_a<ASR::Function_t>(*sym)) {
+                    nested = ASR::down_cast<ASR::Function_t>(sym)->m_symtab;
+                } else if (ASR::is_a<ASR::Block_t>(*sym)) {
+                    nested = ASR::down_cast<ASR::Block_t>(sym)->m_symtab;
+                } else if (ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
+                    nested = ASR::down_cast<ASR::AssociateBlock_t>(sym)->m_symtab;
+                }
+                if (nested == nullptr || nested->parent != scope) continue;
+                if (nested->get_symbol(name) != nullptr
+                        || declared_in_nested_scope(nested, name)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // A name for a companion the translation unit's scope declares on
+        // behalf of a coarray `decl_scope` declares, derived from `base`.
+        // Being free in the translation unit's scope is not enough: `base` is
+        // built from the coarray's own name, so it can be a name the user
+        // wrote, and a companion named like a variable of `decl_scope`, of a
+        // scope enclosing it or of one nested in it would be shadowed by that
+        // variable everywhere the coarray is used. So the name must be one
+        // nothing there can already see; resolving it from `decl_scope`
+        // covers the enclosing scopes up to and including the translation
+        // unit's.
+        std::string unique_companion_name(SymbolTable *decl_scope,
+                const std::string &base) {
+            std::string name = base;
+            int counter = 1;
+            while (decl_scope->resolve_symbol(name) != nullptr
+                    || declared_in_nested_scope(decl_scope, name)) {
+                name = base + std::to_string(counter);
+                counter++;
+            }
+            return name;
+        }
+
         // A saved coarray's Fortran pointer, on its way out of the procedure
         // that declares it and into the translation unit's scope.
         struct HoistedPointer {
             ASR::Variable_t *var;
             std::string key;   // the name it is filed under where declared
             std::string name;  // the name it takes in the global scope
-            bool use_unique_id;
             ASR::abiType abi;
         };
 
@@ -1903,7 +1947,10 @@ class PRIFInterface {
         // declares it and into the translation unit's scope, under a derived
         // name. Everything that reads the coarray holds the symbol itself, in
         // an ASR::Var_t, and the global scope encloses every procedure, so
-        // nothing has to be rewritten to follow it.
+        // renaming the symbol renames every reference to it: nothing has to
+        // be rewritten to follow it, and `declare_coarray_companions` has
+        // already made sure the new name is not one a user variable visible
+        // to those references could shadow.
         //
         // What this buys: the pointer now lives where the unit's startup
         // initializer can reach it, so that initializer binds it once, right
@@ -1914,8 +1961,7 @@ class PRIFInterface {
         // within `do concurrent` with offloading.
         void hoist_saved_pointer(const HoistedPointer &h) {
             SymbolTable *from = ASRUtils::symbol_parent_symtab(&h.var->base);
-            std::string name = unit.m_symtab->get_unique_name(
-                h.name, h.use_unique_id);
+            std::string name = unit.m_symtab->get_unique_name(h.name, false);
             from->erase_symbol(h.key);
             h.var->m_name = s2c(al, name);
             h.var->m_parent_symtab = unit.m_symtab;
@@ -1952,7 +1998,6 @@ class PRIFInterface {
                 // The name this coarray's own pointer takes in the global
                 // scope, empty when it stays where it was declared.
                 std::string pname;
-                bool pname_use_unique_id = false;
 
                 if (is_save && scope != unit.m_symtab) {
                     companion_scope = unit.m_symtab;
@@ -1970,8 +2015,10 @@ class PRIFInterface {
                             *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))
                         && !ASRUtils::is_allocatable(var->m_type);
                     if (module_owned) {
-                        // Deterministic, so the name matches the one the
-                        // module's own object file gave these.
+                        // Deterministic, so a unit that only uses the module
+                        // derives the name the module's own object file gave
+                        // these. No user variable can shadow these: a Fortran
+                        // name cannot begin with an underscore.
                         std::string base = module_companion_basename(var);
                         hname = companion_scope->get_unique_name(
                             base + "__coarray_handle", false);
@@ -1984,11 +2031,13 @@ class PRIFInterface {
                             companion_abi = ASR::abiType::ExternalUndefined;
                         }
                     } else {
-                        hname = companion_scope->get_unique_name(vname + "__coarray_handle");
-                        dname = companion_scope->get_unique_name(vname + "__coarray_data");
+                        hname = unique_companion_name(scope,
+                            vname + "__coarray_handle");
+                        dname = unique_companion_name(scope,
+                            vname + "__coarray_data");
                         if (procedure_local) {
-                            pname = vname + "__coarray_ptr";
-                            pname_use_unique_id = true;
+                            pname = unique_companion_name(scope,
+                                vname + "__coarray_ptr");
                         }
                     }
                 }
@@ -2039,7 +2088,6 @@ class PRIFInterface {
                     h.var = var;
                     h.key = item.first;
                     h.name = pname;
-                    h.use_unique_id = pname_use_unique_id;
                     h.abi = companion_abi;
                     hoists.push_back(h);
                 }
