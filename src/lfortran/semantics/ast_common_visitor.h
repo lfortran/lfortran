@@ -5952,10 +5952,268 @@ public:
         throw SemanticAbort();
     }
 
+    // F2028 16.4.1.3 deferred constants.
+    //
+    //   R1618  deferred-const-decl-stmt  is  DEFERRED declaration-type-spec,
+    //              deferred-const-attr-spec-list :: deferred-const-entity-decl-list
+    //
+    // The parser represents the statement as an ordinary `Declaration` node
+    // whose attribute list starts with the `deferred` attribute (see
+    // DEFERRED_CONST_DECL in parser/semantics.h), the same way `deferred type ::`
+    // is a `DerivedType` node carrying that attribute. `deferred` cannot reach a
+    // `Declaration` node any other way -- the only other place the parser
+    // accepts the keyword is a type-bound procedure declaration, which is a
+    // `DerivedTypeProc` node -- so the attribute alone identifies R1618.
+    static bool is_deferred_const_decl(const AST::Declaration_t &x) {
+        for (size_t i = 0; i < x.n_attributes; i++) {
+            if (AST::is_a<AST::SimpleAttribute_t>(*x.m_attributes[i])
+                    && AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[i])
+                        ->m_attr == AST::simple_attributeType::AttrDeferred) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // True if `t` specifies an assumed character length, i.e. `character(*)`,
+    // `character(len=*)` or `character*(*)`. The length is the first kind item
+    // without a keyword, or the one named `len`; `character` with no kind items
+    // at all has length one, which is not assumed.
+    static bool is_assumed_character_length(const AST::AttrType_t &t) {
+        if (t.n_kind == 0) {
+            return t.m_sym == AST::symbolType::DoubleAsterisk;
+        }
+        for (size_t i = 0; i < t.n_kind; i++) {
+            if (t.m_kind[i].m_id == nullptr
+                    || to_lower(t.m_kind[i].m_id) == "len") {
+                return t.m_kind[i].m_type == AST::kind_item_typeType::Star;
+            }
+        }
+        return false;
+    }
+
+    // Checks the constraints on a deferred-const-decl-stmt (F2028 C1618-C1621).
+    //
+    // They are checked here, once for the whole statement, and not in the
+    // per-entity loop of visit_DeclarationUtil: C1618 and C1619 constrain the
+    // statement, so a three-entity declaration must not report them three
+    // times, and the entity constraints (C1620, C1621) are cheaper to report
+    // together with them than to thread through that loop. Checking them before
+    // any symbol is created also means the loop below never has to cope with a
+    // declaration that the standard does not allow.
+    void check_deferred_const_decl(const AST::Declaration_t &x) {
+        // A deferred constant is a deferred argument (16.4.1.3 p1), so the
+        // statement is only meaningful where deferred arguments are declared:
+        // the specification part of a REQUIREMENT or TEMPLATE construct, or of
+        // a templated subprogram (R1615).
+        if (!(is_template || is_requirement)) {
+            diag.add(Diagnostic(
+                "a `deferred` declaration is only allowed in a requirement, a"
+                " template or a templated subprogram",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        // C1618: A deferred-const-attr-spec-list shall specify the PARAMETER
+        // attribute. R1619 allows only DIMENSION, PARAMETER and a rank-clause,
+        // which is all the parser accepts, so only PARAMETER can be missing.
+        bool has_parameter = false;
+        for (size_t i = 0; i < x.n_attributes; i++) {
+            if (AST::is_a<AST::SimpleAttribute_t>(*x.m_attributes[i])
+                    && AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[i])
+                        ->m_attr == AST::simple_attributeType::AttrParameter) {
+                has_parameter = true;
+            }
+        }
+        if (!has_parameter) {
+            diag.add(Diagnostic(
+                "a `deferred` constant declaration must specify the `parameter`"
+                " attribute",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        // C1619: the declaration-type-spec shall specify type integer, logical
+        // or character, and a character type shall have assumed length. A
+        // deferred constant is substituted by the instantiation argument, so
+        // only the types that a constant expression can be built from at
+        // instantiation time are allowed, and the length of a character
+        // constant comes from that argument rather than from the template.
+        if (x.m_vartype == nullptr
+                || !AST::is_a<AST::AttrType_t>(*x.m_vartype)) {
+            diag.add(Diagnostic(
+                "the type of a `deferred` constant must be integer, logical or"
+                " character",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        AST::AttrType_t *t = AST::down_cast<AST::AttrType_t>(x.m_vartype);
+        if (t->m_type != AST::decl_typeType::TypeInteger
+                && t->m_type != AST::decl_typeType::TypeLogical
+                && t->m_type != AST::decl_typeType::TypeCharacter) {
+            diag.add(Diagnostic(
+                "the type of a `deferred` constant must be integer, logical or"
+                " character",
+                Level::Error, Stage::Semantic, {
+                    Label("", {t->base.base.loc})}));
+            throw SemanticAbort();
+        }
+        if (t->m_type == AST::decl_typeType::TypeCharacter
+                && !is_assumed_character_length(*t)) {
+            diag.add(Diagnostic(
+                "a `deferred` character constant must have assumed length,"
+                " declared as `character(*)`",
+                Level::Error, Stage::Semantic, {
+                    Label("", {t->base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        // The array-spec of a deferred constant can come from the entity
+        // declaration (R1620), from a DIMENSION attribute or from a rank-clause
+        // (R1619); C1621 applies to all three the same way.
+        AST::dimension_t *attr_dim = nullptr;
+        size_t attr_n_dim = 0;
+        Location attr_dim_loc = x.base.base.loc;
+        bool has_rank_clause = false;
+        for (size_t i = 0; i < x.n_attributes; i++) {
+            if (AST::is_a<AST::AttrDimension_t>(*x.m_attributes[i])) {
+                AST::AttrDimension_t *ad =
+                    AST::down_cast<AST::AttrDimension_t>(x.m_attributes[i]);
+                attr_dim = ad->m_dim;
+                attr_n_dim = ad->n_dim;
+                attr_dim_loc = ad->base.base.loc;
+            } else if (AST::is_a<AST::AttrRank_t>(*x.m_attributes[i])) {
+                has_rank_clause = true;
+                attr_dim_loc = x.m_attributes[i]->base.loc;
+            }
+        }
+
+        for (size_t i = 0; i < x.n_syms; i++) {
+            AST::var_sym_t &s = x.m_syms[i];
+            // R1620 is `deferred-const-name [ ( array-spec ) ]`: there is no
+            // place for an initializer, the value comes from instantiation.
+            if (s.m_initializer != nullptr) {
+                diag.add(Diagnostic(
+                    "a `deferred` constant must not be given a value; its value"
+                    " comes from the instantiation argument",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {s.loc})}));
+                throw SemanticAbort();
+            }
+            // C1620: A deferred-const-name shall be the name of a deferred
+            // constant, i.e. of a deferred argument of the scoping unit
+            // containing the statement (16.4.1.3 p1, R1615).
+            if (std::find(current_procedure_args.begin(),
+                    current_procedure_args.end(), to_lower(s.m_name))
+                    == current_procedure_args.end()) {
+                diag.add(Diagnostic(
+                    "'" + to_lower(s.m_name) + "' is not a deferred argument of"
+                    " this template or requirement",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {s.loc})}));
+                throw SemanticAbort();
+            }
+            if (s.n_dim > 0 && (attr_n_dim > 0 || has_rank_clause)) {
+                diag.add(Diagnostic(
+                    "the rank of '" + to_lower(s.m_name) + "' is specified"
+                    " twice",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {s.loc}),
+                        Label("", {attr_dim_loc}, false)}));
+                throw SemanticAbort();
+            }
+            AST::dimension_t *dim = s.n_dim > 0 ? s.m_dim : attr_dim;
+            size_t n_dim = s.n_dim > 0 ? s.n_dim : attr_n_dim;
+            Location dim_loc = s.n_dim > 0 ? s.loc : attr_dim_loc;
+            check_deferred_const_array_spec(dim, n_dim, dim_loc);
+            if (n_dim > 0 || has_rank_clause) {
+                diag.add(Diagnostic(
+                    "a `deferred` constant that is an array is not supported"
+                    " yet",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {dim_loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
+    // C1621: An array-spec in a deferred-const-decl-stmt shall be an
+    // implied-shape-spec, assumed-implied-spec, explicit-shape-spec-list, or
+    // explicit-shape-bounds-spec. It shall not explicitly specify any lower
+    // bound.
+    //
+    // Each of those four forms maps onto one shape of the AST dimension list:
+    //   * explicit-shape-spec-list and explicit-shape-bounds-spec are every
+    //     dimension being an upper bound expression -- `(3)`, `(3,4)`, and, for
+    //     the bounds form, an upper bound that is itself an array, `(v1)`;
+    //   * assumed-implied-spec is a single `*`, and implied-shape-spec is two or
+    //     more of them -- `(*)`, `(*,*)`;
+    //   * an implied-rank-spec `(..)` is a single dimension of its own
+    //     (F2028 C835 allows it only here).
+    // Everything else is either an assumed- or deferred-shape spec, which a
+    // named constant cannot have, or an assumed-size spec, which C840 restricts
+    // to dummy arguments.
+    //
+    // The clause of C1621 that forbids an explicit lower bound -- NOTE 1 of
+    // 16.4.1.3 says the lower bounds are always one, so not even `(1:3)` may be
+    // spelled -- is not checked here. `array_comp_decl` synthesizes the implicit
+    // lower bound, so `(3)` reaches the semantic stage as `1:3` and the two
+    // cannot be told apart without either restating the whole array-spec rule
+    // for this one statement or stopping the synthesis for every array
+    // declaration in the language. Nothing is accepted that should not be: an
+    // array deferred constant of any shape is rejected below as unimplemented,
+    // so `(1:3)` is rejected too, only with a less specific message. The check
+    // belongs with the implementation of array deferred constants, which has to
+    // represent an implied-shape entity properly in any case.
+    void check_deferred_const_array_spec(AST::dimension_t *dim, size_t n_dim,
+            const Location &loc) {
+        bool all_star = true, all_explicit = true;
+        for (size_t i = 0; i < n_dim; i++) {
+            if (dim[i].m_end_star == AST::dimension_typeType::AssumedRank) {
+                if (n_dim != 1) {
+                    diag.add(Diagnostic(
+                        "`..` must be the only dimension of a `deferred`"
+                        " constant",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {dim[i].loc})}));
+                    throw SemanticAbort();
+                }
+                return;
+            }
+            bool is_star = dim[i].m_end_star
+                == AST::dimension_typeType::DimensionStar;
+            if (!is_star && dim[i].m_end == nullptr) {
+                diag.add(Diagnostic(
+                    "a `deferred` constant must not have an assumed or deferred"
+                    " shape `:`",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {dim[i].loc})}));
+                throw SemanticAbort();
+            }
+            all_star = all_star && is_star;
+            all_explicit = all_explicit && !is_star;
+        }
+        if (n_dim > 0 && !all_star && !all_explicit) {
+            diag.add(Diagnostic(
+                "the dimensions of a `deferred` constant must be either all"
+                " upper bounds, as in `(3,4)`, or all `*`, as in `(*,*)`",
+                Level::Error, Stage::Semantic, {
+                    Label("", {loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         _declaring_variable = true;
         current_variable_type_ = nullptr;
         current_struct_type_var_expr = nullptr;
+
+        if (is_deferred_const_decl(x)) {
+            check_deferred_const_decl(x);
+        }
 
         for (size_t i = 0; i < x.n_attributes; i++) {
             if (AST::is_a<AST::AttrType_t>(*x.m_attributes[i])) {
@@ -8155,6 +8413,12 @@ public:
                             } else if (sa->m_attr == AST::simple_attributeType::AttrProtected) {
                                 is_protected = true;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
+                            } else if (sa->m_attr == AST::simple_attributeType::AttrDeferred) {
+                                // F2028 R1618 marks a deferred constant, whose
+                                // declaration check_deferred_const_decl() has
+                                // already validated. The variable itself is an
+                                // ordinary named constant of the template, so
+                                // there is nothing more to do here.
                             } else if (sa->m_attr == AST::simple_attributeType::AttrKind) {
                                 // PDT kind parameter: treat as a Parameter variable
                                 is_kind_parameter = true;

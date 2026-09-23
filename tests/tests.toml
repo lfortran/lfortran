@@ -561,6 +561,10 @@ filename = "errors/template_spec_decl_1.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/deferred_const_decl_1.f90"
+show_asr_with_cc = true
+
+[[test]]
 filename = "errors/requirement_syntax_1.f90"
 syntax_only_cc = true
 
