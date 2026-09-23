@@ -2,7 +2,7 @@
     "basename": "asr-block_call_target_is_function-05f4a4a",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/block_call_target_is_function.asr",
-    "infile_hash": "475881650dc4de385b1f94b477c1944556b2009a3e787fb83531fb1d",
+    "infile_hash": "c04d108592f478233853635ae77322b684588e97f52730b86dc5ad68",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

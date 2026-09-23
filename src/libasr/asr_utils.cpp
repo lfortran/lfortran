@@ -1490,7 +1490,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     ASR::asr_t *orig_asr_owner = symtab->asr_owner;
     ASR::TranslationUnit_t *tu
         = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, loc,
-            symtab, nullptr, 0));
+            symtab, nullptr, 0, nullptr));
 
     // Load any dependent modules recursively
     bool rerun = true;
@@ -1638,7 +1638,7 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
     ASR::asr_t *orig_asr_owner = symtab->asr_owner;
     ASR::TranslationUnit_t *tu
         = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, loc,
-            symtab, nullptr, 0));
+            symtab, nullptr, 0, nullptr));
 
     // Keeps track of loaded dependent modules whose submodules are not yet loaded
     std::vector<ASR::Module_t*> dependent_modules_with_not_yet_loaded_submodules;
