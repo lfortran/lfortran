@@ -158,8 +158,10 @@
         :name "p"
         :dependencies []
         :body []
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

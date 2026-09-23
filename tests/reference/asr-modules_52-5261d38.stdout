@@ -190,6 +190,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             module_52_tomlf_de:
                 (Module
@@ -530,6 +531,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             module_52_tomlf_error:
                 (Module
@@ -623,6 +625,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             module_52_tomlf_type:
                 (Module
@@ -724,7 +727,9 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

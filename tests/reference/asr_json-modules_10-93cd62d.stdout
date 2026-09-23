@@ -141,7 +141,8 @@
                         ],
                         "loaded_from_mod": false,
                         "intrinsic": false,
-                        "has_submodules": false
+                        "has_submodules": false,
+                        "global_init": []
                     },
                     "loc": {
                         "first": 148,
@@ -424,7 +425,8 @@
                         "dependencies": [],
                         "loaded_from_mod": false,
                         "intrinsic": false,
-                        "has_submodules": false
+                        "has_submodules": false,
+                        "global_init": []
                     },
                     "loc": {
                         "first": 0,
@@ -439,7 +441,8 @@
                 }
             }
         },
-        "items": []
+        "items": [],
+        "global_init": []
     },
     "loc": {
         "first": 0,

@@ -7,7 +7,7 @@ The root of every ASR graph.
 ### Syntax
 
 ```text
-TranslationUnit(symbol_table symtab, node* items)
+TranslationUnit(symbol_table symtab, node* items, identifier? global_init)
 ```
 
 ### Arguments
@@ -16,6 +16,7 @@ TranslationUnit(symbol_table symtab, node* items)
 |----------|-------------|
 | `symtab` | the global symbol table, with `id` 0. It owns every program, module, function and global variable of the translation unit. |
 | `items` | statements and expressions that are not inside any program unit yet. Only the interactive frontends produce them; the `global_stmts` pass moves them into a program before the backends run, so a translation unit reaching a backend has an empty `items`. |
+| `global_init` | the name of a startup initializer in the global symbol table, or `nil`. It initializes state that belongs to no program unit, such as the saved coarrays of external procedures. Nothing in ASR calls it, so a backend has to run it the way the target starts up — `@llvm.global_ctors` for LLVM. See [Program](../symbol_nodes/Program.md) for the initializers Fortran does order. |
 
 ### Return values
 
