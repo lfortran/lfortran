@@ -29,7 +29,7 @@ module template_04_semigroup
         end interface
     end requirement
 
-    template derive_extended_semigroup(T, combine)
+    template derive_extended_semigroup {T, combine}
         require :: semigroup {T, combine}
         private
         public :: sconcat, stimes
@@ -89,7 +89,7 @@ module template_04_monoid
         end interface
     end requirement
 
-    template derive_extended_monoid(T, combine, empty)
+    template derive_extended_monoid {T, combine, empty}
         require :: monoid {T, combine, empty}
         private
         public :: stimes, mconcat
@@ -161,7 +161,7 @@ module template_04_unitring
         require ::  unit_ring_only_negate {T, plus, zero, mult, one, negate}
     end requirement
 
-    template derive_unit_ring_from_minus(T, plus, zero, mult, one, minus)
+    template derive_unit_ring_from_minus {T, plus, zero, mult, one, minus}
         require :: unit_ring_only_minus {T, plus, zero, mult, one, minus}
         private
         public :: negate
@@ -173,7 +173,7 @@ module template_04_unitring
         end function
     end template
 
-    template derive_unit_ring_from_negate(T, plus, zero, mult, one, negate)
+    template derive_unit_ring_from_negate {T, plus, zero, mult, one, negate}
         require :: unit_ring_only_negate {T, plus, zero, mult, one, negate}
         private
         public :: minus
@@ -224,7 +224,7 @@ module template_04_field
         require :: field_only_inverse {T, plus, zero, mult, one, minus, negate, invert}
     end requirement
 
-    template derive_field_from_division(T, plus, zero, mult, one, minus, negate, divide)
+    template derive_field_from_division {T, plus, zero, mult, one, minus, negate, divide}
         require :: field_only_division {T, plus, zero, mult, one, minus, negate, divide}
         private
         public :: invert
@@ -236,7 +236,7 @@ module template_04_field
         end function
     end template
 
-    template derive_field_from_inverse(T, plus, zero, mult, one, minus, negate, invert)
+    template derive_field_from_inverse {T, plus, zero, mult, one, minus, negate, invert}
         require :: field_only_inverse {T, plus, zero, mult, one, minus, negate, invert}
         private
         public :: divide
@@ -260,9 +260,9 @@ module template_04_matrix
     private
     public :: matrix_tmpl
 
-    template matrix_tmpl(T, plus_t, zero_t, times_t, one_t, n)
+    template matrix_tmpl {T, plus_t, zero_t, times_t, one_t, n}
         require :: semiring {T, plus_t, zero_t, times_t, one_t}
-        integer :: n
+        deferred integer, parameter :: n
 
         private
         public :: &
@@ -285,7 +285,7 @@ module template_04_matrix
             procedure times_matrix
         end interface        
 
-        template matrix_subtraction_t(minus_t)
+        template matrix_subtraction_t {minus_t}
             require :: unit_ring_only_minus {T, plus_t, zero_t, times_t, one_t, minus_t}
 
             private
@@ -295,7 +295,7 @@ module template_04_matrix
                 procedure minus_matrix
             end interface
 
-            template gaussian_solver_tmpl(div_t)
+            template gaussian_solver_tmpl {div_t}
                 instantiate derive_unit_ring_from_minus {T, plus_t, zero_t, times_t, one_t, minus_t}, only: negate
                 require :: field_only_division {T, plus_t, zero_t, times_t, one_t, minus_t, negate, div_t}      
             contains

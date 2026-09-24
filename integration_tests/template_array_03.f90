@@ -74,7 +74,7 @@ module template_array_03_m
 
     end requirement
 !
-    template array_tmpl(t, plus_t, zero_t, mult_t)
+    template array_tmpl {t, plus_t, zero_t, mult_t}
 
         require :: operations {t, plus_t, zero_t, mult_t}
         private

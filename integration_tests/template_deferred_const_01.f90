@@ -19,7 +19,7 @@ module template_deferred_const_01_m
     private
     public :: test_integer, test_logical, test_character
 
-    template scale_tmpl(n)
+    template scale_tmpl {n}
         deferred integer, parameter :: n
         private
         public :: scale_by_n, sum_to_n
@@ -43,7 +43,7 @@ module template_deferred_const_01_m
         end function
     end template
 
-    template flag_tmpl(b)
+    template flag_tmpl {b}
         deferred logical, parameter :: b
         private
         public :: pick
@@ -61,7 +61,7 @@ module template_deferred_const_01_m
 
     ! C1619: a character deferred constant has assumed length, the length comes
     ! from the instantiation argument.
-    template text_tmpl(s)
+    template text_tmpl {s}
         deferred character(*), parameter :: s
         private
         public :: text_len, first_char

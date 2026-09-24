@@ -51,7 +51,7 @@ module generics_example
   end requirement
 
   ! the template starts from here
-  template array_t(S, op_temp, empty_temp)
+  template array_t {S, op_temp, empty_temp}
     require :: monoid {S, op_temp, empty_temp}
   contains
     ! below is the generic function

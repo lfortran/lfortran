@@ -7080,13 +7080,23 @@ public:
         if (rhs_is_null_intrinsic) {
             current_variable_type_ = ASRUtils::expr_type(target);
         }
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        SetChar current_module_dependencies_copy = current_module_dependencies;
         try {
             this->visit_expr(*x.m_value);
         } catch (const SemanticAbort &e) {
             if (!compiler_options.continue_compilation) throw e;
+            if (is_template || is_requirement || is_current_procedure_templated ||
+                    ASRUtils::is_owned_by_template(current_scope)) {
+                current_function_dependencies = current_function_dependencies_copy;
+                current_module_dependencies = current_module_dependencies_copy;
+                tmp = nullptr;
+            }
         }
         current_variable_type_ = temp_current_variable_type_;
         if (tmp == nullptr) {
+            current_function_dependencies = current_function_dependencies_copy;
+            current_module_dependencies = current_module_dependencies_copy;
             throw SemanticAbort();
         }
         ASR::expr_t *value = ASRUtils::EXPR(tmp);

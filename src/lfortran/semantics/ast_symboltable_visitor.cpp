@@ -97,6 +97,24 @@ public:
         Other, Module, Submodule, Program, Template,
     };
 
+    // Restores `is_requirement` on the way out, including when a diagnostic
+    // aborts the visit part way through. Without it a requirement rejected
+    // under --continue-compilation leaves the flag set, and the next scoping
+    // unit is then checked as if it were still inside that requirement.
+    struct RequirementScope {
+        SymbolTableVisitor &v;
+        bool enclosing;
+
+        RequirementScope(SymbolTableVisitor &v_) : v(v_) {
+            enclosing = v.is_requirement;
+            v.is_requirement = true;
+        }
+
+        ~RequirementScope() {
+            v.is_requirement = enclosing;
+        }
+    };
+
     struct ScopingUnitScope {
         SymbolTableVisitor &v;
         ScopingUnitKind enclosing;
@@ -3705,6 +3723,22 @@ public:
     }
 
     void visit_Interface(const AST::Interface_t &x) {
+        // C1637 (J3/26-007r1): the interface-stmt of an interface-block that
+        // is a requirement-specification shall specify ABSTRACT or DEFERRED.
+        // Any other interface block declares procedures that already exist
+        // (an external procedure with an explicit interface, or a generic
+        // set built from procedures declared elsewhere), which is not what a
+        // requirement states: a requirement only declares deferred arguments.
+        if (is_requirement
+                && !AST::is_a<AST::AbstractInterfaceHeader_t>(*x.m_header)
+                && !AST::is_a<AST::DeferredInterfaceHeader_t>(*x.m_header)) {
+            diag.add(diag::Diagnostic(
+                "an interface block in a requirement must be a deferred or "
+                "an abstract interface",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.m_header->base.loc})}));
+            throw SemanticAbort();
+        }
         if (AST::is_a<AST::InterfaceHeaderName_t>(*x.m_header)) {
             std::string generic_name = to_lower(AST::down_cast<AST::InterfaceHeaderName_t>(x.m_header)->m_name);
             interface_name = generic_name;
@@ -3729,7 +3763,7 @@ public:
             // deferred argument, so the block only has a meaning in a scoping
             // unit that has deferred arguments: a requirement, a template or a
             // templated procedure.
-            if (!is_requirement && !is_template) {
+            if (!has_deferred_args) {
                 diag.add(diag::Diagnostic(
                     "a deferred interface can only appear in a requirement, "
                     "a template or a templated procedure",
@@ -5230,7 +5264,7 @@ public:
                     diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
-        is_requirement = true;
+        RequirementScope requirement_scope(*this);
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
 
         std::vector<std::string> requirement_args;
@@ -5340,7 +5374,6 @@ public:
 
         current_scope = parent_scope;
         current_procedure_args.clear();
-        is_requirement = false;
     }
 
     void visit_Require(const AST::Require_t &x) {
@@ -5504,10 +5537,12 @@ public:
     // over the specification part only.
     //
     // A deferred argument declaration (R1615) is not a template-specification
-    // either. `deferred type :: t` and `require ::` are their own AST nodes, so
-    // they never reach here, but a deferred constant is currently spelled as a
-    // plain type declaration of one of the template's own deferred arguments
-    // (`integer :: n` for `template tmpl(..., n)`), which is left alone.
+    // either: `deferred type :: t` is a DerivedType node and `require ::` is a
+    // Require node, so neither reaches here, and a deferred constant (R1618)
+    // specifies PARAMETER, which C1618 requires and which returns below. A
+    // plain declaration of a deferred argument used to be LFortran's spelling
+    // of a deferred constant; it is rejected here, with the message that names
+    // the standard spelling.
     void check_template_specification(AST::decl_stmt_t *item,
             const std::vector<std::string> &deferred_args) {
         if (!AST::is_a<AST::Declaration_t>(*item)) return;
@@ -5534,14 +5569,23 @@ public:
         if (is_procedure_decl ? !has_pointer : has_parameter) return;
         for (size_t i = 0; i < decl.n_syms; i++) {
             std::string name = to_lower(decl.m_syms[i].m_name);
-            if (std::find(deferred_args.begin(), deferred_args.end(), name)
-                    != deferred_args.end()) continue;
-            std::string msg = is_procedure_decl
-                ? "a template specification part cannot declare a procedure"
-                  " pointer, so '" + name + "' must not have the pointer"
-                  " attribute"
-                : "a template specification part cannot declare a variable,"
-                  " so '" + name + "' must have the parameter attribute";
+            bool is_deferred_arg = std::find(deferred_args.begin(),
+                deferred_args.end(), name) != deferred_args.end();
+            std::string msg;
+            if (is_deferred_arg && !is_procedure_decl) {
+                msg = "'" + name + "' is a deferred argument of the"
+                      " template, so a type declaration of it declares a"
+                      " deferred constant, which is spelled `deferred"
+                      " <type>, parameter :: " + name + "`";
+            } else if (is_procedure_decl) {
+                msg = "a template specification part cannot declare a"
+                      " procedure pointer, so '" + name + "' must not have the"
+                      " pointer attribute";
+            } else {
+                msg = "a template specification part cannot declare a"
+                      " variable, so '" + name + "' must have the parameter"
+                      " attribute";
+            }
             diag.add(diag::Diagnostic(msg, diag::Level::Error,
                 diag::Stage::Semantic, {
                     diag::Label("", {decl.m_syms[i].loc})}));
@@ -5576,9 +5620,6 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
-        // The template's own deferred arguments (R1614); a declaration of one
-        // of them is a deferred argument declaration rather than a
-        // template-specification, see check_template_specification().
         std::vector<std::string> deferred_args;
         for (size_t i=0; i<x.n_namelist; i++) {
             deferred_args.push_back(to_lower(x.m_namelist[i]));

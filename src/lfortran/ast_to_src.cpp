@@ -465,6 +465,11 @@ public:
             r.append(" ");
         }
         r += syn(gr::UnitHeader);
+        // C1609 (J3/26-007r1): TEMPLATE appears in the prefix of a templated
+        // subprogram, which is what a deferred argument list makes this.
+        if (x.n_temp_args > 0) {
+            r.append("template ");
+        }
         r.append("subroutine");
         r += syn();
         r += " ";
@@ -902,12 +907,12 @@ public:
         r += syn();
         r += " ";
         r.append(x.m_name);
-        r.append("(");
+        r.append(" {");
         for (size_t i=0; i<x.n_namelist; i++) {
             r.append(x.m_namelist[i]);
             if (i < x.n_namelist-1) r.append(", ");
         }
-        r.append(")");
+        r.append("}");
         r.append("\n");
         r += format_unit_body(x, !indent_unit);
         r += indent;
@@ -1187,6 +1192,11 @@ public:
             r.append(" ");
         }
         r += syn(gr::UnitHeader);
+        // C1609 (J3/26-007r1): TEMPLATE appears in the prefix of a templated
+        // subprogram, which is what a deferred argument list makes this.
+        if (x.n_temp_args > 0) {
+            r.append("template ");
+        }
         r.append("function");
         r += syn();
         r += " ";

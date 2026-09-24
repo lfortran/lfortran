@@ -3724,7 +3724,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             case ASR::ttypeType::UnsignedInteger:
             case ASR::ttypeType::Real:
             case ASR::ttypeType::Logical:
-            case ASR::ttypeType::Complex: {
+            case ASR::ttypeType::Complex:
+            case ASR::ttypeType::CPtr: {
                 if( ASRUtils::is_array(asr_src_type) ) {
                     ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(asr_src_type);
                     llvm::DataLayout data_layout(module->getDataLayout());
@@ -3790,8 +3791,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     ASRUtils::get_string_type(asr_src_type),
                     /*is_dest_allocatable=*/true);
                 break;
-            case ASR::ttypeType::FunctionType:
-            case ASR::ttypeType::CPtr: {
+            case ASR::ttypeType::FunctionType: {
                 LLVM::CreateStore(*builder, src, dest);
                 break ;
             }

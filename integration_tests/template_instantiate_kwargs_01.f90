@@ -12,7 +12,7 @@ module template_instantiate_kwargs_01_m
     requirement pair_r {a, b, g}
         deferred type :: a
         deferred type :: b
-        interface
+        deferred interface
             function g(x, y) result(z)
                 type(a), intent(in) :: x
                 type(b), intent(in) :: y
@@ -23,7 +23,7 @@ module template_instantiate_kwargs_01_m
 
     ! Deferred arguments in the order (t, u, f). The REQUIRE below passes them
     ! to pair_r by keyword, reversing the order.
-    template pair_t(t, u, f)
+    template pair_t {t, u, f}
         require :: pair_r {g = f, b = u, a = t}
         private
         public :: combine
@@ -57,7 +57,7 @@ contains
 
     ! Inline instantiation of a templated subprogram. The REQUIRE here also
     ! uses keyword arguments, in reverse order.
-    subroutine copy_both{T, U}(x, y, a, b)
+    template subroutine copy_both{T, U}(x, y, a, b)
         require :: two_types_r {q = U, p = T}
         type(T), intent(in) :: x
         type(U), intent(in) :: y
@@ -67,7 +67,7 @@ contains
         b = y
     end subroutine
 
-    function second_of{T, U}(x, y) result(z)
+    template function second_of{T, U}(x, y) result(z)
         require :: two_types_r {q = U, p = T}
         type(T), intent(in) :: x
         type(U), intent(in) :: y
