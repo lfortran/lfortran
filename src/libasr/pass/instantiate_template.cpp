@@ -1173,9 +1173,19 @@ public:
         ASR::ttype_t *new_type = substitute_type(var_expr, x->m_type);
         new_type = fix_substituted_array_physical_type(x, new_type);
 
+        // The initializer of a named constant may refer to the template's
+        // deferred constants, so it goes through the same substitution as
+        // the type; its compile-time value is then taken from the result.
+        ASR::expr_t *new_symbolic_value = duplicate_expr(x->m_symbolic_value);
+        ASR::expr_t *new_value = duplicate_expr(x->m_value);
+        if (new_value && ASRUtils::expr_value(new_value)) {
+            new_value = ASRUtils::expr_value(new_value);
+        }
+
         SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
-        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_type);
+        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_type,
+            new_symbolic_value, new_value, x->m_name);
 
         ASR::symbol_t* type_decl = nullptr;
         if (!ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(x->m_type))
@@ -1194,7 +1204,7 @@ public:
 
         ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
             x->base.base.loc, target_scope, s2c(al, x->m_name), variable_dependencies_vec.p,
-            variable_dependencies_vec.size(), x->m_intent, x->m_symbolic_value, x->m_value, x->m_storage,
+            variable_dependencies_vec.size(), x->m_intent, new_symbolic_value, new_value, x->m_storage,
             new_type, type_decl, x->m_abi, x->m_access, x->m_presence, x->m_value_attr));
         target_scope->add_symbol(x->m_name, s);
 
@@ -1204,7 +1214,8 @@ public:
     // Substituting a deferred constant can turn an integer expression of the
     // template, which had no compile-time value, into a constant expression
     // of the instantiation, e.g. `n*2` with `n` bound to 3. Fold it, so that
-    // array bounds such as `0:n` or `2:n` get a compile-time value.
+    // array bounds such as `0:n` or `2:n` and named constants initialized
+    // with it get a compile-time value.
     ASR::asr_t* duplicate_IntegerBinOp(ASR::IntegerBinOp_t* x) {
         ASR::expr_t* left = duplicate_expr(x->m_left);
         ASR::expr_t* right = duplicate_expr(x->m_right);
