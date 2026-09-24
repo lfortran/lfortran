@@ -13,7 +13,7 @@ module template_add_03_m
         end interface
     end requirement
 
-    template add_t(t, f)
+    template add_t {t, f}
         require :: r {t, f}
         private
         public :: add_generic

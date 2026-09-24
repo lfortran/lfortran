@@ -13,9 +13,9 @@ module template_add_04_m
       end interface
   end requirement
 
-  template add_t(T, F, mult)
+  template add_t {T, F, mult}
       require :: R {T, F}
-      integer :: mult
+      deferred integer, parameter :: mult
       private
       public :: add_generic
   contains

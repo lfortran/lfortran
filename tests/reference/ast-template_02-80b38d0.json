@@ -2,7 +2,7 @@
     "basename": "ast-template_02-80b38d0",
     "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/template_02.f90",
-    "infile_hash": "1ec046008e3c8b77285c936b4f27ee29a05ceffaf9472df3a655e644",
+    "infile_hash": "51636755afb172e450383ee32618379620a64f8705d770fee5bc41ec",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-template_02-80b38d0.stdout",
