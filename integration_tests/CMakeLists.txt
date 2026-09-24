@@ -3644,6 +3644,7 @@ RUN(NAME template_prefix_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_host_var_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_host_var_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_host_var_03 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_broadcast_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

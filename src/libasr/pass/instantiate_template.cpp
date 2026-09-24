@@ -1775,6 +1775,15 @@ public:
             v, args.p, args.size(), ttype, value);
     }
 
+    ASR::asr_t* duplicate_ArrayBroadcast(ASR::ArrayBroadcast_t *x) {
+        ASR::expr_t *array = duplicate_expr(x->m_array);
+        ASR::expr_t *shape = duplicate_expr(x->m_shape);
+        ASR::ttype_t *ttype = substitute_type(&x->base, x->m_type);
+        ASR::expr_t *value = duplicate_expr(x->m_value);
+        return ASR::make_ArrayBroadcast_t(al, x->base.base.loc,
+            array, shape, ttype, value);
+    }
+
     ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t *x) {
         ASR::expr_t *v = duplicate_expr(x->m_v);
         ASR::ttype_t *t = substitute_type(&x->base, x->m_type);
