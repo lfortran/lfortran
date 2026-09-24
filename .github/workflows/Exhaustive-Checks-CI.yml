@@ -470,12 +470,11 @@ jobs:
             echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
             RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
 
-      # The unit tests exercise the JIT, whose LLVM 7 code path differs
-      # from every newer version.
+      # The unit tests exercise the JIT, whose code path differs between
+      # LLVM versions, so run them for every version.
       - name: Test unit tests
         shell: bash -e -l {0}
-        if: matrix.llvm-version == '7'
-        run: ./src/lfortran/tests/test_lfortran
+        run: ctest --output-on-failure
 
       - name: Test LLVM integration tests
         shell: bash -e -l {0}
@@ -589,6 +588,10 @@ jobs:
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
             cmake --build . -j16 --target install
+
+      - name: Test unit tests
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
 
       - name: Test Linux ( WASM )
         shell: bash -e -l {0}
@@ -704,6 +707,10 @@ jobs:
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
             cmake --build . -j16 --target install
+
+      - name: Test unit tests
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
 
       - name: Test Linux
         shell: bash -e -l {0}
