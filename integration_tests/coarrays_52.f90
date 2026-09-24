@@ -8,11 +8,11 @@
 ! The LLVM reference test registered for this file pins the linkage of each.
 module coarrays_52_m
     implicit none
-    integer :: m[*] = 1
+    integer :: m[*] = 100
 contains
     subroutine coarrays_52_mod_sub(v)
         integer, intent(out) :: v
-        integer, save :: m(2)[*] = 2
+        integer, save :: m(2)[*] = 200
         m = m + 1
         v = m(1) + m(2)
     end subroutine
@@ -21,7 +21,7 @@ end module
 subroutine coarrays_52_sub(v)
     implicit none
     integer, intent(out) :: v
-    integer, save :: m[*] = 3
+    integer, save :: m[*] = 300
     m = m + 1
     v = m
 end subroutine
@@ -34,28 +34,28 @@ program coarrays_52
             integer, intent(out) :: v
         end subroutine
     end interface
-    integer, save :: m[*] = 5
+    integer, save :: m[*] = 500
     integer :: v
 
-    if (module_m /= 1) error stop 1
+    if (module_m /= 100) error stop 1
     call coarrays_52_mod_sub(v)
-    if (v /= 6) error stop 2
+    if (v /= 402) error stop 2
     call coarrays_52_sub(v)
-    if (v /= 4) error stop 3
+    if (v /= 301) error stop 3
     call coarrays_52_int_sub(v)
-    if (v /= 5) error stop 4
-    if (m /= 5) error stop 5
+    if (v /= 401) error stop 4
+    if (m /= 500) error stop 5
 
     sync all
-    if (module_m[1] /= 1) error stop 6
-    if (m[1] /= 5) error stop 7
+    if (module_m[1] /= 100) error stop 6
+    if (m[1] /= 500) error stop 7
     if (this_image() == 1) print *, "ok"
 
 contains
 
     subroutine coarrays_52_int_sub(v)
         integer, intent(out) :: v
-        integer, save :: m[*] = 4
+        integer, save :: m[*] = 400
         m = m + 1
         v = m
     end subroutine

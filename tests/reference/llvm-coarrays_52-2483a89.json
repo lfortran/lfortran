@@ -2,11 +2,11 @@
     "basename": "llvm-coarrays_52-2483a89",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/../integration_tests/coarrays_52.f90",
-    "infile_hash": "cc748cb0c8c2026eb6e19a5759e3c7f106bf6f6e05a6c507ecad7923",
+    "infile_hash": "9e24e66b8bec837405f0904bf8cde093796c45300219235cbf160922",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-coarrays_52-2483a89.stdout",
-    "stdout_hash": "380079d4bb1f84c19d99740755b0344a70ef755e5d36ebb43bae8d06",
+    "stdout_hash": "c16abf6c7dea88bad3994eaca8575af2e650ffaa671eeec81b02c74b",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
