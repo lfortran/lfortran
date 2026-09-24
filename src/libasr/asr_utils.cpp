@@ -4739,6 +4739,15 @@ ASR::asr_t* make_ArraySize_t_util(
     if( ASR::is_a<ASR::ArrayItem_t>(*a_v) ) {
         ASR::ArrayItem_t* array_item_t = ASR::down_cast<ASR::ArrayItem_t>(a_v);
         LCOMPILERS_ASSERT(ASRUtils::is_array(array_item_t->m_type));
+        // `w%u(2)` with `w` an array is an array although its subscripts are
+        // scalar: it takes one element of the component from every element of
+        // the base, so it has as many elements as the base. The subscripts
+        // below are the sizes of vector subscripts, which these are not.
+        ASR::expr_t* shape_base = ASRUtils::struct_base_lending_shape(array_item_t);
+        if( shape_base != nullptr ) {
+            return make_ArraySize_t_util(al, a_loc, shape_base, a_dim, a_type,
+                a_value, for_type);
+        }
         if( for_type ) {
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable(array_item_t->m_type) &&
                               !ASRUtils::is_pointer(array_item_t->m_type));

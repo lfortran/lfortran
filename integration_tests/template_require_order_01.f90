@@ -85,7 +85,7 @@ module template_require_order_01_m
         end interface
     end requirement
 
-    template tmpl_a(t, u, v, f)
+    template tmpl_a {t, u, v, f}
         deferred type :: t, u, v
         require :: op_r_a {f, t, u, v}
         private
@@ -99,7 +99,7 @@ module template_require_order_01_m
         end function
     end template
 
-    template tmpl_b(t, u, v, f, g)
+    template tmpl_b {t, u, v, f, g}
         deferred type :: t, u, v
         require :: op_r_b {f, g, t, u, v}
         private
@@ -119,7 +119,7 @@ module template_require_order_01_m
         end function
     end template
 
-    template tmpl_c(t, u, v, f)
+    template tmpl_c {t, u, v, f}
         deferred type :: t, u, v
         require :: op_r_c {t, u, f, v}
         private
@@ -133,7 +133,7 @@ module template_require_order_01_m
         end function
     end template
 
-    template tmpl_d(t, u, v, f)
+    template tmpl_d {t, u, v, f}
         deferred type :: t, u, v
         require :: op_r_d {t, v, f, u}
         private
@@ -147,7 +147,7 @@ module template_require_order_01_m
         end function
     end template
 
-    template tmpl_e(t, u, v, f)
+    template tmpl_e {t, u, v, f}
         deferred type :: t, u, v
         require :: op_r_e {t, u, v, f}
         private

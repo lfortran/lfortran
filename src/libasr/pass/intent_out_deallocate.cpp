@@ -308,7 +308,6 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             SymbolTable* current_scope,
             const Location& loc,
             ASR::ttype_t* logical_type,
-            bool emit_default_init,
             Vec<ASR::stmt_t*>& out_stmts) {
         Vec<ASR::expr_t*> idx_vars;
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope,
@@ -321,10 +320,8 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         innermost_body.reserve(al, 1);
         emit_struct_cleanup_stmts(arr_ref, struct_type, current_scope,
             loc, logical_type, innermost_body);
-        if (emit_default_init) {
-            emit_struct_default_init_stmts(arr_ref, struct_type,
-                current_scope, loc, innermost_body);
-        }
+        emit_struct_default_init_stmts(arr_ref, struct_type,
+            current_scope, loc, innermost_body);
 
         if (innermost_body.size() == 0) return;
 
@@ -576,8 +573,15 @@ public:
                     dealloc_stmts.push_back(al, wrapped_stmt);
                 }
             } else if (is_array_of_struct) {
+                // An unlimited polymorphic dummy has no declared derived
+                // type, so it has neither components to clean up nor
+                // defaults to apply.
+                ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(
+                    arg_var->m_type_declaration);
+                if (decl_sym == nullptr ||
+                        !ASR::is_a<ASR::Struct_t>(*decl_sym)) continue;
                 ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
+                    decl_sym);
 
                 int n_dims = ASRUtils::extract_n_dims_from_ttype(arg_var->m_type);
 
@@ -585,18 +589,17 @@ public:
                     ASR::make_Var_t(al, loc, arg_sym));
 
                 // Fortran 2018 8.5.10: an `intent(out)` dummy of a type with
-                // default initialization is default-initialized on entry.
-                // The dynamic type of a polymorphic dummy decides its
-                // initialization, which this pass cannot see, so that form is
-                // left alone.
-                bool emit_default_init = !ASRUtils::is_class_type(
-                    ASRUtils::type_get_past_array(arg_var->m_type));
-
+                // default initialization is default-initialized on entry,
+                // element by element for an array dummy.  A polymorphic
+                // dummy is initialized with the defaults of its declared
+                // type; the components that a dynamic extension type adds
+                // need the dynamic type, which this pass cannot see, and are
+                // left alone -- which is what a scalar polymorphic
+                // `intent(out)` dummy already does.
                 Vec<ASR::stmt_t*> cleanup;
                 cleanup.reserve(al, 1);
                 emit_array_of_struct_entry_stmts(var_expr_full, struct_type,
-                    n_dims, xx.m_symtab, loc, logical_type, emit_default_init,
-                    cleanup);
+                    n_dims, xx.m_symtab, loc, logical_type, cleanup);
 
                 if (cleanup.size() > 0) {
                     ASR::stmt_t* wrapper_block = nullptr;

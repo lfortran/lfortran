@@ -1746,3 +1746,32 @@ subroutine local_in_specification_expr_in_continue_compilation_1(n, s)
     print *, size(ok_dummy), size(ok_param), size(ok_inquiry), size(ok_common)
     print *, len(ok_str), len(ok_len), len(ok_assumed)
 end subroutine
+
+! `w%u(2)` with `w` an array takes one element of the component out of every
+! element of the base, so what it denotes is strided by the size of an element
+! of `w`. Passing it would hand the callee the elements that follow the first
+! one in memory instead, and an `intent(inout)` or `intent(out)` dummy would
+! write them back. It is rejected until the argument is built by gathering the
+! elements it names.
+subroutine element_of_array_component_as_argument_in_continue_compilation_1()
+    implicit none
+    type :: eac_t
+        integer :: u(3)
+    end type
+    type(eac_t) :: w(2)
+    w(1)%u = [1, 2, 3]
+    w(2)%u = [4, 5, 6]
+    print *, w%u(2)
+    print *, size(w%u(2))
+    call eac_inout(w%u(2))  ! {Error} Passing an element of an array component of an array as an argument is not supported yet
+    call eac_in(w%u(2))  ! {Error} Passing an element of an array component of an array as an argument is not supported yet
+contains
+    subroutine eac_inout(a)
+        integer, intent(inout) :: a(:)
+        a = -a
+    end subroutine
+    subroutine eac_in(a)
+        integer, intent(in) :: a(:)
+        print *, a
+    end subroutine
+end subroutine

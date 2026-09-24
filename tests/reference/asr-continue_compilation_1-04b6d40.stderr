@@ -2788,3 +2788,15 @@ semantic error: NULL() is not permitted as the TARGET= argument to 'associated'
      |
 1715 |     if (associated(a, null())) print *, "bad"  ! {Error} NULL() is not permitted as the TARGET= argument to 'associated'
      |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Passing an element of an array component of an array as an argument is not supported yet
+    --> tests/errors/continue_compilation_1.f90:1766:20
+     |
+1766 |     call eac_inout(w%u(2))  ! {Error} Passing an element of an array component of an array as an argument is not supported yet
+     |                    ^^^^^^ 
+
+semantic error: Passing an element of an array component of an array as an argument is not supported yet
+    --> tests/errors/continue_compilation_1.f90:1767:17
+     |
+1767 |     call eac_in(w%u(2))  ! {Error} Passing an element of an array component of an array as an argument is not supported yet
+     |                 ^^^^^^ 

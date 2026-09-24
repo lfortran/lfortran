@@ -11,7 +11,7 @@ module template_02_m
     end interface
   end requirement
 
-  template change_positions_tmpl(t, ne)
+  template change_positions_tmpl {t, ne}
     require :: eq {t, ne}
     private
     public :: change_positions_t

@@ -32,14 +32,14 @@ contains
         z = x + y
     end function
 
-    function add_generic {t, f} (x, y) result(z)
+    template function add_generic {t, f} (x, y) result(z)
         require r {t, f}
         type(t), intent(in) :: x, y
         type(t) :: z
         z = f(x, y)
     end function
 
-    subroutine add_sub {t, f} (x, y, z)
+    template subroutine add_sub {t, f} (x, y, z)
         require r {t, f}
         type(t), intent(in) :: x, y
         type(t), intent(out) :: z

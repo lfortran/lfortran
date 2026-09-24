@@ -78,7 +78,7 @@ TEST_CASE("LLVM target configuration") {
     llvm::FunctionType *function_type = llvm::FunctionType::get(
         llvm::Type::getVoidTy(context), false);
     llvm::Function *function = llvm::Function::Create(function_type,
-        llvm::Function::ExternalLinkage, "f", module);
+        llvm::Function::ExternalLinkage, "f", &module);
     llvm::BasicBlock *entry = llvm::BasicBlock::Create(
         context, "entry", function);
     llvm::ReturnInst::Create(context, entry);
@@ -2459,7 +2459,7 @@ type(t) :: z
 end function
 end interface
 end requirement
-template add_t(t, op)
+template add_t {t, op}
 require r {t, op}
 contains
 function add_generic(x, y) result(z)

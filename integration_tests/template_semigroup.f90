@@ -28,7 +28,7 @@ module semigroup_m
         end interface
     end requirement
 
-    template derive_extended_semigroup(T, combine)
+    template derive_extended_semigroup {T, combine}
         require :: semigroup {T, combine}
         private
         public :: sconcat, stimes
