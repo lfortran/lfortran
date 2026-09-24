@@ -5106,6 +5106,7 @@ RUN(NAME coarrays_47 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_48 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_49 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_50 EXTRA_ARGS --coarray=true NUM_IMAGES=4)
+RUN(NAME coarrays_51 EXTRA_ARGS --coarray=true --separate-compilation EXTRAFILES coarrays_51_m.f90 NUM_IMAGES=4)
 
 # A GPU backend offloads every `do concurrent` (see doc/src/gpu_offloading.md).
 # A loop that uses a construct on the unsupported list of the device -- a
