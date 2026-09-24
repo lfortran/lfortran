@@ -4,7 +4,6 @@ target datalayout = "..."
 
 %string_descriptor = type <{ i8*, i64 }>
 
-@intrinsics_02.x = internal global float 0x3FEFEB7AA0000000
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [6 x i8] c"R4,R8\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -63,10 +62,12 @@ define i32 @main(i32 %0, i8** %1) {
   %stringFormat_desc = alloca %string_descriptor, align 8
   %2 = call i8* @_lfortran_get_default_allocator()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %x = alloca float, align 4
   %y = alloca double, align 8
+  store float 0x3FEFEB7AA0000000, float* %x, align 4
   store double 0x3FEFEB7A9B2C6D8B, double* %y, align 8
   %3 = alloca i64, align 8
-  %4 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info, i32 0, i32 0), i64* %3, i32 0, i32 0, i32 0, i32 0, i32 0, float* @intrinsics_02.x, double* %y)
+  %4 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info, i32 0, i32 0), i64* %3, i32 0, i32 0, i32 0, i32 0, i32 0, float* %x, double* %y)
   %5 = load i64, i64* %3, align 8
   %6 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %4, i8** %6, align 8
@@ -86,7 +87,7 @@ free_nonnull:                                     ; preds = %.entry
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %.entry
-  %14 = load float, float* @intrinsics_02.x, align 4
+  %14 = load float, float* %x, align 4
   %15 = fsub float %14, 0x3FEFEB7AA0000000
   %16 = call float @llvm.fabs.f32(float %15)
   %17 = fcmp ogt float %16, 0x3EB0C6F7A0000000
@@ -102,7 +103,7 @@ else:                                             ; preds = %free_done
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %18 = call float @_lcompilers_sin_f32(float* @intrinsics_02.x)
+  %18 = call float @_lcompilers_sin_f32(float* %x)
   %19 = fsub float %18, 0x3FEAE238A0000000
   %20 = call float @llvm.fabs.f32(float %19)
   %21 = fcmp ogt float %20, 0x3EB0C6F7A0000000
@@ -147,8 +148,8 @@ else8:                                            ; preds = %ifcont6
 
 ifcont9:                                          ; preds = %else8, %then7
   %26 = call double @_lcompilers_sin_f64(double* %y)
-  %27 = load float, float* @intrinsics_02.x, align 4
-  %28 = call float @_lcompilers_sin_f32(float* @intrinsics_02.x)
+  %27 = load float, float* %x, align 4
+  %28 = call float @_lcompilers_sin_f32(float* %x)
   %29 = fadd float %27, %28
   store float %29, float* %call_arg_value, align 4
   %30 = call float @_lcompilers_sin_f32(float* %call_arg_value)

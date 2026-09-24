@@ -37,7 +37,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Complex 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -527,7 +527,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (StructType
                                         [(CPtr
                                             CPointer
@@ -558,7 +558,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Pointer
                                         (Array
                                             (Real 4)
@@ -590,7 +590,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (CPtr
                                         CPointer
                                     )

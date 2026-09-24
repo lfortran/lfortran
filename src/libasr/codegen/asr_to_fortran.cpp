@@ -1033,7 +1033,13 @@ public:
         }
         if (x.m_storage == ASR::storage_typeType::Parameter) {
             r += ", parameter";
-        } else if (x.m_storage == ASR::storage_typeType::Save && !in_struct_member_declaration) {
+        } else if (x.m_storage == ASR::storage_typeType::Save
+                && !in_struct_member_declaration
+                // Every local of a main program, module or submodule has the
+                // save attribute (F2023 8.5.16), so writing it out would only
+                // restate what the scope implies and what reparsing the
+                // emitted source derives again.
+                && !ASRUtils::save_implied_by_scope(&x)) {
             r += ", save";
         }
         if (x.m_value_attr) {

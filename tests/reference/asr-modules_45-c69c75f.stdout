@@ -15,7 +15,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Allocatable
                                         (String 1 () DeferredLength DescriptorString)
                                     )
@@ -71,7 +71,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -95,7 +95,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Logical 4)
                                     ()
                                     Source
@@ -129,7 +129,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Allocatable
                                         (String 1 () DeferredLength DescriptorString)
                                     )
@@ -155,7 +155,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Allocatable
                                         (Array
                                             (StructType
@@ -225,7 +225,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source

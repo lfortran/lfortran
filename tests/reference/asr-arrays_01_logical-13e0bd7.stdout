@@ -15,7 +15,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Logical 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -45,7 +45,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Logical 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -75,7 +75,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Logical 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -107,7 +107,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -131,7 +131,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source

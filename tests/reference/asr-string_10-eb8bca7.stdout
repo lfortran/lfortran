@@ -45,7 +45,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Logical 4)
                                     ()
                                     Source
@@ -69,7 +69,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source

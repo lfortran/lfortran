@@ -1,0 +1,815 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            implicit_save_01:
+                (Program
+                    (SymbolTable
+                        9
+                        {
+                            bump:
+                                (ExternalSymbol
+                                    9
+                                    bump
+                                    2 bump
+                                    implicit_save_01_mod
+                                    []
+                                    bump
+                                    Public
+                                ),
+                            implied:
+                                (ExternalSymbol
+                                    9
+                                    implied
+                                    2 implied
+                                    implicit_save_01_mod
+                                    []
+                                    implied
+                                    Public
+                                ),
+                            prog_implied:
+                                (Variable
+                                    9
+                                    prog_implied
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            prog_written:
+                                (Variable
+                                    9
+                                    prog_written
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            si:
+                                (Variable
+                                    9
+                                    si
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            sub_bump:
+                                (ExternalSymbol
+                                    9
+                                    sub_bump
+                                    2 sub_bump
+                                    implicit_save_01_mod
+                                    []
+                                    sub_bump
+                                    Public
+                                ),
+                            sub_reset:
+                                (ExternalSymbol
+                                    9
+                                    sub_reset
+                                    2 sub_reset
+                                    implicit_save_01_mod
+                                    []
+                                    sub_reset
+                                    Public
+                                ),
+                            sw:
+                                (Variable
+                                    9
+                                    sw
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            written:
+                                (ExternalSymbol
+                                    9
+                                    written
+                                    2 written
+                                    implicit_save_01_mod
+                                    []
+                                    written
+                                    Public
+                                )
+                        })
+                    implicit_save_01
+                    [implicit_save_01_mod]
+                    [(Assignment
+                        (Var 9 implied)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 9 written)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (SubroutineCall
+                        9 bump
+                        ()
+                        []
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        9 bump
+                        ()
+                        []
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        9 bump
+                        ()
+                        []
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 9 implied)
+                            NotEq
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 9 written)
+                            NotEq
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (SubroutineCall
+                        9 sub_reset
+                        ()
+                        []
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        9 sub_bump
+                        ()
+                        [((Var 9 si))
+                        ((Var 9 sw))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        9 sub_bump
+                        ()
+                        [((Var 9 si))
+                        ((Var 9 sw))]
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 9 si)
+                            NotEq
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 9 sw)
+                            NotEq
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 9 prog_implied)
+                        (Var 9 implied)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 9 prog_written)
+                        (Var 9 written)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 9 prog_implied)
+                            NotEq
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 9 prog_written)
+                            NotEq
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringConstant
+                            "ok"
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )]
+                    ()
+                ),
+            implicit_save_01_mod:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            bump:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    bump
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    [(Assignment
+                                        (Var 2 implied)
+                                        (IntegerBinOp
+                                            (Var 2 implied)
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 2 written)
+                                        (IntegerBinOp
+                                            (Var 2 written)
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            implied:
+                                (Variable
+                                    2
+                                    implied
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            sub_bump:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            i:
+                                                (Variable
+                                                    4
+                                                    i
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            w:
+                                                (Variable
+                                                    4
+                                                    w
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    sub_bump
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 4 i)
+                                    (Var 4 w)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            sub_reset:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            
+                                        })
+                                    sub_reset
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            written:
+                                (Variable
+                                    2
+                                    written
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    implicit_save_01_mod
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .true.
+                    ()
+                ),
+            implicit_save_01_submod:
+                (Module
+                    (SymbolTable
+                        6
+                        {
+                            bump:
+                                (ExternalSymbol
+                                    6
+                                    bump
+                                    2 bump
+                                    implicit_save_01_mod
+                                    []
+                                    bump
+                                    Public
+                                ),
+                            implied:
+                                (ExternalSymbol
+                                    6
+                                    implied
+                                    2 implied
+                                    implicit_save_01_mod
+                                    []
+                                    implied
+                                    Public
+                                ),
+                            sub_bump:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            i:
+                                                (Variable
+                                                    8
+                                                    i
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            w:
+                                                (Variable
+                                                    8
+                                                    w
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    sub_bump
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 8 i)
+                                    (Var 8 w)]
+                                    [(Assignment
+                                        (Var 6 sub_implied)
+                                        (IntegerBinOp
+                                            (Var 6 sub_implied)
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 6 sub_written)
+                                        (IntegerBinOp
+                                            (Var 6 sub_written)
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 8 i)
+                                        (Var 6 sub_implied)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 8 w)
+                                        (Var 6 sub_written)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            sub_implied:
+                                (Variable
+                                    6
+                                    sub_implied
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            sub_reset:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    sub_reset
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    [(Assignment
+                                        (Var 6 sub_implied)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 6 sub_written)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            sub_written:
+                                (Variable
+                                    6
+                                    sub_written
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            written:
+                                (ExternalSymbol
+                                    6
+                                    written
+                                    2 written
+                                    implicit_save_01_mod
+                                    []
+                                    written
+                                    Public
+                                )
+                        })
+                    implicit_save_01_submod
+                    implicit_save_01_mod
+                    [implicit_save_01_mod]
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+    ()
+)

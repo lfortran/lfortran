@@ -310,7 +310,7 @@ private:
                 ASR::down_cast<ASR::Var_t>(target_expr)->m_v);
             if (ASR::is_a<ASR::Variable_t>(*target_sym)) {
                 ASR::Variable_t* target_var = ASR::down_cast<ASR::Variable_t>(target_sym);
-                if (target_var->m_storage == ASR::storage_typeType::Save) {
+                if (ASRUtils::needs_static_storage(target_var)) {
                     std::string wrapper_name = "__lfortran_save_class_wrapper_"
                         + std::to_string(get_hash((ASR::asr_t*)target_sym));
                     llvm::GlobalVariable* wrapper_g = module->getGlobalVariable(
@@ -7262,7 +7262,7 @@ public:
         // - It's NOT a simple character type (but character arrays ARE included)
         if( (ASR::is_a<ASR::Allocatable_t>(*v->m_type) ||
                 ASR::is_a<ASR::Pointer_t>(*v->m_type)) &&
-            v->m_storage != ASR::storage_typeType::Save &&
+            !ASRUtils::needs_static_storage(v) &&
             (ignore_intent ||
              v->m_intent == ASRUtils::intent_local ||
              v->m_intent == ASRUtils::intent_return_var ) &&
@@ -8189,7 +8189,7 @@ public:
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Pointer_t>(*v->m_type));
                 LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(v->m_type) ==
                                      ASR::array_physical_typeType::DescriptorArray);
-                if (v->m_storage == ASR::storage_typeType::Save) {
+                if (ASRUtils::needs_static_storage(v)) {
                     return;
                 }
                 llvm::Type* const array_desc_type = llvm_utils->arr_api->get_array_type(
@@ -8208,7 +8208,7 @@ public:
                     llvm_utils->CreateLoad2(array_desc_type->getPointerTo(), target_var),
                     data_type);
         } else {
-            if (v->m_storage == ASR::storage_typeType::Save
+            if (ASRUtils::needs_static_storage(v)
                 && v->m_value
                 && ((ASR::is_a<ASR::Integer_t>(*v->m_type)
                 || ASR::is_a<ASR::Real_t>(*v->m_type)
@@ -8343,7 +8343,7 @@ public:
             llvm::Value *ptr = nullptr;
             // Allocate the variable
             if( is_array_of_strings &&
-                    (v->m_storage == ASR::Save || v->m_storage == ASR::Parameter) &&
+                    (ASRUtils::needs_static_storage(v) || v->m_storage == ASR::Parameter) &&
                     !ASRUtils::is_allocatable(v->m_type) &&
                     ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::PointerArray ) {
                 ASR::ArrayConstant_t* arr_const = nullptr;
@@ -8366,7 +8366,7 @@ public:
                     ptr = builder->CreateBitCast(ptr_i8, type->getPointerTo());
                 }
             } else if(ASRUtils::is_string_only(v->m_type)){
-                if(v->m_storage == ASR::Save || v->m_storage == ASR::Parameter){
+                if(ASRUtils::needs_static_storage(v) || v->m_storage == ASR::Parameter){
                     if(v->m_storage == ASR::Parameter) {LCOMPILERS_ASSERT(v->m_symbolic_value)}
                     std::string str_initial_value_string {};
                     if(v->m_symbolic_value){ // Get initial value if exist.
@@ -8395,7 +8395,7 @@ public:
                     setup_string(ptr, v->m_type);
                 }
             } else { // Alloca for rest of types (not its internals if exist).
-                if (v->m_storage == ASR::storage_typeType::Save) {
+                if (ASRUtils::needs_static_storage(v)) {
                     std::string parent_function_name = std::string(x.m_name);
                     if (x.class_type == ASR::symbolType::Block) {
                         parent_function_name += "_" + x.m_symtab->get_counter();
@@ -8582,7 +8582,7 @@ public:
                 // values are overwritten. We emit a one-time guard.
                 llvm::BasicBlock* struct_init_bb = nullptr;
                 llvm::BasicBlock* struct_skip_bb = nullptr;
-                if (v->m_storage == ASR::storage_typeType::Save) {
+                if (ASRUtils::needs_static_storage(v)) {
                     std::string parent_function_name = std::string(x.m_name);
                     if (x.class_type == ASR::symbolType::Block) {
                         parent_function_name += "_" + x.m_symtab->get_counter();
@@ -8729,7 +8729,7 @@ public:
                 target_var = ptr;
                 if (save_struct_initialized) {
                     // Already stored inside the one-time guard above
-                } else if ((v->m_storage == ASR::Save   ||
+                } else if ((ASRUtils::needs_static_storage(v) ||
                     v->m_storage == ASR::Parameter)
                     &&
                     (ASRUtils::is_string_only(v->m_type) ||

@@ -75,7 +75,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Allocatable
                                         (Array
                                             (StructType
@@ -125,7 +125,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (StructType
                                         [(Pointer
                                             (Array

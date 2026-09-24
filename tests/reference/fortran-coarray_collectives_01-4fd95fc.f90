@@ -22,7 +22,7 @@ integer(4) :: me
 integer(4) :: n_images
 type(point) :: pt
 integer(4) :: stat
-character(len=2, kind=1), save :: str = "hi"
+character(len=2, kind=1) :: str = "hi"
 integer(4) :: val
 call __module_prif_prif_init(stat)
 call __module_prif_prif_sync_all()

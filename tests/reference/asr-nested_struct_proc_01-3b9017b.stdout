@@ -1526,7 +1526,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -1600,7 +1600,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (StructType
                                         [(StructType
                                             [(StructType
@@ -1840,7 +1840,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Complex 4)
                                     ()
                                     Source

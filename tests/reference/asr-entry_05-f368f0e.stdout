@@ -808,7 +808,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -832,7 +832,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)

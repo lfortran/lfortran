@@ -26,7 +26,7 @@ namespace {
 namespace {
 
 void main2() {
-    static float x=sin(  1.50000000000000000e+00);
+    float x=sin(  1.50000000000000000e+00);
     double y;
     y = sin(  1.50000000000000000e+00);
     std::cout << x << " " << y << std::endl;

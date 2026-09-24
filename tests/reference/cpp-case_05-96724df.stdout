@@ -25,7 +25,7 @@ namespace {
 namespace {
 
 void main2() {
-    static std::string grade="B";
+    std::string grade="B";
     if (grade == "A") {
 std::cout<< "Excellent!"<<std::endl;
     }

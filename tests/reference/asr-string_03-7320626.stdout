@@ -15,7 +15,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
@@ -49,7 +49,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
@@ -73,7 +73,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
@@ -97,7 +97,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
@@ -121,7 +121,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source

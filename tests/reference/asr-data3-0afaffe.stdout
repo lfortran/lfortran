@@ -23,7 +23,7 @@
                                         3.000000
                                         (Complex 4)
                                     )
-                                    Default
+                                    Save
                                     (Complex 4)
                                     ()
                                     Source
@@ -55,7 +55,7 @@
                                         -3.000000
                                         (Complex 4)
                                     )
-                                    Default
+                                    Save
                                     (Complex 4)
                                     ()
                                     Source
@@ -79,7 +79,7 @@
                                     Local
                                     (IntegerConstant 2 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -103,7 +103,7 @@
                                     Local
                                     (IntegerConstant 76 (Integer 4) Decimal)
                                     (IntegerConstant 76 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -127,7 +127,7 @@
                                     Local
                                     (IntegerConstant 587 (Integer 4) Decimal)
                                     (IntegerConstant 587 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -151,7 +151,7 @@
                                     Local
                                     (IntegerConstant 9999 (Integer 4) Decimal)
                                     (IntegerConstant 9999 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -175,7 +175,7 @@
                                     Local
                                     (IntegerConstant 21111 (Integer 4) Decimal)
                                     (IntegerConstant 21111 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -199,7 +199,7 @@
                                     Local
                                     (IntegerConstant 3 (Integer 4) Decimal)
                                     (IntegerConstant 3 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -223,7 +223,7 @@
                                     Local
                                     (IntegerConstant 76 (Integer 4) Decimal)
                                     (IntegerConstant 76 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -247,7 +247,7 @@
                                     Local
                                     (IntegerConstant 587 (Integer 4) Decimal)
                                     (IntegerConstant 587 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -271,7 +271,7 @@
                                     Local
                                     (IntegerConstant 9999 (Integer 4) Decimal)
                                     (IntegerConstant 9999 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -295,7 +295,7 @@
                                     Local
                                     (IntegerConstant 21111 (Integer 4) Decimal)
                                     (IntegerConstant 21111 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -319,7 +319,7 @@
                                     Local
                                     (IntegerConstant -3 (Integer 4) Decimal)
                                     (IntegerConstant -3 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -343,7 +343,7 @@
                                     Local
                                     (IntegerConstant -76 (Integer 4) Decimal)
                                     (IntegerConstant -76 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -367,7 +367,7 @@
                                     Local
                                     (IntegerConstant -587 (Integer 4) Decimal)
                                     (IntegerConstant -587 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -391,7 +391,7 @@
                                     Local
                                     (IntegerConstant -9999 (Integer 4) Decimal)
                                     (IntegerConstant -9999 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -415,7 +415,7 @@
                                     Local
                                     (IntegerConstant -21111 (Integer 4) Decimal)
                                     (IntegerConstant -21111 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -439,7 +439,7 @@
                                     Local
                                     (IntegerConstant 119 (Integer 4) Decimal)
                                     (IntegerConstant 119 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -463,7 +463,7 @@
                                     Local
                                     (IntegerConstant 119 (Integer 4) Decimal)
                                     (IntegerConstant 119 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -487,7 +487,7 @@
                                     Local
                                     (IntegerConstant 7 (Integer 4) Decimal)
                                     (IntegerConstant 7 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -511,7 +511,7 @@
                                     Local
                                     (IntegerConstant 7 (Integer 4) Decimal)
                                     (IntegerConstant 7 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source
@@ -535,7 +535,7 @@
                                     Local
                                     (IntegerConstant -427 (Integer 4) Decimal)
                                     (IntegerConstant -427 (Integer 4) Decimal)
-                                    Default
+                                    Save
                                     (Integer 4)
                                     ()
                                     Source

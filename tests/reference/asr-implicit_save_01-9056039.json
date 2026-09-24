@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit_save_01-9056039",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/implicit_save_01.f90",
+    "infile_hash": "8a146e9c1be432c68e1c8edc2556875f30889ae9cb285df951668e28",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-implicit_save_01-9056039.stdout",
+    "stdout_hash": "e03fb4aaaecece7df62e41a6c8c68055535a541b608833ec275e4fed",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

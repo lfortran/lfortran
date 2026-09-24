@@ -65,7 +65,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (StructType
                                         [(Integer 4)]
                                         []
@@ -94,7 +94,7 @@
                                     Local
                                     ()
                                     ()
-                                    Default
+                                    Save
                                     (StructType
                                         [(Real 4)]
                                         []
