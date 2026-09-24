@@ -57,6 +57,11 @@ private:
 #if LLVM_VERSION_MAJOR >= 8
   std::unique_ptr<ExecutionSession> ES;
   RTDyldObjectLinkingLayer ObjectLayer;
+#if LLVM_VERSION_MAJOR < 10
+  // SimpleCompiler only keeps a reference to the TargetMachine, so it must
+  // outlive CompileLayer.
+  std::unique_ptr<TargetMachine> TM;
+#endif
   IRCompileLayer CompileLayer;
 
   DataLayout DL;
@@ -87,7 +92,8 @@ public:
 #if LLVM_VERSION_MAJOR >= 10
         CompileLayer(*this->ES, ObjectLayer, std::make_unique<ConcurrentIRCompiler>(std::move(JTMB))),
 #else
-        CompileLayer(*this->ES, ObjectLayer, SimpleCompiler(**JTMB.createTargetMachine())),
+        TM(cantFail(JTMB.createTargetMachine())),
+        CompileLayer(*this->ES, ObjectLayer, SimpleCompiler(*TM)),
 #endif
         DL(std::move(DL)), Mangle(*this->ES, this->DL),
         JITDL(
