@@ -2459,7 +2459,7 @@ type(t) :: z
 end function
 end interface
 end requirement
-template add_t(t, op)
+template add_t {t, op}
 require r {t, op}
 contains
 function add_generic(x, y) result(z)

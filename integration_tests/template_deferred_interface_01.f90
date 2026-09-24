@@ -25,7 +25,7 @@ module template_deferred_interface_01_m
 
     ! The deferred procedure of the requirement comes in through REQUIRE, and
     ! the template declares a second deferred procedure of its own.
-    template twice_tmpl(t, add, show)
+    template twice_tmpl {t, add, show}
         deferred type :: t
         require :: add_r {t, add}
         deferred interface

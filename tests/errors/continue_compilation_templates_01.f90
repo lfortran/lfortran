@@ -4,7 +4,7 @@ module continue_compilation_templates_01_mod
     ! Duplicate parameter name in requirement's namelist
     requirement dup_param_req {T, T, op_func}
         deferred type :: T
-        interface
+        deferred interface
             function op_func(x) result(y)
                 type(T), intent(in) :: x
                 type(T) :: y
@@ -18,7 +18,7 @@ module continue_compilation_templates_01_mod
     requirement dup_param_req2 {V, V, W, comp_func}
         deferred type :: V
         deferred type :: W
-        interface
+        deferred interface
             function comp_func(x, y) result(z)
                 type(V), intent(in) :: x
                 type(V), intent(in) :: y
@@ -35,7 +35,7 @@ module continue_compilation_templates_01_mod
     ! C1603 restricts a template specification part to declarations with the
     ! PARAMETER attribute, so the two erroneous declarations below are named
     ! constants.
-    template redecl_tmpl(T)
+    template redecl_tmpl {T}
         deferred type :: T
         integer, parameter :: n = 1
         real, parameter :: n = 1.0
@@ -104,7 +104,7 @@ module travel
         end interface
     end requirement
 
-    template travel_tmpl(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
+    template travel_tmpl {D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}
         require :: operations {D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}
         private
         public :: avg_S_from_T
@@ -148,7 +148,7 @@ module template_travel_01b_m
         end interface
     end requirement
 
-    template travel_tmpl(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
+    template travel_tmpl {D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}
         require :: operation {D, D, D, plus_D}
         !require :: operation {T, T, T, plus_T}
         require :: operation {D, T, S, D_divided_by_T}
@@ -189,7 +189,7 @@ module template_error_02_m
         end interface
     end requirement
 
-    template add_t(T, F)
+    template add_t {T, F}
         require :: R {T, F}
         private
         public :: add_generic
@@ -229,7 +229,7 @@ module template_error_03_m
         end interface
     end requirement
 
-    template add_t(T, F)
+    template add_t {T, F}
         require :: R {T, F}
         private
         public :: add_generic
@@ -268,7 +268,7 @@ module template_error_04_m
         end interface
     end requirement
 
-    template add_t(T, F)
+    template add_t {T, F}
         require :: R {T, F}
         private
         public :: add_generic
@@ -308,7 +308,7 @@ module template_error_05_m
         end interface
     end requirement
 
-    template add_t(T, F)
+    template add_t {T, F}
         require :: R {T, F}
         private
         public :: add_generic
@@ -342,7 +342,7 @@ module template_error_06_m
       deferred type :: t
   end requirement
 
-  template struct_t(t)
+  template struct_t {t}
       require :: r {t}
       private
       public :: tuple
@@ -454,7 +454,7 @@ module template_add_01b_m_e
         end interface
     end requirement
 
-    template add_t(T, F)
+    template add_t {T, F}
         require :: R {T, F}
         private
         public :: add_generic
@@ -500,7 +500,7 @@ module template_error_07_m
         end interface
     end requirement
 
-    template tmp(t)
+    template tmp {t}
         deferred type :: t
         require :: r {t}
     end template
@@ -525,7 +525,7 @@ module std_prop_m
         end interface
     end requirement
 
-    template commutative_prop(T,bin)
+    template commutative_prop {T,bin}
         require :: magma_r {T,bin}
       contains
         pure function commutative_p(x, y) result(prop)
@@ -546,7 +546,7 @@ end module std_prop_m
 module instantiate_type_arg_01_mod
     implicit none
 
-    template tmpl(t)
+    template tmpl {t}
         deferred type :: t
     contains
         subroutine s(x)
@@ -575,7 +575,7 @@ module continue_compilation_instantiate_01_mod
 
     requirement add_r {T, op}
         deferred type :: T
-        interface
+        deferred interface
             function op(x, y) result(z)
                 type(T), intent(in) :: x, y
                 type(T) :: z
@@ -583,7 +583,7 @@ module continue_compilation_instantiate_01_mod
         end interface
     end requirement
 
-    template add_t(T, op)
+    template add_t {T, op}
         require add_r {T, op}
     contains
         function add_generic(x, y) result(z)
@@ -618,7 +618,7 @@ end module continue_compilation_instantiate_01_mod
 module continue_compilation_instantiate_02_mod
     implicit none
 
-    template type_tmpl(t)
+    template type_tmpl {t}
         deferred type :: t
     contains
         subroutine s(x)
@@ -626,9 +626,9 @@ module continue_compilation_instantiate_02_mod
         end subroutine
     end template
 
-    template const_tmpl(t, n)
+    template const_tmpl {t, n}
         deferred type :: t
-        integer :: n
+        deferred integer, parameter :: n
     contains
         subroutine sn(x)
             type(t), intent(in) :: x
@@ -659,7 +659,7 @@ module instantiate_kwargs_01_mod
 
     requirement add_r {T, op}
         deferred type :: T
-        interface
+        deferred interface
             function op(x, y) result(z)
                 type(T), intent(in) :: x, y
                 type(T) :: z
@@ -667,7 +667,7 @@ module instantiate_kwargs_01_mod
         end interface
     end requirement
 
-    template add_t(T, op)
+    template add_t {T, op}
         require add_r {T, op}
     contains
         function add_generic(x, y) result(z)
@@ -840,7 +840,7 @@ module deferred_const_decl_1
     ! array deferred constant is not implemented yet. This pins which spellings
     ! reach the semantic stage; the accepted-and-working forms are the scalars in
     ! integration_tests/template_deferred_const_01.f90.
-    template note2(x2, x3, x4, x5, x6, x7)
+    template note2 {x2, x3, x4, x5, x6, x7}
         integer, parameter :: v1(2) = [5,15]   ! not a deferred constant
         deferred integer, parameter :: x2(3)  ! {Error} a `deferred` constant that is an array is not supported yet
         deferred integer, parameter :: x3(v1)  ! {Error} a `deferred` constant that is an array is not supported yet
@@ -906,7 +906,7 @@ module template_end_name_1
         deferred type :: t
     end requirement not_r  ! {Error} End requirement name does not match requirement name
 
-    template tmpl(u)
+    template tmpl {u}
         deferred type :: u
     end template not_tmpl  ! {Error} End template name does not match template name
 
@@ -931,7 +931,7 @@ module instantiate_syntax_1
         deferred type :: t
     end requirement
 
-    template tmpl(t)
+    template tmpl {t}
         require r {t}
         private
         public :: id
@@ -975,12 +975,12 @@ module require_syntax_1
         deferred type :: u
     end requirement
 
-    template tmpl_1(v)
+    template tmpl_1 {v}
         deferred type :: v
         require :: r1 {v}, r2 {v}  ! {Error} Token ',' is unexpected here
     end template
 
-    template tmpl_2(v)
+    template tmpl_2 {v}
         deferred type :: v
         require r1 {v}, r2 {v}  ! {Error} Token ',' is unexpected here
     end template
@@ -1034,7 +1034,7 @@ module deferred_proc_decl_1_mod
         deferred procedure (no_such_iface) :: p  ! {Error} the interface 'no_such_iface' is not declared
     end requirement
 
-    template t1(p)
+    template t1 {p}
         deferred procedure (not_an_interface) :: p  ! {Error} 'not_an_interface' is not an interface
     end template
 
@@ -1066,14 +1066,14 @@ module deferred_type_scope_1_args_mod
         deferred type :: y  ! {Error} 'y' is not a deferred argument of 'r'
     end requirement
 
-    template tmpl(t)
+    template tmpl {t}
         deferred type :: t
         deferred type :: z  ! {Error} 'z' is not a deferred argument of 'tmpl'
     end template
 
 contains
 
-    subroutine swap{t}(x, y)
+    template subroutine swap{t}(x, y)
         deferred type :: t
         deferred type :: w  ! {Error} 'w' is not a deferred argument of 'swap'
         type(t), intent(inout) :: x, y
@@ -1160,7 +1160,7 @@ module deferred_type_attr_1
         end interface
     end requirement
 
-    template t_extensible(t)
+    template t_extensible {t}
         deferred type, extensible :: t
         private
         public :: nothing_ext
@@ -1169,7 +1169,7 @@ module deferred_type_attr_1
         end subroutine
     end template
 
-    template t_abstract(t)
+    template t_abstract {t}
         deferred type, abstract :: t
         private
         public :: nothing_abs
@@ -1178,7 +1178,7 @@ module deferred_type_attr_1
         end subroutine
     end template
 
-    template t_plain(t)
+    template t_plain {t}
         deferred type :: t
         private
         public :: nothing_plain
@@ -1211,7 +1211,7 @@ module template_save_common_1_m
     implicit none
 
     ! C1610, in a procedure of a template, in each spelling of SAVE
-    template save_tmpl(t)
+    template save_tmpl {t}
         deferred type :: t
     contains
         subroutine explicit_save(x)
@@ -1268,9 +1268,9 @@ module template_save_common_1_m
     ! section, in a scoping unit nested in one, and in a templated procedure.
 
     ! C1610, in a template nested in a template
-    template outer_tmpl(t)
+    template outer_tmpl {t}
         deferred type :: t
-        template inner_tmpl(u)
+        template inner_tmpl {u}
             deferred type :: u
         contains
             subroutine inner_save(y)
@@ -1288,7 +1288,7 @@ module template_save_common_1_m
     end template
 
     ! C1611, in a procedure of a template
-    template storage_tmpl(t)
+    template storage_tmpl {t}
         deferred type :: t
     contains
         subroutine common_block(x)
@@ -1311,7 +1311,7 @@ module template_save_common_1_m
 contains
 
     ! C1610, in a templated procedure
-    subroutine templated_save{t}(x)
+    template subroutine templated_save{t}(x)
         deferred type :: t
         type(t), intent(in) :: x
         integer, save :: counter
@@ -1320,7 +1320,7 @@ contains
     end subroutine
 
     ! C1611, in a templated procedure
-    subroutine templated_common{t}(x)
+    template subroutine templated_common{t}(x)
         deferred type :: t
         type(t), intent(in) :: x
         integer :: a
@@ -1351,7 +1351,7 @@ module template_scope_1_mod
     ! A requirement is not one of the three permitted contexts.
     requirement r {t}
         deferred type :: t
-        template req_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+        template req_tmpl {u}  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
             deferred type :: u
         end template
     end requirement
@@ -1359,13 +1359,13 @@ module template_scope_1_mod
 contains
 
     subroutine s()
-        template sub_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+        template sub_tmpl {u}  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
             deferred type :: u
         end template
     end subroutine
 
     integer function f()
-        template func_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+        template func_tmpl {u}  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
             deferred type :: u
         end template
         f = 1
@@ -1385,7 +1385,7 @@ submodule (template_scope_1_submod_mod) template_scope_1_submod
     implicit none
 
     ! A submodule is not a module for the purposes of C1601.
-    template submod_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+    template submod_tmpl {u}  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
         deferred type :: u
     end template
 
@@ -1424,14 +1424,14 @@ module deferred_type_class_1
 
     requirement r {t, s1}
         deferred type :: t
-        interface
+        deferred interface
             subroutine s1(x)
                 class(t), intent(in) :: x  ! {Error} deferred type 't' is not extensible, so it cannot be used in a class declaration
             end subroutine
         end interface
     end requirement
 
-    template tmpl(u)
+    template tmpl {u}
         deferred type :: u
     contains
         subroutine s2(y)
@@ -1467,7 +1467,7 @@ module deferred_type_coarray_1
     end type
 
     ! Specification part of a template.
-    template spec_tmpl(t)
+    template spec_tmpl {t}
         deferred type :: t
     contains
         subroutine spec_coarray()
@@ -1476,7 +1476,7 @@ module deferred_type_coarray_1
     end template
 
     ! Contains part of a template, all coarray spellings.
-    template body_tmpl(t)
+    template body_tmpl {t}
         deferred type :: t
     contains
         subroutine codim_attr()
@@ -1510,7 +1510,7 @@ module deferred_type_coarray_1
 contains
 
     ! Brace-spelled templated subprogram.
-    subroutine templated_sub{t}()
+    template subroutine templated_sub{t}()
         deferred type :: t
         type(t), codimension[:], allocatable :: x  ! {Error} A variable of deferred type must not be a coarray
     end subroutine
@@ -1552,11 +1552,11 @@ module template_spec_decl_1_mod
         end interface
     end requirement
 
-    template tmpl(t, plus_t, n)
+    template tmpl {t, plus_t, n}
         ! Not template-specifications, and so not restricted by C1603: a
         ! deferred type declaration, a deferred constant and a requirement.
         deferred type :: t
-        integer :: n
+        deferred integer, parameter :: n
         require :: plus_r {t, plus_t}
 
         ! A named constant is what C1603 permits.
@@ -1617,7 +1617,7 @@ module requirement_scope_1_mod
     end requirement
 
     ! R1605 would allow this, C1636 does not.
-    template tmpl(t)
+    template tmpl {t}
         deferred type :: t
         requirement tmpl_r {u}  ! {Error} a requirement can only be declared in the specification part of a main program or a module
             deferred type :: u
@@ -1696,7 +1696,7 @@ module requirement_syntax_1
         deferred type :: t
     end requirement
 
-    template tmpl(u)
+    template tmpl {u}
         deferred type :: u
         require :: r(u)  ! {Error} Token '(' is unexpected here
     end template
@@ -1765,7 +1765,7 @@ module deferred_type_syntax_1
         type, deferred :: t  ! {Error} Token 'deferred' is unexpected here
     end requirement
 
-    template tmpl(u)
+    template tmpl {u}
         deferred type :: u
         type, deferred :: u  ! {Error} Token 'deferred' is unexpected here
     end template
@@ -1782,7 +1782,7 @@ integer :: i
 i = 1
 
 ! A template accepts declarations only
-template decl_order_t(T)
+template decl_order_t {T}
     deferred type :: T
     use iso_fortran_env
     implicit none
@@ -1798,6 +1798,127 @@ import :: y
 a = 1
 end subroutine
 
+
+! C1637 (J3/26-007r1): the interface-stmt of an interface block that is a
+! requirement-specification shall specify ABSTRACT or DEFERRED. A plain
+! interface block declares an external procedure with an explicit interface,
+! and a generic one builds a generic set out of procedures declared
+! elsewhere; neither declares a deferred argument.
+module requirement_interface_kind_1
+    implicit none
+
+    requirement plain_interface_req {T2, plain_func}
+        deferred type :: T2
+        interface  ! {Error} an interface block in a requirement must be a deferred or an abstract interface
+            function plain_func(x) result(y)
+                type(T2), intent(in) :: x
+                type(T2) :: y
+            end function
+        end interface
+    end requirement
+
+    ! A second one, to show compilation continues past the first.
+    requirement operator_interface_req {U, plus_u}
+        deferred type :: U
+        interface operator (+)  ! {Error} an interface block in a requirement must be a deferred or an abstract interface
+            procedure plus_u
+        end interface
+        deferred interface
+            function plus_u(x, y) result(z)
+                type(U), intent(in) :: x, y
+                type(U) :: z
+            end function
+        end interface
+    end requirement
+
+end module
+
+! A deferred constant is declared by a deferred-const-decl-stmt (R1618). A
+! plain type declaration of a deferred argument used to mean the same thing in
+! LFortran; it is a C1603 violation and is now rejected.
+module template_plain_const_1
+    implicit none
+
+    template plain_const_tmpl {T3, n3}
+        deferred type :: T3
+        integer :: n3  ! {Error} 'n3' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n3`
+    end template
+
+    ! The same for an array deferred constant, to show the message does not
+    ! depend on the entity's shape.
+    template plain_const_array_tmpl {T4, n4}
+        deferred type :: T4
+        integer :: n4(3)  ! {Error} 'n4' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n4`
+    end template
+
+end module
+
+! A templated subprogram carries TEMPLATE in its prefix (C1609), with the
+! deferred argument list in braces as J3 paper 26-158 corrects R1611 and R1612.
+! LFortran used to accept the deferred argument list with no TEMPLATE in the
+! prefix at all; one case per removed grammar production. See
+! integration_tests/template_prefix_01.f90 for the accepted spellings.
+module templated_subp_syntax_1a
+    implicit none
+contains
+    subroutine swap{t}(x, y)  ! {Error} Token '{' is unexpected here
+        deferred type :: t
+        type(t), intent(inout) :: x, y
+    end subroutine
+end module
+
+! Each case is its own module so that recovery from the previous syntax error
+! does not swallow the next statement under test.
+module templated_subp_syntax_1b
+    implicit none
+contains
+    pure subroutine copy_into{t}(x, y)  ! {Error} Token '{' is unexpected here
+        deferred type :: t
+        type(t), intent(in) :: x
+        type(t), intent(out) :: y
+    end subroutine
+end module
+
+module templated_subp_syntax_1c
+    implicit none
+contains
+    function pick_last{t}(x, y) result(res)  ! {Error} Token '{' is unexpected here
+        deferred type :: t
+        type(t), intent(in) :: x, y
+        type(t) :: res
+    end function
+end module
+
+module templated_subp_syntax_1d
+    implicit none
+contains
+    pure function pick_second{t}(x, y) result(res)  ! {Error} Token '{' is unexpected here
+        deferred type :: t
+        type(t), intent(in) :: x, y
+        type(t) :: res
+    end function
+end module
+
+! A TEMPLATE statement spells its deferred argument list with braces (R1602 as
+! corrected by 26-158), so the parenthesised spelling is now a syntax error,
+! with and without arguments.
+module template_syntax_1
+    implicit none
+
+    requirement paren_r {t}
+        deferred type :: t
+    end requirement
+
+    template one_arg_tmpl(u)  ! {Error} Token '(' is unexpected here
+        deferred type :: u
+        require :: paren_r {u}
+    end template
+
+    template no_arg_tmpl()  ! {Error} Token '(' is unexpected here
+        integer, parameter :: n = 1
+    end template
+
+end module
 
 program continue_compilation_templates_01
     use continue_compilation_templates_01_mod

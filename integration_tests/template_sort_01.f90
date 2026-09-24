@@ -35,7 +35,7 @@ module template_sort_01_m
         end interface
     end requirement
 
-    template qsort_t(T, lt)
+    template qsort_t {T, lt}
         require :: op_r {T, T, logical, lt}
         private
         public :: qsort

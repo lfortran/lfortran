@@ -6,7 +6,7 @@ public :: struct_t, test_template
 requirement r {t}
 deferred type :: t
 end requirement r
-template struct_t(t)
+template struct_t {t}
 require :: r {t}
 private
 public :: tuple

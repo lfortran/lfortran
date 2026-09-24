@@ -53,7 +53,7 @@ contains
         res = lhs / rhs
     end function
 
-    pure function generic_sum {T, add, cast} (arr) result(res)
+    pure template function generic_sum {T, add, cast} (arr) result(res)
         require :: operator_r {T, T, T, add}
         require :: cast_r {T, cast}
         type(T), intent(in) :: arr(:)
@@ -69,7 +69,7 @@ contains
         end if
     end function
 
-    pure function generic_avg {T, add, cast, div} (arr) result(res)
+    pure template function generic_avg {T, add, cast, div} (arr) result(res)
         require :: operator_r {T, T, T, add}
         require :: cast_r {T, cast}
         require :: operator_r {T, integer, T, div}
