@@ -162,10 +162,34 @@ void  *dbg_realloc(void *context, void *ptr, int64_t size){
 
 
 
+/*
+ * A module's storage is set up by a constructor of the object file that
+ * defines the module, which is the only object file linked wherever that
+ * storage is. The free that answers it belongs there too, but it cannot be a
+ * destructor: the report below runs while `main` is still on the stack, and a
+ * destructor runs after it returns. Each such object file registers its
+ * teardown here instead, and the report runs them before it counts.
+ */
+#define LCOMPILERS_MAX_MODULE_TEARDOWNS 1024
+static void (*module_teardowns[LCOMPILERS_MAX_MODULE_TEARDOWNS])(void);
+static size_t num_module_teardowns = 0;
+
+void _lfortran_register_module_teardown(void (*teardown)(void)) {
+    if (num_module_teardowns >= LCOMPILERS_MAX_MODULE_TEARDOWNS) {
+        fprintf(stderr, "ERROR : too many module teardowns registered\n");
+        exit(1);
+    }
+    module_teardowns[num_module_teardowns++] = teardown;
+}
+
 // Called to report any leaks
 void dbg_report() {
     size_t leaks = 0;
     size_t total_bytes = 0;
+    for (size_t i = 0; i < num_module_teardowns; i++) {
+        module_teardowns[i]();
+    }
+    num_module_teardowns = 0;
     fprintf(stdout, "\n---------------- Memory Leak Report ----------------\n");
     for (size_t i = 0; i < mem_dbg_hashTable.num_buckets; i++) {
         if (mem_dbg_hashTable.buckets[i].state != OCCUPIED_BKT) continue;

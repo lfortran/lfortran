@@ -6858,8 +6858,100 @@ public:
 
         visit_procedures(x);
         emit_module_startup_ctor(x, arrays_mark, structs_mark, struct_arrays_mark);
+        emit_module_teardown_dtor(x);
         mangle_prefix = ASRUtils::cell_prefix(current_scope_copy);
         current_scope = current_scope_copy;
+    }
+
+    // Whether this translation unit defines the storage of `x`'s variables,
+    // rather than only naming it for a definition in another object file.
+    bool module_storage_defined_here(const ASR::Module_t &x) {
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            uint32_t h = get_hash((ASR::asr_t*)item.second);
+            auto it = llvm_symtab.find(h);
+            if (it != llvm_symtab.end() && global_defined_here(it->second)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Frees what the module's own storage owns, in the object file that owns
+    // it. The set up of a module's members is emitted as a constructor of the
+    // object file that defines the module, so the free that answers it
+    // belongs to that object file too. It used to be emitted into the
+    // Program, over the modules of the Program's own translation unit, which
+    // leaves a module the Program never names -- one reached only through a
+    // separately compiled external procedure -- allocated and never freed.
+    //
+    // Only a build detecting leaks frees these at all: a module's storage
+    // lives until the program ends either way, so the free exists to make the
+    // report clean rather than to return the memory.
+    void emit_module_teardown_dtor(const ASR::Module_t &x) {
+        if (!compiler_options.detect_leaks) return;
+        if (prototype_only) return;
+        if (!module_storage_defined_here(x)) return;
+
+        llvm::BasicBlock *saved_block = builder->GetInsertBlock();
+        llvm::DebugLoc saved_debug_loc = builder->getCurrentDebugLocation();
+        llvm::FunctionType *dtor_type = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context), {}, false);
+        llvm::Function *dtor_fn = llvm::Function::Create(dtor_type,
+            llvm::Function::InternalLinkage,
+            mangle_prefix + "__lfortran_module_teardown", module.get());
+        builder->SetInsertPoint(
+            llvm::BasicBlock::Create(context, ".entry", dtor_fn));
+        // The destructor belongs to no Fortran source construct, so nothing
+        // here carries a location of the function that was being emitted.
+        builder->SetCurrentDebugLocation(llvm::DebugLoc());
+
+        llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+        builder->CreateRetVoid();
+
+        if (saved_block != nullptr) {
+            builder->SetInsertPoint(saved_block);
+            builder->SetCurrentDebugLocation(saved_debug_loc);
+        } else {
+            builder->ClearInsertionPoint();
+        }
+
+        // Nothing was emitted, so there was nothing this module owns.
+        if (dtor_fn->size() == 1 && dtor_fn->getEntryBlock().size() == 1) {
+            dtor_fn->eraseFromParent();
+            return;
+        }
+
+        // Not a destructor: the leak report runs while `main` is still on the
+        // stack, and a destructor runs after it returns, so the free would
+        // come after the count. Register the teardown with the run time
+        // instead, from a constructor of this same object file, and the
+        // report runs it before it counts.
+        llvm::FunctionType *register_type = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context),
+            {dtor_type->getPointerTo()}, false);
+        llvm::Function *register_fn = module->getFunction(
+            "_lfortran_register_module_teardown");
+        if (register_fn == nullptr) {
+            register_fn = llvm::Function::Create(register_type,
+                llvm::Function::ExternalLinkage,
+                "_lfortran_register_module_teardown", module.get());
+        }
+        llvm::Function *register_ctor = llvm::Function::Create(dtor_type,
+            llvm::Function::InternalLinkage,
+            mangle_prefix + "__lfortran_module_teardown_register", module.get());
+        builder->SetInsertPoint(
+            llvm::BasicBlock::Create(context, ".entry", register_ctor));
+        builder->SetCurrentDebugLocation(llvm::DebugLoc());
+        builder->CreateCall(register_fn, {dtor_fn});
+        builder->CreateRetVoid();
+        if (saved_block != nullptr) {
+            builder->SetInsertPoint(saved_block);
+            builder->SetCurrentDebugLocation(saved_debug_loc);
+        } else {
+            builder->ClearInsertionPoint();
+        }
+        llvm::appendToGlobalCtors(*module, register_ctor, 65535);
     }
 
     // The global that `ptr` stands for is defined by this translation unit,
@@ -7201,17 +7293,11 @@ public:
         start_new_block(proc_return);
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         finalize_list_call_arg_allocas();
-        // Free globals if detecting leaks is ON, to print clean report
-        if(compiler_options.detect_leaks){
-            SymbolTable* tranlsationUnit_symtab = ASRUtils::get_tu_symtab(x.m_symtab);
-            for(auto &name_sym_pair : tranlsationUnit_symtab->get_scope()){
-                auto &sym = name_sym_pair.second;
-                if(ASR::is_a<ASR::Module_t>(*sym)){
-                    llvm_symtab_finalizer.finalize_symtab(
-                        ASR::down_cast<ASR::Module_t>(sym)->m_symtab);
-                }
-            }
-        }
+        // A module's storage is freed by the object file that defines it, in
+        // the destructor `emit_module_teardown_dtor` writes there, so the
+        // Program frees none of it here. Walking the Program's own
+        // translation unit reached only the modules the Program names, which
+        // is not where the storage was set up.
         // Same for the save variables of struct type that procedures and
         // blocks allocated member storage for. Their initialization runs on
         // the first call only, so a procedure that was never called has
