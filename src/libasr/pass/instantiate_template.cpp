@@ -3,6 +3,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/semantic_exception.h>
 
 namespace LCompilers {
@@ -1380,6 +1381,51 @@ public:
         }
         return ASR::make_Cast_t(al, x->base.base.loc, arg, x->m_kind, type,
             value, dest);
+    }
+
+    // An intrinsic of a deferred constant, e.g. `abs(-n)` or `int(n*2.5)`.
+    ASR::asr_t* duplicate_IntrinsicElementalFunction(
+            ASR::IntrinsicElementalFunction_t* x) {
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            args.push_back(al, duplicate_expr(x->m_args[i]));
+        }
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASRUtils::eval_intrinsic_function eval =
+            ASRUtils::IntrinsicElementalFunctionRegistry::get_eval_function(
+                x->m_intrinsic_id);
+        if (value == nullptr && eval && !ASRUtils::is_array(type)) {
+            Vec<ASR::expr_t*> arg_values;
+            arg_values.reserve(al, args.size());
+            for (size_t i = 0; i < args.size(); i++) {
+                ASR::expr_t* arg_value = ASRUtils::expr_value(args[i]);
+                if (arg_value == nullptr
+                        || !(ASR::is_a<ASR::IntegerConstant_t>(*arg_value)
+                            || ASR::is_a<ASR::RealConstant_t>(*arg_value))) {
+                    break;
+                }
+                arg_values.push_back(al, arg_value);
+            }
+            int64_t divisor = -1;
+            bool divides_by_zero = x->m_intrinsic_id == static_cast<int64_t>(
+                    ASRUtils::IntrinsicElementalFunctions::Mod)
+                && arg_values.size() == 2
+                && ASRUtils::extract_value(arg_values[1], divisor)
+                && divisor == 0;
+            if (arg_values.size() == args.size() && !divides_by_zero) {
+                diag::Diagnostics diagnostics;
+                value = eval(al, x->base.base.loc, type, arg_values,
+                    diagnostics);
+                if (diagnostics.has_error()) {
+                    value = nullptr;
+                }
+            }
+        }
+        return ASRUtils::make_IntrinsicElementalFunction_t_util(al,
+            x->base.base.loc, x->m_intrinsic_id, args.p, args.size(),
+            x->m_overload_id, type, value);
     }
 
     // A variable declared in the module that hosts the template is shared

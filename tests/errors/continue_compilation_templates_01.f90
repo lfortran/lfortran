@@ -1990,3 +1990,22 @@ module requirement_undeclared_arg_1
     end template
 
 end module
+
+! A named constant of a template initialized with an intrinsic function of a
+! deferred constant is folded at instantiation for the numeric intrinsics
+! such as `abs` or `max`; the others are rejected instead of leaving the
+! constant without a value (#13357).
+module template_deferred_const_intrinsic_1
+    implicit none
+
+    template tmpl {n}
+        deferred integer, parameter :: n
+    contains
+        function f() result(r)
+            real :: r
+            real, parameter :: x = sin(real(n))  ! {Error} initialization of named constant `x` with this intrinsic function of a deferred constant is not supported yet
+            r = x
+        end function
+    end template
+
+end module

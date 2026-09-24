@@ -1166,6 +1166,12 @@ semantic error: No requirement 'r_undeclared' is defined
 1989 |         require :: r_undeclared {a, b}
      |                    ^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: initialization of named constant `x` with this intrinsic function of a deferred constant is not supported yet
+    --> tests/errors/continue_compilation_templates_01.f90:2006:36
+     |
+2006 |             real, parameter :: x = sin(real(n))  ! {Error} initialization of named constant `x` with this intrinsic function of a deferred constant is not supported yet
+     |                                    ^^^^^^^^^^^^ 
+
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
     |

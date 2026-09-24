@@ -1,7 +1,8 @@
 ! Local named constants of a templated procedure whose initializers are
 ! expressions of the template's deferred constant, used as array bounds. Each
 ! instantiation must give the arrays the extents of its own constant, and the
-! constants (including negated and real ones) the values of its own constant.
+! constants (including negated and real ones, and numeric intrinsics of the
+! constant) the values of its own constant.
 
 module template_deferred_const_04_m
     implicit none
@@ -14,7 +15,7 @@ module template_deferred_const_04_m
         deferred integer, parameter :: n
         private
         public :: size_mul, size_add, size_chain, fill_sum, neg, &
-            size_neg, neg_real
+            size_neg, neg_real, intr, size_intr, intr_real
     contains
         function size_mul() result(r)
             integer :: r
@@ -66,6 +67,26 @@ module template_deferred_const_04_m
             real, parameter :: x = -(n*2.5), y = -x/2
             r = x + 100*y
         end function
+
+        function intr() result(r)
+            integer :: r
+            integer, parameter :: a = abs(-n), b = max(n, 4) + min(n, 4), &
+                c = mod(n, 2) + modulo(-n, 4), d = sign(2, -n) + dim(n, 1)
+            r = a + 10*b + 100*c + 1000*d
+        end function
+
+        function size_intr() result(r)
+            integer :: r
+            integer, parameter :: m = int(n*2.5), k = abs(n - 10)
+            integer :: y(m), z(k), w(nint(n*0.9) + floor(-n*0.5) + ceiling(n*0.5))
+            r = size(y) + 100*size(z) + 10000*size(w)
+        end function
+
+        function intr_real() result(r)
+            real :: r
+            real, parameter :: x = real(n), y = -real(n)/2, z = sqrt(real(n*n))
+            r = x + 10*y + 100*z
+        end function
     end template
 
 contains
@@ -74,7 +95,8 @@ contains
         instantiate tmpl {three}, only: size_mul_3 => size_mul, &
             size_add_3 => size_add, size_chain_3 => size_chain, &
             fill_sum_3 => fill_sum, neg_3 => neg, size_neg_3 => size_neg, &
-            neg_real_3 => neg_real
+            neg_real_3 => neg_real, intr_3 => intr, &
+            size_intr_3 => size_intr, intr_real_3 => intr_real
         if (size_mul_3() /= 6) error stop
         if (size_add_3() /= 4) error stop
         if (size_chain_3() /= 8) error stop
@@ -82,15 +104,20 @@ contains
         if (neg_3() /= -3) error stop
         if (size_neg_3() /= 603) error stop
         if (abs(neg_real_3() - 367.5) > 1e-4) error stop
+        if (intr_3() /= 273) error stop
+        if (size_intr_3() /= 30707) error stop
+        if (abs(intr_real_3() - 288.0) > 1e-4) error stop
         print *, size_mul_3(), size_add_3(), size_chain_3(), fill_sum_3()
         print *, neg_3(), size_neg_3(), neg_real_3()
+        print *, intr_3(), size_intr_3(), intr_real_3()
     end subroutine
 
     subroutine test_five()
         instantiate tmpl {five}, only: size_mul_5 => size_mul, &
             size_add_5 => size_add, size_chain_5 => size_chain, &
             fill_sum_5 => fill_sum, neg_5 => neg, size_neg_5 => size_neg, &
-            neg_real_5 => neg_real
+            neg_real_5 => neg_real, intr_5 => intr, &
+            size_intr_5 => size_intr, intr_real_5 => intr_real
         if (size_mul_5() /= 10) error stop
         if (size_add_5() /= 6) error stop
         if (size_chain_5() /= 12) error stop
@@ -98,8 +125,12 @@ contains
         if (neg_5() /= -5) error stop
         if (size_neg_5() /= 1005) error stop
         if (abs(neg_real_5() - 612.5) > 1e-4) error stop
+        if (intr_5() /= 2495) error stop
+        if (size_intr_5() /= 50512) error stop
+        if (abs(intr_real_5() - 480.0) > 1e-4) error stop
         print *, size_mul_5(), size_add_5(), size_chain_5(), fill_sum_5()
         print *, neg_5(), size_neg_5(), neg_real_5()
+        print *, intr_5(), size_intr_5(), intr_real_5()
     end subroutine
 
 end module

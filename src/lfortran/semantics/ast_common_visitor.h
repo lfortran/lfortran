@@ -3222,20 +3222,36 @@ public:
             }
     };
 
-    // True if `e` is an arithmetic expression of a deferred constant of the
-    // template being defined, such as `-n` or `real(n)*2`: it reads a named
-    // constant without a compile-time value (a deferred constant, or a named
-    // constant initialized with such an expression), and is otherwise built
-    // only from constants, integer and real arithmetic and conversions. The
-    // instantiation of the template folds such an expression once the
-    // deferred constant is substituted.
-    static bool is_deferred_constant_arithmetic(ASR::expr_t *e) {
+    enum class DeferredConstantInit {
+        // The expression does not read a deferred constant of the template
+        // being defined, or reads it in a way handled elsewhere.
+        None,
+        // An arithmetic expression of a deferred constant, such as `-n`,
+        // `real(n)*2` or `abs(n - 5)`: it reads a named constant without a
+        // compile-time value (a deferred constant, or a named constant
+        // initialized with such an expression), and is otherwise built only
+        // from constants, integer and real arithmetic, conversions and the
+        // intrinsics that the instantiation can evaluate. The instantiation
+        // of the template folds it once the deferred constant is substituted.
+        Foldable,
+        // Reads a deferred constant through an intrinsic that the
+        // instantiation cannot evaluate, such as `sin(real(n))`.
+        Unsupported
+    };
+
+    static DeferredConstantInit classify_deferred_constant_init(ASR::expr_t *e) {
         class Finder : public ASR::BaseWalkVisitor<Finder> {
             public:
                 bool reads_deferred = false;
                 bool foldable = true;
+                bool unsupported_intrinsic = false;
 
                 void visit_expr(const ASR::expr_t &x) {
+                    if (x.type != ASR::exprType::Var
+                            && ASRUtils::expr_value(const_cast<ASR::expr_t*>(&x))) {
+                        // Already a compile-time constant, e.g. `kind(n)`.
+                        return;
+                    }
                     switch (x.type) {
                         case ASR::exprType::Var: {
                             ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
@@ -3255,6 +3271,24 @@ public:
                         case ASR::exprType::IntegerConstant:
                         case ASR::exprType::RealConstant:
                             return;
+                        case ASR::exprType::IntrinsicElementalFunction: {
+                            int64_t id = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(
+                                &x)->m_intrinsic_id;
+                            if (ASRUtils::IntrinsicElementalFunctionRegistry
+                                    ::get_eval_function(id) == nullptr) {
+                                foldable = false;
+                                unsupported_intrinsic = true;
+                                ASR::BaseWalkVisitor<Finder>::visit_expr(x);
+                                return;
+                            }
+                            break;
+                        }
+                        case ASR::exprType::IntrinsicArrayFunction: {
+                            foldable = false;
+                            unsupported_intrinsic = true;
+                            ASR::BaseWalkVisitor<Finder>::visit_expr(x);
+                            return;
+                        }
                         case ASR::exprType::Cast: {
                             ASR::cast_kindType kind =
                                 ASR::down_cast<ASR::Cast_t>(&x)->m_kind;
@@ -3263,32 +3297,41 @@ public:
                                     && kind != ASR::cast_kindType::RealToReal
                                     && kind != ASR::cast_kindType::IntegerToInteger) {
                                 foldable = false;
+                                ASR::BaseWalkVisitor<Finder>::visit_expr(x);
                                 return;
                             }
+                            break;
                         }
-                        [[fallthrough]];
                         case ASR::exprType::IntegerBinOp:
                         case ASR::exprType::RealBinOp:
                         case ASR::exprType::IntegerUnaryMinus:
-                        case ASR::exprType::RealUnaryMinus: {
-                            if (ASRUtils::is_array(ASRUtils::expr_type(
-                                    const_cast<ASR::expr_t*>(&x)))) {
-                                foldable = false;
-                                return;
-                            }
+                        case ASR::exprType::RealUnaryMinus:
+                            break;
+                        default: {
+                            foldable = false;
                             ASR::BaseWalkVisitor<Finder>::visit_expr(x);
                             return;
                         }
-                        default: {
-                            foldable = false;
-                            return;
-                        }
                     }
+                    if (ASRUtils::is_array(ASRUtils::expr_type(
+                            const_cast<ASR::expr_t*>(&x)))) {
+                        foldable = false;
+                    }
+                    ASR::BaseWalkVisitor<Finder>::visit_expr(x);
                 }
         };
         Finder finder;
         finder.visit_expr(*e);
-        return finder.reads_deferred && finder.foldable;
+        if (!finder.reads_deferred) {
+            return DeferredConstantInit::None;
+        }
+        if (finder.foldable) {
+            return DeferredConstantInit::Foldable;
+        }
+        if (finder.unsupported_intrinsic) {
+            return DeferredConstantInit::Unsupported;
+        }
+        return DeferredConstantInit::None;
     }
 
     // Rejects `e`, the array bound or character length just built for
@@ -9925,6 +9968,11 @@ public:
                         if ( init_expr && !ASR::is_a<ASR::FunctionType_t>(*
                                 ASRUtils::type_get_past_pointer(
                                     ASRUtils::expr_type(init_expr))) ) {
+                            DeferredConstantInit deferred_init =
+                                in_template_definition
+                                    && storage_type == ASR::storage_typeType::Parameter
+                                ? classify_deferred_constant_init(init_expr)
+                                : DeferredConstantInit::None;
                             if (is_pointer && !is_allocatable &&
                                     ASRUtils::is_pointer_association_initializer(
                                         init_expr)) {
@@ -9938,6 +9986,22 @@ public:
                                 // The target is kept as the value as well, as
                                 // the character branch above already does.
                                 value = init_expr;
+                            } else if (deferred_init != DeferredConstantInit::None) {
+                                if (deferred_init == DeferredConstantInit::Unsupported) {
+                                    diag.add(Diagnostic(
+                                        "initialization of named constant `"
+                                        + std::string(x.m_syms[i].m_name)
+                                        + "` with this intrinsic function of a"
+                                        " deferred constant is not supported yet",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("", {init_expr->base.loc})
+                                        }));
+                                }
+                                // The initializer, e.g. `n*2`, `-n` or
+                                // `abs(n - 5)`, uses a deferred constant of the
+                                // template, so it has no compile-time value
+                                // until the template is instantiated.
+                                value = nullptr;
                             } else if( ASRUtils::is_value_constant(value) ) {
                             } else if( ASRUtils::is_value_constant(init_expr) ) {
                                 if (ASR::is_a<ASR::Cast_t>(*init_expr)) {
@@ -10089,14 +10153,6 @@ public:
                                 } else {
                                     value = nullptr;
                                 }
-                            } else if (in_template_definition
-                                    && storage_type == ASR::storage_typeType::Parameter
-                                    && is_deferred_constant_arithmetic(init_expr)) {
-                                // The initializer, e.g. `n*2` or `-n`, uses a
-                                // deferred constant of the template, so it has
-                                // no compile-time value until the template is
-                                // instantiated.
-                                value = nullptr;
                             } else if ( ASR::is_a<ASR::ArrayConstructor_t>(*init_expr) ||
                                 ( ASR::is_a<ASR::Cast_t>(*init_expr) &&
                                 ASR::is_a<ASR::ArrayConstructor_t>(*ASR::down_cast<ASR::Cast_t>(init_expr)->m_arg) )
