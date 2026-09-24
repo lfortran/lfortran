@@ -140,6 +140,26 @@ void set_null_context_from_variable(Allocator& al, const Location& loc,
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::Struct_t* s);
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression);
 
+// The procedure that an assignment of `s` to `s` is defined by, or nullptr
+// when there is none. `resolve_struct_assign_symbol` alone is not enough: it
+// answers with any `~assign` visible from the type, whose procedures may all
+// take other types, so the procedures are matched against `s` here.
+ASR::symbol_t* resolve_struct_defined_assignment_proc(ASR::Struct_t* s);
+
+// An intrinsic assignment whose variable is of derived type does more than
+// copy the components across. F2018 7.5.6.3 p1: the variable is finalized
+// after the expression is evaluated and before the variable is defined.
+// F2018 10.2.1.3 p13: every nonpointer component of derived type that has a
+// type-bound defined assignment is assigned through that defined assignment.
+// Both belong to the assignment and are carried out when the value is copied
+// into the variable, so this reports whether assigning to `struct_sym` does
+// either, in which case the value has to exist before the variable is
+// written: built straight into the variable it would skip them.
+// Only a component declared by the type itself is looked at. A component the
+// type inherits is written through the parent component, which is a component
+// of derived type in its own right (F2018 7.5.7.2) and is copied as one.
+bool struct_assignment_is_more_than_a_copy(ASR::symbol_t* struct_sym);
+
 ASR::symbol_t* get_union_sym_from_union_expr(ASR::expr_t* expression);
 static inline bool is_unlimited_polymorphic_type(ASR::Struct_t* st);
 static inline bool is_unlimited_polymorphic_type(ASR::ttype_t* const t);

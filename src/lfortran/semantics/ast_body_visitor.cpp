@@ -7590,6 +7590,28 @@ public:
             }
         }
 
+        // Assigning a structure constructor to a scalar variable of derived
+        // type is an intrinsic assignment, and an intrinsic assignment does
+        // more than write the components: it finalizes the variable, and it
+        // routes a component of derived type through that type's defined
+        // assignment. Both act on the variable once the value exists, so the
+        // constructor is evaluated into a temporary and the variable is
+        // assigned from it. Written straight into the variable, as the
+        // structure constructor is otherwise lowered, neither would happen.
+        // An array or allocatable variable is already assigned from a
+        // temporary, so only the scalar case is handled here.
+        if( overloaded_stmt == nullptr &&
+            ASR::is_a<ASR::StructConstructor_t>(*value) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(target)) &&
+            !ASRUtils::is_allocatable(ASRUtils::expr_type(target)) &&
+            ASRUtils::struct_assignment_is_more_than_a_copy(
+                ASRUtils::get_struct_sym_from_struct_expr(target)) ) {
+            ASR::expr_t* evaluated_value = evaluate_into_temporary(value);
+            if( evaluated_value != nullptr ) {
+                value = evaluated_value;
+            }
+        }
+
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
 
         tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target, value,

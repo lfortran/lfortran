@@ -2731,6 +2731,94 @@ ASR::symbol_t* resolve_struct_assign_symbol(ASR::Struct_t* s) {
     return nullptr;
 }
 
+ASR::symbol_t* resolve_struct_defined_assignment_proc(ASR::Struct_t* s) {
+    ASR::symbol_t* da_sym = resolve_struct_assign_symbol(s);
+    if (da_sym == nullptr) {
+        return nullptr;
+    }
+    da_sym = ASRUtils::symbol_get_past_external(da_sym);
+    if (!ASR::is_a<ASR::CustomOperator_t>(*da_sym)) {
+        return nullptr;
+    }
+    ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(da_sym);
+    for (size_t ip = 0; ip < custom_op->n_procs; ip++) {
+        ASR::symbol_t* assign_proc =
+            ASRUtils::symbol_get_past_external(custom_op->m_procs[ip]);
+        ASR::symbol_t* candidate;
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*assign_proc)) {
+            candidate = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                    assign_proc)->m_proc);
+        } else {
+            candidate = assign_proc;
+        }
+        if (!ASR::is_a<ASR::Function_t>(*candidate)) {
+            continue;
+        }
+        ASR::Function_t* cand_func = ASR::down_cast<ASR::Function_t>(candidate);
+        if (cand_func->n_args < 2) {
+            continue;
+        }
+        // Both formals must be type/class of s (type_declaration).
+        auto formal_matches = [&](ASR::expr_t* arg) {
+            ASR::Variable_t* var = ASRUtils::EXPR2VAR(arg);
+            ASR::ttype_t* t = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(var->m_type)));
+            if (!ASR::is_a<ASR::StructType_t>(*t) ||
+                    var->m_type_declaration == nullptr) {
+                return false;
+            }
+            return ASRUtils::symbol_get_past_external(var->m_type_declaration)
+                == &s->base;
+        };
+        if (formal_matches(cand_func->m_args[0]) &&
+                formal_matches(cand_func->m_args[1])) {
+            return candidate;
+        }
+    }
+    return nullptr;
+}
+
+bool struct_assignment_is_more_than_a_copy(ASR::symbol_t* struct_sym) {
+    if (struct_sym == nullptr) {
+        return false;
+    }
+    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(struct_sym);
+    if (!ASR::is_a<ASR::Struct_t>(*sym)) {
+        return false;
+    }
+    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(sym);
+    // A final procedure of the variable's own type finalizes the variable.
+    if (struct_t->n_member_functions > 0) {
+        return true;
+    }
+    for (size_t i = 0; i < struct_t->n_members; i++) {
+        ASR::symbol_t* member = struct_t->m_symtab->get_symbol(
+            struct_t->m_members[i]);
+        if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
+            continue;
+        }
+        ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member);
+        if (ASRUtils::is_pointer(member_var->m_type) ||
+                member_var->m_type_declaration == nullptr ||
+                !ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(member_var->m_type))) {
+            continue;
+        }
+        ASR::symbol_t* member_struct = ASRUtils::symbol_get_past_external(
+            member_var->m_type_declaration);
+        if (!ASR::is_a<ASR::Struct_t>(*member_struct)) {
+            continue;
+        }
+        if (resolve_struct_defined_assignment_proc(
+                ASR::down_cast<ASR::Struct_t>(member_struct)) != nullptr) {
+            return true;
+        }
+    }
+    return false;
+}
+
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression) {
     ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expression);
     if (struct_sym == nullptr) {
