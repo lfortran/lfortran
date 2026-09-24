@@ -5935,6 +5935,143 @@ public:
             create_llvm_constant_from_asr_expr(value, v->m_type));
     }
 
+    // The constant address of the designator `d`, which
+    // `ASRUtils::has_link_time_address` accepted: a global, an element of one
+    // at a constant offset, or a component of one at a constant offset. Both
+    // offsets are constant `getelementptr`s, so the whole address is a
+    // link-time constant and needs no code.
+    llvm::Constant* constant_designator_address(ASR::expr_t* d) {
+        switch (d->type) {
+            case ASR::exprType::Var: {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(d)->m_v);
+                ASR::Variable_t* target = ASR::down_cast<ASR::Variable_t>(sym);
+                uint32_t target_h = get_hash((ASR::asr_t*)target);
+                if (llvm_symtab.find(target_h) == llvm_symtab.end()) {
+                    // The target belongs to a module that has not been
+                    // emitted yet. Lay it out now, under the prefix of the
+                    // module that declares it rather than the one being
+                    // emitted, so that this is the same global that module's
+                    // own declaration creates.
+                    std::string mangle_prefix_copy = mangle_prefix;
+                    ASR::symbol_t* owner = ASRUtils::get_asr_owner(
+                        const_cast<ASR::symbol_t*>(&target->base));
+                    if (owner != nullptr && ASR::is_a<ASR::Module_t>(*owner)) {
+                        mangle_prefix = ASRUtils::cell_prefix(
+                                ASRUtils::symbol_symtab(owner))
+                            + "__module_" + ASRUtils::symbol_name(owner) + "_";
+                    }
+                    visit_Variable(*target);
+                    mangle_prefix = mangle_prefix_copy;
+                }
+                if (llvm_symtab.find(target_h) == llvm_symtab.end()) {
+                    return nullptr;
+                }
+                llvm::Constant* address = llvm::dyn_cast<llvm::Constant>(
+                    llvm_symtab[target_h]);
+                // An alias is another name for the address it aliases rather
+                // than storage of its own.
+                while (address != nullptr
+                        && llvm::isa<llvm::GlobalAlias>(address)) {
+                    address = llvm::cast<llvm::GlobalAlias>(address)->getAliasee();
+                }
+                // Only a global of the variable's own type is storage the
+                // pointer can be given the address of. Anything else -- a
+                // descriptor, or a field of a larger object -- is not the
+                // variable's own address, and the pass has left no statement
+                // behind to fall back to, so this is refused below rather
+                // than emitted.
+                llvm::GlobalVariable* storage =
+                    llvm::dyn_cast_or_null<llvm::GlobalVariable>(address);
+                if (storage == nullptr || storage->getValueType()
+                        != llvm_utils->get_type_from_ttype_t_util(d,
+                            target->m_type, module.get())) {
+                    return nullptr;
+                }
+                return address;
+            }
+            case ASR::exprType::ArrayItem: {
+                ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(d);
+                llvm::Constant* base = constant_designator_address(item->m_v);
+                int64_t offset = ASRUtils::constant_array_item_offset(item);
+                if (base == nullptr || offset < 0) {
+                    return nullptr;
+                }
+                llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
+                    item->m_v, ASRUtils::expr_type(item->m_v), module.get());
+                if (!array_type->isArrayTy()) {
+                    return nullptr;
+                }
+                llvm::Constant* indices[] = {
+                    llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                    llvm::ConstantInt::get(context, llvm::APInt(64, offset, true))};
+                return llvm::ConstantExpr::getGetElementPtr(array_type, base,
+                    indices);
+            }
+            case ASR::exprType::StructInstanceMember: {
+                ASR::StructInstanceMember_t* member =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(d);
+                llvm::Constant* base = constant_designator_address(member->m_v);
+                if (base == nullptr) {
+                    return nullptr;
+                }
+                ASR::symbol_t* struct_sym =
+                    ASRUtils::get_struct_sym_from_struct_expr(member->m_v);
+                if (struct_sym == nullptr) {
+                    return nullptr;
+                }
+                std::string struct_name = get_type_key(struct_sym);
+                std::string member_name = ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(member->m_m));
+                llvm::Constant* zero = llvm::ConstantInt::get(context,
+                    llvm::APInt(32, 0));
+                // A member of a parent type is a member of the first member
+                // of this one, however many types deep it is inherited from.
+                while (name2memidx[struct_name].find(member_name)
+                        == name2memidx[struct_name].end()) {
+                    if (dertype2parent.find(struct_name) == dertype2parent.end()
+                            || name2dertype.find(struct_name)
+                                == name2dertype.end()) {
+                        return nullptr;
+                    }
+                    llvm::Constant* indices[] = {zero, zero};
+                    base = llvm::ConstantExpr::getGetElementPtr(
+                        name2dertype[struct_name], base, indices);
+                    struct_name = dertype2parent[struct_name];
+                }
+                if (name2dertype.find(struct_name) == name2dertype.end()) {
+                    return nullptr;
+                }
+                llvm::Constant* indices[] = {zero,
+                    llvm::ConstantInt::get(context, llvm::APInt(32,
+                        name2memidx[struct_name][member_name]))};
+                return llvm::ConstantExpr::getGetElementPtr(
+                    name2dertype[struct_name], base, indices);
+            }
+            default: {
+                return nullptr;
+            }
+        }
+    }
+
+    // The static initializer of a declaration pointer association: the
+    // address of its target, which is a link-time constant. Nothing else is
+    // emitted for such a variable -- in particular the `global_init` pass
+    // left no statement behind for it -- so failing to describe the address
+    // here is an error rather than something to fall back from.
+    llvm::Constant* get_static_pointer_association(const ASR::Variable_t &v) {
+        if (!ASRUtils::is_static_pointer_association(v)) {
+            return nullptr;
+        }
+        llvm::Constant* address = constant_designator_address(v.m_symbolic_value);
+        if (address == nullptr) {
+            throw CodeGenError("The target of the pointer initialization of '"
+                + std::string(v.m_name) + "' has no link time address",
+                v.base.base.loc);
+        }
+        return address;
+    }
+
     ASR::ArrayBroadcast_t* get_struct_array_broadcast(ASR::expr_t* expr) {
         if (expr == nullptr || !ASR::is_a<ASR::ArrayBroadcast_t>(*expr)) {
             return nullptr;
@@ -6118,10 +6255,11 @@ public:
                 (x.m_symbolic_value != nullptr || x.m_intent == intent_local)) {
             external = false;
         }
-        llvm::Constant* init_value = nullptr;
+        llvm::Constant* init_value = get_static_pointer_association(x);
         llvm::Constant* alias_target = nullptr;
         bool pointer_null_array_init = has_pointer_null_array_initializer(&x);
-        if (x.m_symbolic_value != nullptr &&
+        if (init_value == nullptr &&
+            x.m_symbolic_value != nullptr &&
             !pointer_null_array_init &&
             !ASRUtils::is_string_only(x.m_type)){
             ASR::expr_t* alias_init = x.m_symbolic_value;
@@ -6806,10 +6944,17 @@ public:
         std::vector<ASR::symbol_t*> functions;
         std::vector<ASR::symbol_t*> structs;
 
+        // Declaration order, so that a variable whose initializer names
+        // another of the same module -- the address of the target of a
+        // pointer association, say -- is laid out after it.
+        for (auto &name : ASRUtils::determine_variable_declaration_order(x.m_symtab)) {
+            ASR::symbol_t *sym = x.m_symtab->get_symbol(name);
+            if (sym != nullptr && is_a<ASR::Variable_t>(*sym)) {
+                variables.push_back(sym);
+            }
+        }
         for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Variable_t>(*item.second)) {
-                variables.push_back(item.second);
-            } else if (is_a<ASR::Function_t>(*item.second)) {
+            if (is_a<ASR::Function_t>(*item.second)) {
                 functions.push_back(item.second);
             } else if (ASR::is_a<ASR::Struct_t>(*item.second)) {
                 structs.push_back(item.second);
