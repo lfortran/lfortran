@@ -24534,11 +24534,16 @@ public:
                         value = ASRUtils::externalize_struct_refs_in_init(
                             al, value, current_scope);
                     }
-                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))) {
-                    ASR::StructInstanceMember_t* v = ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
-                    if (v->m_value) {
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp)) ||
+                           ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
+                    // An element of a named constant's array component is
+                    // itself a compile time constant, so the member selected
+                    // from it has to be folded here as well: it has no
+                    // storage to be read from later on.
+                    ASR::expr_t* base_value = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
+                    if (base_value) {
                         value = get_struct_member_value_from_constant_array(
-                            v->m_value, tmp2_m_m_ext, tmp2_mem_type);
+                            base_value, tmp2_m_m_ext, tmp2_mem_type);
                         ASR::symbol_t* mem_sym =
                             ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 
@@ -24624,12 +24629,16 @@ public:
                     value = ASRUtils::externalize_struct_refs_in_init(
                         al, value, current_scope);
                 }
-            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))) {
-                ASR::StructInstanceMember_t* v =
-                    ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
-                if (v->m_value) {
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp)) ||
+                       ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
+                // An element of a named constant's array component is itself
+                // a compile time constant, so the member selected from it has
+                // to be folded here as well: it has no storage to be read
+                // from later on.
+                ASR::expr_t* base_value = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
+                if (base_value) {
                     value = get_struct_member_value_from_constant_array(
-                        v->m_value, tmp2_m_m_ext, tmp2_mem_type);
+                        base_value, tmp2_m_m_ext, tmp2_mem_type);
                     ASR::symbol_t* mem_sym =
                         ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 
