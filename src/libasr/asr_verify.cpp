@@ -65,6 +65,10 @@ private:
     bool _inside_array_physical_cast_type = false;
     bool _processing_assumed_rank_array = false;
     bool _processing_unbounded_pointer_array = false;
+    // True while the symbols of a template are visited. A named constant of a
+    // template whose initializer uses a deferred constant has no compile-time
+    // value until the template is instantiated.
+    bool _inside_template = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
@@ -371,9 +375,12 @@ public:
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        bool inside_template = _inside_template;
+        _inside_template = true;
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
+        _inside_template = inside_template;
         current_symtab = parent_symtab;
     }
 
@@ -1305,7 +1312,7 @@ public:
             }
         }
         if( symtab->parent != nullptr &&
-            !is_module && !is_struct) {
+            !is_module && !is_struct && !_inside_template) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
             ASR::ArrayConstructor_t *array_construct = nullptr;

@@ -10058,7 +10058,15 @@ public:
                                 value = init_expr;
                             } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr) ||
                                         ASR::is_a<ASR::ComplexBinOp_t>(*init_expr)) {
-                                value = init_expr;
+                                if (in_template_definition) {
+                                    // The operation uses a deferred constant
+                                    // of the template, so it has no
+                                    // compile-time value until the template
+                                    // is instantiated.
+                                    value = nullptr;
+                                } else {
+                                    value = init_expr;
+                                }
                             } else if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr) || ASR::is_a<ASR::BitCast_t>(*init_expr) ||
                                 ASR::is_a<ASR::IntegerCompare_t>(*init_expr)) {
                                 value = init_expr;

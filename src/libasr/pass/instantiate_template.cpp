@@ -1176,8 +1176,14 @@ public:
         // The initializer of a named constant may refer to the template's
         // deferred constants, so it goes through the same substitution as
         // the type; its compile-time value is then taken from the result.
+        // An initializer that uses a deferred constant has no value in the
+        // template, and gets one here once the constant is substituted.
         ASR::expr_t *new_symbolic_value = duplicate_expr(x->m_symbolic_value);
         ASR::expr_t *new_value = duplicate_expr(x->m_value);
+        if (new_value == nullptr && new_symbolic_value
+                && x->m_storage == ASR::storage_typeType::Parameter) {
+            new_value = ASRUtils::expr_value(new_symbolic_value);
+        }
         if (new_value && ASRUtils::expr_value(new_value)) {
             new_value = ASRUtils::expr_value(new_value);
         }
