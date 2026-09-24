@@ -1501,10 +1501,10 @@ module deferred_type_coarray_1
         end subroutine
     end template
 
-    ! Specification part of a requirement.
+    ! Specification part of a requirement (R1634 rejects it before C1617).
     requirement r {t}
         deferred type :: t
-        type(t), codimension[:], allocatable :: req_x  ! {Error} A variable of deferred type must not be a coarray
+        type(t), codimension[:], allocatable :: req_x  ! {Error} 'req_x' is not a deferred argument of 'r'
     end requirement
 
 contains
@@ -1949,3 +1949,26 @@ c = 1
 end block
 
 end program continue_compilation_templates_01
+
+! A requirement specification holds only deferred argument declarations and
+! interface blocks (R1634), so a plain type declaration of one of its
+! arguments is rejected where it is written instead of being taken for a
+! deferred type (#13328).
+module requirement_non_deferred_decl_1
+    implicit none
+
+    requirement r_derived {t, c}
+        deferred type :: t
+        type(t) :: c  ! {Error} 'c' is a deferred argument of requirement 'r_derived', so it must be declared as a deferred type, a deferred constant or a deferred procedure
+    end requirement
+
+    requirement r_intrinsic {c}
+        integer :: c  ! {Error} 'c' is a deferred argument of requirement 'r_intrinsic', so it must be declared as a deferred type, a deferred constant or a deferred procedure
+    end requirement
+
+    requirement r_not_arg {t}
+        deferred type :: t
+        real :: x  ! {Error} 'x' is not a deferred argument of 'r_not_arg'
+    end requirement
+
+end module

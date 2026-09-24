@@ -5243,6 +5243,40 @@ public:
         }
     }
 
+    // R1634 (J3/26-007r1, 16.6.1): a requirement-specification is only a
+    // deferred-arg-decl-stmt or an interface-block. A deferred type and a
+    // deferred interface are other kinds of AST node, and a deferred constant
+    // (R1618) is a Declaration node that carries the `deferred` attribute, so
+    // any other type declaration, such as `integer :: c` or `type(t) :: c`,
+    // declares something that is not a deferred argument and is rejected
+    // here, where it is written. A statement without a type (an access
+    // statement or another attribute statement) is not checked here.
+    void check_requirement_specification(AST::decl_stmt_t &item,
+            const std::string &requirement_name,
+            const std::vector<std::string> &requirement_args) {
+        if (!AST::is_a<AST::Declaration_t>(item)) return;
+        AST::Declaration_t &decl = *AST::down_cast<AST::Declaration_t>(&item);
+        if (decl.m_vartype == nullptr || is_deferred_const_decl(decl)) return;
+        for (size_t i = 0; i < decl.n_syms; i++) {
+            std::string name = to_lower(decl.m_syms[i].m_name);
+            std::string msg;
+            if (std::find(requirement_args.begin(), requirement_args.end(),
+                    name) != requirement_args.end()) {
+                msg = "'" + name + "' is a deferred argument of requirement '"
+                      + requirement_name + "', so it must be declared as a"
+                      " deferred type, a deferred constant or a deferred"
+                      " procedure";
+            } else {
+                msg = "'" + name + "' is not a deferred argument of '"
+                      + requirement_name + "'";
+            }
+            diag.add(diag::Diagnostic(msg, diag::Level::Error,
+                diag::Stage::Semantic, {
+                    diag::Label("", {decl.m_syms[i].loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     void visit_Requirement(const AST::Requirement_t &x) {
         // The Fortran 2028 working draft (J3/26-007r1) contradicts itself
         // here, so this is a deliberate choice, not a settled rule. R1605
@@ -5322,6 +5356,8 @@ public:
                     tmp = nullptr;
                 }
             } else {
+                check_requirement_specification(*x.m_items[i],
+                    to_lower(x.m_name), requirement_args);
                 this->visit_decl_stmt(*x.m_items[i]);
             }
         }
