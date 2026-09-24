@@ -3872,6 +3872,190 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
     return ASR::make_Cast_t(al, a_loc, a_arg, a_kind, a_type, value, nullptr);
 }
 
+template<typename T>
+static T perform_binop(T left_value, T right_value, ASR::binopType op) {
+    T result;
+    switch (op) {
+        case ASR::Add:
+            result = left_value + right_value;
+            break;
+        case ASR::Sub:
+            result = left_value - right_value;
+            break;
+        case ASR::Mul:
+            result = left_value * right_value;
+            break;
+        case ASR::Div:
+            result = left_value / right_value;
+            break;
+        case ASR::Pow:
+            result = std::pow(left_value, right_value);
+            break;
+        default:
+            LCOMPILERS_ASSERT(false);
+            result = 0;
+    }
+    return result;
+}
+
+ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
+        ASR::expr_t* right, ASR::binopType op, const Location& loc,
+        ASR::ttype_t* dest_type, bool &division_by_zero) {
+    LCOMPILERS_ASSERT((left != nullptr) && (right != nullptr));
+    division_by_zero = false;
+    if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::RealConstant_t>(*right)) {
+        ASR::RealConstant_t* lc = ASR::down_cast<ASR::RealConstant_t>(left);
+        ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(right);
+        if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 16) {
+            lf_float128 lv = ASRUtils::real_constant_get_r16(lc);
+            lf_float128 rv = ASRUtils::real_constant_get_r16(rc);
+            lf_float128 res;
+            switch (op) {
+                case ASR::Add: res = lf_f128_add(lv, rv); break;
+                case ASR::Sub: res = lf_f128_sub(lv, rv); break;
+                case ASR::Mul: res = lf_f128_mul(lv, rv); break;
+                case ASR::Div: res = lf_f128_div(lv, rv); break;
+                case ASR::Pow: res = lf_f128_pow(lv, rv); break;
+                default: LCOMPILERS_ASSERT(false); res = lv;
+            }
+            return ASRUtils::make_RealConstant_r16(al, left->base.loc, res, dest_type);
+        } else if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 10) {
+            const uint8_t* l_bytes = ASRUtils::real_constant_get_r10_bytes(lc);
+            const uint8_t* r_bytes = ASRUtils::real_constant_get_r10_bytes(rc);
+            long double lv{}, rv{};
+            std::memcpy(&lv, l_bytes, sizeof(long double));
+            std::memcpy(&rv, r_bytes, sizeof(long double));
+            long double res;
+            switch (op) {
+                case ASR::Add: res = lv + rv; break;
+                case ASR::Sub: res = lv - rv; break;
+                case ASR::Mul: res = lv * rv; break;
+                case ASR::Div: res = lv / rv; break;
+                case ASR::Pow: res = std::pow(lv, rv); break;
+                default: LCOMPILERS_ASSERT(false); res = lv;
+            }
+            return ASRUtils::make_RealConstant_r10(al, left->base.loc, res, dest_type);
+        }
+        if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
+            // Evaluate in single precision, as the program would.
+            float left_value = lc->m_r;
+            float right_value = rc->m_r;
+            float result = perform_binop(left_value, right_value, op);
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
+                result, dest_type));
+        }
+        double left_value = lc->m_r;
+        double right_value = rc->m_r;
+        return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
+        perform_binop(left_value, right_value, op), dest_type));
+    } else if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)){
+        LCOMPILERS_ASSERT(op == ASR::binopType::Pow);
+        ASR::RealConstant_t* lc = ASR::down_cast<ASR::RealConstant_t>(left);
+        int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+        if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 16) {
+            lf_float128 lv = ASRUtils::real_constant_get_r16(lc);
+            lf_float128 res = lf_f128_pow(lv, lf_f128_from_double((double)right_value));
+            return ASRUtils::make_RealConstant_r16(al, left->base.loc, res, dest_type);
+        } else if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 10) {
+            const uint8_t* l_bytes = ASRUtils::real_constant_get_r10_bytes(lc);
+            long double lv{};
+            std::memcpy(&lv, l_bytes, sizeof(long double));
+            long double res = std::pow(lv, (long double)right_value);
+            return ASRUtils::make_RealConstant_r10(al, left->base.loc, res, dest_type);
+        }
+        double left_value = lc->m_r;
+        double result = std::pow(left_value, right_value);
+        if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
+            result = (float) result;
+        }
+        return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
+                result, dest_type));
+    } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
+        int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
+        int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+
+        if (op == ASR::Div && right_value == 0) {
+            division_by_zero = true;
+            return nullptr;
+        }
+
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, left->base.loc,
+                perform_binop(left_value, right_value, op), dest_type));
+    } else if (ASR::is_a<ASR::ComplexConstant_t>(*left) && ASR::is_a<ASR::ComplexConstant_t>(*right)) {
+        ASR::ComplexConstant_t *left_value
+            = ASR::down_cast<ASR::ComplexConstant_t>(
+                    ASRUtils::expr_value(left));
+        ASR::ComplexConstant_t *right_value
+            = ASR::down_cast<ASR::ComplexConstant_t>(
+                    ASRUtils::expr_value(right));
+        std::complex<double> left_value_(left_value->m_re, left_value->m_im);
+        std::complex<double> right_value_(right_value->m_re, right_value->m_im);
+        std::complex<double> result = perform_binop(left_value_, right_value_, op);
+        return ASRUtils::EXPR( ASR::make_ComplexConstant_t(al, loc,
+                std::real(result), std::imag(result), dest_type));
+    }
+    return nullptr;
+}
+
+template<typename T>
+static bool perform_compare(T left, T right, ASR::cmpopType op) {
+    switch (op) {
+        case ASR::cmpopType::Eq: return left == right;
+        case ASR::cmpopType::NotEq: return left != right;
+        case ASR::cmpopType::Gt: return left > right;
+        case ASR::cmpopType::GtE: return left >= right;
+        case ASR::cmpopType::Lt: return left < right;
+        case ASR::cmpopType::LtE: return left <= right;
+    }
+    LCOMPILERS_ASSERT(false);
+    return false;
+}
+
+ASR::expr_t* fold_compare_constants(Allocator &al, ASR::expr_t* left,
+        ASR::expr_t* right, ASR::cmpopType op, const Location& loc,
+        ASR::ttype_t* logical_type) {
+    bool result;
+    if (ASR::is_a<ASR::IntegerConstant_t>(*left)
+            && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
+        result = perform_compare(ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n,
+            ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n, op);
+    } else if (ASR::is_a<ASR::RealConstant_t>(*left)
+            && ASR::is_a<ASR::RealConstant_t>(*right)) {
+        ASR::RealConstant_t* lc = ASR::down_cast<ASR::RealConstant_t>(left);
+        ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(right);
+        if (ASRUtils::extract_kind_from_ttype_t(lc->m_type) == 16) {
+            lf_float128 lv = ASRUtils::real_constant_get_r16(lc);
+            lf_float128 rv = ASRUtils::real_constant_get_r16(rc);
+            if (op == ASR::cmpopType::Eq || op == ASR::cmpopType::NotEq) {
+                result = (lf_f128_eq(lv, rv) != 0) == (op == ASR::cmpopType::Eq);
+            } else {
+                result = perform_compare(lf_f128_cmp(lv, rv), 0, op);
+            }
+        } else {
+            result = perform_compare(lc->m_r, rc->m_r, op);
+        }
+    } else if (ASR::is_a<ASR::LogicalConstant_t>(*left)
+            && ASR::is_a<ASR::LogicalConstant_t>(*right)) {
+        result = perform_compare(ASR::down_cast<ASR::LogicalConstant_t>(left)->m_value,
+            ASR::down_cast<ASR::LogicalConstant_t>(right)->m_value, op);
+    } else {
+        return nullptr;
+    }
+    return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, result,
+        logical_type));
+}
+
+bool fold_logical_binop(ASR::logicalbinopType op, bool left, bool right,
+        bool &result) {
+    switch (op) {
+        case ASR::And: result = left && right; return true;
+        case ASR::Or: result = left || right; return true;
+        case ASR::NEqv: result = left != right; return true;
+        case ASR::Eqv: result = left == right; return true;
+        default: return false;
+    }
+}
+
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope) {
     if (original_sym && ASR::is_a<ASR::ExternalSymbol_t>(*original_sym)) {

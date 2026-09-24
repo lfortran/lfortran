@@ -7591,6 +7591,31 @@ class LabelGenerator {
 ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
         ASR::expr_t* a_arg, ASR::cast_kindType a_kind, ASR::ttype_t* a_type);
 
+// Compile-time evaluation of operations on scalar constants, shared by the
+// frontends and by the passes that create new constant expressions, such as
+// the instantiation of a template. Each returns nullptr when the operands are
+// not constants of a kind it can evaluate.
+
+// Evaluates `left op right` for IntegerConstant, RealConstant (of every kind)
+// and ComplexConstant operands, giving a constant of `dest_type`. An integer
+// division by zero sets `division_by_zero` and returns nullptr: the caller
+// reports it.
+ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
+        ASR::expr_t* right, ASR::binopType op, const Location& loc,
+        ASR::ttype_t* dest_type, bool &division_by_zero);
+
+// Evaluates the comparison `left op right` of two IntegerConstant, two
+// RealConstant or two LogicalConstant operands, giving a LogicalConstant of
+// `logical_type`.
+ASR::expr_t* fold_compare_constants(Allocator &al, ASR::expr_t* left,
+        ASR::expr_t* right, ASR::cmpopType op, const Location& loc,
+        ASR::ttype_t* logical_type);
+
+// Evaluates the logical operation `left op right`; returns false for an
+// operation it does not evaluate (`Xor`).
+bool fold_logical_binop(ASR::logicalbinopType op, bool left, bool right,
+        bool &result);
+
 static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, ASR::expr_t* end) {
     ASR::expr_t* start_value = nullptr;
     ASR::expr_t* end_value = nullptr;
