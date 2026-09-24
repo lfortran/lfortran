@@ -10,17 +10,17 @@ module template_05_m
         end interface
     end requirement
 
-    template tmp(T, plus)
+    template tmp {T, plus}
         require :: req {T, plus}
 
-        template tmp_minus(minus)
+        template tmp_minus {minus}
             require :: req {T, minus}
             require :: req {T, plus}
 
-            template tmp_mult(mult)
+            template tmp_mult {mult}
                 require :: req {T, mult}
 
-                template tmp_div(div)
+                template tmp_div {div}
                     require :: req {T, div}
                 end template
 

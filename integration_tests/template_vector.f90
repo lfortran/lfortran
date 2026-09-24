@@ -3,7 +3,7 @@ module template_vector_m
     private
     public :: vector_t, main
 
-    template vector_t(T)
+    template vector_t {T}
         deferred type :: T
         public :: Vector
 

@@ -13,7 +13,7 @@ program template_03
         end interface
     end requirement
 
-    template axpy_tmpl(T, U, V, W, plus, times)
+    template axpy_tmpl {T, U, V, W, plus, times}
         public :: axpy
         require :: op {V, W, V, plus}
         require :: op {T, U, W, times}

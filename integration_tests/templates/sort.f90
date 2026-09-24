@@ -17,7 +17,7 @@ module sort_m
         end interface
     end requirement
 
-    template sort_tmpl(T, lt, gt)
+    template sort_tmpl {T, lt, gt}
         private
         public :: sorted_order, sorted, sort
 

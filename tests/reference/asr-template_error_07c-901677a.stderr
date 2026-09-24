@@ -1,5 +1,0 @@
-semantic error: Parameter 'scombine' was not declared
-  --> tests/errors/template_error_07c.f90:17:20
-   |
-17 |         require :: semigroup {t, scombine}
-   |                    ^^^^^^^^^^^^^^^^^^^^^^^ 
