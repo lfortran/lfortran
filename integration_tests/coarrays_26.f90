@@ -18,6 +18,7 @@ end module
 ! declares its own `x`, the other reaches its host's by host association.
 module coarrays_26_m3
     implicit none
+    integer :: x[*]
 contains
     subroutine coarrays_26_mod_sub()
         integer, save :: x[*] = 10
@@ -87,7 +88,7 @@ end subroutine
 program coarrays_26
     use coarrays_26_m, only: module_x => x
     use coarrays_26_m2, only: module_x2 => x
-    use coarrays_26_m3, only: coarrays_26_mod_sub
+    use coarrays_26_m3, only: module_x3 => x, coarrays_26_mod_sub
     implicit none
 
     integer :: x[*]
@@ -95,6 +96,7 @@ program coarrays_26
 
     module_x = this_image()
     module_x2 = this_image() + 1
+    module_x3 = this_image() + 2
     x = this_image() * 10
 
     call coarrays_26_sub()
@@ -117,6 +119,10 @@ program coarrays_26
 
     if (module_x2 /= this_image() + 1) then
         error stop "Incorrect module coarray value in module m2"
+    end if
+
+    if (module_x3 /= this_image() + 2) then
+        error stop "Incorrect module coarray value in module m3"
     end if
 contains
     ! Saved coarray of an internal procedure of the program.

@@ -40,6 +40,7 @@ end module coarrays_26_m2
 
 module coarrays_26_m3
 implicit none
+integer(4), pointer :: x
 
 contains
 
@@ -49,6 +50,9 @@ subroutine __lfortran_global_init_coarrays_26_m3()
     if (.not. __lfortran_global_init_done) then
         __lfortran_global_init_done = .true.
         call __module_prif_prif_init(stat)
+        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(),&
+         __module_coarrays_26_m3_x__coarray_handle, __module_coarrays_26_m3_x__coarray_data)
+        call c_f_pointer(__module_coarrays_26_m3_x__coarray_data, x)
         call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(),&
          __module_coarrays_26_m3_coarrays_26_mod_sub_x__coarray_handle,&
          __module_coarrays_26_m3_coarrays_26_mod_sub_x__coarray_data)
@@ -106,6 +110,7 @@ program coarrays_26
 use coarrays_26_m3, only: coarrays_26_mod_sub
 use coarrays_26_m, only: module_x => x
 use coarrays_26_m2, only: module_x2 => x
+use coarrays_26_m3, only: module_x3 => x
 implicit none
 integer(4) :: stat
 integer(4), pointer :: x
@@ -115,6 +120,7 @@ call __module_prif_prif_init(stat)
 call __module_prif_prif_sync_all()
 module_x = lcompilers_prif_this_image()
 module_x2 = lcompilers_prif_this_image() + 1
+module_x3 = lcompilers_prif_this_image() + 2
 x = lcompilers_prif_this_image()*10
 call coarrays_26_sub()
 call coarrays_26_mod_sub()
@@ -130,6 +136,9 @@ if (module_x /= lcompilers_prif_this_image()) then
     error stop
 end if
 if (module_x2 /= lcompilers_prif_this_image() + 1) then
+    error stop
+end if
+if (module_x3 /= lcompilers_prif_this_image() + 2) then
     error stop
 end if
 call __module_prif_prif_stop(.false.)
