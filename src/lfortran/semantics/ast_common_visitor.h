@@ -21326,6 +21326,13 @@ public:
                     default: LCOMPILERS_ASSERT(false); res = lv;
                 }
                 return ASRUtils::make_RealConstant_r10(al, left->base.loc, res, dest_type);
+            } else if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
+                // Evaluate in single precision, as the program would.
+                float left_value = lc->m_r;
+                float right_value = rc->m_r;
+                float result = perform_binop(left_value, right_value, op);
+                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
+                    result, dest_type));
             }
             double left_value = lc->m_r;
             double right_value = rc->m_r;
@@ -21347,8 +21354,12 @@ public:
                 return ASRUtils::make_RealConstant_r10(al, left->base.loc, res, dest_type);
             }
             double left_value = lc->m_r;
+            double result = std::pow(left_value, right_value);
+            if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
+                result = (float) result;
+            }
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
-                    std::pow(left_value, right_value), dest_type));
+                    result, dest_type));
         } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
             int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
             int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;

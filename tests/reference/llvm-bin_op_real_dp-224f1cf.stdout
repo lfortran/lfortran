@@ -18,7 +18,7 @@ define i32 @main(i32 %0, i8** %1) {
   %x = alloca float, align 4
   %zero = alloca float, align 4
   store float 0x3FC24924A0000000, float* %zero, align 4
-  store double 0x3FC2492492492492, double* %u, align 8
+  store double 0x3FC24924A0000000, double* %u, align 8
   store double 0x3FC2492492492492, double* %v, align 8
   store float 0x3FC24924A0000000, float* %x, align 4
   %3 = alloca i64, align 8

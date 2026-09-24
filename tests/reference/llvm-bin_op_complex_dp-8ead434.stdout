@@ -20,7 +20,7 @@ define i32 @main(i32 %0, i8** %1) {
   %x = alloca %complex_4, align 8
   %zero = alloca %complex_4, align 8
   store %complex_4 <{ float 0x3FC24924A0000000, float 0.000000e+00 }>, %complex_4* %zero, align 1
-  store %complex_8 <{ double 0x3FC2492492492492, double 0.000000e+00 }>, %complex_8* %u, align 1
+  store %complex_8 <{ double 0x3FC24924A0000000, double 0.000000e+00 }>, %complex_8* %u, align 1
   store %complex_8 <{ double 0x3FC2492492492492, double 0.000000e+00 }>, %complex_8* %v, align 1
   store %complex_4 <{ float 0x3FC24924A0000000, float 0.000000e+00 }>, %complex_4* %x, align 1
   %3 = alloca i64, align 8
