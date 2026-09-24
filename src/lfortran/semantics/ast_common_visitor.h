@@ -612,83 +612,11 @@ public:
 
 
 static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::cmpopType asr_op, ASR::ttype_t* logical_type, const Location loc, diag::Diagnostics &diag) {
-    if (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(left_value))) {
-        if (!ASR::is_a<ASR::IntegerConstant_t>(*left_value) ||
-            !ASR::is_a<ASR::IntegerConstant_t>(*right_value)) {
-            return nullptr;
-        }
-        int64_t left_val = ASR::down_cast<ASR::IntegerConstant_t>(left_value)->m_n;
-        int64_t right_val = ASR::down_cast<ASR::IntegerConstant_t>(right_value)->m_n;
-        bool result = true;
-        switch (asr_op) {
-            case (ASR::cmpopType::Eq):  { result = result && (left_val == right_val); break; }
-            case (ASR::cmpopType::Gt): { result = result && (left_val > right_val); break; }
-            case (ASR::cmpopType::GtE): { result = result && (left_val >= right_val); break; }
-            case (ASR::cmpopType::Lt): { result = result && (left_val < right_val); break; }
-            case (ASR::cmpopType::LtE): { result = result && (left_val <= right_val); break; }
-            case (ASR::cmpopType::NotEq): { result = result && (left_val != right_val); break; }
-            default: {
-                diag.add(diag::Diagnostic(
-                    "Comparison operator not implemented",
-                    Level::Error, Stage::Semantic, {
-                    diag::Label("", {loc})}));
-                throw SemanticAbort();
-            }
-        }
-        return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-            al, loc, result, logical_type));
-
-    } else if (ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(left_value))) {
-        if (!ASR::is_a<ASR::RealConstant_t>(*left_value) ||
-            !ASR::is_a<ASR::RealConstant_t>(*right_value)) {
-            return nullptr;
-        }
-        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(left_value)) == 16) {
-            lf_float128 lv = ASRUtils::real_constant_get_r16(
-                ASR::down_cast<ASR::RealConstant_t>(left_value));
-            lf_float128 rv = ASRUtils::real_constant_get_r16(
-                ASR::down_cast<ASR::RealConstant_t>(right_value));
-            int c = lf_f128_cmp(lv, rv);
-            bool result;
-            switch (asr_op) {
-                case (ASR::cmpopType::Eq):    { result = lf_f128_eq(lv, rv); break; }
-                case (ASR::cmpopType::NotEq): { result = !lf_f128_eq(lv, rv); break; }
-                case (ASR::cmpopType::Gt):    { result = (c > 0); break; }
-                case (ASR::cmpopType::GtE):   { result = (c >= 0); break; }
-                case (ASR::cmpopType::Lt):    { result = (c < 0); break; }
-                case (ASR::cmpopType::LtE):   { result = (c <= 0); break; }
-                default: {
-                    diag.add(diag::Diagnostic(
-                        "Comparison operator not implemented",
-                        Level::Error, Stage::Semantic, {
-                        diag::Label("", {loc})}));
-                    throw SemanticAbort();
-                }
-            }
-            return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-                al, loc, result, logical_type));
-        }
-        double left_val = ASR::down_cast<ASR::RealConstant_t>(left_value)->m_r;
-        double right_val = ASR::down_cast<ASR::RealConstant_t>(right_value)->m_r;
-        bool result = true;
-        switch (asr_op) {
-            case (ASR::cmpopType::Eq):  { result = result && (left_val == right_val); break; }
-            case (ASR::cmpopType::Gt): { result = result && (left_val > right_val); break; }
-            case (ASR::cmpopType::GtE): { result = result && (left_val >= right_val); break; }
-            case (ASR::cmpopType::Lt): { result = result && (left_val < right_val); break; }
-            case (ASR::cmpopType::LtE): { result = result && (left_val <= right_val); break; }
-            case (ASR::cmpopType::NotEq): { result = result && (left_val != right_val); break; }
-            default: {
-                diag.add(diag::Diagnostic(
-                    "Comparison operator not implemented",
-                    Level::Error, Stage::Semantic, {
-                    diag::Label("", {loc})}));
-                throw SemanticAbort();
-            }
-        }
-        return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-            al, loc, result, logical_type));
-
+    if (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(left_value))
+            || ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(left_value))
+            || ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(left_value))) {
+        return ASRUtils::fold_compare_constants(al, left_value, right_value,
+            asr_op, loc, logical_type);
     } else if (ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(left_value))) {
         if (!ASR::is_a<ASR::ComplexConstant_t>(*left_value) ||
             !ASR::is_a<ASR::ComplexConstant_t>(*right_value)) {
@@ -724,33 +652,6 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
             al, loc, result, logical_type));
 
-    } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(left_value))) {
-        if (!ASR::is_a<ASR::LogicalConstant_t>(*left_value) ||
-            !ASR::is_a<ASR::LogicalConstant_t>(*right_value)) {
-            return nullptr;
-        }
-        bool left_val = ASR::down_cast<ASR::LogicalConstant_t>(
-                                left_value)->m_value;
-        bool right_val = ASR::down_cast<ASR::LogicalConstant_t>(
-                                right_value)->m_value;
-        bool result = true;
-        switch (asr_op) {
-            case (ASR::cmpopType::Eq):  { result = result && (left_val == right_val); break; }
-            case (ASR::cmpopType::Gt): { result = result && (left_val > right_val); break; }
-            case (ASR::cmpopType::GtE): { result = result && (left_val >= right_val); break; }
-            case (ASR::cmpopType::Lt): { result = result && (left_val < right_val); break; }
-            case (ASR::cmpopType::LtE): { result = result && (left_val <= right_val); break; }
-            case (ASR::cmpopType::NotEq): { result = result && (left_val != right_val); break; }
-            default: {
-                diag.add(diag::Diagnostic(
-                    "Comparison operator not implemented",
-                    Level::Error, Stage::Semantic, {
-                    diag::Label("", {loc})}));
-                throw SemanticAbort();
-            }
-        }
-        return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-            al, loc, result, logical_type));
     } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(left_value))) {
         if (!ASR::is_a<ASR::StringConstant_t>(*left_value) ||
             !ASR::is_a<ASR::StringConstant_t>(*right_value)) {
@@ -1172,26 +1073,13 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
 inline static bool get_boolean_comparison_value(Location loc, ASR::logicalbinopType op,
                                                 bool left_value, bool right_value, diag::Diagnostics &diag) {
     bool result;
-    switch (op) {
-        case (ASR::And):
-            result = left_value && right_value;
-            break;
-        case (ASR::Or):
-            result = left_value || right_value;
-            break;
-        case (ASR::NEqv):
-            result = left_value != right_value;
-            break;
-        case (ASR::Eqv):
-            result = left_value == right_value;
-            break;
-        default:
-            diag.add(diag::Diagnostic(
-                R"""(Only .and., .or., .neqv., .eqv.
-                implemented for logical type operands.)""",
-                Level::Error, Stage::Semantic, {
-                diag::Label("", {loc})}));
-            throw SemanticAbort();
+    if (!ASRUtils::fold_logical_binop(op, left_value, right_value, result)) {
+        diag.add(diag::Diagnostic(
+            R"""(Only .and., .or., .neqv., .eqv.
+            implemented for logical type operands.)""",
+            Level::Error, Stage::Semantic, {
+            diag::Label("", {loc})}));
+        throw SemanticAbort();
     }
     return result;
 }
@@ -21266,130 +21154,21 @@ public:
         return false;
     }
 
-    template<typename T>
-    T perform_binop(T left_value, T right_value, ASR::binopType op) {
-        T result;
-        switch (op) {
-            case ASR::Add:
-                result = left_value + right_value;
-                break;
-            case ASR::Sub:
-                result = left_value - right_value;
-                break;
-            case ASR::Mul:
-                result = left_value * right_value;
-                break;
-            case ASR::Div:
-                result = left_value / right_value;
-                break;
-            case ASR::Pow:
-                result = std::pow(left_value, right_value);
-                break;
-            default:
-                LCOMPILERS_ASSERT(false);
-                result = 0;
-        }
-        return result;
-    }
     // Creates a compile-time expression value for the Binop expression, if possible.
     ASR::expr_t* visit_BinOp_helper(ASR::expr_t* left, ASR::expr_t* right, ASR::binopType op, const Location& loc, ASR::ttype_t* dest_type) {
-        LCOMPILERS_ASSERT((left != nullptr) && (right != nullptr));
-        if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::RealConstant_t>(*right)) {
-            ASR::RealConstant_t* lc = ASR::down_cast<ASR::RealConstant_t>(left);
-            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(right);
-            if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 16) {
-                lf_float128 lv = ASRUtils::real_constant_get_r16(lc);
-                lf_float128 rv = ASRUtils::real_constant_get_r16(rc);
-                lf_float128 res;
-                switch (op) {
-                    case ASR::Add: res = lf_f128_add(lv, rv); break;
-                    case ASR::Sub: res = lf_f128_sub(lv, rv); break;
-                    case ASR::Mul: res = lf_f128_mul(lv, rv); break;
-                    case ASR::Div: res = lf_f128_div(lv, rv); break;
-                    case ASR::Pow: res = lf_f128_pow(lv, rv); break;
-                    default: LCOMPILERS_ASSERT(false); res = lv;
-                }
-                return ASRUtils::make_RealConstant_r16(al, left->base.loc, res, dest_type);
-            } else if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 10) {
-                const uint8_t* l_bytes = ASRUtils::real_constant_get_r10_bytes(lc);
-                const uint8_t* r_bytes = ASRUtils::real_constant_get_r10_bytes(rc);
-                long double lv{}, rv{};
-                std::memcpy(&lv, l_bytes, sizeof(long double));
-                std::memcpy(&rv, r_bytes, sizeof(long double));
-                long double res;
-                switch (op) {
-                    case ASR::Add: res = lv + rv; break;
-                    case ASR::Sub: res = lv - rv; break;
-                    case ASR::Mul: res = lv * rv; break;
-                    case ASR::Div: res = lv / rv; break;
-                    case ASR::Pow: res = std::pow(lv, rv); break;
-                    default: LCOMPILERS_ASSERT(false); res = lv;
-                }
-                return ASRUtils::make_RealConstant_r10(al, left->base.loc, res, dest_type);
-            } else if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
-                // Evaluate in single precision, as the program would.
-                float left_value = lc->m_r;
-                float right_value = rc->m_r;
-                float result = perform_binop(left_value, right_value, op);
-                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
-                    result, dest_type));
-            }
-            double left_value = lc->m_r;
-            double right_value = rc->m_r;
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
-            perform_binop(left_value, right_value, op), dest_type));
-        } else if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)){
-            LCOMPILERS_ASSERT(op == ASR::binopType::Pow);
-            ASR::RealConstant_t* lc = ASR::down_cast<ASR::RealConstant_t>(left);
-            int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
-            if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 16) {
-                lf_float128 lv = ASRUtils::real_constant_get_r16(lc);
-                lf_float128 res = lf_f128_pow(lv, lf_f128_from_double((double)right_value));
-                return ASRUtils::make_RealConstant_r16(al, left->base.loc, res, dest_type);
-            } else if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 10) {
-                const uint8_t* l_bytes = ASRUtils::real_constant_get_r10_bytes(lc);
-                long double lv{};
-                std::memcpy(&lv, l_bytes, sizeof(long double));
-                long double res = std::pow(lv, (long double)right_value);
-                return ASRUtils::make_RealConstant_r10(al, left->base.loc, res, dest_type);
-            }
-            double left_value = lc->m_r;
-            double result = std::pow(left_value, right_value);
-            if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
-                result = (float) result;
-            }
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
-                    result, dest_type));
-        } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
-            int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
-            int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
-
-            if (op == ASR::Div && right_value == 0) {
-                diag.add(Diagnostic(
-                    "Division by zero",
-                    Level::Error, Stage::Semantic, {
-                        Label("", {loc})
-                    })
-                );
-                throw SemanticAbort();
-            }
-
-            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, left->base.loc,
-                    perform_binop(left_value, right_value, op), dest_type));
-        } else if (ASR::is_a<ASR::ComplexConstant_t>(*left) && ASR::is_a<ASR::ComplexConstant_t>(*right)) {
-            ASR::ComplexConstant_t *left_value
-                = ASR::down_cast<ASR::ComplexConstant_t>(
-                        ASRUtils::expr_value(left));
-            ASR::ComplexConstant_t *right_value
-                = ASR::down_cast<ASR::ComplexConstant_t>(
-                        ASRUtils::expr_value(right));
-            std::complex<double> left_value_(left_value->m_re, left_value->m_im);
-            std::complex<double> right_value_(right_value->m_re, right_value->m_im);
-            std::complex<double> result = perform_binop(left_value_, right_value_, op);
-            return ASRUtils::EXPR( ASR::make_ComplexConstant_t(al, loc,
-                    std::real(result), std::imag(result), dest_type));
+        bool division_by_zero = false;
+        ASR::expr_t* value = ASRUtils::fold_binop_constants(al, left, right,
+            op, loc, dest_type, division_by_zero);
+        if (division_by_zero) {
+            diag.add(Diagnostic(
+                "Division by zero",
+                Level::Error, Stage::Semantic, {
+                    Label("", {loc})
+                })
+            );
+            throw SemanticAbort();
         }
-        return nullptr;
+        return value;
     }
 
     ASR::expr_t* extract_value(ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::binopType op, ASR::ttype_t* dest_type, const Location& loc) {
