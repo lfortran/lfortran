@@ -167,6 +167,7 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
     {"event", KW_EVENT},
     {"exit", KW_EXIT},
     {"extends", KW_EXTENDS},
+    {"extensible", KW_EXTENSIBLE},
     {"external", KW_EXTERNAL},
     {"file", KW_FILE},
     {"final", KW_FINAL},

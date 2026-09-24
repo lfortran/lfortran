@@ -24,12 +24,25 @@ module procedure_39_mod
     procedure :: run
   end type
 
+  type :: wrapper_t
+    procedure(result_fn_i), pointer, nopass :: ptr => null()
+  end type
+
 contains
 
   function make_pass() result(r)
     type(result_t) :: r
     r%passed = .true.
   end function
+
+  subroutine check_constructor()
+    type(wrapper_t) :: wrapper
+    type(result_t) :: res
+
+    wrapper = wrapper_t(make_pass)
+    res = wrapper%ptr()
+    if (.not. res%passed) error stop
+  end subroutine
 
   subroutine run(self)
     class(desc_t), intent(in) :: self
@@ -53,6 +66,8 @@ program procedure_39
   ! Test with assigned procedure pointer
   d%get_result => make_pass
   call d%run()
+
+  call check_constructor()
 
   print *, "ok"
 end program

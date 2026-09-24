@@ -218,6 +218,15 @@ public:
               ds_funcs_defined + util_funcs_defined;
     }
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        // A translation unit initializer has to run before main, which only
+        // a target with a startup hook of its own can arrange. Nothing that
+        // reaches this backend sets one today — it comes from a saved coarray
+        // of an external procedure — so say so rather than quietly dropping
+        // the initialization on the floor.
+        if (x.m_global_init != nullptr) {
+            throw CodeGenError("a startup initializer of the translation unit "
+                "is not supported by this backend");
+        }
         global_scope = x.m_symtab;
         // All loose statements must be converted to a function, so the items
         // must be empty:
@@ -2715,21 +2724,33 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
+    // Neither deallocate statement releases anything in this backend yet; both
+    // only name what would be released, so a component is named the same way a
+    // whole variable is rather than being refused.
+    std::string deallocate_operand_name(ASR::expr_t* e) {
+        if( ASR::is_a<ASR::Var_t>(*e) ) {
+            return ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(e)->m_v);
+        }
+        if( ASR::is_a<ASR::StructInstanceMember_t>(*e) ) {
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(e);
+            return deallocate_operand_name(member->m_v) + "." +
+                ASRUtils::symbol_name(member->m_m);
+        }
+        if( ASR::is_a<ASR::ArrayItem_t>(*e) ) {
+            return deallocate_operand_name(ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
+        }
+        if( ASR::is_a<ASR::ArraySection_t>(*e) ) {
+            return deallocate_operand_name(ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
+        }
+        return ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(e), e);
+    }
+
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "// FIXME: deallocate(";
         for (size_t i=0; i<x.n_vars; i++) {
-            ASR::symbol_t* tmp_sym = nullptr;
-            ASR::expr_t* tmp_expr = x.m_vars[i];
-            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
-                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
-                tmp_sym = tmp_var->m_v;
-            } else {
-                throw CodeGenError("Cannot deallocate variables in expression " +
-                                    ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(tmp_expr), tmp_expr),
-                                    tmp_expr->base.loc);
-            }
-            out += std::string(ASRUtils::symbol_name(tmp_sym)) + ", ";
+            out += deallocate_operand_name(x.m_vars[i]) + ", ";
         }
         out += ");\n";
         src = out;
@@ -2739,17 +2760,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "// FIXME: implicit deallocate(";
         for (size_t i=0; i<x.n_vars; i++) {
-            ASR::symbol_t* tmp_sym = nullptr;
-            ASR::expr_t* tmp_expr = x.m_vars[i];
-            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
-                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
-                tmp_sym = tmp_var->m_v;
-            } else {
-                throw CodeGenError("Cannot deallocate variables in expression " +
-                                    ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(tmp_expr), tmp_expr),
-                                    tmp_expr->base.loc);
-            }
-            out += std::string(ASRUtils::symbol_name(tmp_sym)) + ", ";
+            out += deallocate_operand_name(x.m_vars[i]) + ", ";
         }
         out += ");\n";
         src = out;

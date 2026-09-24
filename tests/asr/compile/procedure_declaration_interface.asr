@@ -349,6 +349,7 @@
             []
           )
         ]
+        nil
       )
       "my_module" (Module
         (SymbolTable
@@ -643,8 +644,10 @@
         false
         false
         false
+        nil
       )
     }
   )
   []
+  nil
 )

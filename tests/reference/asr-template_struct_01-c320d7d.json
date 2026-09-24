@@ -2,11 +2,11 @@
     "basename": "asr-template_struct_01-c320d7d",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/template_struct_01.f90",
-    "infile_hash": "f66f5d6abfb085636af3a1f278953ef2297f93f3a209002272e6d1f8",
+    "infile_hash": "7bb0ae5a80bd0c6d846c7a6016555e7d7d64bf0897f157afc2077b74",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-template_struct_01-c320d7d.stdout",
-    "stdout_hash": "08419f78b8c7b226bcb30d4d189fc12a0cb6925cbd1195301492d3f6",
+    "stdout_hash": "3fc2d0584e9a6dfd6cafa7b9b9aafe0d6adf6205b2af3f33d263c6ff",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

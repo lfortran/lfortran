@@ -2,7 +2,7 @@
     "basename": "asr-call_rank_mismatch-ec56b79",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/call_rank_mismatch.asr",
-    "infile_hash": "16a2044f600164170b021e0518931af68fb5c4ee110cdcaaec7ad1c2",
+    "infile_hash": "1c0a9cc6e37a5c8de594df2d494e3510d22122317c704d0b908dda16",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

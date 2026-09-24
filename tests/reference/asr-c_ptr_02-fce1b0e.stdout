@@ -529,7 +529,9 @@
                                     ()
                                     Default
                                     (StructType
-                                        [(CPtr)]
+                                        [(CPtr
+                                            CPointer
+                                        )]
                                         []
                                         .true.
                                         .false.
@@ -589,8 +591,10 @@
                                     ()
                                     ()
                                     Default
-                                    (CPtr)
-                                    ()
+                                    (CPtr
+                                        CPointer
+                                    )
+                                    2 c_ptr
                                     Source
                                     Public
                                     Required
@@ -613,19 +617,25 @@
                                                 (Variable
                                                     13
                                                     ptr
-                                                    []
+                                                    [c_ptr]
                                                     Local
                                                     (PointerNullConstant
-                                                        (CPtr)
-                                                        ()
+                                                        (CPtr
+                                                            CPointer
+                                                        )
+                                                        (Var 2 c_ptr)
                                                     )
                                                     (PointerNullConstant
-                                                        (CPtr)
-                                                        ()
+                                                        (CPtr
+                                                            CPointer
+                                                        )
+                                                        (Var 2 c_ptr)
                                                     )
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -642,7 +652,9 @@
                                         })
                                     test_obj
                                     (StructType
-                                        [(CPtr)]
+                                        [(CPtr
+                                            CPointer
+                                        )]
                                         []
                                         .true.
                                         .false.
@@ -668,7 +680,9 @@
                         (StructInstanceMember
                             (Var 2 instance)
                             2 1_test_obj_ptr
-                            (CPtr)
+                            (CPtr
+                                CPointer
+                            )
                             ()
                         )
                         ()
@@ -728,7 +742,9 @@
                                 )
                                 ()
                             )
-                            (CPtr)
+                            (CPtr
+                                CPointer
+                            )
                             ()
                         )
                         (Var 2 r_ptr)
@@ -790,7 +806,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

@@ -436,11 +436,17 @@ semantic error: The shapes of the `array` and `mask` arguments of the `MaxLoc` i
 631 |     integer :: maxloc_shape_mismatch = maxloc([2, 1, 3], 1, [.true., .false.])
     |                                               ^^^^^^^^^     ^^^^^^^^^^^^^^^^^ `array` has shape [3], but `mask` has shape [2]
 
-semantic error: variable cannot appear in character length expression
+semantic error: the variable 'char_len_var' is local to this scoping unit, so it cannot appear in a specification expression
    --> tests/errors/continue_compilation_1.f90:638:21
     |
 638 |     character(len = char_len_var) :: char_nonconst
-    |                     ^^^^^^^^^^^^ 
+    |                     ^^^^^^^^^^^^ the value of 'char_len_var' is read to give a character length
+    |
+637 |     integer :: char_len_var = 10
+    |                ~~~~~~~~~~~~~~~~~ 'char_len_var' is declared here
+    |
+638 |     character(len = char_len_var) :: char_nonconst
+    |                     ~~~~~~~~~~~~ help: Fortran 2023 10.1.11 allows a dummy argument, a variable in a common block, and one made accessible by use or host association; a named constant, and an inquiry such as `size` or `len` about a local, are also allowed
 
 semantic error: type mismatch in initialization: `string` cannot be assigned to `integer`
    --> tests/errors/continue_compilation_1.f90:643:32
@@ -735,6 +741,114 @@ semantic error: null() cannot be the value of component 'x' of type real(8), dim
      |
 1330 |     type(t_null_array_component) :: v1 = t_null_array_component(null(), t_null_inner_2(1))  ! {Error} null() cannot be the value of component 'x' of type real(8), dimension(2), which is neither a pointer nor allocatable
      |                                                                 ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1345:71
+     |
+1345 |     type(t_null_c_component), parameter :: p1 = t_null_c_component(1, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+     |                                                                       ^^^^^^ 
+
+semantic error: Array index 3 is out of bounds (1 to 2) in dimension 1
+    --> tests/errors/continue_compilation_1.f90:1421:32
+     |
+1421 |     integer, parameter :: k1 = a(3)%h  ! {Error} Array index 3 is out of bounds (1 to 2) in dimension 1
+     |                                ^^^^^^ 
+
+semantic error: Array index 0 is out of bounds (1 to 2) in dimension 1
+    --> tests/errors/continue_compilation_1.f90:1422:32
+     |
+1422 |     integer, parameter :: k2 = a(0)%h  ! {Error} Array index 0 is out of bounds (1 to 2) in dimension 1
+     |                                ^^^^^^ 
+
+semantic error: Array index -1 is out of bounds (1 to 2) in dimension 1
+    --> tests/errors/continue_compilation_1.f90:1423:32
+     |
+1423 |     integer, parameter :: k3 = a(-1)%h  ! {Error} Array index -1 is out of bounds (1 to 2) in dimension 1
+     |                                ^^^^^^^ 
+
+semantic error: Array index -1 is out of bounds (0 to 1) in dimension 1
+    --> tests/errors/continue_compilation_1.f90:1424:32
+     |
+1424 |     integer, parameter :: k4 = b(-1)%h  ! {Error} Array index -1 is out of bounds (0 to 1) in dimension 1
+     |                                ^^^^^^^ 
+
+semantic error: Array index 0 is out of bounds (-2 to -1) in dimension 2
+    --> tests/errors/continue_compilation_1.f90:1425:32
+     |
+1425 |     integer, parameter :: k5 = c(0, 0)%h  ! {Error} Array index 0 is out of bounds (-2 to -1) in dimension 2
+     |                                ^^^^^^^^^ 
+
+semantic error: array of derived type initialized with a scalar structure constructor must have constant explicit shape
+    --> tests/errors/continue_compilation_1.f90:1435:40
+     |
+1435 |         type(scalar_shape_t) :: a(*) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
+     |                                        ^^^^^^^^^^^^^^^^^ 
+
+semantic error: array of derived type initialized with a scalar structure constructor must have constant explicit shape
+    --> tests/errors/continue_compilation_1.f90:1443:40
+     |
+1443 |         type(scalar_shape_t) :: a(n) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
+     |                                        ^^^^^^^^^^^^^^^^^ 
+
+semantic error: null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1647:20
+     |
+1647 |     integer :: i = null()  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+     |                    ^^^^^^ 
+
+semantic error: null() cannot initialize 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1653:24
+     |
+1653 |     type(c_ptr) :: p = null()  ! {Error} null() cannot initialize 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+     |                        ^^^^^^ 
+
+semantic error: null() cannot initialize 'k' of type integer(4), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1659:24
+     |
+1659 |         integer :: k = null()  ! {Error} null() cannot initialize 'k' of type integer(4), which is neither a pointer nor allocatable
+     |                        ^^^^^^ 
+
+semantic error: too many arguments in derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1672:38
+     |
+1672 |     type(plain_t) :: pv = plain_t(1, null())  ! {Error} too many arguments in derived type constructor
+     |                                      ^^^^^^ more positional arguments than components and type parameters
+
+semantic error: the variable 'lse_a' is local to this scoping unit, so it cannot appear in a specification expression
+    --> tests/errors/continue_compilation_1.f90:1743:27
+     |
+1743 |     integer :: bad_member(lse_a(1)%x)  ! {Error} the variable 'lse_a' is local to this scoping unit, so it cannot appear in a specification expression
+     |                           ^^^^^^^^^^ the value of 'lse_a' is read to give an array bound
+     |
+1732 |     type(lse_t), save :: lse_a(1) = lse_t(4)
+     |                          ~~~~~~~~~~~~~~~~~~~ 'lse_a' is declared here
+     |
+1743 |     integer :: bad_member(lse_a(1)%x)  ! {Error} the variable 'lse_a' is local to this scoping unit, so it cannot appear in a specification expression
+     |                           ~~~~~~~~~~ help: Fortran 2023 10.1.11 allows a dummy argument, a variable in a common block, and one made accessible by use or host association; a named constant, and an inquiry such as `size` or `len` about a local, are also allowed
+
+semantic error: the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+    --> tests/errors/continue_compilation_1.f90:1744:27
+     |
+1744 |     integer :: bad_scalar(lse_m)  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+     |                           ^^^^^ the value of 'lse_m' is read to give an array bound
+     |
+1733 |     integer :: lse_m
+     |                ~~~~~ 'lse_m' is declared here
+     |
+1744 |     integer :: bad_scalar(lse_m)  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+     |                           ~~~~~ help: Fortran 2023 10.1.11 allows a dummy argument, a variable in a common block, and one made accessible by use or host association; a named constant, and an inquiry such as `size` or `len` about a local, are also allowed
+
+semantic error: the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+    --> tests/errors/continue_compilation_1.f90:1745:19
+     |
+1745 |     character(len=lse_m) :: bad_len  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+     |                   ^^^^^ the value of 'lse_m' is read to give a character length
+     |
+1733 |     integer :: lse_m
+     |                ~~~~~ 'lse_m' is declared here
+     |
+1745 |     character(len=lse_m) :: bad_len  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+     |                   ~~~~~ help: Fortran 2023 10.1.11 allows a dummy argument, a variable in a common block, and one made accessible by use or host association; a named constant, and an inquiry such as `size` or `len` about a local, are also allowed
 
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
@@ -1740,7 +1854,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
 617 |     base_var = derived_var
     |     ^^^^^^^^   ^^^^^^^^^^^ type mismatch (base and derived)
 
-semantic error: Type mismatch in argument `this`: expected `derived_type` but got `integer(4)`
+semantic error: Type mismatch in argument `this`: expected `myclass` but got `integer(4)`
    --> tests/errors/continue_compilation_1.f90:628:21
     |
 628 |     call set_caller(1)
@@ -2182,28 +2296,28 @@ semantic error: a conditional expression cannot be a pointer assignment target
      |              ^^^^^^^^^^^^^^^^^^ this is a value, not a target or a pointer
 
 semantic error: too many arguments in parameterized derived type constructor
-    --> tests/errors/continue_compilation_1.f90:1129:18
+    --> tests/errors/continue_compilation_1.f90:1129:37
      |
 1129 |         print *, parameterized_t(4, 8)(1)  ! {Error} too many arguments in parameterized derived type constructor
-     |                  ^^^^^^^^^^^^^^^^^^^^^^^^ type parameters and components must be specified in their respective argument lists
+     |                                     ^ type parameters and components must be specified in their respective argument lists
 
 semantic error: too many arguments in parameterized derived type constructor
-    --> tests/errors/continue_compilation_1.f90:1130:18
+    --> tests/errors/continue_compilation_1.f90:1130:40
      |
 1130 |         print *, parameterized_t(4)(1, 2)  ! {Error} too many arguments in parameterized derived type constructor
-     |                  ^^^^^^^^^^^^^^^^^^^^^^^^ type parameters and components must be specified in their respective argument lists
+     |                                        ^ type parameters and components must be specified in their respective argument lists
 
 semantic error: too many arguments in derived type constructor
-    --> tests/errors/continue_compilation_1.f90:1131:18
+    --> tests/errors/continue_compilation_1.f90:1131:29
      |
 1131 |         print *, plain_t(1, 2)  ! {Error} too many arguments in derived type constructor
-     |                  ^^^^^^^^^^^^^ more positional arguments than components and type parameters
+     |                             ^ more positional arguments than components and type parameters
 
 semantic error: too many arguments in derived type constructor
-    --> tests/errors/continue_compilation_1.f90:1132:18
+    --> tests/errors/continue_compilation_1.f90:1132:40
      |
 1132 |         print *, parameterized_t(4, 1, 2)  ! {Error} too many arguments in derived type constructor
-     |                  ^^^^^^^^^^^^^^^^^^^^^^^^ more positional arguments than components and type parameters
+     |                                        ^ more positional arguments than components and type parameters
 
 semantic error: ArrayInitalizer expressions can only be assigned array references
     --> tests/errors/continue_compilation_1.f90:1141:9
@@ -2258,3 +2372,419 @@ semantic error: null() cannot be the value of component 'ins' of type type(t_nul
      |
 1332 |     v2 = t_null_array_component(1.0d0, ins=null())  ! {Error} null() cannot be the value of component 'ins' of type type(t_null_inner_2), dimension(3, 2), which is neither a pointer nor allocatable
      |                                            ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'f' of type type(c_funptr), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1347:46
+     |
+1347 |     v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_funptr), which is neither a pointer nor allocatable
+     |                                              ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1369:32
+     |
+1369 |     a = t_null_c_pdt(4)(h=1, p=null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+     |                                ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1370:37
+     |
+1370 |     e = t_null_c_ext(1, c_null_ptr, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+     |                                     ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1382:27
+     |
+1382 |     a = t_null_int_pdt(4)(null(), 2)  ! {Error} null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
+     |                           ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1383:29
+     |
+1383 |     a = t_null_int_pdt(4)(h=null(), j=2)  ! {Error} null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
+     |                             ^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ip' of type integer(4)
+    --> tests/errors/continue_compilation_1.f90:1405:25
+     |
+1405 |     v = t_null_mismatch(c_null_ptr, null(), null(), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ip' of type integer(4)
+     |                         ^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ia' of type integer(4), dimension(:)
+    --> tests/errors/continue_compilation_1.f90:1406:33
+     |
+1406 |     v = t_null_mismatch(null(), c_null_ptr, null(), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ia' of type integer(4), dimension(:)
+     |                                 ^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type integer(4) cannot be the value of component 'rp' of type real(4)
+    --> tests/errors/continue_compilation_1.f90:1407:41
+     |
+1407 |     v = t_null_mismatch(null(), null(), null(ip), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type integer(4) cannot be the value of component 'rp' of type real(4)
+     |                                         ^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+    --> tests/errors/continue_compilation_1.f90:1408:49
+     |
+1408 |     v = t_null_mismatch(null(), null(), null(), c_null_ptr, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+     |                                                 ^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'r' of type real(4)
+    --> tests/errors/continue_compilation_1.f90:1409:54
+     |
+1409 |     v = t_null_mismatch(null(), null(), null(), 1, r=c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'r' of type real(4)
+     |                                                      ^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+    --> tests/errors/continue_compilation_1.f90:1410:32
+     |
+1410 |     a = t_null_mismatch_pdt(4)(c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+     |                                ^^^^^^^^^^ 
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1460:9
+     |
+1460 |         q = associate_const_b_t(associate_const_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1459 |        associate (q => pb)
+     |        ~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1461 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1464:9
+     |
+1464 |         q%a%x = 5  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^ assignment here
+     |
+1463 |        associate (q => pb)
+     |        ~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1465 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1468:9
+     |
+1468 |         r%x = 6  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^ assignment here
+     |
+1467 |        associate (r => pb%a)
+     |        ~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1469 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1472:9
+     |
+1472 |         q(1)%a%x = 7  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^ assignment here
+     |
+1471 |        associate (q => pba)
+     |        ~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1473 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1490:13
+     |
+1490 |             r%y = 88  ! {Error} Cannot assign to a constant variable
+     |             ^^^^^^^^ assignment here
+     |
+1489 |            associate (r => q)
+     |            ~~~~~~~~~~~~~~~~~~...
+...
+     |
+1491 |            end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1496:13
+     |
+1496 |             r%x = 99  ! {Error} Cannot assign to a constant variable
+     |             ^^^^^^^^ assignment here
+     |
+1495 |            associate (r => q%a)
+     |            ~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1497 |            end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1502:13
+     |
+1502 |             r = 77  ! {Error} Cannot assign to a constant variable
+     |             ^^^^^^ assignment here
+     |
+1501 |            associate (r => q%a%x)
+     |            ~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1503 |            end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1508:13
+     |
+1508 |             r%a%x = 66  ! {Error} Cannot assign to a constant variable
+     |             ^^^^^^^^^^ assignment here
+     |
+1507 |            associate (r => q(1))
+     |            ~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1509 |            end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1515:17
+     |
+1515 |                 s%y = 55  ! {Error} Cannot assign to a constant variable
+     |                 ^^^^^^^^ assignment here
+     |
+1514 |                associate (s => r)
+     |                ~~~~~~~~~~~~~~~~~~...
+...
+     |
+1516 |                end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1538:9
+     |
+1538 |         r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1537 |        associate (r => pba(1))
+     |        ~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1539 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1542:9
+     |
+1542 |         r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1541 |        associate (r => pba(i))
+     |        ~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1543 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1546:9
+     |
+1546 |         r(1) = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1545 |        associate (r => pba(1:2))
+     |        ~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1547 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1550:9
+     |
+1550 |         r = associate_param_array_a_t(1)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1549 |        associate (r => pba(1)%a)
+     |        ~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1551 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1554:9
+     |
+1554 |         r = 1  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^ assignment here
+     |
+1553 |        associate (r => pba(1)%a%x)
+     |        ~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1555 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1568:5
+     |
+1568 |     cp = c_null_funptr  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^^   ^^^^^^^^^^^^^ type mismatch (type(c_ptr) and type(c_funptr))
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1569:5
+     |
+1569 |     fp = c_null_ptr  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^^   ^^^^^^^^^^ type mismatch (type(c_funptr) and type(c_ptr))
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'p' of type type(c_ptr)
+    --> tests/errors/continue_compilation_1.f90:1570:23
+     |
+1570 |     v = cptr_funptr_t(c_null_funptr, c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'p' of type type(c_ptr)
+     |                       ^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'f' of type type(c_funptr)
+    --> tests/errors/continue_compilation_1.f90:1571:35
+     |
+1571 |     v = cptr_funptr_t(c_null_ptr, c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'f' of type type(c_funptr)
+     |                                   ^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1589:5
+     |
+1589 |     fp = c_loc(x)  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^^   ^^^^^^^^ type mismatch (type(c_funptr) and type(c_ptr))
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1590:5
+     |
+1590 |     cp = c_funloc(cptr_funptr_bindc_target)  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch (type(c_ptr) and type(c_funptr))
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1591:5
+     |
+1591 |     fp = returns_c_ptr_for_mismatch()  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch (type(c_funptr) and type(c_ptr))
+
+semantic error: null() cannot be assigned to an entity of type type(c_ptr), which is not a pointer
+    --> tests/errors/continue_compilation_1.f90:1598:9
+     |
+1598 |     p = null()  ! {Error} null() cannot be assigned to an entity of type type(c_ptr), which is not a pointer
+     |         ^^^^^^ 
+
+semantic error: the value of pointer component 'cp' must be a pointer, a target or null()
+    --> tests/errors/continue_compilation_1.f90:1613:34
+     |
+1613 |     a = cptr_pointer_component_t(c_null_ptr)  ! {Error} the value of pointer component 'cp' must be a pointer, a target or null()
+     |                                  ^^^^^^^^^^ 
+
+semantic error: the value of pointer component 'ip' must be a pointer, a target or null()
+    --> tests/errors/continue_compilation_1.f90:1614:37
+     |
+1614 |     b = integer_pointer_component_t(1)  ! {Error} the value of pointer component 'ip' must be a pointer, a target or null()
+     |                                     ^ 
+
+semantic error: the value of pointer component 'ip' must be a pointer, a target or null()
+    --> tests/errors/continue_compilation_1.f90:1615:37
+     |
+1615 |     b = integer_pointer_component_t(v)  ! {Error} the value of pointer component 'ip' must be a pointer, a target or null()
+     |                                     ^ 
+
+semantic error: type mismatch in structure constructor: value of type payload_t cannot be the value of component 'p' of type type(c_ptr)
+    --> tests/errors/continue_compilation_1.f90:1629:26
+     |
+1629 |     a = cptr_component_t(payload)  ! {Error} type mismatch in structure constructor: value of type type(payload_t) cannot be the value of component 'p' of type type(c_ptr)
+     |                          ^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1629:5
+     |
+1629 |     a = cptr_component_t(payload)  ! {Error} type mismatch in structure constructor: value of type type(payload_t) cannot be the value of component 'p' of type type(c_ptr)
+     |     ^                    ^^^^^^^ type mismatch (cptr_component_t and payload_t)
+
+semantic error: type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
+    --> tests/errors/continue_compilation_1.f90:1630:26
+     |
+1630 |     a = cptr_component_t(1)  ! {Error} type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
+     |                          ^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1630:5
+     |
+1630 |     a = cptr_component_t(1)  ! {Error} type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
+     |     ^                    ^ type mismatch (cptr_component_t and integer)
+
+semantic error: Type mismatch in argument `x`: expected `integer(4)` but got `type(c_funptr)`
+    --> tests/errors/continue_compilation_1.f90:1637:24
+     |
+1637 |     call takes_integer(f)  ! {Error} Type mismatch in argument `x`: expected `integer(4)` but got `type(c_funptr)`
+     |                        ^ 
+
+semantic error: Expected logical expression in if statement, but recieved type(c_funptr) instead
+    --> tests/errors/continue_compilation_1.f90:1638:9
+     |
+1638 |     if (f) print *, "bad"  ! {Error} Expected logical expression in if statement, but recieved type(c_funptr) instead
+     |         ^ type(c_funptr) expression, expected logical
+
+semantic error: too many arguments in derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1673:25
+     |
+1673 |     print *, plain_t(1, null())  ! {Error} too many arguments in derived type constructor
+     |                         ^^^^^^ more positional arguments than components and type parameters
+
+semantic error: too many arguments in derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1674:36
+     |
+1674 |     print *, parameterized_t(4, 1, null())  ! {Error} too many arguments in derived type constructor
+     |                                    ^^^^^^ more positional arguments than components and type parameters
+
+semantic error: too many arguments in parameterized derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1675:33
+     |
+1675 |     print *, parameterized_t(4, null())(1)  ! {Error} too many arguments in parameterized derived type constructor
+     |                                 ^^^^^^ type parameters and components must be specified in their respective argument lists
+
+semantic error: too many arguments in parameterized derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1676:36
+     |
+1676 |     print *, parameterized_t(4)(1, null())  ! {Error} too many arguments in parameterized derived type constructor
+     |                                    ^^^^^^ type parameters and components must be specified in their respective argument lists
+
+semantic error: component 'x' is already specified by the parent component 'pck_base_t'
+    --> tests/errors/continue_compilation_1.f90:1695:46
+     |
+1695 |     e = pck_e_t(pck_base_t=pck_base_t(11), x=3, z=51)  ! {Error} component 'x' is already specified by the parent component 'pck_base_t'
+     |                                              ^ 
+
+semantic error: component 'x' is already specified, it cannot also be given by the parent component 'pck_base_t'
+    --> tests/errors/continue_compilation_1.f90:1696:33
+     |
+1696 |     e = pck_e_t(x=3, pck_base_t=pck_base_t(11), z=51)  ! {Error} component 'x' is already specified, it cannot also be given by the parent component 'pck_base_t'
+     |                                 ^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not integer(4)
+    --> tests/errors/continue_compilation_1.f90:1697:28
+     |
+1697 |     e = pck_e_t(pck_base_t=42, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not integer(4)
+     |                            ^^ 
+
+semantic error: type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_base_t), dimension(2)
+    --> tests/errors/continue_compilation_1.f90:1698:28
+     |
+1698 |     e = pck_e_t(pck_base_t=arr, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_base_t), dimension(2)
+     |                            ^^^ 
+
+semantic error: type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_f_t)
+    --> tests/errors/continue_compilation_1.f90:1699:28
+     |
+1699 |     e = pck_e_t(pck_base_t=f, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_f_t)
+     |                            ^ 
+
+semantic error: the value given for the parent component 'pck_base_t' must be a constant or a variable inside an implied do loop, it would otherwise be evaluated once for every component of 'pck_base_t'
+    --> tests/errors/continue_compilation_1.f90:1700:32
+     |
+1700 |     ee = [ (pck_e_t(pck_base_t=pck_make(i), z=i), i = 1, 2) ]  ! {Error} the value given for the parent component 'pck_base_t' must be a constant or a variable inside an implied do loop, it would otherwise be evaluated once for every component of 'pck_base_t'
+     |                                ^^^^^^^^^^^ help: assign it to a variable before the array constructor and give that variable here
+
+semantic error: NULL() is not permitted as the TARGET= argument to 'associated'
+    --> tests/errors/continue_compilation_1.f90:1715:9
+     |
+1715 |     if (associated(a, null())) print *, "bad"  ! {Error} NULL() is not permitted as the TARGET= argument to 'associated'
+     |         ^^^^^^^^^^^^^^^^^^^^^ 

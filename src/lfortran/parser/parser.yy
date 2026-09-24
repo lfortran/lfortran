@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    195 // shift/reduce conflicts
+%expect    196 // shift/reduce conflicts
 %expect-rr 185 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -269,6 +269,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_EVENT
 %token <string> KW_EXIT
 %token <string> KW_EXTENDS
+%token <string> KW_EXTENSIBLE
 %token <string> KW_EXTERNAL
 %token <string> KW_FILE
 %token <string> KW_FINAL
@@ -406,17 +407,25 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> end_submodule
 %type <ast> submodule
 %type <ast> block_data
-%type <ast> instantiate
+%type <vec_ast> instantiate
 %type <ast> interface_decl
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
+%type <vec_ast> deferred_type_decl
+%type <ast> deferred_proc_decl
+%type <vec_ast> deferred_type_attr_list
+%type <ast> deferred_type_attr
+%type <ast> deferred_const_decl
+%type <ast> deferred_const_attr
+%type <vec_ast> deferred_const_attr_list
 %type <ast> template_decl
 %type <ast> requirement_decl
 %type <ast> require_decl
-%type <vec_ast> unit_require_plus
 %type <ast> unit_require
 %type <vec_ast> instantiate_symbol_list
+%type <vec_ast> instantiate_symbol_list_opt
 %type <ast> instantiate_symbol
+%type <ast> instantiate_arg_spec
 %type <ast> enum_decl
 %type <ast> program
 %type <end_stmt> end_program
@@ -460,6 +469,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> var_type
 %type <ast> fn_mod
 %type <vec_ast> fn_mod_plus
+%type <vec_ast> template_sub_prefix
+%type <vec_ast> template_fn_prefix
 %type <vec_ast> var_modifiers
 %type <vec_ast> enum_var_modifiers
 %type <vec_ast> var_modifier_list
@@ -550,7 +561,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> contains_block
 %type <vec_ast> contains_block_opt
 %type <vec_ast> sub_or_func_plus
-%type <vec_ast> sub_or_func_star
 %type <ast> result_opt
 %type <ast> result
 %type <string> inout
@@ -703,6 +713,7 @@ interface_stmt
     | KW_INTERFACE KW_OPERATOR "(" TK_DEF_OP ")" {
         $$ = INTERFACE_HEADER_DEFOP($4, @$); }
     | KW_ABSTRACT KW_INTERFACE { $$ = ABSTRACT_INTERFACE_HEADER(@$); }
+    | KW_DEFERRED KW_INTERFACE { $$ = DEFERRED_INTERFACE_HEADER(@$); }
     | KW_INTERFACE KW_WRITE "(" id ")" { $$ = INTERFACE_HEADER_WRITE($4, @$); }
     | KW_INTERFACE KW_READ "(" id ")" { $$ = INTERFACE_HEADER_READ($4, @$); }
     ;
@@ -760,14 +771,61 @@ enum_var_modifiers
     ;
 
 derived_type_decl
-    : KW_TYPE "," KW_DEFERRED "::" id sep {
-            $$ = DERIVED_TYPE2($5, SIMPLE_ATTR(Deferred, @$), TRIVIA_AFTER($6, @$), @$); }
-    | KW_TYPE var_modifiers id sep var_decl_star
+    : KW_TYPE var_modifiers id sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE($2, $3, TRIVIA($4, $8, @$), $5, $6, @$); }
     | KW_TYPE var_modifiers id "(" id_list ")" sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
+    ;
+
+deferred_type_decl
+    : KW_DEFERRED KW_TYPE "::" id_list sep {
+            $$ = DEFERRED_TYPES(p.m_a, nullptr, 0, $4,
+                TRIVIA_AFTER($5, @$), @$); }
+    | KW_DEFERRED KW_TYPE deferred_type_attr_list "::" id_list sep {
+            $$ = DEFERRED_TYPES(p.m_a, $3.p, $3.size(), $5,
+                TRIVIA_AFTER($6, @$), @$); }
+    ;
+
+deferred_type_attr_list
+    : deferred_type_attr_list "," deferred_type_attr { $$ = $1; LIST_ADD($$, $3); }
+    | "," deferred_type_attr { LIST_NEW($$); LIST_ADD($$, $2); }
+    ;
+
+deferred_type_attr
+    : KW_ABSTRACT { $$ = SIMPLE_ATTR(Abstract, @$); }
+    | KW_EXTENSIBLE { $$ = SIMPLE_ATTR(Extensible, @$); }
+    ;
+
+deferred_const_attr
+    : var_modifier { $$ = $1; }
+    | KW_RANK "(" expr_list ")" { $$ = ATTR_RANK($3, @$); }
+    ;
+
+deferred_const_attr_list
+    : deferred_const_attr_list "," deferred_const_attr {
+            $$ = $1; LIST_ADD($$, $3); }
+    | "," deferred_const_attr { LIST_NEW($$); LIST_ADD($$, $2); }
+    ;
+
+deferred_const_decl
+    : KW_DEFERRED declaration_type_spec deferred_const_attr_list "::"
+      var_sym_decl_list sep {
+            LLOC(@$, @5); $$ = DEFERRED_CONST_DECL(p.m_a, $2, $3, $5,
+                TRIVIA_AFTER($6, @$), @$); }
+    | KW_DEFERRED declaration_type_spec "::" var_sym_decl_list sep {
+            LLOC(@$, @4); $$ = DEFERRED_CONST_DECL_NOATTR(p.m_a, $2, $4,
+                TRIVIA_AFTER($5, @$), @$); }
+    ;
+
+deferred_proc_decl
+    : KW_DEFERRED KW_PROCEDURE "(" id ")" "::" id_list sep {
+            $$ = DEFERRED_PROCEDURE($4, $7, TRIVIA_AFTER($8, @$),
+                SPAN(@1, @7)); }
+    | KW_DEFERRED KW_PROCEDURE "(" id ")" id_list sep {
+            $$ = DEFERRED_PROCEDURE($4, $6, TRIVIA_AFTER($7, @$),
+                SPAN(@1, @6)); }
     ;
 
 
@@ -777,41 +835,58 @@ union_type_decl
     ;
 
 template_decl
-    : KW_TEMPLATE id "(" id_list ")" sep decl_statements
-        contains_block_opt KW_END KW_TEMPLATE sep {
-            $$ = TEMPLATE($2, $4, $7, $8, @$); }
+    : KW_TEMPLATE id "{" id_list_opt "}" sep decl_statements
+        contains_block_opt KW_END KW_TEMPLATE id_opt sep {
+            $$ = TEMPLATE($2, $4, $7, $8, $11, @$); }
     ;
 
 requirement_decl
-    : KW_REQUIREMENT id "(" id_list ")" sep decl_statements
-        sub_or_func_star KW_END KW_REQUIREMENT sep {
-            $$ = REQUIREMENT($2, $4, $7, $8, @$); }
+    : KW_REQUIREMENT id "{" id_list_opt "}" sep decl_statements
+        KW_END KW_REQUIREMENT id_opt sep {
+            $$ = REQUIREMENT($2, $4, $7, $10, @$); }
     ;
 
 require_decl
-    : KW_REQUIRE "::" unit_require_plus sep {
+    : KW_REQUIRE "::" unit_require sep {
         $$ = REQUIRE($3, @$); }
-    ;
-
-unit_require_plus
-    : unit_require_plus "," unit_require { $$ = $1; LIST_ADD($$, $3); }
-    | unit_require { LIST_NEW($$); LIST_ADD($$, $1); }
+    | KW_REQUIRE unit_require sep {
+        $$ = REQUIRE($2, @$); }
     ;
 
 unit_require
-    : id "(" instantiate_symbol_list ")" { $$ = UNIT_REQUIRE($1, $3, @$); }
+    : id "{" instantiate_symbol_list_opt "}" { $$ = UNIT_REQUIRE($1, $3, @$); }
     ;
 
 instantiate
-    : KW_INSTANTIATE id "(" instantiate_symbol_list ")" sep {
-        $$ = INSTANTIATE1($2, $4, @$); }
-    | KW_INSTANTIATE id "(" instantiate_symbol_list ")" "," KW_ONLY ":" use_symbol_list sep {
-        $$ = INSTANTIATE2($2, $4, $9, @$); }
+    : KW_INSTANTIATE id "{" instantiate_symbol_list_opt "}" sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE1($2, $4, @$)); }
+    | KW_INSTANTIATE id "{" instantiate_symbol_list_opt "}" "," KW_ONLY ":" use_symbol_list sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE2($2, $4, $9, @$)); }
+    | KW_INSTANTIATE id "{" instantiate_symbol_list_opt "}" "," use_symbol_list sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE2($2, $4, $7, @7));
+        LIST_ADD($$, INSTANTIATE1($2, $4, @$)); }
+    | KW_INSTANTIATE "::" id "{" instantiate_symbol_list_opt "}" sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE1($3, $5, @$)); }
+    | KW_INSTANTIATE "::" id "{" instantiate_symbol_list_opt "}" "," KW_ONLY ":" use_symbol_list sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE2($3, $5, $10, @$)); }
+    | KW_INSTANTIATE "::" id "{" instantiate_symbol_list_opt "}" "," use_symbol_list sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE2($3, $5, $8, @8));
+        LIST_ADD($$, INSTANTIATE1($3, $5, @$)); }
+    | KW_INSTANTIATE "::" id "=>" id "{" instantiate_symbol_list_opt "}" sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE_SUBP($5, $3, $7, @$)); }
     ;
 
 instantiate_symbol_list
-    : instantiate_symbol_list "," instantiate_symbol { $$ = $1; LIST_ADD($$, $3); }
-    | instantiate_symbol { LIST_NEW($$); LIST_ADD($$, $1); }
+    : instantiate_symbol_list "," instantiate_arg_spec { $$ = $1; LIST_ADD($$, $3); }
+    | instantiate_arg_spec { LIST_NEW($$); LIST_ADD($$, $1); }
+
+instantiate_symbol_list_opt
+    : instantiate_symbol_list
+    | %empty { LIST_NEW($$); }
+
+instantiate_arg_spec
+    : instantiate_symbol { $$ = $1; }
+    | id "=" instantiate_symbol { $$ = ATTR_KEYWORD($1, $3, @$); }
 
 instantiate_symbol
     : var_type %dprec 2 { $$ = $1; }
@@ -1013,18 +1088,22 @@ subroutine
         subroutine_contains_end sep {
             LLOC(@$, @7); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $8, @$),
                 $6, $7, @$); }
-    | KW_SUBROUTINE id "{" id_list "}" sub_args bind_opt
-    sep decl_statements end_subroutine sep {
-            LLOC(@$, @10); $$ = TEMPLATED_SUBROUTINE($2, $4, $6, $7,
-                TRIVIA($8, $11, @$), $9, $10, @$); }
     | fn_mod_plus KW_SUBROUTINE id sub_args bind_opt sep decl_statements
         subroutine_contains_end sep {
             LLOC(@$, @8); $$ = SUBROUTINE1($1, $3, $4, $5, TRIVIA($6, $9, @$),
                 $7, $8, @$); }
-    | fn_mod_plus KW_SUBROUTINE id "{" id_list "}" sub_args bind_opt
+    | template_sub_prefix id "{" id_list "}" sub_args bind_opt
     sep decl_statements end_subroutine sep {
-            LLOC(@$, @11); $$ = TEMPLATED_SUBROUTINE1($1, $3, $5, $7, $8,
-                TRIVIA($9, $12, @$), $10, $11, @$); }
+            LLOC(@$, @10); $$ = TEMPLATED_SUBROUTINE1($1, $2, $4, $6, $7,
+                TRIVIA($8, $11, @$), $9, $10, @$); }
+    ;
+
+template_sub_prefix
+    : KW_TEMPLATE KW_SUBROUTINE { LIST_NEW($$); }
+    | KW_TEMPLATE fn_mod_plus KW_SUBROUTINE { $$ = $2; }
+    | fn_mod_plus KW_TEMPLATE KW_SUBROUTINE { $$ = $1; }
+    | fn_mod_plus KW_TEMPLATE fn_mod_plus KW_SUBROUTINE {
+            $$ = concat_prefix(p.m_a, $1, $3); }
     ;
 
 subroutine_contains_end
@@ -1063,13 +1142,6 @@ function
         sep decl_statements function_contains_end sep {
             LLOC(@$, @10); $$ = FUNCTION0($2, $4, $6, $7, TRIVIA($8, $11, @$),
                 $9, $10, @$); }
-    | KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
-        result_opt
-        bind_opt
-        sep decl_statements
-        end_function sep {
-            LLOC(@$, @13); $$ = TEMPLATED_FUNCTION0($2, $4, $7, $9, $10,
-                TRIVIA($11, $14, @$), $12, $13, @$); }
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
         sep decl_statements function_contains_end sep {
             LLOC(@$, @9); $$ = FUNCTION($1, $3, $5, nullptr, nullptr,
@@ -1086,13 +1158,21 @@ function
         sep decl_statements function_contains_end sep {
             LLOC(@$, @11); $$ = FUNCTION($1, $3, $5, $7, $8,
                 TRIVIA($9, $12, @$), $10, $11, @$); }
-    | fn_mod_plus KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
+    | template_fn_prefix id "{" id_list "}" "(" id_list_opt ")"
         result_opt
         bind_opt
         sep decl_statements
         end_function sep {
-            LLOC(@$, @14); $$ = TEMPLATED_FUNCTION($1, $3, $5, $8, $10, $11,
-                TRIVIA($12, $15, @$), $13, $14, @$); }
+            LLOC(@$, @13); $$ = TEMPLATED_FUNCTION($1, $2, $4, $7, $9, $10,
+                TRIVIA($11, $14, @$), $12, $13, @$); }
+    ;
+
+template_fn_prefix
+    : KW_TEMPLATE KW_FUNCTION { LIST_NEW($$); }
+    | KW_TEMPLATE fn_mod_plus KW_FUNCTION { $$ = $2; }
+    | fn_mod_plus KW_TEMPLATE KW_FUNCTION { $$ = $1; }
+    | fn_mod_plus KW_TEMPLATE fn_mod_plus KW_FUNCTION {
+            $$ = concat_prefix(p.m_a, $1, $3); }
     ;
 
 function_contains_end
@@ -1125,10 +1205,6 @@ contains_block
     : KW_CONTAINS sep sub_or_func_plus { $$ = $3; }
     | KW_CONTAINS sep { LIST_NEW($$); }
     ;
-
-sub_or_func_star
-    : sub_or_func_plus
-    | %empty { LIST_NEW($$); }
 
 sub_or_func_plus
     : sub_or_func_plus sub_or_func { LIST_ADD($$, $2); }
@@ -1188,11 +1264,6 @@ implicit_spec_list
     | implicit_spec { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
-/*
-  We are using kind_arg_list rather than letter_spec_list to avoid conflicts
-  in the parser.  The kind_args are translated into letter_specs in the
-  IMPLICIT_SPEC macro.
-*/
 
 implicit_spec
     : KW_INTEGER "(" kind_arg_list ")" "(" kind_arg_list ")" {
@@ -1255,7 +1326,6 @@ implicit_spec
             $$ = IMPLICIT_SPEC(ATTR_TYPE_NAME(Class, $3, @$), $6, @$); }
     ;
 
-// IMPLICIT NONE [ ( [implicit-none-spec-list] ) ]
 implicit_none_spec_star
     : implicit_none_spec_star "," implicit_none_spec { $$ = $1; LIST_ADD($$, $3); }
     | implicit_none_spec { LIST_NEW($$); LIST_ADD($$, $1); }
@@ -1324,7 +1394,6 @@ use_modifier
     | KW_NON_INTRINSIC { $$ = SIMPLE_ATTR(Non_Intrinsic, @$); }
     ;
 
-// var_decl*
 var_decl_star
     : var_decl_star var_decl { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
@@ -1722,20 +1791,23 @@ sep_one
 
 decl_statements
     : decl_statements decl_statement { $$ = $1; LIST_ADD($$, $2); }
+    | decl_statements deferred_type_decl { $$ = LIST_EXTEND(p.m_a, $1, $2); }
+    | decl_statements instantiate { $$ = LIST_EXTEND(p.m_a, $1, $2); }
     | %empty { LIST_NEW($$); }
     | decl_statements error sep_one { $$ = $1; }
     ;
 
 decl_statement
     : var_decl
+    | deferred_const_decl
     | interface_decl
     | derived_type_decl
+    | deferred_proc_decl
     | union_type_decl
     | enum_decl
     | statement
     | template_decl
     | requirement_decl
-    | instantiate
     | require_decl
     | use_statement
     | import_statement
@@ -1980,7 +2052,6 @@ end_file
     | KW_ENDFILE
     ;
 
-// sr-conflict (2x): KW_ENDIF can be an "id" or end of "if_statement"
 if_statement
     : if_block endif {}
     ;
@@ -2129,7 +2200,6 @@ select_type_body_statements
 
 select_type_body_statement
     : KW_TYPE KW_IS "(" TK_NAME ")" sep statements { $$ = TYPE_STMTNAME($4, TRIVIA_AFTER($6, @$), $7, @$); }
-    // type is (pdt(kind)) — TK_NAME keeps integer(4)/real(8) on the var_type path
     | KW_TYPE KW_IS "(" TK_NAME "(" kind_arg_list ")" ")" sep statements {
             $$ = TYPE_STMTVAR(ATTR_TYPE_NAME_KIND(Type, SYMBOL($4, @4), $6, @$),
                 TRIVIA_AFTER($9, @$), $10, @$); }
@@ -2145,7 +2215,6 @@ while_statement
                 $$ = WHILE($3, TRIVIA_AFTER($5, @$), $6, @$); }
     ;
 
-// sr-conflict (2x): "KW_DO sep" being either a do_statement or an expr
 do_statement
     : KW_DO sep statements enddo {
             $$ = DO1(TRIVIA_AFTER($2, @$), $3, $4, @$); }
@@ -2548,10 +2617,6 @@ expr
     | expr TK_DEF_OP expr { $$ = DEFOP($1, $2, $3, @$); }
     ;
 
-// The tail of a Fortran 2023 conditional expression (R1002):
-//     ( scalar-logical-expr ? expr [ : scalar-logical-expr ? expr ]... : expr )
-// Right recursion keeps the decision after `expr` to a single lookahead token:
-// `?` shifts into another arm, anything else reduces to the default arm.
 cond_expr_tail
     : cond_consequent { $$ = $1; }
     | expr "?" cond_consequent ":" cond_expr_tail { $$ = COND_EXPR($1, $3, $5, @$); }
@@ -2579,9 +2644,7 @@ fnarray_arg_list_opt
     ;
 
 fnarray_arg
-// array element / function argument
     : expr                   { $$ = ARRAY_COMP_DECL_0i0($1, @$); }
-// array section
     | ":"                    { $$ = ARRAY_COMP_DECL_001(@$); }
     | expr ":"               { $$ = ARRAY_COMP_DECL_a01($1, @$); }
     | ":" expr               { $$ = ARRAY_COMP_DECL_0b1($2, @$); }
@@ -2592,7 +2655,6 @@ fnarray_arg
     | expr ":" ":" expr      { $$ = ARRAY_COMP_DECL_a0c($1, $4, @$); }
     | ":" expr ":" expr      { $$ = ARRAY_COMP_DECL_0bc($2, $4, @$); }
     | expr ":" expr ":" expr { $$ = ARRAY_COMP_DECL_abc($1, $3, $5, @$); }
-// keyword function argument
     | id "=" expr            { $$ = ARRAY_COMP_DECL1k($1, $3, @$); }
     | "*" TK_INTEGER         { $$ = ARRAY_COMP_DECL_label($2, @$); }
     ;
@@ -2603,16 +2665,12 @@ coarray_arg_list
     ;
 
 coarray_arg
-// array element / function argument
     : expr                   { $$ = COARRAY_COMP_DECL_0i0($1, @$); }
-// array section
     | ":"                    { $$ = COARRAY_COMP_DECL_001(@$); }
     | expr ":"               { $$ = COARRAY_COMP_DECL_a01($1, @$); }
     | ":" expr               { $$ = COARRAY_COMP_DECL_0b1($2, @$); }
     | expr ":" expr          { $$ = COARRAY_COMP_DECL_ab1($1, $3, @$); }
-// keyword function argument
     | id "=" expr            { $$ = COARRAY_COMP_DECL1k($1, $3, @$); }
-// star
     | "*"                    { $$ = COARRAY_COMP_DECL_star(@$); }
     | expr ":" "*"           { $$ = COARRAY_COMP_DECL_astar($1, @$); }
     ;
@@ -2627,7 +2685,6 @@ id_list
     | id { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
-// id?
 id_opt
     : id { $$ = $1; }
     | %empty { $$ = nullptr; }
@@ -2706,6 +2763,7 @@ id
     | KW_EVENT { $$ = SYMBOL($1, @$); }
     | KW_EXIT { $$ = SYMBOL($1, @$); }
     | KW_EXTENDS { $$ = SYMBOL($1, @$); }
+    | KW_EXTENSIBLE { $$ = SYMBOL($1, @$); }
     | KW_EXTERNAL { $$ = SYMBOL($1, @$); }
     | KW_FILE { $$ = SYMBOL($1, @$); }
     | KW_FINAL { $$ = SYMBOL($1, @$); }

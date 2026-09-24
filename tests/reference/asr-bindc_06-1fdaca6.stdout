@@ -238,6 +238,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             bindc_06_mod:
                 (Module
@@ -335,8 +336,10 @@
                                     ()
                                     ()
                                     Default
-                                    (CPtr)
-                                    ()
+                                    (CPtr
+                                        CPointer
+                                    )
+                                    2 c_ptr
                                     BindC
                                     Public
                                     Required
@@ -357,9 +360,11 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
 )

@@ -517,7 +517,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false.)] (Var 2 f) Public .true. .true. ())}) [])");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] ())");
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
@@ -559,7 +559,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false.)] (Var 4 f) Public .true. .true. ())}) [])");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] ())");
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;
@@ -2434,6 +2434,44 @@ call takes_ptr(q)
 end program
 )";
     CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+}
+
+TEST_CASE("FortranEvaluator a cell declaring a requirement and a template") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    // Not get_runtime_library_dir(): this binary never sets the execution
+    // mode that answer depends on, so it cannot find the modfiles itself.
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator e(cu);
+    // Every cell is snapshotted symbol by symbol through SymbolDuplicator so
+    // the next one is parented to a tree no ASR pass has touched. A kind the
+    // duplicator does not know about throws and kills the cell, which is what
+    // a Requirement and a Template used to do.
+    const char *cell = R"(module mtempl
+implicit none
+requirement r {t, op}
+deferred type :: t
+deferred interface
+function op(x, y) result(z)
+type(t), intent(in) :: x, y
+type(t) :: z
+end function
+end interface
+end requirement
+template add_t {t, op}
+require r {t, op}
+contains
+function add_generic(x, y) result(z)
+type(t), intent(in) :: x, y
+type(t) :: z
+z = op(x, y)
+end function
+end template
+end module
+)";
+    CHECK(e.evaluate2(cell).ok);
+    // again, so the second cell is built on the duplicated scope
     CHECK(e.evaluate2(cell).ok);
 }
 

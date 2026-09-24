@@ -2214,7 +2214,8 @@ namespace LCompilers {
 #if LLVM_VERSION_MAJOR < 15
         ASR::String_t* str_type = ASRUtils::get_string_type(type);
         switch(ASRUtils::extract_physical_type(type)){
-            case ASR::DescriptorArray:{
+            case ASR::DescriptorArray:
+            case ASR::AssumedRankArray:{
                 switch (str_type->m_physical_type){
                     // A pointer to the Array Descriptor => `{ %string_descriptor*, i32, %dimension_descriptor*, i1, i32 }`
                     case ASR::DescriptorString:{
@@ -2664,7 +2665,8 @@ namespace LCompilers {
         ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(type));
         ASR::String_t* str = ASRUtils::get_string_type(arr->m_type);
         switch(arr->m_physical_type){
-            case ASR::DescriptorArray: {
+            case ASR::DescriptorArray:
+            case ASR::AssumedRankArray: {
                 llvm::Type* type_ = get_type_from_ttype_t_util(nullptr, ASRUtils::type_get_past_allocatable_pointer(type), module);
                 llvm::Value* str_desc = builder->CreateLoad(
                     get_StringType(ASRUtils::extract_type(type))->getPointerTo(),
@@ -2685,7 +2687,8 @@ namespace LCompilers {
         ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(type));
         ASR::String_t* str = ASRUtils::get_string_type(arr->m_type);
         switch(arr->m_physical_type){
-            case ASR::DescriptorArray: {
+            case ASR::DescriptorArray:
+            case ASR::AssumedRankArray: {
                 llvm::Type* type_ = get_type_from_ttype_t_util(nullptr, ASRUtils::type_get_past_allocatable_pointer(type), module);
                 llvm::Value* str_desc = builder->CreateLoad(
                     get_StringType(ASRUtils::extract_type(type))->getPointerTo(),
@@ -3721,7 +3724,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             case ASR::ttypeType::UnsignedInteger:
             case ASR::ttypeType::Real:
             case ASR::ttypeType::Logical:
-            case ASR::ttypeType::Complex: {
+            case ASR::ttypeType::Complex:
+            case ASR::ttypeType::CPtr: {
                 if( ASRUtils::is_array(asr_src_type) ) {
                     ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(asr_src_type);
                     llvm::DataLayout data_layout(module->getDataLayout());
@@ -3787,8 +3791,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     ASRUtils::get_string_type(asr_src_type),
                     /*is_dest_allocatable=*/true);
                 break;
-            case ASR::ttypeType::FunctionType:
-            case ASR::ttypeType::CPtr: {
+            case ASR::ttypeType::FunctionType: {
                 LLVM::CreateStore(*builder, src, dest);
                 break ;
             }

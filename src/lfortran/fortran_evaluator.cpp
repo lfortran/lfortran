@@ -627,7 +627,7 @@ SymbolTable* FortranEvaluator::copy_cell_scope(SymbolTable *scope,
     SymbolTable *parent, const Location &loc)
 {
     SymbolTable* copy = al.make_new<SymbolTable>(parent);
-    ASR::asr_t* owner = ASR::make_TranslationUnit_t(al, loc, copy, nullptr, 0);
+    ASR::asr_t* owner = ASR::make_TranslationUnit_t(al, loc, copy, nullptr, 0, nullptr);
     copy->asr_owner = owner;
     ASRUtils::SymbolDuplicator duplicator(al);
     for (auto &item : scope->get_scope()) {

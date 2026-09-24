@@ -343,6 +343,10 @@ static inline Vec<kind_item_t> a2kind_list(Allocator &al,
 #define DIMENSION(x, l) make_AttrDimension_t( \
             p.m_a, l, \
             x.p, x.size())
+// F2028 R1619 rank-clause: `RANK ( rank-spec-list )`
+#define ATTR_RANK(x, l) make_AttrRank_t( \
+            p.m_a, l, \
+            EXPRS(x), x.size())
 #define DIMENSION0(l) make_AttrDimension_t( \
             p.m_a, l, \
             nullptr, 0)
@@ -481,6 +485,10 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
 
 #define ATTR_NAME(x, l) make_AttrName_t \
             (p.m_a, l, name2char(x))
+
+// R1630 `keyword = instantiation-arg`
+#define ATTR_KEYWORD(kw, arg, l) make_AttrKeyword_t \
+            (p.m_a, l, name2char(kw), down_cast<decl_attribute_t>(arg))
 
 #define ATTR_TYPE_LIST(x, attr_list, l) make_AttrTypeList_t( \
             p.m_a, l, \
@@ -1917,42 +1925,6 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
         /*start_name*/ &(name->loc), \
         /*end_name*/ END_NAME_LOC(end), \
         END_LABEL(end), END_LOC(end), p.diag)
-#define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, \
-        trivia, decl_stmts, end, l) \
-    FUNCTION2(p.m_a, l, \
-        /*name*/ name2char_with_check(name, END_NAME(end), l, "function", \
-            p.diag), \
-        /*args*/ ARGS(p.m_a, fn_args), \
-        /*n_args*/ fn_args.size(), \
-        /*m_attributes*/ nullptr, \
-        /*n_attributes*/ 0, \
-        /*return_var*/ EXPR_OPT(return_var), \
-        /*bind*/ bind_opt(bind), \
-        trivia_cast(trivia), \
-        decl_stmts, \
-        /*contains*/ nullptr, \
-        /*n_contains*/ 0, \
-        /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
-        /*n_temp_args*/ temp_args.size(), \
-        /*start_name*/ &(name->loc), \
-        /*end_name*/ END_NAME_LOC(end), \
-        END_LABEL(end), END_LOC(end), p.diag)
-#define TEMPLATED_SUBROUTINE(name, temp_args, fn_args, bind, trivia, \
-        decl_stmts, end, l) SUBROUTINE2(p.m_a, l, \
-        /*name*/ name2char(name), \
-        /*args*/ ARGS(p.m_a, fn_args), \
-        /*n_args*/ fn_args.size(), \
-        /*m_attributes*/ nullptr, \
-        /*n_attributes*/ 0, \
-        /*bind*/ bind_opt(bind), \
-        trivia_cast(trivia), \
-        decl_stmts, \
-        /*contains*/ nullptr, \
-        /*n_contains*/ 0, \
-        /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
-        /*n_temp_args*/ temp_args.size(), \
-        /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name->loc), END_LABEL(end), END_LOC(end), p.diag)
 #define TEMPLATED_SUBROUTINE1(fn_type, name, temp_args, fn_args, bind, \
         trivia, decl_stmts, end, l) SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char(name), \
@@ -2102,6 +2074,15 @@ ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
 #define LIST_NEW(l) l.reserve(p.m_a, 4)
 #define LIST_ADD(l, x) l.push_back(p.m_a, x)
 #define PLIST_ADD(l, x) l.push_back(p.m_a, *x)
+
+static inline Vec<ast_t*> concat_prefix(Allocator &al, Vec<ast_t*> first,
+        Vec<ast_t*> second) {
+    for (size_t i=0; i < second.size(); i++) {
+        first.push_back(al, second[i]);
+    }
+    return first;
+}
+
 static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
         ast_t *repeat, ast_t *e) {
     if (LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::expr_t>(*repeat)) {
@@ -2810,6 +2791,7 @@ ast_t* BLOCKDATA2(Allocator &al, const Location &l, char* a_name,
 #define INTERFACE_HEADER_DEFOP(op, l) make_InterfaceHeaderDefinedOperator_t( \
         p.m_a, l, def_op_to_str(p.m_a, op))
 #define ABSTRACT_INTERFACE_HEADER(l) make_AbstractInterfaceHeader_t(p.m_a, l)
+#define DEFERRED_INTERFACE_HEADER(l) make_DeferredInterfaceHeader_t(p.m_a, l)
 #define INTERFACE_HEADER_WRITE(x, l) make_InterfaceHeaderWrite_t(p.m_a, l, name2char(x))
 #define INTERFACE_HEADER_READ(x, l) make_InterfaceHeaderRead_t(p.m_a, l, name2char(x))
 
@@ -2846,9 +2828,6 @@ ast_t* BLOCKDATA2(Allocator &al, const Location &l, char* a_name,
         VEC_CAST(attr, decl_attribute), attr.size(),  \
         DECLS(decl), decl.size(), \
         VEC_CAST(contains, procedure_decl), contains.size())
-#define DERIVED_TYPE2(name, attr, trivia, l) \
-        TYPEPARAMETER0(p.m_a, attr, name, trivia, l)
-
 
 #define UNION_TYPE(attr, name, trivia, decl, l) make_Union_t(p.m_a, l, \
         name2char(name), \
@@ -2858,15 +2837,115 @@ ast_t* BLOCKDATA2(Allocator &al, const Location &l, char* a_name,
 
 ast_t* TYPEPARAMETER0(Allocator &al,
         const ast_t *attr,
+        ast_t **extra_attrs,
+        size_t n_extra_attrs,
         const ast_t *id,
         const ast_t *trivia,
         Location &l) {
     Vec<decl_attribute_t*> v;
-    v.reserve(al, 1);
+    v.reserve(al, 1 + n_extra_attrs);
     v.push_back(al, down_cast<decl_attribute_t>(attr));
+    for (size_t i = 0; i < n_extra_attrs; i++) {
+        v.push_back(al, down_cast<decl_attribute_t>(extra_attrs[i]));
+    }
     return make_DerivedType_t(al, l,
         name2char(id), nullptr, 0, trivia_cast(trivia), v.p, v.size(),
         nullptr, 0, nullptr, 0);
+}
+
+// A `deferred type [, deferred-type-attr-list] :: t1, t2` statement (F2028
+// R1616) declares one deferred type argument per name, each of which becomes
+// its own DerivedType node whose first attribute is `deferred`, followed by the
+// deferred-type-attrs (R1617: `abstract` or `extensible`) of the statement.
+// Each node is located at its own name, so that diagnostics about one declared
+// type (a redeclaration, for example) point at that name only, exactly like the
+// individual names of an `integer :: a, b` declaration. The attributes and the
+// trivia (the comments following the statement) belong to the statement as a
+// whole: the `deferred` attribute keeps the statement location and the trivia
+// is attached to the last node only.
+Vec<ast_t*> DEFERRED_TYPES(Allocator &al,
+        ast_t **attrs,
+        size_t n_attrs,
+        const Vec<ast_t*> &names,
+        const ast_t *trivia,
+        Location &l) {
+    Vec<ast_t*> types;
+    types.reserve(al, names.size());
+    for (size_t i = 0; i < names.size(); i++) {
+        const ast_t *t = (i + 1 == names.size()) ? trivia : nullptr;
+        types.push_back(al, TYPEPARAMETER0(al,
+            make_SimpleAttribute_t(al, l, simple_attributeType::AttrDeferred),
+            attrs, n_attrs, names[i], t, names[i]->loc));
+    }
+    return types;
+}
+
+// A `deferred procedure (iface) :: p, q` statement (F2028 R1622) declares one
+// deferred procedure argument per name, all sharing the interface named by
+// `iface`. The names are stored as an `arg` list, like the deferred-arg-name-list
+// of a REQUIREMENT, so that each name keeps its own location and a diagnostic
+// about one declared name points at that name only.
+// The location a statement's rule reports spans the statement separator that
+// closes it too; SPAN() narrows a diagnostic to the statement itself.
+static inline Location SPAN(const Location &first, const Location &last) {
+    Location l;
+    l.first = first.first;
+    l.last = last.last;
+    return l;
+}
+
+#define DEFERRED_PROCEDURE(iface, names, trivia, l) \
+        make_DeferredProcedure_t(p.m_a, l, \
+        name2char(iface), ARGS(p.m_a, names), names.size(), \
+        trivia_cast(trivia))
+
+// A `deferred <type>, <attrs> :: <entities>` statement (F2028 R1618) declares
+// deferred constants. It is an ordinary type declaration statement carrying one
+// extra attribute, so it reuses the `Declaration` node: the only difference from
+// `integer, parameter :: x` is the `deferred` attribute, which is prepended to
+// the attribute list so that the semantic stage recognises the statement from
+// the attributes alone, exactly as `deferred type ::` is recognised by the
+// `deferred` attribute on a `DerivedType` node. Keeping one node type means the
+// statement ordering rules (F2018 R508), the declaration visitors and the
+// `--show-ast` output need no special case for it.
+ast_t* DEFERRED_CONST_DECL(Allocator &al,
+        ast_t *vartype,
+        const Vec<ast_t*> &attrs,
+        const Vec<var_sym_t> &syms,
+        ast_t *trivia,
+        Location &l) {
+    Vec<decl_attribute_t*> v;
+    v.reserve(al, attrs.size() + 1);
+    v.push_back(al, down_cast<decl_attribute_t>(
+        make_SimpleAttribute_t(al, l, simple_attributeType::AttrDeferred)));
+    for (size_t i=0; i < attrs.size(); i++) {
+        v.push_back(al, down_cast<decl_attribute_t>(attrs[i]));
+    }
+    return make_Declaration_t(al, l, down_cast<decl_attribute_t>(vartype),
+        v.p, v.size(), syms.p, syms.size(), trivia_cast(trivia));
+}
+
+// The same statement with no attribute list at all, `deferred integer :: n`.
+// C1618 requires the PARAMETER attribute, so this always ends in a diagnostic,
+// but it is parsed so that the message can say which attribute is missing.
+ast_t* DEFERRED_CONST_DECL_NOATTR(Allocator &al,
+        ast_t *vartype,
+        const Vec<var_sym_t> &syms,
+        ast_t *trivia,
+        Location &l) {
+    Vec<ast_t*> empty;
+    empty.reserve(al, 0);
+    return DEFERRED_CONST_DECL(al, vartype, empty, syms, trivia, l);
+}
+
+// Appends all `items` at the end of `list`; used by declaration statements
+// that expand into more than one AST node.
+Vec<ast_t*> LIST_EXTEND(Allocator &al, Vec<ast_t*> list,
+        const Vec<ast_t*> &items) {
+    for (size_t i = 0; i < items.size(); i++) {
+        list.push_back(al, items[i]);
+    }
+    return list;
 }
 
 ast_t* TEMPLATE2(Allocator &al, const Location &l, char* a_name,
@@ -2879,27 +2958,48 @@ ast_t* TEMPLATE2(Allocator &al, const Location &l, char* a_name,
         /*contains*/ a_contains, /*n_contains*/ n_contains);
 }
 
+// R1626 `instantiate :: local-name => templated-subp-name {args}`. A templated
+// subprogram is held in an implicit template of the same name, so instantiating
+// it under a local name is the same as instantiating that template while
+// renaming its single subprogram, i.e. `{args}, only: local-name => name`.
+ast_t* INSTANTIATE_SUBP2(Allocator &al, const Location &l, char* a_name,
+        char* a_local_name, decl_attribute_t** a_args, size_t n_args) {
+    Vec<ast_t*> syms;
+    syms.reserve(al, 1);
+    syms.push_back(al, make_UseSymbol_t(al, l, a_name, a_local_name));
+    return make_Instantiate_t(al, l, a_name, a_args, n_args,
+        VEC_CAST(syms, use_symbol), syms.size());
+}
+
+// R1636 takes exactly one requirement-name, but AST::Require stores a list of
+// them, so wrap the single requirement into a one element list.
+ast_t* REQUIRE2(Allocator &al, const Location &l, ast_t* a_req) {
+    Vec<ast_t*> reqs;
+    reqs.reserve(al, 1);
+    reqs.push_back(al, a_req);
+    return make_Require_t(al, l, VEC_CAST(reqs, unit_require), reqs.size());
+}
+
 ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         arg_t* a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
-        program_unit_t** a_funcs, size_t n_funcs,
         LCompilers::diag::Diagnostics &diag) {
     check_decl_order(decl_stmts, DeclContext::Template, diag);
     return make_Requirement_t(al, l, a_name, a_namelist, n_namelist,
-        DECLS(decl_stmts), decl_stmts.size(), a_funcs, n_funcs);
+        DECLS(decl_stmts), decl_stmts.size(), nullptr, 0);
 }
 
-#define TEMPLATE(name, namelist, decl_stmts, contains, l) \
-        TEMPLATE2(p.m_a, l, name2char(name), \
+#define TEMPLATE(name, namelist, decl_stmts, contains, name_opt, l) \
+        TEMPLATE2(p.m_a, l, \
+        name2char_with_check(name, name_opt, l, "template", p.diag), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size(), p.diag)
-#define REQUIREMENT(name, namelist, decl_stmts, funcs, l) \
-        REQUIREMENT2(p.m_a, l, name2char(name), \
+#define REQUIREMENT(name, namelist, decl_stmts, name_opt, l) \
+        REQUIREMENT2(p.m_a, l, \
+        name2char_with_check(name, name_opt, l, "requirement", p.diag), \
         ARGS(p.m_a, namelist), namelist.size(), \
-        decl_stmts, CONTAINS(funcs), funcs.size(), p.diag)
-#define REQUIRE(require_list, l) \
-        make_Require_t(p.m_a, l, \
-        VEC_CAST(require_list, unit_require), require_list.size())
+        decl_stmts, p.diag)
+#define REQUIRE(req, l) REQUIRE2(p.m_a, l, req)
 #define UNIT_REQUIRE(name, namelist, l) \
         make_UnitRequire_t(p.m_a, l, name2char(name), \
         VEC_CAST(namelist, decl_attribute), namelist.size())
@@ -2911,6 +3011,9 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         make_Instantiate_t(p.m_a, l, name2char(name), \
         VEC_CAST(args, decl_attribute), args.size(), \
         USE_SYMBOLS(syms), syms.size())
+#define INSTANTIATE_SUBP(name, local_name, args, l) \
+        INSTANTIATE_SUBP2(p.m_a, l, name2char(name), name2char(local_name), \
+        VEC_CAST(args, decl_attribute), args.size())
 
 #define DERIVED_TYPE_PROC(attr, syms, trivia, l) make_DerivedTypeProc_t(p.m_a, l, \
         nullptr, VEC_CAST(attr, decl_attribute), attr.size(), \

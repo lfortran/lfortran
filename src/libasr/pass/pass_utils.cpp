@@ -145,6 +145,36 @@ namespace LCompilers {
             return array_ref;
         }
 
+        // `base` is the array somewhere inside the component chain `expr`, and
+        // `replacement` is the element of it that has just been indexed out.
+        // Rebuild every `%` level above `base` on top of `replacement`, so a
+        // chain of any depth survives: `v%nest%ii` with `v` an array becomes
+        // `v(i)%nest%ii`, not `v(i)%ii`. Each rebuilt level drops the shape it
+        // inherited from `base`, since one element of `base` is a scalar.
+        static ASR::expr_t* rebuild_struct_member_chain(Allocator& al,
+            ASR::expr_t* expr, ASR::expr_t* base, ASR::expr_t* replacement) {
+            if( expr == base ) {
+                return replacement;
+            }
+            if( !ASR::is_a<ASR::StructInstanceMember_t>(*expr) ) {
+                return nullptr;
+            }
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+            ASR::expr_t* new_v = rebuild_struct_member_chain(
+                al, member->m_v, base, replacement);
+            if( new_v == nullptr ) {
+                return nullptr;
+            }
+            ASR::ttype_t* new_type = ASRUtils::type_get_past_allocatable(member->m_type);
+            if( ASR::is_a<ASR::Array_t>(*new_type) ) {
+                new_type = ASR::down_cast<ASR::Array_t>(new_type)->m_type;
+            }
+            return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
+                member->base.base.loc, new_v, member->m_m, new_type,
+                member->m_value));
+        }
+
         ASR::expr_t* create_array_ref(ASR::expr_t* arr_expr,
             Vec<ASR::expr_t*>& idx_vars, Allocator& al, SymbolTable* current_scope,
             bool perform_cast, ASR::cast_kindType cast_kind, ASR::ttype_t* casted_type) {
@@ -178,7 +208,18 @@ namespace LCompilers {
             bool check_m_m = true;
             while(ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr) && !array_ref_container_node ){
                 tmp = ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr);
-                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(tmp->m_v)))){
+                // A member that reads a scalar component of an array base is
+                // itself shaped like that base, but it is not an array in its
+                // own right -- its elements are strided by the base's element
+                // size, not its own. Keep walking down to the array the shape
+                // actually comes from, and index that one instead.
+                bool inherits_shape_from_base =
+                    ASR::is_a<ASR::StructInstanceMember_t>(*tmp->m_v) &&
+                    !ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(
+                        ASRUtils::symbol_type(ASR::down_cast<ASR::StructInstanceMember_t>(
+                            tmp->m_v)->m_m)));
+                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(tmp->m_v))) &&
+                   !inherits_shape_from_base){
                     arr_expr = tmp->m_v;
                     array_ref_container_node = &(tmp->m_v);
                 } else if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(tmp->m_m))) && check_m_m){
@@ -201,15 +242,13 @@ namespace LCompilers {
                                                 ASRUtils::type_get_past_allocatable(array_ref_type))),
                                         ASR::arraystorageType::RowMajor, nullptr));
             if(array_ref_container_node){
+                ASR::expr_t* rebuilt = nullptr;
                 if(ASR::is_a<ASR::StructInstanceMember_t>(**original_arr_expr)){
-                    ASR::StructInstanceMember_t* orig_sim = ASR::down_cast<ASR::StructInstanceMember_t>(*original_arr_expr);
-                    ASR::ttype_t* new_type = ASRUtils::type_get_past_allocatable(orig_sim->m_type);
-                    if(ASR::is_a<ASR::Array_t>(*new_type)) {
-                        new_type = ASR::down_cast<ASR::Array_t>(new_type)->m_type;
-                    }
-                    array_ref = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
-                        orig_sim->base.base.loc, array_ref, orig_sim->m_m,
-                        new_type, orig_sim->m_value));
+                    rebuilt = rebuild_struct_member_chain(al, *original_arr_expr,
+                        arr_expr, array_ref);
+                }
+                if(rebuilt != nullptr){
+                    array_ref = rebuilt;
                 } else {
                     *array_ref_container_node = array_ref;
                     array_ref = *original_arr_expr;

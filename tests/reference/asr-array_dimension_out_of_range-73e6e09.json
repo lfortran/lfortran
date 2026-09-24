@@ -2,7 +2,7 @@
     "basename": "asr-array_dimension_out_of_range-73e6e09",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/array_dimension_out_of_range.asr",
-    "infile_hash": "98b774da078dff19669cb19a95d4271fc2343b26c507e2f65f4663d3",
+    "infile_hash": "6020b66654c2aea8f9c93d18768c6fae4c1bc389e47efa8b80aee4eb",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

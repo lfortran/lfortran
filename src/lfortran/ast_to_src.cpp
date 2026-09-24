@@ -465,10 +465,19 @@ public:
             r.append(" ");
         }
         r += syn(gr::UnitHeader);
+        // C1609 (J3/26-007r1): TEMPLATE appears in the prefix of a templated
+        // subprogram, which is what a deferred argument list makes this.
+        if (x.n_temp_args > 0) {
+            r.append("template ");
+        }
         r.append("subroutine");
         r += syn();
         r += " ";
         r.append(x.m_name);
+        if (x.n_temp_args > 0) {
+            r.append(" ");
+            r += format_generic_args(x.m_temp_args, x.n_temp_args);
+        }
         r.append("(");
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_arg(x.m_args[i]);
@@ -542,7 +551,38 @@ public:
         s = r;
     }
 
+    // `deferred type [, deferred-type-attr-list] :: t` (F2028 R1616) is stored
+    // as a DerivedType whose first attribute is `deferred`, optionally followed
+    // by the deferred-type-attrs of the statement (R1617).
+    bool is_deferred_type(const DerivedType_t &x) {
+        return x.n_attrtype >= 1 && x.n_namelist == 0 && x.n_items == 0
+            && x.n_contains == 0
+            && is_a<SimpleAttribute_t>(*x.m_attrtype[0])
+            && down_cast<SimpleAttribute_t>(x.m_attrtype[0])->m_attr
+                == simple_attributeType::AttrDeferred;
+    }
+
     void visit_DerivedType(const DerivedType_t &x) {
+        if (is_deferred_type(x)) {
+            std::string r = indent;
+            r += syn(gr::UnitHeader);
+            r.append("deferred type");
+            r += syn();
+            for (size_t i=1; i<x.n_attrtype; i++) {
+                r.append(", ");
+                this->visit_decl_attribute(*x.m_attrtype[i]);
+                r.append(s);
+            }
+            r.append(" :: ");
+            r.append(x.m_name);
+            if (x.m_trivia) {
+                r += print_trivia_after(*x.m_trivia);
+            } else {
+                r.append("\n");
+            }
+            s = r;
+            return;
+        }
         std::string r = indent;
         r += syn(gr::UnitHeader);
         r.append("type");
@@ -837,10 +877,169 @@ public:
         s = r;
     }
 
+    // The `{...}` argument list of a template instantiation, a requirement
+    // header or a templated procedure name.
+    std::string format_generic_args(decl_attribute_t **args, size_t n) {
+        std::string r = "{";
+        for (size_t i=0; i<n; i++) {
+            this->visit_decl_attribute(*args[i]);
+            r.append(s);
+            if (i < n-1) r.append(", ");
+        }
+        r.append("}");
+        return r;
+    }
+
+    std::string format_generic_args(char **args, size_t n) {
+        std::string r = "{";
+        for (size_t i=0; i<n; i++) {
+            r.append(args[i]);
+            if (i < n-1) r.append(", ");
+        }
+        r.append("}");
+        return r;
+    }
+
+    void visit_Template(const Template_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("template");
+        r += syn();
+        r += " ";
+        r.append(x.m_name);
+        r.append(" {");
+        for (size_t i=0; i<x.n_namelist; i++) {
+            r.append(x.m_namelist[i]);
+            if (i < x.n_namelist-1) r.append(", ");
+        }
+        r.append("}");
+        r.append("\n");
+        r += format_unit_body(x, !indent_unit);
+        r += indent;
+        r += syn(gr::UnitHeader);
+        r.append("end template");
+        r += syn();
+        r += " ";
+        r.append(x.m_name);
+        r.append("\n");
+        s = r;
+    }
+
+    void visit_Requirement(const Requirement_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("requirement");
+        r += syn();
+        r += " ";
+        r.append(x.m_name);
+        r.append(" {");
+        for (size_t i=0; i<x.n_namelist; i++) {
+            this->visit_arg(x.m_namelist[i]);
+            r.append(s);
+            if (i < x.n_namelist-1) r.append(", ");
+        }
+        r.append("}");
+        r.append("\n");
+        if (indent_unit) inc_indent();
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_decl_stmt(*x.m_items[i]);
+            r.append(s);
+        }
+        // The functions of a requirement follow the declarations directly,
+        // there is no `contains` statement.
+        for (size_t i=0; i<x.n_funcs; i++) {
+            this->visit_program_unit(*x.m_funcs[i]);
+            r.append(s);
+        }
+        if (indent_unit) dec_indent();
+        r += indent;
+        r += syn(gr::UnitHeader);
+        r.append("end requirement");
+        r += syn();
+        r += " ";
+        r.append(x.m_name);
+        r.append("\n");
+        s = r;
+    }
+
+    // F2028 R1622: DEFERRED PROCEDURE ( interface-name ) [ :: ]
+    //              deferred-proc-name-list
+    // The `::` is optional in the source; it is always printed.
+    void visit_DeferredProcedure(const DeferredProcedure_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("deferred procedure");
+        r += syn();
+        r.append(" (");
+        r.append(x.m_interface_name);
+        r.append(") :: ");
+        for (size_t i=0; i<x.n_names; i++) {
+            this->visit_arg(x.m_names[i]);
+            r.append(s);
+            if (i < x.n_names-1) r.append(", ");
+        }
+        if (x.m_trivia) {
+            r += print_trivia_after(*x.m_trivia);
+        } else {
+            r.append("\n");
+        }
+        s = r;
+    }
+
+    void visit_Require(const Require_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("require");
+        r += syn();
+        r.append(" :: ");
+        for (size_t i=0; i<x.n_reqs; i++) {
+            this->visit_unit_require(*x.m_reqs[i]);
+            r.append(s);
+            if (i < x.n_reqs-1) r.append(", ");
+        }
+        r.append("\n");
+        s = r;
+    }
+
+    void visit_UnitRequire(const UnitRequire_t &x) {
+        std::string r;
+        r.append(x.m_name);
+        r.append(" ");
+        r += format_generic_args(x.m_namelist, x.n_namelist);
+        s = r;
+    }
+
+    void visit_Instantiate(const Instantiate_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("instantiate");
+        r += syn();
+        r += " ";
+        r.append(x.m_name);
+        r.append(" ");
+        r += format_generic_args(x.m_args, x.n_args);
+        if (x.n_symbols > 0) {
+            r.append(", ");
+            r += syn(gr::UnitHeader);
+            r.append("only");
+            r += syn();
+            r.append(": ");
+            for (size_t i=0; i<x.n_symbols; i++) {
+                this->visit_use_symbol(*x.m_symbols[i]);
+                r.append(s);
+                if (i < x.n_symbols-1) r.append(", ");
+            }
+        }
+        r.append("\n");
+        s = r;
+    }
+
     void visit_Interface(const Interface_t &x) {
         std::string r;
         if(x.m_header->type == AbstractInterfaceHeader) {
             r += "abstract ";
+        } else if(x.m_header->type == DeferredInterfaceHeader) {
+            r += "deferred ";
         }
         r += syn(gr::UnitHeader);
         r.append("interface");
@@ -901,6 +1100,11 @@ public:
 
     void visit_AbstractInterfaceHeader
             (const AbstractInterfaceHeader_t &/* x */) {
+        s = "";
+    }
+
+    void visit_DeferredInterfaceHeader
+            (const DeferredInterfaceHeader_t &/* x */) {
         s = "";
     }
 
@@ -988,10 +1192,19 @@ public:
             r.append(" ");
         }
         r += syn(gr::UnitHeader);
+        // C1609 (J3/26-007r1): TEMPLATE appears in the prefix of a templated
+        // subprogram, which is what a deferred argument list makes this.
+        if (x.n_temp_args > 0) {
+            r.append("template ");
+        }
         r.append("function");
         r += syn();
         r += " ";
         r.append(x.m_name);
+        if (x.n_temp_args > 0) {
+            r.append(" ");
+            r += format_generic_args(x.m_temp_args, x.n_temp_args);
+        }
         r.append("(");
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_arg(x.m_args[i]);
@@ -1452,6 +1665,7 @@ public:
             ATTRTYPE(Deferred)
             ATTRTYPE(Elemental)
             ATTRTYPE(Enumerator)
+            ATTRTYPE(Extensible)
             ATTRTYPE(External)
             ATTRTYPE(Impure)
             ATTRTYPE(Intrinsic)
@@ -1577,6 +1791,18 @@ public:
         s = r;
     }
 
+    void visit_AttrName(const AttrName_t &x) {
+        s = std::string(x.m_name);
+    }
+
+    void visit_AttrKeyword(const AttrKeyword_t &x) {
+        std::string r = std::string(x.m_name);
+        r += " = ";
+        this->visit_decl_attribute(*x.m_value);
+        r += s;
+        s = r;
+    }
+
     void visit_AttrIntent(const AttrIntent_t &x) {
         std::string r;
         r += syn(gr::Type);
@@ -1632,6 +1858,23 @@ public:
             }
             r += ")";
         }
+        s = r;
+    }
+
+    // F2028 R831 rank-clause, `RANK ( rank-spec-list )`, which only a deferred
+    // constant declaration accepts so far (R1619).
+    void visit_AttrRank(const AttrRank_t &x) {
+        std::string r;
+        r += syn(gr::Type);
+        r += "rank";
+        r += syn();
+        r += "(";
+        for (size_t i=0; i<x.n_rank; i++) {
+            visit_expr(*x.m_rank[i]);
+            r += s;
+            if (i < x.n_rank-1) r.append(", ");
+        }
+        r += ")";
         s = r;
     }
 
@@ -1849,6 +2092,9 @@ public:
             r.append("%");
         }
         r.append(x.m_name);
+        if (x.n_temp_args > 0) {
+            r += format_generic_args(x.m_temp_args, x.n_temp_args);
+        }
         r.append("(");
         for (size_t i=0; i<x.n_args; i++) {
             if (x.m_args[i].m_end) {
@@ -3594,6 +3840,9 @@ public:
             }
         }
         r.append(x.m_func);
+        if (x.n_temp_args > 0) {
+            r += format_generic_args(x.m_temp_args, x.n_temp_args);
+        }
         r.append("(");
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_fnarg(x.m_args[i]);

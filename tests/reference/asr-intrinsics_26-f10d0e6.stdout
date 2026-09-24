@@ -63,6 +63,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             stdlib_bitsets_64:
                 (Module
@@ -254,7 +255,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

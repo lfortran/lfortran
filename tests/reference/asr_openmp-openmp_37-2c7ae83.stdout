@@ -1815,8 +1815,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    4 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -1863,8 +1865,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CFunPointer
+                                                    )
+                                                    4 c_funptr
                                                     BindC
                                                     Public
                                                     Required
@@ -1905,8 +1909,12 @@
                                         })
                                     gomp_parallel
                                     (FunctionType
-                                        [(CPtr)
-                                        (CPtr)
+                                        [(CPtr
+                                            CFunPointer
+                                        )
+                                        (CPtr
+                                            CPointer
+                                        )
                                         (Integer 4)
                                         (Integer 4)]
                                         ()
@@ -2162,8 +2170,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    4 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2186,8 +2196,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    4 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2210,8 +2222,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    4 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2258,8 +2272,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    4 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2300,14 +2316,22 @@
                                         })
                                     gomp_task
                                     (FunctionType
-                                        [(CPtr)
-                                        (CPtr)
-                                        (CPtr)
+                                        [(CPtr
+                                            CPointer
+                                        )
+                                        (CPtr
+                                            CPointer
+                                        )
+                                        (CPtr
+                                            CPointer
+                                        )
                                         (Integer 8)
                                         (Integer 8)
                                         (Logical 1)
                                         (Integer 4)
-                                        (CPtr)]
+                                        (CPtr
+                                            CPointer
+                                        )]
                                         ()
                                         BindC
                                         Interface
@@ -2383,8 +2407,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    4 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2407,8 +2433,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CFunPointer
+                                                    )
+                                                    4 c_funptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2473,8 +2501,12 @@
                                         })
                                     gomp_teams
                                     (FunctionType
-                                        [(CPtr)
-                                        (CPtr)
+                                        [(CPtr
+                                            CFunPointer
+                                        )
+                                        (CPtr
+                                            CPointer
+                                        )
                                         (Integer 4)
                                         (Integer 4)]
                                         ()
@@ -3028,6 +3060,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             openmp_37:
                 (Program
@@ -3682,7 +3715,9 @@
                         )]
                         ExecAuto
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

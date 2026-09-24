@@ -1,4 +1,7 @@
-integer function a()
+! The bounds of `Y` and `X` below are specification expressions, so
+! Fortran 2023 10.1.11 lets them read `d1`, `e1` and `f1` only because those
+! are dummy arguments; a local of this same scoping unit could not appear there.
+integer function a(d1, e1, f1)
 implicit none
 integer :: b, c
 real :: d, e, f

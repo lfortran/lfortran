@@ -2,7 +2,7 @@
     "basename": "asr-call_scalar_to_assumed_shape-67253a1",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/call_scalar_to_assumed_shape.asr",
-    "infile_hash": "86e1e3d548e4fa27c189e45e11ca6c2b82e249953778581bcbed2c12",
+    "infile_hash": "69f730715d2b0ce1fe1bb6d9dcd227346d6d22f90e95ea09b7365516",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

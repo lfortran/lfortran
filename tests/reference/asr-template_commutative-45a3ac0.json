@@ -2,11 +2,11 @@
     "basename": "asr-template_commutative-45a3ac0",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/template_commutative.f90",
-    "infile_hash": "17b44264286a23c913bfa477f02febff7dcd4db7d04cf26d8cf3c413",
+    "infile_hash": "b7d28385ed05752b142848954f930f67e5e999800f91ab9495aa375b",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-template_commutative-45a3ac0.stdout",
-    "stdout_hash": "7dfc6d19dc2b99d25d116f5f6ecbdadd26841ea9c4c605a6dfbd94f4",
+    "stdout_hash": "f05e4386b7ab6e0a72e9e3fb30a82c51bdab715c028183a865e15d15",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

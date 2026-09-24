@@ -7,12 +7,12 @@ A C pointer: an address with no type and no shape.
 ### Syntax
 
 ```text
-CPtr()
+CPtr(cptr_kind kind)
 ```
 
 ### Arguments
 
-None.
+`kind` is `CPointer`, `CFunPointer`, or `CPtrUnspecified`, distinguishing `c_ptr` from `c_funptr` once semantics has resolved the intrinsic symbols.
 
 ### Return values
 
@@ -20,7 +20,7 @@ None. A type is not evaluated.
 
 ## Description
 
-`type(c_ptr)` from `iso_c_binding`. It carries an address and nothing else, so
+`type(c_ptr)` or `type(c_funptr)` from `iso_c_binding`. It carries an address and optional identity for which C pointer type it is, but no pointee type or shape, so
 nothing can be read through it until
 [CPtrToPointer](../statement_nodes/CPtrToPointer.md) supplies the type and the
 shape.
@@ -28,7 +28,9 @@ shape.
 ## Examples
 
 ```clojure
-(CPtr)
+(CPtr
+  :kind :CPtrUnspecified
+)
 ```
 
 It comes from this complete ASR text document:

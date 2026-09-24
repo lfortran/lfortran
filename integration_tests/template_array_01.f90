@@ -4,12 +4,12 @@ module template_array_01_m
     private
     public :: test_template
 
-    requirement r(t)
-        type, deferred :: t
+    requirement r {t}
+        deferred type :: t
     end requirement
 
-    template array_tmpl(t)
-        require :: r(t)
+    template array_tmpl {t}
+        require :: r {t}
         private
         public :: insert_t
     contains
@@ -32,7 +32,7 @@ module template_array_01_m
 contains
 
     subroutine test_template()
-        instantiate array_tmpl(integer), only: insert_int => insert_t, insert_int_n => insert_t_n
+        instantiate array_tmpl {integer}, only: insert_int => insert_t, insert_int_n => insert_t_n
         integer :: a(1), i, r
         a(1) = 0
         i = 1
