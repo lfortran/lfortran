@@ -25,7 +25,7 @@ module monoid_m
         end interface
     end requirement
 
-    template derive_extended_monoid(T, combine, empty)
+    template derive_extended_monoid {T, combine, empty}
         require :: monoid {T, combine, empty}
 
         private

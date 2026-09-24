@@ -25,7 +25,7 @@ end requirement
 
 contains
 
-    pure function generic_sum{T, add, cast}(A) result(res)
+    pure template function generic_sum{T, add, cast}(A) result(res)
     require :: operator_r {T, T, T, add}
     require :: cast_r {T, cast}
     interface operator(+)

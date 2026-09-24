@@ -7,7 +7,7 @@ module reverse_m
         deferred type :: t
     end requirement
 
-    template reverse_tmpl(t)
+    template reverse_tmpl {t}
         require :: default_behavior {t}
         private
         public :: reverse

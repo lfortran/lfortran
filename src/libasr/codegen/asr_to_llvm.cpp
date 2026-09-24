@@ -11179,6 +11179,13 @@ public:
             LLVM::is_llvm_pointer(*value_array_type) ) {
             value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
         }
+        // A character component of a bind(C)/SEQUENCE type is a flat byte blob
+        // with no descriptor in front of it, so the address selected above is
+        // already the character data. The descriptor filler below reads the
+        // data pointer and the element length out of a %string_descriptor, so
+        // materialize one over the blob for it.
+        value_desc = inline_char_member_as_string_descriptor(array_section->m_v,
+            value_desc, "inline_array_section_desc");
         llvm::Type *value_el_type = llvm_utils->get_el_type(array_section->m_v,
               ASRUtils::extract_type(value_array_type), module.get());
         ptr_loads = 0;

@@ -11,8 +11,8 @@ syntax error: End requirement name does not match requirement name
 syntax error: End template name does not match template name
    --> tests/errors/continue_compilation_templates_01.f90:909:5 - 912:1
     |
-909 |        template tmpl(u)
-    |        ^^^^^^^^^^^^^^^^...
+909 |        template tmpl {u}
+    |        ^^^^^^^^^^^^^^^^^...
 ...
     |
 912 |    
@@ -132,28 +132,100 @@ syntax error: import statement must appear before implicit and declaration state
 1797 | import :: y
      | ^^^^^^^^^^^^ 
 
-syntax error: implicit statement is not allowed in a block construct
-    --> tests/errors/continue_compilation_templates_01.f90:1825:1
+syntax error: Token '{' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1864:20
      |
-1825 | implicit none
+1864 |     subroutine swap{t}(x, y)  ! {Error} Token '{' is unexpected here
+     |                    ^ 
+
+syntax error: Token 'end subroutine' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1867:5
+     |
+1867 |     end subroutine
+     |     ^^^^^^^^^^^^^^ 
+
+syntax error: Token '{' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1875:30
+     |
+1875 |     pure subroutine copy_into{t}(x, y)  ! {Error} Token '{' is unexpected here
+     |                              ^ 
+
+syntax error: Token 'end subroutine' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1879:5
+     |
+1879 |     end subroutine
+     |     ^^^^^^^^^^^^^^ 
+
+syntax error: Token '{' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1885:23
+     |
+1885 |     function pick_last{t}(x, y) result(res)  ! {Error} Token '{' is unexpected here
+     |                       ^ 
+
+syntax error: Token 'end function' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1889:5
+     |
+1889 |     end function
+     |     ^^^^^^^^^^^^ 
+
+syntax error: Token '{' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1895:30
+     |
+1895 |     pure function pick_second{t}(x, y) result(res)  ! {Error} Token '{' is unexpected here
+     |                              ^ 
+
+syntax error: Token 'end function' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1899:5
+     |
+1899 |     end function
+     |     ^^^^^^^^^^^^ 
+
+syntax error: Token '(' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1912:26
+     |
+1912 |     template one_arg_tmpl(u)  ! {Error} Token '(' is unexpected here
+     |                          ^ 
+
+syntax error: Token 'template' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1915:9
+     |
+1915 |     end template
+     |         ^^^^^^^^ 
+
+syntax error: Token '(' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1917:25
+     |
+1917 |     template no_arg_tmpl()  ! {Error} Token '(' is unexpected here
+     |                         ^ 
+
+syntax error: Token 'template' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1919:9
+     |
+1919 |     end template
+     |         ^^^^^^^^ 
+
+syntax error: implicit statement is not allowed in a block construct
+    --> tests/errors/continue_compilation_templates_01.f90:1946:1
+     |
+1946 | implicit none
      | ^^^^^^^^^^^^^^ 
 
 syntax error: import statement is not allowed in a main program
-    --> tests/errors/continue_compilation_templates_01.f90:1820:1
+    --> tests/errors/continue_compilation_templates_01.f90:1941:1
      |
-1820 | import :: x
+1941 | import :: x
      | ^^^^^^^^^^^^ 
 
 syntax error: use statement must appear before all other declarations and statements
-    --> tests/errors/continue_compilation_templates_01.f90:1822:1
+    --> tests/errors/continue_compilation_templates_01.f90:1943:1
      |
-1822 | use, intrinsic :: iso_c_binding
+1943 | use, intrinsic :: iso_c_binding
      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: implicit statement must appear before declaration and executable statements
-    --> tests/errors/continue_compilation_templates_01.f90:1823:1
+    --> tests/errors/continue_compilation_templates_01.f90:1944:1
      |
-1823 | implicit none
+1944 | implicit none
      | ^^^^^^^^^^^^^^ 
 
 semantic error: Parameter 't' is declared more than once in requirement 'dup_param_req'
@@ -192,8 +264,8 @@ semantic error: type mismatch in initialization: `string` cannot be assigned to 
 semantic error: Template argument plus_t has not been declared in template specification.
    --> tests/errors/continue_compilation_templates_01.f90:151:5 - 173:1
     |
-151 |        template travel_tmpl(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+151 |        template travel_tmpl {D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
 173 |    
@@ -492,8 +564,8 @@ semantic error: a `deferred` constant that is an array is not supported yet
 semantic error: Template argument x2 has not been declared in template specification.
    --> tests/errors/continue_compilation_templates_01.f90:843:5 - 853:71
     |
-843 |        template note2(x2, x3, x4, x5, x6, x7)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+843 |        template note2 {x2, x3, x4, x5, x6, x7}
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
 853 |        ! The DIMENSION attribute spelling of the same array-spec (R1619).
@@ -569,8 +641,8 @@ semantic error: 'not_an_interface' is not an interface
 semantic error: Template argument p has not been declared in template specification.
     --> tests/errors/continue_compilation_templates_01.f90:1037:5 - 1041:42
      |
-1037 |        template t1(p)
-     |        ^^^^^^^^^^^^^^...
+1037 |        template t1 {p}
+     |        ^^^^^^^^^^^^^^^...
 ...
      |
 1041 |        ! A module has no deferred arguments.
@@ -741,8 +813,8 @@ semantic error: a common statement is not allowed in a template or templated pro
 semantic error: a template can only be declared in the specification part of a main program, a module or another template
     --> tests/errors/continue_compilation_templates_01.f90:1354:9 - 1356:21
      |
-1354 |            template req_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
-     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+1354 |            template req_tmpl {u}  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
      |
 1356 |            end template
@@ -751,8 +823,8 @@ semantic error: a template can only be declared in the specification part of a m
 semantic error: a template can only be declared in the specification part of a main program, a module or another template
     --> tests/errors/continue_compilation_templates_01.f90:1362:9 - 1364:21
      |
-1362 |            template sub_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
-     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+1362 |            template sub_tmpl {u}  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
      |
 1364 |            end template
@@ -761,8 +833,8 @@ semantic error: a template can only be declared in the specification part of a m
 semantic error: a template can only be declared in the specification part of a main program, a module or another template
     --> tests/errors/continue_compilation_templates_01.f90:1368:9 - 1370:21
      |
-1368 |            template func_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
-     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+1368 |            template func_tmpl {u}  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
      |
 1370 |            end template
@@ -771,8 +843,8 @@ semantic error: a template can only be declared in the specification part of a m
 semantic error: a template can only be declared in the specification part of a main program, a module or another template
     --> tests/errors/continue_compilation_templates_01.f90:1388:5 - 1391:1
      |
-1388 |        template submod_tmpl(u)  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
-     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+1388 |        template submod_tmpl {u}  ! {Error} a template can only be declared in the specification part of a main program, a module or another template
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
      |
 1391 |    
@@ -932,22 +1004,144 @@ semantic error: Intent attribute can only be applied to procedure arguments
 1741 |             type(t), intent(in) :: x
      |                      ^^^^^^^^^^ 
 
-semantic error: a deferred interface can only appear in a requirement, a template or a templated procedure
-    --> tests/errors/continue_compilation_templates_01.f90:1807:5
+semantic error: an interface block in a requirement must be a deferred or an abstract interface
+    --> tests/errors/continue_compilation_templates_01.f90:1812:9
      |
-1807 |     deferred interface  ! {Error} a deferred interface can only appear in a requirement, a template or a templated procedure
+1812 |         interface  ! {Error} an interface block in a requirement must be a deferred or an abstract interface
+     |         ^^^^^^^^^ 
+
+semantic error: an interface block in a requirement must be a deferred or an abstract interface
+    --> tests/errors/continue_compilation_templates_01.f90:1823:9
+     |
+1823 |         interface operator (+)  ! {Error} an interface block in a requirement must be a deferred or an abstract interface
+     |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'n3' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n3`
+    --> tests/errors/continue_compilation_templates_01.f90:1844:20
+     |
+1844 |         integer :: n3  ! {Error} 'n3' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n3`
+     |                    ^^ 
+
+semantic error: Template argument n3 has not been declared in template specification.
+    --> tests/errors/continue_compilation_templates_01.f90:1842:5 - 1848:36
+     |
+1842 |        template plain_const_tmpl {T3, n3}
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1848 |        ! depend on the entity's shape.
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'n4' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n4`
+    --> tests/errors/continue_compilation_templates_01.f90:1851:20
+     |
+1851 |         integer :: n4(3)  ! {Error} 'n4' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n4`
+     |                    ^^^^^ 
+
+semantic error: Template argument n4 has not been declared in template specification.
+    --> tests/errors/continue_compilation_templates_01.f90:1849:5 - 1853:1
+     |
+1849 |        template plain_const_array_tmpl {T4, n4}
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1853 |    
+     | ...^ 
+
+semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1865:26
+     |
+1865 |         deferred type :: t
+     |                          ^ 
+
+semantic error: Intent attribute can only be applied to procedure arguments
+    --> tests/errors/continue_compilation_templates_01.f90:1866:18
+     |
+1866 |         type(t), intent(inout) :: x, y
+     |                  ^^^^^^^^^^^^^ 
+
+semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1876:26
+     |
+1876 |         deferred type :: t
+     |                          ^ 
+
+semantic error: Intent attribute can only be applied to procedure arguments
+    --> tests/errors/continue_compilation_templates_01.f90:1877:18
+     |
+1877 |         type(t), intent(in) :: x
+     |                  ^^^^^^^^^^ 
+
+semantic error: Intent attribute can only be applied to procedure arguments
+    --> tests/errors/continue_compilation_templates_01.f90:1878:18
+     |
+1878 |         type(t), intent(out) :: y
+     |                  ^^^^^^^^^^^ 
+
+semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1886:26
+     |
+1886 |         deferred type :: t
+     |                          ^ 
+
+semantic error: Intent attribute can only be applied to procedure arguments
+    --> tests/errors/continue_compilation_templates_01.f90:1887:18
+     |
+1887 |         type(t), intent(in) :: x, y
+     |                  ^^^^^^^^^^ 
+
+semantic error: Type parameter 't' is not specified in any requirements
+    --> tests/errors/continue_compilation_templates_01.f90:1888:9
+     |
+1888 |         type(t) :: res
+     |         ^^^^^^^^^^^^^^ 
+
+semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1896:26
+     |
+1896 |         deferred type :: t
+     |                          ^ 
+
+semantic error: Intent attribute can only be applied to procedure arguments
+    --> tests/errors/continue_compilation_templates_01.f90:1897:18
+     |
+1897 |         type(t), intent(in) :: x, y
+     |                  ^^^^^^^^^^ 
+
+semantic error: Type parameter 't' is not specified in any requirements
+    --> tests/errors/continue_compilation_templates_01.f90:1898:9
+     |
+1898 |         type(t) :: res
+     |         ^^^^^^^^^^^^^^ 
+
+semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1913:26
+     |
+1913 |         deferred type :: u
+     |                          ^ 
+
+semantic error: Parameter 'u' was not declared
+    --> tests/errors/continue_compilation_templates_01.f90:1914:20
+     |
+1914 |         require :: paren_r {u}
+     |                    ^^^^^^^^^^^ 
+
+semantic error: a deferred interface can only appear in a requirement, a template or a templated procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1928:5
+     |
+1928 |     deferred interface  ! {Error} a deferred interface can only appear in a requirement, a template or a templated procedure
      |     ^^^^^^^^^^^^^^^^^^ 
 
 semantic error: a deferred procedure can only be declared in a requirement, a template or a templated procedure
-    --> tests/errors/continue_compilation_templates_01.f90:1814:5
+    --> tests/errors/continue_compilation_templates_01.f90:1935:5
      |
-1814 |     deferred procedure (iface) q  ! {Error} a deferred procedure can only be declared in a requirement, a template or a templated procedure
+1935 |     deferred procedure (iface) q  ! {Error} a deferred procedure can only be declared in a requirement, a template or a templated procedure
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
-    --> tests/errors/continue_compilation_templates_01.f90:1817:22
+    --> tests/errors/continue_compilation_templates_01.f90:1938:22
      |
-1817 |     deferred type :: v  ! {Error} a deferred type can only be declared in a requirement, a template or a templated procedure
+1938 |     deferred type :: v  ! {Error} a deferred type can only be declared in a requirement, a template or a templated procedure
      |                      ^ 
 
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
