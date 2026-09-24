@@ -3640,6 +3640,9 @@ RUN(NAME template_require_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_end_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_kwargs_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_prefix_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_host_var_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_host_var_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_host_var_03 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

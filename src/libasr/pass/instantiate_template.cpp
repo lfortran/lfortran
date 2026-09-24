@@ -1071,6 +1071,10 @@ public:
             }
             case (ASR::symbolType::Variable) : {
                 ASR::Variable_t* x = ASR::down_cast<ASR::Variable_t>(sym);
+                ASR::symbol_t* host_var = reference_host_variable(x);
+                if (host_var) {
+                    return host_var;
+                }
                 return instantiate_Variable(x);
             }
             case (ASR::symbolType::Template) : {
@@ -1194,6 +1198,51 @@ public:
         target_scope->add_symbol(x->m_name, s);
 
         return s;
+    }
+
+    // A variable declared in the module that hosts the template is shared
+    // storage reached by host association: the instantiation must refer to
+    // the original variable, never own a copy of it. Returns nullptr for
+    // every variable that is copied, as before: variables owned by the
+    // template itself (locals and arguments of its procedures, struct
+    // members), named constants, which have no storage to share, and
+    // program variables.
+    //
+    // Reachability is decided by scope ancestry, not by name lookup: a
+    // same-named local at the instantiation site must not capture the
+    // reference.
+    ASR::symbol_t* reference_host_variable(ASR::Variable_t* x) {
+        if (x->m_storage == ASR::storage_typeType::Parameter) {
+            return nullptr;
+        }
+        SymbolTable* host_scope = x->m_parent_symtab;
+        ASR::symbol_t* host = nullptr;
+        if (host_scope->asr_owner != nullptr
+                && ASR::is_a<ASR::symbol_t>(*host_scope->asr_owner)) {
+            host = ASR::down_cast<ASR::symbol_t>(host_scope->asr_owner);
+        }
+        ASR::symbol_t* var_sym = &x->base;
+        if (host_scope->parent == nullptr) {
+            // The global scope encloses every instantiation.
+            return var_sym;
+        }
+        if (host != nullptr && ASR::is_a<ASR::Module_t>(*host)) {
+            // Module variables are static storage, reachable from any
+            // nesting depth: directly if the module encloses the
+            // instantiation, otherwise through an ExternalSymbol.
+            for (SymbolTable* s = target_scope; s != nullptr; s = s->parent) {
+                if (s == host_scope) {
+                    return var_sym;
+                }
+            }
+            ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(host);
+            ASR::symbol_t* e = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                al, x->base.base.loc, target_scope, x->m_name, var_sym,
+                module->m_name, nullptr, 0, x->m_name, x->m_access));
+            target_scope->add_symbol(x->m_name, e);
+            return e;
+        }
+        return nullptr;
     }
 
     ASR::symbol_t* instantiate_Template(ASR::Template_t* x) {
