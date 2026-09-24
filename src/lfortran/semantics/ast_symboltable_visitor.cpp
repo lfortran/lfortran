@@ -5365,17 +5365,23 @@ public:
             this->visit_program_unit(*x.m_funcs[i]);
         }
 
+        bool undeclared_arg = false;
         for (size_t i=0; i<x.n_namelist; i++) {
             std::string arg = to_lower(x.m_namelist[i].m_arg);
             if (!current_scope->get_symbol(arg)) {
                 diag.add(Diagnostic(
-                    "Parameter " + arg + " is unused in " + x.m_name,
-                    Level::Warning, Stage::Semantic, {
-                        Label("", {x.base.base.loc})
+                    "requirement argument '" + arg + "' has not been "
+                    "declared in requirement '" + to_lower(x.m_name) + "'",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.m_namelist[i].loc})
                     }
                 ));
+                undeclared_arg = true;
             }
             current_procedure_args.push_back(arg);
+        }
+        if (undeclared_arg) {
+            throw SemanticAbort();
         }
 
         for (auto &item: current_scope->get_scope()) {

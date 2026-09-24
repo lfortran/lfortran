@@ -1972,3 +1972,21 @@ module requirement_non_deferred_decl_1
     end requirement
 
 end module
+
+! requirement_undeclared_arg_1
+! A requirement argument that is never declared in the requirement is an
+! error; using the requirement must not crash (#13327).
+module requirement_undeclared_arg_1
+    implicit none
+
+    requirement r_undeclared {t, u}  ! {Error} requirement argument 'u' has not been declared in requirement 'r_undeclared'
+        deferred type :: t
+    end requirement
+
+    template tmpl_undeclared {a, b}
+        deferred type :: a
+        deferred type :: b
+        require :: r_undeclared {a, b}
+    end template
+
+end module
