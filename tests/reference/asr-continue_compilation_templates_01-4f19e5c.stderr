@@ -918,11 +918,11 @@ semantic error: A variable of deferred type must not be a coarray
 1495 |             type(t), dimension(:), codimension[:], allocatable :: x  ! {Error} A variable of deferred type must not be a coarray
      |                                                                   ^ `x` has deferred type `t`
 
-semantic error: A variable of deferred type must not be a coarray
+semantic error: 'req_x' is not a deferred argument of 'r'
     --> tests/errors/continue_compilation_templates_01.f90:1507:49
      |
-1507 |         type(t), codimension[:], allocatable :: req_x  ! {Error} A variable of deferred type must not be a coarray
-     |                                                 ^^^^^ `req_x` has deferred type `t`
+1507 |         type(t), codimension[:], allocatable :: req_x  ! {Error} 'req_x' is not a deferred argument of 'r'
+     |                                                 ^^^^^ 
 
 semantic error: A variable of deferred type must not be a coarray
     --> tests/errors/continue_compilation_templates_01.f90:1515:49
@@ -992,17 +992,17 @@ semantic error: a requirement can only be declared in the specification part of 
 1671 |    
      | ...^ 
 
-semantic error: Intent attribute can only be applied to procedure arguments
-    --> tests/errors/continue_compilation_templates_01.f90:1733:22
+semantic error: 'x' is not a deferred argument of 'func_r'
+    --> tests/errors/continue_compilation_templates_01.f90:1733:36
      |
 1733 |             type(t), intent(in) :: x
-     |                      ^^^^^^^^^^ 
+     |                                    ^ 
 
-semantic error: Intent attribute can only be applied to procedure arguments
-    --> tests/errors/continue_compilation_templates_01.f90:1741:22
+semantic error: 'x' is not a deferred argument of 'sub_r'
+    --> tests/errors/continue_compilation_templates_01.f90:1741:36
      |
 1741 |             type(t), intent(in) :: x
-     |                      ^^^^^^^^^^ 
+     |                                    ^ 
 
 semantic error: an interface block in a requirement must be a deferred or an abstract interface
     --> tests/errors/continue_compilation_templates_01.f90:1812:9
@@ -1143,6 +1143,24 @@ semantic error: a deferred type can only be declared in a requirement, a templat
      |
 1938 |     deferred type :: v  ! {Error} a deferred type can only be declared in a requirement, a template or a templated procedure
      |                      ^ 
+
+semantic error: 'c' is a deferred argument of requirement 'r_derived', so it must be declared as a deferred type, a deferred constant or a deferred procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1962:20
+     |
+1962 |         type(t) :: c  ! {Error} 'c' is a deferred argument of requirement 'r_derived', so it must be declared as a deferred type, a deferred constant or a deferred procedure
+     |                    ^ 
+
+semantic error: 'c' is a deferred argument of requirement 'r_intrinsic', so it must be declared as a deferred type, a deferred constant or a deferred procedure
+    --> tests/errors/continue_compilation_templates_01.f90:1966:20
+     |
+1966 |         integer :: c  ! {Error} 'c' is a deferred argument of requirement 'r_intrinsic', so it must be declared as a deferred type, a deferred constant or a deferred procedure
+     |                    ^ 
+
+semantic error: 'x' is not a deferred argument of 'r_not_arg'
+    --> tests/errors/continue_compilation_templates_01.f90:1971:17
+     |
+1971 |         real :: x  ! {Error} 'x' is not a deferred argument of 'r_not_arg'
+     |                 ^ 
 
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
