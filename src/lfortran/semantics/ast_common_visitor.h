@@ -21781,6 +21781,31 @@ public:
         return ordered;
     }
 
+    // Returns the indices of a template's deferred arguments in the order
+    // their instantiation arguments must be processed: every deferred type
+    // first, then everything else, each group in declaration order. A
+    // deferred procedure's interface may reference any deferred type of the
+    // template, wherever that type sits in the argument list, so `type_subs`
+    // has to be complete before the first procedure is checked against its
+    // restriction.
+    std::vector<size_t> instantiation_arg_order(ASR::Template_t *temp) {
+        std::vector<size_t> order;
+        order.reserve(temp->n_args);
+        std::vector<size_t> rest;
+        for (size_t i = 0; i < temp->n_args; i++) {
+            ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(temp->m_args[i]);
+            if (param_sym && ASR::is_a<ASR::Variable_t>(*param_sym)
+                    && ASRUtils::is_type_parameter(
+                        *ASRUtils::symbol_type(param_sym))) {
+                order.push_back(i);
+            } else {
+                rest.push_back(i);
+            }
+        }
+        order.insert(order.end(), rest.begin(), rest.end());
+        return order;
+    }
+
     // TODO: extract commonality with visit_Instantiate
     std::string handle_templated(std::string name, bool is_nested,
             AST::decl_attribute_t** args, size_t n_args, const Location &loc) {
@@ -21809,7 +21834,9 @@ public:
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
         std::map<std::string, ASR::symbol_t*> symbol_subs;
 
-        for (size_t i=0; i<ordered_args.size(); i++) {
+        // Bind every deferred type before checking any deferred procedure,
+        // whose interface may use a type listed after it (#13325).
+        for (size_t i : instantiation_arg_order(temp)) {
             std::string param = temp->m_args[i];
             AST::decl_attribute_t *arg_attr = ordered_args[i];
             ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(param);
