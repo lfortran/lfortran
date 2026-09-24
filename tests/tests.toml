@@ -6123,9 +6123,9 @@ fortran = true
 # Coarrays that share one name across a module, a module procedure and its
 # internal procedure, an external procedure and its internal procedure, and the
 # program and its internal procedure, next to user variables named like the
-# companions the pass derives for them. The reference pins that every scope is
-# left referring to its own coarray and that no user variable is shadowed by a
-# companion. Through the wiring pass, as coarrays_50 is.
+# unprefixed companions. The reference pins that every scope is left referring
+# to its own coarray and that the reserved __cac_ prefix prevents user variables
+# from shadowing companions. Through the wiring pass, as coarrays_50 is.
 pass = "coarray,global_init_wire"
 options = "--coarray=true"
 
@@ -6135,7 +6135,8 @@ filename = "../integration_tests/coarrays_52.f90"
 # scope: the companions of a coarray a module owns -- a module variable or a
 # module procedure's -- are exported, since a translation unit that uses the
 # module refers to them; those of an external procedure's or the program's,
-# and the translation unit's own initializer, are internal.
+# with the reserved __cac_ prefix, and the translation unit's own initializer,
+# are internal.
 llvm = true
 options = "--coarray=true"
 

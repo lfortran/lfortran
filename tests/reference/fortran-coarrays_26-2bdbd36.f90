@@ -154,19 +154,19 @@ subroutine __lfortran_global_init_coarrays_26()
         call __lfortran_global_init_coarrays_26_m2()
         call __lfortran_global_init_coarrays_26_m3()
         call __module_prif_prif_init(stat)
-        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle,&
-         x__coarray_data)
-        call c_f_pointer(x__coarray_data, x)
-        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle1,&
-         x__coarray_data1)
-        call c_f_pointer(x__coarray_data1, x__coarray_ptr1)
-        x__coarray_ptr1 = 40
+        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), __cac_x__coarray_handle,&
+         __cac_x__coarray_data)
+        call c_f_pointer(__cac_x__coarray_data, x)
+        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), __cac_x__coarray_handle1,&
+         __cac_x__coarray_data1)
+        call c_f_pointer(__cac_x__coarray_data1, __cac_x__coarray_ptr)
+        __cac_x__coarray_ptr = 40
     end if
 end subroutine __lfortran_global_init_coarrays_26
 
 subroutine coarrays_26_prog_inner()
-    x__coarray_ptr1 = x__coarray_ptr1 + 1
-    if (x__coarray_ptr1 /= 41) then
+    __cac_x__coarray_ptr = __cac_x__coarray_ptr + 1
+    if (__cac_x__coarray_ptr /= 41) then
         error stop
     end if
 end subroutine coarrays_26_prog_inner
@@ -174,13 +174,16 @@ end subroutine coarrays_26_prog_inner
 subroutine __lfortran_coarray_init_coarrays_26_inner_coarrays_26_sub_coarrays_26_sub2()
     integer(4) :: stat
     call __module_prif_prif_init(stat)
-    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle2, x__coarray_data2)
-    call c_f_pointer(x__coarray_data2, x__coarray_ptr2)
-    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle3, x__coarray_data3)
-    call c_f_pointer(x__coarray_data3, x__coarray_ptr3)
-    x__coarray_ptr3 = 30
-    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle4, x__coarray_data4)
-    call c_f_pointer(x__coarray_data4, x__coarray_ptr)
+    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), __cac_x__coarray_handle2,&
+         __cac_x__coarray_data2)
+    call c_f_pointer(__cac_x__coarray_data2, __cac_x__coarray_ptr1)
+    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), __cac_x__coarray_handle3,&
+         __cac_x__coarray_data3)
+    call c_f_pointer(__cac_x__coarray_data3, __cac_x__coarray_ptr2)
+    __cac_x__coarray_ptr2 = 30
+    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), __cac_x__coarray_handle4,&
+         __cac_x__coarray_data4)
+    call c_f_pointer(__cac_x__coarray_data4, __cac_x__coarray_ptr3)
 end subroutine __lfortran_coarray_init_coarrays_26_inner_coarrays_26_sub_coarrays_26_sub2
 
 interface
@@ -235,11 +238,11 @@ subroutine coarrays_26_sub()
     x__coarray_ptr = -1
     x__coarray_handle = -2
     x__coarray_data = -3
-    x__coarray_ptr2 = lcompilers_prif_this_image() + 100
+    __cac_x__coarray_ptr1 = lcompilers_prif_this_image() + 100
     call coarrays_26_sub2()
     call coarrays_26_inner()
     call coarrays_26_host()
-    if (x__coarray_ptr2 /= lcompilers_prif_this_image() + 101) then
+    if (__cac_x__coarray_ptr1 /= lcompilers_prif_this_image() + 101) then
         error stop
     end if
     if (x__coarray_ptr /= (-1) .or. x__coarray_handle /= (-2) .or. x__coarray_data /= (-3)) then
@@ -247,12 +250,12 @@ subroutine coarrays_26_sub()
     end if
     contains
     subroutine coarrays_26_host()
-        x__coarray_ptr2 = x__coarray_ptr2 + 1
+        __cac_x__coarray_ptr1 = __cac_x__coarray_ptr1 + 1
     end subroutine coarrays_26_host
 
     subroutine coarrays_26_inner()
-        x__coarray_ptr3 = x__coarray_ptr3 + 1
-        if (x__coarray_ptr3 /= 31) then
+        __cac_x__coarray_ptr2 = __cac_x__coarray_ptr2 + 1
+        if (__cac_x__coarray_ptr2 /= 31) then
             error stop
         end if
     end subroutine coarrays_26_inner
@@ -260,8 +263,8 @@ subroutine coarrays_26_sub()
 end subroutine coarrays_26_sub
 
 subroutine coarrays_26_sub2()
-    x__coarray_ptr = lcompilers_prif_this_image() + 1000
-    if (x__coarray_ptr /= lcompilers_prif_this_image() + 1000) then
+    __cac_x__coarray_ptr3 = lcompilers_prif_this_image() + 1000
+    if (__cac_x__coarray_ptr3 /= lcompilers_prif_this_image() + 1000) then
         error stop
     end if
 end subroutine coarrays_26_sub2

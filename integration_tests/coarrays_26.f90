@@ -1,5 +1,5 @@
 ! Coarrays that share a name across scopes, and user variables named like
-! the companions the coarray pass derives for a coarray. Every coarray here is
+! unprefixed coarray companions. Every coarray here is
 ! named `x`, so each of those derived names collides with another; the
 ! reference test registered for this file pins that every scope is left
 ! referring to its own coarray, and that no user variable is shadowed by a

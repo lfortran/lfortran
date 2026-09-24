@@ -1889,51 +1889,6 @@ class PRIFInterface {
             return name + var->m_name;
         }
 
-        // Whether a scope nested in `scope` -- an internal procedure or a
-        // block, at any depth -- declares `name`.
-        static bool declared_in_nested_scope(SymbolTable *scope,
-                const std::string &name) {
-            for (auto &item : scope->get_scope()) {
-                ASR::symbol_t *sym = item.second;
-                SymbolTable *nested = nullptr;
-                if (ASR::is_a<ASR::Function_t>(*sym)) {
-                    nested = ASR::down_cast<ASR::Function_t>(sym)->m_symtab;
-                } else if (ASR::is_a<ASR::Block_t>(*sym)) {
-                    nested = ASR::down_cast<ASR::Block_t>(sym)->m_symtab;
-                } else if (ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
-                    nested = ASR::down_cast<ASR::AssociateBlock_t>(sym)->m_symtab;
-                }
-                if (nested == nullptr || nested->parent != scope) continue;
-                if (nested->get_symbol(name) != nullptr
-                        || declared_in_nested_scope(nested, name)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // A name for a companion the translation unit's scope declares on
-        // behalf of a coarray `decl_scope` declares, derived from `base`.
-        // Being free in the translation unit's scope is not enough: `base` is
-        // built from the coarray's own name, so it can be a name the user
-        // wrote, and a companion named like a variable of `decl_scope`, of a
-        // scope enclosing it or of one nested in it would be shadowed by that
-        // variable everywhere the coarray is used. So the name must be one
-        // nothing there can already see; resolving it from `decl_scope`
-        // covers the enclosing scopes up to and including the translation
-        // unit's.
-        std::string unique_companion_name(SymbolTable *decl_scope,
-                const std::string &base) {
-            std::string name = base;
-            int counter = 1;
-            while (decl_scope->resolve_symbol(name) != nullptr
-                    || declared_in_nested_scope(decl_scope, name)) {
-                name = base + std::to_string(counter);
-                counter++;
-            }
-            return name;
-        }
-
         // A saved coarray's Fortran pointer, on its way out of the procedure
         // that declares it and into the translation unit's scope.
         struct HoistedPointer {
@@ -2042,13 +1997,18 @@ class PRIFInterface {
                         // companions of the same name, and exported the two
                         // would clash at link time.
                         companion_access = ASR::accessType::Private;
-                        hname = unique_companion_name(scope,
-                            vname + "__coarray_handle");
-                        dname = unique_companion_name(scope,
-                            vname + "__coarray_data");
+                        // A Fortran name cannot begin with an underscore.
+                        // Reserve a prefix distinct from module companions
+                        // and initializers, so no user variable in this or
+                        // any nested scope can shadow a hoisted companion.
+                        std::string base = "__cac_" + vname;
+                        hname = companion_scope->get_unique_name(
+                            base + "__coarray_handle", false);
+                        dname = companion_scope->get_unique_name(
+                            base + "__coarray_data", false);
                         if (procedure_local) {
-                            pname = unique_companion_name(scope,
-                                vname + "__coarray_ptr");
+                            pname = companion_scope->get_unique_name(
+                                base + "__coarray_ptr", false);
                         }
                     }
                 }
