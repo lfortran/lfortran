@@ -1,0 +1,5 @@
+runtime error: Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.
+  --> tests/errors/realloc_lhs_fn_result_03.f90:48:5
+   |
+48 |     u = h%p(3)
+   |     ^ not allocated here

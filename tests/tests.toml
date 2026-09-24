@@ -6095,6 +6095,14 @@ filename = "errors/realloc_lhs_fn_result_02.f90"
 run = true
 
 [[test]]
+filename = "errors/realloc_lhs_fn_result_03.f90"
+run = true
+
+[[test]]
+filename = "errors/realloc_lhs_fn_result_04.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/global_init_01.f90"
 # Both halves, so the reference output documents the whole shape in one
 # place: the run-once guard, the dependency call, the initialization and the

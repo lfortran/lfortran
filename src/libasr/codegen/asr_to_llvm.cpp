@@ -26340,8 +26340,14 @@ public:
                 ASR::StructMethodDeclaration_t>(m_name);
             function = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
         } else if (ASR::is_a<ASR::Variable_t>(*m_name)) {
-            // Ignore functions passed in as arguments
-            return;
+            // Called through a procedure pointer or a dummy procedure. The
+            // declared interface of the variable is the callee's signature,
+            // so the same argument checks apply. Without an explicit
+            // interface there is nothing to check the call against.
+            function = ASRUtils::get_function(m_name);
+            if (function == nullptr) {
+                return;
+            }
         } else {
             throw CodeGenError("bounds_check_call: Symbol type not supported");
         }
@@ -26418,7 +26424,7 @@ public:
                                 infile,
                                 location_manager,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
-                                LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)));
+                                LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(m_name)));
                     }
 
                     // Throw error if shapes don't match
@@ -26459,7 +26465,7 @@ public:
                                         LLVMUtils::RuntimeLabel("Parameter is size %d, argument is size %d", {m_dims[j].loc}, {pointer_length, descriptor_length}, false)},
                                     infile,
                                     location_manager,
-                                    LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
+                                    LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(m_name)),
                                     descriptor_length,
                                     dim,
                                     llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
@@ -26484,7 +26490,7 @@ public:
                             {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                             infile,
                             location_manager,
-                            LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
+                            LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(m_name)),
                             desc_size,
                             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                             pointer_size);
@@ -26519,7 +26525,7 @@ public:
                                         {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                                         infile,
                                         location_manager,
-                                        LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
+                                        LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(m_name)),
                                         fixed_length,
                                         dim,
                                         llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
@@ -26544,7 +26550,7 @@ public:
                                 {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                                 infile,
                                 location_manager,
-                                LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
+                                LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(m_name)),
                                 fixed_size,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                                 pointer_size);
@@ -26567,7 +26573,8 @@ public:
                     }
                 }
 
-                if (ASRUtils::is_allocatable(alloc_check_type)) {
+                if (ASRUtils::is_allocatable(alloc_check_type) &&
+                        i < function->n_args) {
                     ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(function);
                     ASR::Variable_t *func_arg_variable = ASRUtils::expr_to_variable_or_null(function->m_args[i]);
                     LCOMPILERS_ASSERT(func_arg_variable != nullptr);
@@ -26580,7 +26587,7 @@ public:
                         } else {
                             llvm::Value* arg_number = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1));
                             llvm::Value* subroutine_name = LCompilers::create_global_string_ptr(
-                                context, *module, *builder, ASRUtils::symbol_name(x.m_name));
+                                context, *module, *builder, ASRUtils::symbol_name(m_name));
                             llvm_utils->generate_runtime_error(is_unallocated,
                                     "Argument %d of subroutine %s is unallocated.",
                                     {LLVMUtils::RuntimeLabel("This is unallocated", {arg_expr->base.loc})},
