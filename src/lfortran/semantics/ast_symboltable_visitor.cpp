@@ -5827,7 +5827,9 @@ public:
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
         std::map<std::string, ASR::symbol_t*> symbol_subs;
 
-        for (size_t i=0; i<ordered_args.size(); i++) {
+        // Bind every deferred type before checking any deferred procedure,
+        // whose interface may use a type listed after it (#13325).
+        for (size_t i : instantiation_arg_order(temp)) {
             std::string param = temp->m_args[i];
             AST::decl_attribute_t *arg_attr = ordered_args[i];
             ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(param);
