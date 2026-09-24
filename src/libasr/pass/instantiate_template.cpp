@@ -1313,6 +1313,75 @@ public:
             ASR::array_physical_typeType::FixedSizeArray, true);
     }
 
+    // A real value folded here is rounded to the precision of its kind.
+    static double round_to_kind(double r, ASR::ttype_t* type) {
+        if (ASRUtils::extract_kind_from_ttype_t(type) == 4) {
+            return (float) r;
+        }
+        return r;
+    }
+
+    // The real counterparts of the integer operations above, e.g. `n*2.0`.
+    ASR::asr_t* duplicate_RealBinOp(ASR::RealBinOp_t* x) {
+        ASR::expr_t* left = duplicate_expr(x->m_left);
+        ASR::expr_t* right = duplicate_expr(x->m_right);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        double l = 0, r = 0;
+        if (value == nullptr && !ASRUtils::is_array(type)
+                && ASRUtils::extract_value(ASRUtils::expr_value(left), l)
+                && ASRUtils::extract_value(ASRUtils::expr_value(right), r)) {
+            bool folded = true;
+            double result = 0;
+            switch (x->m_op) {
+                case ASR::binopType::Add: { result = l + r; break; }
+                case ASR::binopType::Sub: { result = l - r; break; }
+                case ASR::binopType::Mul: { result = l * r; break; }
+                case ASR::binopType::Div: { result = l / r; break; }
+                case ASR::binopType::Pow: { result = std::pow(l, r); break; }
+                default: { folded = false; break; }
+            }
+            if (folded) {
+                value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
+                    x->base.base.loc, round_to_kind(result, type), type));
+            }
+        }
+        return ASR::make_RealBinOp_t(al, x->base.base.loc, left, x->m_op,
+            right, type, value);
+    }
+
+    ASR::asr_t* duplicate_RealUnaryMinus(ASR::RealUnaryMinus_t* x) {
+        ASR::expr_t* arg = duplicate_expr(x->m_arg);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        double a = 0;
+        if (value == nullptr && !ASRUtils::is_array(type)
+                && ASRUtils::extract_value(ASRUtils::expr_value(arg), a)) {
+            value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
+                x->base.base.loc, -a, type));
+        }
+        return ASR::make_RealUnaryMinus_t(al, x->base.base.loc, arg, type,
+            value);
+    }
+
+    // A conversion of a deferred constant, e.g. `real(n)`.
+    ASR::asr_t* duplicate_Cast(ASR::Cast_t* x) {
+        ASR::expr_t* arg = duplicate_expr(x->m_arg);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASR::expr_t* dest = duplicate_expr(x->m_dest);
+        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        if (value == nullptr && arg_value && !ASRUtils::is_array(type)
+                && (ASR::is_a<ASR::IntegerConstant_t>(*arg_value)
+                    || ASR::is_a<ASR::RealConstant_t>(*arg_value))) {
+            value = ASRUtils::expr_value(ASRUtils::EXPR(
+                ASRUtils::make_Cast_t_value(al, x->base.base.loc, arg,
+                    x->m_kind, type)));
+        }
+        return ASR::make_Cast_t(al, x->base.base.loc, arg, x->m_kind, type,
+            value, dest);
+    }
+
     // A variable declared in the module that hosts the template is shared
     // storage reached by host association: the instantiation must refer to
     // the original variable, never own a copy of it. Returns nullptr for

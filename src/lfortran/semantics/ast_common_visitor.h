@@ -3222,6 +3222,75 @@ public:
             }
     };
 
+    // True if `e` is an arithmetic expression of a deferred constant of the
+    // template being defined, such as `-n` or `real(n)*2`: it reads a named
+    // constant without a compile-time value (a deferred constant, or a named
+    // constant initialized with such an expression), and is otherwise built
+    // only from constants, integer and real arithmetic and conversions. The
+    // instantiation of the template folds such an expression once the
+    // deferred constant is substituted.
+    static bool is_deferred_constant_arithmetic(ASR::expr_t *e) {
+        class Finder : public ASR::BaseWalkVisitor<Finder> {
+            public:
+                bool reads_deferred = false;
+                bool foldable = true;
+
+                void visit_expr(const ASR::expr_t &x) {
+                    switch (x.type) {
+                        case ASR::exprType::Var: {
+                            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::Var_t>(&x)->m_v);
+                            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                                foldable = false;
+                                return;
+                            }
+                            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                            if (var->m_storage != ASR::storage_typeType::Parameter) {
+                                foldable = false;
+                            } else if (var->m_value == nullptr) {
+                                reads_deferred = true;
+                            }
+                            return;
+                        }
+                        case ASR::exprType::IntegerConstant:
+                        case ASR::exprType::RealConstant:
+                            return;
+                        case ASR::exprType::Cast: {
+                            ASR::cast_kindType kind =
+                                ASR::down_cast<ASR::Cast_t>(&x)->m_kind;
+                            if (kind != ASR::cast_kindType::IntegerToReal
+                                    && kind != ASR::cast_kindType::RealToInteger
+                                    && kind != ASR::cast_kindType::RealToReal
+                                    && kind != ASR::cast_kindType::IntegerToInteger) {
+                                foldable = false;
+                                return;
+                            }
+                        }
+                        [[fallthrough]];
+                        case ASR::exprType::IntegerBinOp:
+                        case ASR::exprType::RealBinOp:
+                        case ASR::exprType::IntegerUnaryMinus:
+                        case ASR::exprType::RealUnaryMinus: {
+                            if (ASRUtils::is_array(ASRUtils::expr_type(
+                                    const_cast<ASR::expr_t*>(&x)))) {
+                                foldable = false;
+                                return;
+                            }
+                            ASR::BaseWalkVisitor<Finder>::visit_expr(x);
+                            return;
+                        }
+                        default: {
+                            foldable = false;
+                            return;
+                        }
+                    }
+                }
+        };
+        Finder finder;
+        finder.visit_expr(*e);
+        return finder.reads_deferred && finder.foldable;
+    }
+
     // Rejects `e`, the array bound or character length just built for
     // `context`, when it reads a local of the scoping unit being compiled.
     // The context is passed in rather than read from
@@ -10020,6 +10089,14 @@ public:
                                 } else {
                                     value = nullptr;
                                 }
+                            } else if (in_template_definition
+                                    && storage_type == ASR::storage_typeType::Parameter
+                                    && is_deferred_constant_arithmetic(init_expr)) {
+                                // The initializer, e.g. `n*2` or `-n`, uses a
+                                // deferred constant of the template, so it has
+                                // no compile-time value until the template is
+                                // instantiated.
+                                value = nullptr;
                             } else if ( ASR::is_a<ASR::ArrayConstructor_t>(*init_expr) ||
                                 ( ASR::is_a<ASR::Cast_t>(*init_expr) &&
                                 ASR::is_a<ASR::ArrayConstructor_t>(*ASR::down_cast<ASR::Cast_t>(init_expr)->m_arg) )
@@ -10058,15 +10135,7 @@ public:
                                 value = init_expr;
                             } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr) ||
                                         ASR::is_a<ASR::ComplexBinOp_t>(*init_expr)) {
-                                if (in_template_definition) {
-                                    // The operation uses a deferred constant
-                                    // of the template, so it has no
-                                    // compile-time value until the template
-                                    // is instantiated.
-                                    value = nullptr;
-                                } else {
-                                    value = init_expr;
-                                }
+                                value = init_expr;
                             } else if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr) || ASR::is_a<ASR::BitCast_t>(*init_expr) ||
                                 ASR::is_a<ASR::IntegerCompare_t>(*init_expr)) {
                                 value = init_expr;

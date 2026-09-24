@@ -1,6 +1,7 @@
 ! Local named constants of a templated procedure whose initializers are
 ! expressions of the template's deferred constant, used as array bounds. Each
-! instantiation must give the arrays the extents of its own constant.
+! instantiation must give the arrays the extents of its own constant, and the
+! constants (including negated and real ones) the values of its own constant.
 
 module template_deferred_const_04_m
     implicit none
@@ -12,7 +13,8 @@ module template_deferred_const_04_m
     template tmpl {n}
         deferred integer, parameter :: n
         private
-        public :: size_mul, size_add, size_chain, fill_sum
+        public :: size_mul, size_add, size_chain, fill_sum, neg, &
+            size_neg, neg_real
     contains
         function size_mul() result(r)
             integer :: r
@@ -45,6 +47,25 @@ module template_deferred_const_04_m
             end do
             r = sum(y)
         end function
+
+        function neg() result(r)
+            integer :: r
+            integer, parameter :: d = -n
+            r = d
+        end function
+
+        function size_neg() result(r)
+            integer :: r
+            integer, parameter :: m = -(-n), k = -n
+            integer :: y(m), z(k + 3*n)
+            r = size(y) + 100*size(z)
+        end function
+
+        function neg_real() result(r)
+            real :: r
+            real, parameter :: x = -(n*2.5), y = -x/2
+            r = x + 100*y
+        end function
     end template
 
 contains
@@ -52,23 +73,33 @@ contains
     subroutine test_three()
         instantiate tmpl {three}, only: size_mul_3 => size_mul, &
             size_add_3 => size_add, size_chain_3 => size_chain, &
-            fill_sum_3 => fill_sum
+            fill_sum_3 => fill_sum, neg_3 => neg, size_neg_3 => size_neg, &
+            neg_real_3 => neg_real
         if (size_mul_3() /= 6) error stop
         if (size_add_3() /= 4) error stop
         if (size_chain_3() /= 8) error stop
         if (fill_sum_3() /= 21) error stop
+        if (neg_3() /= -3) error stop
+        if (size_neg_3() /= 603) error stop
+        if (abs(neg_real_3() - 367.5) > 1e-4) error stop
         print *, size_mul_3(), size_add_3(), size_chain_3(), fill_sum_3()
+        print *, neg_3(), size_neg_3(), neg_real_3()
     end subroutine
 
     subroutine test_five()
         instantiate tmpl {five}, only: size_mul_5 => size_mul, &
             size_add_5 => size_add, size_chain_5 => size_chain, &
-            fill_sum_5 => fill_sum
+            fill_sum_5 => fill_sum, neg_5 => neg, size_neg_5 => size_neg, &
+            neg_real_5 => neg_real
         if (size_mul_5() /= 10) error stop
         if (size_add_5() /= 6) error stop
         if (size_chain_5() /= 12) error stop
         if (fill_sum_5() /= 55) error stop
+        if (neg_5() /= -5) error stop
+        if (size_neg_5() /= 1005) error stop
+        if (abs(neg_real_5() - 612.5) > 1e-4) error stop
         print *, size_mul_5(), size_add_5(), size_chain_5(), fill_sum_5()
+        print *, neg_5(), size_neg_5(), neg_real_5()
     end subroutine
 
 end module
