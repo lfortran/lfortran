@@ -23055,28 +23055,109 @@ public:
         this->current_round_mode = nullptr;
     }
 
-    std::string serialize_structType_symbols(ASR::symbol_t* sym){
-        std::string res {};
+    /*
+        Serializes the members of a derived type and inserts an explicit `P<n>`
+        marker wherever the LLVM layout of that type leaves a gap. The runtime
+        walker advances a raw pointer by the size of each serialized element,
+        so without these markers every component that sits behind an alignment
+        gap is read from the wrong offset.
+
+        `walked_size` receives the number of bytes the walker advances past the
+        whole type; `walked_size_known` is cleared when that cannot be modelled,
+        and the enclosing type is then left unpadded.
+    */
+    std::string serialize_structType_symbols(ASR::symbol_t* sym,
+        int64_t& walked_size, bool& walked_size_known) {
         ASR::Struct_t* StructSymbol = ASR::down_cast<ASR::Struct_t>(sym);
+        std::vector<std::string> members_serialization;
+        std::vector<int64_t> members_size;
+        bool sizes_known = true;
         // An extended type stores its parent as the 0th member of the LLVM
         // struct (see LLVMUtils::getStructType), so the inherited components
         // are serialized first, as a nested struct.
         if( StructSymbol->m_parent != nullptr ) {
             ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
                 StructSymbol->m_parent);
-            res += "(" + serialize_structType_symbols(parent) + ")";
-            if( StructSymbol->n_members > 0 ) {
-                res += ",";
-            }
+            int64_t parent_size = 0;
+            bool parent_size_known = false;
+            members_serialization.push_back("(" + serialize_structType_symbols(
+                parent, parent_size, parent_size_known) + ")");
+            members_size.push_back(parent_size);
+            sizes_known = sizes_known && parent_size_known;
         }
         for(size_t i=0; i < StructSymbol->n_members; i++){
             ASR::symbol_t* StructMember = StructSymbol->m_symtab->
                                             get_symbol(StructSymbol->m_members[i]);
-            res += SerializeType(ASRUtils::get_expr_from_sym(al, StructMember), ASRUtils::symbol_type(StructMember), true);
-            if(i < StructSymbol->n_members-1){
-                res += ",";
+            ASR::ttype_t* member_type = ASRUtils::symbol_type(StructMember);
+            int64_t member_size = 0;
+            bool member_size_known = false;
+            members_serialization.push_back(SerializeType(
+                ASRUtils::get_expr_from_sym(al, StructMember), member_type, true,
+                member_size, member_size_known));
+            members_size.push_back(member_size);
+            // An allocatable or pointer component is stored as a descriptor or
+            // a pointer but is serialized as the type it holds, and a bind(C)
+            // or SEQUENCE character component is stored inline as a byte blob
+            // but is serialized as a string descriptor. Neither advance
+            // describes the layout, so such a type is left unpadded.
+            if( ASRUtils::is_allocatable(member_type) ||
+                ASR::is_a<ASR::Pointer_t>(*member_type) ||
+                ASRUtils::is_inline_character_struct_member(StructSymbol, member_type) ) {
+                member_size_known = false;
+            }
+            sizes_known = sizes_known && member_size_known;
+        }
+
+        // Gap in front of each member, plus the trailing gap of the type.
+        std::vector<int64_t> paddings(members_serialization.size() + 1, 0);
+        bool paddings_known = sizes_known && !members_serialization.empty();
+        int64_t struct_size = 0;
+        if( paddings_known ) {
+            llvm::StructType* struct_llvm_type = llvm::dyn_cast<llvm::StructType>(
+                llvm_utils->getStructType(StructSymbol, module.get()));
+            if( struct_llvm_type == nullptr || struct_llvm_type->isOpaque() ||
+                (size_t) struct_llvm_type->getNumElements() != members_serialization.size() ) {
+                paddings_known = false;
+            } else {
+                const llvm::StructLayout* struct_layout =
+                    module->getDataLayout().getStructLayout(struct_llvm_type);
+                int64_t walked = 0;
+                for( size_t i = 0; i < members_serialization.size(); i++ ) {
+                    int64_t offset = (int64_t) struct_layout->getElementOffset(i);
+                    if( offset < walked ) {
+                        paddings_known = false;
+                        break;
+                    }
+                    paddings[i] = offset - walked;
+                    walked = offset + members_size[i];
+                }
+                struct_size = (int64_t) struct_layout->getSizeInBytes();
+                if( paddings_known && struct_size >= walked ) {
+                    paddings[members_serialization.size()] = struct_size - walked;
+                } else {
+                    paddings_known = false;
+                }
             }
         }
+        if( !paddings_known ) {
+            paddings.assign(paddings.size(), 0);
+        }
+
+        std::string res {};
+        for( size_t i = 0; i < members_serialization.size(); i++ ) {
+            if( i > 0 ) {
+                res += ",";
+            }
+            if( paddings[i] > 0 ) {
+                res += "P" + std::to_string(paddings[i]) + ",";
+            }
+            res += members_serialization[i];
+        }
+        if( paddings[members_serialization.size()] > 0 ) {
+            res += ",P" + std::to_string(paddings[members_serialization.size()]);
+        }
+        walked_size = struct_size;
+        walked_size_known = paddings_known;
         return res;
     }
 
@@ -23092,20 +23173,47 @@ public:
         So, Complex type results in `{R, R}` as it's a struct of floating types in the backend.
     */
 
-    // Serialize `type` using symbols above.
     std::string SerializeType(ASR::expr_t* expr, ASR::ttype_t* type, bool in_struct) {
+        int64_t walked_size = 0;
+        bool walked_size_known = false;
+        return SerializeType(expr, type, in_struct, walked_size, walked_size_known);
+    }
+
+    /*
+        Serialize `type` using symbols above.
+
+        `walked_size` receives the number of bytes the runtime walker advances
+        past one such element; it mirrors `primitive_type_sizes` in
+        `libasr/runtime/lfortran_intrinsics.c`. `walked_size_known` is cleared
+        when that advance cannot be modelled.
+    */
+    std::string SerializeType(ASR::expr_t* expr, ASR::ttype_t* type, bool in_struct,
+        int64_t& walked_size, bool& walked_size_known) {
         std::string res {};
+        int64_t pointer_size = (int64_t) module->getDataLayout().getPointerSize();
+        walked_size = 0;
+        walked_size_known = true;
         type = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(type));
         if (ASR::is_a<ASR::Integer_t>(*type)) {
             res += "I";
             res += std::to_string(ASRUtils::extract_kind_from_ttype_t(type));
+            walked_size = ASRUtils::extract_kind_from_ttype_t(type);
         } else if (ASR::is_a<ASR::UnsignedInteger_t>(*type)) {
             res += "U";
             res += std::to_string(ASRUtils::extract_kind_from_ttype_t(type));
+            walked_size = ASRUtils::extract_kind_from_ttype_t(type);
         } else if (ASR::is_a<ASR::Real_t>(*type)) {
+            int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
             res += "R";
-            res += std::to_string(ASRUtils::extract_kind_from_ttype_t(type));
+            res += std::to_string(a_kind);
+            // A real(10) is walked with `sizeof(long double)`, which the
+            // compiler cannot reproduce from the LLVM type.
+            if( a_kind == 4 || a_kind == 8 || a_kind == 16 ) {
+                walked_size = a_kind;
+            } else {
+                walked_size_known = false;
+            }
         } else if (ASR::is_a<ASR::String_t>(*type)) {
             res += "S-";
             ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
@@ -23116,12 +23224,15 @@ public:
             // occupies, so that it can transcode a kind 4 value to UTF-8 and
             // count field widths in characters rather than bytes.
             res += "-K" + std::to_string(str_type->m_kind);
+            walked_size = (str_type->m_physical_type == ASR::DescriptorString) ?
+                pointer_size + (int64_t) sizeof(int64_t) : pointer_size;
             int len;
             if(ASRUtils::extract_value(str_type->m_len, len)){res += "-" + std::to_string(len);}
         } else if (ASR::is_a<ASR::Complex_t>(*type)){
             res += "{R" + std::to_string(ASRUtils::extract_kind_from_ttype_t(type))+
                     ",R" + std::to_string(ASRUtils::extract_kind_from_ttype_t(type))+
                     "}";
+            walked_size = 2 * (int64_t) ASRUtils::extract_kind_from_ttype_t(type);
         } else if (ASR::is_a<ASR::Array_t>(*type)) {
             // push array size only if it's not a struct member.
             if(in_struct && ASRUtils::is_fixed_size_array(type)){
@@ -23130,18 +23241,41 @@ public:
                 // TODO : Throw a semantic error instead.
                 throw CodeGenError("Can't print type variable with dynamic array member");
             }
+            ASR::ttype_t* element_type = ASR::down_cast<ASR::Array_t>(type)->m_type;
+            int64_t element_size = 0;
+            bool element_size_known = false;
             res += "[";
-            res += SerializeType(expr, ASR::down_cast<ASR::Array_t>(type)->m_type, in_struct);
+            res += SerializeType(expr, element_type, in_struct,
+                element_size, element_size_known);
             res += "]";
+            // An array of strings inside a derived type is walked element by
+            // element through the string data itself, not by a fixed stride.
+            // A zero-size array does not advance the pointer at all, but the
+            // runtime still reads its element type out of the description and
+            // leaves it as the current type, so the advance past the *next*
+            // element is the size of this array's element rather than of the
+            // member before it. That is not a stride this side can describe.
+            if( in_struct && element_size_known &&
+                !ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(element_type)) &&
+                ASRUtils::is_fixed_size_array(type) &&
+                ASRUtils::get_fixed_size_of_array(type) > 0 ) {
+                walked_size = ASRUtils::get_fixed_size_of_array(type) * element_size;
+            } else {
+                walked_size_known = false;
+            }
         } else if (ASR::is_a<ASR::StructType_t>(*type)) {
             res += "(";
-            res += serialize_structType_symbols(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr)));
+            res += serialize_structType_symbols(
+                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr)),
+                walked_size, walked_size_known);
             res += ")";
         } else if (ASR::is_a<ASR::Logical_t>(*type)) {
             int a_kind = ASR::down_cast<ASR::Logical_t>(type)->m_kind;
             res += "L" + std::to_string(a_kind * 8);
+            walked_size = a_kind;
         } else if(ASR::is_a<ASR::CPtr_t>(*type)){
             res += "CPtr";
+            walked_size = pointer_size;
         } else {
             throw CodeGenError("Printing support is not available for `" +
                 ASRUtils::type_to_str_fortran_expr(type, expr) + "` type.");
