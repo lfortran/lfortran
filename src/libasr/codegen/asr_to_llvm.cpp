@@ -6863,45 +6863,62 @@ public:
         current_scope = current_scope_copy;
     }
 
-    // Whether everything `fn` does is write back the value the storage it
+    // The global `store` writes to, when it writes through nothing but casts
+    // and element addresses; null when it writes somewhere else.
+    static llvm::GlobalVariable *stored_global(llvm::StoreInst *store) {
+        llvm::Value *base = store->getPointerOperand();
+        while (true) {
+            llvm::Value *stripped = base->stripPointerCasts();
+            if (stripped != base) { base = stripped; continue; }
+            if (auto *gep = llvm::dyn_cast<llvm::GetElementPtrInst>(base)) {
+                base = gep->getPointerOperand();
+                continue;
+            }
+            break;
+        }
+        return llvm::dyn_cast<llvm::GlobalVariable>(base);
+    }
+
+    // Take out of `fn` every store that writes back the value the storage it
     // writes to already holds. A module's variables are laid out with a
-    // static initializer that zeroes them, so a constructor storing that
-    // same zero changes nothing it can observe -- and it is not the only
-    // thing that runs before the program does. Where in the target's startup
-    // a given object file's hook runs is chosen by the linker, so such a
-    // store can land after a library's own initialization has put the real
-    // value there and undo it. A saved coarray is allocated from a
-    // constructor of the unit that declares it, and the allocation is a call
-    // into PRIF that associates the current team, which a module of that
-    // same library then had nulled back out from its own constructor.
-    static bool writes_only_its_static_initializer(llvm::Function *fn) {
+    // static initializer that zeroes them, so a constructor storing that same
+    // zero changes nothing it can observe -- and it is not the only thing
+    // that runs before the program does. Where in the target's startup a
+    // given object file's hook runs is chosen by the linker, so such a store
+    // can land after a library's own initialization has put the real value
+    // there and undo it. A saved coarray is allocated from a constructor of
+    // the unit that declares it, and that allocation is a call into PRIF
+    // which associates the current team; a module of that same library then
+    // had the association nulled back out from its own constructor, and every
+    // image aborted with an unassociated info pointer in prif_team_type.
+    //
+    // A store is left alone when something earlier in the same constructor
+    // wrote to that global, because then it is not writing back what the
+    // storage holds -- it is undoing what this constructor just did.
+    static void drop_static_initializer_writes(llvm::Function *fn) {
+        std::set<llvm::GlobalVariable*> written;
+        std::vector<llvm::StoreInst*> redundant;
         for (llvm::BasicBlock &bb : *fn) {
             for (llvm::Instruction &instr : bb) {
-                if (llvm::isa<llvm::ReturnInst>(instr)) continue;
                 llvm::StoreInst *store = llvm::dyn_cast<llvm::StoreInst>(&instr);
-                if (store == nullptr) return false;
+                if (store == nullptr) continue;
+                llvm::GlobalVariable *gv = stored_global(store);
+                if (gv == nullptr) continue;
                 llvm::Constant *value = llvm::dyn_cast<llvm::Constant>(
                     store->getValueOperand());
-                if (value == nullptr || !value->isNullValue()) return false;
-                llvm::Value *base = store->getPointerOperand();
-                while (true) {
-                    llvm::Value *stripped = base->stripPointerCasts();
-                    if (stripped != base) { base = stripped; continue; }
-                    if (auto *gep = llvm::dyn_cast<llvm::GetElementPtrInst>(base)) {
-                        base = gep->getPointerOperand();
-                        continue;
-                    }
-                    break;
+                if (value != nullptr && value->isNullValue()
+                        && gv->hasInitializer()
+                        && gv->getInitializer()->isNullValue()
+                        && written.find(gv) == written.end()) {
+                    redundant.push_back(store);
+                    continue;
                 }
-                llvm::GlobalVariable *gv =
-                    llvm::dyn_cast<llvm::GlobalVariable>(base);
-                if (gv == nullptr || !gv->hasInitializer()
-                        || !gv->getInitializer()->isNullValue()) {
-                    return false;
-                }
+                written.insert(gv);
             }
         }
-        return true;
+        for (llvm::StoreInst *store : redundant) {
+            store->eraseFromParent();
+        }
     }
 
     // Whether this translation unit defines the storage of `x`'s variables,
@@ -7122,15 +7139,15 @@ public:
             builder->SetCurrentDebugLocation(saved_debug_loc);
         }
 
+        drop_static_initializer_writes(ctor_fn);
+
         // What the set up above queues is a member that may need code, not
         // one that does: a COMMON block is carried as a module's struct
         // whose members can all be scalars, and then nothing is emitted here
         // at all. Registering a constructor that only returns would put a
         // startup hook on an object file that has nothing to do at startup,
-        // so take it back out. So is one that only writes back what the
-        // module's static initializer already put there.
-        if ((ctor_fn->size() == 1 && ctor_fn->getEntryBlock().size() == 1)
-                || writes_only_its_static_initializer(ctor_fn)) {
+        // so take it back out.
+        if (ctor_fn->size() == 1 && ctor_fn->getEntryBlock().size() == 1) {
             ctor_fn->eraseFromParent();
             return;
         }
