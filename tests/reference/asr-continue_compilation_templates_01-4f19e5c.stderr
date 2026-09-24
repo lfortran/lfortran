@@ -1166,11 +1166,35 @@ semantic error: No requirement 'r_undeclared' is defined
 1989 |         require :: r_undeclared {a, b}
      |                    ^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: initialization of named constant `x` with this intrinsic function of a deferred constant is not supported yet
+semantic error: initialization of named constant `x` with this expression of a deferred constant is not supported yet
     --> tests/errors/continue_compilation_templates_01.f90:2006:36
      |
-2006 |             real, parameter :: x = sin(real(n))  ! {Error} initialization of named constant `x` with this intrinsic function of a deferred constant is not supported yet
+2006 |             real, parameter :: x = sin(real(n))  ! {Error} initialization of named constant `x` with this expression of a deferred constant is not supported yet
      |                                    ^^^^^^^^^^^^ 
+
+semantic error: initialization of named constant `k` with this expression of a deferred constant is not supported yet
+    --> tests/errors/continue_compilation_templates_01.f90:2026:39
+     |
+2026 |             integer, parameter :: k = ishft(n, 1) + 1  ! {Error} initialization of named constant `k` with this expression of a deferred constant is not supported yet
+     |                                       ^^^^^^^^^^^^^^^ 
+
+semantic error: Division by zero
+    --> tests/errors/continue_compilation_templates_01.f90:2036:39
+     |
+2036 |             integer, parameter :: k = 6/(n - 3)  ! {Error} Division by zero
+     |                                       ^^^^^^^^^ 
+
+semantic error: Second argument of mod cannot be 0
+    --> tests/errors/continue_compilation_templates_01.f90:2046:39
+     |
+2046 |             integer, parameter :: k = mod(n, n - 3)  ! {Error} Second argument of mod cannot be 0
+     |                                       ^^^^^^^^^^^^^ 
+
+semantic error: Second argument of modulo cannot be 0
+    --> tests/errors/continue_compilation_templates_01.f90:2056:39
+     |
+2056 |             integer, parameter :: k = modulo(n, n - 3)  ! {Error} Second argument of modulo cannot be 0
+     |                                       ^^^^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55

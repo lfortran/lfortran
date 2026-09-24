@@ -3222,20 +3222,41 @@ public:
             }
     };
 
+    // Removes the symbols that an instantiation which reported errors added
+    // to `scope`, whose symbols before it were `scope_before`, so that the
+    // incomplete instantiation is not left in the ASR.
+    static void erase_failed_instantiation(SymbolTable *scope,
+            const std::map<std::string, ASR::symbol_t*> &scope_before) {
+        std::vector<std::string> added;
+        for (auto &item: scope->get_scope()) {
+            if (scope_before.find(item.first) == scope_before.end()) {
+                added.push_back(item.first);
+            }
+        }
+        for (auto &name: added) {
+            scope->erase_symbol(name);
+        }
+    }
+
     enum class DeferredConstantInit {
         // The expression does not read a deferred constant of the template
-        // being defined, or reads it in a way handled elsewhere.
+        // being defined.
         None,
-        // An arithmetic expression of a deferred constant, such as `-n`,
-        // `real(n)*2` or `abs(n - 5)`: it reads a named constant without a
-        // compile-time value (a deferred constant, or a named constant
-        // initialized with such an expression), and is otherwise built only
-        // from constants, integer and real arithmetic, conversions and the
-        // intrinsics that the instantiation can evaluate. The instantiation
-        // of the template folds it once the deferred constant is substituted.
+        // A scalar expression of a deferred constant, such as `-n`,
+        // `real(n)*2`, `abs(n - 5)` or `n > 3 .and. n < 10`: it reads a named
+        // constant without a compile-time value (a deferred constant, or a
+        // named constant initialized with such an expression), and is
+        // otherwise built only from constants and the operations that the
+        // instantiation of the template evaluates once the deferred constant
+        // is substituted: integer, real and logical operations and
+        // comparisons (`ASRUtils::fold_binop_constants`,
+        // `ASRUtils::fold_compare_constants`, `ASRUtils::fold_logical_binop`),
+        // numeric conversions (`ASRUtils::make_Cast_t_value`) and the numeric
+        // intrinsics with an evaluation function.
         Foldable,
-        // Reads a deferred constant through an intrinsic that the
-        // instantiation cannot evaluate, such as `sin(real(n))`.
+        // Reads a deferred constant in any other way, such as
+        // `sin(real(n))`, `[n, 2*n]` or `-(n*0.1_16)`, which the
+        // instantiation cannot evaluate.
         Unsupported
     };
 
@@ -3244,7 +3265,67 @@ public:
             public:
                 bool reads_deferred = false;
                 bool foldable = true;
-                bool unsupported_intrinsic = false;
+
+                // The kind of `e` if it is a real, 0 otherwise.
+                static int real_kind(ASR::expr_t *e) {
+                    ASR::ttype_t *t = ASRUtils::expr_type(e);
+                    return ASRUtils::is_real(*t)
+                        ? ASRUtils::extract_kind_from_ttype_t(t) : 0;
+                }
+
+                // Real constants of kinds 10 and 16 are stored in their own
+                // formats. Only the binary operations and comparisons, and the
+                // conversion of an integer, evaluate real(16) values;
+                // real(10) values are evaluated by none of them.
+                static bool evaluates_real_kinds(const ASR::expr_t &x) {
+                    ASR::expr_t *e = const_cast<ASR::expr_t*>(&x);
+                    std::vector<ASR::expr_t*> operands = {e};
+                    bool real16 = false;
+                    switch (x.type) {
+                        case ASR::exprType::RealBinOp: {
+                            ASR::RealBinOp_t *b = ASR::down_cast<ASR::RealBinOp_t>(e);
+                            operands.push_back(b->m_left);
+                            operands.push_back(b->m_right);
+                            real16 = true;
+                            break;
+                        }
+                        case ASR::exprType::RealCompare: {
+                            ASR::RealCompare_t *c = ASR::down_cast<ASR::RealCompare_t>(e);
+                            operands.push_back(c->m_left);
+                            operands.push_back(c->m_right);
+                            real16 = true;
+                            break;
+                        }
+                        case ASR::exprType::Cast: {
+                            ASR::Cast_t *c = ASR::down_cast<ASR::Cast_t>(e);
+                            operands.push_back(c->m_arg);
+                            real16 = c->m_kind == ASR::cast_kindType::IntegerToReal;
+                            break;
+                        }
+                        case ASR::exprType::IntrinsicElementalFunction: {
+                            ASR::IntrinsicElementalFunction_t *f =
+                                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+                            for (size_t i = 0; i < f->n_args; i++) {
+                                operands.push_back(f->m_args[i]);
+                            }
+                            break;
+                        }
+                        default: break;
+                    }
+                    for (ASR::expr_t *operand: operands) {
+                        int kind = real_kind(operand);
+                        if (kind == 10 || (kind == 16 && !real16)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+
+                static bool is_arithmetic(ASR::binopType op) {
+                    return op == ASR::binopType::Add || op == ASR::binopType::Sub
+                        || op == ASR::binopType::Mul || op == ASR::binopType::Div
+                        || op == ASR::binopType::Pow;
+                }
 
                 void visit_expr(const ASR::expr_t &x) {
                     if (x.type != ASR::exprType::Var
@@ -3252,6 +3333,7 @@ public:
                         // Already a compile-time constant, e.g. `kind(n)`.
                         return;
                     }
+                    bool supported = true;
                     switch (x.type) {
                         case ASR::exprType::Var: {
                             ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
@@ -3270,51 +3352,56 @@ public:
                         }
                         case ASR::exprType::IntegerConstant:
                         case ASR::exprType::RealConstant:
+                        case ASR::exprType::LogicalConstant:
                             return;
                         case ASR::exprType::IntrinsicElementalFunction: {
-                            int64_t id = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(
-                                &x)->m_intrinsic_id;
-                            if (ASRUtils::IntrinsicElementalFunctionRegistry
-                                    ::get_eval_function(id) == nullptr) {
-                                foldable = false;
-                                unsupported_intrinsic = true;
-                                ASR::BaseWalkVisitor<Finder>::visit_expr(x);
-                                return;
-                            }
+                            supported = ASRUtils::IntrinsicElementalFunctionRegistry
+                                ::get_eval_function(ASR::down_cast<
+                                    ASR::IntrinsicElementalFunction_t>(&x)
+                                        ->m_intrinsic_id) != nullptr;
                             break;
-                        }
-                        case ASR::exprType::IntrinsicArrayFunction: {
-                            foldable = false;
-                            unsupported_intrinsic = true;
-                            ASR::BaseWalkVisitor<Finder>::visit_expr(x);
-                            return;
                         }
                         case ASR::exprType::Cast: {
                             ASR::cast_kindType kind =
                                 ASR::down_cast<ASR::Cast_t>(&x)->m_kind;
-                            if (kind != ASR::cast_kindType::IntegerToReal
-                                    && kind != ASR::cast_kindType::RealToInteger
-                                    && kind != ASR::cast_kindType::RealToReal
-                                    && kind != ASR::cast_kindType::IntegerToInteger) {
-                                foldable = false;
-                                ASR::BaseWalkVisitor<Finder>::visit_expr(x);
-                                return;
-                            }
+                            supported = kind == ASR::cast_kindType::IntegerToReal
+                                || kind == ASR::cast_kindType::RealToInteger
+                                || kind == ASR::cast_kindType::RealToReal
+                                || kind == ASR::cast_kindType::IntegerToInteger;
                             break;
                         }
-                        case ASR::exprType::IntegerBinOp:
-                        case ASR::exprType::RealBinOp:
+                        case ASR::exprType::IntegerBinOp: {
+                            supported = is_arithmetic(
+                                ASR::down_cast<ASR::IntegerBinOp_t>(&x)->m_op);
+                            break;
+                        }
+                        case ASR::exprType::RealBinOp: {
+                            supported = is_arithmetic(
+                                ASR::down_cast<ASR::RealBinOp_t>(&x)->m_op);
+                            break;
+                        }
                         case ASR::exprType::IntegerUnaryMinus:
                         case ASR::exprType::RealUnaryMinus:
+                        case ASR::exprType::IntegerCompare:
+                        case ASR::exprType::RealCompare:
+                        case ASR::exprType::LogicalNot:
                             break;
+                        case ASR::exprType::LogicalBinOp: {
+                            bool result;
+                            supported = ASRUtils::fold_logical_binop(
+                                ASR::down_cast<ASR::LogicalBinOp_t>(&x)->m_op,
+                                false, false, result);
+                            break;
+                        }
                         default: {
-                            foldable = false;
-                            ASR::BaseWalkVisitor<Finder>::visit_expr(x);
-                            return;
+                            supported = false;
+                            break;
                         }
                     }
-                    if (ASRUtils::is_array(ASRUtils::expr_type(
-                            const_cast<ASR::expr_t*>(&x)))) {
+                    if (!supported
+                            || ASRUtils::is_array(ASRUtils::expr_type(
+                                const_cast<ASR::expr_t*>(&x)))
+                            || !evaluates_real_kinds(x)) {
                         foldable = false;
                     }
                     ASR::BaseWalkVisitor<Finder>::visit_expr(x);
@@ -3328,10 +3415,7 @@ public:
         if (finder.foldable) {
             return DeferredConstantInit::Foldable;
         }
-        if (finder.unsupported_intrinsic) {
-            return DeferredConstantInit::Unsupported;
-        }
-        return DeferredConstantInit::None;
+        return DeferredConstantInit::Unsupported;
     }
 
     // Rejects `e`, the array bound or character length just built for
@@ -9991,11 +10075,12 @@ public:
                                     diag.add(Diagnostic(
                                         "initialization of named constant `"
                                         + std::string(x.m_syms[i].m_name)
-                                        + "` with this intrinsic function of a"
+                                        + "` with this expression of a"
                                         " deferred constant is not supported yet",
                                         Level::Error, Stage::Semantic, {
                                             Label("", {init_expr->base.loc})
                                         }));
+                                    throw SemanticAbort();
                                 }
                                 // The initializer, e.g. `n*2`, `-n` or
                                 // `abs(n - 5)`, uses a deferred constant of the
@@ -22008,7 +22093,14 @@ public:
 
         std::string new_func_name = target_scope->get_unique_name("__instantiated_" + func_name);
 
-        ASR::symbol_t* new_s = instantiate_symbol(al, target_scope, type_subs, symbol_subs, new_func_name, s);
+        size_t n_diagnostics = diag.diagnostics.size();
+        std::map<std::string, ASR::symbol_t*> scope_before = target_scope->get_scope();
+        ASR::symbol_t* new_s = instantiate_symbol(al, target_scope, type_subs, symbol_subs, new_func_name, s,
+            diag);
+        if (diag.diagnostics.size() > n_diagnostics) {
+            erase_failed_instantiation(target_scope, scope_before);
+            throw SemanticAbort();
+        }
         instantiate_body(al, type_subs, symbol_subs, new_s, s);
 
         return new_func_name;

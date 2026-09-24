@@ -66,7 +66,7 @@ private:
     bool _processing_assumed_rank_array = false;
     bool _processing_unbounded_pointer_array = false;
     // True while the symbols of a template are visited. A named constant of a
-    // template whose initializer uses a deferred constant has no compile-time
+    // template whose initializer reads a deferred constant has no compile-time
     // value until the template is instantiated.
     bool _inside_template = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
@@ -1312,7 +1312,7 @@ public:
             }
         }
         if( symtab->parent != nullptr &&
-            !is_module && !is_struct && !_inside_template) {
+            !is_module && !is_struct) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
             ASR::ArrayConstructor_t *array_construct = nullptr;
@@ -1331,7 +1331,9 @@ public:
             } else {
                 require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
                         (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                        (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
+                        (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)) ||
+                        (_inside_template && x.m_storage == ASR::storage_typeType::Parameter &&
+                            ASRUtils::reads_valueless_parameter(x.m_symbolic_value)),
                         "Initialisation of " + std::string(x.m_name) +
                         " must reduce to a compile time constant.");
             }

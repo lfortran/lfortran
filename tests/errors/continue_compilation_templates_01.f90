@@ -2003,9 +2003,77 @@ module template_deferred_const_intrinsic_1
     contains
         function f() result(r)
             real :: r
-            real, parameter :: x = sin(real(n))  ! {Error} initialization of named constant `x` with this intrinsic function of a deferred constant is not supported yet
+            real, parameter :: x = sin(real(n))  ! {Error} initialization of named constant `x` with this expression of a deferred constant is not supported yet
             r = x
         end function
     end template
+
+end module
+
+! The rejection of such an initializer is final, so that instantiating the
+! template reports it instead of failing on a constant without a value; the
+! instantiation reports a division by zero in the initializer it evaluates
+! (#13357).
+module template_deferred_const_instantiated_1
+    implicit none
+    integer, parameter :: three = 3
+
+    template tmpl_ishft {n}
+        deferred integer, parameter :: n
+    contains
+        function f() result(r)
+            integer :: r
+            integer, parameter :: k = ishft(n, 1) + 1  ! {Error} initialization of named constant `k` with this expression of a deferred constant is not supported yet
+            r = k
+        end function
+    end template
+
+    template tmpl_div {n}
+        deferred integer, parameter :: n
+    contains
+        function f() result(r)
+            integer :: r
+            integer, parameter :: k = 6/(n - 3)  ! {Error} Division by zero
+            r = k
+        end function
+    end template
+
+    template tmpl_mod {n}
+        deferred integer, parameter :: n
+    contains
+        function f() result(r)
+            integer :: r
+            integer, parameter :: k = mod(n, n - 3)  ! {Error} Second argument of mod cannot be 0
+            r = k
+        end function
+    end template
+
+    template tmpl_modulo {n}
+        deferred integer, parameter :: n
+    contains
+        function f() result(r)
+            integer :: r
+            integer, parameter :: k = modulo(n, n - 3)  ! {Error} Second argument of modulo cannot be 0
+            r = k
+        end function
+    end template
+
+contains
+
+    subroutine use_ishft()
+        instantiate tmpl_ishft {three}
+    end subroutine
+
+    subroutine use_div()
+        instantiate tmpl_div {three}
+    end subroutine
+
+    subroutine use_mod()
+        instantiate tmpl_mod {three}
+    end subroutine
+
+    subroutine use_modulo()
+        instantiate tmpl_modulo {three}
+    end subroutine
 
 end module

@@ -2,7 +2,9 @@
 ! expressions of the template's deferred constant, used as array bounds. Each
 ! instantiation must give the arrays the extents of its own constant, and the
 ! constants (including negated and real ones, and numeric intrinsics of the
-! constant) the values of its own constant.
+! constant, negative powers, comparisons and logical operations of the
+! constant) the values of its own constant. real(16) constants are in
+! template_deferred_const_05.
 
 module template_deferred_const_04_m
     implicit none
@@ -15,7 +17,7 @@ module template_deferred_const_04_m
         deferred integer, parameter :: n
         private
         public :: size_mul, size_add, size_chain, fill_sum, neg, &
-            size_neg, neg_real, intr, size_intr, intr_real
+            size_neg, neg_real, intr, size_intr, intr_real, pow_neg, logic
     contains
         function size_mul() result(r)
             integer :: r
@@ -87,6 +89,25 @@ module template_deferred_const_04_m
             real, parameter :: x = real(n), y = -real(n)/2, z = sqrt(real(n*n))
             r = x + 10*y + 100*z
         end function
+
+        function pow_neg() result(r)
+            integer :: r
+            integer, parameter :: a = 2**(-n), b = (-1)**(-n), c = 1**(-n), &
+                d = 12/(n-1)
+            integer :: y(c + 1)
+            r = a + 10*b + 100*size(y) + 1000*d
+        end function
+
+        function logic() result(r)
+            integer :: r
+            logical, parameter :: a = n > 3, b = n > 2 .and. n < 10, &
+                c = .not. a .or. real(n) > 4.5, d = a .eqv. c
+            r = 0
+            if (a) r = r + 1
+            if (b) r = r + 10
+            if (c) r = r + 100
+            if (d) r = r + 1000
+        end function
     end template
 
 contains
@@ -96,7 +117,8 @@ contains
             size_add_3 => size_add, size_chain_3 => size_chain, &
             fill_sum_3 => fill_sum, neg_3 => neg, size_neg_3 => size_neg, &
             neg_real_3 => neg_real, intr_3 => intr, &
-            size_intr_3 => size_intr, intr_real_3 => intr_real
+            size_intr_3 => size_intr, intr_real_3 => intr_real, &
+            pow_neg_3 => pow_neg, logic_3 => logic
         if (size_mul_3() /= 6) error stop
         if (size_add_3() /= 4) error stop
         if (size_chain_3() /= 8) error stop
@@ -109,7 +131,10 @@ contains
         if (abs(intr_real_3() - 288.0) > 1e-4) error stop
         print *, size_mul_3(), size_add_3(), size_chain_3(), fill_sum_3()
         print *, neg_3(), size_neg_3(), neg_real_3()
+        if (pow_neg_3() /= 6190) error stop
+        if (logic_3() /= 110) error stop
         print *, intr_3(), size_intr_3(), intr_real_3()
+        print *, pow_neg_3(), logic_3()
     end subroutine
 
     subroutine test_five()
@@ -117,7 +142,8 @@ contains
             size_add_5 => size_add, size_chain_5 => size_chain, &
             fill_sum_5 => fill_sum, neg_5 => neg, size_neg_5 => size_neg, &
             neg_real_5 => neg_real, intr_5 => intr, &
-            size_intr_5 => size_intr, intr_real_5 => intr_real
+            size_intr_5 => size_intr, intr_real_5 => intr_real, &
+            pow_neg_5 => pow_neg, logic_5 => logic
         if (size_mul_5() /= 10) error stop
         if (size_add_5() /= 6) error stop
         if (size_chain_5() /= 12) error stop
@@ -130,7 +156,10 @@ contains
         if (abs(intr_real_5() - 480.0) > 1e-4) error stop
         print *, size_mul_5(), size_add_5(), size_chain_5(), fill_sum_5()
         print *, neg_5(), size_neg_5(), neg_real_5()
+        if (pow_neg_5() /= 3190) error stop
+        if (logic_5() /= 1111) error stop
         print *, intr_5(), size_intr_5(), intr_real_5()
+        print *, pow_neg_5(), logic_5()
     end subroutine
 
 end module

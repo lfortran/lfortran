@@ -7616,6 +7616,11 @@ ASR::expr_t* fold_compare_constants(Allocator &al, ASR::expr_t* left,
 bool fold_logical_binop(ASR::logicalbinopType op, bool left, bool right,
         bool &result);
 
+// True if `e` reads a named constant that has no compile-time value, such as
+// a deferred constant of a template, or a named constant of a template
+// initialized with an expression of one.
+bool reads_valueless_parameter(ASR::expr_t* e);
+
 static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, ASR::expr_t* end) {
     ASR::expr_t* start_value = nullptr;
     ASR::expr_t* end_value = nullptr;

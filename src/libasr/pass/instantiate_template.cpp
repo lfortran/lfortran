@@ -1029,18 +1029,22 @@ public:
     std::string new_sym_name;                           // name for the new symbol
     ASR::symbol_t* sym;
     SetChar dependencies;
+    // Where the errors found while evaluating the constant expressions of the
+    // instantiation, such as a division by zero, are reported.
+    diag::Diagnostics* diagnostics;
 
     SymbolInstantiator(Allocator &al,
             SymbolTable* target_scope,
             std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs,
             std::map<std::string,ASR::symbol_t*>& symbol_subs,
-            std::string new_sym_name, ASR::symbol_t* sym):
+            std::string new_sym_name, ASR::symbol_t* sym,
+            diag::Diagnostics* diagnostics = nullptr):
         BaseExprStmtDuplicator(al),
         target_scope{target_scope},
         new_scope{target_scope},
         type_subs{type_subs},
         symbol_subs{symbol_subs},
-        new_sym_name{new_sym_name}, sym{sym}
+        new_sym_name{new_sym_name}, sym{sym}, diagnostics{diagnostics}
         {}
 
     ASR::symbol_t* instantiate() {
@@ -1116,7 +1120,8 @@ public:
             // instantiation of other symbols like StructMethodDeclaration
             if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
                 SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
-                    ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                    ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
+                    diagnostics);
                 t.instantiate();
             } else {
                 instantiation_vector.push_back(sym_pair);
@@ -1126,7 +1131,8 @@ public:
         // instantiate the rest of the symbols
         for (auto &sym_pair: instantiation_vector) {
             SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
-                ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
+                diagnostics);
             t.instantiate();
         }
 
@@ -1179,11 +1185,24 @@ public:
         // the type; its compile-time value is then taken from the result.
         // An initializer that uses a deferred constant has no value in the
         // template, and gets one here once the constant is substituted.
+        size_t n_diagnostics = diagnostics ? diagnostics->diagnostics.size() : 0;
         ASR::expr_t *new_symbolic_value = duplicate_expr(x->m_symbolic_value);
         ASR::expr_t *new_value = duplicate_expr(x->m_value);
         if (new_value == nullptr && new_symbolic_value
                 && x->m_storage == ASR::storage_typeType::Parameter) {
             new_value = ASRUtils::expr_value(new_symbolic_value);
+            if (diagnostics && diagnostics->diagnostics.size() == n_diagnostics
+                    && !ASRUtils::is_value_constant(new_value)) {
+                // The semantics accept only initializers that the operations
+                // above evaluate, so this is not expected; report it rather
+                // than leave the named constant without a value.
+                diagnostics->add(diag::Diagnostic(
+                    "initialization of named constant `" + std::string(x->m_name)
+                    + "` does not reduce to a compile time constant in this"
+                    " instantiation",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x->m_symbolic_value->base.loc})}));
+            }
         }
         if (new_value && ASRUtils::expr_value(new_value)) {
             new_value = ASRUtils::expr_value(new_value);
@@ -1218,64 +1237,240 @@ public:
         return s;
     }
 
-    // Substituting a deferred constant can turn an integer expression of the
+    // Substituting a deferred constant can turn an expression of the
     // template, which had no compile-time value, into a constant expression
-    // of the instantiation, e.g. `n*2` with `n` bound to 3. Fold it, so that
-    // array bounds such as `0:n` or `2:n` and named constants initialized
-    // with it get a compile-time value.
+    // of the instantiation, e.g. `n*2` with `n` bound to 3. The operations
+    // below evaluate it with the same functions as the frontend, so that named
+    // constants initialized with it get a compile-time value.
+
+    void report_error(const std::string &message, const Location &loc) {
+        if (diagnostics) {
+            diagnostics->add(diag::Diagnostic(message, diag::Level::Error,
+                diag::Stage::Semantic, {diag::Label("", {loc})}));
+        }
+    }
+
+    // The compile-time value of the scalar `left op right`, or nullptr.
+    ASR::expr_t* fold_binop(ASR::expr_t* left, ASR::binopType op,
+            ASR::expr_t* right, ASR::ttype_t* type, const Location &loc) {
+        ASR::expr_t* left_value = ASRUtils::expr_value(left);
+        ASR::expr_t* right_value = ASRUtils::expr_value(right);
+        if (left_value == nullptr || right_value == nullptr
+                || ASRUtils::is_array(type)) {
+            return nullptr;
+        }
+        bool division_by_zero = false;
+        ASR::expr_t* value = ASRUtils::fold_binop_constants(al, left_value,
+            right_value, op, loc, type, division_by_zero);
+        if (division_by_zero) {
+            report_error("Division by zero", loc);
+        }
+        return value;
+    }
+
     ASR::asr_t* duplicate_IntegerBinOp(ASR::IntegerBinOp_t* x) {
         ASR::expr_t* left = duplicate_expr(x->m_left);
         ASR::expr_t* right = duplicate_expr(x->m_right);
         ASR::ttype_t* type = duplicate_ttype(x->m_type);
         ASR::expr_t* value = duplicate_expr(x->m_value);
-        int64_t l = 0, r = 0;
-        if (value == nullptr
-                && ASRUtils::extract_value(ASRUtils::expr_value(left), l)
-                && ASRUtils::extract_value(ASRUtils::expr_value(right), r)) {
-            bool folded = true;
-            int64_t result = 0;
-            switch (x->m_op) {
-                case ASR::binopType::Add: { result = l + r; break; }
-                case ASR::binopType::Sub: { result = l - r; break; }
-                case ASR::binopType::Mul: { result = l * r; break; }
-                case ASR::binopType::Div: {
-                    folded = (r != 0);
-                    if (folded) {
-                        result = l / r;
-                    }
-                    break;
-                }
-                case ASR::binopType::Pow: {
-                    folded = (r >= 0);
-                    result = 1;
-                    for (int64_t i = 0; folded && i < r; i++) {
-                        result *= l;
-                    }
-                    break;
-                }
-                default: { folded = false; break; }
-            }
-            if (folded) {
-                value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
-                    x->base.base.loc, result, type));
-            }
+        if (value == nullptr) {
+            value = fold_binop(left, x->m_op, right, type, x->base.base.loc);
         }
         return ASR::make_IntegerBinOp_t(al, x->base.base.loc, left, x->m_op,
             right, type, value);
     }
 
+    ASR::asr_t* duplicate_RealBinOp(ASR::RealBinOp_t* x) {
+        ASR::expr_t* left = duplicate_expr(x->m_left);
+        ASR::expr_t* right = duplicate_expr(x->m_right);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        if (value == nullptr) {
+            value = fold_binop(left, x->m_op, right, type, x->base.base.loc);
+        }
+        return ASR::make_RealBinOp_t(al, x->base.base.loc, left, x->m_op,
+            right, type, value);
+    }
+
+    // The frontend negates a scalar integer or real constant in place (in
+    // `visit_UnaryOp`); this is the same, for the kinds whose value is stored
+    // in `m_n` or `m_r` (the semantics reject real(10) and real(16) here).
     ASR::asr_t* duplicate_IntegerUnaryMinus(ASR::IntegerUnaryMinus_t* x) {
         ASR::expr_t* arg = duplicate_expr(x->m_arg);
         ASR::ttype_t* type = duplicate_ttype(x->m_type);
         ASR::expr_t* value = duplicate_expr(x->m_value);
-        int64_t a = 0;
-        if (value == nullptr
-                && ASRUtils::extract_value(ASRUtils::expr_value(arg), a)) {
+        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        if (value == nullptr && arg_value
+                && ASR::is_a<ASR::IntegerConstant_t>(*arg_value)) {
             value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
-                x->base.base.loc, -a, type));
+                x->base.base.loc,
+                -ASR::down_cast<ASR::IntegerConstant_t>(arg_value)->m_n, type));
         }
         return ASR::make_IntegerUnaryMinus_t(al, x->base.base.loc, arg, type,
             value);
+    }
+
+    ASR::asr_t* duplicate_RealUnaryMinus(ASR::RealUnaryMinus_t* x) {
+        ASR::expr_t* arg = duplicate_expr(x->m_arg);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        int kind = ASRUtils::extract_kind_from_ttype_t(type);
+        if (value == nullptr && arg_value && kind != 10 && kind != 16
+                && ASR::is_a<ASR::RealConstant_t>(*arg_value)) {
+            value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
+                x->base.base.loc,
+                -ASR::down_cast<ASR::RealConstant_t>(arg_value)->m_r, type));
+        }
+        return ASR::make_RealUnaryMinus_t(al, x->base.base.loc, arg, type,
+            value);
+    }
+
+    // The compile-time value of the scalar comparison `left op right`.
+    ASR::expr_t* fold_compare(ASR::expr_t* left, ASR::cmpopType op,
+            ASR::expr_t* right, ASR::ttype_t* type, const Location &loc) {
+        ASR::expr_t* left_value = ASRUtils::expr_value(left);
+        ASR::expr_t* right_value = ASRUtils::expr_value(right);
+        if (left_value == nullptr || right_value == nullptr
+                || ASRUtils::is_array(type)) {
+            return nullptr;
+        }
+        return ASRUtils::fold_compare_constants(al, left_value, right_value,
+            op, loc, type);
+    }
+
+    ASR::asr_t* duplicate_IntegerCompare(ASR::IntegerCompare_t* x) {
+        ASR::expr_t* left = duplicate_expr(x->m_left);
+        ASR::expr_t* right = duplicate_expr(x->m_right);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        if (value == nullptr) {
+            value = fold_compare(left, x->m_op, right, type, x->base.base.loc);
+        }
+        return ASR::make_IntegerCompare_t(al, x->base.base.loc, left, x->m_op,
+            right, type, value);
+    }
+
+    ASR::asr_t* duplicate_RealCompare(ASR::RealCompare_t* x) {
+        ASR::expr_t* left = duplicate_expr(x->m_left);
+        ASR::expr_t* right = duplicate_expr(x->m_right);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        if (value == nullptr) {
+            value = fold_compare(left, x->m_op, right, type, x->base.base.loc);
+        }
+        return ASR::make_RealCompare_t(al, x->base.base.loc, left, x->m_op,
+            right, type, value);
+    }
+
+    ASR::asr_t* duplicate_LogicalBinOp(ASR::LogicalBinOp_t* x) {
+        ASR::expr_t* left = duplicate_expr(x->m_left);
+        ASR::expr_t* right = duplicate_expr(x->m_right);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASR::expr_t* left_value = ASRUtils::expr_value(left);
+        ASR::expr_t* right_value = ASRUtils::expr_value(right);
+        bool result;
+        if (value == nullptr && left_value && right_value
+                && ASR::is_a<ASR::LogicalConstant_t>(*left_value)
+                && ASR::is_a<ASR::LogicalConstant_t>(*right_value)
+                && ASRUtils::fold_logical_binop(x->m_op,
+                    ASR::down_cast<ASR::LogicalConstant_t>(left_value)->m_value,
+                    ASR::down_cast<ASR::LogicalConstant_t>(right_value)->m_value,
+                    result)) {
+            value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
+                x->base.base.loc, result, type));
+        }
+        return ASR::make_LogicalBinOp_t(al, x->base.base.loc, left, x->m_op,
+            right, type, value);
+    }
+
+    ASR::asr_t* duplicate_LogicalNot(ASR::LogicalNot_t* x) {
+        ASR::expr_t* arg = duplicate_expr(x->m_arg);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        if (value == nullptr && arg_value
+                && ASR::is_a<ASR::LogicalConstant_t>(*arg_value)) {
+            value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
+                x->base.base.loc,
+                !ASR::down_cast<ASR::LogicalConstant_t>(arg_value)->m_value,
+                type));
+        }
+        return ASR::make_LogicalNot_t(al, x->base.base.loc, arg, type, value);
+    }
+
+    // A conversion of a deferred constant, e.g. `real(n)`.
+    ASR::asr_t* duplicate_Cast(ASR::Cast_t* x) {
+        ASR::expr_t* arg = duplicate_expr(x->m_arg);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASR::expr_t* dest = duplicate_expr(x->m_dest);
+        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        if (value == nullptr && arg_value && !ASRUtils::is_array(type)
+                && (ASR::is_a<ASR::IntegerConstant_t>(*arg_value)
+                    || ASR::is_a<ASR::RealConstant_t>(*arg_value))) {
+            value = ASRUtils::expr_value(ASRUtils::EXPR(
+                ASRUtils::make_Cast_t_value(al, x->base.base.loc, arg,
+                    x->m_kind, type)));
+        }
+        return ASR::make_Cast_t(al, x->base.base.loc, arg, x->m_kind, type,
+            value, dest);
+    }
+
+    // An intrinsic of a deferred constant, e.g. `abs(-n)` or `int(n*2.5)`,
+    // evaluated by the intrinsic's own evaluation function.
+    ASR::asr_t* duplicate_IntrinsicElementalFunction(
+            ASR::IntrinsicElementalFunction_t* x) {
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            args.push_back(al, duplicate_expr(x->m_args[i]));
+        }
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASRUtils::eval_intrinsic_function eval =
+            ASRUtils::IntrinsicElementalFunctionRegistry::get_eval_function(
+                x->m_intrinsic_id);
+        if (value == nullptr && eval && !ASRUtils::is_array(type)) {
+            Vec<ASR::expr_t*> arg_values;
+            arg_values.reserve(al, args.size());
+            for (size_t i = 0; i < args.size(); i++) {
+                ASR::expr_t* arg_value = ASRUtils::expr_value(args[i]);
+                if (arg_value == nullptr
+                        || !(ASR::is_a<ASR::IntegerConstant_t>(*arg_value)
+                            || ASR::is_a<ASR::RealConstant_t>(*arg_value))) {
+                    break;
+                }
+                arg_values.push_back(al, arg_value);
+            }
+            // `eval_Mod` divides an integer by the second argument unchecked,
+            // while `eval_Modulo` reports a zero second argument itself.
+            int64_t divisor = -1;
+            if (arg_values.size() == args.size()
+                    && x->m_intrinsic_id == static_cast<int64_t>(
+                        ASRUtils::IntrinsicElementalFunctions::Mod)
+                    && ASRUtils::extract_value(arg_values[1], divisor)
+                    && divisor == 0) {
+                report_error("Second argument of mod cannot be 0",
+                    x->base.base.loc);
+            } else if (arg_values.size() == args.size()) {
+                diag::Diagnostics eval_diagnostics;
+                value = eval(al, x->base.base.loc, type, arg_values,
+                    eval_diagnostics);
+                if (eval_diagnostics.has_error()) {
+                    value = nullptr;
+                    if (diagnostics) {
+                        for (auto &d: eval_diagnostics.diagnostics) {
+                            diagnostics->diagnostics.push_back(d);
+                        }
+                    }
+                }
+            }
+        }
+        return ASRUtils::make_IntrinsicElementalFunction_t_util(al,
+            x->base.base.loc, x->m_intrinsic_id, args.p, args.size(),
+            x->m_overload_id, type, value);
     }
 
     // An explicit-shape array whose bounds depend on a deferred named
@@ -1312,120 +1507,6 @@ public:
         return ASRUtils::make_Array_t_util(al, type->base.loc, a->m_type,
             new_dims.p, new_dims.size(), ASR::abiType::Source, false,
             ASR::array_physical_typeType::FixedSizeArray, true);
-    }
-
-    // A real value folded here is rounded to the precision of its kind.
-    static double round_to_kind(double r, ASR::ttype_t* type) {
-        if (ASRUtils::extract_kind_from_ttype_t(type) == 4) {
-            return (float) r;
-        }
-        return r;
-    }
-
-    // The real counterparts of the integer operations above, e.g. `n*2.0`.
-    ASR::asr_t* duplicate_RealBinOp(ASR::RealBinOp_t* x) {
-        ASR::expr_t* left = duplicate_expr(x->m_left);
-        ASR::expr_t* right = duplicate_expr(x->m_right);
-        ASR::ttype_t* type = duplicate_ttype(x->m_type);
-        ASR::expr_t* value = duplicate_expr(x->m_value);
-        double l = 0, r = 0;
-        if (value == nullptr && !ASRUtils::is_array(type)
-                && ASRUtils::extract_value(ASRUtils::expr_value(left), l)
-                && ASRUtils::extract_value(ASRUtils::expr_value(right), r)) {
-            bool folded = true;
-            double result = 0;
-            switch (x->m_op) {
-                case ASR::binopType::Add: { result = l + r; break; }
-                case ASR::binopType::Sub: { result = l - r; break; }
-                case ASR::binopType::Mul: { result = l * r; break; }
-                case ASR::binopType::Div: { result = l / r; break; }
-                case ASR::binopType::Pow: { result = std::pow(l, r); break; }
-                default: { folded = false; break; }
-            }
-            if (folded) {
-                value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                    x->base.base.loc, round_to_kind(result, type), type));
-            }
-        }
-        return ASR::make_RealBinOp_t(al, x->base.base.loc, left, x->m_op,
-            right, type, value);
-    }
-
-    ASR::asr_t* duplicate_RealUnaryMinus(ASR::RealUnaryMinus_t* x) {
-        ASR::expr_t* arg = duplicate_expr(x->m_arg);
-        ASR::ttype_t* type = duplicate_ttype(x->m_type);
-        ASR::expr_t* value = duplicate_expr(x->m_value);
-        double a = 0;
-        if (value == nullptr && !ASRUtils::is_array(type)
-                && ASRUtils::extract_value(ASRUtils::expr_value(arg), a)) {
-            value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                x->base.base.loc, -a, type));
-        }
-        return ASR::make_RealUnaryMinus_t(al, x->base.base.loc, arg, type,
-            value);
-    }
-
-    // A conversion of a deferred constant, e.g. `real(n)`.
-    ASR::asr_t* duplicate_Cast(ASR::Cast_t* x) {
-        ASR::expr_t* arg = duplicate_expr(x->m_arg);
-        ASR::ttype_t* type = duplicate_ttype(x->m_type);
-        ASR::expr_t* value = duplicate_expr(x->m_value);
-        ASR::expr_t* dest = duplicate_expr(x->m_dest);
-        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
-        if (value == nullptr && arg_value && !ASRUtils::is_array(type)
-                && (ASR::is_a<ASR::IntegerConstant_t>(*arg_value)
-                    || ASR::is_a<ASR::RealConstant_t>(*arg_value))) {
-            value = ASRUtils::expr_value(ASRUtils::EXPR(
-                ASRUtils::make_Cast_t_value(al, x->base.base.loc, arg,
-                    x->m_kind, type)));
-        }
-        return ASR::make_Cast_t(al, x->base.base.loc, arg, x->m_kind, type,
-            value, dest);
-    }
-
-    // An intrinsic of a deferred constant, e.g. `abs(-n)` or `int(n*2.5)`.
-    ASR::asr_t* duplicate_IntrinsicElementalFunction(
-            ASR::IntrinsicElementalFunction_t* x) {
-        Vec<ASR::expr_t*> args;
-        args.reserve(al, x->n_args);
-        for (size_t i = 0; i < x->n_args; i++) {
-            args.push_back(al, duplicate_expr(x->m_args[i]));
-        }
-        ASR::ttype_t* type = duplicate_ttype(x->m_type);
-        ASR::expr_t* value = duplicate_expr(x->m_value);
-        ASRUtils::eval_intrinsic_function eval =
-            ASRUtils::IntrinsicElementalFunctionRegistry::get_eval_function(
-                x->m_intrinsic_id);
-        if (value == nullptr && eval && !ASRUtils::is_array(type)) {
-            Vec<ASR::expr_t*> arg_values;
-            arg_values.reserve(al, args.size());
-            for (size_t i = 0; i < args.size(); i++) {
-                ASR::expr_t* arg_value = ASRUtils::expr_value(args[i]);
-                if (arg_value == nullptr
-                        || !(ASR::is_a<ASR::IntegerConstant_t>(*arg_value)
-                            || ASR::is_a<ASR::RealConstant_t>(*arg_value))) {
-                    break;
-                }
-                arg_values.push_back(al, arg_value);
-            }
-            int64_t divisor = -1;
-            bool divides_by_zero = x->m_intrinsic_id == static_cast<int64_t>(
-                    ASRUtils::IntrinsicElementalFunctions::Mod)
-                && arg_values.size() == 2
-                && ASRUtils::extract_value(arg_values[1], divisor)
-                && divisor == 0;
-            if (arg_values.size() == args.size() && !divides_by_zero) {
-                diag::Diagnostics diagnostics;
-                value = eval(al, x->base.base.loc, type, arg_values,
-                    diagnostics);
-                if (diagnostics.has_error()) {
-                    value = nullptr;
-                }
-            }
-        }
-        return ASRUtils::make_IntrinsicElementalFunction_t_util(al,
-            x->base.base.loc, x->m_intrinsic_id, args.p, args.size(),
-            x->m_overload_id, type, value);
     }
 
     // A variable declared in the module that hosts the template is shared
@@ -1479,7 +1560,8 @@ public:
         // duplicate symbol table
         for (auto const &sym_pair: x->m_symtab->get_scope()) {
             SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
-                ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
+                diagnostics);
             t.instantiate();
         }
 
@@ -1537,7 +1619,8 @@ public:
             // instantiation of other symbols like StructMethodDeclaration
             if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
                 SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
-                    ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                    ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
+                    diagnostics);
                 t.instantiate();
             } else {
                 instantiation_vector.push_back(sym_pair);
@@ -1547,7 +1630,8 @@ public:
         // instantiate the rest of the symbols
         for (auto &sym_pair: instantiation_vector) {
             SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
-                ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
+                diagnostics);
             t.instantiate();
         }
 
@@ -1587,7 +1671,8 @@ public:
         std::string new_cp_name = target_scope->parent->get_unique_name("__asr_" + std::string(x->m_name), false);
         ASR::symbol_t* cp_proc = x->m_proc;
 
-        SymbolInstantiator t(al, target_scope->parent, type_subs, symbol_subs, new_cp_name, cp_proc);
+        SymbolInstantiator t(al, target_scope->parent, type_subs, symbol_subs, new_cp_name, cp_proc,
+            diagnostics);
         ASR::symbol_t* new_cp_proc = t.instantiate();
         symbol_subs[ASRUtils::symbol_name(cp_proc)] = new_cp_proc;
 
@@ -1606,7 +1691,8 @@ public:
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
 
-        SymbolInstantiator t(al, new_scope, type_subs, symbol_subs, sym_name, x->m_v);
+        SymbolInstantiator t(al, new_scope, type_subs, symbol_subs, sym_name, x->m_v,
+            diagnostics);
         ASR::symbol_t* sym = t.instantiate();
 
         return ASR::make_Var_t(al, x->base.base.loc, sym);
@@ -2152,8 +2238,10 @@ ASR::symbol_t* instantiate_symbol(Allocator &al,
         SymbolTable *target_scope,
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs,
         std::map<std::string,ASR::symbol_t*>& symbol_subs,
-        std::string new_sym_name, ASR::symbol_t *sym) {
-    SymbolInstantiator t(al, target_scope, type_subs, symbol_subs, new_sym_name, sym);
+        std::string new_sym_name, ASR::symbol_t *sym,
+        diag::Diagnostics &diagnostics) {
+    SymbolInstantiator t(al, target_scope, type_subs, symbol_subs, new_sym_name, sym,
+        &diagnostics);
     return t.instantiate();
 }
 
