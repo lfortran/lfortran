@@ -526,7 +526,6 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
 {
     const llvm::Target *target = get_llvm_target(config.triple);
     llvm::TargetOptions options;
-#if LLVM_VERSION_MAJOR >= 8
     llvm::Triple triple(config.triple);
     // WebAssembly objects are linked into static executables (wasm-ld for
     // WASI, emcc for Emscripten), which do not need position independent
@@ -559,17 +558,6 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
             + config.triple + "'");
     }
     return std::unique_ptr<llvm::TargetMachine>(machine);
-#else
-    llvm::EngineBuilder builder;
-    builder.setEngineKind(llvm::EngineKind::JIT);
-    builder.setRelocationModel(llvm::Reloc::Model::PIC_);
-    llvm::TargetMachine *machine = builder.selectTarget();
-    if (!machine) {
-        throw LCompilersException("could not create target machine for '"
-            + config.triple + "'");
-    }
-    return std::unique_ptr<llvm::TargetMachine>(machine);
-#endif
 }
 
 LLVMTargetConfig resolve_target_only(const std::string &target)
