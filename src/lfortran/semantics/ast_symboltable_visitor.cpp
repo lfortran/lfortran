@@ -223,7 +223,8 @@ public:
     ASR::symbol_t *resolve_instantiation_procedure(const std::string &name,
             ASR::Function_t *restriction,
             const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs,
-            const std::map<std::string, ASR::symbol_t*> &symbol_subs) {
+            const std::map<std::string, ASR::symbol_t*> &symbol_subs,
+            const Location &loc) {
         for (SymbolTable *scope = current_scope; scope; scope = scope->parent) {
             if (ASR::symbol_t *sym = scope->get_symbol(name)) return sym;
             for (ContainedProcedureScope *procedures = contained_procedure_scope;
@@ -231,6 +232,17 @@ public:
                 if (procedures->scope != scope) continue;
                 AST::program_unit_t *declaration = procedures->find(name);
                 if (!declaration) continue;
+                if ((AST::is_a<AST::Function_t>(*declaration)
+                        && AST::down_cast<AST::Function_t>(declaration)->n_temp_args > 0)
+                        || (AST::is_a<AST::Subroutine_t>(*declaration)
+                        && AST::down_cast<AST::Subroutine_t>(declaration)->n_temp_args > 0)) {
+                    diag.add(diag::Diagnostic(
+                        "templated procedure '" + name
+                            + "' cannot be used as a procedure argument",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {loc})}));
+                    throw SemanticAbort();
+                }
                 // This is a provisional interface, not a declaration of the
                 // actual's locals. Keep its identity for substitutions and
                 // check the real interface once CONTAINS has defined it.
@@ -6084,7 +6096,7 @@ public:
                     // Handling functions passed as instantiate's arguments
                     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
                     ASR::symbol_t *f_arg0 = resolve_instantiation_procedure(
-                        arg, f, type_subs, symbol_subs);
+                        arg, f, type_subs, symbol_subs, arg_attr->base.loc);
                     if (!f_arg0
                             && ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(arg)) {
                         // Handling intrinsic function (e.g. min, max) as

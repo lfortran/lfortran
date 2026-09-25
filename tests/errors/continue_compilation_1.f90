@@ -1890,3 +1890,77 @@ contains
         end subroutine
     end subroutine
 end module
+
+module template_scope_templated_function_m
+    implicit none
+    template unary{op}
+        deferred interface
+            integer function op(x)
+                integer, intent(in) :: x
+            end function
+        end interface
+    contains
+        integer function apply(x) result(value)
+            integer, intent(in) :: x
+            value = op(x)
+        end function
+    end template
+contains
+    subroutine check_templated_function()
+        instantiate unary{abs}, only: rejected_function => apply ! {Error} templated procedure 'abs' cannot be used as a procedure argument
+        instantiate unary{increment}, only: valid_function => apply
+        if (valid_function(2) /= 3) error stop
+        print *, after_templated_function_missing ! {Error} Variable 'after_templated_function_missing' is not declared
+    contains
+        template function abs{t}(x) result(value)
+            deferred type :: t
+            type(t), intent(in) :: x
+            type(t) :: value
+            value = x
+        end function
+        integer function increment(x) result(value)
+            integer, intent(in) :: x
+            value = x + 1
+        end function
+    end subroutine
+end module
+
+module template_scope_templated_subroutine_m
+    implicit none
+    template action{op}
+        deferred interface
+            subroutine op(x)
+                integer, intent(inout) :: x
+            end subroutine
+        end interface
+    contains
+        subroutine apply(x)
+            integer, intent(inout) :: x
+            call op(x)
+        end subroutine
+    end template
+contains
+    subroutine actual(x)
+        integer, intent(inout) :: x
+        x = x + 10
+    end subroutine
+    subroutine check_templated_subroutine()
+        instantiate action{op=actual}, only: rejected_subroutine => apply ! {Error} templated procedure 'actual' cannot be used as a procedure argument
+        instantiate action{assign_value}, only: valid_subroutine => apply
+        integer :: value
+        value = 2
+        call valid_subroutine(value)
+        if (value /= 3) error stop
+        print *, after_templated_subroutine_missing ! {Error} Variable 'after_templated_subroutine_missing' is not declared
+    contains
+        template subroutine actual{t}(x)
+            deferred type :: t
+            type(t), intent(inout) :: x
+            x = x
+        end subroutine
+        subroutine assign_value(x)
+            integer, intent(inout) :: x
+            x = x + 1
+        end subroutine
+    end subroutine
+end module

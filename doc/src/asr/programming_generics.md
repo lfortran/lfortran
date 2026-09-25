@@ -156,6 +156,9 @@ introduced by the instantiation remain available to subsequent declarations
 and to the contained procedure's local variables.
 The contained specific procedure may share its name with a generic interface;
 completing that declaration preserves the procedure selected by instantiation.
+A bare templated function or subroutine is not a concrete procedure actual.
+A nearer templated declaration is diagnosed at the actual argument rather
+than bypassed in favor of a host procedure or intrinsic of the same name.
 With `--continue-compilation`, a failed requirement is diagnosed without
 constructing the rejected instantiation's procedure bodies; independent code
 is still checked.

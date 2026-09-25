@@ -856,6 +856,18 @@ semantic error: Symbol missing_symbol was not found
 1795 |     instantiate tmpl {real}, only: outer_real => outer, missing_symbol  ! {Error} Symbol missing_symbol was not found
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: templated procedure 'abs' cannot be used as a procedure argument
+    --> tests/errors/continue_compilation_1.f90:1910:27
+     |
+1910 |         instantiate unary{abs}, only: rejected_function => apply ! {Error} templated procedure 'abs' cannot be used as a procedure argument
+     |                           ^^^ 
+
+semantic error: templated procedure 'actual' cannot be used as a procedure argument
+    --> tests/errors/continue_compilation_1.f90:1948:31
+     |
+1948 |         instantiate action{op=actual}, only: rejected_subroutine => apply ! {Error} templated procedure 'actual' cannot be used as a procedure argument
+     |                               ^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1814:33
      |
@@ -2944,3 +2956,15 @@ semantic error: Variable 'after_template_recovery_missing' is not declared
      |
 1874 |         print *, after_template_recovery_missing ! {Error} Variable 'after_template_recovery_missing' is not declared
      |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'after_template_recovery_missing' is undeclared
+
+semantic error: Variable 'after_templated_function_missing' is not declared
+    --> tests/errors/continue_compilation_1.f90:1913:18
+     |
+1913 |         print *, after_templated_function_missing ! {Error} Variable 'after_templated_function_missing' is not declared
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'after_templated_function_missing' is undeclared
+
+semantic error: Variable 'after_templated_subroutine_missing' is not declared
+    --> tests/errors/continue_compilation_1.f90:1954:18
+     |
+1954 |         print *, after_templated_subroutine_missing ! {Error} Variable 'after_templated_subroutine_missing' is not declared
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'after_templated_subroutine_missing' is undeclared
