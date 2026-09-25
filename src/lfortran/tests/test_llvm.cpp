@@ -624,6 +624,53 @@ TEST_CASE("FortranEvaluator character result") {
     CHECK(r.result.str == "hello");
 }
 
+TEST_CASE("FortranEvaluator rich display result") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(R"(
+module showable_value
+    implicit none
+    type :: html
+        character(len=:), allocatable :: content
+    contains
+        procedure :: show
+    end type
+contains
+    function show(self) result(representation)
+        class(html), intent(in) :: self
+        character(len=:), allocatable :: representation
+        representation = "text/html" // new_line('a') // self%content
+    end function
+end module
+)");
+    REQUIRE(r.ok);
+
+    r = e.evaluate2(R"(
+use showable_value
+type(html) :: card
+card%content = "<b>Hello</b>"
+card
+)");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::display_data);
+    CHECK(r.result.mime_type == "text/html");
+    CHECK(r.result.str == "<b>Hello</b>");
+
+    r = e.evaluate2("card");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::display_data);
+    CHECK(r.result.mime_type == "text/html");
+    CHECK(r.result.str == "<b>Hello</b>");
+
+    r = e.evaluate2("'__lfortran_mime_bundle_v1__' // new_line('a') // 'text/html'");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::character);
+    CHECK(r.result.str == "__lfortran_mime_bundle_v1__\ntext/html");
+}
+
 TEST_CASE("FortranEvaluator character function across cells") {
     CompilerOptions cu;
     cu.interactive = true;
