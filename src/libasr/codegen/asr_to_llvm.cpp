@@ -8108,6 +8108,13 @@ public:
                     return llvm::ConstantFP::get(llvm_type, static_cast<float>(rc->m_r));
                 } else if (llvm_type->isDoubleTy()) {
                     return llvm::ConstantFP::get(llvm_type, rc->m_r);
+                } else if (llvm_type->isFP128Ty()) {
+                    // kind=16: m_r holds a pointer to the binary128 bytes
+                    const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(rc);
+                    uint64_t words[2] = {0, 0};
+                    std::memcpy(words, bytes, 16);
+                    llvm::APInt bits(128, llvm::ArrayRef<uint64_t>(words, 2));
+                    return llvm::ConstantFP::get(context, llvm::APFloat(llvm::APFloat::IEEEquad(), bits));
                 }
                 break;
             }
