@@ -5578,8 +5578,14 @@ namespace SelectedRealKind {
             kind = 4;
         } else if (p < 16 && r < 308 && radix == 2) {
             kind = 8;
+        } else if (p < 34 && r < 4932 && radix == 2) {
+            kind = 16;
         } else if (radix != 2) {
             kind = -5;
+        } else if (p >= 34 && r >= 4932) {
+            kind = -3;
+        } else if (r >= 4932) {
+            kind = -2;
         } else {
             kind = -1;
         }
@@ -5604,13 +5610,25 @@ namespace SelectedRealKind {
         body.push_back(al, b.If(b.And(b.And(b.Lt(p, b.i_t(7, arg_types[0])), b.Lt(r, b.i_t(38, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
             b.Assignment(result, b.i32(4))
         }, {
-            b.If( b.And(b.And(b.Lt(p, b.i_t(15, arg_types[0])), b.Lt(r, b.i_t(308, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
+            b.If( b.And(b.And(b.Lt(p, b.i_t(16, arg_types[0])), b.Lt(r, b.i_t(308, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
                 b.Assignment(result, b.i32(8))
             }, {
-                b.If(b.NotEq(radix, b.i_t(2, arg_types[2])), {
-                    b.Assignment(result, b.i32(-5))
+                b.If( b.And(b.And(b.Lt(p, b.i_t(34, arg_types[0])), b.Lt(r, b.i_t(4932, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
+                    b.Assignment(result, b.i32(16))
                 }, {
-                    b.Assignment(result, b.i32(-1))
+                    b.If(b.NotEq(radix, b.i_t(2, arg_types[2])), {
+                        b.Assignment(result, b.i32(-5))
+                    }, {
+                        b.If(b.And(b.GtE(p, b.i_t(34, arg_types[0])), b.GtE(r, b.i_t(4932, arg_types[1]))), {
+                            b.Assignment(result, b.i32(-3))
+                        }, {
+                            b.If(b.GtE(r, b.i_t(4932, arg_types[1])), {
+                                b.Assignment(result, b.i32(-2))
+                            }, {
+                                b.Assignment(result, b.i32(-1))
+                            })
+                        })
+                    })
                 })
             })
         }));
