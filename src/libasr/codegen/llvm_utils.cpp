@@ -2004,6 +2004,14 @@ namespace LCompilers {
 #if LLVM_VERSION_MAJOR >= 8
         return builder->CreateLoad(t, x, is_volatile);
 #else
+        // LLVM 7 has no `CreateLoad(Type*, Value*, bool)` and `CreateLoad(x)`
+        // loads the pointee type of `x`. Callers rely on `t` being honored
+        // (e.g. loading the data pointer through a descriptor pointer), as
+        // it is by LLVM 8+, so cast the pointer to `t*` when they differ.
+        if (t != x->getType()->getPointerElementType()) {
+            x = builder->CreateBitCast(x, t->getPointerTo(
+                x->getType()->getPointerAddressSpace()));
+        }
         return builder->CreateLoad(x, is_volatile);
 #endif
     }

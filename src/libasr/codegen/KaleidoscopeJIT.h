@@ -28,6 +28,7 @@
 #include "llvm/IR/LLVMContext.h"
 #if LLVM_VERSION_MAJOR < 8
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/ExecutionEngine/Orc/Legacy.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/IR/Mangler.h"
@@ -116,10 +117,16 @@ public:
 #else
   // LLVM 7: Constructor takes TargetMachine directly, different API structure
   KaleidoscopeJIT(std::unique_ptr<TargetMachine> TM_)
-      : TM(std::move(TM_)), DL(TM->createDataLayout()),
-        ObjectLayer(ES, [](VModuleKey) {
+      : Resolver(createLegacyLookupResolver(
+            ES,
+            [this](const std::string &Name) {
+              return findMangledSymbol(Name);
+            },
+            [](Error Err) { cantFail(std::move(Err), "lookupFlags failed"); })),
+        TM(std::move(TM_)), DL(TM->createDataLayout()),
+        ObjectLayer(ES, [this](VModuleKey) {
           return RTDyldObjectLinkingLayer::Resources{
-              std::make_shared<SectionMemoryManager>(), nullptr};
+              std::make_shared<SectionMemoryManager>(), Resolver};
         }),
         CompileLayer(ObjectLayer, SimpleCompiler(*TM)) {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
@@ -195,7 +202,20 @@ public:
     std::string MangledName;
     raw_string_ostream MangledNameStream(MangledName);
     Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
-    return CompileLayer.findSymbol(MangledNameStream.str(), false);
+    return findMangledSymbol(MangledNameStream.str());
+  }
+
+private:
+  // Search the JIT'd modules first, then the symbols of the host process
+  // (e.g. the LFortran runtime library linked into the compiler).
+  JITSymbol findMangledSymbol(const std::string &Name) {
+    if (auto Sym = CompileLayer.findSymbol(Name, false))
+      return Sym;
+    else if (auto Err = Sym.takeError())
+      return std::move(Err);
+    if (auto SymAddr = RTDyldMemoryManager::getSymbolAddressInProcess(Name))
+      return JITSymbol(SymAddr, JITSymbolFlags::Exported);
+    return nullptr;
   }
 #endif
 
