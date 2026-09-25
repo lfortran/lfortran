@@ -12574,8 +12574,7 @@ public:
             // lowered assignment with it (#13382), so a derived type
             // component with no elements, which has nothing to spread
             // anyway, is left as it is.
-            if (ASR::is_a<ASR::StructType_t>(*element_type)
-                    && ASRUtils::get_fixed_size_of_array(member_type) == 0) {
+            if (ASRUtils::get_fixed_size_of_array(member_type) == 0) {
                 continue;
             }
             if (value == nullptr && ASR::is_a<ASR::StructConstructor_t>(*arg)
