@@ -1598,6 +1598,11 @@ public:
         // external function call in a program that also has a CONTAINS section)
         // would wrongly be seen as having no interface.
         std::vector<std::string> saved_external_procedures = external_procedures;
+        // Pending `optional` statements apply only to the scoping unit in
+        // which they appear: start empty and restore the host's entries once
+        // this procedure (possibly an interface body) has been processed.
+        std::map<std::string, ASR::presenceType> saved_assgnd_presence = assgnd_presence;
+        assgnd_presence.clear();
         if (x.n_temp_args > 0) {
             is_template = true;
 
@@ -2027,6 +2032,7 @@ public:
         external_procedures = saved_external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
+        assgnd_presence = saved_assgnd_presence;
         if (subroutine_contains_entry_function(sym_name, x.m_items, x.n_items)) {
             /*
                 This subroutine contains an entry function, create
@@ -2196,6 +2202,11 @@ public:
         // procedure (dropping its explicitly declared type). This mirrors the
         // handling in visit_Subroutine.
         std::vector<std::string> saved_external_procedures = external_procedures;
+        // Pending `optional` statements apply only to the scoping unit in
+        // which they appear: start empty and restore the host's entries once
+        // this procedure (possibly an interface body) has been processed.
+        std::map<std::string, ASR::presenceType> saved_assgnd_presence = assgnd_presence;
+        assgnd_presence.clear();
         std::map<std::string, std::vector<std::pair<std::string, Location>>> ext_overloaded_op_procs;
 
         if (x.n_temp_args > 0) {
@@ -2875,6 +2886,7 @@ public:
         external_procedures = saved_external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
+        assgnd_presence = saved_assgnd_presence;
         if (subroutine_contains_entry_function(sym_name, x.m_items, x.n_items)) {
             /*
                 This subroutine contains an entry function, create
