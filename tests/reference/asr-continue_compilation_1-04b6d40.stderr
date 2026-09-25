@@ -2806,3 +2806,9 @@ semantic error: Passing an element of an array component of an array as an argum
      |
 1767 |     call eac_in(w%u(2))  ! {Error} Passing an element of an array component of an array as an argument is not supported yet
      |                 ^^^^^^ 
+
+semantic error: Required argument `p` is missing in procedure call
+    --> tests/errors/continue_compilation_1.f90:1804:5
+     |
+1804 |     call oas_b()  ! {Error} Required argument `p` is missing in procedure call
+     |     ^^^^^^^^^^^^ 
