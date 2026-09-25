@@ -1677,14 +1677,6 @@
                                                     ()
                                                     []
                                                 ),
-                                            ~add:
-                                                (CustomOperator
-                                                    13
-                                                    ~add
-                                                    [13 ~add_intrinsic
-                                                    13 ~add_intrinsic1]
-                                                    Public
-                                                ),
                                             ~add_intrinsic:
                                                 (Function
                                                     (SymbolTable
@@ -1771,7 +1763,7 @@
                                                         Source
                                                         Implementation
                                                         ()
-                                                        .false.
+                                                        .true.
                                                         .true.
                                                         .false.
                                                         .false.
@@ -1888,7 +1880,7 @@
                                                         Source
                                                         Implementation
                                                         ()
-                                                        .false.
+                                                        .true.
                                                         .true.
                                                         .false.
                                                         .false.

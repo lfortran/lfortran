@@ -495,12 +495,10 @@ r2%elements(2,2) = 1
 r3 = real_plus_matrix(r1, r2)
 print *, r3%elements(1,1), r3%elements(1,2)
 print *, r3%elements(2,1), r3%elements(2,2), achar(10)
-! The values are exact to one decimal, so compare nint(10*x) instead of
-! abs(x - ref) < tol, which is miscompiled for real arrays (#13471).
-if (any(nint(10 * r3%elements) /= reshape([22, 20, 25, 20], [2, 2]))) error stop
+if (any(abs(r3%elements - reshape([2.2, 2.0, 2.5, 2.0], [2, 2])) > 1.0e-5)) error stop
 
 r4 = real_times_matrix(r3, r2)
 print *, r4%elements(1,1), r4%elements(1,2)
 print *, r4%elements(2,1), r4%elements(2,2), achar(10)
-if (any(nint(10 * r4%elements) /= reshape([72, 60, 80, 70], [2, 2]))) error stop
+if (any(abs(r4%elements - reshape([7.2, 6.0, 8.0, 7.0], [2, 2])) > 1.0e-5)) error stop
 end program
