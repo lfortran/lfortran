@@ -3724,6 +3724,14 @@ public:
                 }
             }
             ASR::expr_t *array_stmt = tmp_stmt;
+            if( array_stmt == nullptr ) {
+                diag.add(Diagnostic(
+                    "Unsupported allocate-object form",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.m_args[i].loc})
+                    }));
+                throw SemanticAbort();
+            }
             // Assume that tmp is an `ArraySection` or `ArrayItem`
             if( ASR::is_a<ASR::ArraySection_t>(*array_stmt) ) {
                 ASR::ArraySection_t* array_ref = ASR::down_cast<ASR::ArraySection_t>(array_stmt);
@@ -3773,6 +3781,31 @@ public:
                 new_arg.m_a = array_stmt;
                 new_arg.m_dims = nullptr;
                 new_arg.n_dims = 0;
+            } else {
+                // The allocate-object did not resolve to a data reference,
+                // so there is no variable to allocate. This happens with
+                // implicit interfaces enabled, where `x(n)` for a scalar or
+                // undeclared `x` resolves to a call to an external function
+                // `x`. Report it here: an alloc_arg with no target would
+                // crash the checks that run after this loop.
+                std::string label_msg = "this expression cannot be allocated";
+                AST::expr_t* alloc_obj = x.m_args[i].m_end ? x.m_args[i].m_end
+                                                           : x.m_args[i].m_step;
+                if (ASR::is_a<ASR::FunctionCall_t>(*array_stmt) && alloc_obj &&
+                        AST::is_a<AST::FuncCallOrArray_t>(*alloc_obj)) {
+                    // Name the entity as written: the call's own target is a
+                    // generated procedure-pointer temporary (`x~fpcast_ptr`).
+                    std::string fn_name =
+                        AST::down_cast<AST::FuncCallOrArray_t>(alloc_obj)->m_func;
+                    label_msg = "`" + fn_name + "` is not an array variable, "
+                        "so this resolves to a function call";
+                }
+                diag.add(Diagnostic(
+                    "An allocate-object must be a data pointer or an allocatable variable",
+                    Level::Error, Stage::Semantic, {
+                        Label(label_msg, {array_stmt->base.loc})
+                    }));
+                throw SemanticAbort();
             }
             alloc_args_vec.push_back(al, new_arg);
         }
