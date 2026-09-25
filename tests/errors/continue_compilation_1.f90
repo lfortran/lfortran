@@ -1864,10 +1864,10 @@ contains
         integer, parameter :: offset = 20
         type(rejected_holder) :: item
         procedure(rejected_apply), pointer :: rejected_callback
-        procedure(scalar), pointer :: callback
+        procedure(apply_scalar), pointer :: callback
 
         item%value = 1.0
-        callback => scalar
+        callback => apply_scalar
         if (scalar(2) /= 22) error stop
         if (apply_scalar(3) /= 23) error stop
         if (callback(4) /= 24) error stop
