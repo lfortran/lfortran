@@ -5769,10 +5769,14 @@ public:
         }
 
         for (size_t i=0; i<x.n_contains; i++) {
+            SymbolTable *template_scope = current_scope;
             try {
                 this->visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
+                // An abort in the declarations of a procedure leaves its scope
+                // current.
+                current_scope = template_scope;
             }
         }
 
@@ -6309,12 +6313,17 @@ public:
             }
         }
 
+        // The instantiation reports the errors in the constant expressions it
+        // evaluates, such as a division by zero.
+        size_t n_diagnostics = diag.diagnostics.size();
+        std::map<std::string, ASR::symbol_t*> scope_before = current_scope->get_scope();
         if (x.n_symbols == 0) {
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
-                    instantiate_symbol(al, current_scope, type_subs, symbol_subs, s_name, s);
+                    instantiate_symbol(al, current_scope, type_subs, symbol_subs, s_name, s,
+                        diag);
                 }
             }
         } else {
@@ -6333,9 +6342,15 @@ public:
                 if (use_symbol->m_local_rename) {
                     new_sym_name = to_lower(use_symbol->m_local_rename);
                 }
-                ASR::symbol_t* new_sym = instantiate_symbol(al, current_scope, type_subs, symbol_subs, new_sym_name, s);
+                ASR::symbol_t* new_sym = instantiate_symbol(al, current_scope, type_subs, symbol_subs, new_sym_name, s,
+                    diag);
                 symbol_subs[generic_name] = new_sym;
             }
+        }
+
+        if (diag.diagnostics.size() > n_diagnostics) {
+            erase_failed_instantiation(current_scope, scope_before);
+            throw SemanticAbort();
         }
 
         instantiate_types[x.base.base.loc.first] = type_subs;
