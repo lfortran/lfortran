@@ -1566,21 +1566,61 @@ public:
             selected.p, selected.size()));
     }
 
+    static std::string deferred_const_spelling_msg(const std::string &name) {
+        return "'" + name + "' is a deferred argument of the template, so a"
+            " type declaration of it declares a deferred constant, which is"
+            " spelled `deferred <type>, parameter :: " + name + "`";
+    }
+
+    // The entity `name` of a type declaration (not a procedure declaration)
+    // in `items`, or nullptr if there is none.
+    static const AST::var_sym_t *find_type_declaration(
+            AST::decl_stmt_t **items, size_t n_items, const std::string &name) {
+        for (size_t i = 0; i < n_items; i++) {
+            if (!AST::is_a<AST::Declaration_t>(*items[i])) continue;
+            const AST::Declaration_t &decl =
+                *AST::down_cast<AST::Declaration_t>(items[i]);
+            if (decl.m_vartype == nullptr) continue;
+            if (AST::is_a<AST::AttrType_t>(*decl.m_vartype)
+                    && AST::down_cast<AST::AttrType_t>(decl.m_vartype)->m_type
+                        == AST::decl_typeType::TypeProcedure) continue;
+            for (size_t j = 0; j < decl.n_syms; j++) {
+                if (decl.m_syms[j].m_name
+                        && to_lower(decl.m_syms[j].m_name) == name) {
+                    return &decl.m_syms[j];
+                }
+            }
+        }
+        return nullptr;
+    }
+
     void check_templated_subprogram_args(SymbolTable *scope,
-            const std::vector<std::string> &args, const std::string &kind,
-            const Location &loc) {
+            const std::vector<std::string> &args, AST::decl_stmt_t **items,
+            size_t n_items, const std::string &kind, const Location &loc) {
         // Deferred declarations belong to the Template, not to the child
         // procedure or a host scope.
+        bool undeclared = false;
         for (const std::string &arg: args) {
-            if (!scope->get_symbol(arg)) {
+            if (scope->get_symbol(arg)) continue;
+            undeclared = true;
+            // A type declaration such as `integer :: n` or
+            // `integer, parameter :: n = 7` declared an ordinary local of the
+            // subprogram, which keeps its uses in the body resolved, so this
+            // is the only error reported for it.
+            if (const AST::var_sym_t *sym = find_type_declaration(items,
+                    n_items, arg)) {
+                diag.add(diag::Diagnostic(deferred_const_spelling_msg(arg),
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {sym->loc})}));
+            } else {
                 diag.add(diag::Diagnostic(
                     "template argument '" + arg + "' has not been declared in "
                     "templated " + kind + " specification",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {loc})}));
-                throw SemanticAbort();
             }
         }
+        if (undeclared) throw SemanticAbort();
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
@@ -2095,7 +2135,7 @@ public:
         // as a clean return.
         if (x.n_temp_args > 0) {
             check_templated_subprogram_args(parent_scope, subroutine_temp_args,
-                "subroutine", x.base.base.loc);
+                x.m_items, x.n_items, "subroutine", x.base.base.loc);
             check_no_save_in_template(parent_scope);
         }
     }
@@ -2942,7 +2982,7 @@ public:
         // as a clean return.
         if (x.n_temp_args > 0) {
             check_templated_subprogram_args(parent_scope, function_temp_args,
-                "function", x.base.base.loc);
+                x.m_items, x.n_items, "function", x.base.base.loc);
             check_no_save_in_template(parent_scope);
         }
     }
@@ -5693,10 +5733,7 @@ public:
                 deferred_args.end(), name) != deferred_args.end();
             std::string msg;
             if (is_deferred_arg && !is_procedure_decl) {
-                msg = "'" + name + "' is a deferred argument of the"
-                      " template, so a type declaration of it declares a"
-                      " deferred constant, which is spelled `deferred"
-                      " <type>, parameter :: " + name + "`";
+                msg = deferred_const_spelling_msg(name);
             } else if (is_procedure_decl) {
                 msg = "a template specification part cannot declare a"
                       " procedure pointer, so '" + name + "' must not have the"

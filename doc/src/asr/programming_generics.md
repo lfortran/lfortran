@@ -206,9 +206,10 @@ The first difference is that the template parameters are now included as the fun
 For both `template function` and `template subroutine`, every name in braces
 must have a deferred declaration in the subprogram's specification, directly
 or through `require`. A deferred integer constant is declared with
-`deferred integer, parameter :: n`. An ordinary local declaration such as
-`integer :: n` or `integer, parameter :: n = 7`, or a host-associated constant,
-does not declare a deferred argument.
+`deferred integer, parameter :: n`. A host-associated constant does not
+declare a deferred argument. A type declaration such as `integer :: n` or
+`integer, parameter :: n = 7` does not either: it is reported as an error that
+names the deferred spelling, as in a `template` construct.
 
 This is merely a syntax sugar for the original templated function. Inside the compiler this generic function is treated as the following template:
 

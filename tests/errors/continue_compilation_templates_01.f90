@@ -2091,17 +2091,22 @@ contains
     end function
 end module
 
-! An ordinary local variable does not declare a deferred constant.
+! An ordinary local variable does not declare a deferred constant. The
+! error names the deferred spelling, and is the only one reported, also when
+! the body uses the name.
 module templated_subprogram_local_1
     implicit none
 contains
-    template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
-        integer :: n
+    template subroutine s{n}(x)
+        integer :: n  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+        integer, intent(inout) :: x
+        x = x + n
     end subroutine
 
-    template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
-        integer :: n
-        r = 0
+    template integer function f{n}(x) result(res)
+        integer :: n  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+        integer, intent(in) :: x
+        res = x + n
     end function
 end module
 
@@ -2109,12 +2114,12 @@ end module
 module templated_subprogram_parameter_1
     implicit none
 contains
-    template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
-        integer, parameter :: n = 7
+    template subroutine s{n}()
+        integer, parameter :: n = 7  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
     end subroutine
 
-    template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
-        integer, parameter :: n = 7
+    template integer function f{n}() result(r)
+        integer, parameter :: n = 7  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
         r = n
     end function
 end module
