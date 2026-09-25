@@ -84,6 +84,12 @@ Symbol table visit checks the variable declarations in `array_sum`. Since `S` is
 
 ASR representation of templates are also not compiled into the target language.
 
+Array-operation and intrinsic-function lowering leave these generic definitions
+intact and process their concrete specializations instead. Scalarizing an array
+expression or generating an intrinsic implementation requires the substituted
+element type; an unused template must not create runtime helpers with deferred
+types.
+
 ## Instantiations
 
 Generic functions need to be instantiated with concrete types and functions to be used in run-time. The process of instantiation replaces the generic types in the function definition with concrete types (such as `integer`, `real`) and replace the abstract functions with implemented functions. 

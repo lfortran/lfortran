@@ -160,6 +160,10 @@ class ReplaceIntrinsicFunctionsVisitor : public ASR::CallReplacerOnExpressionsVi
             replacer(al_, global_scope_, func2intrinsicid_, in_debugcheck, in_ttype,
                 index_kind_) {}
 
+        void visit_Template(const ASR::Template_t& /*x*/) {
+            // Intrinsic implementations require concrete specialization types.
+        }
+
         // Don't replace inside DebugCheckArrayBounds, the arguments for elemental functions might be arrays
         void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& x) {
             bool in_debugcheck_copy = in_debugcheck;
@@ -373,6 +377,7 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
             pass_result.n = 0;
         }
 
+        void visit_Template(const ASR::Template_t& /*x*/) {}
 
         void call_replacer() {
             replacer.current_expr = current_expr;
