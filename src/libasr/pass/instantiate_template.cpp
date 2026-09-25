@@ -1062,8 +1062,13 @@ public:
             return target_scope->get_symbol(new_sym_name);
         }
 
-        // if passed as instantiation's argument
-        if (symbol_subs.find(sym_name) != symbol_subs.end()) {
+        // if passed as instantiation's argument. Members of a derived type
+        // (components and type-bound procedures) live in the type's own
+        // namespace, so a substitution for a same-named symbol elsewhere in
+        // the template must not replace them.
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(sym);
+        bool is_struct_member = owner != nullptr && ASR::is_a<ASR::Struct_t>(*owner);
+        if (!is_struct_member && symbol_subs.find(sym_name) != symbol_subs.end()) {
             ASR::symbol_t* added_sym = symbol_subs[sym_name];
             std::string added_sym_name = ASRUtils::symbol_name(added_sym);
             if (new_scope->resolve_symbol(added_sym_name)) {
