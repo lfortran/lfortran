@@ -850,6 +850,12 @@ semantic error: the variable 'lse_m' is local to this scoping unit, so it cannot
 1745 |     character(len=lse_m) :: bad_len  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
      |                   ~~~~~ help: Fortran 2023 10.1.11 allows a dummy argument, a variable in a common block, and one made accessible by use or host association; a named constant, and an inquiry such as `size` or `len` about a local, are also allowed
 
+semantic error: Symbol missing_symbol was not found
+    --> tests/errors/continue_compilation_1.f90:1795:5
+     |
+1795 |     instantiate tmpl {real}, only: outer_real => outer, missing_symbol  ! {Error} Symbol missing_symbol was not found
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
@@ -2788,3 +2794,15 @@ semantic error: NULL() is not permitted as the TARGET= argument to 'associated'
      |
 1715 |     if (associated(a, null())) print *, "bad"  ! {Error} NULL() is not permitted as the TARGET= argument to 'associated'
      |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Passing an element of an array component of an array as an argument is not supported yet
+    --> tests/errors/continue_compilation_1.f90:1766:20
+     |
+1766 |     call eac_inout(w%u(2))  ! {Error} Passing an element of an array component of an array as an argument is not supported yet
+     |                    ^^^^^^ 
+
+semantic error: Passing an element of an array component of an array as an argument is not supported yet
+    --> tests/errors/continue_compilation_1.f90:1767:17
+     |
+1767 |     call eac_in(w%u(2))  ! {Error} Passing an element of an array component of an array as an argument is not supported yet
+     |                 ^^^^^^ 

@@ -60,7 +60,7 @@ module template_deferred_type_attr_01_m
         end interface
     end requirement
 
-    template scaled_ext_tmpl(t, area_t)
+    template scaled_ext_tmpl {t, area_t}
         deferred type, extensible :: t
         require :: area_ext_r {t, area_t}
         private
@@ -73,7 +73,7 @@ module template_deferred_type_attr_01_m
         end function
     end template
 
-    template scaled_abs_tmpl(t, area_t)
+    template scaled_abs_tmpl {t, area_t}
         deferred type, abstract :: t
         require :: area_abs_r {t, area_t}
         private

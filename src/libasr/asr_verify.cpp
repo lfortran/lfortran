@@ -65,6 +65,10 @@ private:
     bool _inside_array_physical_cast_type = false;
     bool _processing_assumed_rank_array = false;
     bool _processing_unbounded_pointer_array = false;
+    // True while the symbols of a template are visited. A named constant of a
+    // template whose initializer reads a deferred constant has no compile-time
+    // value until the template is instantiated.
+    bool _inside_template = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
@@ -371,9 +375,12 @@ public:
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        bool inside_template = _inside_template;
+        _inside_template = true;
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
+        _inside_template = inside_template;
         current_symtab = parent_symtab;
     }
 
@@ -1324,7 +1331,9 @@ public:
             } else {
                 require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
                         (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                        (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
+                        (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)) ||
+                        (_inside_template && x.m_storage == ASR::storage_typeType::Parameter &&
+                            ASRUtils::reads_valueless_parameter(x.m_symbolic_value)),
                         "Initialisation of " + std::string(x.m_name) +
                         " must reduce to a compile time constant.");
             }
@@ -1719,9 +1728,32 @@ public:
 
     void visit_ArrayItem(const ArrayItem_t &x) {
         if( check_external ) {
+            // Selecting an element of an array component of an array, as in
+            // `w%u(2)`, reads one element of the component out of every
+            // element of the base, so the reference is an array shaped like
+            // that base even though every subscript is scalar.
+            ASR::expr_t *shape_base = ASRUtils::struct_base_lending_shape(
+                const_cast<ArrayItem_t*>(&x));
             if( ASRUtils::is_array_indexed_with_array_indices(x.m_args, x.n_args) ) {
                 require(ASRUtils::is_array(x.m_type),
                     "ArrayItem::m_type with array indices must be an array.")
+            } else if( shape_base != nullptr ) {
+                size_t base_rank = ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(shape_base));
+                require_id(ASRUtils::is_array(x.m_type),
+                    "asr.verify.array_item.array_base",
+                    "selecting an element of a component of an array is an "
+                    "array, but its type is not an array");
+                if (ASRUtils::is_array(x.m_type)) {
+                    require_id(
+                        (size_t) ASRUtils::extract_n_dims_from_ttype(x.m_type)
+                            == base_rank,
+                        "asr.verify.array_item.array_base_rank",
+                        "selecting an element of a component of an array of "
+                        "rank " + std::to_string(base_rank) + " has rank " +
+                        std::to_string(
+                            ASRUtils::extract_n_dims_from_ttype(x.m_type)));
+                }
             } else {
                 require(!ASRUtils::is_array(x.m_type),
                     "ArrayItem::m_type cannot be array.")

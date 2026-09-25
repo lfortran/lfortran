@@ -855,14 +855,6 @@
                                     eq
                                     Public
                                 ),
-                            ~neq:
-                                (CustomOperator
-                                    8
-                                    ~neq
-                                    [8 ~neq_intrinsic
-                                    8 ~neq_intrinsic1]
-                                    Public
-                                ),
                             ~neq_intrinsic:
                                 (Function
                                     (SymbolTable

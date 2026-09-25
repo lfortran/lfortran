@@ -7,7 +7,7 @@ module template_struct_01_m
       deferred type :: t
   end requirement
 
-  template struct_t(t)
+  template struct_t {t}
       require :: r {t}
       private
       public :: tuple

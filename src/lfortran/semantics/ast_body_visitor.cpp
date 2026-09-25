@@ -2979,12 +2979,16 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
-        // The symbol table visitor has already checked this statement and, for
-        // a bad one, reported the error. Without --continue-compilation that
-        // ended the compilation; with it we are called anyway, and the symbols
-        // this visitor instantiates the bodies of were never created. The
-        // diagnostic is already recorded, so skip whatever is missing instead
-        // of instantiating from a null symbol.
+        // Substitutions are recorded only after the whole instantiation succeeds.
+        // With --continue-compilation, a failed declaration can leave some symbols
+        // behind, but its bodies must not be built with missing substitutions.
+        auto type_subs_it = instantiate_types.find(x.base.base.loc.first);
+        auto symbol_subs_it = instantiate_symbols.find(x.base.base.loc.first);
+        if (type_subs_it == instantiate_types.end()
+                || symbol_subs_it == instantiate_symbols.end()) {
+            return;
+        }
+
         ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
         if (sym == nullptr) {
             return;
@@ -2995,8 +2999,8 @@ public:
         }
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(template_sym);
 
-        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = instantiate_types[x.base.base.loc.first];
-        std::map<std::string, ASR::symbol_t*> symbol_subs = instantiate_symbols[x.base.base.loc.first];
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = type_subs_it->second;
+        std::map<std::string, ASR::symbol_t*> symbol_subs = symbol_subs_it->second;
 
         if (x.n_symbols == 0) {
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
@@ -5293,9 +5297,11 @@ public:
         current_scope = v->m_symtab;
         current_module = v;
 
+        // Instantiations need bodies too; transform_stmts skips declarations.
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if(x.m_items[i]->type == AST::decl_stmtType::Template){
+            if (x.m_items[i]->type == AST::decl_stmtType::Template ||
+                x.m_items[i]->type == AST::decl_stmtType::Instantiate) {
                 visit_decl_stmt(*x.m_items[i]);
             }
         }
@@ -7588,6 +7594,28 @@ public:
                         al, loc, nullptr, if_test, if_body.p, if_body.n, nullptr, 0));
                     current_body->push_back(al, if_stmt);
                 }
+            }
+        }
+
+        // Assigning a structure constructor to a scalar variable of derived
+        // type is an intrinsic assignment, and an intrinsic assignment does
+        // more than write the components: it finalizes the variable, and it
+        // routes a component of derived type through that type's defined
+        // assignment. Both act on the variable once the value exists, so the
+        // constructor is evaluated into a temporary and the variable is
+        // assigned from it. Written straight into the variable, as the
+        // structure constructor is otherwise lowered, neither would happen.
+        // An array or allocatable variable is already assigned from a
+        // temporary, so only the scalar case is handled here.
+        if( overloaded_stmt == nullptr &&
+            ASR::is_a<ASR::StructConstructor_t>(*value) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(target)) &&
+            !ASRUtils::is_allocatable(ASRUtils::expr_type(target)) &&
+            ASRUtils::struct_assignment_is_more_than_a_copy(
+                ASRUtils::get_struct_sym_from_struct_expr(target)) ) {
+            ASR::expr_t* evaluated_value = evaluate_into_temporary(value);
+            if( evaluated_value != nullptr ) {
+                value = evaluated_value;
             }
         }
 

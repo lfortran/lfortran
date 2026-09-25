@@ -50,7 +50,7 @@ Having defined the necessary requirement to use the deferred type `T`, we can pr
 A template works as a closure for a generic function. A template takes as parameters symbols that would replace the generic symbols inside a generic function.
 
 ```fortran
-template array_t(T, add_element, set_to_zero)
+template array_t {T, add_element, set_to_zero}
   ...
   public :: array_sum
 contains
@@ -73,7 +73,7 @@ end template
 Then to connect the parameters with the functions defined in the requirement, we use a `require` statement.
 
 ```fortran
-template array_t(T, add_element, set_to_zero)
+template array_t {T, add_element, set_to_zero}
   require :: number_type {T, add_element, set_to_zero}
   public :: array_sum
 contains
@@ -98,7 +98,7 @@ end template
 A template can also contains multiple functions that may depend on each other.
 
 ```fortran
-template array_t(T, add_element, set_to_zero)
+template array_t {T, add_element, set_to_zero}
   require :: number_type {T, add_element, set_to_zero}
   public :: array_sum
 contains
@@ -151,6 +151,11 @@ end function
 
 After `only: ` we decide which function inside in the template we want to instantiate, in this case `array_sum`, and give the new instantiated function a new name `array_sum_integer`.
 
+Renaming a function in an instantiation does not rename its local result
+variable. Without a `result(...)` clause, assignments to the original function
+name inside its body still set the result of the instantiated function.
+An explicit result variable also keeps its declared name.
+
 After instantiation, we can then use the instantiated function similar to ordinary functions:
 
 ```fortran
@@ -185,7 +190,7 @@ instantiate array_t {real, add_element_real, set_to_zero_real}, &
 The template notation can be cumbersome for defining a single generic function. To alleviate this, LFortran also supports a simpler syntax for declaring generic functions without having to declare an enclosing template. For example, our running `array_sum` example can be written as follows in the simpler syntax:
 
 ```fortran
-function generic_sum {T, add_element, set_to_zero} (arr) result(r)
+template function generic_sum {T, add_element, set_to_zero} (arr) result(r)
   require :: number_type {T, add_element, set_to_zero}
   type(T), intent(in) :: arr(:)
   type(T) :: r
@@ -206,7 +211,7 @@ The first difference is that the template parameters are now included as the fun
 This is merely a syntax sugar for the original templated function. Inside the compiler this generic function is treated as the following template:
 
 ```fortran
-template generic_sum(T, add_element, set_to_zero)
+template generic_sum {T, add_element, set_to_zero}
   require :: number_type {T, add_element, set_to_zero}
   public :: generic_sum
 contains
@@ -259,7 +264,7 @@ Doing so would generate the function `array_sum` and `array_avg` without any ren
 LFortran also supports generic derived types. Let's say we want a generic tuple. We can define a derived type for tuples as usual inside a template:
 
 ```fortran
-template derived_type_t(T)
+template derived_type_t {T}
     ! for brevity we have the deferred type
     ! declared directly inside the template
     deferred type :: T
@@ -275,7 +280,7 @@ end template
 We can also define generic functions accessing this generic tuple as:
 
 ```fortran
-template derived_type_t(T)
+template derived_type_t {T}
     deferred type :: T
     public :: tuple
 

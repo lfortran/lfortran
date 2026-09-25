@@ -13,7 +13,7 @@ module template_end_name_01_m
         end interface
     end requirement addable_r
 
-    template sum_tmpl(t, add)
+    template sum_tmpl {t, add}
         require :: addable_r {t, add}
         private
         public :: sum_t

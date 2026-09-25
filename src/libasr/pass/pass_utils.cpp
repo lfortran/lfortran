@@ -149,8 +149,10 @@ namespace LCompilers {
         // `replacement` is the element of it that has just been indexed out.
         // Rebuild every `%` level above `base` on top of `replacement`, so a
         // chain of any depth survives: `v%nest%ii` with `v` an array becomes
-        // `v(i)%nest%ii`, not `v(i)%ii`. Each rebuilt level drops the shape it
-        // inherited from `base`, since one element of `base` is a scalar.
+        // `v(i)%nest%ii`, not `v(i)%ii`. A level that inherited its shape from
+        // `base` drops it, since one element of `base` is a scalar; a level
+        // whose component is declared an array keeps its own dimensions, which
+        // one element of `base` still holds whole.
         static ASR::expr_t* rebuild_struct_member_chain(Allocator& al,
             ASR::expr_t* expr, ASR::expr_t* base, ASR::expr_t* replacement) {
             if( expr == base ) {
@@ -166,9 +168,15 @@ namespace LCompilers {
             if( new_v == nullptr ) {
                 return nullptr;
             }
-            ASR::ttype_t* new_type = ASRUtils::type_get_past_allocatable(member->m_type);
-            if( ASR::is_a<ASR::Array_t>(*new_type) ) {
-                new_type = ASR::down_cast<ASR::Array_t>(new_type)->m_type;
+            ASR::ttype_t* new_type = member->m_type;
+            // Only a shape inherited from `base` is dropped. A component
+            // declared an array of its own keeps its dimensions, since one
+            // element of `base` still holds the whole component.
+            if( !ASRUtils::is_array(ASRUtils::symbol_type(member->m_m)) ) {
+                new_type = ASRUtils::type_get_past_allocatable(new_type);
+                if( ASR::is_a<ASR::Array_t>(*new_type) ) {
+                    new_type = ASR::down_cast<ASR::Array_t>(new_type)->m_type;
+                }
             }
             return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
                 member->base.base.loc, new_v, member->m_m, new_type,
@@ -180,6 +188,37 @@ namespace LCompilers {
             bool perform_cast, ASR::cast_kindType cast_kind, ASR::ttype_t* casted_type) {
             if (idx_vars.size() == 0) {
                 return arr_expr;
+            }
+            // `w%u(2)` with `w` an array is shaped like `w`, not like the
+            // component `u` its subscripts index: they select one element of
+            // `u` out of every element of `w`. Index `w` and rebuild the
+            // element selection on top of the indexed base.
+            if( ASR::is_a<ASR::ArrayItem_t>(*arr_expr) ) {
+                ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(arr_expr);
+                if( ASRUtils::is_array(item->m_type) &&
+                    ASRUtils::struct_base_lending_shape(item) != nullptr ) {
+                    ASR::expr_t* base = item->m_v;
+                    while( ASR::is_a<ASR::StructInstanceMember_t>(*base) ) {
+                        base = ASR::down_cast<ASR::StructInstanceMember_t>(base)->m_v;
+                    }
+                    ASR::expr_t* member = rebuild_struct_member_chain(al, item->m_v,
+                        base, create_array_ref(base, idx_vars, al, current_scope,
+                            false, cast_kind, nullptr));
+                    if( member != nullptr ) {
+                        ASR::expr_t* array_ref = ASRUtils::EXPR(
+                            ASRUtils::make_ArrayItem_t_util(al, item->base.base.loc,
+                                member, item->m_args, item->n_args,
+                                ASRUtils::extract_type(item->m_type),
+                                item->m_storage_format, nullptr));
+                        if( perform_cast ) {
+                            LCOMPILERS_ASSERT(casted_type != nullptr);
+                            array_ref = ASRUtils::EXPR(ASR::make_Cast_t(al,
+                                array_ref->base.loc, array_ref, cast_kind,
+                                casted_type, nullptr, nullptr));
+                        }
+                        return array_ref;
+                    }
+                }
             }
             Vec<ASR::array_index_t> args;
             args.reserve(al, 1);

@@ -25,7 +25,7 @@ module template_interface_01_m
         end interface
     end requirement
 
-    template sum_t(T, add, cast)
+    template sum_t {T, add, cast}
         require :: operator_r {T, T, T, add}
         require :: cast_r {T, cast}
         private
@@ -64,7 +64,7 @@ contains
         res = 0.0
     end function
 
-    pure function simple_generic_sum {T, add, cast} (arr) result(res)
+    pure template function simple_generic_sum {T, add, cast} (arr) result(res)
         require :: operator_r {T, T, T, add}
         require :: cast_r {T, cast}
         interface operator(+)

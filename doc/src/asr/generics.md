@@ -51,7 +51,7 @@ module generics_example
   end requirement
 
   ! the template starts from here
-  template array_t(S, op_temp, empty_temp)
+  template array_t {S, op_temp, empty_temp}
     require :: monoid {S, op_temp, empty_temp}
   contains
     ! below is the generic function
@@ -188,6 +188,17 @@ function array_sum_integer(n, a) result(res)
   end do
 end function
 ```
+
+A module's specification part must also visit its `instantiate` declarations
+during body construction, whether the template is defined locally or imported
+with `use`. Instantiation is a declaration, not an executable statement, so
+executable-statement traversal alone leaves the instantiated procedures without
+bodies.
+
+The symbol-table visitor records substitutions only after the entire
+instantiation succeeds. During error recovery (`--continue-compilation`),
+the body visitor skips declarations without this record, even if an earlier
+item in an erroneous `only:` list already created a procedure signature.
 
 ## See Also
 

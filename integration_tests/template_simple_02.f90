@@ -40,7 +40,7 @@ contains
         res = 0.0
     end function
 
-    pure function generic_sum {T, add, cast} (arr) result(res)
+    pure template function generic_sum {T, add, cast} (arr) result(res)
         require :: operator_r {T, T, T, add}
         require :: cast_r {T, cast}
         type(T), intent(in) :: arr(:)

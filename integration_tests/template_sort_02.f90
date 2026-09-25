@@ -35,7 +35,7 @@ module template_sort_02_m
 
 contains
     
-    subroutine swap {T} (lhs, rhs)
+    template subroutine swap {T} (lhs, rhs)
         deferred type :: T
         type(T), intent(inout) :: lhs
         type(T), intent(inout) :: rhs
@@ -48,7 +48,7 @@ contains
     end subroutine
 
     ! non-generic reference
-    recursive subroutine quicksort {T, lt} (arr, low, high)
+    recursive template subroutine quicksort {T, lt} (arr, low, high)
         require :: op_r {T, T, logical, lt}
         type(T), intent(inout) :: arr(:)
         integer, intent(in) :: low, high

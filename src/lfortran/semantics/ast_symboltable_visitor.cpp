@@ -97,6 +97,24 @@ public:
         Other, Module, Submodule, Program, Template,
     };
 
+    // Restores `is_requirement` on the way out, including when a diagnostic
+    // aborts the visit part way through. Without it a requirement rejected
+    // under --continue-compilation leaves the flag set, and the next scoping
+    // unit is then checked as if it were still inside that requirement.
+    struct RequirementScope {
+        SymbolTableVisitor &v;
+        bool enclosing;
+
+        RequirementScope(SymbolTableVisitor &v_) : v(v_) {
+            enclosing = v.is_requirement;
+            v.is_requirement = true;
+        }
+
+        ~RequirementScope() {
+            v.is_requirement = enclosing;
+        }
+    };
+
     struct ScopingUnitScope {
         SymbolTableVisitor &v;
         ScopingUnitKind enclosing;
@@ -1486,6 +1504,64 @@ public:
         current_scope = parent_scope;
     }
 
+    // The part of `item`, in the specification part of a templated
+    // subprogram whose deferred arguments are `temp_args`, that declares
+    // deferred procedures (`deferred == true`), or the part that declares
+    // anything else (`deferred == false`); nullptr if that part is empty.
+    // Deferred procedures belong to the Template of the subprogram, like a
+    // `deferred type` statement, because instantiation only substitutes the
+    // deferred arguments it finds there; everything else belongs to the
+    // subprogram itself. A `deferred procedure` statement and a deferred
+    // interface block declare only deferred procedures. An ordinary interface
+    // block is accepted for a deferred argument too, as it is in a template
+    // construct: its interface bodies named by a deferred argument declare
+    // deferred procedures, and its other items (e.g. external procedures)
+    // stay in the subprogram, so a block that mixes both is split.
+    static AST::decl_stmt_t *deferred_procedure_part(Allocator &al,
+            AST::decl_stmt_t *item, char **temp_args, size_t n_temp_args,
+            bool deferred) {
+        if (AST::is_a<AST::DeferredProcedure_t>(*item)) {
+            return deferred ? item : nullptr;
+        }
+        if (!AST::is_a<AST::Interface_t>(*item)) {
+            return deferred ? nullptr : item;
+        }
+        AST::Interface_t &iface = *AST::down_cast<AST::Interface_t>(item);
+        if (AST::is_a<AST::DeferredInterfaceHeader_t>(*iface.m_header)) {
+            return deferred ? item : nullptr;
+        }
+        if (!AST::is_a<AST::InterfaceHeader_t>(*iface.m_header)) {
+            return deferred ? nullptr : item;
+        }
+        Vec<AST::interface_item_t*> selected;
+        selected.reserve(al, iface.n_items);
+        for (size_t i = 0; i < iface.n_items; i++) {
+            bool is_deferred = false;
+            if (AST::is_a<AST::InterfaceProc_t>(*iface.m_items[i])) {
+                AST::program_unit_t *proc = AST::down_cast<AST::InterfaceProc_t>(
+                    iface.m_items[i])->m_proc;
+                char *name = nullptr;
+                if (AST::is_a<AST::Subroutine_t>(*proc)) {
+                    name = AST::down_cast<AST::Subroutine_t>(proc)->m_name;
+                } else if (AST::is_a<AST::Function_t>(*proc)) {
+                    name = AST::down_cast<AST::Function_t>(proc)->m_name;
+                }
+                for (size_t j = 0; name && j < n_temp_args; j++) {
+                    if (to_lower(name) == to_lower(temp_args[j])) {
+                        is_deferred = true;
+                        break;
+                    }
+                }
+            }
+            if (is_deferred == deferred) selected.push_back(al, iface.m_items[i]);
+        }
+        if (selected.size() == 0) return nullptr;
+        if (selected.size() == iface.n_items) return item;
+        return AST::down_cast<AST::decl_stmt_t>(AST::make_Interface_t(al,
+            iface.base.base.loc, iface.m_header, iface.m_trivia,
+            selected.p, selected.size()));
+    }
+
     void visit_Subroutine(const AST::Subroutine_t &x) {
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
@@ -1554,11 +1630,13 @@ public:
                     }
                 }
 
-                // A `deferred procedure` statement declares deferred
-                // arguments, so it belongs to the Template of the templated
-                // subprogram, exactly like a `deferred type` statement.
-                if (AST::is_a<AST::DeferredProcedure_t>(*x.m_items[i])) {
-                    visit_decl_stmt(*x.m_items[i]);
+                // `deferred procedure` statements and interface bodies for
+                // deferred procedures declare deferred arguments, so they
+                // belong to the Template of the templated subprogram,
+                // exactly like a `deferred type` statement.
+                if (AST::decl_stmt_t *deferred_part = deferred_procedure_part(
+                        al, x.m_items[i], x.m_temp_args, x.n_temp_args, true)) {
+                    visit_decl_stmt(*deferred_part);
                 }
             }
 
@@ -1628,9 +1706,11 @@ public:
             // Template, where they were declared above; declaring them here as
             // well would shadow them with a symbol that instantiation never
             // substitutes.
-            if (x.n_temp_args > 0
-                    && AST::is_a<AST::DeferredProcedure_t>(*x.m_items[i])) {
-                continue;
+            AST::decl_stmt_t *item = x.m_items[i];
+            if (x.n_temp_args > 0) {
+                item = deferred_procedure_part(al, item, x.m_temp_args,
+                    x.n_temp_args, false);
+                if (!item) continue;
             }
             is_Function = true;
             if(x.m_items[i]->type == AST::decl_stmtType::Declaration) {
@@ -1661,7 +1741,7 @@ public:
             }
             if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
                 try {
-                    visit_decl_stmt(*x.m_items[i]);
+                    visit_decl_stmt(*item);
                 } catch (SemanticAbort &e) {
                     if ( !compiler_options.continue_compilation ) throw e;
                 }
@@ -2153,11 +2233,13 @@ public:
                     }
                 }
 
-                // A `deferred procedure` statement declares deferred
-                // arguments, so it belongs to the Template of the templated
-                // subprogram, exactly like a `deferred type` statement.
-                if (AST::is_a<AST::DeferredProcedure_t>(*x.m_items[i])) {
-                    visit_decl_stmt(*x.m_items[i]);
+                // `deferred procedure` statements and interface bodies for
+                // deferred procedures declare deferred arguments, so they
+                // belong to the Template of the templated subprogram,
+                // exactly like a `deferred type` statement.
+                if (AST::decl_stmt_t *deferred_part = deferred_procedure_part(
+                        al, x.m_items[i], x.m_temp_args, x.n_temp_args, true)) {
+                    visit_decl_stmt(*deferred_part);
                 }
             }
 
@@ -2220,9 +2302,11 @@ public:
             // Template, where they were declared above; declaring them here as
             // well would shadow them with a symbol that instantiation never
             // substitutes.
-            if (x.n_temp_args > 0
-                    && AST::is_a<AST::DeferredProcedure_t>(*x.m_items[i])) {
-                continue;
+            AST::decl_stmt_t *item = x.m_items[i];
+            if (x.n_temp_args > 0) {
+                item = deferred_procedure_part(al, item, x.m_temp_args,
+                    x.n_temp_args, false);
+                if (!item) continue;
             }
             is_Function = true;
             if(x.m_items[i]->type == AST::decl_stmtType::Declaration) {
@@ -2251,7 +2335,7 @@ public:
                 }
             }
             if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
-                visit_decl_stmt(*x.m_items[i]);
+                visit_decl_stmt(*item);
             }
             is_Function = false;
         }
@@ -3705,6 +3789,22 @@ public:
     }
 
     void visit_Interface(const AST::Interface_t &x) {
+        // C1637 (J3/26-007r1): the interface-stmt of an interface-block that
+        // is a requirement-specification shall specify ABSTRACT or DEFERRED.
+        // Any other interface block declares procedures that already exist
+        // (an external procedure with an explicit interface, or a generic
+        // set built from procedures declared elsewhere), which is not what a
+        // requirement states: a requirement only declares deferred arguments.
+        if (is_requirement
+                && !AST::is_a<AST::AbstractInterfaceHeader_t>(*x.m_header)
+                && !AST::is_a<AST::DeferredInterfaceHeader_t>(*x.m_header)) {
+            diag.add(diag::Diagnostic(
+                "an interface block in a requirement must be a deferred or "
+                "an abstract interface",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.m_header->base.loc})}));
+            throw SemanticAbort();
+        }
         if (AST::is_a<AST::InterfaceHeaderName_t>(*x.m_header)) {
             std::string generic_name = to_lower(AST::down_cast<AST::InterfaceHeaderName_t>(x.m_header)->m_name);
             interface_name = generic_name;
@@ -5209,6 +5309,40 @@ public:
         }
     }
 
+    // R1634 (J3/26-007r1, 16.6.1): a requirement-specification is only a
+    // deferred-arg-decl-stmt or an interface-block. A deferred type and a
+    // deferred interface are other kinds of AST node, and a deferred constant
+    // (R1618) is a Declaration node that carries the `deferred` attribute, so
+    // any other type declaration, such as `integer :: c` or `type(t) :: c`,
+    // declares something that is not a deferred argument and is rejected
+    // here, where it is written. A statement without a type (an access
+    // statement or another attribute statement) is not checked here.
+    void check_requirement_specification(AST::decl_stmt_t &item,
+            const std::string &requirement_name,
+            const std::vector<std::string> &requirement_args) {
+        if (!AST::is_a<AST::Declaration_t>(item)) return;
+        AST::Declaration_t &decl = *AST::down_cast<AST::Declaration_t>(&item);
+        if (decl.m_vartype == nullptr || is_deferred_const_decl(decl)) return;
+        for (size_t i = 0; i < decl.n_syms; i++) {
+            std::string name = to_lower(decl.m_syms[i].m_name);
+            std::string msg;
+            if (std::find(requirement_args.begin(), requirement_args.end(),
+                    name) != requirement_args.end()) {
+                msg = "'" + name + "' is a deferred argument of requirement '"
+                      + requirement_name + "', so it must be declared as a"
+                      " deferred type, a deferred constant or a deferred"
+                      " procedure";
+            } else {
+                msg = "'" + name + "' is not a deferred argument of '"
+                      + requirement_name + "'";
+            }
+            diag.add(diag::Diagnostic(msg, diag::Level::Error,
+                diag::Stage::Semantic, {
+                    diag::Label("", {decl.m_syms[i].loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     void visit_Requirement(const AST::Requirement_t &x) {
         // The Fortran 2028 working draft (J3/26-007r1) contradicts itself
         // here, so this is a deliberate choice, not a settled rule. R1605
@@ -5230,7 +5364,7 @@ public:
                     diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
-        is_requirement = true;
+        RequirementScope requirement_scope(*this);
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
 
         std::vector<std::string> requirement_args;
@@ -5288,6 +5422,8 @@ public:
                     tmp = nullptr;
                 }
             } else {
+                check_requirement_specification(*x.m_items[i],
+                    to_lower(x.m_name), requirement_args);
                 this->visit_decl_stmt(*x.m_items[i]);
             }
         }
@@ -5295,17 +5431,23 @@ public:
             this->visit_program_unit(*x.m_funcs[i]);
         }
 
+        bool undeclared_arg = false;
         for (size_t i=0; i<x.n_namelist; i++) {
             std::string arg = to_lower(x.m_namelist[i].m_arg);
             if (!current_scope->get_symbol(arg)) {
                 diag.add(Diagnostic(
-                    "Parameter " + arg + " is unused in " + x.m_name,
-                    Level::Warning, Stage::Semantic, {
-                        Label("", {x.base.base.loc})
+                    "requirement argument '" + arg + "' has not been "
+                    "declared in requirement '" + to_lower(x.m_name) + "'",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.m_namelist[i].loc})
                     }
                 ));
+                undeclared_arg = true;
             }
             current_procedure_args.push_back(arg);
+        }
+        if (undeclared_arg) {
+            throw SemanticAbort();
         }
 
         for (auto &item: current_scope->get_scope()) {
@@ -5340,7 +5482,6 @@ public:
 
         current_scope = parent_scope;
         current_procedure_args.clear();
-        is_requirement = false;
     }
 
     void visit_Require(const AST::Require_t &x) {
@@ -5504,10 +5645,12 @@ public:
     // over the specification part only.
     //
     // A deferred argument declaration (R1615) is not a template-specification
-    // either. `deferred type :: t` and `require ::` are their own AST nodes, so
-    // they never reach here, but a deferred constant is currently spelled as a
-    // plain type declaration of one of the template's own deferred arguments
-    // (`integer :: n` for `template tmpl(..., n)`), which is left alone.
+    // either: `deferred type :: t` is a DerivedType node and `require ::` is a
+    // Require node, so neither reaches here, and a deferred constant (R1618)
+    // specifies PARAMETER, which C1618 requires and which returns below. A
+    // plain declaration of a deferred argument used to be LFortran's spelling
+    // of a deferred constant; it is rejected here, with the message that names
+    // the standard spelling.
     void check_template_specification(AST::decl_stmt_t *item,
             const std::vector<std::string> &deferred_args) {
         if (!AST::is_a<AST::Declaration_t>(*item)) return;
@@ -5534,14 +5677,23 @@ public:
         if (is_procedure_decl ? !has_pointer : has_parameter) return;
         for (size_t i = 0; i < decl.n_syms; i++) {
             std::string name = to_lower(decl.m_syms[i].m_name);
-            if (std::find(deferred_args.begin(), deferred_args.end(), name)
-                    != deferred_args.end()) continue;
-            std::string msg = is_procedure_decl
-                ? "a template specification part cannot declare a procedure"
-                  " pointer, so '" + name + "' must not have the pointer"
-                  " attribute"
-                : "a template specification part cannot declare a variable,"
-                  " so '" + name + "' must have the parameter attribute";
+            bool is_deferred_arg = std::find(deferred_args.begin(),
+                deferred_args.end(), name) != deferred_args.end();
+            std::string msg;
+            if (is_deferred_arg && !is_procedure_decl) {
+                msg = "'" + name + "' is a deferred argument of the"
+                      " template, so a type declaration of it declares a"
+                      " deferred constant, which is spelled `deferred"
+                      " <type>, parameter :: " + name + "`";
+            } else if (is_procedure_decl) {
+                msg = "a template specification part cannot declare a"
+                      " procedure pointer, so '" + name + "' must not have the"
+                      " pointer attribute";
+            } else {
+                msg = "a template specification part cannot declare a"
+                      " variable, so '" + name + "' must have the parameter"
+                      " attribute";
+            }
             diag.add(diag::Diagnostic(msg, diag::Level::Error,
                 diag::Stage::Semantic, {
                     diag::Label("", {decl.m_syms[i].loc})}));
@@ -5576,9 +5728,6 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
-        // The template's own deferred arguments (R1614); a declaration of one
-        // of them is a deferred argument declaration rather than a
-        // template-specification, see check_template_specification().
         std::vector<std::string> deferred_args;
         for (size_t i=0; i<x.n_namelist; i++) {
             deferred_args.push_back(to_lower(x.m_namelist[i]));
@@ -5620,10 +5769,14 @@ public:
         }
 
         for (size_t i=0; i<x.n_contains; i++) {
+            SymbolTable *template_scope = current_scope;
             try {
                 this->visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
+                // An abort in the declarations of a procedure leaves its scope
+                // current.
+                current_scope = template_scope;
             }
         }
 
@@ -5750,7 +5903,9 @@ public:
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
         std::map<std::string, ASR::symbol_t*> symbol_subs;
 
-        for (size_t i=0; i<ordered_args.size(); i++) {
+        // Bind every deferred type before checking any deferred procedure,
+        // whose interface may use a type listed after it (#13325).
+        for (size_t i : instantiation_arg_order(temp)) {
             std::string param = temp->m_args[i];
             AST::decl_attribute_t *arg_attr = ordered_args[i];
             ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(param);
@@ -6130,22 +6285,8 @@ public:
                     ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
                     parent_scope->add_symbol(func_name, op_sym);
 
-                    Vec<ASR::symbol_t*> symbols;
-                    if (parent_scope->get_symbol(op_name) != nullptr) {
-                        ASR::CustomOperator_t *old_c = ASR::down_cast<ASR::CustomOperator_t>(
-                            parent_scope->get_symbol(op_name));
-                        symbols.reserve(al, old_c->n_procs + 1);
-                        for (size_t i=0; i<old_c->n_procs; i++) {
-                            symbols.push_back(al, old_c->m_procs[i]);
-                        }
-                    } else {
-                        symbols.reserve(al, 1);
-                    }
-                    symbols.push_back(al, ASR::down_cast<ASR::symbol_t>(op_function));
-                    ASR::asr_t *c = ASR::make_CustomOperator_t(al, x.base.base.loc,
-                        parent_scope, s2c(al, op_name), symbols.p, symbols.size(), ASR::Public);
-                    parent_scope->add_or_overwrite_symbol(op_name, ASR::down_cast<ASR::symbol_t>(c));
-
+                    // Bind the wrapper only to the deferred procedure, not to
+                    // the instantiating scope's operator interface.
                     current_scope = parent_scope;
                     symbol_subs[f->m_name] = op_sym;
                 }
@@ -6158,12 +6299,17 @@ public:
             }
         }
 
+        // The instantiation reports the errors in the constant expressions it
+        // evaluates, such as a division by zero.
+        size_t n_diagnostics = diag.diagnostics.size();
+        std::map<std::string, ASR::symbol_t*> scope_before = current_scope->get_scope();
         if (x.n_symbols == 0) {
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
-                    instantiate_symbol(al, current_scope, type_subs, symbol_subs, s_name, s);
+                    instantiate_symbol(al, current_scope, type_subs, symbol_subs, s_name, s,
+                        diag);
                 }
             }
         } else {
@@ -6182,9 +6328,15 @@ public:
                 if (use_symbol->m_local_rename) {
                     new_sym_name = to_lower(use_symbol->m_local_rename);
                 }
-                ASR::symbol_t* new_sym = instantiate_symbol(al, current_scope, type_subs, symbol_subs, new_sym_name, s);
+                ASR::symbol_t* new_sym = instantiate_symbol(al, current_scope, type_subs, symbol_subs, new_sym_name, s,
+                    diag);
                 symbol_subs[generic_name] = new_sym;
             }
+        }
+
+        if (diag.diagnostics.size() > n_diagnostics) {
+            erase_failed_instantiation(current_scope, scope_before);
+            throw SemanticAbort();
         }
 
         instantiate_types[x.base.base.loc.first] = type_subs;

@@ -140,6 +140,26 @@ void set_null_context_from_variable(Allocator& al, const Location& loc,
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::Struct_t* s);
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression);
 
+// The procedure that an assignment of `s` to `s` is defined by, or nullptr
+// when there is none. `resolve_struct_assign_symbol` alone is not enough: it
+// answers with any `~assign` visible from the type, whose procedures may all
+// take other types, so the procedures are matched against `s` here.
+ASR::symbol_t* resolve_struct_defined_assignment_proc(ASR::Struct_t* s);
+
+// An intrinsic assignment whose variable is of derived type does more than
+// copy the components across. F2018 7.5.6.3 p1: the variable is finalized
+// after the expression is evaluated and before the variable is defined.
+// F2018 10.2.1.3 p13: every nonpointer component of derived type that has a
+// type-bound defined assignment is assigned through that defined assignment.
+// Both belong to the assignment and are carried out when the value is copied
+// into the variable, so this reports whether assigning to `struct_sym` does
+// either, in which case the value has to exist before the variable is
+// written: built straight into the variable it would skip them.
+// Only a component declared by the type itself is looked at. A component the
+// type inherits is written through the parent component, which is a component
+// of derived type in its own right (F2018 7.5.7.2) and is copied as one.
+bool struct_assignment_is_more_than_a_copy(ASR::symbol_t* struct_sym);
+
 ASR::symbol_t* get_union_sym_from_union_expr(ASR::expr_t* expression);
 static inline bool is_unlimited_polymorphic_type(ASR::Struct_t* st);
 static inline bool is_unlimited_polymorphic_type(ASR::ttype_t* const t);
@@ -1950,9 +1970,9 @@ static inline bool is_variable(ASR::expr_t* a_value) {
 
 // `p => tgt` in a declaration associates the pointer with a designator — a
 // whole variable, an array element or section, or a component — instead of
-// giving it a value. An association is not a value, so no target can lay it
-// out as static data: the `global_init` pass turns it into the pointer
-// assignment that runs before any user code observes the pointer.
+// giving it a value. `is_static_pointer_association` says which of these a
+// backend lays out as static data; the `global_init` pass turns the rest into
+// the pointer assignment that runs before any user code observes the pointer.
 //
 // A named constant is not a valid target, so a `parameter` at the base of the
 // designator says no. `=> null()` is a value, not a designator, and is laid
@@ -3698,6 +3718,21 @@ static inline int64_t get_fixed_size_of_array(ASR::ttype_t* type) {
     return ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
 }
 
+static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* type);
+
+// Size and alignment a component contributes to its enclosing derived type.
+// A pointer or allocatable component is stored as a pointer, whatever it
+// points at; every other component contributes its own layout.
+static inline std::pair<int64_t, int64_t> compute_struct_member_size_align(
+        ASR::ttype_t* member_type) {
+    if ((ASR::is_a<ASR::Pointer_t>(*member_type) ||
+         ASR::is_a<ASR::Allocatable_t>(*member_type)) &&
+        !ASR::is_a<ASR::Array_t>(*member_type)) {
+        return {8, 8};
+    }
+    return compute_type_size_align(member_type);
+}
+
 // Compute the byte size and alignment of an ASR type, matching the
 // LLVM struct layout rules used by LFortran's codegen on LP64 targets.
 // Returns {size_bytes, align_bytes}. Returns {-1, -1} on failure.
@@ -3754,17 +3789,8 @@ static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* 
         int64_t offset = 0;
         int64_t max_align = 1;
         for (size_t i = 0; i < st->n_data_member_types; i++) {
-            ASR::ttype_t* mt = st->m_data_member_types[i];
-            // Pointer/Allocatable scalars are pointers in LLVM
-            if ((ASR::is_a<ASR::Pointer_t>(*mt) || ASR::is_a<ASR::Allocatable_t>(*mt)) &&
-                !ASR::is_a<ASR::Array_t>(*mt)) {
-                int64_t align = 8, size = 8;
-                offset = ((offset + align - 1) / align) * align;
-                offset += size;
-                if (align > max_align) max_align = align;
-                continue;
-            }
-            auto [size, align] = compute_type_size_align(mt);
+            auto [size, align] = compute_struct_member_size_align(
+                st->m_data_member_types[i]);
             if (size < 0) return {-1, -1};
             offset = ((offset + align - 1) / align) * align;
             offset += size;
@@ -3807,9 +3833,31 @@ static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* 
             if (member_sym == nullptr || !ASR::is_a<ASR::Variable_t>(*member_sym)) {
                 return {-1, -1};
             }
-            ASR::ttype_t* member_type =
-                ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
-            auto [size, align] = compute_type_size_align(member_type);
+            ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member_sym);
+            ASR::ttype_t* member_type = member_var->m_type;
+            ASR::symbol_t* member_struct = member_var->m_type_declaration == nullptr
+                ? nullptr
+                : ASRUtils::symbol_get_past_external(member_var->m_type_declaration);
+            std::pair<int64_t, int64_t> member_layout;
+            if (member_struct != nullptr && ASR::is_a<ASR::Struct_t>(*member_struct) &&
+                    !ASR::is_a<ASR::Pointer_t>(*member_type) &&
+                    !ASR::is_a<ASR::Allocatable_t>(*member_type) &&
+                    ASR::is_a<ASR::StructType_t>(*type_get_past_array(member_type))) {
+                // A component of derived type is laid out from its own declared
+                // type, which is the only place its inherited components live.
+                member_layout = compute_struct_type_size_align(
+                    ASR::down_cast<ASR::Struct_t>(member_struct));
+                if (member_layout.first < 0) return {-1, -1};
+                if (ASR::is_a<ASR::Array_t>(*member_type)) {
+                    int64_t n_elem = get_fixed_size_of_array(member_type);
+                    if (n_elem <= 0) return {-1, -1};
+                    member_layout.first *= n_elem;
+                }
+            } else {
+                member_layout = compute_struct_member_size_align(member_type);
+            }
+            int64_t size = member_layout.first;
+            int64_t align = member_layout.second;
             if (size < 0) return {-1, -1};
             if (!struct_type->m_is_packed) {
                 offset = ((offset + align - 1) / align) * align;
@@ -3823,6 +3871,28 @@ static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* 
         }
         if (offset == 0) offset = 1;
         return {offset, struct_type->m_is_packed ? 1 : max_align};
+    }
+
+    // Byte size of the declared derived type of a struct expression, or -1
+    // when it cannot be resolved. An ASR::StructType_t lists only the
+    // components a type declares itself, so for an extended type it omits
+    // the inherited ones; those are reachable only through the
+    // ASR::Struct_t symbol, whose m_parent the backends inline as the first
+    // field of the layout. Resolving the symbol therefore gives the size the
+    // generated code actually allocates.
+    static inline int64_t get_struct_expr_byte_size(ASR::expr_t* expr) {
+        if (expr == nullptr) {
+            return -1;
+        }
+        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(expr));
+        if (struct_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+            return -1;
+        }
+        auto [size, _align] = compute_struct_type_size_align(
+            ASR::down_cast<ASR::Struct_t>(struct_sym));
+        (void)_align;
+        return size;
     }
 
 static inline int64_t get_type_byte_size(ASR::ttype_t* type) {
@@ -7541,6 +7611,36 @@ class LabelGenerator {
 ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
         ASR::expr_t* a_arg, ASR::cast_kindType a_kind, ASR::ttype_t* a_type);
 
+// Compile-time evaluation of operations on scalar constants, shared by the
+// frontends and by the passes that create new constant expressions, such as
+// the instantiation of a template. Each returns nullptr when the operands are
+// not constants of a kind it can evaluate.
+
+// Evaluates `left op right` for IntegerConstant, RealConstant (of every kind)
+// and ComplexConstant operands, giving a constant of `dest_type`. An integer
+// division by zero sets `division_by_zero` and returns nullptr: the caller
+// reports it.
+ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
+        ASR::expr_t* right, ASR::binopType op, const Location& loc,
+        ASR::ttype_t* dest_type, bool &division_by_zero);
+
+// Evaluates the comparison `left op right` of two IntegerConstant, two
+// RealConstant or two LogicalConstant operands, giving a LogicalConstant of
+// `logical_type`.
+ASR::expr_t* fold_compare_constants(Allocator &al, ASR::expr_t* left,
+        ASR::expr_t* right, ASR::cmpopType op, const Location& loc,
+        ASR::ttype_t* logical_type);
+
+// Evaluates the logical operation `left op right`; returns false for an
+// operation it does not evaluate (`Xor`).
+bool fold_logical_binop(ASR::logicalbinopType op, bool left, bool right,
+        bool &result);
+
+// True if `e` reads a named constant that has no compile-time value, such as
+// a deferred constant of a template, or a named constant of a template
+// initialized with an expression of one.
+bool reads_valueless_parameter(ASR::expr_t* e);
+
 static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, ASR::expr_t* end) {
     ASR::expr_t* start_value = nullptr;
     ASR::expr_t* end_value = nullptr;
@@ -9931,6 +10031,65 @@ static inline bool is_array_indexed_with_array_indices(T* x) {
     return is_array_indexed_with_array_indices(x->m_args, x->n_args);
 }
 
+// Selecting an element of an array component of an array, as in `w%u(2)` or
+// `w%nest%v(2)` with `w` an array, reads one element of the component out of
+// every element of the base. The subscripts consume the rank of the
+// component, not the rank of the base, so the reference denotes an array
+// shaped like the base although every subscript is scalar. Returns the base
+// whose shape the reference carries, or nullptr when it carries none.
+//
+// What such a reference denotes is a view of the base strided by the size of
+// an element of the base, and no `array_physical_type` says that. Giving it
+// the base's shape is therefore only sound where the lowering below knows how
+// to walk it: a whole array variable of a statically known shape, reached
+// through components that hold their value inline. A base behind a descriptor
+// or an indirection (`allocatable`, `pointer`, an assumed-shape dummy) and a
+// base that is already a section or an element are left alone, so that such a
+// reference keeps the type, and the behaviour, it has always had.
+static inline ASR::expr_t* struct_base_lending_shape(ASR::ArrayItem_t* x) {
+    if( is_array_indexed_with_array_indices(x->m_args, x->n_args) ||
+        x->m_v == nullptr ||
+        !ASR::is_a<ASR::StructInstanceMember_t>(*x->m_v) ) {
+        return nullptr;
+    }
+    ASR::expr_t* base = ASR::down_cast<ASR::StructInstanceMember_t>(x->m_v)->m_v;
+    if( base == nullptr || !ASRUtils::is_array(ASRUtils::expr_type(base)) ) {
+        return nullptr;
+    }
+    // Every component between the base array and the one being indexed must
+    // hold its value inline, or the reference denotes an array of
+    // indirections, which this type representation cannot express.
+    ASR::expr_t* root = base;
+    while( ASR::is_a<ASR::StructInstanceMember_t>(*root) ) {
+        ASR::StructInstanceMember_t* member =
+            ASR::down_cast<ASR::StructInstanceMember_t>(root);
+        if( ASRUtils::is_allocatable(member->m_type) ||
+            ASR::is_a<ASR::Pointer_t>(*member->m_type) ) {
+            return nullptr;
+        }
+        root = member->m_v;
+    }
+    // The chain has to bottom out in a whole array variable. A section or an
+    // element underneath carries an offset and a stride of its own, which the
+    // shape taken from it would not describe.
+    if( !ASR::is_a<ASR::Var_t>(*root) ) {
+        return nullptr;
+    }
+    ASR::ttype_t* root_type = ASRUtils::expr_type(root);
+    if( root_type == nullptr || ASRUtils::is_allocatable(root_type) ||
+        ASR::is_a<ASR::Pointer_t>(*root_type) ||
+        !ASRUtils::is_array(root_type) ) {
+        return nullptr;
+    }
+    // Only a statically shaped, contiguous base. Anything reached through a
+    // descriptor has neither the shape nor the stride this type would claim.
+    if( ASRUtils::extract_physical_type(root_type) !=
+            ASR::array_physical_typeType::FixedSizeArray ) {
+        return nullptr;
+    }
+    return base;
+}
+
 static inline ASR::ttype_t* create_array_type_with_empty_dims(Allocator& al,
     size_t value_n_dims, ASR::ttype_t* value_type) {
     Vec<ASR::dimension_t> empty_dims; empty_dims.reserve(al, value_n_dims);
@@ -10324,6 +10483,118 @@ static inline bool needs_struct_array_member_init(ASR::expr_t* expr,
     std::set<ASR::Struct_t*> visited;
     return struct_needs_member_init(
         ASR::down_cast<ASR::Struct_t>(struct_sym), visited);
+}
+
+// The zero based offset, in elements, of the array element `x` names in the
+// storage of its array, or -1 when it is not known at compile time. Fortran
+// lays an array out with its first dimension varying fastest, so the offset
+// of `a(i, j)` is `(i - lbound(a, 1)) + (j - lbound(a, 2)) * size(a, 1)`.
+static inline int64_t constant_array_item_offset(ASR::ArrayItem_t* x) {
+    ASR::dimension_t* dims = nullptr;
+    size_t n_dims = extract_dimensions_from_ttype(expr_type(x->m_v), dims);
+    if (n_dims == 0 || n_dims != x->n_args) {
+        return -1;
+    }
+    int64_t offset = 0, stride = 1;
+    for (size_t i = 0; i < n_dims; i++) {
+        if (x->m_args[i].m_right == nullptr || dims[i].m_start == nullptr
+                || dims[i].m_length == nullptr) {
+            return -1;
+        }
+        int64_t index, start, length;
+        if (!extract_value(expr_value(x->m_args[i].m_right), index)
+                || !extract_value(expr_value(dims[i].m_start), start)
+                || !extract_value(expr_value(dims[i].m_length), length)) {
+            return -1;
+        }
+        if (index < start || index >= start + length) {
+            return -1;
+        }
+        offset += (index - start) * stride;
+        stride *= length;
+    }
+    return offset;
+}
+
+// A variable a module declares. Every backend lays those out as static data
+// of the module and leaves their declaration initializers on the declaration
+// for that; a variable of a procedure, of a block or of a program is instead
+// initialized by statements of the scope that declares it, put there by the
+// `global_init` pass or by `array_struct_temporary`.
+static inline bool is_module_variable(const ASR::Variable_t &v) {
+    return v.m_parent_symtab != nullptr
+        && v.m_parent_symtab->asr_owner != nullptr
+        && ASR::is_a<ASR::symbol_t>(*v.m_parent_symtab->asr_owner)
+        && ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
+            v.m_parent_symtab->asr_owner));
+}
+
+// The designator `d` names storage whose address a linker can compute: a
+// variable of a module, an element of one at constant indices, or a component
+// of one.
+static inline bool has_link_time_address(ASR::expr_t* d) {
+    switch (d->type) {
+        case ASR::exprType::Var: {
+            ASR::symbol_t* sym = symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(d)->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                return false;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+            // A coarray's storage comes from `prif_allocate_coarray` at run
+            // time, and an allocatable's from the allocation: the global that
+            // names one holds an address the run time writes, rather than
+            // being the storage itself.
+            if (v->n_codims > 0 || is_allocatable_or_pointer(v->m_type)) {
+                return false;
+            }
+            return is_module_variable(*v);
+        }
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(d);
+            return constant_array_item_offset(item) >= 0
+                && has_link_time_address(item->m_v);
+        }
+        case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(d);
+            // A pointer or allocatable component holds an address that is
+            // read at run time rather than storage of its own.
+            if (is_allocatable_or_pointer(expr_type(member->m_v))) {
+                return false;
+            }
+            return has_link_time_address(member->m_v);
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
+// `p => tgt` in a declaration that a backend lays out as the variable's own
+// static initializer instead of assigning it with a statement: the address of
+// the target is a link-time constant, so the association needs no executable
+// code at all and the unit it is declared in needs no startup initializer
+// because of it.
+//
+// An array pointer is deliberately not one of these. It is a descriptor --
+// data pointer, bounds and strides -- rather than a bare address, and the
+// descriptor is filled in from the target by the association itself. Neither
+// is a character pointer, whose descriptor carries the length as well, nor a
+// polymorphic pointer, whose type pointer is not the target's. Nor is a
+// pointer of a procedure, of a block or of a program, whose declaration
+// initializer becomes a statement of that scope whatever shape it has, nor
+// one whose target is a coarray, whose storage the run time allocates.
+static inline bool is_static_pointer_association(const ASR::Variable_t &v) {
+    if (!is_module_variable(v) || !is_pointer(v.m_type)
+            || !is_pointer_association_initializer(v.m_symbolic_value)) {
+        return false;
+    }
+    if (v.n_codims > 0 || is_array(v.m_type) || is_character(*v.m_type)
+            || is_class_type(extract_type(v.m_type))) {
+        return false;
+    }
+    return has_link_time_address(v.m_symbolic_value);
 }
 
 } // namespace ASRUtils

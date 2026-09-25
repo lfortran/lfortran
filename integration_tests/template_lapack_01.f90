@@ -26,7 +26,7 @@ module template_lapack_01_m
         end interface
     end requirement
 
-    template external_matmul_t(T, gemm, cast_to_T)
+    template external_matmul_t {T, gemm, cast_to_T}
         require :: gemm_r {T, gemm}
         require :: cast_r {real, T, cast_to_T}
         private
@@ -82,7 +82,7 @@ contains
         call my_gemm_real('n', 'n', m, n, k, my_cast_to_real(1.0), a, m, b, k, my_cast_to_real(0.0), c, m)
     end function
 
-    function simple_external_matmul {T, gemm, cast_to_T} (a, b) result(c)
+    template function simple_external_matmul {T, gemm, cast_to_T} (a, b) result(c)
         require :: gemm_r {T, gemm}
         require :: cast_r {real, T, cast_to_T}
         type(T), intent(in) :: a(:,:), b(:,:)

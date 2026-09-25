@@ -2731,6 +2731,94 @@ ASR::symbol_t* resolve_struct_assign_symbol(ASR::Struct_t* s) {
     return nullptr;
 }
 
+ASR::symbol_t* resolve_struct_defined_assignment_proc(ASR::Struct_t* s) {
+    ASR::symbol_t* da_sym = resolve_struct_assign_symbol(s);
+    if (da_sym == nullptr) {
+        return nullptr;
+    }
+    da_sym = ASRUtils::symbol_get_past_external(da_sym);
+    if (!ASR::is_a<ASR::CustomOperator_t>(*da_sym)) {
+        return nullptr;
+    }
+    ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(da_sym);
+    for (size_t ip = 0; ip < custom_op->n_procs; ip++) {
+        ASR::symbol_t* assign_proc =
+            ASRUtils::symbol_get_past_external(custom_op->m_procs[ip]);
+        ASR::symbol_t* candidate;
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*assign_proc)) {
+            candidate = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                    assign_proc)->m_proc);
+        } else {
+            candidate = assign_proc;
+        }
+        if (!ASR::is_a<ASR::Function_t>(*candidate)) {
+            continue;
+        }
+        ASR::Function_t* cand_func = ASR::down_cast<ASR::Function_t>(candidate);
+        if (cand_func->n_args < 2) {
+            continue;
+        }
+        // Both formals must be type/class of s (type_declaration).
+        auto formal_matches = [&](ASR::expr_t* arg) {
+            ASR::Variable_t* var = ASRUtils::EXPR2VAR(arg);
+            ASR::ttype_t* t = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(var->m_type)));
+            if (!ASR::is_a<ASR::StructType_t>(*t) ||
+                    var->m_type_declaration == nullptr) {
+                return false;
+            }
+            return ASRUtils::symbol_get_past_external(var->m_type_declaration)
+                == &s->base;
+        };
+        if (formal_matches(cand_func->m_args[0]) &&
+                formal_matches(cand_func->m_args[1])) {
+            return candidate;
+        }
+    }
+    return nullptr;
+}
+
+bool struct_assignment_is_more_than_a_copy(ASR::symbol_t* struct_sym) {
+    if (struct_sym == nullptr) {
+        return false;
+    }
+    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(struct_sym);
+    if (!ASR::is_a<ASR::Struct_t>(*sym)) {
+        return false;
+    }
+    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(sym);
+    // A final procedure of the variable's own type finalizes the variable.
+    if (struct_t->n_member_functions > 0) {
+        return true;
+    }
+    for (size_t i = 0; i < struct_t->n_members; i++) {
+        ASR::symbol_t* member = struct_t->m_symtab->get_symbol(
+            struct_t->m_members[i]);
+        if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
+            continue;
+        }
+        ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member);
+        if (ASRUtils::is_pointer(member_var->m_type) ||
+                member_var->m_type_declaration == nullptr ||
+                !ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(member_var->m_type))) {
+            continue;
+        }
+        ASR::symbol_t* member_struct = ASRUtils::symbol_get_past_external(
+            member_var->m_type_declaration);
+        if (!ASR::is_a<ASR::Struct_t>(*member_struct)) {
+            continue;
+        }
+        if (resolve_struct_defined_assignment_proc(
+                ASR::down_cast<ASR::Struct_t>(member_struct)) != nullptr) {
+            return true;
+        }
+    }
+    return false;
+}
+
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression) {
     ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expression);
     if (struct_sym == nullptr) {
@@ -3872,6 +3960,213 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
     return ASR::make_Cast_t(al, a_loc, a_arg, a_kind, a_type, value, nullptr);
 }
 
+template<typename T>
+static T perform_binop(T left_value, T right_value, ASR::binopType op) {
+    T result;
+    switch (op) {
+        case ASR::Add:
+            result = left_value + right_value;
+            break;
+        case ASR::Sub:
+            result = left_value - right_value;
+            break;
+        case ASR::Mul:
+            result = left_value * right_value;
+            break;
+        case ASR::Div:
+            result = left_value / right_value;
+            break;
+        case ASR::Pow:
+            result = std::pow(left_value, right_value);
+            break;
+        default:
+            LCOMPILERS_ASSERT(false);
+            result = 0;
+    }
+    return result;
+}
+
+ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
+        ASR::expr_t* right, ASR::binopType op, const Location& loc,
+        ASR::ttype_t* dest_type, bool &division_by_zero) {
+    LCOMPILERS_ASSERT((left != nullptr) && (right != nullptr));
+    division_by_zero = false;
+    if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::RealConstant_t>(*right)) {
+        ASR::RealConstant_t* lc = ASR::down_cast<ASR::RealConstant_t>(left);
+        ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(right);
+        if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 16) {
+            lf_float128 lv = ASRUtils::real_constant_get_r16(lc);
+            lf_float128 rv = ASRUtils::real_constant_get_r16(rc);
+            lf_float128 res;
+            switch (op) {
+                case ASR::Add: res = lf_f128_add(lv, rv); break;
+                case ASR::Sub: res = lf_f128_sub(lv, rv); break;
+                case ASR::Mul: res = lf_f128_mul(lv, rv); break;
+                case ASR::Div: res = lf_f128_div(lv, rv); break;
+                case ASR::Pow: res = lf_f128_pow(lv, rv); break;
+                default: LCOMPILERS_ASSERT(false); res = lv;
+            }
+            return ASRUtils::make_RealConstant_r16(al, left->base.loc, res, dest_type);
+        } else if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 10) {
+            const uint8_t* l_bytes = ASRUtils::real_constant_get_r10_bytes(lc);
+            const uint8_t* r_bytes = ASRUtils::real_constant_get_r10_bytes(rc);
+            long double lv{}, rv{};
+            std::memcpy(&lv, l_bytes, sizeof(long double));
+            std::memcpy(&rv, r_bytes, sizeof(long double));
+            long double res;
+            switch (op) {
+                case ASR::Add: res = lv + rv; break;
+                case ASR::Sub: res = lv - rv; break;
+                case ASR::Mul: res = lv * rv; break;
+                case ASR::Div: res = lv / rv; break;
+                case ASR::Pow: res = std::pow(lv, rv); break;
+                default: LCOMPILERS_ASSERT(false); res = lv;
+            }
+            return ASRUtils::make_RealConstant_r10(al, left->base.loc, res, dest_type);
+        }
+        if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
+            // Evaluate in single precision, as the program would.
+            float left_value = lc->m_r;
+            float right_value = rc->m_r;
+            float result = perform_binop(left_value, right_value, op);
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
+                result, dest_type));
+        }
+        double left_value = lc->m_r;
+        double right_value = rc->m_r;
+        return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
+        perform_binop(left_value, right_value, op), dest_type));
+    } else if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)){
+        LCOMPILERS_ASSERT(op == ASR::binopType::Pow);
+        ASR::RealConstant_t* lc = ASR::down_cast<ASR::RealConstant_t>(left);
+        int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+        if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 16) {
+            lf_float128 lv = ASRUtils::real_constant_get_r16(lc);
+            lf_float128 res = lf_f128_pow(lv, lf_f128_from_double((double)right_value));
+            return ASRUtils::make_RealConstant_r16(al, left->base.loc, res, dest_type);
+        } else if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 10) {
+            const uint8_t* l_bytes = ASRUtils::real_constant_get_r10_bytes(lc);
+            long double lv{};
+            std::memcpy(&lv, l_bytes, sizeof(long double));
+            long double res = std::pow(lv, (long double)right_value);
+            return ASRUtils::make_RealConstant_r10(al, left->base.loc, res, dest_type);
+        }
+        double left_value = lc->m_r;
+        double result = std::pow(left_value, right_value);
+        if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
+            result = (float) result;
+        }
+        return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
+                result, dest_type));
+    } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
+        int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
+        int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+
+        if (op == ASR::Div && right_value == 0) {
+            division_by_zero = true;
+            return nullptr;
+        }
+
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, left->base.loc,
+                perform_binop(left_value, right_value, op), dest_type));
+    } else if (ASR::is_a<ASR::ComplexConstant_t>(*left) && ASR::is_a<ASR::ComplexConstant_t>(*right)) {
+        ASR::ComplexConstant_t *left_value
+            = ASR::down_cast<ASR::ComplexConstant_t>(
+                    ASRUtils::expr_value(left));
+        ASR::ComplexConstant_t *right_value
+            = ASR::down_cast<ASR::ComplexConstant_t>(
+                    ASRUtils::expr_value(right));
+        std::complex<double> left_value_(left_value->m_re, left_value->m_im);
+        std::complex<double> right_value_(right_value->m_re, right_value->m_im);
+        std::complex<double> result = perform_binop(left_value_, right_value_, op);
+        return ASRUtils::EXPR( ASR::make_ComplexConstant_t(al, loc,
+                std::real(result), std::imag(result), dest_type));
+    }
+    return nullptr;
+}
+
+template<typename T>
+static bool perform_compare(T left, T right, ASR::cmpopType op) {
+    switch (op) {
+        case ASR::cmpopType::Eq: return left == right;
+        case ASR::cmpopType::NotEq: return left != right;
+        case ASR::cmpopType::Gt: return left > right;
+        case ASR::cmpopType::GtE: return left >= right;
+        case ASR::cmpopType::Lt: return left < right;
+        case ASR::cmpopType::LtE: return left <= right;
+    }
+    LCOMPILERS_ASSERT(false);
+    return false;
+}
+
+ASR::expr_t* fold_compare_constants(Allocator &al, ASR::expr_t* left,
+        ASR::expr_t* right, ASR::cmpopType op, const Location& loc,
+        ASR::ttype_t* logical_type) {
+    bool result;
+    if (ASR::is_a<ASR::IntegerConstant_t>(*left)
+            && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
+        result = perform_compare(ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n,
+            ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n, op);
+    } else if (ASR::is_a<ASR::RealConstant_t>(*left)
+            && ASR::is_a<ASR::RealConstant_t>(*right)) {
+        ASR::RealConstant_t* lc = ASR::down_cast<ASR::RealConstant_t>(left);
+        ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(right);
+        if (ASRUtils::extract_kind_from_ttype_t(lc->m_type) == 16) {
+            lf_float128 lv = ASRUtils::real_constant_get_r16(lc);
+            lf_float128 rv = ASRUtils::real_constant_get_r16(rc);
+            if (op == ASR::cmpopType::Eq || op == ASR::cmpopType::NotEq) {
+                result = (lf_f128_eq(lv, rv) != 0) == (op == ASR::cmpopType::Eq);
+            } else {
+                result = perform_compare(lf_f128_cmp(lv, rv), 0, op);
+            }
+        } else {
+            result = perform_compare(lc->m_r, rc->m_r, op);
+        }
+    } else if (ASR::is_a<ASR::LogicalConstant_t>(*left)
+            && ASR::is_a<ASR::LogicalConstant_t>(*right)) {
+        result = perform_compare(ASR::down_cast<ASR::LogicalConstant_t>(left)->m_value,
+            ASR::down_cast<ASR::LogicalConstant_t>(right)->m_value, op);
+    } else {
+        return nullptr;
+    }
+    return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, result,
+        logical_type));
+}
+
+bool fold_logical_binop(ASR::logicalbinopType op, bool left, bool right,
+        bool &result) {
+    switch (op) {
+        case ASR::And: result = left && right; return true;
+        case ASR::Or: result = left || right; return true;
+        case ASR::NEqv: result = left != right; return true;
+        case ASR::Eqv: result = left == right; return true;
+        default: return false;
+    }
+}
+
+bool reads_valueless_parameter(ASR::expr_t* e) {
+    class Finder : public ASR::BaseWalkVisitor<Finder> {
+        public:
+            bool found = false;
+            void visit_Var(const ASR::Var_t &x) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (var->m_storage == ASR::storage_typeType::Parameter
+                            && var->m_value == nullptr) {
+                        found = true;
+                    }
+                }
+            }
+    };
+    if (e == nullptr) {
+        return false;
+    }
+    Finder finder;
+    finder.visit_expr(*e);
+    return finder.found;
+}
+
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope) {
     if (original_sym && ASR::is_a<ASR::ExternalSymbol_t>(*original_sym)) {
@@ -4739,6 +5034,15 @@ ASR::asr_t* make_ArraySize_t_util(
     if( ASR::is_a<ASR::ArrayItem_t>(*a_v) ) {
         ASR::ArrayItem_t* array_item_t = ASR::down_cast<ASR::ArrayItem_t>(a_v);
         LCOMPILERS_ASSERT(ASRUtils::is_array(array_item_t->m_type));
+        // `w%u(2)` with `w` an array is an array although its subscripts are
+        // scalar: it takes one element of the component from every element of
+        // the base, so it has as many elements as the base. The subscripts
+        // below are the sizes of vector subscripts, which these are not.
+        ASR::expr_t* shape_base = ASRUtils::struct_base_lending_shape(array_item_t);
+        if( shape_base != nullptr ) {
+            return make_ArraySize_t_util(al, a_loc, shape_base, a_dim, a_type,
+                a_value, for_type);
+        }
         if( for_type ) {
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable(array_item_t->m_type) &&
                               !ASRUtils::is_pointer(array_item_t->m_type));

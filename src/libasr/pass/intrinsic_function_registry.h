@@ -861,6 +861,31 @@ namespace IntrinsicElementalFunctionRegistry {
         return std::get<0>(get_intrinsic_function_by_id_db().at(id));
     }
 
+    // The function that computes the compile-time value of the intrinsic
+    // `id` from the values of its arguments (`m_args` of its
+    // IntrinsicElementalFunction) and its type, for the numeric intrinsics
+    // whose arguments are stored as given; nullptr for all others.
+    static inline eval_intrinsic_function get_eval_function(int64_t id) {
+        switch (static_cast<IntrinsicElementalFunctions>(id)) {
+            case IntrinsicElementalFunctions::Abs: return &Abs::eval_Abs;
+            case IntrinsicElementalFunctions::Int: return &Int::eval_Int;
+            case IntrinsicElementalFunctions::Real: return &Real::eval_Real;
+            case IntrinsicElementalFunctions::Nint: return &Nint::eval_Nint;
+            case IntrinsicElementalFunctions::Aint: return &Aint::eval_Aint;
+            case IntrinsicElementalFunctions::Anint: return &Anint::eval_Anint;
+            case IntrinsicElementalFunctions::Floor: return &Floor::eval_Floor;
+            case IntrinsicElementalFunctions::Ceiling: return &Ceiling::eval_Ceiling;
+            case IntrinsicElementalFunctions::Min: return &Min::eval_Min;
+            case IntrinsicElementalFunctions::Max: return &Max::eval_Max;
+            case IntrinsicElementalFunctions::Mod: return &Mod::eval_Mod;
+            case IntrinsicElementalFunctions::Modulo: return &Modulo::eval_Modulo;
+            case IntrinsicElementalFunctions::Sign: return &Sign::eval_Sign;
+            case IntrinsicElementalFunctions::Dim: return &Dim::eval_Dim;
+            case IntrinsicElementalFunctions::Sqrt: return &Sqrt::eval_Sqrt;
+            default: return nullptr;
+        }
+    }
+
     static inline std::string get_intrinsic_function_name(int64_t id) {
         // Use switch statement instead of lazy map for zero runtime overhead
         return get_intrinsic_name(id);

@@ -2004,6 +2004,14 @@ namespace LCompilers {
 #if LLVM_VERSION_MAJOR >= 8
         return builder->CreateLoad(t, x, is_volatile);
 #else
+        // LLVM 7 has no `CreateLoad(Type*, Value*, bool)` and `CreateLoad(x)`
+        // loads the pointee type of `x`. Callers rely on `t` being honored
+        // (e.g. loading the data pointer through a descriptor pointer), as
+        // it is by LLVM 8+, so cast the pointer to `t*` when they differ.
+        if (t != x->getType()->getPointerElementType()) {
+            x = builder->CreateBitCast(x, t->getPointerTo(
+                x->getType()->getPointerAddressSpace()));
+        }
         return builder->CreateLoad(x, is_volatile);
 #endif
     }
@@ -3728,7 +3736,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             case ASR::ttypeType::UnsignedInteger:
             case ASR::ttypeType::Real:
             case ASR::ttypeType::Logical:
-            case ASR::ttypeType::Complex: {
+            case ASR::ttypeType::Complex:
+            case ASR::ttypeType::CPtr: {
                 if( ASRUtils::is_array(asr_src_type) ) {
                     ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(asr_src_type);
                     llvm::DataLayout data_layout(module->getDataLayout());
@@ -3794,8 +3803,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     ASRUtils::get_string_type(asr_src_type),
                     /*is_dest_allocatable=*/true);
                 break;
-            case ASR::ttypeType::FunctionType:
-            case ASR::ttypeType::CPtr: {
+            case ASR::ttypeType::FunctionType: {
                 LLVM::CreateStore(*builder, src, dest);
                 break ;
             }
@@ -10348,54 +10356,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     bool LLVMStruct::try_call_struct_defined_assignment(ASR::Struct_t* struct_t,
             llvm::Value* dest, llvm::Value* src, llvm::Module* module,
             bool value_is_class) {
-        ASR::symbol_t* da_sym = ASRUtils::resolve_struct_assign_symbol(struct_t);
-        if (da_sym == nullptr) {
-            return false;
-        }
-        da_sym = ASRUtils::symbol_get_past_external(da_sym);
-        if (!ASR::is_a<ASR::CustomOperator_t>(*da_sym)) {
-            return false;
-        }
-
-        ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(da_sym);
-        ASR::symbol_t* matching_func_sym = nullptr;
-        for (size_t ip = 0; ip < custom_op->n_procs; ip++) {
-            ASR::symbol_t* assign_proc =
-                ASRUtils::symbol_get_past_external(custom_op->m_procs[ip]);
-            ASR::symbol_t* candidate;
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*assign_proc)) {
-                candidate = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::StructMethodDeclaration_t>(
-                        assign_proc)->m_proc);
-            } else {
-                candidate = assign_proc;
-            }
-            if (!ASR::is_a<ASR::Function_t>(*candidate)) {
-                continue;
-            }
-            ASR::Function_t* cand_func = ASR::down_cast<ASR::Function_t>(candidate);
-            if (cand_func->n_args < 2) {
-                continue;
-            }
-            // Both formals must be type/class of struct_t (type_declaration).
-            auto formal_matches = [&](ASR::expr_t* arg) {
-                ASR::Variable_t* var = ASRUtils::EXPR2VAR(arg);
-                ASR::ttype_t* t = ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(var->m_type)));
-                if (!ASR::is_a<ASR::StructType_t>(*t) ||
-                        var->m_type_declaration == nullptr) {
-                    return false;
-                }
-                return ASRUtils::symbol_get_past_external(var->m_type_declaration)
-                    == &struct_t->base;
-            };
-            if (formal_matches(cand_func->m_args[0]) &&
-                    formal_matches(cand_func->m_args[1])) {
-                matching_func_sym = candidate;
-                break;
-            }
-        }
+        ASR::symbol_t* matching_func_sym =
+            ASRUtils::resolve_struct_defined_assignment_proc(struct_t);
         if (matching_func_sym == nullptr) {
             return false;
         }

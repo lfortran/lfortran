@@ -3,6 +3,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/semantic_exception.h>
 
 namespace LCompilers {
@@ -1028,22 +1029,38 @@ public:
     std::string new_sym_name;                           // name for the new symbol
     ASR::symbol_t* sym;
     SetChar dependencies;
+    // Where the errors found while evaluating the constant expressions of the
+    // instantiation, such as a division by zero, are reported.
+    diag::Diagnostics* diagnostics;
 
     SymbolInstantiator(Allocator &al,
             SymbolTable* target_scope,
             std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs,
             std::map<std::string,ASR::symbol_t*>& symbol_subs,
-            std::string new_sym_name, ASR::symbol_t* sym):
+            std::string new_sym_name, ASR::symbol_t* sym,
+            diag::Diagnostics* diagnostics = nullptr):
         BaseExprStmtDuplicator(al),
         target_scope{target_scope},
         new_scope{target_scope},
         type_subs{type_subs},
         symbol_subs{symbol_subs},
-        new_sym_name{new_sym_name}, sym{sym}
+        new_sym_name{new_sym_name}, sym{sym}, diagnostics{diagnostics}
         {}
 
     ASR::symbol_t* instantiate() {
         std::string sym_name = ASRUtils::symbol_name(sym);
+
+        // Already instantiated into this scope? The new symbol is always added
+        // under new_sym_name, so that is the name to look for. Looking for the
+        // template's own name instead would match whatever else happens to carry
+        // it in this scope -- in a main program that uses the module, the name is
+        // use-associated to the Template itself, and returning that hands back a
+        // Template where a Function is expected.
+        // A local result variable must also take precedence over the substitution
+        // for the same-named function when that function is renamed.
+        if (target_scope->get_symbol(new_sym_name) != nullptr) {
+            return target_scope->get_symbol(new_sym_name);
+        }
 
         // if passed as instantiation's argument
         if (symbol_subs.find(sym_name) != symbol_subs.end()) {
@@ -1054,16 +1071,6 @@ public:
             }
         }
 
-        // Already instantiated into this scope? The new symbol is always added
-        // under new_sym_name, so that is the name to look for. Looking for the
-        // template's own name instead would match whatever else happens to carry
-        // it in this scope -- in a main program that uses the module, the name is
-        // use-associated to the Template itself, and returning that hands back a
-        // Template where a Function is expected.
-        if (target_scope->get_symbol(new_sym_name) != nullptr) {
-            return target_scope->get_symbol(new_sym_name);
-        }
-
         switch (sym->type) {
             case (ASR::symbolType::Function) : {
                 ASR::Function_t* x = ASR::down_cast<ASR::Function_t>(sym);
@@ -1071,6 +1078,10 @@ public:
             }
             case (ASR::symbolType::Variable) : {
                 ASR::Variable_t* x = ASR::down_cast<ASR::Variable_t>(sym);
+                ASR::symbol_t* host_var = reference_host_variable(x);
+                if (host_var) {
+                    return host_var;
+                }
                 return instantiate_Variable(x);
             }
             case (ASR::symbolType::Template) : {
@@ -1111,7 +1122,8 @@ public:
             // instantiation of other symbols like StructMethodDeclaration
             if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
                 SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
-                    ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                    ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
+                    diagnostics);
                 t.instantiate();
             } else {
                 instantiation_vector.push_back(sym_pair);
@@ -1121,7 +1133,8 @@ public:
         // instantiate the rest of the symbols
         for (auto &sym_pair: instantiation_vector) {
             SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
-                ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
+                diagnostics);
             t.instantiate();
         }
 
@@ -1167,10 +1180,40 @@ public:
     ASR::symbol_t* instantiate_Variable(ASR::Variable_t* x) {
         ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, &x->base));
         ASR::ttype_t *new_type = substitute_type(var_expr, x->m_type);
+        new_type = fix_substituted_array_physical_type(x, new_type);
+
+        // The initializer of a named constant may refer to the template's
+        // deferred constants, so it goes through the same substitution as
+        // the type; its compile-time value is then taken from the result.
+        // An initializer that uses a deferred constant has no value in the
+        // template, and gets one here once the constant is substituted.
+        size_t n_diagnostics = diagnostics ? diagnostics->diagnostics.size() : 0;
+        ASR::expr_t *new_symbolic_value = duplicate_expr(x->m_symbolic_value);
+        ASR::expr_t *new_value = duplicate_expr(x->m_value);
+        if (new_value == nullptr && new_symbolic_value
+                && x->m_storage == ASR::storage_typeType::Parameter) {
+            new_value = ASRUtils::expr_value(new_symbolic_value);
+            if (diagnostics && diagnostics->diagnostics.size() == n_diagnostics
+                    && !ASRUtils::is_value_constant(new_value)) {
+                // The semantics accept only initializers that the operations
+                // above evaluate, so this is not expected; report it rather
+                // than leave the named constant without a value.
+                diagnostics->add(diag::Diagnostic(
+                    "initialization of named constant `" + std::string(x->m_name)
+                    + "` does not reduce to a compile time constant in this"
+                    " instantiation",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x->m_symbolic_value->base.loc})}));
+            }
+        }
+        if (new_value && ASRUtils::expr_value(new_value)) {
+            new_value = ASRUtils::expr_value(new_value);
+        }
 
         SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
-        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_type);
+        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_type,
+            new_symbolic_value, new_value, x->m_name);
 
         ASR::symbol_t* type_decl = nullptr;
         if (!ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(x->m_type))
@@ -1189,11 +1232,328 @@ public:
 
         ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
             x->base.base.loc, target_scope, s2c(al, x->m_name), variable_dependencies_vec.p,
-            variable_dependencies_vec.size(), x->m_intent, x->m_symbolic_value, x->m_value, x->m_storage,
+            variable_dependencies_vec.size(), x->m_intent, new_symbolic_value, new_value, x->m_storage,
             new_type, type_decl, x->m_abi, x->m_access, x->m_presence, x->m_value_attr));
         target_scope->add_symbol(x->m_name, s);
 
         return s;
+    }
+
+    // Substituting a deferred constant can turn an expression of the
+    // template, which had no compile-time value, into a constant expression
+    // of the instantiation, e.g. `n*2` with `n` bound to 3. The operations
+    // below evaluate it with the same functions as the frontend, so that named
+    // constants initialized with it get a compile-time value.
+
+    void report_error(const std::string &message, const Location &loc) {
+        if (diagnostics) {
+            diagnostics->add(diag::Diagnostic(message, diag::Level::Error,
+                diag::Stage::Semantic, {diag::Label("", {loc})}));
+        }
+    }
+
+    // The compile-time value of the scalar `left op right`, or nullptr.
+    ASR::expr_t* fold_binop(ASR::expr_t* left, ASR::binopType op,
+            ASR::expr_t* right, ASR::ttype_t* type, const Location &loc) {
+        ASR::expr_t* left_value = ASRUtils::expr_value(left);
+        ASR::expr_t* right_value = ASRUtils::expr_value(right);
+        if (left_value == nullptr || right_value == nullptr
+                || ASRUtils::is_array(type)) {
+            return nullptr;
+        }
+        bool division_by_zero = false;
+        ASR::expr_t* value = ASRUtils::fold_binop_constants(al, left_value,
+            right_value, op, loc, type, division_by_zero);
+        if (division_by_zero) {
+            report_error("Division by zero", loc);
+        }
+        return value;
+    }
+
+    ASR::asr_t* duplicate_IntegerBinOp(ASR::IntegerBinOp_t* x) {
+        ASR::expr_t* left = duplicate_expr(x->m_left);
+        ASR::expr_t* right = duplicate_expr(x->m_right);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        if (value == nullptr) {
+            value = fold_binop(left, x->m_op, right, type, x->base.base.loc);
+        }
+        return ASR::make_IntegerBinOp_t(al, x->base.base.loc, left, x->m_op,
+            right, type, value);
+    }
+
+    ASR::asr_t* duplicate_RealBinOp(ASR::RealBinOp_t* x) {
+        ASR::expr_t* left = duplicate_expr(x->m_left);
+        ASR::expr_t* right = duplicate_expr(x->m_right);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        if (value == nullptr) {
+            value = fold_binop(left, x->m_op, right, type, x->base.base.loc);
+        }
+        return ASR::make_RealBinOp_t(al, x->base.base.loc, left, x->m_op,
+            right, type, value);
+    }
+
+    // The frontend negates a scalar integer or real constant in place (in
+    // `visit_UnaryOp`); this is the same, for the kinds whose value is stored
+    // in `m_n` or `m_r` (the semantics reject real(10) and real(16) here).
+    ASR::asr_t* duplicate_IntegerUnaryMinus(ASR::IntegerUnaryMinus_t* x) {
+        ASR::expr_t* arg = duplicate_expr(x->m_arg);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        if (value == nullptr && arg_value
+                && ASR::is_a<ASR::IntegerConstant_t>(*arg_value)) {
+            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                x->base.base.loc,
+                -ASR::down_cast<ASR::IntegerConstant_t>(arg_value)->m_n, type));
+        }
+        return ASR::make_IntegerUnaryMinus_t(al, x->base.base.loc, arg, type,
+            value);
+    }
+
+    ASR::asr_t* duplicate_RealUnaryMinus(ASR::RealUnaryMinus_t* x) {
+        ASR::expr_t* arg = duplicate_expr(x->m_arg);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        int kind = ASRUtils::extract_kind_from_ttype_t(type);
+        if (value == nullptr && arg_value && kind != 10 && kind != 16
+                && ASR::is_a<ASR::RealConstant_t>(*arg_value)) {
+            value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
+                x->base.base.loc,
+                -ASR::down_cast<ASR::RealConstant_t>(arg_value)->m_r, type));
+        }
+        return ASR::make_RealUnaryMinus_t(al, x->base.base.loc, arg, type,
+            value);
+    }
+
+    // The compile-time value of the scalar comparison `left op right`.
+    ASR::expr_t* fold_compare(ASR::expr_t* left, ASR::cmpopType op,
+            ASR::expr_t* right, ASR::ttype_t* type, const Location &loc) {
+        ASR::expr_t* left_value = ASRUtils::expr_value(left);
+        ASR::expr_t* right_value = ASRUtils::expr_value(right);
+        if (left_value == nullptr || right_value == nullptr
+                || ASRUtils::is_array(type)) {
+            return nullptr;
+        }
+        return ASRUtils::fold_compare_constants(al, left_value, right_value,
+            op, loc, type);
+    }
+
+    ASR::asr_t* duplicate_IntegerCompare(ASR::IntegerCompare_t* x) {
+        ASR::expr_t* left = duplicate_expr(x->m_left);
+        ASR::expr_t* right = duplicate_expr(x->m_right);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        if (value == nullptr) {
+            value = fold_compare(left, x->m_op, right, type, x->base.base.loc);
+        }
+        return ASR::make_IntegerCompare_t(al, x->base.base.loc, left, x->m_op,
+            right, type, value);
+    }
+
+    ASR::asr_t* duplicate_RealCompare(ASR::RealCompare_t* x) {
+        ASR::expr_t* left = duplicate_expr(x->m_left);
+        ASR::expr_t* right = duplicate_expr(x->m_right);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        if (value == nullptr) {
+            value = fold_compare(left, x->m_op, right, type, x->base.base.loc);
+        }
+        return ASR::make_RealCompare_t(al, x->base.base.loc, left, x->m_op,
+            right, type, value);
+    }
+
+    ASR::asr_t* duplicate_LogicalBinOp(ASR::LogicalBinOp_t* x) {
+        ASR::expr_t* left = duplicate_expr(x->m_left);
+        ASR::expr_t* right = duplicate_expr(x->m_right);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASR::expr_t* left_value = ASRUtils::expr_value(left);
+        ASR::expr_t* right_value = ASRUtils::expr_value(right);
+        bool result;
+        if (value == nullptr && left_value && right_value
+                && ASR::is_a<ASR::LogicalConstant_t>(*left_value)
+                && ASR::is_a<ASR::LogicalConstant_t>(*right_value)
+                && ASRUtils::fold_logical_binop(x->m_op,
+                    ASR::down_cast<ASR::LogicalConstant_t>(left_value)->m_value,
+                    ASR::down_cast<ASR::LogicalConstant_t>(right_value)->m_value,
+                    result)) {
+            value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
+                x->base.base.loc, result, type));
+        }
+        return ASR::make_LogicalBinOp_t(al, x->base.base.loc, left, x->m_op,
+            right, type, value);
+    }
+
+    ASR::asr_t* duplicate_LogicalNot(ASR::LogicalNot_t* x) {
+        ASR::expr_t* arg = duplicate_expr(x->m_arg);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        if (value == nullptr && arg_value
+                && ASR::is_a<ASR::LogicalConstant_t>(*arg_value)) {
+            value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
+                x->base.base.loc,
+                !ASR::down_cast<ASR::LogicalConstant_t>(arg_value)->m_value,
+                type));
+        }
+        return ASR::make_LogicalNot_t(al, x->base.base.loc, arg, type, value);
+    }
+
+    // A conversion of a deferred constant, e.g. `real(n)`.
+    ASR::asr_t* duplicate_Cast(ASR::Cast_t* x) {
+        ASR::expr_t* arg = duplicate_expr(x->m_arg);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASR::expr_t* dest = duplicate_expr(x->m_dest);
+        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        if (value == nullptr && arg_value && !ASRUtils::is_array(type)
+                && (ASR::is_a<ASR::IntegerConstant_t>(*arg_value)
+                    || ASR::is_a<ASR::RealConstant_t>(*arg_value))) {
+            value = ASRUtils::expr_value(ASRUtils::EXPR(
+                ASRUtils::make_Cast_t_value(al, x->base.base.loc, arg,
+                    x->m_kind, type)));
+        }
+        return ASR::make_Cast_t(al, x->base.base.loc, arg, x->m_kind, type,
+            value, dest);
+    }
+
+    // An intrinsic of a deferred constant, e.g. `abs(-n)` or `int(n*2.5)`,
+    // evaluated by the intrinsic's own evaluation function.
+    ASR::asr_t* duplicate_IntrinsicElementalFunction(
+            ASR::IntrinsicElementalFunction_t* x) {
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            args.push_back(al, duplicate_expr(x->m_args[i]));
+        }
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASRUtils::eval_intrinsic_function eval =
+            ASRUtils::IntrinsicElementalFunctionRegistry::get_eval_function(
+                x->m_intrinsic_id);
+        if (value == nullptr && eval && !ASRUtils::is_array(type)) {
+            Vec<ASR::expr_t*> arg_values;
+            arg_values.reserve(al, args.size());
+            for (size_t i = 0; i < args.size(); i++) {
+                ASR::expr_t* arg_value = ASRUtils::expr_value(args[i]);
+                if (arg_value == nullptr
+                        || !(ASR::is_a<ASR::IntegerConstant_t>(*arg_value)
+                            || ASR::is_a<ASR::RealConstant_t>(*arg_value))) {
+                    break;
+                }
+                arg_values.push_back(al, arg_value);
+            }
+            // `eval_Mod` divides an integer by the second argument unchecked,
+            // while `eval_Modulo` reports a zero second argument itself.
+            int64_t divisor = -1;
+            if (arg_values.size() == args.size()
+                    && x->m_intrinsic_id == static_cast<int64_t>(
+                        ASRUtils::IntrinsicElementalFunctions::Mod)
+                    && ASRUtils::extract_value(arg_values[1], divisor)
+                    && divisor == 0) {
+                report_error("Second argument of mod cannot be 0",
+                    x->base.base.loc);
+            } else if (arg_values.size() == args.size()) {
+                diag::Diagnostics eval_diagnostics;
+                value = eval(al, x->base.base.loc, type, arg_values,
+                    eval_diagnostics);
+                if (eval_diagnostics.has_error()) {
+                    value = nullptr;
+                    if (diagnostics) {
+                        for (auto &d: eval_diagnostics.diagnostics) {
+                            diagnostics->diagnostics.push_back(d);
+                        }
+                    }
+                }
+            }
+        }
+        return ASRUtils::make_IntrinsicElementalFunction_t_util(al,
+            x->base.base.loc, x->m_intrinsic_id, args.p, args.size(),
+            x->m_overload_id, type, value);
+    }
+
+    // An explicit-shape array whose bounds depend on a deferred named
+    // constant is a PointerArray inside the template, since the bounds are
+    // unknown there. Once the constant is substituted the bounds are known,
+    // so a non-dummy array (a local or a struct member) must become a
+    // FixedSizeArray with constant bounds, exactly as the same declaration
+    // is represented outside a template. Otherwise a struct member would be
+    // an uninitialized pointer instead of inline storage.
+    // Character arrays are left alone: outside a template the same
+    // declaration is a PointerArray too, so keeping it matches the
+    // non-template representation.
+    ASR::ttype_t* fix_substituted_array_physical_type(ASR::Variable_t* x,
+            ASR::ttype_t* type) {
+        if (!ASR::is_a<ASR::Array_t>(*type) || ASRUtils::is_arg_dummy(x->m_intent)) {
+            return type;
+        }
+        ASR::Array_t* a = ASR::down_cast<ASR::Array_t>(type);
+        if (a->m_physical_type != ASR::array_physical_typeType::PointerArray
+                || ASRUtils::is_character(*a->m_type)
+                || !ASRUtils::is_fixed_size_array(a->m_dims, a->n_dims)) {
+            return type;
+        }
+        Vec<ASR::dimension_t> new_dims;
+        new_dims.reserve(al, a->n_dims);
+        for (size_t i = 0; i < a->n_dims; i++) {
+            ASR::dimension_t dim = a->m_dims[i];
+            if (dim.m_start && ASRUtils::expr_value(dim.m_start)) {
+                dim.m_start = ASRUtils::expr_value(dim.m_start);
+            }
+            dim.m_length = ASRUtils::expr_value(dim.m_length);
+            new_dims.push_back(al, dim);
+        }
+        return ASRUtils::make_Array_t_util(al, type->base.loc, a->m_type,
+            new_dims.p, new_dims.size(), ASR::abiType::Source, false,
+            ASR::array_physical_typeType::FixedSizeArray, true);
+    }
+
+    // A variable declared in the module that hosts the template is shared
+    // storage reached by host association: the instantiation must refer to
+    // the original variable, never own a copy of it. Returns nullptr for
+    // every variable that is copied, as before: variables owned by the
+    // template itself (locals and arguments of its procedures, struct
+    // members), named constants, which have no storage to share, and
+    // program variables.
+    //
+    // Reachability is decided by scope ancestry, not by name lookup: a
+    // same-named local at the instantiation site must not capture the
+    // reference.
+    ASR::symbol_t* reference_host_variable(ASR::Variable_t* x) {
+        if (x->m_storage == ASR::storage_typeType::Parameter) {
+            return nullptr;
+        }
+        SymbolTable* host_scope = x->m_parent_symtab;
+        ASR::symbol_t* host = nullptr;
+        if (host_scope->asr_owner != nullptr
+                && ASR::is_a<ASR::symbol_t>(*host_scope->asr_owner)) {
+            host = ASR::down_cast<ASR::symbol_t>(host_scope->asr_owner);
+        }
+        ASR::symbol_t* var_sym = &x->base;
+        if (host_scope->parent == nullptr) {
+            // The global scope encloses every instantiation.
+            return var_sym;
+        }
+        if (host != nullptr && ASR::is_a<ASR::Module_t>(*host)) {
+            // Module variables are static storage, reachable from any
+            // nesting depth: directly if the module encloses the
+            // instantiation, otherwise through an ExternalSymbol.
+            for (SymbolTable* s = target_scope; s != nullptr; s = s->parent) {
+                if (s == host_scope) {
+                    return var_sym;
+                }
+            }
+            ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(host);
+            ASR::symbol_t* e = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                al, x->base.base.loc, target_scope, x->m_name, var_sym,
+                module->m_name, nullptr, 0, x->m_name, x->m_access));
+            target_scope->add_symbol(x->m_name, e);
+            return e;
+        }
+        return nullptr;
     }
 
     ASR::symbol_t* instantiate_Template(ASR::Template_t* x) {
@@ -1202,7 +1562,8 @@ public:
         // duplicate symbol table
         for (auto const &sym_pair: x->m_symtab->get_scope()) {
             SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
-                ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
+                diagnostics);
             t.instantiate();
         }
 
@@ -1260,7 +1621,8 @@ public:
             // instantiation of other symbols like StructMethodDeclaration
             if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
                 SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
-                    ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                    ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
+                    diagnostics);
                 t.instantiate();
             } else {
                 instantiation_vector.push_back(sym_pair);
@@ -1270,7 +1632,8 @@ public:
         // instantiate the rest of the symbols
         for (auto &sym_pair: instantiation_vector) {
             SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
-                ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
+                ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
+                diagnostics);
             t.instantiate();
         }
 
@@ -1310,7 +1673,8 @@ public:
         std::string new_cp_name = target_scope->parent->get_unique_name("__asr_" + std::string(x->m_name), false);
         ASR::symbol_t* cp_proc = x->m_proc;
 
-        SymbolInstantiator t(al, target_scope->parent, type_subs, symbol_subs, new_cp_name, cp_proc);
+        SymbolInstantiator t(al, target_scope->parent, type_subs, symbol_subs, new_cp_name, cp_proc,
+            diagnostics);
         ASR::symbol_t* new_cp_proc = t.instantiate();
         symbol_subs[ASRUtils::symbol_name(cp_proc)] = new_cp_proc;
 
@@ -1329,7 +1693,8 @@ public:
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
 
-        SymbolInstantiator t(al, new_scope, type_subs, symbol_subs, sym_name, x->m_v);
+        SymbolInstantiator t(al, new_scope, type_subs, symbol_subs, sym_name, x->m_v,
+            diagnostics);
         ASR::symbol_t* sym = t.instantiate();
 
         return ASR::make_Var_t(al, x->base.base.loc, sym);
@@ -1706,8 +2071,15 @@ public:
             }
         }
         ASR::expr_t *value = duplicate_expr(x->m_value);
-        return ASR::make_ArrayPhysicalCast_t(al, x->base.base.loc,
-            arg, x->m_old, x->m_new, ttype, value);
+        // The instantiated argument may have a different physical type
+        // than in the template (e.g. a FixedSizeArray once a deferred
+        // constant bound is known), so the cast must start from it.
+        ASR::array_physical_typeType old_phys = x->m_old;
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            old_phys = ASRUtils::extract_physical_type(ASRUtils::expr_type(arg));
+        }
+        return ASRUtils::make_ArrayPhysicalCast_t_util(al, x->base.base.loc,
+            arg, old_phys, x->m_new, ttype, value);
     }
 
     ASR::asr_t* duplicate_ArraySection(ASR::ArraySection_t *x) {
@@ -1726,6 +2098,15 @@ public:
             v, args.p, args.size(), ttype, value);
     }
 
+    ASR::asr_t* duplicate_ArrayBroadcast(ASR::ArrayBroadcast_t *x) {
+        ASR::expr_t *array = duplicate_expr(x->m_array);
+        ASR::expr_t *shape = duplicate_expr(x->m_shape);
+        ASR::ttype_t *ttype = substitute_type(&x->base, x->m_type);
+        ASR::expr_t *value = duplicate_expr(x->m_value);
+        return ASR::make_ArrayBroadcast_t(al, x->base.base.loc,
+            array, shape, ttype, value);
+    }
+
     ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t *x) {
         ASR::expr_t *v = duplicate_expr(x->m_v);
         ASR::ttype_t *t = substitute_type(&x->base, x->m_type);
@@ -1734,6 +2115,22 @@ public:
         std::string s_name = ASRUtils::symbol_name(x->m_m);
         SymbolInstantiator t_i(al, new_scope, type_subs, symbol_subs, s_name, x->m_m);
         ASR::symbol_t *s = t_i.instantiate();
+
+        // An array member whose bounds depend on a deferred constant is a
+        // FixedSizeArray in the instantiated struct (see
+        // fix_substituted_array_physical_type), so its reference must have
+        // the same type, not the PointerArray type it had in the template.
+        ASR::symbol_t *member = ASRUtils::symbol_get_past_external(s);
+        if (ASR::is_a<ASR::Variable_t>(*member) && ASR::is_a<ASR::Array_t>(*t)) {
+            ASR::ttype_t *member_type = ASRUtils::symbol_type(member);
+            if (ASR::is_a<ASR::Array_t>(*member_type)
+                    && ASRUtils::extract_physical_type(member_type)
+                        == ASR::array_physical_typeType::FixedSizeArray
+                    && ASRUtils::extract_physical_type(t)
+                        == ASR::array_physical_typeType::PointerArray) {
+                t = ASRUtils::duplicate_type(al, member_type);
+            }
+        }
 
         return ASR::make_StructInstanceMember_t(al, x->base.base.loc, v, s, t, value);
     }
@@ -1843,8 +2240,10 @@ ASR::symbol_t* instantiate_symbol(Allocator &al,
         SymbolTable *target_scope,
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs,
         std::map<std::string,ASR::symbol_t*>& symbol_subs,
-        std::string new_sym_name, ASR::symbol_t *sym) {
-    SymbolInstantiator t(al, target_scope, type_subs, symbol_subs, new_sym_name, sym);
+        std::string new_sym_name, ASR::symbol_t *sym,
+        diag::Diagnostics &diagnostics) {
+    SymbolInstantiator t(al, target_scope, type_subs, symbol_subs, new_sym_name, sym,
+        &diagnostics);
     return t.instantiate();
 }
 

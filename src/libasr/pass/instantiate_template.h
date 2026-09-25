@@ -49,7 +49,8 @@ namespace LFortran {
         SymbolTable* target_scope,
         std::map<std::string,std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs,
         std::map<std::string,ASR::symbol_t*>& symbol_subs,
-        std::string new_sym_name, ASR::symbol_t* sym);
+        std::string new_sym_name, ASR::symbol_t* sym,
+        diag::Diagnostics &diagnostics);
 
 
     void instantiate_body(Allocator& al,

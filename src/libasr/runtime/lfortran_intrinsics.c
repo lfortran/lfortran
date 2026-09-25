@@ -2553,6 +2553,9 @@ typedef struct serialization_info{
         int32_t current_index;
     } array_sizes, string_lengths;
     bool just_peeked; // Flag to indicate if we just peeked the next element.
+    // Bytes of alignment padding the compiler asked us to skip once the
+    // element in progress has been consumed (the `P<n>` marker).
+    int64_t pending_padding;
     char* temp_char_pp; // Dummy container (Should be removed)
 } Serialization_Info;
 
@@ -2654,6 +2657,9 @@ bool array_of_string_special_case(Serialization_Info* s_info){ // {string_descri
 // Moves a containing pointer (struct, array) to the next the element
 void move_containing_ptr_next(Serialization_Info* s_info){
     // Ordering of types is crucial (Matched with enum `Primitive_Types`)
+    // These sizes are what `SerializeType` in libasr/codegen/asr_to_llvm.cpp
+    // models as a member's `walked_size` when it computes the `P<n>` padding
+    // markers, so the two must be changed together.
     static const int primitive_type_sizes[] = 
         {sizeof(int64_t), sizeof(int32_t), sizeof(int16_t),
         sizeof(int8_t) , sizeof(double), sizeof(float), 
@@ -2675,9 +2681,10 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         s_info->current_arg_info.current_arg = 
             (void*)
             ((char*)s_info->current_arg_info.current_arg +
-                primitive_type_sizes[s_info->current_element_type]); // char* cast needed for windows MinGW.
+                primitive_type_sizes[s_info->current_element_type] +
+                s_info->pending_padding); // char* cast needed for windows MinGW.
     }
-        
+    s_info->pending_padding = 0;
 }
 
 /* Sets primitive type for the current argument
@@ -2862,6 +2869,12 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
             s_info->current_arg_info.is_complex = false;
             pop_stack(s_info->array_sizes_stack);
             ++s_info->current_stop;
+        } else if (cur == 'P'){ // Alignment padding inside a struct --> `(R8,I4,P4)`
+            ++s_info->current_stop;
+            int64_t padding = transform_string_size_into_int(s_info);
+            if(!zero_size){
+                s_info->pending_padding += padding;
+            }
         } else if (cur == ','){ // Separator between scalars or in compound type --> `I4,R8`, (I4,R8)`.
             ++s_info->current_stop;
             // Only move from passed arg to another in the `va_list` when we don't have struct or array in process.
@@ -2869,12 +2882,14 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
                 ASSERT(stack_empty(s_info->array_serialiation_start_index));
                 s_info->current_arg_info.current_arg = va_arg(*s_info->current_arg_info.args, void*);
                 s_info->current_element_type = NONE_TYPE; // Important to set type to none when moving from whole argument to another
+                s_info->pending_padding = 0; // Trailing padding of the previous argument.
             } 
         } else if(cur == '\0'){ // End of Serialization.
             ASSERT( stack_empty(s_info->array_sizes_stack) && 
                     stack_empty(s_info->array_serialiation_start_index));
             s_info->current_arg_info.current_arg = NULL;
             s_info->current_element_type = NONE_TYPE;
+            s_info->pending_padding = 0;
             return false;
         } else { // Type
             if(zero_size) {
@@ -3326,6 +3341,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     s_info.array_sizes.current_index = 0;
     s_info.string_lengths.current_index = 0;
     s_info.just_peeked = false;
+    s_info.pending_padding = 0;
 
     int64_t* array_sizes = (int64_t*) internal_malloc(array_sizes_cnt * sizeof(int64_t));
     for(int i=0; i<array_sizes_cnt; i++){
@@ -6222,6 +6238,14 @@ static void use_stdin_char_mode(void)
     if (!__atomic_exchange_n(&done, 1, __ATOMIC_RELAXED)) {
         setvbuf(stdin, NULL, _IONBF, 0);
     }
+    // A 0-byte read on this target is not necessarily end of file:
+    // Emscripten reports end-of-line this way when stdin is served one
+    // line per read() (interactive use), and the next line simply has
+    // not arrived yet.  But stdio latches the EOF indicator, so the
+    // following READ would then fail without asking for more input.
+    // Drop any stale latch here, at the start of every stdin transfer:
+    // genuine EOF re-reports on the next read.
+    clearerr(stdin);
 #endif
 }
 
@@ -8050,6 +8074,17 @@ static bool read_stdin_list_directed_token(FILE *filep, char *buffer, size_t buf
     do {
         c = fgetc(filep);
     } while (c != EOF && isspace((unsigned char)c));
+#if defined(__EMSCRIPTEN__)
+    // Same spurious-EOF recovery as in read_line: a record boundary
+    // (e.g. a blank line) at the start of the whitespace skip looks
+    // like end of file on the first read; the retry pulls the next line.
+    if (c == EOF && filep == stdin) {
+        clearerr(filep);
+        do {
+            c = fgetc(filep);
+        } while (c != EOF && isspace((unsigned char)c));
+    }
+#endif
 
     if (c == EOF) {
         if (iostat) *iostat = -1;
@@ -9434,6 +9469,16 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
         int c;
         while ((c = fgetc(filep)) != EOF && isspace(c)) {
         }
+#if defined(__EMSCRIPTEN__)
+        // Same spurious-EOF recovery as in read_stdin_list_directed_token
+        // above, for a record boundary at the start of the skip when
+        // reading the standard input.
+        if (c == EOF && filep == stdin) {
+            clearerr(filep);
+            while ((c = fgetc(filep)) != EOF && isspace(c)) {
+            }
+        }
+#endif
 
         if (c == EOF) {
             if (iostat) { *iostat = -1; return; }
@@ -11117,6 +11162,18 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
     switch (inputSource->inputMethod) {
     case INPUT_FILE: {
         char *ret = fgets(buf, size, inputSource->file);
+#if defined(__EMSCRIPTEN__)
+        // A failed first read here is not necessarily end of file: when
+        // stdin is served one line per read() (interactive use), the
+        // previous record's line delivery can end exactly where this
+        // read starts, and the 0-byte read latches a spurious EOF.
+        // Retry once with a clean slate; genuine EOF fails the retry
+        // too, so termination still works.
+        if (ret == NULL && inputSource->file == stdin) {
+            clearerr(inputSource->file);
+            ret = fgets(buf, size, inputSource->file);
+        }
+#endif
         if (ret != NULL) {
             // Keep record-local cursor in sync for T/TL/TR editing.
             // Count only non-newline chars consumed from current record.
@@ -11158,6 +11215,15 @@ static inline int read_character(InputSource *inputSource)
 
     case INPUT_FILE: {
         int c = fgetc(inputSource->file);
+#if defined(__EMSCRIPTEN__)
+        // Same spurious-EOF recovery as in read_line above: a record
+        // boundary at the very start of this read looks like end of
+        // file on the first attempt; the retry pulls the next line.
+        if (c == EOF && inputSource->file == stdin) {
+            clearerr(inputSource->file);
+            c = fgetc(inputSource->file);
+        }
+#endif
         if (c != EOF && c != '\n') {
             inputSource->pos_in_record++;
         }
@@ -12572,6 +12638,20 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_
         bool read_any = false;
         do {
             c = fgetc(stdin);
+#if defined(__EMSCRIPTEN__)
+            // A record boundary at the very start of this drain looks
+            // like end of file on the first read: the previous line is
+            // fully delivered and the next one has not been requested
+            // yet (see use_stdin_char_mode).  The retried read pulls
+            // the next line, which is the record this drain must
+            // consume.  Only the first read can hit this: afterwards
+            // the line is either being consumed (data) or genuinely
+            // exhausted, and a second consecutive EOF ends the loop.
+            if (c == EOF && !read_any) {
+                clearerr(stdin);
+                c = fgetc(stdin);
+            }
+#endif
             read_any = read_any || (c != EOF);
         } while (c != '\n' && c != EOF);
         // Hitting end of file while advancing only ends the statement when
