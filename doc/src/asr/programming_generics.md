@@ -156,6 +156,9 @@ introduced by the instantiation remain available to subsequent declarations
 and to the contained procedure's local variables.
 The contained specific procedure may share its name with a generic interface;
 completing that declaration preserves the procedure selected by instantiation.
+With `--continue-compilation`, a failed requirement is diagnosed without
+constructing the rejected instantiation's procedure bodies; independent code
+is still checked.
 
 After `only: ` we decide which function inside in the template we want to instantiate, in this case `array_sum`, and give the new instantiated function a new name `array_sum_integer`.
 

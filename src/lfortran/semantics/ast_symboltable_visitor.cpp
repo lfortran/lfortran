@@ -215,6 +215,7 @@ public:
         ASR::Function_t *restriction;
         ASR::symbol_t *actual;
         Location loc;
+        uint32_t instantiation;
     };
     std::map<ASR::symbol_t*, const AST::program_unit_t*> forward_instantiation_procedures;
     std::vector<PendingInstantiationRestriction> pending_instantiation_restrictions;
@@ -272,9 +273,15 @@ public:
 
     void check_pending_instantiation_restrictions() {
         LCOMPILERS_ASSERT(forward_instantiation_procedures.empty() || diag.has_error());
+        std::set<uint32_t> failed_instantiations;
         for (auto &pending : pending_instantiation_restrictions) {
+            // An earlier error may already have rejected the instantiation.
+            if (instantiate_symbols.count(pending.instantiation) == 0) continue;
             // A failed procedure declaration has already issued its diagnostic.
-            if (is_forward_instantiation_procedure(pending.actual)) continue;
+            if (is_forward_instantiation_procedure(pending.actual)) {
+                failed_instantiations.insert(pending.instantiation);
+                continue;
+            }
             std::map<std::string, ASR::symbol_t*> substitutions;
             try {
                 check_restriction(pending.type_subs, substitutions,
@@ -282,7 +289,14 @@ public:
                     []() { throw SemanticAbort(); });
             } catch (SemanticAbort &) {
                 if (!compiler_options.continue_compilation) throw;
+                failed_instantiations.insert(pending.instantiation);
             }
+        }
+        for (uint32_t instantiation : failed_instantiations) {
+            // Later declarations can already reference the instantiated types
+            // and interfaces. Keep those anchors, but never build rejected bodies.
+            instantiate_types.erase(instantiation);
+            instantiate_symbols.erase(instantiation);
         }
     }
 
@@ -6184,7 +6198,8 @@ public:
                         }
                         if (is_forward_instantiation_procedure(f_arg)) {
                             pending_instantiation_restrictions.push_back(
-                                {type_subs, f, f_arg0, arg_attr->base.loc});
+                                {type_subs, f, f_arg0, arg_attr->base.loc,
+                                    x.base.base.loc.first});
                             symbol_subs[f->m_name] = f_arg0;
                         } else {
                             check_restriction(type_subs,

@@ -1833,3 +1833,60 @@ contains
         end subroutine
     end subroutine
 end module
+
+module template_scope_recovery_m
+    implicit none
+    template unary{t, op}
+        deferred type :: t
+        deferred interface
+            function op(x) result(value)
+                type(t), intent(in) :: x
+                type(t) :: value
+            end function
+        end interface
+        type :: holder
+            type(t) :: value
+        end type
+    contains
+        function apply(x) result(value)
+            type(t), intent(in) :: x
+            type(t) :: value
+            value = op(x)
+        end function
+    end template
+contains
+    subroutine check_rejected_bodies()
+        instantiate unary{real, scalar}, only: rejected_apply => apply, rejected_holder => holder ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, scalar}, only: apply_scalar => apply
+        instantiate unary{integer, real_result}, only: apply_real_result => apply ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, binary}, only: apply_binary => apply ! {Error} Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+        instantiate unary{integer, assign_value}, only: apply_assign_value => apply ! {Error} The restriction argument assign_value should have a return value
+        integer, parameter :: offset = 20
+        type(rejected_holder) :: item
+        procedure(rejected_apply), pointer :: rejected_callback
+        procedure(scalar), pointer :: callback
+
+        item%value = 1.0
+        callback => scalar
+        if (scalar(2) /= 22) error stop
+        if (apply_scalar(3) /= 23) error stop
+        if (callback(4) /= 24) error stop
+        print *, after_template_recovery_missing ! {Error} Variable 'after_template_recovery_missing' is not declared
+    contains
+        integer function scalar(x) result(value)
+            integer, intent(in) :: x
+            value = x + offset
+        end function
+        real function real_result(x) result(value)
+            integer, intent(in) :: x
+            value = real(x)
+        end function
+        integer function binary(x, y) result(value)
+            integer, intent(in) :: x, y
+            value = x + y
+        end function
+        subroutine assign_value(x)
+            integer, intent(in) :: x
+        end subroutine
+    end subroutine
+end module

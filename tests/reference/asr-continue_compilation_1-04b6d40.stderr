@@ -922,6 +922,72 @@ semantic error: The restriction argument assign_value should have a return value
 1817 |         instantiate unary{integer, assign_value}  ! {Error} The restriction argument assign_value should have a return value
      |                                    ^^^^^^^^^^^^ 
 
+semantic error: Restriction type mismatch with provided function argument
+    --> tests/errors/continue_compilation_1.f90:1859:33
+     |
+1859 |         instantiate unary{real, scalar}, only: rejected_apply => apply, rejected_holder => holder ! {Error} Restriction type mismatch with provided function argument
+     |                                 ^^^^^^ 
+     |
+1842 |                function op(x) result(value)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1845 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ Restriction's parameter x of type real
+     |
+1876 |            integer function scalar(x) result(value)
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1879 |            end function
+     | ...^^^^^^^^^^^^^^^^^^^^ Function's parameter x of type integer
+
+semantic error: Restriction type mismatch with provided function argument
+    --> tests/errors/continue_compilation_1.f90:1861:36
+     |
+1861 |         instantiate unary{integer, real_result}, only: apply_real_result => apply ! {Error} Restriction type mismatch with provided function argument
+     |                                    ^^^^^^^^^^^ 
+     |
+1842 |                function op(x) result(value)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1845 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ Requirement's return type integer
+     |
+1880 |            real function real_result(x) result(value)
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1883 |            end function
+     | ...^^^^^^^^^^^^^^^^^^^^ Function's return type real
+
+semantic error: Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+    --> tests/errors/continue_compilation_1.f90:1862:36
+     |
+1862 |         instantiate unary{integer, binary}, only: apply_binary => apply ! {Error} Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+     |                                    ^^^^^^ binary has 2 parameters
+     |
+1884 |            integer function binary(x, y) result(value)
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1887 |            end function
+     | ...^^^^^^^^^^^^^^^^^^^^ binary has 2 parameters
+     |
+1842 |                function op(x) result(value)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1845 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ op has 1 parameters
+
+semantic error: The restriction argument assign_value should have a return value
+    --> tests/errors/continue_compilation_1.f90:1863:36
+     |
+1863 |         instantiate unary{integer, assign_value}, only: apply_assign_value => apply ! {Error} The restriction argument assign_value should have a return value
+     |                                    ^^^^^^^^^^^^ 
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
@@ -2872,3 +2938,9 @@ semantic error: Passing an element of an array component of an array as an argum
      |
 1767 |     call eac_in(w%u(2))  ! {Error} Passing an element of an array component of an array as an argument is not supported yet
      |                 ^^^^^^ 
+
+semantic error: Variable 'after_template_recovery_missing' is not declared
+    --> tests/errors/continue_compilation_1.f90:1874:18
+     |
+1874 |         print *, after_template_recovery_missing ! {Error} Variable 'after_template_recovery_missing' is not declared
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'after_template_recovery_missing' is undeclared
