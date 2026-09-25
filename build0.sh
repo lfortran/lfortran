@@ -6,9 +6,6 @@ set -x
 RE2C=${RE2C:-re2c}
 BISON=${BISON:-bison}
 
-# Generate the `version` file
-ci/version.sh
-
 # Generate a Fortran AST from AST.asdl (C++)
 python src/libasr/asdl_cpp.py grammar/AST.asdl src/lfortran/ast.h
 # Generate a Fortran ASR from ASR.asdl (C++)

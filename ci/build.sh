@@ -1,14 +1,16 @@
-#!/usr/bin/env shell
+#!/usr/bin/env bash
 
 set -ex
+
+if [[ "$LFORTRAN_VERSION" == "" ]]; then
+    echo "LFORTRAN_VERSION must be set by CI"
+    exit 1
+fi
 
 echo "Running SHELL"
 
 echo "CONDA_PREFIX=$CONDA_PREFIX"
 llvm-config --components
-
-# Generate the `version` file
-bash ci/version.sh
 
 # Generate a Fortran AST from AST.asdl (C++)
 python src/libasr/asdl_cpp.py grammar/AST.asdl src/lfortran/ast.h
@@ -30,12 +32,7 @@ python src/server/generator/generate_lsp_code.py --schema src/server/generator/m
 
 pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
 
-# using debugging option i.e. `-x` causes a bug with `cat` command here,
-# and hence we turned off command tracing
-set +x
-lfortran_version=$(cat version)
-# we re-enable command tracing
-set -x
+lfortran_version=$LFORTRAN_VERSION
 
 bash ci/create_source_tarball.sh "$lfortran_version"
 tar xzf dist/lfortran-$lfortran_version.tar.gz
@@ -52,7 +49,7 @@ else # Linux or macOS
     BUILD_TYPE="Debug"
 fi
 
-cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LSP=yes -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DWITH_RUNTIME_STACKTRACE=$ENABLE_RUNTIME_STACKTRACE -DWITH_INTERNAL_ALLOC_CHECK=yes ..
+cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DLFORTRAN_VERSION=$LFORTRAN_VERSION -DWITH_LSP=yes -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DWITH_RUNTIME_STACKTRACE=$ENABLE_RUNTIME_STACKTRACE -DWITH_INTERNAL_ALLOC_CHECK=yes ..
 cmake --build . --target install
 ./src/lfortran/tests/test_lfortran
 ./src/bin/lfortran < ../src/bin/example_input.txt
