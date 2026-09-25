@@ -1795,3 +1795,41 @@ module partial_template_instantiation
     instantiate tmpl {real}, only: outer_real => outer, missing_symbol  ! {Error} Symbol missing_symbol was not found
     instantiate tmpl {integer}, only: outer_integer => outer
 end module
+
+module template_scope_restrictions_m
+    implicit none
+    template unary{t, op}
+        deferred type :: t
+        deferred interface
+            function op(x) result(value)
+                type(t), intent(in) :: x
+                type(t) :: value
+            end function
+        end interface
+    end template
+contains
+    subroutine check_forward_restrictions()
+        instantiate unary{integer, scalar}
+        ! Check every restriction against the completed actual, not its provisional interface.
+        instantiate unary{real, scalar}  ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, real_result}  ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, binary}  ! {Error} Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+        instantiate unary{integer, assign_value}  ! {Error} The restriction argument assign_value should have a return value
+    contains
+        integer function scalar(x) result(value)
+            integer, intent(in) :: x
+            value = x
+        end function
+        real function real_result(x) result(value)
+            integer, intent(in) :: x
+            value = real(x)
+        end function
+        integer function binary(x, y) result(value)
+            integer, intent(in) :: x, y
+            value = x + y
+        end function
+        subroutine assign_value(x)
+            integer, intent(in) :: x
+        end subroutine
+    end subroutine
+end module

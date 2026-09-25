@@ -856,6 +856,72 @@ semantic error: Symbol missing_symbol was not found
 1795 |     instantiate tmpl {real}, only: outer_real => outer, missing_symbol  ! {Error} Symbol missing_symbol was not found
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Restriction type mismatch with provided function argument
+    --> tests/errors/continue_compilation_1.f90:1814:33
+     |
+1814 |         instantiate unary{real, scalar}  ! {Error} Restriction type mismatch with provided function argument
+     |                                 ^^^^^^ 
+     |
+1804 |                function op(x) result(value)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1807 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ Restriction's parameter x of type real
+     |
+1819 |            integer function scalar(x) result(value)
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1822 |            end function
+     | ...^^^^^^^^^^^^^^^^^^^^ Function's parameter x of type integer
+
+semantic error: Restriction type mismatch with provided function argument
+    --> tests/errors/continue_compilation_1.f90:1815:36
+     |
+1815 |         instantiate unary{integer, real_result}  ! {Error} Restriction type mismatch with provided function argument
+     |                                    ^^^^^^^^^^^ 
+     |
+1804 |                function op(x) result(value)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1807 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ Requirement's return type integer
+     |
+1823 |            real function real_result(x) result(value)
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1826 |            end function
+     | ...^^^^^^^^^^^^^^^^^^^^ Function's return type real
+
+semantic error: Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+    --> tests/errors/continue_compilation_1.f90:1816:36
+     |
+1816 |         instantiate unary{integer, binary}  ! {Error} Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+     |                                    ^^^^^^ binary has 2 parameters
+     |
+1827 |            integer function binary(x, y) result(value)
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1830 |            end function
+     | ...^^^^^^^^^^^^^^^^^^^^ binary has 2 parameters
+     |
+1804 |                function op(x) result(value)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1807 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ op has 1 parameters
+
+semantic error: The restriction argument assign_value should have a return value
+    --> tests/errors/continue_compilation_1.f90:1817:36
+     |
+1817 |         instantiate unary{integer, assign_value}  ! {Error} The restriction argument assign_value should have a return value
+     |                                    ^^^^^^^^^^^^ 
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |

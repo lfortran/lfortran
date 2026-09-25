@@ -171,16 +171,14 @@ public:
     struct ContainedProcedureScope;
     ContainedProcedureScope *contained_procedure_scope = nullptr;
 
-    // An instantiation in the specification part may need the interface of a
-    // procedure in CONTAINS. Declare that procedure on demand, and do not
-    // declare it again when the normal CONTAINS traversal reaches it.
+    // Record lexical procedure declarations without visiting their specification
+    // parts before their host's declarations are complete.
     struct ContainedProcedureScope {
         SymbolTableVisitor &v;
         ContainedProcedureScope *enclosing;
         SymbolTable *scope;
         AST::program_unit_t **procedures;
         size_t n_procedures;
-        std::set<const AST::program_unit_t*> visited;
 
         ContainedProcedureScope(SymbolTableVisitor &v_,
                 AST::program_unit_t **procedures_, size_t n_procedures_)
@@ -210,85 +208,73 @@ public:
             return nullptr;
         }
 
-        void visit(const AST::program_unit_t &p) {
-            if (visited.insert(&p).second) {
-                v.visit_program_unit(p);
-            } else {
-                // Access statements following the instantiation still apply
-                // to a procedure that was declared on demand.
-                const char *name = nullptr;
-                if (AST::is_a<AST::Function_t>(p)) {
-                    name = AST::down_cast<AST::Function_t>(&p)->m_name;
-                } else if (AST::is_a<AST::Subroutine_t>(p)) {
-                    name = AST::down_cast<AST::Subroutine_t>(&p)->m_name;
-                }
-                if (!name) return;
-                std::string sym_name = to_lower(name);
-                ASR::symbol_t *sym = scope->get_symbol(sym_name);
-                if (sym && ASR::is_a<ASR::Function_t>(*sym)) {
-                    ASR::down_cast<ASR::Function_t>(sym)->m_access =
-                        v.assgnd_access.count(sym_name)
-                            ? v.assgnd_access[sym_name] : v.dflt_access;
-                }
-            }
-        }
     };
 
-    void declare_instantiation_procedure(const std::string &name) {
-        ContainedProcedureScope *procedures = contained_procedure_scope;
-        if (!procedures || procedures->scope != current_scope) return;
-        AST::program_unit_t *p = procedures->find(name);
-        if (!p || procedures->visited.count(p)) return;
+    struct PendingInstantiationRestriction {
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
+        ASR::Function_t *restriction;
+        ASR::symbol_t *actual;
+        Location loc;
+    };
+    std::set<ASR::symbol_t*> forward_instantiation_procedures;
+    std::vector<PendingInstantiationRestriction> pending_instantiation_restrictions;
 
-        // Unlike the final CONTAINS traversal, this visit interrupts the
-        // host's declarations. Preserve its declaration context, including
-        // when --continue-compilation recovers from an error in the procedure.
-        SymbolTable *scope = current_scope;
-        auto implicit = implicit_dictionary;
-        auto args = current_procedure_args;
-        auto simd = simd_variables;
-        auto externals = external_procedures;
-        auto intrinsics = explicit_intrinsic_procedures;
-        auto access = assgnd_access;
-        auto storage = assgnd_storage;
-        auto presence = assgnd_presence;
-        auto pointers = assgnd_pointer;
-        auto allocatables = assgnd_allocatable;
-        auto targets = assgnd_target;
-        auto abi = current_procedure_abi_type;
-        bool save = default_storage_save;
-        bool function = is_Function;
-        bool subroutine = in_Subroutine;
-        bool templated = is_template;
-        auto restore = [&]() {
-            current_scope = scope;
-            implicit_dictionary = implicit;
-            current_procedure_args = args;
-            simd_variables = simd;
-            external_procedures = externals;
-            explicit_intrinsic_procedures = intrinsics;
-            assgnd_access = access;
-            assgnd_storage = storage;
-            assgnd_presence = presence;
-            assgnd_pointer = pointers;
-            assgnd_allocatable = allocatables;
-            assgnd_target = targets;
-            current_procedure_abi_type = abi;
-            default_storage_save = save;
-            is_Function = function;
-            in_Subroutine = subroutine;
-            is_template = templated;
-        };
-        current_procedure_args.clear();
-        default_storage_save = false;
-        is_Function = false;
-        try {
-            procedures->visit(*p);
-        } catch (SemanticAbort &) {
-            restore();
-            throw;
+    ASR::symbol_t *resolve_instantiation_procedure(const std::string &name,
+            ASR::Function_t *restriction,
+            const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs,
+            const std::map<std::string, ASR::symbol_t*> &symbol_subs) {
+        for (SymbolTable *scope = current_scope; scope; scope = scope->parent) {
+            if (ASR::symbol_t *sym = scope->get_symbol(name)) return sym;
+            for (ContainedProcedureScope *procedures = contained_procedure_scope;
+                    procedures; procedures = procedures->enclosing) {
+                if (procedures->scope != scope || !procedures->find(name)) continue;
+                // This is a provisional interface, not a declaration of the
+                // actual's locals. Keep its identity for substitutions and
+                // check the real interface once CONTAINS has defined it.
+                auto substitutions = symbol_subs;
+                ASR::symbol_t *sym = instantiate_symbol(al, scope, type_subs,
+                    substitutions, name, &restriction->base, diag);
+                forward_instantiation_procedures.insert(sym);
+                return sym;
+            }
         }
-        restore();
+        return nullptr;
+    }
+
+    bool is_forward_instantiation_procedure(ASR::symbol_t *sym) {
+        return forward_instantiation_procedures.count(sym) != 0;
+    }
+
+    ASR::asr_t *complete_instantiation_procedure(ASR::asr_t *definition,
+            SymbolTable *scope, const std::string &name) {
+        ASR::symbol_t *sym = scope->get_symbol(name);
+        if (!is_forward_instantiation_procedure(sym)) return definition;
+        ASR::Function_t *forward = ASR::down_cast<ASR::Function_t>(sym);
+        ASR::Function_t *actual = ASR::down_cast2<ASR::Function_t>(definition);
+        ASR::FunctionType_t *signature = ASRUtils::get_FunctionType(forward);
+        *signature = *ASRUtils::get_FunctionType(actual);
+        *forward = *actual;
+        forward->m_function_signature = &signature->base;
+        forward->m_symtab->asr_owner = &forward->base.base;
+        forward_instantiation_procedures.erase(sym);
+        scope->erase_symbol(name);
+        return &forward->base.base;
+    }
+
+    void check_pending_instantiation_restrictions() {
+        LCOMPILERS_ASSERT(forward_instantiation_procedures.empty() || diag.has_error());
+        for (auto &pending : pending_instantiation_restrictions) {
+            // A failed procedure declaration has already issued its diagnostic.
+            if (is_forward_instantiation_procedure(pending.actual)) continue;
+            std::map<std::string, ASR::symbol_t*> substitutions;
+            try {
+                check_restriction(pending.type_subs, substitutions,
+                    pending.restriction, pending.actual, pending.loc, diag,
+                    []() { throw SemanticAbort(); });
+            } catch (SemanticAbort &) {
+                if (!compiler_options.continue_compilation) throw;
+            }
+        }
     }
 
     static bool is_equivalence_declaration(AST::decl_stmt_t* decl) {
@@ -363,6 +349,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        check_pending_instantiation_restrictions();
         global_scope = nullptr;
         tmp = tmp0;
         if (pre_declared_array_dims.size() > 0) {
@@ -716,7 +703,7 @@ public:
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
             try {
-                contained_procedures.visit(*x.m_contains[i]);
+                visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -989,7 +976,7 @@ public:
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
             try {
-                contained_procedures.visit(*x.m_contains[i]);
+                visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -1904,7 +1891,7 @@ public:
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
             try {
-                contained_procedures.visit(*x.m_contains[i]);
+                visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -2006,7 +1993,8 @@ public:
         bool update_gp = false;
         int gp_index_to_be_updated = -1;
         ASR::symbol_t* f1_ = nullptr;
-        if (parent_scope->get_symbol(sym_name) != nullptr) {
+        if (parent_scope->get_symbol(sym_name) != nullptr
+                && !is_forward_instantiation_procedure(parent_scope->get_symbol(sym_name))) {
             f1_ = parent_scope->get_symbol(sym_name);
             ASR::symbol_t *f1 = ASRUtils::symbol_get_past_external(f1_);
             if (ASR::is_a<ASR::Function_t>(*f1)) {
@@ -2084,7 +2072,7 @@ public:
 
         // Check for function/subroutine attribute conflict
         ASR::symbol_t* existing_sym = parent_scope->get_symbol(sym_name);
-        if (existing_sym != nullptr) {
+        if (existing_sym != nullptr && !is_forward_instantiation_procedure(existing_sym)) {
             ASR::symbol_t* existing_past_ext = ASRUtils::symbol_get_past_external(existing_sym);
             if (ASR::is_a<ASR::Function_t>(*existing_past_ext)) {
                 ASR::Function_t* existing_func = ASR::down_cast<ASR::Function_t>(existing_past_ext);
@@ -2131,6 +2119,7 @@ public:
             is_elemental, is_pure, is_module, false, false,
             nullptr, 0,
             is_requirement, init_deterministic, init_side_effect_free);
+        tmp = complete_instantiation_procedure(tmp, parent_scope, sym_name);
         handle_save();
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
@@ -2815,7 +2804,7 @@ public:
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
             try {
-                contained_procedures.visit(*x.m_contains[i]);
+                visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -2901,7 +2890,8 @@ public:
         ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
 
-        if (parent_scope->get_symbol(sym_name) != nullptr) {
+        if (parent_scope->get_symbol(sym_name) != nullptr
+                && !is_forward_instantiation_procedure(parent_scope->get_symbol(sym_name))) {
             ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
             if (ASR::is_a<ASR::ExternalSymbol_t>(*f1)) {
                 if (in_submodule) {
@@ -2985,6 +2975,7 @@ public:
                 throw SemanticAbort();
             }
         }
+        tmp = complete_instantiation_procedure(tmp, parent_scope, sym_name);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
@@ -5899,7 +5890,7 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             SymbolTable *template_scope = current_scope;
             try {
-                contained_procedures.visit(*x.m_contains[i]);
+                visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
                 // An abort in the declarations of a procedure leaves its scope
@@ -6069,8 +6060,8 @@ public:
                 if (ASR::is_a<ASR::Function_t>(*param_sym)) {
                     // Handling functions passed as instantiate's arguments
                     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
-                    declare_instantiation_procedure(arg);
-                    ASR::symbol_t *f_arg0 = current_scope->resolve_symbol(arg);
+                    ASR::symbol_t *f_arg0 = resolve_instantiation_procedure(
+                        arg, f, type_subs, symbol_subs);
                     if (!f_arg0
                             && ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(arg)) {
                         // Handling intrinsic function (e.g. min, max) as
@@ -6182,9 +6173,15 @@ public:
                                     diag::Label("", {arg_attr->base.loc})}));
                             throw SemanticAbort();
                         }
-                        check_restriction(type_subs,
-                            symbol_subs, f, f_arg0, arg_attr->base.loc, diag,
-                            []() { throw SemanticAbort(); });
+                        if (is_forward_instantiation_procedure(f_arg)) {
+                            pending_instantiation_restrictions.push_back(
+                                {type_subs, f, f_arg0, arg_attr->base.loc});
+                            symbol_subs[f->m_name] = f_arg0;
+                        } else {
+                            check_restriction(type_subs,
+                                symbol_subs, f, f_arg0, arg_attr->base.loc, diag,
+                                []() { throw SemanticAbort(); });
+                        }
                     }
                 } else {
                     ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
