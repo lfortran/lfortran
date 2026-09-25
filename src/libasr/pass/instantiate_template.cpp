@@ -2054,6 +2054,11 @@ public:
         // requirement function
         if (symbol_subs.find(call_name) != symbol_subs.end()) {
             name = symbol_subs[call_name];
+
+            // Completing a dependency can map the call to a sibling's import.
+            if (ASRUtils::symbol_parent_symtab(name)->get_counter() != new_scope->get_counter()) {
+                name = new_scope->resolve_symbol(ASRUtils::symbol_name(name));
+            }
         }
 
         // function call found in body that needs to be instantiated
