@@ -2590,10 +2590,10 @@ public:
                             tmp_expr, ASRUtils::extract_type(array_type), module.get());
                         llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
                     }
-                    // Check if this is a mold-based allocation for unlimited polymorphic arrays.
-                    // When the mold is also unlimited polymorphic (class(*)),
-                    // we need to allocate a zeroed wrapper first, then patch it
-                    // with type info from the mold at runtime.
+                    // Check if this is a mold-based allocation for an unlimited
+                    // polymorphic array (the target is class(*); the mold itself need
+                    // not be). We allocate a zeroed wrapper first, then patch it with
+                    // type info from the mold below.
                     bool is_mold_unlimited_poly = m_source
                         && ASRUtils::is_unlimited_polymorphic_type(
                             ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
