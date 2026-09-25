@@ -5,6 +5,7 @@
 #include <complex.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include "lfortran_float128_llvm.h"   /* lf_float128 */
 
 #ifdef __cplusplus
 extern "C" {
@@ -348,6 +349,7 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
 LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_f128(lf_float128 *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, int32_t unit_num, int32_t *iostat);
@@ -373,6 +375,8 @@ LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format
 LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *format, float *arr, int64_t array_size, int32_t *iostat);
 LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *format, double *arr, int64_t array_size, int32_t *iostat);
+LFORTRAN_API void _lfortran_string_read_f128(char *str, int64_t len, char *format, lf_float128 *f, int32_t *iostat, int64_t *offset);
+LFORTRAN_API void _lfortran_string_read_f128_array(char *str, int64_t len, char *format, lf_float128 *arr, int64_t array_size, int32_t *iostat);
 LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char *arr, int64_t elem_len);
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset);

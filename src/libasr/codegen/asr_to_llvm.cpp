@@ -19061,6 +19061,9 @@ public:
                 if (a_kind == 4) {
                     runtime_func_name = "_lfortran_read_float";
                     type_arg = llvm::Type::getFloatTy(context);
+                } else if (a_kind == 16) {
+                    runtime_func_name = "_lfortran_read_f128";
+                    type_arg = llvm_utils->getFPType(16);
                 } else {
                     runtime_func_name = "_lfortran_read_double";
                     type_arg = llvm::Type::getDoubleTy(context);

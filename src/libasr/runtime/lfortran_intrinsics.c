@@ -9635,6 +9635,30 @@ static int parse_fortran_double_token(const char* buffer, double* result, int* c
     return ok;
 }
 
+// Parse a real token into binary128. Returns 1 on success, 0 on failure.
+static int parse_fortran_f128_token(const char* buffer, lf_float128* result, int* consumed_chars) {
+    size_t token_len = fortran_real_token_length(buffer);
+    if (token_len == 0) return 0;
+    char *temp = (char*)internal_malloc(token_len + 2);
+    if (!temp) {
+        return 0;
+    }
+    memcpy(temp, buffer, token_len);
+    temp[token_len] = '\0';
+    normalize_fortran_real_token(temp, token_len + 2);
+    // validate with strtod (syntax and trailing characters), then convert
+    // the same token at full precision
+    char* endptr;
+    strtod(temp, &endptr);
+    int ok = (endptr != temp && *endptr == '\0');
+    if (ok) {
+        *result = lf_float128_from_str(temp);
+        if (consumed_chars) *consumed_chars = (int)token_len;
+    }
+    internal_free(temp);
+    return ok;
+}
+
 // Helper to parse float with D exponent support and error checking
 // Returns 1 on success, 0 on failure
 static int parse_fortran_float(const char* buffer, float* result) {
@@ -10848,6 +10872,127 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
         }
         normalize_numeric_input(buffer, dmode);
         if (!parse_fortran_double(buffer, p)) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input from file.\n");
+            exit(1);
+        }
+        // If we didn't consume a trailing comma in the loop, try now
+        if (c != lsep) {
+            skip_trailing_comma(filep, lsep);
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_read_f128(lf_float128 *p, int32_t unit_num, int32_t *iostat)
+{
+    int dmode = _lfortran_get_decimal_mode(unit_num);
+    char lsep = list_directed_separator(unit_num);
+    if (iostat) *iostat = 0;
+
+    if (unit_num == -1) {
+        // Read as string to handle Fortran D exponent notation
+        char buffer[100];
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+            if (iostat) return;
+            fprintf(stderr, "Error: Failed to read real(16) from stdin.\n");
+            exit(1);
+        }
+        normalize_numeric_input(buffer, dmode);
+        if (!parse_fortran_f128_token(buffer, p, NULL)) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input from stdin.\n");
+            exit(1);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    int access_mode;
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
+    if (!filep) {
+        if (iostat) { *iostat = 1; return; }
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (access_mode == 0) {
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for real(16).\n");
+                exit(1);
+            }
+            if (find_unit(unit_num)->seq_unf_pending < (int32_t)sizeof(lf_float128)) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for real(16).\n");
+                exit(1);
+            }
+            if (fread(p, sizeof(lf_float128), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read real(16) from sequential binary file.\n");
+                exit(1);
+            }
+            find_unit(unit_num)->seq_unf_pending -= (int32_t)sizeof(lf_float128);
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker while reading real(16).\n");
+                exit(1);
+            }
+        } else {
+            if (fread(p, sizeof(*p), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read real(16) from binary file.\n");
+                exit(1);
+            }
+        }
+    } else {
+        if (list_directed_check_null_repeat(unit_num)) {
+            return;
+        }
+        int c;
+        while ((c = fgetc(filep)) != EOF && isspace(c)) {}
+        if (c == EOF) {
+            if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+            fprintf(stderr, "Error: Failed to read real(16) from file.\n");
+            exit(1);
+        }
+        // Leading comma = null value
+        if (c == lsep) {
+            return;
+        }
+        if (c == '/') {
+            ungetc(c, filep);
+            return;
+        }
+        char buffer[100];
+        int len = 0;
+        do {
+            if (len < 99) buffer[len++] = (char)c;
+            c = fgetc(filep);
+        } while (c != EOF && !isspace(c) && c != lsep && c != '/');
+        buffer[len] = '\0';
+        if (c == lsep) {
+            // Trailing comma consumed (separator for next value)
+        } else if (c != EOF) {
+            ungetc(c, filep);
+        }
+        int null_count = list_directed_parse_null_repeat(buffer);
+        if (null_count > 0) {
+            {
+                struct UNIT_FILE *uf_ = find_unit(unit_num);
+                if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
+            }
+            return;
+        }
+        normalize_numeric_input(buffer, dmode);
+        if (!parse_fortran_f128_token(buffer, p, NULL)) {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid input from file.\n");
             exit(1);
@@ -13431,6 +13576,52 @@ LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format
     if (iostat) *iostat = 0;
 }
 
+LFORTRAN_API void _lfortran_string_read_f128(char *str, int64_t len, char *format, lf_float128 *f, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    // Internal files have no connection: only a DECIMAL= specifier on the
+    // statement can select the COMMA decimal edit mode here.
+    normalize_numeric_input(buf, _lfortran_get_decimal_mode(-1));
+    int rc;
+    if (offset) {
+        int skip = 0;
+
+        /* Handle empty fields like: 1.5, , 2.5 */
+        if (_lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+            internal_free(buf);
+            return;
+        }
+
+        int consumed = 0;
+        lf_float128 tmp_f;
+        parse_fortran_f128_token(buf + skip, &tmp_f, &consumed);
+        rc = 0;
+        if (consumed > 0) {
+            char next = buf[skip + consumed];
+            /*
+             * Fortran 2018 (13.10.2): valid separators
+             * comma, slash, or blanks
+             */
+            if (next == '\0' || next == ' ' || next == '\t' || next == '\n'
+                             || next == ',' || next == '/') {
+                *f = tmp_f;
+                *offset = off + skip + consumed;
+                rc = 1;
+            }
+        }
+    } else {
+        (void)format;
+        rc = parse_fortran_f128_token(buf, f, NULL);
+    }
+    internal_free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad real for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
+}
+
 char* remove_whitespace(char* str, int64_t* len) {
     if (!str || *len <= 0) return str;
     char* start = str;
@@ -13731,6 +13922,33 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
         if ((const char *)next > end) break;
         arr[count++] = value;
         pos = next;
+    }
+    internal_free(buf);
+    if (iostat) *iostat = (count < array_size) ? -1 : 0;
+}
+
+LFORTRAN_API void _lfortran_string_read_f128_array(char *str, int64_t len, char *format, lf_float128 *arr, int64_t array_size, int32_t *iostat) {
+    (void)format;
+    char *buf = to_c_string((const fchar*)str, len);
+    // Internal files have no connection: only a DECIMAL= specifier on the
+    // statement can select the COMMA decimal edit mode here.
+    normalize_numeric_input(buf, _lfortran_get_decimal_mode(-1));
+    convert_fortran_d_exponent(buf);
+    const char *pos = buf;
+    const char *end = buf + len;
+    char *next = NULL;
+    int64_t count = 0;
+    while (pos < end && count < array_size) {
+        while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
+            pos++;
+        }
+        if (pos >= end) break;
+        int consumed = 0;
+        lf_float128 value;
+        if (!parse_fortran_f128_token(pos, &value, &consumed)) break;
+        if (pos + consumed > end) break;
+        arr[count++] = value;
+        pos += consumed;
     }
     internal_free(buf);
     if (iostat) *iostat = (count < array_size) ? -1 : 0;
