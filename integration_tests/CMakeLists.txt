@@ -3586,8 +3586,7 @@ RUN(NAME conv_complex2real LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 
 RUN(NAME template_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-# DISABLED: #8115 - ASR verify: FunctionType contains types tied to scope after template instantiation
-# RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_05 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_06 LABELS llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME template_07 LABELS llvm llvm_wasm llvm_wasm_emcc)
@@ -3650,6 +3649,9 @@ RUN(NAME template_prefix_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_host_var_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_host_var_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_host_var_03 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_broadcast_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_derived_result_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_struct_deferred_dim_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
