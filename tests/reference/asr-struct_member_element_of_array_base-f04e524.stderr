@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.array_item.array_base]: selecting an element of a component of an array is an array, but its type is not an array
-   --> tests/asr/verify/struct_member_element_of_array_base.asr:243:14
+   --> tests/asr/verify/struct_member_element_of_array_base.asr:244:14
     |
-243 |             (ArrayItem
+244 |             (ArrayItem
     |              ^^^^^^^^^ failed here
