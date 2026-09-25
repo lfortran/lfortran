@@ -21842,22 +21842,8 @@ public:
                     ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
                     parent_scope->add_symbol(func_name, op_sym);
 
-                    Vec<ASR::symbol_t*> symbols;
-                    if (parent_scope->get_symbol(op_name) != nullptr) {
-                        ASR::CustomOperator_t *old_c = ASR::down_cast<ASR::CustomOperator_t>(
-                            parent_scope->get_symbol(op_name));
-                        symbols.reserve(al, old_c->n_procs + 1);
-                        for (size_t i=0; i<old_c->n_procs; i++) {
-                            symbols.push_back(al, old_c->m_procs[i]);
-                        }
-                    } else {
-                        symbols.reserve(al, 1);
-                    }
-                    symbols.push_back(al, ASR::down_cast<ASR::symbol_t>(op_function));
-                    ASR::asr_t *c = ASR::make_CustomOperator_t(al, loc,
-                        parent_scope, s2c(al, op_name), symbols.p, symbols.size(), ASR::Public);
-                    parent_scope->add_or_overwrite_symbol(op_name, ASR::down_cast<ASR::symbol_t>(c));
-
+                    // Bind the wrapper only to the deferred procedure, not to
+                    // the instantiating scope's operator interface.
                     current_scope = parent_scope;
                     symbol_subs[f->m_name] = op_sym;
                 }

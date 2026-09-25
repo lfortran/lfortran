@@ -2181,14 +2181,6 @@
                                     tmp
                                     Public
                                 ),
-                            ~add:
-                                (CustomOperator
-                                    16
-                                    ~add
-                                    [16 ~add_intrinsic
-                                    16 ~add_intrinsic1]
-                                    Public
-                                ),
                             ~add_intrinsic:
                                 (Function
                                     (SymbolTable
@@ -2422,14 +2414,6 @@
                                     .true.
                                     .true.
                                     ()
-                                ),
-                            ~sub:
-                                (CustomOperator
-                                    16
-                                    ~sub
-                                    [16 ~sub_intrinsic
-                                    16 ~sub_intrinsic1]
-                                    Public
                                 ),
                             ~sub_intrinsic:
                                 (Function

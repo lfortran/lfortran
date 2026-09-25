@@ -689,13 +689,6 @@
                                                     ()
                                                     []
                                                 ),
-                                            ~add:
-                                                (CustomOperator
-                                                    8
-                                                    ~add
-                                                    [8 ~add_intrinsic]
-                                                    Public
-                                                ),
                                             ~add_intrinsic:
                                                 (Function
                                                     (SymbolTable

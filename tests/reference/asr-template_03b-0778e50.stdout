@@ -943,13 +943,6 @@
                                                     ()
                                                     []
                                                 ),
-                                            ~add:
-                                                (CustomOperator
-                                                    12
-                                                    ~add
-                                                    [12 ~add_intrinsic]
-                                                    Public
-                                                ),
                                             ~add_intrinsic:
                                                 (Function
                                                     (SymbolTable
@@ -1072,13 +1065,6 @@
                                                     .true.
                                                     .true.
                                                     ()
-                                                ),
-                                            ~mul:
-                                                (CustomOperator
-                                                    12
-                                                    ~mul
-                                                    [12 ~mul_intrinsic]
-                                                    Public
                                                 ),
                                             ~mul_intrinsic:
                                                 (Function
