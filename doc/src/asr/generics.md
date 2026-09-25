@@ -189,6 +189,12 @@ function array_sum_integer(n, a) result(res)
 end function
 ```
 
+A module's specification part must also visit its `instantiate` declarations
+during body construction, whether the template is defined locally or imported
+with `use`. Instantiation is a declaration, not an executable statement, so
+executable-statement traversal alone leaves the instantiated procedures without
+bodies.
+
 ## See Also
 
 * [Programming With Generics](programming_generics.md), for simpler explaining about using generics in LFortran

@@ -5292,9 +5292,11 @@ public:
         current_scope = v->m_symtab;
         current_module = v;
 
+        // Instantiations need bodies too; transform_stmts skips declarations.
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if(x.m_items[i]->type == AST::decl_stmtType::Template){
+            if (x.m_items[i]->type == AST::decl_stmtType::Template ||
+                x.m_items[i]->type == AST::decl_stmtType::Instantiate) {
                 visit_decl_stmt(*x.m_items[i]);
             }
         }
