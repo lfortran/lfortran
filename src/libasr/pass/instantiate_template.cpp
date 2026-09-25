@@ -1731,7 +1731,28 @@ public:
             }
             case (ASR::ttypeType::StructType) : {
                 ASR::StructType_t *s = ASR::down_cast<ASR::StructType_t>(ttype);
-                std::string struct_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr)));
+                ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(expr));
+                std::string struct_name = ASRUtils::symbol_name(struct_sym);
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(struct_sym);
+                if (symbol_subs.find(struct_name) == symbol_subs.end()
+                        && owner != nullptr && ASR::is_a<ASR::Template_t>(*owner)) {
+                    // An ONLY list need not name a procedure's local types.
+                    // Instantiate the dependency in the corresponding template
+                    // scope, shared by all procedures of this instantiation.
+                    SymbolTable* source_scope = ASRUtils::symbol_parent_symtab(sym);
+                    SymbolTable* struct_scope = target_scope;
+                    SymbolTable* source_struct_scope = ASRUtils::symbol_parent_symtab(struct_sym);
+                    while (source_scope != source_struct_scope) {
+                        LCOMPILERS_ASSERT(source_scope != nullptr && struct_scope != nullptr);
+                        source_scope = source_scope->parent;
+                        struct_scope = struct_scope->parent;
+                    }
+                    LCOMPILERS_ASSERT(struct_scope != nullptr);
+                    std::string name = struct_scope->get_unique_name("__asr_" + struct_name, false);
+                    SymbolInstantiator t(al, struct_scope, type_subs, symbol_subs, name, struct_sym);
+                    t.instantiate();
+                }
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
                     return ASRUtils::make_StructType_t_util(

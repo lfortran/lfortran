@@ -3635,6 +3635,7 @@ RUN(NAME template_array_04b LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray 
 #     template_matrix.f90
 #     )
 RUN(NAME template_struct_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_struct_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_vector LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_simple_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_simple_02 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
