@@ -1775,3 +1775,23 @@ contains
         print *, a
     end subroutine
 end subroutine
+
+module partial_template_instantiation
+    implicit none
+    template tmpl {t}
+        deferred type :: t
+    contains
+        function identity(x) result(y)
+            type(t), intent(in) :: x
+            type(t) :: y
+            y = x
+        end function
+        function outer(x) result(y)
+            type(t), intent(in) :: x
+            type(t) :: y
+            y = identity(x)
+        end function
+    end template
+    instantiate tmpl {real}, only: outer_real => outer, missing_symbol  ! {Error} Symbol missing_symbol was not found
+    instantiate tmpl {integer}, only: outer_integer => outer
+end module

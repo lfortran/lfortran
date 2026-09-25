@@ -2979,12 +2979,16 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
-        // The symbol table visitor has already checked this statement and, for
-        // a bad one, reported the error. Without --continue-compilation that
-        // ended the compilation; with it we are called anyway, and the symbols
-        // this visitor instantiates the bodies of were never created. The
-        // diagnostic is already recorded, so skip whatever is missing instead
-        // of instantiating from a null symbol.
+        // Substitutions are recorded only after the whole instantiation succeeds.
+        // With --continue-compilation, a failed declaration can leave some symbols
+        // behind, but its bodies must not be built with missing substitutions.
+        auto type_subs_it = instantiate_types.find(x.base.base.loc.first);
+        auto symbol_subs_it = instantiate_symbols.find(x.base.base.loc.first);
+        if (type_subs_it == instantiate_types.end()
+                || symbol_subs_it == instantiate_symbols.end()) {
+            return;
+        }
+
         ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
         if (sym == nullptr) {
             return;
@@ -2995,8 +2999,8 @@ public:
         }
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(template_sym);
 
-        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = instantiate_types[x.base.base.loc.first];
-        std::map<std::string, ASR::symbol_t*> symbol_subs = instantiate_symbols[x.base.base.loc.first];
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = type_subs_it->second;
+        std::map<std::string, ASR::symbol_t*> symbol_subs = symbol_subs_it->second;
 
         if (x.n_symbols == 0) {
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {

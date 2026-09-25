@@ -195,6 +195,11 @@ with `use`. Instantiation is a declaration, not an executable statement, so
 executable-statement traversal alone leaves the instantiated procedures without
 bodies.
 
+The symbol-table visitor records substitutions only after the entire
+instantiation succeeds. During error recovery (`--continue-compilation`),
+the body visitor skips declarations without this record, even if an earlier
+item in an erroneous `only:` list already created a procedure signature.
+
 ## See Also
 
 * [Programming With Generics](programming_generics.md), for simpler explaining about using generics in LFortran
