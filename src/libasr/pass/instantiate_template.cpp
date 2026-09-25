@@ -2055,9 +2055,25 @@ public:
         if (symbol_subs.find(call_name) != symbol_subs.end()) {
             name = symbol_subs[call_name];
 
-            // Completing a dependency can map the call to a sibling's import.
-            if (ASRUtils::symbol_parent_symtab(name)->get_counter() != new_scope->get_counter()) {
-                name = new_scope->resolve_symbol(ASRUtils::symbol_name(name));
+            // A sibling's import needs rebinding, but a visible procedure
+            // argument must keep its identity even when its name is shadowed.
+            if (!ASRUtils::is_visible_from(name, new_scope)) {
+                ASR::symbol_t* definition = ASRUtils::symbol_get_past_external(name);
+                ASR::symbol_t* scoped_sym = new_scope->resolve_symbol(ASRUtils::symbol_name(name));
+                if (ASRUtils::symbol_get_past_external(scoped_sym) == definition) {
+                    name = scoped_sym;
+                } else if (ASRUtils::is_visible_from(definition, new_scope)) {
+                    name = definition;
+                } else if (ASR::is_a<ASR::ExternalSymbol_t>(*name)) {
+                    ASRUtils::SymbolDuplicator duplicator(al);
+                    ASR::ExternalSymbol_t* imported = ASR::down_cast<ASR::ExternalSymbol_t>(
+                        duplicator.duplicate_ExternalSymbol(
+                            ASR::down_cast<ASR::ExternalSymbol_t>(name), new_scope));
+                    std::string local_name = new_scope->get_unique_name(imported->m_name);
+                    imported->m_name = s2c(al, local_name);
+                    name = &imported->base;
+                    new_scope->add_symbol(local_name, name);
+                }
             }
         }
 
