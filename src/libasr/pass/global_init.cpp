@@ -6,6 +6,7 @@
 #include <libasr/pass/global_init.h>
 #include <libasr/pass/pass_utils.h>
 
+#include <functional>
 #include <map>
 #include <string>
 #include <utility>
@@ -222,6 +223,50 @@ ASR::Function_t* global_init_of(ASR::symbol_t *sym) {
     return ASR::down_cast<ASR::Function_t>(fn);
 }
 
+// A copy of an expression written in the scope that defines a derived type --
+// the default the type gives one of its components -- for a statement of
+// `scope`. Every symbol the expression names is replaced by the one through
+// which `scope` reaches the same definition: the variables of a pointer's
+// initial target designator and the subscripts in it, a component it selects,
+// a procedure. Each is imported where `scope` does not already reach it, once
+// per definition, so a target named twice, or named in `scope` by a symbol of
+// its own that happens to have the same name, gets one import.
+class DefaultValueDuplicator: public ASR::BaseExprStmtDuplicator<DefaultValueDuplicator> {
+    public:
+        SymbolTable *scope;
+        std::map<ASR::symbol_t*, ASR::symbol_t*> &imports;
+
+        DefaultValueDuplicator(Allocator &al, SymbolTable *scope_,
+                std::map<ASR::symbol_t*, ASR::symbol_t*> &imports_):
+            ASR::BaseExprStmtDuplicator<DefaultValueDuplicator>(al),
+            scope(scope_), imports(imports_) {}
+
+        ASR::symbol_t* reachable(ASR::symbol_t *sym) {
+            ASR::symbol_t *definition = ASRUtils::symbol_get_past_external(sym);
+            auto imported = imports.find(definition);
+            if (imported != imports.end()) return imported->second;
+            ASR::symbol_t *reached = ASRUtils::import_symbol(al, sym, scope);
+            // A module's type can only name what the module itself can: its
+            // own entities, those it uses, and the procedures of the whole
+            // translation unit, each of which `scope` reaches or can import.
+            LCOMPILERS_ASSERT(ASRUtils::is_visible_from(reached, scope));
+            imports[definition] = reached;
+            return reached;
+        }
+
+        ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
+            return ASR::make_Var_t(al, x->base.base.loc, reachable(x->m_v));
+        }
+
+        ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t *x) {
+            ASR::expr_t *v = duplicate_expr(x->m_v);
+            ASR::symbol_t *member = ASRUtils::import_struct_instance_member(al,
+                x->m_m, scope);
+            return ASR::make_StructInstanceMember_t(al, x->base.base.loc, v,
+                member, duplicate_ttype(x->m_type), duplicate_expr(x->m_value));
+        }
+};
+
 class GlobalInitVisitor {
 
     private:
@@ -232,6 +277,9 @@ class GlobalInitVisitor {
         // read back from a `.mod` file is initialized by that object file and
         // not here.
         bool separate_compilation;
+        // What the defaults put into an initializer imported into its scope,
+        // by definition; see `DefaultValueDuplicator`.
+        std::map<SymbolTable*, std::map<ASR::symbol_t*, ASR::symbol_t*>> default_imports;
 
     public:
 
@@ -328,7 +376,7 @@ class GlobalInitVisitor {
         // resolves to the one definition at link time.
         void name_external_global_init(ASR::Module_t *m) {
             std::vector<ASR::Variable_t*> vars = runtime_init_vars(m->m_symtab);
-            if (vars.empty()) return;
+            if (vars.empty() && !has_default_init_stmts(m->m_symtab)) return;
             ASRUtils::get_or_create_global_init(al, unit, (ASR::asr_t*)&m->base,
                 true);
             // Drop the initializers here as well. This translation unit only
@@ -345,19 +393,287 @@ class GlobalInitVisitor {
             }
         }
 
+        // Default initialization of a module's storage.
+        //
+        // A module variable of a derived type with no declaration initializer
+        // gets its initial value from its type's default initialization. A
+        // backend lays a scalar one out as static data holding every default
+        // `ASRUtils::struct_member_default_is_static` accepts, however deeply
+        // the derived types it holds by value nest, and an array as zeros,
+        // whatever its size. Everything that layout does not hold becomes a
+        // statement of the module's initializer here: a default of a scalar
+        // that is not static -- one in storage created at run time, a
+        // string's buffer above all, or a pointer's initial procedure or
+        // target -- and every default of an element of an array, given by one
+        // loop over the array. So every member is initialized by exactly one
+        // of the two, and a target's startup hook only creates the storage
+        // the layout does not hold in place.
+
+        // A designator built only once a statement needs it, so that a member
+        // with nothing to initialize adds no symbol to the initializer.
+        using Designator = std::function<ASR::expr_t*()>;
+
+        // The derived type whose default initialization gives module variable
+        // `v` its initial value, held by value as a scalar or as a fixed-size
+        // array, or nullptr.
+        static ASR::Struct_t* default_initialized_type(const ASR::Variable_t &v) {
+            if (v.m_symbolic_value != nullptr || v.m_value != nullptr
+                    || v.m_storage == ASR::storage_typeType::Parameter
+                    || v.n_codims > 0 || !ASRUtils::is_module_variable(v)) {
+                return nullptr;
+            }
+            return ASRUtils::struct_member_held_by_value(
+                const_cast<ASR::Variable_t*>(&v));
+        }
+
+        // Whether any variable of `scope` gets a statement of its default
+        // initialization.
+        bool has_default_init_stmts(SymbolTable *scope) {
+            for (auto &item : scope->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                ASR::Struct_t *s = default_initialized_type(*v);
+                if (s != nullptr && variable_default_init_stmts(v, s, nullptr, nullptr)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Append to `out` the statements of the default initialization of
+        // `v`, of type `s`, in `scope`. With `out` null nothing is built, and
+        // the result only says whether there is anything to append.
+        bool variable_default_init_stmts(ASR::Variable_t *v, ASR::Struct_t *s,
+                SymbolTable *scope, std::vector<ASR::stmt_t*> *out) {
+            const Location &loc = v->base.base.loc;
+            Designator var = [this, v, &loc]() {
+                return ASRUtils::EXPR(ASR::make_Var_t(al, loc, &v->base));
+            };
+            if (ASRUtils::is_array(v->m_type)) {
+                return array_default_init_stmts(var, v->m_type, s, nullptr,
+                    true, scope, loc, out);
+            }
+            return default_init_stmts(var, s, nullptr, false, scope, loc, out);
+        }
+
+        // Append to `out` the statements that give `target`, storage of type
+        // `s`, what static data does not hold of its default initialization:
+        // all of it when `all` is set, because the storage is laid out as
+        // zeros, and otherwise the defaults that are not static. The defaults
+        // are those of `constant`, a structure constant of type `s`, where it
+        // gives one, and the members' own otherwise. With `out` null nothing
+        // is built, and the result only says whether there is anything.
+        bool default_init_stmts(const Designator &target, ASR::Struct_t *s,
+                ASR::expr_t *constant, bool all, SymbolTable *scope,
+                const Location &loc, std::vector<ASR::stmt_t*> *out) {
+            // The members of the parent types come first, as in a structure
+            // constant, so the statements run in declaration order.
+            std::vector<ASR::Struct_t*> chain;
+            for (ASR::Struct_t *c = s; c != nullptr;
+                    c = c->m_parent == nullptr ? nullptr
+                        : ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(c->m_parent))) {
+                chain.insert(chain.begin(), c);
+            }
+            bool any = false;
+            for (ASR::Struct_t *c : chain) {
+                for (size_t i = 0; i < c->n_members; i++) {
+                    ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                        c->m_symtab->get_symbol(c->m_members[i]));
+                    if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+                    ASR::Variable_t *m = ASR::down_cast<ASR::Variable_t>(sym);
+                    ASR::expr_t *value = constant == nullptr ? nullptr
+                        : ASRUtils::get_struct_member_value_from_constant(
+                            constant, sym);
+                    if (value == nullptr) {
+                        value = m->m_value != nullptr ? m->m_value
+                            : m->m_symbolic_value;
+                    }
+                    Designator member = [this, &target, sym, scope, &loc]() {
+                        return ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(
+                            al, loc, (ASR::asr_t*)target(), nullptr, sym, scope));
+                    };
+                    bool has;
+                    if (ASR::Struct_t *held = ASRUtils::struct_member_held_by_value(m)) {
+                        if (ASRUtils::is_array(m->m_type)) {
+                            has = array_default_init_stmts(member, m->m_type,
+                                held, value, all, scope, loc, out);
+                        } else {
+                            ASR::expr_t *nested = folded(value);
+                            if (nested != nullptr
+                                    && !ASR::is_a<ASR::StructConstant_t>(*nested)) {
+                                nested = nullptr;
+                            }
+                            has = default_init_stmts(member, held, nested, all,
+                                scope, loc, out);
+                        }
+                    } else {
+                        has = value != nullptr
+                            && !ASRUtils::is_allocatable(m->m_type)
+                            && !ASR::is_a<ASR::PointerNullConstant_t>(*value)
+                            && (all || !ASRUtils::struct_member_default_is_static(
+                                c, m, value));
+                        if (has && out != nullptr) {
+                            out->push_back(default_stmt(member(), m, value,
+                                scope, loc));
+                        }
+                    }
+                    any = any || has;
+                    if (any && out == nullptr) return true;
+                }
+            }
+            return any;
+        }
+
+        // `default_init_stmts` for each element of `array`, a fixed-size array
+        // of type `s` whose type is `array_type`, with the defaults of
+        // `value`, the array's own default, where it gives one.
+        bool array_default_init_stmts(const Designator &array,
+                ASR::ttype_t *array_type, ASR::Struct_t *s, ASR::expr_t *value,
+                bool all, SymbolTable *scope, const Location &loc,
+                std::vector<ASR::stmt_t*> *out) {
+            ASR::dimension_t *dims = nullptr;
+            int n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, dims);
+            std::vector<int64_t> starts, lengths;
+            for (int d = 0; d < n_dims; d++) {
+                int64_t start = 0, length = 0;
+                [[maybe_unused]] bool is_constant = ASRUtils::extract_value(
+                        ASRUtils::expr_value(dims[d].m_start), start)
+                    && ASRUtils::extract_value(
+                        ASRUtils::expr_value(dims[d].m_length), length);
+                LCOMPILERS_ASSERT(is_constant);
+                starts.push_back(start);
+                lengths.push_back(length);
+            }
+            ASR::expr_t *element_value = folded(value);
+            if (element_value != nullptr
+                    && ASR::is_a<ASR::ArrayConstant_t>(*element_value)) {
+                // A default element by element: each element is its own
+                // constant, at a constant index.
+                ASR::ArrayConstant_t *elements =
+                    ASR::down_cast<ASR::ArrayConstant_t>(element_value);
+                bool any = false;
+                int64_t n = ASRUtils::get_fixed_size_of_array(array_type);
+                for (int64_t k = 0; k < n; k++) {
+                    std::vector<ASR::expr_t*> index;
+                    for (int64_t d = 0, rest = k; d < n_dims; d++) {
+                        index.push_back(index_constant(
+                            starts[d] + rest % lengths[d], loc));
+                        rest /= lengths[d];
+                    }
+                    Designator element = [this, &array, index]() {
+                        ASRUtils::ASRBuilder b(al, array()->base.loc);
+                        return b.ArrayItem_01(array(), index);
+                    };
+                    ASR::expr_t *element_constant = folded(
+                        ASRUtils::fetch_ArrayConstant_value(al, elements, k));
+                    any = default_init_stmts(element, s, element_constant, all,
+                        scope, loc, out) || any;
+                    if (any && out == nullptr) return true;
+                }
+                return any;
+            }
+            if (element_value != nullptr
+                    && ASR::is_a<ASR::ArrayBroadcast_t>(*element_value)) {
+                element_value = folded(
+                    ASR::down_cast<ASR::ArrayBroadcast_t>(element_value)->m_array);
+            }
+            if (element_value != nullptr
+                    && !ASR::is_a<ASR::StructConstant_t>(*element_value)) {
+                element_value = nullptr;
+            }
+            // One loop over the array, created with its index variables only
+            // once an element has a statement to put in it.
+            Vec<ASR::expr_t*> index;
+            index.reserve(al, n_dims);
+            Designator element = [this, &array, &index, n_dims, scope, &loc]() {
+                if (index.size() == 0) {
+                    SymbolTable *index_scope = scope;
+                    PassUtils::create_idx_vars(index, n_dims, loc, al,
+                        index_scope, "_default_init_idx");
+                }
+                return PassUtils::create_array_ref(array(), index, al, scope);
+            };
+            std::vector<ASR::stmt_t*> body;
+            bool has = default_init_stmts(element, s, element_value, all, scope,
+                loc, out == nullptr ? nullptr : &body);
+            if (has && out != nullptr) {
+                ASRUtils::ASRBuilder b(al, loc);
+                for (int d = 0; d < n_dims; d++) {
+                    ASR::stmt_t *loop = b.DoLoop(index[d],
+                        index_constant(starts[d], loc),
+                        index_constant(starts[d] + lengths[d] - 1, loc), body);
+                    body = {loop};
+                }
+                out->push_back(body[0]);
+            }
+            return has;
+        }
+
+        // `e` as its compile-time value, where it has one.
+        static ASR::expr_t* folded(ASR::expr_t *e) {
+            ASR::expr_t *value = e == nullptr ? nullptr : ASRUtils::expr_value(e);
+            return value != nullptr ? value : e;
+        }
+
+        ASR::expr_t* index_constant(int64_t n, const Location &loc) {
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                ASR::integerbozType::Decimal));
+        }
+
+        // The statement that gives `target`, member `m`, its default `value`:
+        // an association for a pointer, an assignment otherwise. The default
+        // is written in the scope that defines the type, so the statement
+        // gets a copy of it that names everything it refers to through
+        // symbols `scope` reaches.
+        ASR::stmt_t* default_stmt(ASR::expr_t *target, ASR::Variable_t *m,
+                ASR::expr_t *value, SymbolTable *scope, const Location &loc) {
+            DefaultValueDuplicator duplicator(al, scope, default_imports[scope]);
+            if (ASRUtils::is_pointer(m->m_type)) {
+                return ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, loc,
+                    target, duplicator.duplicate_expr(value)));
+            }
+            return ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+                target, duplicator.duplicate_expr(folded(value)), nullptr,
+                false, false));
+        }
+
         // Move every declaration initializer of `owner`'s scope that needs
-        // executable code into `owner`'s initializer.
+        // executable code into `owner`'s initializer, and, for a module, put
+        // there the default initialization of its variables that static data
+        // does not hold, all in declaration order.
         void lower_scope(ASR::asr_t *owner, SymbolTable *scope) {
             ASR::Function_t *fn = nullptr;
-            for (ASR::Variable_t *v : runtime_init_vars(scope)) {
+            auto initializer = [&]() {
                 if (fn == nullptr) {
                     fn = ASRUtils::get_or_create_global_init(al, unit, owner);
                 }
-                // A declaration initializer is an assignment or an
-                // association that reads a constant or the address of a
-                // variable with `save`, and nothing else.
-                ASRUtils::global_init_append_stmt(al, fn, take_initializer(v),
-                    ASRUtils::InitOrdering::OrderInsensitive);
+                return fn;
+            };
+            for (auto &name : ASRUtils::determine_variable_declaration_order(scope)) {
+                ASR::symbol_t *sym = scope->get_symbol(name);
+                if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                // A declaration initializer and a default are each an
+                // assignment or an association that reads a constant or the
+                // address of a variable with `save` or of a procedure, and
+                // nothing else.
+                if (needs_runtime_init(*v)) {
+                    ASRUtils::global_init_append_stmt(al, initializer(),
+                        take_initializer(v), ASRUtils::InitOrdering::OrderInsensitive);
+                    continue;
+                }
+                ASR::Struct_t *s = default_initialized_type(*v);
+                if (s == nullptr || !variable_default_init_stmts(v, s, nullptr, nullptr)) {
+                    continue;
+                }
+                std::vector<ASR::stmt_t*> stmts;
+                variable_default_init_stmts(v, s, initializer()->m_symtab, &stmts);
+                for (ASR::stmt_t *stmt : stmts) {
+                    ASRUtils::global_init_append_stmt(al, fn, stmt,
+                        ASRUtils::InitOrdering::OrderInsensitive);
+                }
             }
         }
 

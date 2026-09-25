@@ -1043,6 +1043,11 @@ RUN(NAME global_init_06 LABELS gfortran llvm EXTRAFILES global_init_06_m.f90 EXT
 RUN(NAME global_init_07 LABELS gfortran llvm)
 RUN(NAME global_init_08 LABELS gfortran llvm EXTRAFILES global_init_08c.c EXTRA_ARGS --separate-compilation)
 RUN(NAME global_init_09 LABELS gfortran llvm EXTRAFILES global_init_09_m.f90 global_init_09_s.f90 EXTRA_ARGS --separate-compilation)
+# The C file has to come before the module on the link line; see global_init_10c.c.
+RUN(NAME global_init_10 LABELS gfortran llvm EXTRAFILES global_init_10c.c global_init_10_m.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_11 LABELS gfortran llvm EXTRAFILES global_init_11c.c global_init_11_m.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_12 LABELS gfortran llvm)
+RUN(NAME global_init_13 LABELS gfortran llvm EXTRAFILES global_init_13_c.f90 global_init_13_a.f90 global_init_13_b.f90 EXTRA_ARGS --separate-compilation)
 # Calls the LFortran runtime's own entry point, which GFortran does not have.
 RUN(NAME module_teardown_01 LABELS llvm EXTRAFILES module_teardown_01c.c EXTRA_ARGS --detect-leaks)
 RUN(NAME module_teardown_02 LABELS gfortran llvm EXTRA_ARGS --detect-leaks)

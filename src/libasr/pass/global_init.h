@@ -83,8 +83,16 @@ namespace LCompilers {
 
     } // namespace ASRUtils
 
-    // Lower the declaration initializers no target can lay out as static
-    // data into the initializers of the units that own them.
+    // Make statements out of what the current layout does not hold as static
+    // data, in the initializer of the unit that owns it (for a procedure or a
+    // block, at the top of its own body): each declaration initializer the
+    // layout does not hold, and, for a module, the defaults of the module's
+    // variables that `ASRUtils::struct_member_default_is_static` rejects
+    // together with every default of an element of an array of a derived
+    // type. That is a fixed rule today; a materialization policy the user can
+    // select is the intended design, and is not implemented. Afterwards every
+    // initialized component of module storage has exactly one source, static
+    // data or a statement, and a startup hook only creates storage.
     void pass_global_init(Allocator &al, ASR::TranslationUnit_t &unit,
                           const PassOptions &pass_options);
 

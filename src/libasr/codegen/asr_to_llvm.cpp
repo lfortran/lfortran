@@ -465,11 +465,17 @@ public:
         size_t n_dims;
     };
     std::vector<to_be_allocated_array> allocatable_array_details;
-    std::vector<std::pair<ASR::symbol_t*, llvm::Value*>> allocatable_struct_array_members_details;
+    struct struct_global { /* A global of a derived type whose members' storage is set up once, before any user code runs */
+        ASR::symbol_t* struct_sym; // The type of the global.
+        llvm::Value* ptr; // The global.
+        bool initialize_val; // See `allocate_array_members_of_struct`.
+    };
+    std::vector<struct_global> allocatable_struct_array_members_details;
     struct struct_array_global { /* A module level array of a derived type, whose elements' members are set up once, inside `program` */
         ASR::expr_t* expr; // The module variable.
         llvm::Value* ptr; // Corresponds to variable `expr` in llvm IR.
         ASR::ttype_t* var_type; // The array type of `expr`.
+        bool initialize_val; // See `allocate_array_members_of_struct`.
     };
     std::vector<struct_array_global> struct_array_global_members_details;
     struct variable_inital_value { /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
@@ -6458,12 +6464,17 @@ public:
             // variable that has an initializer is left alone: its members are
             // either already described by the static initializer, or set up by
             // the broadcast constructor above.
+            //
+            // The elements of a module's array get the values of their
+            // default initialization from the statements the `global_init`
+            // pass put into the module's initializer, so their set up only
+            // creates the storage.
             if (x.m_symbolic_value == nullptr && x.m_value == nullptr) {
                 ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
                     x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base)));
                 if (ASRUtils::needs_struct_array_member_init(var_expr, x.m_type)) {
                     struct_array_global_members_details.push_back(
-                        { var_expr, ptr, x.m_type });
+                        { var_expr, ptr, x.m_type, !ASRUtils::is_module_variable(x) });
                 }
             }
         } else if (x.m_type->type == ASR::ttypeType::Logical) {
@@ -6615,9 +6626,23 @@ public:
                     skip_runtime_struct_init = true;
                 }
             }
+            // A module variable that default initialization gives its value
+            // is laid out above with every default static data can hold, and
+            // the `global_init` pass gave it every other one as a statement
+            // of the module's initializer. What is left is to create the
+            // storage its layout does not hold in place, which a type that
+            // needs no member init has none of.
+            bool is_module_variable = ASRUtils::is_module_variable(x);
+            if (!skip_runtime_struct_init && is_module_variable) {
+                std::set<ASR::Struct_t*> visited;
+                skip_runtime_struct_init = !ASRUtils::struct_needs_member_init(
+                    ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                        x.m_type_declaration)), visited);
+            }
             if (!skip_runtime_struct_init) {
-                allocatable_struct_array_members_details.push_back(std::make_pair(
-                    ASRUtils::symbol_get_past_external(x.m_type_declaration), llvm_symtab[h]));
+                allocatable_struct_array_members_details.push_back({
+                    ASRUtils::symbol_get_past_external(x.m_type_declaration),
+                    llvm_symtab[h], !is_module_variable });
             }
         } else if(x.m_type->type == ASR::ttypeType::Pointer ||
                     x.m_type->type == ASR::ttypeType::Allocatable) {
@@ -7008,64 +7033,6 @@ public:
         current_scope = current_scope_copy;
     }
 
-    // The global `store` writes to, when it writes through nothing but casts
-    // and element addresses; null when it writes somewhere else.
-    static llvm::GlobalVariable *stored_global(llvm::StoreInst *store) {
-        llvm::Value *base = store->getPointerOperand();
-        while (true) {
-            llvm::Value *stripped = base->stripPointerCasts();
-            if (stripped != base) { base = stripped; continue; }
-            if (auto *gep = llvm::dyn_cast<llvm::GetElementPtrInst>(base)) {
-                base = gep->getPointerOperand();
-                continue;
-            }
-            break;
-        }
-        return llvm::dyn_cast<llvm::GlobalVariable>(base);
-    }
-
-    // Take out of `fn` every store that writes back the value the storage it
-    // writes to already holds. A module's variables are laid out with a
-    // static initializer that zeroes them, so a constructor storing that same
-    // zero changes nothing it can observe -- and it is not the only thing
-    // that runs before the program does. Where in the target's startup a
-    // given object file's hook runs is chosen by the linker, so such a store
-    // can land after a library's own initialization has put the real value
-    // there and undo it. A saved coarray is allocated from a constructor of
-    // the unit that declares it, and that allocation is a call into PRIF
-    // which associates the current team; a module of that same library then
-    // had the association nulled back out from its own constructor, and every
-    // image aborted with an unassociated info pointer in prif_team_type.
-    //
-    // A store is left alone when something earlier in the same constructor
-    // wrote to that global, because then it is not writing back what the
-    // storage holds -- it is undoing what this constructor just did.
-    static void drop_static_initializer_writes(llvm::Function *fn) {
-        std::set<llvm::GlobalVariable*> written;
-        std::vector<llvm::StoreInst*> redundant;
-        for (llvm::BasicBlock &bb : *fn) {
-            for (llvm::Instruction &instr : bb) {
-                llvm::StoreInst *store = llvm::dyn_cast<llvm::StoreInst>(&instr);
-                if (store == nullptr) continue;
-                llvm::GlobalVariable *gv = stored_global(store);
-                if (gv == nullptr) continue;
-                llvm::Constant *value = llvm::dyn_cast<llvm::Constant>(
-                    store->getValueOperand());
-                if (value != nullptr && value->isNullValue()
-                        && gv->hasInitializer()
-                        && gv->getInitializer()->isNullValue()
-                        && written.find(gv) == written.end()) {
-                    redundant.push_back(store);
-                    continue;
-                }
-                written.insert(gv);
-            }
-        }
-        for (llvm::StoreInst *store : redundant) {
-            store->eraseFromParent();
-        }
-    }
-
     // Whether this translation unit defines the storage of `x`'s variables,
     // rather than only naming it for a definition in another object file.
     bool module_storage_defined_here(const ASR::Module_t &x) {
@@ -7166,11 +7133,11 @@ public:
     }
 
     // Everything that has to have happened before any code can read one of
-    // `x`'s variables: the members a zeroed static initializer cannot
-    // describe — an array member needs a descriptor of its own, a string
-    // member its data — and then the module's startup initializer, which
-    // holds the declaration initializers no target can lay out as static
-    // data.
+    // `x`'s variables: the storage their layout does not hold in place — an
+    // array member needs a descriptor of its own, a string member its buffer
+    // — and then the module's startup initializer, which holds the
+    // declaration initializers and the defaults static data cannot hold, as
+    // the `global_init` pass lowered them to statements.
     //
     // Both used to be reached only from the **Program**: the member set up
     // was emitted into `main`, and the initializer is called from the chain
@@ -7205,11 +7172,11 @@ public:
         // descriptor of a module level array is a global of its own.
         if (allocatable_array_details.size() > arrays_mark) return;
 
-        std::vector<std::pair<ASR::symbol_t*, llvm::Value*>> structs;
+        std::vector<struct_global> structs;
         std::vector<struct_array_global> struct_arrays;
         for (size_t i = structs_mark;
                 i < allocatable_struct_array_members_details.size(); i++) {
-            if (global_defined_here(allocatable_struct_array_members_details[i].second)) {
+            if (global_defined_here(allocatable_struct_array_members_details[i].ptr)) {
                 structs.push_back(allocatable_struct_array_members_details[i]);
             }
         }
@@ -7262,12 +7229,19 @@ public:
         // here carries a location of the function that was being emitted.
         builder->SetCurrentDebugLocation(llvm::DebugLoc());
 
-        for (auto &st : structs) {
-            allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.first),
-                st.second, ASRUtils::symbol_type(st.first), false, true);
+        // Only the storage the layout of a module variable does not hold in
+        // place is created here, and no value is stored: static data holds
+        // every default it can, and the module's initializer, called below,
+        // gives every other. This runs wherever the linker puts this object
+        // file's hook among the others, and code that ran earlier may already
+        // have changed what the static data holds.
+        for (struct_global &st : structs) {
+            allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.struct_sym),
+                st.ptr, ASRUtils::symbol_type(st.struct_sym), false, st.initialize_val);
         }
         for (struct_array_global &st : struct_arrays) {
-            allocate_array_members_of_struct_arrays(st.expr, st.ptr, st.var_type);
+            allocate_array_members_of_struct_arrays(st.expr, st.ptr, st.var_type,
+                nullptr, st.initialize_val);
         }
         // Last, because a declaration initializer can read a member that the
         // set up above is what gives a descriptor of its own.
@@ -7279,19 +7253,8 @@ public:
         if (saved_block != nullptr) {
             builder->SetInsertPoint(saved_block);
             builder->SetCurrentDebugLocation(saved_debug_loc);
-        }
-
-        drop_static_initializer_writes(ctor_fn);
-
-        // What the set up above queues is a member that may need code, not
-        // one that does: a COMMON block is carried as a module's struct
-        // whose members can all be scalars, and then nothing is emitted here
-        // at all. Registering a constructor that only returns would put a
-        // startup hook on an object file that has nothing to do at startup,
-        // so take it back out.
-        if (ctor_fn->size() == 1 && ctor_fn->getEntryBlock().size() == 1) {
-            ctor_fn->eraseFromParent();
-            return;
+        } else {
+            builder->ClearInsertionPoint();
         }
         llvm::appendToGlobalCtors(*module, ctor_fn, 65535);
     }
@@ -7473,13 +7436,14 @@ public:
             fill_array_details_(array.expr, array.pointer_to_array_type, array.array_type, nullptr, array.n_dims,
                 true, true, false, array.var_type);
         }
-        for(auto& st : allocatable_struct_array_members_details) {
-            allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.first),
-                st.second, ASRUtils::symbol_type(st.first), false, true);
+        for(struct_global& st : allocatable_struct_array_members_details) {
+            allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.struct_sym),
+                st.ptr, ASRUtils::symbol_type(st.struct_sym), false, st.initialize_val);
         }
         allocatable_struct_array_members_details.clear();
         for(struct_array_global& st : struct_array_global_members_details) {
-            allocate_array_members_of_struct_arrays(st.expr, st.ptr, st.var_type);
+            allocate_array_members_of_struct_arrays(st.expr, st.ptr, st.var_type,
+                nullptr, st.initialize_val);
         }
         struct_array_global_members_details.clear();
         declare_vars(x);
@@ -7715,6 +7679,14 @@ public:
         }
     }
 
+    // Set up the members of the derived type `ptr` points to. With
+    // `initialize_val` false only the storage the layout of a member does not
+    // hold in place is created -- a descriptor, a string's buffer, a type
+    // pointer -- and no value is stored in the members at all, which is for a
+    // global whose static data and whose module's initializer already give
+    // every member its initial value: storing one here would undo whatever
+    // code that ran earlier, such as another object file's constructor, has
+    // put there. Otherwise the members get their default values as well.
     void allocate_array_members_of_struct(ASR::Struct_t* struct_sym, llvm::Value* ptr,
             ASR::ttype_t* asr_type, bool is_intent_out = false, bool initialize_val = true,
             bool skip_allocatable_array_descriptor_init = false,
@@ -7847,7 +7819,14 @@ public:
                                 llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(inner_ptr_type)),
                                 struct_ptr_field);
                         }
-                    } else {
+                    } else if (initialize_val || (ASRUtils::is_array(v->m_type)
+                            && !(skip_allocatable_array_descriptor_init
+                                && ASRUtils::is_allocatable(v->m_type)))) {
+                        // Without values only an array that gets a descriptor
+                        // below is set up here: every other pointer or
+                        // allocatable is null in the static data that set up
+                        // is for, and storing null again would undo an
+                        // earlier association or allocation.
                         set_pointer_variable_to_null(v, llvm::Constant::getNullValue(
                             llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                         al, v->base.base.loc, &v->base)), v->m_type, module.get())),
@@ -7942,7 +7921,8 @@ public:
                     }
                     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(symbol_type))
                         && !ASRUtils::is_class_type(ASRUtils::type_get_past_array(symbol_type))) {
-                        allocate_array_members_of_struct_arrays(ASRUtils::get_expr_from_sym(al, sym), ptr_member, symbol_type);
+                        allocate_array_members_of_struct_arrays(ASRUtils::get_expr_from_sym(al, sym),
+                            ptr_member, symbol_type, nullptr, initialize_val);
                     }
                 } else if (ASR::is_a<ASR::StructType_t>(*symbol_type) && !ASRUtils::is_class_type(symbol_type)) {
                     ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
@@ -7966,19 +7946,6 @@ public:
                     if (!ASRUtils::is_inline_character_struct_member(
                             struct_type_t, v_sym->m_type)) {
                         setup_string(ptr_member, symbol_type);
-                        // `=> null()` on a character pointer component is not a string
-                        // value to copy; setup_string already left the descriptor in the
-                        // null/zero-length state that null() denotes.
-                        if (!initialize_val && v && v->m_symbolic_value &&
-                            !ASR::is_a<ASR::PointerNullConstant_t>(*v->m_symbolic_value) &&
-                            ASRUtils::is_string_only(ASRUtils::expr_type(v->m_symbolic_value))) {
-                            visit_expr(*v->m_symbolic_value);
-                            llvm_utils->lfortran_str_copy(
-                                ptr_member, tmp,
-                                ASRUtils::get_string_type(symbol_type),
-                                ASRUtils::get_string_type(ASRUtils::expr_type(v->m_symbolic_value)),
-                                ASRUtils::is_allocatable(symbol_type));
-                        }
                     }
                 }
                 if( ASR::is_a<ASR::Variable_t>(*sym) && apply_init ) {
@@ -8115,8 +8082,10 @@ public:
         }
     }
 
+    // `allocate_array_members_of_struct` for every element of the array `ptr`
+    // points to.
     void allocate_array_members_of_struct_arrays(ASR::expr_t* expr, llvm::Value* ptr, ASR::ttype_t* v_m_type,
-            ASR::Struct_t* allocated_subclass = nullptr) {
+            ASR::Struct_t* allocated_subclass = nullptr, bool initialize_val = true) {
         ASR::array_physical_typeType phy_type = ASRUtils::extract_physical_type(v_m_type);
         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::extract_type(v_m_type), module.get());
@@ -8216,11 +8185,11 @@ public:
                 }
                 if (allocated_subclass) {
                     allocate_array_members_of_struct(allocated_subclass, ptr_i,
-                        ASRUtils::symbol_type(&allocated_subclass->base), false, true, true);
+                        ASRUtils::symbol_type(&allocated_subclass->base), false, initialize_val, true);
                 } else {
                     allocate_array_members_of_struct(
                         ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))),
-                            ptr_i, ASRUtils::extract_type(v_m_type), false, true, true);
+                            ptr_i, ASRUtils::extract_type(v_m_type), false, initialize_val, true);
                 }
                 LLVM::CreateStore(*builder,
                     builder->CreateAdd(llvm_utils->CreateLoad2(t, llvmi),
@@ -8301,14 +8270,25 @@ public:
         return llvm::ConstantDataArray::getString(context, bytes, false);
     }
 
+    // The static initializer that default initialization gives storage of
+    // type `struct_sym`, member by member: each default that
+    // `ASRUtils::struct_member_default_is_static` accepts, those of a derived
+    // type held by value in turn, and zeros for everything else. The defaults
+    // are those of `constant`, a structure constant of the type, where it
+    // gives one, and the members' own otherwise. The `global_init` pass walks
+    // the same defaults and gives a module variable each of the others by a
+    // statement, and the storage created at run time is set up by
+    // `allocate_array_members_of_struct`.
     void get_type_default_field_values(ASR::symbol_t* struct_sym,
-            std::vector<llvm::Constant*>& field_values, ASR::symbol_t* orig_struct_sym) {
+            std::vector<llvm::Constant*>& field_values, ASR::symbol_t* orig_struct_sym,
+            ASR::expr_t* constant = nullptr) {
         struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
 
         if (struct_t->m_parent != nullptr) {
             std::vector<llvm::Constant*> tmp_field_values;
-            get_type_default_field_values(struct_t->m_parent, tmp_field_values, orig_struct_sym);
+            get_type_default_field_values(struct_t->m_parent, tmp_field_values, orig_struct_sym,
+                constant);
             llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(
                 llvm_utils->get_type_from_ttype_t_util(ASRUtils::symbol_type(
                     struct_t->m_parent), struct_t->m_parent, module.get()));
@@ -8320,23 +8300,80 @@ public:
             if (!sym || !ASR::is_a<ASR::Variable_t>(*sym))
                 continue;
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            ASR::expr_t* init = constant == nullptr ? nullptr
+                : ASRUtils::get_struct_member_value_from_constant(constant, sym);
+            if (init == nullptr) {
+                init = var->m_value != nullptr ? var->m_value : var->m_symbolic_value;
+            }
+            auto member_type = [&]() {
+                return llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, &var->base)),
+                    var->m_type, module.get());
+            };
             if (ASRUtils::is_inline_character_struct_member(
                     struct_t, var->m_type)) {
                 // Inline character member is a flat [count*len x i8] byte blob;
                 // build a matching byte constant (space-padded) from its DATA value.
-                field_values.push_back(get_inline_char_member_constant(var->m_type, var->m_value));
-            } else if (var->m_value != nullptr || (var->m_symbolic_value != nullptr
-                    && ASRUtils::is_value_constant(var->m_symbolic_value))) {
-                ASR::expr_t* init = var->m_value ? var->m_value : var->m_symbolic_value;
+                field_values.push_back(get_inline_char_member_constant(var->m_type,
+                    constant == nullptr ? var->m_value : init));
+            } else if (ASR::Struct_t* held = ASRUtils::struct_member_held_by_value(var)) {
+                field_values.push_back(get_default_value_held_by_value(held,
+                    member_type(), init));
+            } else if (init != nullptr
+                    && ASRUtils::struct_member_default_is_static(struct_t, var, init)) {
                 llvm::Constant* c = create_llvm_constant_from_asr_expr(init, var->m_type,
                     orig_struct_sym);
                 field_values.push_back(c);
             } else {
-                llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(
-                    ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, &var->base)),var->m_type, module.get());
-                field_values.push_back(llvm::Constant::getNullValue(member_type));
+                field_values.push_back(llvm::Constant::getNullValue(member_type()));
             }
         }
+    }
+
+    // `get_type_default_field_values` for storage of the derived type `held`
+    // laid out as `type`, a structure or a fixed-size array of them, whose own
+    // default is `value` where it has one: a structure constant for the one
+    // structure, an array constant element by element, or a broadcast.
+    llvm::Constant* get_default_value_held_by_value(ASR::Struct_t* held,
+            llvm::Type* type, ASR::expr_t* value) {
+        auto folded = [](ASR::expr_t* e) {
+            ASR::expr_t* v = e == nullptr ? nullptr : ASRUtils::expr_value(e);
+            return v != nullptr ? v : e;
+        };
+        llvm::StructType* held_type = llvm::cast<llvm::StructType>(
+            type->isArrayTy() ? type->getArrayElementType() : type);
+        auto element = [&](ASR::expr_t* constant) {
+            constant = folded(constant);
+            if (constant != nullptr && !ASR::is_a<ASR::StructConstant_t>(*constant)) {
+                constant = nullptr;
+            }
+            std::vector<llvm::Constant*> fields;
+            get_type_default_field_values(&held->base, fields, &held->base, constant);
+            return llvm::ConstantStruct::get(held_type, fields);
+        };
+        if (!type->isArrayTy()) {
+            return element(value);
+        }
+        llvm::ArrayType* array_type = llvm::cast<llvm::ArrayType>(type);
+        std::vector<llvm::Constant*> elements;
+        value = folded(value);
+        if (value != nullptr && ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+            ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(value);
+            for (uint64_t k = 0; k < array_type->getNumElements(); k++) {
+                elements.push_back(element(
+                    ASRUtils::fetch_ArrayConstant_value(al, array_constant, k)));
+            }
+        } else {
+            if (value != nullptr && ASR::is_a<ASR::ArrayBroadcast_t>(*value)) {
+                value = ASR::down_cast<ASR::ArrayBroadcast_t>(value)->m_array;
+            }
+            llvm::Constant* c = element(value);
+            if (c->isNullValue()) {
+                return llvm::ConstantArray::getNullValue(array_type);
+            }
+            elements.assign(array_type->getNumElements(), c);
+        }
+        return llvm::ConstantArray::get(array_type, elements);
     }
 
     llvm::Constant* create_llvm_constant_from_asr_expr(ASR::expr_t* expr,
