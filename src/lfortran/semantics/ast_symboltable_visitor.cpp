@@ -6180,6 +6180,10 @@ public:
                         found = check_restriction(type_subs,
                             symbol_subs, f, proc, arg_attr->base.loc, diag,
                             []() { throw SemanticAbort(); }, false);
+                        if (found) {
+                            symbol_subs[f_name] = make_operator_proc_visible(
+                                proc, op_name, current_scope);
+                        }
                     }
                 }
 

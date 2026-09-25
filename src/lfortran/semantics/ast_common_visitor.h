@@ -21964,11 +21964,16 @@ public:
                     ASR::symbol_t* sym = current_scope->resolve_symbol(op_name);
                     ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
                     ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
+                    SymbolTable *op_scope = is_nested ? current_scope->parent : current_scope;
                     for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
                         ASR::symbol_t* proc = gen_proc->m_procs[i];
                         found = check_restriction(type_subs,
                                     symbol_subs, f, proc, loc, diag,
                                     []() { throw SemanticAbort(); }, false);
+                        if (found) {
+                            symbol_subs[f_name] = make_operator_proc_visible(
+                                proc, op_name, op_scope);
+                        }
                     }
                 }
 
@@ -26096,6 +26101,39 @@ public:
 
         // make custom operators names distinct by appending "~~" to the begining of their names
         return "~~" + op;
+    }
+
+    // A specific procedure of a generic operator can be bound to a deferred
+    // procedure of a template even when only the operator, and not the
+    // procedure, is use-associated. The instantiation refers to the procedure
+    // by name, so make sure it is visible from `scope` under a name that
+    // resolves to it, importing it if needed.
+    ASR::symbol_t* make_operator_proc_visible(ASR::symbol_t *proc,
+            const std::string &op_name, SymbolTable *scope) {
+        ASR::symbol_t *proc_def = ASRUtils::symbol_get_past_external(proc);
+        std::string name = ASRUtils::symbol_name(proc_def);
+        ASR::symbol_t *existing = scope->resolve_symbol(name);
+        if (existing && ASRUtils::symbol_get_past_external(existing) == proc_def) {
+            return existing;
+        }
+        std::string local_name = name + "@" + op_name;
+        existing = scope->resolve_symbol(local_name);
+        if (existing && ASRUtils::symbol_get_past_external(existing) == proc_def) {
+            return existing;
+        }
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(proc_def);
+        if (owner == nullptr || !ASR::is_a<ASR::Module_t>(*owner)) {
+            return proc;
+        }
+        if (scope->get_symbol(local_name) != nullptr) {
+            local_name = scope->get_unique_name(local_name, false);
+        }
+        ASR::symbol_t *imported = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_ExternalSymbol_t(al, proc_def->base.loc, scope,
+                s2c(al, local_name), proc_def, ASRUtils::symbol_name(owner),
+                nullptr, 0, s2c(al, name), ASR::accessType::Private));
+        scope->add_symbol(local_name, imported);
+        return imported;
     }
 
     ASR::symbol_t* resolve_custom_operator_proc(const std::string& intrinsic_op_name, ASR::expr_t *left, ASR::expr_t *right,
