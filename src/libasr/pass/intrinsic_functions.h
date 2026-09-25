@@ -274,6 +274,17 @@ static inline bool contains_function_call(ASR::expr_t* expr) {
 
 namespace UnaryIntrinsicFunction {
 
+// The elemental functions that the runtime implements in binary128
+// (`_lfortran_q<name>`); the others still go through the double entry point.
+static inline bool has_f128_runtime(const std::string &name) {
+    static const std::set<std::string> names = {
+        "sin", "cos", "tan", "asin", "acos", "atan",
+        "sinh", "cosh", "tanh", "asinh", "acosh", "atanh",
+        "log", "log10"
+    };
+    return names.count(name) > 0;
+}
+
 static inline ASR::expr_t* instantiate_functions(Allocator &al,
         const Location &loc, SymbolTable *scope, std::string new_name,
         ASR::ttype_t *arg_type, ASR::ttype_t *return_type,
@@ -289,8 +300,11 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
             break;
         }
         default : {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+            if (kind == 4) {
                 c_func_name = "_lfortran_s" + new_name;
+            } else if (kind == 16 && has_f128_runtime(new_name)) {
+                c_func_name = "_lfortran_q" + new_name;
             } else {
                 c_func_name = "_lfortran_d" + new_name;
             }
@@ -919,8 +933,11 @@ namespace Atan2 {
                 break;
             }
             default : {
-                if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+                int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                if (kind == 4) {
                     c_func_name = "_lfortran_s" + new_name;
+                } else if (kind == 16) {
+                    c_func_name = "_lfortran_q" + new_name;
                 } else {
                     c_func_name = "_lfortran_d" + new_name;
                 }

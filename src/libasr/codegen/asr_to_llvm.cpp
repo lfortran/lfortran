@@ -3672,6 +3672,19 @@ public:
     void generate_Exp(ASR::expr_t* m_arg) {
         this->visit_expr_wrapper(m_arg, true);
         llvm::Value *item = tmp;
+        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(m_arg)) == 16) {
+            // llvm.exp.f128 is lowered to expl, which is only 64-bit on
+            // Apple ARM64; call the portable runtime instead (see sqrt).
+            llvm::Type *type = llvm_utils->getFPType(16);
+            llvm::Function *fn_exp = module->getFunction("lf_expq");
+            if (!fn_exp) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(type, {type}, false);
+                fn_exp = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, "lf_expq", module.get());
+            }
+            tmp = builder->CreateCall(fn_exp, {item});
+            return;
+        }
 #if LLVM_VERSION_MAJOR >= 12
         tmp = builder->CreateUnaryIntrinsic(llvm::Intrinsic::exp, item);
 #elif LLVM_VERSION_MAJOR >= 8
