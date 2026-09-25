@@ -6110,9 +6110,34 @@ fortran = true
 # unit's scope under a derived name; the reference pins that the initializer
 # then binds it once, and that the procedure bodies are left with no bind of
 # their own. Through the wiring pass, as coarray_saved_01 is, so the reference
-# shows who calls each initializer too. The runtime side of this is the
-# integration test, which needs the coarray runtime the Caffeine CI jobs have.
+# shows who calls each initializer too. Every coarray is named `i`, so the
+# derived names collide, and the reference pins that each procedure is left
+# referring to its own. The runtime side of this is the integration test,
+# which needs the coarray runtime the Caffeine CI jobs have.
 pass = "coarray,global_init_wire"
+options = "--coarray=true"
+
+[[test]]
+filename = "../integration_tests/coarrays_26.f90"
+fortran = true
+# Coarrays that share one name across a module, a module procedure and its
+# internal procedure, an external procedure and its internal procedure, and the
+# program and its internal procedure, next to user variables named like the
+# unprefixed companions. The reference pins that every scope is left referring
+# to its own coarray and that the reserved __cac_ prefix prevents user variables
+# from shadowing companions. Through the wiring pass, as coarrays_50 is.
+pass = "coarray,global_init_wire"
+options = "--coarray=true"
+
+[[test]]
+filename = "../integration_tests/coarrays_52.f90"
+# The linkage of what the coarray pass declares in the translation unit's
+# scope: the companions of a coarray a module owns -- a module variable or a
+# module procedure's -- are exported, since a translation unit that uses the
+# module refers to them; those of an external procedure's or the program's,
+# with the reserved __cac_ prefix, and the translation unit's own initializer,
+# are internal.
+llvm = true
 options = "--coarray=true"
 
 [[test]]
