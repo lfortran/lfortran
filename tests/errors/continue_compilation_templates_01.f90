@@ -2120,3 +2120,22 @@ contains
     end subroutine
 
 end module
+
+module continue_compilation_templates_01_require_const_arg
+    implicit none
+
+    requirement req_const_arg{n}
+        deferred integer, parameter :: n
+    end requirement
+
+    template tmpl_require_deferred_expr {n}
+        deferred integer, parameter :: n
+        require :: req_const_arg{n + 1}  ! {Error} the argument for the deferred constant 'n' in a require statement must be a constant expression with a known value; expressions of deferred constants are not supported yet
+    end template
+
+    template tmpl_require_wrong_type {n}
+        deferred integer, parameter :: n
+        require :: req_const_arg{1.5}  ! {Error} the type of the instantiation argument, real(4), does not match the type of the deferred constant 'n', integer(4)
+    end template
+
+end module

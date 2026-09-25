@@ -1214,6 +1214,18 @@ semantic error: the type of the instantiation argument, integer(8), does not mat
 2107 |         instantiate tmpl_const_arg {integer, 3_8}  ! {Error} the type of the instantiation argument, integer(8), does not match the type of the deferred constant 'n', integer(4)
      |                                              ^^^ 
 
+semantic error: the argument for the deferred constant 'n' in a require statement must be a constant expression with a known value; expressions of deferred constants are not supported yet
+    --> tests/errors/continue_compilation_templates_01.f90:2133:34
+     |
+2133 |         require :: req_const_arg{n + 1}  ! {Error} the argument for the deferred constant 'n' in a require statement must be a constant expression with a known value; expressions of deferred constants are not supported yet
+     |                                  ^^^^^ 
+
+semantic error: the type of the instantiation argument, real(4), does not match the type of the deferred constant 'n', integer(4)
+    --> tests/errors/continue_compilation_templates_01.f90:2138:34
+     |
+2138 |         require :: req_const_arg{1.5}  ! {Error} the type of the instantiation argument, real(4), does not match the type of the deferred constant 'n', integer(4)
+     |                                  ^^^ 
+
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
     |

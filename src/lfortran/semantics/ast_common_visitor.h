@@ -21796,7 +21796,7 @@ public:
     // to a named constant passed as the argument.
     ASR::symbol_t *make_instantiation_const_arg(const AST::AttrExpr_t &arg,
             const std::string &param, ASR::symbol_t *param_sym,
-            SymbolTable *scope) {
+            SymbolTable *scope, bool in_require=false) {
         const Location &arg_loc = arg.base.base.loc;
         if (!param_sym || !ASR::is_a<ASR::Variable_t>(*param_sym)
                 || ASRUtils::is_type_parameter(*ASRUtils::symbol_type(param_sym))) {
@@ -21809,6 +21809,14 @@ public:
         this->visit_expr(*arg.m_value);
         ASR::expr_t *arg_expr = ASRUtils::EXPR(tmp);
         ASR::expr_t *arg_value = ASRUtils::expr_value(arg_expr);
+        if (!arg_value && in_require) {
+            diag.add(Diagnostic("the argument for the deferred constant '"
+                + param + "' in a require statement must be a constant"
+                " expression with a known value; expressions of deferred"
+                " constants are not supported yet",
+                Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
+            throw SemanticAbort();
+        }
         if (!arg_value) {
             diag.add(Diagnostic("the instantiation argument for the deferred"
                 " constant '" + param + "' must be a constant expression",
