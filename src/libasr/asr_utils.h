@@ -3698,6 +3698,21 @@ static inline int64_t get_fixed_size_of_array(ASR::ttype_t* type) {
     return ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
 }
 
+static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* type);
+
+// Size and alignment a component contributes to its enclosing derived type.
+// A pointer or allocatable component is stored as a pointer, whatever it
+// points at; every other component contributes its own layout.
+static inline std::pair<int64_t, int64_t> compute_struct_member_size_align(
+        ASR::ttype_t* member_type) {
+    if ((ASR::is_a<ASR::Pointer_t>(*member_type) ||
+         ASR::is_a<ASR::Allocatable_t>(*member_type)) &&
+        !ASR::is_a<ASR::Array_t>(*member_type)) {
+        return {8, 8};
+    }
+    return compute_type_size_align(member_type);
+}
+
 // Compute the byte size and alignment of an ASR type, matching the
 // LLVM struct layout rules used by LFortran's codegen on LP64 targets.
 // Returns {size_bytes, align_bytes}. Returns {-1, -1} on failure.
@@ -3754,17 +3769,8 @@ static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* 
         int64_t offset = 0;
         int64_t max_align = 1;
         for (size_t i = 0; i < st->n_data_member_types; i++) {
-            ASR::ttype_t* mt = st->m_data_member_types[i];
-            // Pointer/Allocatable scalars are pointers in LLVM
-            if ((ASR::is_a<ASR::Pointer_t>(*mt) || ASR::is_a<ASR::Allocatable_t>(*mt)) &&
-                !ASR::is_a<ASR::Array_t>(*mt)) {
-                int64_t align = 8, size = 8;
-                offset = ((offset + align - 1) / align) * align;
-                offset += size;
-                if (align > max_align) max_align = align;
-                continue;
-            }
-            auto [size, align] = compute_type_size_align(mt);
+            auto [size, align] = compute_struct_member_size_align(
+                st->m_data_member_types[i]);
             if (size < 0) return {-1, -1};
             offset = ((offset + align - 1) / align) * align;
             offset += size;
@@ -3807,9 +3813,31 @@ static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* 
             if (member_sym == nullptr || !ASR::is_a<ASR::Variable_t>(*member_sym)) {
                 return {-1, -1};
             }
-            ASR::ttype_t* member_type =
-                ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
-            auto [size, align] = compute_type_size_align(member_type);
+            ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member_sym);
+            ASR::ttype_t* member_type = member_var->m_type;
+            ASR::symbol_t* member_struct = member_var->m_type_declaration == nullptr
+                ? nullptr
+                : ASRUtils::symbol_get_past_external(member_var->m_type_declaration);
+            std::pair<int64_t, int64_t> member_layout;
+            if (member_struct != nullptr && ASR::is_a<ASR::Struct_t>(*member_struct) &&
+                    !ASR::is_a<ASR::Pointer_t>(*member_type) &&
+                    !ASR::is_a<ASR::Allocatable_t>(*member_type) &&
+                    ASR::is_a<ASR::StructType_t>(*type_get_past_array(member_type))) {
+                // A component of derived type is laid out from its own declared
+                // type, which is the only place its inherited components live.
+                member_layout = compute_struct_type_size_align(
+                    ASR::down_cast<ASR::Struct_t>(member_struct));
+                if (member_layout.first < 0) return {-1, -1};
+                if (ASR::is_a<ASR::Array_t>(*member_type)) {
+                    int64_t n_elem = get_fixed_size_of_array(member_type);
+                    if (n_elem <= 0) return {-1, -1};
+                    member_layout.first *= n_elem;
+                }
+            } else {
+                member_layout = compute_struct_member_size_align(member_type);
+            }
+            int64_t size = member_layout.first;
+            int64_t align = member_layout.second;
             if (size < 0) return {-1, -1};
             if (!struct_type->m_is_packed) {
                 offset = ((offset + align - 1) / align) * align;
@@ -3823,6 +3851,28 @@ static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* 
         }
         if (offset == 0) offset = 1;
         return {offset, struct_type->m_is_packed ? 1 : max_align};
+    }
+
+    // Byte size of the declared derived type of a struct expression, or -1
+    // when it cannot be resolved. An ASR::StructType_t lists only the
+    // components a type declares itself, so for an extended type it omits
+    // the inherited ones; those are reachable only through the
+    // ASR::Struct_t symbol, whose m_parent the backends inline as the first
+    // field of the layout. Resolving the symbol therefore gives the size the
+    // generated code actually allocates.
+    static inline int64_t get_struct_expr_byte_size(ASR::expr_t* expr) {
+        if (expr == nullptr) {
+            return -1;
+        }
+        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(expr));
+        if (struct_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+            return -1;
+        }
+        auto [size, _align] = compute_struct_type_size_align(
+            ASR::down_cast<ASR::Struct_t>(struct_sym));
+        (void)_align;
+        return size;
     }
 
 static inline int64_t get_type_byte_size(ASR::ttype_t* type) {
