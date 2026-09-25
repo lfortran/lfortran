@@ -10,6 +10,7 @@ integer, optional :: o
 optional :: q
 interface
 subroutine q
+implicit none
 end subroutine
 end interface
 r = 0
@@ -24,12 +25,14 @@ subroutine g(p1, flag, p2)
 optional :: p1
 interface
 subroutine p1
+implicit none
 end subroutine
 end interface
 logical, intent(in), optional :: flag
 optional :: p2
 interface
 subroutine p2
+implicit none
 end subroutine
 end interface
 if (present(p1)) call p1()

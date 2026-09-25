@@ -18,6 +18,7 @@ contains
     subroutine f(p)
         interface
             subroutine p(x)
+                implicit none
                 integer, intent(in) :: x
             end subroutine
         end interface
@@ -29,10 +30,12 @@ contains
     subroutine g(q, p)
         interface
             subroutine q(p)
+                implicit none
                 optional :: p
                 integer :: p
             end subroutine
             subroutine p(x)
+                implicit none
                 integer, intent(in) :: x
             end subroutine
         end interface
