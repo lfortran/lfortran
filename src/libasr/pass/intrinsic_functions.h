@@ -1267,8 +1267,19 @@ namespace StorageSize {
             
         } else if (ASR::is_a<ASR::StructType_t>(*type) ||
                    ASR::is_a<ASR::CPtr_t>(*type)) {
-            auto [size_bytes, _align] = ASRUtils::compute_type_size_align(type);
-            (void)_align;
+            int64_t size_bytes = -1;
+            if (ASR::is_a<ASR::StructType_t>(*type)) {
+                // The type alone lists only the components the derived type
+                // declares itself, so for an extended type it leaves out the
+                // inherited ones. Go through the declared type symbol, which
+                // is what the backends build the layout from.
+                size_bytes = ASRUtils::get_struct_expr_byte_size(args[0]);
+            }
+            if (size_bytes <= 0) {
+                auto [type_size_bytes, _align] = ASRUtils::compute_type_size_align(type);
+                (void)_align;
+                size_bytes = type_size_bytes;
+            }
             if (size_bytes > 0) {
                 return make_ConstantWithType(make_IntegerConstant_t, size_bytes * 8, t1, loc);
             }

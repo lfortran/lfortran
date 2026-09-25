@@ -6802,6 +6802,21 @@ public:
         } else {
             throw CodeGenError("Variable type not supported " + ASRUtils::type_to_str_python_symbol(x.m_type, x.m_type_declaration), x.base.base.loc);
         }
+        if (!external && is_translation_unit_private(x.m_parent_symtab, x.m_access)) {
+            if (llvm::GlobalVariable *gv = module->getNamedGlobal(llvm_var_name)) {
+                gv->setLinkage(llvm::GlobalValue::InternalLinkage);
+            }
+        }
+    }
+
+    // A symbol the translation unit's own scope declares Private is reachable
+    // from this translation unit only, so it is not exported: another
+    // translation unit declaring one of the same name must not clash with it
+    // at link time.
+    static bool is_translation_unit_private(const SymbolTable *parent_symtab,
+            ASR::accessType access) {
+        return access == ASR::accessType::Private
+            && parent_symtab->parent == nullptr;
     }
 
     void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x){
@@ -9633,6 +9648,11 @@ public:
                 // instead of erroring with "multiple definition".
                 if (fn_name.rfind("_lcompiler_", 0) == 0) {
                     F->setLinkage(llvm::Function::LinkOnceODRLinkage);
+                }
+                if (is_translation_unit_private(x.m_symtab->parent, x.m_access)
+                        && ftype->m_abi == ASR::abiType::Source
+                        && ftype->m_deftype == ASR::deftypeType::Implementation) {
+                    F->setLinkage(llvm::Function::InternalLinkage);
                 }
             } else {
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];

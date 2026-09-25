@@ -19,22 +19,22 @@ integer(4) :: stat1
 integer(4), pointer :: x
 call __module_prif_prif_init(stat1)
 call __module_prif_prif_sync_all()
-call __module_prif_prif_allocate_coarray([int(1, kind=8)], [integer(8) :: ], 4_8, null(), a__coarray_handle,&
-         a__coarray_data, stat, errmsg)
-call c_f_pointer(a__coarray_data, a)
+call __module_prif_prif_allocate_coarray([int(1, kind=8)], [integer(8) :: ], 4_8, null(), __cac_a__coarray_handle,&
+         __cac_a__coarray_data, stat, errmsg)
+call c_f_pointer(__cac_a__coarray_data, a)
 call __module_prif_prif_allocate_coarray([int(1, kind=8)], [integer(8) :: ], 4_8*int(10, kind=8), null(),&
-         b__coarray_handle, b__coarray_data, stat, errmsg)
-call c_f_pointer(b__coarray_data, b, [10], [1])
+         __cac_b__coarray_handle, __cac_b__coarray_data, stat, errmsg)
+call c_f_pointer(__cac_b__coarray_data, b, [10], [1])
 call __module_prif_prif_allocate_coarray([int(1, kind=8), int(1, kind=8)], [int(2, kind=8)], 4_8, null(),&
-         x__coarray_handle, x__coarray_data, stat, errmsg)
-call c_f_pointer(x__coarray_data, x)
+         __cac_x__coarray_handle, __cac_x__coarray_data, stat, errmsg)
+call c_f_pointer(__cac_x__coarray_data, x)
 a = lcompilers_prif_this_image()
 x = lcompilers_prif_this_image()
-call __module_prif_prif_deallocate_coarray(a__coarray_handle)
+call __module_prif_prif_deallocate_coarray(__cac_a__coarray_handle)
 nullify (a)
-call __module_prif_prif_deallocate_coarray(b__coarray_handle)
+call __module_prif_prif_deallocate_coarray(__cac_b__coarray_handle)
 nullify (b)
-call __module_prif_prif_deallocate_coarray(x__coarray_handle)
+call __module_prif_prif_deallocate_coarray(__cac_x__coarray_handle)
 nullify (x)
 call __module_prif_prif_stop(.false.)
 

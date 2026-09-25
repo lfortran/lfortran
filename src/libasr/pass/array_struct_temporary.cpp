@@ -1316,7 +1316,13 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
             ( (ASR::is_a<ASR::ArraySection_t>(*array_expr) &&
             !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(array_expr))) ||
             (ASR::is_a<ASR::ArrayItem_t>(*array_expr) &&
-            !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArrayItem_t>(array_expr))) ) ) {
+            !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArrayItem_t>(array_expr)) &&
+            // `w%u(2)` is a view of its base `w` strided by the size of an
+            // element of `w`, which a pointer to the component's element
+            // type cannot describe. Copy it element-wise instead of
+            // aliasing it.
+            ASRUtils::struct_base_lending_shape(
+                ASR::down_cast<ASR::ArrayItem_t>(array_expr)) == nullptr) ) ) {
             size_t value_n_dims = ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(array_expr));
             ASR::ttype_t* tmp_type = ASRUtils::create_array_type_with_empty_dims(

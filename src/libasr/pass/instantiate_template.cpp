@@ -1171,6 +1171,7 @@ public:
     ASR::symbol_t* instantiate_Variable(ASR::Variable_t* x) {
         ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, &x->base));
         ASR::ttype_t *new_type = substitute_type(var_expr, x->m_type);
+        new_type = fix_substituted_array_physical_type(x, new_type);
 
         SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
@@ -1198,6 +1199,101 @@ public:
         target_scope->add_symbol(x->m_name, s);
 
         return s;
+    }
+
+    // Substituting a deferred constant can turn an integer expression of the
+    // template, which had no compile-time value, into a constant expression
+    // of the instantiation, e.g. `n*2` with `n` bound to 3. Fold it, so that
+    // array bounds such as `0:n` or `2:n` get a compile-time value.
+    ASR::asr_t* duplicate_IntegerBinOp(ASR::IntegerBinOp_t* x) {
+        ASR::expr_t* left = duplicate_expr(x->m_left);
+        ASR::expr_t* right = duplicate_expr(x->m_right);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        int64_t l = 0, r = 0;
+        if (value == nullptr
+                && ASRUtils::extract_value(ASRUtils::expr_value(left), l)
+                && ASRUtils::extract_value(ASRUtils::expr_value(right), r)) {
+            bool folded = true;
+            int64_t result = 0;
+            switch (x->m_op) {
+                case ASR::binopType::Add: { result = l + r; break; }
+                case ASR::binopType::Sub: { result = l - r; break; }
+                case ASR::binopType::Mul: { result = l * r; break; }
+                case ASR::binopType::Div: {
+                    folded = (r != 0);
+                    if (folded) {
+                        result = l / r;
+                    }
+                    break;
+                }
+                case ASR::binopType::Pow: {
+                    folded = (r >= 0);
+                    result = 1;
+                    for (int64_t i = 0; folded && i < r; i++) {
+                        result *= l;
+                    }
+                    break;
+                }
+                default: { folded = false; break; }
+            }
+            if (folded) {
+                value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                    x->base.base.loc, result, type));
+            }
+        }
+        return ASR::make_IntegerBinOp_t(al, x->base.base.loc, left, x->m_op,
+            right, type, value);
+    }
+
+    ASR::asr_t* duplicate_IntegerUnaryMinus(ASR::IntegerUnaryMinus_t* x) {
+        ASR::expr_t* arg = duplicate_expr(x->m_arg);
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        int64_t a = 0;
+        if (value == nullptr
+                && ASRUtils::extract_value(ASRUtils::expr_value(arg), a)) {
+            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                x->base.base.loc, -a, type));
+        }
+        return ASR::make_IntegerUnaryMinus_t(al, x->base.base.loc, arg, type,
+            value);
+    }
+
+    // An explicit-shape array whose bounds depend on a deferred named
+    // constant is a PointerArray inside the template, since the bounds are
+    // unknown there. Once the constant is substituted the bounds are known,
+    // so a non-dummy array (a local or a struct member) must become a
+    // FixedSizeArray with constant bounds, exactly as the same declaration
+    // is represented outside a template. Otherwise a struct member would be
+    // an uninitialized pointer instead of inline storage.
+    // Character arrays are left alone: outside a template the same
+    // declaration is a PointerArray too, so keeping it matches the
+    // non-template representation.
+    ASR::ttype_t* fix_substituted_array_physical_type(ASR::Variable_t* x,
+            ASR::ttype_t* type) {
+        if (!ASR::is_a<ASR::Array_t>(*type) || ASRUtils::is_arg_dummy(x->m_intent)) {
+            return type;
+        }
+        ASR::Array_t* a = ASR::down_cast<ASR::Array_t>(type);
+        if (a->m_physical_type != ASR::array_physical_typeType::PointerArray
+                || ASRUtils::is_character(*a->m_type)
+                || !ASRUtils::is_fixed_size_array(a->m_dims, a->n_dims)) {
+            return type;
+        }
+        Vec<ASR::dimension_t> new_dims;
+        new_dims.reserve(al, a->n_dims);
+        for (size_t i = 0; i < a->n_dims; i++) {
+            ASR::dimension_t dim = a->m_dims[i];
+            if (dim.m_start && ASRUtils::expr_value(dim.m_start)) {
+                dim.m_start = ASRUtils::expr_value(dim.m_start);
+            }
+            dim.m_length = ASRUtils::expr_value(dim.m_length);
+            new_dims.push_back(al, dim);
+        }
+        return ASRUtils::make_Array_t_util(al, type->base.loc, a->m_type,
+            new_dims.p, new_dims.size(), ASR::abiType::Source, false,
+            ASR::array_physical_typeType::FixedSizeArray, true);
     }
 
     // A variable declared in the module that hosts the template is shared
@@ -1755,8 +1851,15 @@ public:
             }
         }
         ASR::expr_t *value = duplicate_expr(x->m_value);
-        return ASR::make_ArrayPhysicalCast_t(al, x->base.base.loc,
-            arg, x->m_old, x->m_new, ttype, value);
+        // The instantiated argument may have a different physical type
+        // than in the template (e.g. a FixedSizeArray once a deferred
+        // constant bound is known), so the cast must start from it.
+        ASR::array_physical_typeType old_phys = x->m_old;
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            old_phys = ASRUtils::extract_physical_type(ASRUtils::expr_type(arg));
+        }
+        return ASRUtils::make_ArrayPhysicalCast_t_util(al, x->base.base.loc,
+            arg, old_phys, x->m_new, ttype, value);
     }
 
     ASR::asr_t* duplicate_ArraySection(ASR::ArraySection_t *x) {
@@ -1775,6 +1878,15 @@ public:
             v, args.p, args.size(), ttype, value);
     }
 
+    ASR::asr_t* duplicate_ArrayBroadcast(ASR::ArrayBroadcast_t *x) {
+        ASR::expr_t *array = duplicate_expr(x->m_array);
+        ASR::expr_t *shape = duplicate_expr(x->m_shape);
+        ASR::ttype_t *ttype = substitute_type(&x->base, x->m_type);
+        ASR::expr_t *value = duplicate_expr(x->m_value);
+        return ASR::make_ArrayBroadcast_t(al, x->base.base.loc,
+            array, shape, ttype, value);
+    }
+
     ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t *x) {
         ASR::expr_t *v = duplicate_expr(x->m_v);
         ASR::ttype_t *t = substitute_type(&x->base, x->m_type);
@@ -1783,6 +1895,22 @@ public:
         std::string s_name = ASRUtils::symbol_name(x->m_m);
         SymbolInstantiator t_i(al, new_scope, type_subs, symbol_subs, s_name, x->m_m);
         ASR::symbol_t *s = t_i.instantiate();
+
+        // An array member whose bounds depend on a deferred constant is a
+        // FixedSizeArray in the instantiated struct (see
+        // fix_substituted_array_physical_type), so its reference must have
+        // the same type, not the PointerArray type it had in the template.
+        ASR::symbol_t *member = ASRUtils::symbol_get_past_external(s);
+        if (ASR::is_a<ASR::Variable_t>(*member) && ASR::is_a<ASR::Array_t>(*t)) {
+            ASR::ttype_t *member_type = ASRUtils::symbol_type(member);
+            if (ASR::is_a<ASR::Array_t>(*member_type)
+                    && ASRUtils::extract_physical_type(member_type)
+                        == ASR::array_physical_typeType::FixedSizeArray
+                    && ASRUtils::extract_physical_type(t)
+                        == ASR::array_physical_typeType::PointerArray) {
+                t = ASRUtils::duplicate_type(al, member_type);
+            }
+        }
 
         return ASR::make_StructInstanceMember_t(al, x->base.base.loc, v, s, t, value);
     }

@@ -353,15 +353,11 @@ semantic error: Symbol combine is not declared in semigroup's parameters
 378 |    
     | ...^ 
 
-warning: Parameter combine is unused in semigroup
-   --> tests/errors/continue_compilation_templates_01.f90:392:5 - 395:1
+semantic error: requirement argument 'combine' has not been declared in requirement 'semigroup'
+   --> tests/errors/continue_compilation_templates_01.f90:392:31
     |
-392 |        requirement semigroup {t, combine}
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-    |
-395 |    
-    | ...^ 
+392 |     requirement semigroup {t, combine}
+    |                               ^^^^^^^ 
 
 semantic error: Parameter 'scombine' was not declared
    --> tests/errors/continue_compilation_templates_01.f90:420:20
@@ -607,15 +603,11 @@ semantic error: a deferred interface block can only contain interface bodies
 1011 |             procedure f  ! {Error} a deferred interface block can only contain interface bodies
      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-warning: Parameter f is unused in r
-    --> tests/errors/continue_compilation_templates_01.f90:1008:5 - 1014:1
+semantic error: requirement argument 'f' has not been declared in requirement 'r'
+    --> tests/errors/continue_compilation_templates_01.f90:1008:23
      |
-1008 |        requirement r {t, f}
-     |        ^^^^^^^^^^^^^^^^^^^^...
-...
-     |
-1014 |    
-     | ...^ 
+1008 |     requirement r {t, f}
+     |                       ^ 
 
 semantic error: 'q' is not a deferred argument of 'r1'
     --> tests/errors/continue_compilation_templates_01.f90:1030:42
@@ -1161,6 +1153,18 @@ semantic error: 'x' is not a deferred argument of 'r_not_arg'
      |
 1971 |         real :: x  ! {Error} 'x' is not a deferred argument of 'r_not_arg'
      |                 ^ 
+
+semantic error: requirement argument 'u' has not been declared in requirement 'r_undeclared'
+    --> tests/errors/continue_compilation_templates_01.f90:1982:34
+     |
+1982 |     requirement r_undeclared {t, u}  ! {Error} requirement argument 'u' has not been declared in requirement 'r_undeclared'
+     |                                  ^ 
+
+semantic error: No requirement 'r_undeclared' is defined
+    --> tests/errors/continue_compilation_templates_01.f90:1989:20
+     |
+1989 |         require :: r_undeclared {a, b}
+     |                    ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55

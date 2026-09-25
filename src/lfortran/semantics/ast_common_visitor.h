@@ -12947,6 +12947,48 @@ public:
         return int_const->m_intboz_type != ASR::integerbozType::Decimal;
     }
 
+    // Selecting an element of an array component of an array, as in `w%u(2)`
+    // or `w%nest%v(2)` with `w` an array, reads one element of the component
+    // out of every element of the base. The subscripts consume the rank of
+    // the component, not the rank of the base, so the reference is an array
+    // shaped like the base (only `w` is a part-ref of nonzero rank, C919).
+    // `make_ArrayItem_t_util` drops the shape because the subscripts are
+    // scalar, so put the base's shape back on the finished node.
+    void give_struct_member_item_shape_of_base(ASR::expr_t* expr) {
+        if( !ASR::is_a<ASR::ArrayItem_t>(*expr) ) {
+            return;
+        }
+        ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expr);
+        ASR::expr_t* base = ASRUtils::struct_base_lending_shape(array_item);
+        if( base == nullptr || ASRUtils::is_array(array_item->m_type) ) {
+            return;
+        }
+        ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(base));
+        ASR::Array_t* base_array = ASR::down_cast<ASR::Array_t>(base_type);
+        // The reference has as many elements as the base in every dimension,
+        // but it is not the base: like any array-valued reference that is not
+        // a whole array, its bounds start at one. Taking the base's lower
+        // bounds as well would report `w(2:5)%u(1)` as running from 2 to 5.
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, base_array->n_dims);
+        ASR::ttype_t* index_type = ASRUtils::TYPE(ASR::make_Integer_t(
+            al, expr->base.loc, compiler_options.po.default_integer_kind));
+        for( size_t i = 0; i < base_array->n_dims; i++ ) {
+            ASR::dimension_t dim;
+            dim.loc = base_array->m_dims[i].loc;
+            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, expr->base.loc, 1, index_type));
+            dim.m_length = base_array->m_dims[i].m_length;
+            dims.push_back(al, dim);
+        }
+        array_item->m_type = ASRUtils::duplicate_type(al, array_item->m_type,
+            &dims, base_array->m_physical_type, true);
+        // A compile time value folded out of a single element of the base
+        // describes one element, not the array this reference denotes.
+        array_item->m_value = nullptr;
+    }
+
     ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
         size_t n_args, AST::fnarg_t* m_subargs, size_t n_subargs,
         ASR::expr_t* v_expr, ASR::symbol_t *v, ASR::symbol_t *f2) {
@@ -13354,9 +13396,12 @@ public:
                 }
                 validate_fixed_size_array_index_bounds(v_Var, args.p,
                     args.size(), loc);
-                return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
-                    v_Var, args.p, args.size(), final_type,
-                    ASR::arraystorageType::ColMajor, arr_ref_val)));
+                ASR::expr_t* array_item = replace_with_common_block_variables(
+                    ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
+                        v_Var, args.p, args.size(), final_type,
+                        ASR::arraystorageType::ColMajor, arr_ref_val)));
+                give_struct_member_item_shape_of_base(array_item);
+                return (ASR::asr_t*) array_item;
             }
         } else {
             ASR::ttype_t *v_type = ASRUtils::symbol_type(v);
@@ -15318,6 +15363,26 @@ public:
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("scalar argument", {args[i].m_value->base.loc}),
                             diag::Label("array dummy argument", {f->m_args[i]->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                // `w%u(2)` with `w` an array is one element of the component
+                // taken from every element of the base, so what it denotes is
+                // strided by the size of an element of the base. Passing it
+                // would hand the callee the elements that follow the first one
+                // in memory instead, and write them back through an
+                // `intent(out)` or `intent(inout)` dummy. Reject it until the
+                // argument is built by gathering the elements it names.
+                if (args[i].m_value &&
+                        ASR::is_a<ASR::ArrayItem_t>(*args[i].m_value) &&
+                        ASRUtils::struct_base_lending_shape(
+                            ASR::down_cast<ASR::ArrayItem_t>(args[i].m_value))
+                            != nullptr) {
+                    diag.add(diag::Diagnostic(
+                        "Passing an element of an array component of an array "
+                        "as an argument is not supported yet",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {args[i].m_value->base.loc})
                         }));
                     throw SemanticAbort();
                 }
@@ -21716,6 +21781,31 @@ public:
         return ordered;
     }
 
+    // Returns the indices of a template's deferred arguments in the order
+    // their instantiation arguments must be processed: every deferred type
+    // first, then everything else, each group in declaration order. A
+    // deferred procedure's interface may reference any deferred type of the
+    // template, wherever that type sits in the argument list, so `type_subs`
+    // has to be complete before the first procedure is checked against its
+    // restriction.
+    std::vector<size_t> instantiation_arg_order(ASR::Template_t *temp) {
+        std::vector<size_t> order;
+        order.reserve(temp->n_args);
+        std::vector<size_t> rest;
+        for (size_t i = 0; i < temp->n_args; i++) {
+            ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(temp->m_args[i]);
+            if (param_sym && ASR::is_a<ASR::Variable_t>(*param_sym)
+                    && ASRUtils::is_type_parameter(
+                        *ASRUtils::symbol_type(param_sym))) {
+                order.push_back(i);
+            } else {
+                rest.push_back(i);
+            }
+        }
+        order.insert(order.end(), rest.begin(), rest.end());
+        return order;
+    }
+
     // TODO: extract commonality with visit_Instantiate
     std::string handle_templated(std::string name, bool is_nested,
             AST::decl_attribute_t** args, size_t n_args, const Location &loc) {
@@ -21744,7 +21834,9 @@ public:
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
         std::map<std::string, ASR::symbol_t*> symbol_subs;
 
-        for (size_t i=0; i<ordered_args.size(); i++) {
+        // Bind every deferred type before checking any deferred procedure,
+        // whose interface may use a type listed after it (#13325).
+        for (size_t i : instantiation_arg_order(temp)) {
             std::string param = temp->m_args[i];
             AST::decl_attribute_t *arg_attr = ordered_args[i];
             ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(param);
@@ -24534,11 +24626,16 @@ public:
                         value = ASRUtils::externalize_struct_refs_in_init(
                             al, value, current_scope);
                     }
-                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))) {
-                    ASR::StructInstanceMember_t* v = ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
-                    if (v->m_value) {
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp)) ||
+                           ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
+                    // An element of a named constant's array component is
+                    // itself a compile time constant, so the member selected
+                    // from it has to be folded here as well: it has no
+                    // storage to be read from later on.
+                    ASR::expr_t* base_value = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
+                    if (base_value) {
                         value = get_struct_member_value_from_constant_array(
-                            v->m_value, tmp2_m_m_ext, tmp2_mem_type);
+                            base_value, tmp2_m_m_ext, tmp2_mem_type);
                         ASR::symbol_t* mem_sym =
                             ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 
@@ -24624,12 +24721,16 @@ public:
                     value = ASRUtils::externalize_struct_refs_in_init(
                         al, value, current_scope);
                 }
-            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))) {
-                ASR::StructInstanceMember_t* v =
-                    ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
-                if (v->m_value) {
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp)) ||
+                       ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
+                // An element of a named constant's array component is itself
+                // a compile time constant, so the member selected from it has
+                // to be folded here as well: it has no storage to be read
+                // from later on.
+                ASR::expr_t* base_value = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
+                if (base_value) {
                     value = get_struct_member_value_from_constant_array(
-                        v->m_value, tmp2_m_m_ext, tmp2_mem_type);
+                        base_value, tmp2_m_m_ext, tmp2_mem_type);
                     ASR::symbol_t* mem_sym =
                         ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 
