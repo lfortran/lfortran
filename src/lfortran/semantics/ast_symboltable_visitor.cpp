@@ -216,7 +216,7 @@ public:
         ASR::symbol_t *actual;
         Location loc;
     };
-    std::set<ASR::symbol_t*> forward_instantiation_procedures;
+    std::map<ASR::symbol_t*, const AST::program_unit_t*> forward_instantiation_procedures;
     std::vector<PendingInstantiationRestriction> pending_instantiation_restrictions;
 
     ASR::symbol_t *resolve_instantiation_procedure(const std::string &name,
@@ -227,14 +227,16 @@ public:
             if (ASR::symbol_t *sym = scope->get_symbol(name)) return sym;
             for (ContainedProcedureScope *procedures = contained_procedure_scope;
                     procedures; procedures = procedures->enclosing) {
-                if (procedures->scope != scope || !procedures->find(name)) continue;
+                if (procedures->scope != scope) continue;
+                AST::program_unit_t *declaration = procedures->find(name);
+                if (!declaration) continue;
                 // This is a provisional interface, not a declaration of the
                 // actual's locals. Keep its identity for substitutions and
                 // check the real interface once CONTAINS has defined it.
                 auto substitutions = symbol_subs;
                 ASR::symbol_t *sym = instantiate_symbol(al, scope, type_subs,
                     substitutions, name, &restriction->base, diag);
-                forward_instantiation_procedures.insert(sym);
+                forward_instantiation_procedures[sym] = declaration;
                 return sym;
             }
         }
@@ -246,19 +248,26 @@ public:
     }
 
     ASR::asr_t *complete_instantiation_procedure(ASR::asr_t *definition,
-            SymbolTable *scope, const std::string &name) {
-        ASR::symbol_t *sym = scope->get_symbol(name);
-        if (!is_forward_instantiation_procedure(sym)) return definition;
-        ASR::Function_t *forward = ASR::down_cast<ASR::Function_t>(sym);
-        ASR::Function_t *actual = ASR::down_cast2<ASR::Function_t>(definition);
-        ASR::FunctionType_t *signature = ASRUtils::get_FunctionType(forward);
-        *signature = *ASRUtils::get_FunctionType(actual);
-        *forward = *actual;
-        forward->m_function_signature = &signature->base;
-        forward->m_symtab->asr_owner = &forward->base.base;
-        forward_instantiation_procedures.erase(sym);
-        scope->erase_symbol(name);
-        return &forward->base.base;
+            SymbolTable *scope, const AST::program_unit_t &declaration) {
+        for (auto it = forward_instantiation_procedures.begin();
+                it != forward_instantiation_procedures.end(); ++it) {
+            ASR::symbol_t *sym = it->first;
+            if (it->second != &declaration
+                    || ASRUtils::symbol_parent_symtab(sym) != scope) continue;
+            // A same-name generic can change the definition's symbol-table key,
+            // but substitutions must keep the original symbol and type identity.
+            scope->erase_symbol(ASRUtils::symbol_name(sym));
+            ASR::Function_t *forward = ASR::down_cast<ASR::Function_t>(sym);
+            ASR::Function_t *actual = ASR::down_cast2<ASR::Function_t>(definition);
+            ASR::FunctionType_t *signature = ASRUtils::get_FunctionType(forward);
+            *signature = *ASRUtils::get_FunctionType(actual);
+            *forward = *actual;
+            forward->m_function_signature = &signature->base;
+            forward->m_symtab->asr_owner = &forward->base.base;
+            forward_instantiation_procedures.erase(it);
+            return &forward->base.base;
+        }
+        return definition;
     }
 
     void check_pending_instantiation_restrictions() {
@@ -2119,7 +2128,7 @@ public:
             is_elemental, is_pure, is_module, false, false,
             nullptr, 0,
             is_requirement, init_deterministic, init_side_effect_free);
-        tmp = complete_instantiation_procedure(tmp, parent_scope, sym_name);
+        tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
         handle_save();
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
@@ -2975,7 +2984,7 @@ public:
                 throw SemanticAbort();
             }
         }
-        tmp = complete_instantiation_procedure(tmp, parent_scope, sym_name);
+        tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 

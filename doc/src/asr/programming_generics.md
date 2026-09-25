@@ -154,6 +154,8 @@ including declarations after the `instantiate` statement. Instantiation does
 not change host association in an ordinary call to that procedure. Types
 introduced by the instantiation remain available to subsequent declarations
 and to the contained procedure's local variables.
+The contained specific procedure may share its name with a generic interface;
+completing that declaration preserves the procedure selected by instantiation.
 
 After `only: ` we decide which function inside in the template we want to instantiate, in this case `array_sum`, and give the new instantiated function a new name `array_sum_integer`.
 
