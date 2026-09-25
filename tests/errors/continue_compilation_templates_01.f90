@@ -2077,3 +2077,46 @@ contains
     end subroutine
 
 end module
+
+module continue_compilation_templates_01_const_arg
+    implicit none
+
+    template tmpl_const_arg {T, n}
+        deferred type :: T
+        deferred integer, parameter :: n
+    contains
+        function f() result(r)
+            integer :: r
+            r = n
+        end function
+    end template
+
+contains
+
+    subroutine use_not_constant()
+        integer :: k
+        k = 3
+        instantiate tmpl_const_arg {integer, k + 1}  ! {Error} the instantiation argument for the deferred constant 'n' must be a constant expression
+    end subroutine
+
+    subroutine use_expr_for_type()
+        instantiate tmpl_const_arg {2, 3}  ! {Error} the instantiation argument for 't' is an expression, but 't' is not a deferred constant
+    end subroutine
+
+    subroutine use_wrong_kind()
+        instantiate tmpl_const_arg {integer, 3_8}  ! {Error} the type of the instantiation argument, integer(8), does not match the type of the deferred constant 'n', integer(4)
+    end subroutine
+
+    template subroutine inline_const_arg{T}(x)
+        deferred type :: T
+        type(T), intent(inout) :: x
+        x = x
+    end subroutine
+
+    subroutine use_inline_expr_for_type()
+        integer :: y
+        y = 1
+        call inline_const_arg{2}(y)  ! {Error} the instantiation argument for 't' is an expression, but 't' is not a deferred constant
+    end subroutine
+
+end module

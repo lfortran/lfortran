@@ -21789,6 +21789,56 @@ public:
         return ordered;
     }
 
+    // An instantiation argument that is an expression corresponds to a
+    // deferred constant and must be a constant expression (R1630). Binds the
+    // deferred constant `param` to a new named constant in `scope` that holds
+    // the value, so the instantiated body refers to it the same way it refers
+    // to a named constant passed as the argument.
+    ASR::symbol_t *make_instantiation_const_arg(const AST::AttrExpr_t &arg,
+            const std::string &param, ASR::symbol_t *param_sym,
+            SymbolTable *scope) {
+        const Location &arg_loc = arg.base.base.loc;
+        if (!param_sym || !ASR::is_a<ASR::Variable_t>(*param_sym)
+                || ASRUtils::is_type_parameter(*ASRUtils::symbol_type(param_sym))) {
+            diag.add(Diagnostic("the instantiation argument for '" + param
+                + "' is an expression, but '" + param
+                + "' is not a deferred constant", Level::Error,
+                Stage::Semantic, {Label("", {arg_loc})}));
+            throw SemanticAbort();
+        }
+        this->visit_expr(*arg.m_value);
+        ASR::expr_t *arg_expr = ASRUtils::EXPR(tmp);
+        ASR::expr_t *arg_value = ASRUtils::expr_value(arg_expr);
+        if (!arg_value) {
+            diag.add(Diagnostic("the instantiation argument for the deferred"
+                " constant '" + param + "' must be a constant expression",
+                Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
+            throw SemanticAbort();
+        }
+        ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg_expr);
+        if (!ASRUtils::check_equal_type(arg_type, param_type, arg_expr,
+                ASRUtils::get_expr_from_sym(al, param_sym))) {
+            diag.add(Diagnostic("the type of the instantiation argument, "
+                + ASRUtils::type_to_str_fortran_symbol(arg_type, nullptr, true)
+                + ", does not match the type of the deferred constant '"
+                + param + "', "
+                + ASRUtils::type_to_str_fortran_symbol(param_type, nullptr, true),
+                Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
+            throw SemanticAbort();
+        }
+        std::string name = scope->get_unique_name("~" + param + "_instantiation_arg");
+        ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, arg_loc, scope,
+            s2c(al, name), nullptr, 0, ASR::intentType::Local, arg_expr,
+            arg_value, ASR::storage_typeType::Parameter,
+            ASRUtils::duplicate_type(al, arg_type), nullptr,
+            ASR::abiType::Source, ASR::accessType::Private,
+            ASR::presenceType::Required, false);
+        ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(v);
+        scope->add_symbol(name, sym);
+        return sym;
+    }
+
     // Returns the indices of a template's deferred arguments in the order
     // their instantiation arguments must be processed: every deferred type
     // first, then everything else, each group in declaration order. A
@@ -22068,6 +22118,12 @@ public:
                     current_scope = parent_scope;
                     symbol_subs[f->m_name] = op_sym;
                 }
+            } else if (AST::is_a<AST::AttrExpr_t>(*arg_attr)) {
+                // Handling a constant expression passed for a deferred constant
+                SymbolTable *const_scope = is_nested ? current_scope->parent : current_scope;
+                symbol_subs[param] = make_instantiation_const_arg(
+                    *AST::down_cast<AST::AttrExpr_t>(arg_attr), param,
+                    param_sym, const_scope);
             } else {
                 throw LCompilersException("Unsupported argument to instantiate statement.");
             }

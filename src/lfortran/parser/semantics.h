@@ -490,6 +490,9 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
 #define ATTR_KEYWORD(kw, arg, l) make_AttrKeyword_t \
             (p.m_a, l, name2char(kw), down_cast<decl_attribute_t>(arg))
 
+// R1630 instantiation-arg that is a constant expression
+#define ATTR_EXPR(x, l) make_AttrExpr_t(p.m_a, l, EXPR(x))
+
 #define ATTR_TYPE_LIST(x, attr_list, l) make_AttrTypeList_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
