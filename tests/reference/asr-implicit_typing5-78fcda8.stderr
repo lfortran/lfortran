@@ -1,0 +1,8 @@
+semantic error: Symbol is already declared in the same scope
+ --> tests/errors/implicit_typing5.f90:4:9
+  |
+4 | integer a
+  |         ^ redeclaration
+  |
+2 | dimension a(10)
+  |           ~~~~~ original declaration
