@@ -1,0 +1,13 @@
+{
+    "basename": "run-realloc_lhs_fn_result_04-4292eae",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/realloc_lhs_fn_result_04.f90",
+    "infile_hash": "05b842a2f92725d92ac2987fa9ad98288b2eb9ae218cc28a82834191",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-realloc_lhs_fn_result_04-4292eae.stderr",
+    "stderr_hash": "5c63c8761576049a7f2dc22f5458b8fcef7c59e11f687bafd74e0437",
+    "returncode": 1
+}

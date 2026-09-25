@@ -22,7 +22,7 @@ target datalayout = "..."
 @5 = private unnamed_addr constant [63 x i8] c"tests/../integration_tests/call_subroutine_without_type_01.f90\00", align 1
 @6 = private unnamed_addr constant [22 x i8] c"'%s' unallocated here\00", align 1
 @7 = private unnamed_addr constant [52 x i8] c"Tried to access member of unallocated variable '%s'\00", align 1
-@8 = private unnamed_addr constant [15 x i8] c"1_mytype_get_i\00", align 1
+@8 = private unnamed_addr constant [6 x i8] c"get_i\00", align 1
 @9 = private unnamed_addr constant [63 x i8] c"tests/../integration_tests/call_subroutine_without_type_01.f90\00", align 1
 @10 = private unnamed_addr constant [20 x i8] c"This is unallocated\00", align 1
 @11 = private unnamed_addr constant [45 x i8] c"Argument %d of subroutine %s is unallocated.\00", align 1
@@ -244,7 +244,7 @@ then1:                                            ; preds = %ifcont
   %53 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %48, i32 0, i32 3
   store i32 1, i32* %53, align 4
   %54 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %39, i32 0, i32 0
-  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %54, i32 1, i8* getelementptr inbounds ([45 x i8], [45 x i8]* @11, i32 0, i32 0), i32 1, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @8, i32 0, i32 0))
+  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %54, i32 1, i8* getelementptr inbounds ([45 x i8], [45 x i8]* @11, i32 0, i32 0), i32 1, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @8, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
