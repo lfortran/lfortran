@@ -2184,6 +2184,16 @@ public:
         return &substitute_type(nullptr, &x->base)->base;
     }
 
+    ASR::asr_t* duplicate_Array(ASR::Array_t* x) {
+        ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(
+            ASRUtils::TYPE(BaseExprStmtDuplicator::duplicate_Array(x)));
+        // Substitution can change the layout: character arrays cannot be fixed-size.
+        return &ASRUtils::make_Array_t_util(al, array->base.base.loc,
+            array->m_type, array->m_dims, array->n_dims, ASR::abiType::Source,
+            false, array->m_physical_type, true, false, true,
+            array->m_memory_space)->base;
+    }
+
     // TODO: join this with the other substitute_type
     ASR::ttype_t* substitute_type(ASR::expr_t* expr, ASR::ttype_t *ttype) {
         switch (ttype->type) {

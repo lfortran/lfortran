@@ -211,7 +211,10 @@ just in variable declarations and procedure signatures. The generated ASR
 duplicator recursively copies type wrappers, while `BodyInstantiator` replaces
 each `TypeParameter` leaf using `type_subs`. Thus array constructors and
 `reshape` results acquire the concrete element type and kind for each
-instantiation without changing the original template.
+instantiation without changing the original template. Array wrappers are
+normalized after substituting their element types: for example, a fixed-size
+array of a deferred type becomes a pointer array when specialized for
+`character`. The duplicated dimensions and memory space are preserved.
 
 ## See Also
 
