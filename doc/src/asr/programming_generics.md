@@ -151,6 +151,11 @@ end function
 
 After `only: ` we decide which function inside in the template we want to instantiate, in this case `array_sum`, and give the new instantiated function a new name `array_sum_integer`.
 
+Renaming a function in an instantiation does not rename its local result
+variable. Without a `result(...)` clause, assignments to the original function
+name inside its body still set the result of the instantiated function.
+An explicit result variable also keeps its declared name.
+
 After instantiation, we can then use the instantiated function similar to ordinary functions:
 
 ```fortran

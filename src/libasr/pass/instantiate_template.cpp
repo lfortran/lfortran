@@ -1050,6 +1050,18 @@ public:
     ASR::symbol_t* instantiate() {
         std::string sym_name = ASRUtils::symbol_name(sym);
 
+        // Already instantiated into this scope? The new symbol is always added
+        // under new_sym_name, so that is the name to look for. Looking for the
+        // template's own name instead would match whatever else happens to carry
+        // it in this scope -- in a main program that uses the module, the name is
+        // use-associated to the Template itself, and returning that hands back a
+        // Template where a Function is expected.
+        // A local result variable must also take precedence over the substitution
+        // for the same-named function when that function is renamed.
+        if (target_scope->get_symbol(new_sym_name) != nullptr) {
+            return target_scope->get_symbol(new_sym_name);
+        }
+
         // if passed as instantiation's argument
         if (symbol_subs.find(sym_name) != symbol_subs.end()) {
             ASR::symbol_t* added_sym = symbol_subs[sym_name];
@@ -1057,16 +1069,6 @@ public:
             if (new_scope->resolve_symbol(added_sym_name)) {
                 return new_scope->resolve_symbol(added_sym_name);
             }
-        }
-
-        // Already instantiated into this scope? The new symbol is always added
-        // under new_sym_name, so that is the name to look for. Looking for the
-        // template's own name instead would match whatever else happens to carry
-        // it in this scope -- in a main program that uses the module, the name is
-        // use-associated to the Template itself, and returning that hands back a
-        // Template where a Function is expected.
-        if (target_scope->get_symbol(new_sym_name) != nullptr) {
-            return target_scope->get_symbol(new_sym_name);
         }
 
         switch (sym->type) {
