@@ -1506,20 +1506,24 @@ public:
 
     // The part of `item`, in the specification part of a templated
     // subprogram whose deferred arguments are `temp_args`, that declares
-    // deferred procedures (`deferred == true`), or the part that declares
-    // anything else (`deferred == false`); nullptr if that part is empty.
-    // Deferred procedures belong to the Template of the subprogram, like a
-    // `deferred type` statement, because instantiation only substitutes the
-    // deferred arguments it finds there; everything else belongs to the
-    // subprogram itself. A `deferred procedure` statement and a deferred
-    // interface block declare only deferred procedures. An ordinary interface
-    // block is accepted for a deferred argument too, as it is in a template
+    // deferred constants or procedures (`deferred == true`), or the part that
+    // declares anything else (`deferred == false`); nullptr if that part is empty.
+    // Deferred constants and procedures belong to the Template of the subprogram,
+    // like a `deferred type` statement, because instantiation only substitutes
+    // the deferred arguments it finds there; everything else belongs to the
+    // subprogram itself. An ordinary interface block is accepted for a
+    // deferred argument too, as it is in a template
     // construct: its interface bodies named by a deferred argument declare
     // deferred procedures, and its other items (e.g. external procedures)
     // stay in the subprogram, so a block that mixes both is split.
-    static AST::decl_stmt_t *deferred_procedure_part(Allocator &al,
+    static AST::decl_stmt_t *deferred_argument_part(Allocator &al,
             AST::decl_stmt_t *item, char **temp_args, size_t n_temp_args,
             bool deferred) {
+        if (AST::is_a<AST::Declaration_t>(*item)
+                && is_deferred_const_decl(
+                    *AST::down_cast<AST::Declaration_t>(item))) {
+            return deferred ? item : nullptr;
+        }
         if (AST::is_a<AST::DeferredProcedure_t>(*item)) {
             return deferred ? item : nullptr;
         }
@@ -1630,11 +1634,9 @@ public:
                     }
                 }
 
-                // `deferred procedure` statements and interface bodies for
-                // deferred procedures declare deferred arguments, so they
-                // belong to the Template of the templated subprogram,
+                // Deferred constants and procedures belong to the Template,
                 // exactly like a `deferred type` statement.
-                if (AST::decl_stmt_t *deferred_part = deferred_procedure_part(
+                if (AST::decl_stmt_t *deferred_part = deferred_argument_part(
                         al, x.m_items[i], x.m_temp_args, x.n_temp_args, true)) {
                     visit_decl_stmt(*deferred_part);
                 }
@@ -1702,13 +1704,12 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
             if (is_common_declaration(x.m_items[i])) continue;
-            // The deferred procedures of a templated subprogram belong to its
-            // Template, where they were declared above; declaring them here as
-            // well would shadow them with a symbol that instantiation never
-            // substitutes.
+            // The deferred constants and procedures belong to the Template,
+            // where they were declared above; declaring them here as well would
+            // shadow them with a symbol that instantiation never substitutes.
             AST::decl_stmt_t *item = x.m_items[i];
             if (x.n_temp_args > 0) {
-                item = deferred_procedure_part(al, item, x.m_temp_args,
+                item = deferred_argument_part(al, item, x.m_temp_args,
                     x.n_temp_args, false);
                 if (!item) continue;
             }
@@ -2233,11 +2234,9 @@ public:
                     }
                 }
 
-                // `deferred procedure` statements and interface bodies for
-                // deferred procedures declare deferred arguments, so they
-                // belong to the Template of the templated subprogram,
+                // Deferred constants and procedures belong to the Template,
                 // exactly like a `deferred type` statement.
-                if (AST::decl_stmt_t *deferred_part = deferred_procedure_part(
+                if (AST::decl_stmt_t *deferred_part = deferred_argument_part(
                         al, x.m_items[i], x.m_temp_args, x.n_temp_args, true)) {
                     visit_decl_stmt(*deferred_part);
                 }
@@ -2298,13 +2297,12 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
             if (is_common_declaration(x.m_items[i])) continue;
-            // The deferred procedures of a templated subprogram belong to its
-            // Template, where they were declared above; declaring them here as
-            // well would shadow them with a symbol that instantiation never
-            // substitutes.
+            // The deferred constants and procedures belong to the Template,
+            // where they were declared above; declaring them here as well would
+            // shadow them with a symbol that instantiation never substitutes.
             AST::decl_stmt_t *item = x.m_items[i];
             if (x.n_temp_args > 0) {
-                item = deferred_procedure_part(al, item, x.m_temp_args,
+                item = deferred_argument_part(al, item, x.m_temp_args,
                     x.n_temp_args, false);
                 if (!item) continue;
             }
