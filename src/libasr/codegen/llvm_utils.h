@@ -1041,9 +1041,14 @@ class ASRToLLVMVisitor;
             }
         }
 
+        /// Whether `finalize_variable` emits anything for `v`.
+        bool is_finalizable_variable(ASR::Variable_t* const v){
+            return !not_finalizable_variable(v)
+                && is_finalizable_type(v->m_type, get_struct_sym(v), false);
+        }
+
         void finalize_variable(ASR::Variable_t* const v){
-            if(not_finalizable_variable(v)) return;
-            if(!is_finalizable_type(v->m_type, get_struct_sym(v), false)) return;
+            if(!is_finalizable_variable(v)) return;
             LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
 
             insert_BB_for_readability((std::string("Finalize_Variable_") + v->m_name).c_str());
@@ -2626,6 +2631,19 @@ class ASRToLLVMVisitor;
             (void)in_struct;  // May be used in future for dimension descriptor handling
         }
 
+
+        /// Whether `finalize_symtab(symtab)` frees anything at all, decided
+        /// from the variables of `symtab` rather than from what it emits.
+        bool has_finalizable_variable(SymbolTable* symtab){
+            for(auto &str_sym_pair : symtab->get_scope()){
+                ASR::symbol_t* const sym = str_sym_pair.second;
+                if (is_variable(sym) && is_finalizable_variable(
+                        ASR::down_cast<ASR::Variable_t>(sym))){
+                    return true;
+                }
+            }
+            return false;
+        }
 
         void finalize_symtab(SymbolTable* symtab){
             LCOMPILERS_ASSERT(!non_deallocatable_construct(symtab->asr_owner))

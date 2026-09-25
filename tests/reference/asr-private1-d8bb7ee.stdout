@@ -16,6 +16,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 ),
             foo2:
                 (Module
@@ -107,6 +108,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                 ),
             test:
                 (Program

@@ -29,13 +29,33 @@ namespace LCompilers {
     // own initializer correct, which a target startup hook calls with no
     // ordering at all.
     //
-    // Nothing calls any of them twice, so under `--fast` the guard is dropped
-    // and the body is the initialization statements themselves. The guard at
-    // the top of a procedure or block body is a different thing — it is the
-    // save attribute of an initialized local, so it decides behaviour rather
-    // than repeating a call that cannot happen — and is kept in every mode.
+    // An initializer nothing calls twice drops its guard under `--fast`, so
+    // that the body is the initialization statements themselves. A module
+    // whose `global_init_at_startup` is set is the exception: a target's
+    // startup runs that one as well as the call chain, and the guard is what
+    // makes those two into one initialization. The guard at the top of a
+    // procedure or block body is a different thing — it is the save attribute
+    // of an initialized local, so it decides behaviour rather than repeating a
+    // call that cannot happen — and is kept in every mode.
 
     namespace ASRUtils {
+
+        // Whether where in a target's startup an initializer runs can be told
+        // apart from the order the call chain gives it.
+        //
+        // `OrderInsensitive` is an assignment or an association that reads a
+        // constant or the address of a variable with `save`. No other
+        // initializer can change either of those, so no program can observe
+        // which of two such initializers ran first.
+        //
+        // `Ordered` is everything else, and a call above all: where in the
+        // startup a given object file's hook runs is chosen by the linker and
+        // cannot be predicted from the source, so a call from there can reach
+        // a library whose own startup has not run yet.
+        enum class InitOrdering {
+            OrderInsensitive,
+            Ordered,
+        };
 
         // Return the initializer `owner` names, creating it if `owner` has
         // none yet. `owner` is a `Module_t*`, a `Program_t*` or the
@@ -49,19 +69,30 @@ namespace LCompilers {
             ASR::TranslationUnit_t &unit, ASR::asr_t *owner,
             bool defined_elsewhere = false);
 
-        // Append `stmt` inside the run-once guard of `fn`.
+        // Append `stmt` inside the run-once guard of `fn`. `ordering` says
+        // what `stmt` is, and a module's `global_init_at_startup` holds only
+        // while everything put into its initializer is `OrderInsensitive`.
         void global_init_append_stmt(Allocator &al, ASR::Function_t *fn,
-            ASR::stmt_t *stmt);
+            ASR::stmt_t *stmt, InitOrdering ordering);
 
         // Prepend `stmts` inside the run-once guard of `fn`, after the
-        // statement that marks the initializer as run.
+        // statement that marks the initializer as run. `ordering` is read as
+        // for `global_init_append_stmt`.
         void global_init_prepend_stmts(Allocator &al, ASR::Function_t *fn,
-            const std::vector<ASR::stmt_t*> &stmts);
+            const std::vector<ASR::stmt_t*> &stmts, InitOrdering ordering);
 
     } // namespace ASRUtils
 
-    // Lower the declaration initializers no target can lay out as static
-    // data into the initializers of the units that own them.
+    // Make statements out of what the current layout does not hold as static
+    // data, in the initializer of the unit that owns it (for a procedure or a
+    // block, at the top of its own body): each declaration initializer the
+    // layout does not hold, and, for a module, the defaults of the module's
+    // variables that `ASRUtils::struct_member_default_is_static` rejects
+    // together with every default of an element of an array of a derived
+    // type. That is a fixed rule today; a materialization policy the user can
+    // select is the intended design, and is not implemented. Afterwards every
+    // initialized component of module storage has exactly one source, static
+    // data or a statement, and a startup hook only creates storage.
     void pass_global_init(Allocator &al, ASR::TranslationUnit_t &unit,
                           const PassOptions &pass_options);
 

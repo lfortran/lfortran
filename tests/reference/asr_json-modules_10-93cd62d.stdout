@@ -142,7 +142,8 @@
                         "loaded_from_mod": false,
                         "intrinsic": false,
                         "has_submodules": false,
-                        "global_init": []
+                        "global_init": [],
+                        "global_init_at_startup": false
                     },
                     "loc": {
                         "first": 148,
@@ -426,7 +427,8 @@
                         "loaded_from_mod": false,
                         "intrinsic": false,
                         "has_submodules": false,
-                        "global_init": []
+                        "global_init": [],
+                        "global_init_at_startup": false
                     },
                     "loc": {
                         "first": 0,

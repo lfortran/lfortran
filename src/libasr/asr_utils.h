@@ -4270,6 +4270,55 @@ static inline bool is_visible_from(ASR::symbol_t* sym, SymbolTable* scope) {
     return false;
 }
 
+// The symbol through which `scope` reaches `sym`, which is a symbol or an
+// import of one: `sym` itself or its definition where either is visible from
+// `scope`, an import of the definition that the scope chain already holds
+// under the definition's name, and otherwise a new import of the definition
+// into `scope`. An ExternalSymbol names its target through the module or
+// derived type that owns it, so a definition a program or a procedure owns
+// cannot be imported at all, and `sym` is then returned as given.
+static inline ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
+        SymbolTable* scope) {
+    ASR::symbol_t* definition = symbol_get_past_external(sym);
+    if (definition == nullptr) return sym;
+    // Already visible as given: prefer the symbol the caller passed, which
+    // may be an import that keeps a module boundary intact.
+    SymbolTable* given_owner = symbol_parent_symtab(sym);
+    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+        if (s == given_owner) return sym;
+    }
+    // Otherwise the definition itself may be visible, which happens when the
+    // caller handed over an import made for some other scope.
+    SymbolTable* owner = symbol_parent_symtab(definition);
+    if (owner == nullptr) return sym;
+    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+        if (s == owner) return definition;
+    }
+    std::string name = symbol_name(definition);
+    // Reuse a name already standing for this definition in the scope chain.
+    ASR::symbol_t* existing = scope->resolve_symbol(name);
+    if (existing != nullptr &&
+            symbol_get_past_external(existing) == definition) {
+        return existing;
+    }
+    ASR::symbol_t* module_sym = get_asr_owner(definition);
+    if (module_sym == nullptr) return sym;
+    if (!ASR::is_a<ASR::Module_t>(*module_sym) &&
+            !ASR::is_a<ASR::Struct_t>(*module_sym)) {
+        return sym;
+    }
+    std::string local_name = name;
+    if (scope->get_symbol(local_name) != nullptr) {
+        local_name = scope->get_unique_name(name);
+    }
+    ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
+        ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
+            s2c(al, local_name), definition, symbol_name(module_sym),
+            nullptr, 0, s2c(al, name), ASR::accessType::Public));
+    scope->add_symbol(local_name, imported);
+    return imported;
+}
+
 // A variable's type declaration has to be visible from the variable's own
 // scope, the same way its name is. A producer that carries a type over from
 // somewhere else -- the frontend declaring an entity of a type it imported,
@@ -4303,46 +4352,7 @@ static inline ASR::symbol_t* import_type_declaration(Allocator &al,
             !ASR::is_a<ASR::Function_t>(*definition)) {
         return type_declaration;
     }
-
-    // Already visible as given: prefer the symbol the caller passed, which
-    // may be an import that keeps a module boundary intact.
-    SymbolTable* given_owner = symbol_parent_symtab(type_declaration);
-    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
-        if (s == given_owner) return type_declaration;
-    }
-    // Otherwise the definition itself may be visible, which happens when the
-    // caller handed over an import made for some other scope.
-    SymbolTable* owner = symbol_parent_symtab(definition);
-    if (owner == nullptr) return type_declaration;
-    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
-        if (s == owner) return definition;
-    }
-    std::string name = symbol_name(definition);
-    // Reuse a name already standing for this type in the scope chain.
-    ASR::symbol_t* existing = scope->resolve_symbol(name);
-    if (existing != nullptr &&
-            symbol_get_past_external(existing) == definition) {
-        return existing;
-    }
-    // An ExternalSymbol names its target through the module or derived type
-    // that owns it. A symbol owned by a program or a procedure cannot be
-    // named that way, so it cannot be imported at all.
-    ASR::symbol_t* module_sym = get_asr_owner(definition);
-    if (module_sym == nullptr) return type_declaration;
-    if (!ASR::is_a<ASR::Module_t>(*module_sym) &&
-            !ASR::is_a<ASR::Struct_t>(*module_sym)) {
-        return type_declaration;
-    }
-    std::string local_name = name;
-    if (scope->get_symbol(local_name) != nullptr) {
-        local_name = scope->get_unique_name(name);
-    }
-    ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
-        ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
-            s2c(al, local_name), definition, symbol_name(module_sym),
-            nullptr, 0, s2c(al, name), ASR::accessType::Public));
-    scope->add_symbol(local_name, imported);
-    return imported;
+    return import_symbol(al, type_declaration, scope);
 }
 
 static inline void set_cptr_type_declaration(ASR::ttype_t* type,
@@ -7317,6 +7327,7 @@ class SymbolDuplicator {
             module_t->m_name, module_t->m_parent_module, module_t->m_dependencies,
             module_t->n_dependencies, module_t->m_loaded_from_mod, module_t->m_intrinsic,
             module_t->m_has_submodules, module_t->m_global_init,
+            module_t->m_global_init_at_startup,
             module_t->m_start_name, module_t->m_end_name
         ));
     }
@@ -10381,19 +10392,85 @@ inline std::set<ASR::Function_t*> get_called_functions(ASR::stmt_t **body,
     return collector.callees;
 }
 
-// Whether a member of `s`, of one of its parents, or of one of its derived
-// type members, cannot be described by static data and so has to be set up by
-// executable code: an array member needs a descriptor of its own or its
-// dimensions filled in, a string member its data, and a class member its type
-// pointer. A scalar of an intrinsic type, and a pointer or allocatable scalar,
-// are fully described by a constant.
+// Whether the storage of member `v` of `owner` is created by executable code
+// rather than laid out in place, so that static data can hold it only as
+// zeros: a string member needs a buffer of its own, an array member that is
+// allocatable, a pointer or not of a fixed size needs a descriptor, and a
+// polymorphic member that is neither needs its type pointer. A string member
+// of a bind(c) or SEQUENCE type is stored in place and needs none, and so do
+// a scalar of an intrinsic type, a pointer or allocatable scalar, which is
+// null until it is associated or allocated, and a fixed-size array of either.
+// A derived type the member holds by value is not this member's storage but
+// that of its own members; see `struct_member_held_by_value`.
+static inline bool struct_member_set_up_at_run_time(ASR::Struct_t* owner,
+        ASR::Variable_t* v) {
+    if (is_character(*v->m_type)) {
+        return !is_inline_character_struct_member(owner, v->m_type);
+    }
+    bool allocatable_or_pointer = is_allocatable_or_pointer(v->m_type);
+    if (is_array(v->m_type)) {
+        return allocatable_or_pointer
+            || extract_physical_type(v->m_type)
+                != ASR::array_physical_typeType::FixedSizeArray
+            || is_class_type(type_get_past_array(v->m_type));
+    }
+    return !allocatable_or_pointer && is_class_type(extract_type(v->m_type));
+}
+
+// The derived type member `v` holds by value, as a scalar or as a fixed-size
+// array of them, or nullptr. A pointer or allocatable member holds the address
+// of another object instead, whose storage is not part of this one.
+static inline ASR::Struct_t* struct_member_held_by_value(ASR::Variable_t* v) {
+    if (is_allocatable_or_pointer(v->m_type) || v->m_type_declaration == nullptr) {
+        return nullptr;
+    }
+    if (is_array(v->m_type) && extract_physical_type(v->m_type)
+            != ASR::array_physical_typeType::FixedSizeArray) {
+        return nullptr;
+    }
+    ASR::ttype_t* element_type = type_get_past_array(v->m_type);
+    if (!ASR::is_a<ASR::StructType_t>(*element_type) || is_class_type(element_type)) {
+        return nullptr;
+    }
+    ASR::symbol_t* s = symbol_get_past_external(v->m_type_declaration);
+    return ASR::is_a<ASR::Struct_t>(*s) ? ASR::down_cast<ASR::Struct_t>(s) : nullptr;
+}
+
+// Whether static data holds `value`, the default initialization of member `v`
+// of `owner` that holds no derived type by value: the member is laid out in
+// place and the default is a constant. A pointer's only such default is
+// `null()`; associating it with a procedure or a target is done by a
+// statement.
 //
-// It decides two things that have to agree: whether the `global_init` pass
-// turns a declaration initializer of such an array into a statement, and
-// whether a backend lays that initializer out as static data. Laying an
-// element out statically when this is true would give every element the one
-// descriptor the constant holds, so a write through one element would be seen
-// through all of them.
+// A backend's static layout of a variable that default initialization gives
+// its value holds exactly these defaults, however deeply the derived types it
+// holds by value nest, and the `global_init` pass makes every other default
+// of a module variable a statement of the module's initializer. The two ask
+// this same question, so they cannot disagree about which of them initializes
+// a member.
+static inline bool struct_member_default_is_static(ASR::Struct_t* owner,
+        ASR::Variable_t* v, ASR::expr_t* value) {
+    if (struct_member_set_up_at_run_time(owner, v)) {
+        return false;
+    }
+    if (is_pointer(v->m_type)) {
+        return ASR::is_a<ASR::PointerNullConstant_t>(*value);
+    }
+    return is_value_constant(value);
+}
+
+// Whether a member of `s` or of one of its parents, or of a derived type one
+// of them holds by value, has storage that is created by executable code; see
+// `struct_member_set_up_at_run_time`. Every other member is described by a
+// constant.
+//
+// It decides what has to agree between the ASR passes and a backend: whether
+// a variable of type `s` needs its members set up at run time at all, whether
+// the `global_init` pass turns a declaration initializer of an array of `s`
+// into a statement, and whether a backend lays such an initializer out as
+// static data. Laying an element out statically when this is true would give
+// every element the one descriptor the constant holds, so a write through one
+// element would be seen through all of them.
 static inline bool struct_needs_member_init(ASR::Struct_t* s,
         std::set<ASR::Struct_t*>& visited) {
     if (!visited.insert(s).second) {
@@ -10410,29 +10487,12 @@ static inline bool struct_needs_member_init(ASR::Struct_t* s,
                 continue;
             }
             ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
-            if (is_array(v->m_type)) {
+            if (struct_member_set_up_at_run_time(c, v)) {
                 return true;
             }
-            if (is_character(*v->m_type)
-                    && !is_inline_character_struct_member(c, v->m_type)) {
+            ASR::Struct_t* held = struct_member_held_by_value(v);
+            if (held != nullptr && struct_needs_member_init(held, visited)) {
                 return true;
-            }
-            ASR::ttype_t* member_type = extract_type(v->m_type);
-            if (is_class_type(member_type)) {
-                return true;
-            }
-            // A pointer or allocatable member holds the address of another
-            // object, whose members are not set up from here.
-            if (ASR::is_a<ASR::StructType_t>(*member_type)
-                    && !is_pointer(v->m_type) && !is_allocatable(v->m_type)) {
-                ASR::symbol_t* member_struct = symbol_get_past_external(
-                    v->m_type_declaration);
-                if (member_struct != nullptr
-                        && ASR::is_a<ASR::Struct_t>(*member_struct)
-                        && struct_needs_member_init(
-                            ASR::down_cast<ASR::Struct_t>(member_struct), visited)) {
-                    return true;
-                }
             }
         }
     }

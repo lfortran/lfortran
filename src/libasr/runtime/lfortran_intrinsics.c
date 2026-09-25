@@ -162,10 +162,65 @@ void  *dbg_realloc(void *context, void *ptr, int64_t size){
 
 
 
+/*
+ * A module's storage is set up by a constructor of the object file that
+ * defines the module, which is the only object file linked wherever that
+ * storage is. The free that answers it belongs there too, but it cannot be a
+ * destructor: the report below runs while `main` is still on the stack, and a
+ * destructor runs after it returns. Each such object file registers its
+ * teardown here instead, and the report runs them before it counts.
+ *
+ * The list grows with the number of object files that register, so its only
+ * limit is the most entries whose size in bytes a `size_t` can hold. It is
+ * the runtime's own storage, taken with `realloc` rather than the tracked
+ * allocator so that it is not itself reported, and the report frees it once
+ * it has run every teardown.
+ */
+static void (**module_teardowns)(void) = NULL;
+static size_t num_module_teardowns = 0;
+static size_t module_teardowns_capacity = 0;
+
+void _lfortran_register_module_teardown(void (*teardown)(void)) {
+    if (num_module_teardowns == module_teardowns_capacity) {
+        const size_t max_capacity = SIZE_MAX / sizeof(*module_teardowns);
+        size_t capacity;
+        if (module_teardowns_capacity == 0) {
+            capacity = 16;
+        } else if (module_teardowns_capacity <= max_capacity / 2) {
+            capacity = 2 * module_teardowns_capacity;
+        } else {
+            capacity = max_capacity;
+        }
+        if (capacity == module_teardowns_capacity) {
+            fprintf(stderr, "ERROR : cannot register module teardown number "
+                "%zu: a list of more than %zu teardowns cannot be addressed\n",
+                num_module_teardowns + 1, max_capacity);
+            exit(1);
+        }
+        void (**grown)(void) = (void (**)(void)) realloc(module_teardowns,
+            capacity * sizeof(*module_teardowns));
+        if (grown == NULL) {
+            fprintf(stderr, "ERROR : out of memory registering module "
+                "teardown number %zu\n", num_module_teardowns + 1);
+            exit(1);
+        }
+        module_teardowns = grown;
+        module_teardowns_capacity = capacity;
+    }
+    module_teardowns[num_module_teardowns++] = teardown;
+}
+
 // Called to report any leaks
 void dbg_report() {
     size_t leaks = 0;
     size_t total_bytes = 0;
+    for (size_t i = 0; i < num_module_teardowns; i++) {
+        module_teardowns[i]();
+    }
+    free(module_teardowns);
+    module_teardowns = NULL;
+    num_module_teardowns = 0;
+    module_teardowns_capacity = 0;
     fprintf(stdout, "\n---------------- Memory Leak Report ----------------\n");
     for (size_t i = 0; i < mem_dbg_hashTable.num_buckets; i++) {
         if (mem_dbg_hashTable.buckets[i].state != OCCUPIED_BKT) continue;

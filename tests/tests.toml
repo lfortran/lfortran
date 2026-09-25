@@ -6164,3 +6164,13 @@ filename = "../integration_tests/global_init_07.f90"
 # from the initializer it knows while the storage is sized from the value the
 # generated code has at that point.
 pass = "global_init"
+
+[[test]]
+filename = "../integration_tests/module_teardown_02.f90"
+# Under --detect-leaks only a module whose storage owns something registers a
+# teardown with the runtime: `module_teardown_02_b` does, `module_teardown_02_a`
+# does not. That is not observable at run time, where a teardown with nothing
+# to free changes nothing, so this reference is what catches a module that
+# owns nothing registering one again.
+llvm = true
+options = "--detect-leaks"

@@ -91,6 +91,29 @@ is usually the default mode used by most other Fortran compilers. We create obje
 
 Note: **_If you enable separate compilation mode, you have to enable it for all the files._**
 
+## Initialization of Variables
+
+LFortran keeps three parts of initializing a variable apart: the initial state
+the language defines, which ASR states; the physical setup a backend's
+representation of the storage needs, such as array descriptors and character
+buffers; and the choice of materializing an initial value as static data or by
+code that runs once at startup. That choice is made in the ASR lowering, by
+the `global_init` pass, which turns each declaration initializer static data
+does not hold, and each default of a module variable it does not hold, into a
+statement of a startup initializer. A backend only carries the choice out: it
+lays the rest out as static data, and the startup hook of a module creates
+the storage the layout needs without storing a value. Today the choice
+follows a fixed rule; a policy the user can select, for large arrays in
+particular, is the intended design but not implemented. Every variable has to
+be initialized exactly once, before anything can observe it, whether a Fortran
+main program, a C `main` or a library user drives the code and whatever the
+compilation mode. Startup code never stores back a value that static data
+already holds, and initialization that depends on other code having run is
+ordered by explicit calls in ASR rather than by the order in which a linker
+runs constructors. The *Startup initializers* section of
+[Program](asr/asr_nodes/symbol_nodes/Program.md) has the details, including
+what is lowered to startup code today and the intended materialization policy.
+
 ## Notes:
 
 Information that is lost when parsing source to AST:

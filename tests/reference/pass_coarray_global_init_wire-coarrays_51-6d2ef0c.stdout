@@ -1642,6 +1642,7 @@
                     .false.
                     .false.
                     __lfortran_global_init_coarrays_51_a
+                    .false.
                 ),
             coarrays_51_b:
                 (Module
@@ -1902,6 +1903,7 @@
                     .false.
                     .false.
                     __lfortran_global_init_coarrays_51_b
+                    .false.
                 ),
             lcompilers_prif_get_integer(4):
                 (Function

@@ -2,12 +2,12 @@
     "basename": "asr-module_procedure_argument_type-14bc8ae",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/module_procedure_argument_type.asr",
-    "infile_hash": "a0e377a2adeb71621a3a7a023e85f857693150ee210cef94158d58d9",
+    "infile_hash": "48b44373ec8f1513038214628b4729fadda7c77f0c252725404f6077",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-module_procedure_argument_type-14bc8ae.stderr",
-    "stderr_hash": "5c31f38f1b210699ff7ed784fa6b068b1c931c10014fb3d7ecb0a7d8",
+    "stderr_hash": "7bf789fd439c6b3c66454b01702ed88adde925980b6182610cc0d063",
     "returncode": 2
 }

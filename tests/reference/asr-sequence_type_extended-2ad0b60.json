@@ -2,7 +2,7 @@
     "basename": "asr-sequence_type_extended-2ad0b60",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/sequence_type_extended.asr",
-    "infile_hash": "0b49dc33be1892ac524e29c225d32fbb788146b1198450e73ae1b944",
+    "infile_hash": "90077c1a7a169deb5b8a665b7719a9fe5c70bbe7743408d46e378ce2",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
