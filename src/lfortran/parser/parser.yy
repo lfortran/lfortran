@@ -15,7 +15,7 @@ see the documentation in that script for details and motivation.
 %locations
 %glr-parser
 %expect    197 // shift/reduce conflicts
-%expect-rr 189 // reduce/reduce conflicts
+%expect-rr 185 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -889,11 +889,10 @@ instantiate_arg_spec
     | id "=" instantiate_symbol { $$ = ATTR_KEYWORD($1, $3, @$); }
 
 instantiate_symbol
-    : var_type %dprec 3 { $$ = $1; }
+    : var_type %dprec 2 { $$ = $1; }
     | KW_OPERATOR "(" operator_type ")" { $$ = DECL_OP($3, @$); }
     | KW_OPERATOR "(" "/)" { $$ = DECL_OP(OPERATOR(DIV, @$), @$); }
-    | id %dprec 2 { $$ = ATTR_NAME($1, @$); }
-    | expr %dprec 1 { $$ = ATTR_EXPR($1, @$); }
+    | expr %dprec 1 { $$ = instantiate_arg_expr(p.m_a, $1, @$); }
 
 end_type
     : KW_END_TYPE id_opt

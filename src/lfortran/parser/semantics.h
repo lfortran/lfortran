@@ -490,8 +490,16 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
 #define ATTR_KEYWORD(kw, arg, l) make_AttrKeyword_t \
             (p.m_a, l, name2char(kw), down_cast<decl_attribute_t>(arg))
 
-// R1630 instantiation-arg that is a constant expression
-#define ATTR_EXPR(x, l) make_AttrExpr_t(p.m_a, l, EXPR(x))
+// R1630 instantiation-arg: a plain name (type, procedure, named constant) is
+// an AttrName, any other expression (deferred-constant value) is an AttrExpr.
+static inline ast_t* instantiate_arg_expr(Allocator &al, ast_t *x,
+        const Location &l) {
+    expr_t *e = EXPR(x);
+    if (is_a<Name_t>(*e) && down_cast<Name_t>(e)->n_member == 0) {
+        return make_AttrName_t(al, l, down_cast<Name_t>(e)->m_id);
+    }
+    return make_AttrExpr_t(al, l, e);
+}
 
 #define ATTR_TYPE_LIST(x, attr_list, l) make_AttrTypeList_t( \
             p.m_a, l, \
