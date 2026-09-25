@@ -3621,6 +3621,28 @@ public:
         is_interface = old_is_interface;
         in_Subroutine = old_in_Subroutine;
         current_procedure_args = old_procedure_args;
+        // An `optional :: q` statement that precedes the interface body of
+        // the dummy procedure `q` is recorded in assgnd_presence; apply it
+        // now that `q` has been declared.
+        std::string proc_name;
+        if (AST::is_a<AST::Subroutine_t>(*x.m_proc)) {
+            proc_name = to_lower(AST::down_cast<AST::Subroutine_t>(x.m_proc)->m_name);
+        } else if (AST::is_a<AST::Function_t>(*x.m_proc)) {
+            proc_name = to_lower(AST::down_cast<AST::Function_t>(x.m_proc)->m_name);
+        }
+        if (!proc_name.empty() && assgnd_presence.count(proc_name) &&
+                assgnd_presence[proc_name] == ASR::presenceType::Optional &&
+                std::find(current_procedure_args.begin(),
+                    current_procedure_args.end(), proc_name)
+                    != current_procedure_args.end()) {
+            ASR::symbol_t* proc_sym = current_scope->get_symbol(proc_name);
+            if (proc_sym && ASR::is_a<ASR::Function_t>(*proc_sym)) {
+                make_optional_procedure_dummy(proc_name,
+                    ASR::down_cast<ASR::Function_t>(proc_sym),
+                    x.m_proc->base.loc);
+                assgnd_presence.erase(proc_name);
+            }
+        }
         return;
     }
 
