@@ -7095,6 +7095,9 @@ public:
         if (!compiler_options.detect_leaks) return;
         if (prototype_only) return;
         if (!module_storage_defined_here(x)) return;
+        // A module whose variables own nothing -- `integer :: x = 1` -- has
+        // nothing to free, and registers nothing.
+        if (!llvm_symtab_finalizer.has_finalizable_variable(x.m_symtab)) return;
 
         llvm::BasicBlock *saved_block = builder->GetInsertBlock();
         llvm::DebugLoc saved_debug_loc = builder->getCurrentDebugLocation();
@@ -7117,12 +7120,6 @@ public:
             builder->SetCurrentDebugLocation(saved_debug_loc);
         } else {
             builder->ClearInsertionPoint();
-        }
-
-        // Nothing was emitted, so there was nothing this module owns.
-        if (dtor_fn->size() == 1 && dtor_fn->getEntryBlock().size() == 1) {
-            dtor_fn->eraseFromParent();
-            return;
         }
 
         // Not a destructor: the leak report runs while `main` is still on the

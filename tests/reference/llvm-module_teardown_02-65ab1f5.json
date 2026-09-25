@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-module_teardown_02-65ab1f5",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/module_teardown_02.f90",
+    "infile_hash": "c5e595a0de0213b02725fa3da64f0f8740117ace6ca7ad522d7426df",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-module_teardown_02-65ab1f5.stdout",
+    "stdout_hash": "ef24b2e1514ecdaaf18ffec6bae8b8f983535f317d7450e92fcd2cee",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
