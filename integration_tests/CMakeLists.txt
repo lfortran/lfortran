@@ -3623,6 +3623,7 @@ RUN(NAME template_array_02 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray w
 RUN(NAME template_array_03 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME template_array_04 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME template_array_04b LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
+RUN(NAME template_array_06 LABELS llvm)
 # DISABLED: #8115 - ASR verify: FunctionType contains types tied to scope after template instantiation
 # RUN(NAME template_matrix_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 # DISABLED: #8115 - ASR verify: FunctionType contains types tied to scope after template instantiation

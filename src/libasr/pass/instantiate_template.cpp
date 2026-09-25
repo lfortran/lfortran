@@ -2178,6 +2178,12 @@ public:
 
     /* utility */
 
+    // The generated duplicator visits expression types recursively, including
+    // array and allocatable wrappers, so substitute their deferred leaves.
+    ASR::asr_t* duplicate_TypeParameter(ASR::TypeParameter_t* x) {
+        return &substitute_type(nullptr, &x->base)->base;
+    }
+
     // TODO: join this with the other substitute_type
     ASR::ttype_t* substitute_type(ASR::expr_t* expr, ASR::ttype_t *ttype) {
         switch (ttype->type) {

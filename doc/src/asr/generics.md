@@ -200,6 +200,13 @@ instantiation succeeds. During error recovery (`--continue-compilation`),
 the body visitor skips declarations without this record, even if an earlier
 item in an erroneous `only:` list already created a procedure signature.
 
+Body instantiation also substitutes deferred types in expression results, not
+just in variable declarations and procedure signatures. The generated ASR
+duplicator recursively copies type wrappers, while `BodyInstantiator` replaces
+each `TypeParameter` leaf using `type_subs`. Thus array constructors and
+`reshape` results acquire the concrete element type and kind for each
+instantiation without changing the original template.
+
 ## See Also
 
 * [Programming With Generics](programming_generics.md), for simpler explaining about using generics in LFortran
