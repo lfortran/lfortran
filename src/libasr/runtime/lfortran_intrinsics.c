@@ -6238,6 +6238,14 @@ static void use_stdin_char_mode(void)
     if (!__atomic_exchange_n(&done, 1, __ATOMIC_RELAXED)) {
         setvbuf(stdin, NULL, _IONBF, 0);
     }
+    // A 0-byte read on this target is not necessarily end of file:
+    // Emscripten reports end-of-line this way when stdin is served one
+    // line per read() (interactive use), and the next line simply has
+    // not arrived yet.  But stdio latches the EOF indicator, so the
+    // following READ would then fail without asking for more input.
+    // Drop any stale latch here, at the start of every stdin transfer:
+    // genuine EOF re-reports on the next read.
+    clearerr(stdin);
 #endif
 }
 
@@ -8066,6 +8074,17 @@ static bool read_stdin_list_directed_token(FILE *filep, char *buffer, size_t buf
     do {
         c = fgetc(filep);
     } while (c != EOF && isspace((unsigned char)c));
+#if defined(__EMSCRIPTEN__)
+    // Same spurious-EOF recovery as in read_line: a record boundary
+    // (e.g. a blank line) at the start of the whitespace skip looks
+    // like end of file on the first read; the retry pulls the next line.
+    if (c == EOF && filep == stdin) {
+        clearerr(filep);
+        do {
+            c = fgetc(filep);
+        } while (c != EOF && isspace((unsigned char)c));
+    }
+#endif
 
     if (c == EOF) {
         if (iostat) *iostat = -1;
@@ -9450,6 +9469,16 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
         int c;
         while ((c = fgetc(filep)) != EOF && isspace(c)) {
         }
+#if defined(__EMSCRIPTEN__)
+        // Same spurious-EOF recovery as in read_stdin_list_directed_token
+        // above, for a record boundary at the start of the skip when
+        // reading the standard input.
+        if (c == EOF && filep == stdin) {
+            clearerr(filep);
+            while ((c = fgetc(filep)) != EOF && isspace(c)) {
+            }
+        }
+#endif
 
         if (c == EOF) {
             if (iostat) { *iostat = -1; return; }
@@ -11133,6 +11162,18 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
     switch (inputSource->inputMethod) {
     case INPUT_FILE: {
         char *ret = fgets(buf, size, inputSource->file);
+#if defined(__EMSCRIPTEN__)
+        // A failed first read here is not necessarily end of file: when
+        // stdin is served one line per read() (interactive use), the
+        // previous record's line delivery can end exactly where this
+        // read starts, and the 0-byte read latches a spurious EOF.
+        // Retry once with a clean slate; genuine EOF fails the retry
+        // too, so termination still works.
+        if (ret == NULL && inputSource->file == stdin) {
+            clearerr(inputSource->file);
+            ret = fgets(buf, size, inputSource->file);
+        }
+#endif
         if (ret != NULL) {
             // Keep record-local cursor in sync for T/TL/TR editing.
             // Count only non-newline chars consumed from current record.
@@ -11174,6 +11215,15 @@ static inline int read_character(InputSource *inputSource)
 
     case INPUT_FILE: {
         int c = fgetc(inputSource->file);
+#if defined(__EMSCRIPTEN__)
+        // Same spurious-EOF recovery as in read_line above: a record
+        // boundary at the very start of this read looks like end of
+        // file on the first attempt; the retry pulls the next line.
+        if (c == EOF && inputSource->file == stdin) {
+            clearerr(inputSource->file);
+            c = fgetc(inputSource->file);
+        }
+#endif
         if (c != EOF && c != '\n') {
             inputSource->pos_in_record++;
         }
@@ -12588,6 +12638,20 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_
         bool read_any = false;
         do {
             c = fgetc(stdin);
+#if defined(__EMSCRIPTEN__)
+            // A record boundary at the very start of this drain looks
+            // like end of file on the first read: the previous line is
+            // fully delivered and the next one has not been requested
+            // yet (see use_stdin_char_mode).  The retried read pulls
+            // the next line, which is the record this drain must
+            // consume.  Only the first read can hit this: afterwards
+            // the line is either being consumed (data) or genuinely
+            // exhausted, and a second consecutive EOF ends the loop.
+            if (c == EOF && !read_any) {
+                clearerr(stdin);
+                c = fgetc(stdin);
+            }
+#endif
             read_any = read_any || (c != EOF);
         } while (c != '\n' && c != EOF);
         // Hitting end of file while advancing only ends the statement when
