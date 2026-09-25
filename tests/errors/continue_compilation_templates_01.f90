@@ -2077,3 +2077,71 @@ contains
     end subroutine
 
 end module
+
+! Every deferred argument must be declared in the templated subprogram's
+! specification, for subroutines and functions alike (#13360).
+module templated_subprogram_undeclared_1
+    implicit none
+contains
+    template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+    end subroutine
+
+    template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+        r = 0
+    end function
+end module
+
+! An ordinary local variable does not declare a deferred constant.
+module templated_subprogram_local_1
+    implicit none
+contains
+    template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+        integer :: n
+    end subroutine
+
+    template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+        integer :: n
+        r = 0
+    end function
+end module
+
+! PARAMETER alone still declares a local constant, not a deferred argument.
+module templated_subprogram_parameter_1
+    implicit none
+contains
+    template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+        integer, parameter :: n = 7
+    end subroutine
+
+    template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+        integer, parameter :: n = 7
+        r = n
+    end function
+end module
+
+! A host-associated constant does not declare the deferred argument either.
+module templated_subprogram_host_1
+    implicit none
+    integer, parameter :: n = 7
+contains
+    template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+    end subroutine
+
+    template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+        r = n
+    end function
+end module
+
+! Check every argument, matching declarations case-insensitively.
+module templated_subprogram_partial_1
+    implicit none
+contains
+    template subroutine s{T, N}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+        deferred type :: t
+    end subroutine
+
+    template integer function f{T, N}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+        deferred type :: t
+        r = 0
+    end function
+end module

@@ -1566,6 +1566,23 @@ public:
             selected.p, selected.size()));
     }
 
+    void check_templated_subprogram_args(SymbolTable *scope,
+            const std::vector<std::string> &args, const std::string &kind,
+            const Location &loc) {
+        // Deferred declarations belong to the Template, not to the child
+        // procedure or a host scope.
+        for (const std::string &arg: args) {
+            if (!scope->get_symbol(arg)) {
+                diag.add(diag::Diagnostic(
+                    "template argument '" + arg + "' has not been declared in "
+                    "templated " + kind + " specification",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
     void visit_Subroutine(const AST::Subroutine_t &x) {
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
@@ -2076,7 +2093,11 @@ public:
         // built for it. Checked last, once the enclosing context has been
         // restored, so that an abort here leaves the visitor in the same state
         // as a clean return.
-        if (x.n_temp_args > 0) check_no_save_in_template(parent_scope);
+        if (x.n_temp_args > 0) {
+            check_templated_subprogram_args(parent_scope, subroutine_temp_args,
+                "subroutine", x.base.base.loc);
+            check_no_save_in_template(parent_scope);
+        }
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -2895,17 +2916,6 @@ public:
             for (auto &proc: ext_overloaded_op_procs) {
                 overloaded_op_procs[proc.first] = proc.second;
             }
-            for (size_t i=0; i<x.n_temp_args; i++) {
-                ASR::symbol_t *s = parent_scope->get_symbol(to_lower(x.m_temp_args[i]));
-                if (!s) {
-                    diag.add(diag::Diagnostic(
-                        "Template argument " + std::string(x.m_temp_args[i])
-                        + " has not been declared in templated function specification.",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
-            }
             current_scope = grandparent_scope;
         } else {
             current_scope = parent_scope;
@@ -2930,7 +2940,11 @@ public:
         // built for it. Checked last, once the enclosing context has been
         // restored, so that an abort here leaves the visitor in the same state
         // as a clean return.
-        if (x.n_temp_args > 0) check_no_save_in_template(parent_scope);
+        if (x.n_temp_args > 0) {
+            check_templated_subprogram_args(parent_scope, function_temp_args,
+                "function", x.base.base.loc);
+            check_no_save_in_template(parent_scope);
+        }
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {

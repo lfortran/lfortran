@@ -1196,6 +1196,106 @@ semantic error: Second argument of modulo cannot be 0
 2056 |             integer, parameter :: k = modulo(n, n - 3)  ! {Error} Second argument of modulo cannot be 0
      |                                       ^^^^^^^^^^^^^^^^ 
 
+semantic error: template argument 'n' has not been declared in templated subroutine specification
+    --> tests/errors/continue_compilation_templates_01.f90:2086:5 - 2087:18
+     |
+2086 |        template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2087 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated function specification
+    --> tests/errors/continue_compilation_templates_01.f90:2089:5 - 2091:16
+     |
+2089 |        template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2091 |        end function
+     | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated subroutine specification
+    --> tests/errors/continue_compilation_templates_01.f90:2098:5 - 2100:18
+     |
+2098 |        template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2100 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated function specification
+    --> tests/errors/continue_compilation_templates_01.f90:2102:5 - 2105:16
+     |
+2102 |        template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2105 |        end function
+     | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated subroutine specification
+    --> tests/errors/continue_compilation_templates_01.f90:2112:5 - 2114:18
+     |
+2112 |        template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2114 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated function specification
+    --> tests/errors/continue_compilation_templates_01.f90:2116:5 - 2119:16
+     |
+2116 |        template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2119 |        end function
+     | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated subroutine specification
+    --> tests/errors/continue_compilation_templates_01.f90:2127:5 - 2128:18
+     |
+2127 |        template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2128 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated function specification
+    --> tests/errors/continue_compilation_templates_01.f90:2130:5 - 2132:16
+     |
+2130 |        template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2132 |        end function
+     | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated subroutine specification
+    --> tests/errors/continue_compilation_templates_01.f90:2139:5 - 2141:18
+     |
+2139 |        template subroutine s{T, N}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2141 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated function specification
+    --> tests/errors/continue_compilation_templates_01.f90:2143:5 - 2146:16
+     |
+2143 |        template integer function f{T, N}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2146 |        end function
+     | ...^^^^^^^^^^^^^^^^ 
+
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
     |
