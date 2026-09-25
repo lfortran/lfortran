@@ -92,6 +92,21 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             SymbolTable* current_scope,
             const Location& loc,
             Vec<ASR::stmt_t*>& out_stmts) {
+        if (ASRUtils::is_pointer(ASRUtils::expr_type(target))) {
+            // A pointer component is associated, not assigned.  Only a null
+            // default is handled, as elsewhere in this pass; the
+            // PointerNullConstant is rebuilt around the component so that
+            // codegen can resolve what it points at.
+            if (!ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
+                return false;
+            }
+            ASR::expr_t* null_value = ASRUtils::EXPR(
+                ASR::make_PointerNullConstant_t(al, loc,
+                    ASRUtils::expr_type(value), target));
+            out_stmts.push_back(al, ASRUtils::STMT(
+                ASRUtils::make_Associate_t_util(al, loc, target, null_value)));
+            return true;
+        }
         if (!ASR::is_a<ASR::StructConstant_t>(*value)) {
             out_stmts.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
                 al, loc, target, value, nullptr, false, false)));
@@ -238,6 +253,155 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         }
     }
 
+    // Whether finalizing an entity of this type emits anything: the type has
+    // a final subroutine, or one of its components (or a component it
+    // inherits) is of a type for which this holds.  A component whose type
+    // has nothing to finalize is left alone, so that a program that has no
+    // finalization to do is unchanged by this pass.  `visited` guards against
+    // a malformed cyclic type or parent chain.
+    static bool struct_needs_finalization(ASR::Struct_t* st,
+            std::set<ASR::Struct_t*>& visited) {
+        if (st == nullptr || visited.find(st) != visited.end()) {
+            return false;
+        }
+        visited.insert(st);
+        if (st->n_member_functions > 0) return true;
+        ASR::Struct_t* level = st;
+        while (level != nullptr) {
+            for (auto& m : level->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
+                ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(
+                    m.second);
+                if (!is_finalizable_component(m_var)) continue;
+                if (struct_needs_finalization(component_struct_type(m_var),
+                        visited)) {
+                    return true;
+                }
+            }
+            if (level->m_parent != nullptr) {
+                level = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(level->m_parent));
+            } else {
+                level = nullptr;
+            }
+        }
+        return false;
+    }
+
+    // Whether a component is one this pass finalizes on entry.  An array
+    // component is skipped, because a final subroutine is only called for an
+    // entity whose rank its dummy argument has; an allocatable one is
+    // finalized when it is deallocated (emit_struct_cleanup_stmts emits that
+    // deallocation); a pointer one is never finalized; and the dynamic type
+    // of a polymorphic one, which decides what applies to it, is not known
+    // here.
+    static bool is_finalizable_component(ASR::Variable_t* m_var) {
+        if (ASRUtils::is_allocatable(m_var->m_type) ||
+                ASRUtils::is_pointer(m_var->m_type)) return false;
+        if (ASRUtils::is_class_type(m_var->m_type)) return false;
+        return component_struct_type(m_var) != nullptr;
+    }
+
+    // Call the final subroutines of `st` itself with `entity_expr` as the
+    // entity being finalized (F2018 7.5.6.2, step 1).
+    void emit_final_calls(
+            ASR::expr_t* entity_expr,
+            ASR::Struct_t* st,
+            SymbolTable* current_scope,
+            const Location& loc,
+            Vec<ASR::stmt_t*>& out_stmts) {
+        for (size_t fi = 0; fi < st->n_member_functions; fi++) {
+            std::string final_proc_name = st->m_member_functions[fi];
+            ASR::symbol_t* final_sym =
+                st->m_symtab->parent->get_symbol(final_proc_name);
+            LCOMPILERS_ASSERT(final_sym != nullptr);
+            if (final_sym == nullptr) continue;
+
+            ASR::symbol_t* local_final_sym =
+                current_scope->resolve_symbol(final_proc_name);
+            std::string local_name = final_proc_name;
+            if (local_final_sym != nullptr &&
+                    ASRUtils::symbol_get_past_external(local_final_sym) !=
+                        final_sym) {
+                // Another symbol of that name is visible here, so the final
+                // subroutine is brought in under a name of its own rather
+                // than calling whatever the name resolves to.
+                local_final_sym = nullptr;
+                local_name = current_scope->get_unique_name(final_proc_name);
+            }
+            if (local_final_sym == nullptr) {
+                std::string module_name = "";
+                ASR::asr_t* owner = st->m_symtab->parent->asr_owner;
+                if (owner && ASR::is_a<ASR::symbol_t>(*owner)) {
+                    module_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::symbol_t>(owner));
+                }
+                ASR::asr_t* ext = ASR::make_ExternalSymbol_t(al, loc,
+                    current_scope, s2c(al, local_name), final_sym,
+                    s2c(al, module_name), nullptr, 0,
+                    s2c(al, final_proc_name), ASR::accessType::Private);
+                current_scope->add_symbol(local_name,
+                    ASR::down_cast<ASR::symbol_t>(ext));
+                local_final_sym = ASR::down_cast<ASR::symbol_t>(ext);
+            }
+
+            Vec<ASR::call_arg_t> call_args;
+            call_args.reserve(al, 1);
+            ASR::call_arg_t call_arg;
+            call_arg.loc = loc;
+            call_arg.m_value = entity_expr;
+            call_args.push_back(al, call_arg);
+
+            out_stmts.push_back(al, ASRUtils::STMT(
+                ASR::make_SubroutineCall_t(al, loc, local_final_sym,
+                    local_final_sym, call_args.p, call_args.n, nullptr,
+                    false)));
+        }
+    }
+
+    // Finalize the finalizable components of `struct_expr` (F2018 7.5.6.2,
+    // step 2).  A component of derived type is an entity in its own right, so
+    // the same sequence applies to it: its type's final subroutines first,
+    // then its own components.  Components inherited from a parent type are
+    // finalized too; the parent component itself is not, because its final
+    // subroutine takes the parent type and this pass cannot form a reference
+    // of that type.  `is_finalizable_component` says which components this
+    // covers.
+    void emit_struct_component_finalize_stmts(
+            ASR::expr_t* struct_expr,
+            ASR::Struct_t* struct_type,
+            SymbolTable* current_scope,
+            const Location& loc,
+            Vec<ASR::stmt_t*>& out_stmts) {
+        ASR::Struct_t* st = struct_type;
+        while (st != nullptr) {
+            for (auto& m : st->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
+                ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(
+                    m.second);
+                if (!is_finalizable_component(m_var)) continue;
+                ASR::Struct_t* m_struct = component_struct_type(m_var);
+                std::set<ASR::Struct_t*> visited;
+                if (!struct_needs_finalization(m_struct, visited)) continue;
+
+                ASR::expr_t* member_expr = ASRUtils::EXPR(
+                    ASRUtils::getStructInstanceMember_t(al, loc,
+                        (ASR::asr_t*)struct_expr, m.second, m.second,
+                        current_scope));
+                emit_final_calls(member_expr, m_struct, current_scope, loc,
+                    out_stmts);
+                emit_struct_component_finalize_stmts(member_expr, m_struct,
+                    current_scope, loc, out_stmts);
+            }
+            if (st->m_parent != nullptr) {
+                st = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(st->m_parent));
+            } else {
+                st = nullptr;
+            }
+        }
+    }
+
     void emit_struct_cleanup_stmts(
             ASR::expr_t* struct_expr,
             ASR::Struct_t* struct_type,
@@ -308,6 +472,7 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             SymbolTable* current_scope,
             const Location& loc,
             ASR::ttype_t* logical_type,
+            bool is_polymorphic,
             Vec<ASR::stmt_t*>& out_stmts) {
         Vec<ASR::expr_t*> idx_vars;
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope,
@@ -318,6 +483,10 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
 
         Vec<ASR::stmt_t*> innermost_body;
         innermost_body.reserve(al, 1);
+        if (!is_polymorphic) {
+            emit_struct_component_finalize_stmts(arr_ref, struct_type,
+                current_scope, loc, innermost_body);
+        }
         emit_struct_cleanup_stmts(arr_ref, struct_type, current_scope,
             loc, logical_type, innermost_body);
         emit_struct_default_init_stmts(arr_ref, struct_type,
@@ -490,79 +659,42 @@ public:
                 ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
 
-                // Fortran 2018 §7.5.6.3 ¶7:
-                //   "When a procedure is invoked with a nonpointer,
-                //    nonallocatable, INTENT(OUT) dummy argument of a type
-                //    for which a final subroutine is defined, the
+                // Fortran 2018 7.5.6.3 p7: an actual argument corresponding
+                // to a nonpointer, nonallocatable `intent(out)` dummy is
+                // finalized when the procedure is invoked.  7.5.6.2 defines
+                // that as calling the type's own final subroutines and then
+                // finalizing its finalizable components, so a type without a
+                // final subroutine of its own still has work to do here.
                 bool has_finalizer =
                     struct_hierarchy_has_finalizer(struct_type);
-                if (has_finalizer) {
-                    ASR::expr_t* var_expr = ASRUtils::EXPR(
-                        ASR::make_Var_t(al, loc, arg_sym));
-                    for (size_t fi = 0;
-                            fi < struct_type->n_member_functions; fi++) {
-                        std::string final_proc_name =
-                            struct_type->m_member_functions[fi];
-                        ASR::symbol_t* final_sym =
-                            struct_type->m_symtab->parent->get_symbol(
-                                final_proc_name);
-                        LCOMPILERS_ASSERT(final_sym != nullptr);
-
-                        ASR::symbol_t* local_final_sym =
-                            xx.m_symtab->resolve_symbol(final_proc_name);
-                        if (!local_final_sym) {
-                            std::string module_name = "";
-                            ASR::asr_t* owner =
-                                struct_type->m_symtab->parent->asr_owner;
-                            if (owner &&
-                                ASR::is_a<ASR::symbol_t>(*owner)) {
-                                module_name = ASRUtils::symbol_name(
-                                    ASR::down_cast<ASR::symbol_t>(owner));
-                            }
-                            ASR::asr_t* ext = ASR::make_ExternalSymbol_t(
-                                al, loc, xx.m_symtab,
-                                s2c(al, final_proc_name), final_sym,
-                                s2c(al, module_name), nullptr, 0,
-                                s2c(al, final_proc_name),
-                                ASR::accessType::Private);
-                            xx.m_symtab->add_symbol(final_proc_name,
-                                ASR::down_cast<ASR::symbol_t>(ext));
-                            local_final_sym =
-                                ASR::down_cast<ASR::symbol_t>(ext);
-                        }
-
-                        Vec<ASR::call_arg_t> call_args;
-                        call_args.reserve(al, 1);
-                        ASR::call_arg_t call_arg;
-                        call_arg.loc = loc;
-                        call_arg.m_value = var_expr;
-                        call_args.push_back(al, call_arg);
-
-                        ASR::stmt_t* call_stmt = ASRUtils::STMT(
-                            ASR::make_SubroutineCall_t(
-                                al, loc, local_final_sym,
-                                local_final_sym, call_args.p,
-                                call_args.n, nullptr, false));
-
-                        ASR::stmt_t* wrapped_stmt = wrap_optional_check(
-                            loc, var_expr, arg_var->m_presence,
-                            call_stmt);
-                        dealloc_stmts.push_back(al, wrapped_stmt);
-                    }
-                    Vec<ASR::stmt_t*> init_stmts;
-                    init_stmts.reserve(al, 1);
-                    emit_struct_default_init_stmts(var_expr, struct_type,
-                        xx.m_symtab, loc, init_stmts);
-                    for (size_t k = 0; k < init_stmts.size(); k++) {
-                        ASR::stmt_t* wrapped_stmt = wrap_optional_check(
-                            loc, var_expr, arg_var->m_presence,
-                            init_stmts[k]);
-                        dealloc_stmts.push_back(al, wrapped_stmt);
-                    }
-                }
-
+                bool is_polymorphic = ASRUtils::is_class_type(
+                    arg_var->m_type);
                 ASR::expr_t* var_expr = ASRUtils::EXPR(
                     ASR::make_Var_t(al, loc, arg_sym));
+                Vec<ASR::stmt_t*> entry_stmts;
+                entry_stmts.reserve(al, 1);
+                if (has_finalizer) {
+                    emit_final_calls(var_expr, struct_type, xx.m_symtab, loc,
+                        entry_stmts);
+                }
+                if (!is_polymorphic) {
+                    emit_struct_component_finalize_stmts(var_expr,
+                        struct_type, xx.m_symtab, loc, entry_stmts);
+                }
+                if (has_finalizer || entry_stmts.size() > 0) {
+                    // Finalization leaves the dummy with whatever its final
+                    // subroutines left behind, so its default initialization
+                    // is applied afterwards (F2018 8.5.10).  A component that
+                    // was finalized needs this as much as a dummy that was.
+                    emit_struct_default_init_stmts(var_expr, struct_type,
+                        xx.m_symtab, loc, entry_stmts);
+                }
+                for (size_t k = 0; k < entry_stmts.size(); k++) {
+                    ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc,
+                        var_expr, arg_var->m_presence, entry_stmts[k]);
+                    dealloc_stmts.push_back(al, wrapped_stmt);
+                }
+
                 Vec<ASR::stmt_t*> cleanup;
                 cleanup.reserve(al, 1);
                 emit_struct_cleanup_stmts(var_expr, struct_type, xx.m_symtab,
@@ -596,10 +728,19 @@ public:
                 // need the dynamic type, which this pass cannot see, and are
                 // left alone -- which is what a scalar polymorphic
                 // `intent(out)` dummy already does.
+                //
+                // 7.5.6.3 requires the dummy to be finalized before that, but
+                // which final procedures run is decided by the dynamic type,
+                // so the component finalization below is emitted only for a
+                // non-polymorphic dummy.
+                bool is_polymorphic = ASRUtils::is_class_type(
+                    ASRUtils::type_get_past_array(arg_var->m_type));
+
                 Vec<ASR::stmt_t*> cleanup;
                 cleanup.reserve(al, 1);
                 emit_array_of_struct_entry_stmts(var_expr_full, struct_type,
-                    n_dims, xx.m_symtab, loc, logical_type, cleanup);
+                    n_dims, xx.m_symtab, loc, logical_type, is_polymorphic,
+                    cleanup);
 
                 if (cleanup.size() > 0) {
                     ASR::stmt_t* wrapper_block = nullptr;
