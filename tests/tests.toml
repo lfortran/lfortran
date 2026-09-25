@@ -2997,6 +2997,12 @@ ast_f90 = true
 ast_fixed_form = true
 ast_f90_fixed_form = true
 
+# Must compile without warnings: POINTER/ALLOCATABLE DO loop-control
+# expressions are valid scalar-int-expr (#12681).
+[[test]]
+filename = "../integration_tests/doloop_20.f90"
+semantics_only_cc = true
+
 [[test]]
 filename = "fixedform_doloop.f"
 ast = true
