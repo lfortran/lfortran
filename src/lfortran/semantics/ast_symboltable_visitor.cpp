@@ -168,6 +168,129 @@ public:
 
     ASR::ttype_t *tmp_type;
 
+    struct ContainedProcedureScope;
+    ContainedProcedureScope *contained_procedure_scope = nullptr;
+
+    // An instantiation in the specification part may need the interface of a
+    // procedure in CONTAINS. Declare that procedure on demand, and do not
+    // declare it again when the normal CONTAINS traversal reaches it.
+    struct ContainedProcedureScope {
+        SymbolTableVisitor &v;
+        ContainedProcedureScope *enclosing;
+        SymbolTable *scope;
+        AST::program_unit_t **procedures;
+        size_t n_procedures;
+        std::set<const AST::program_unit_t*> visited;
+
+        ContainedProcedureScope(SymbolTableVisitor &v_,
+                AST::program_unit_t **procedures_, size_t n_procedures_)
+            : v(v_), enclosing(v_.contained_procedure_scope),
+              scope(v_.current_scope), procedures(procedures_),
+              n_procedures(n_procedures_) {
+            v.contained_procedure_scope = this;
+        }
+
+        ~ContainedProcedureScope() {
+            v.contained_procedure_scope = enclosing;
+        }
+
+        AST::program_unit_t *find(const std::string &name) {
+            for (size_t i = 0; i < n_procedures; i++) {
+                AST::program_unit_t *p = procedures[i];
+                if (AST::is_a<AST::Function_t>(*p)) {
+                    if (to_lower(AST::down_cast<AST::Function_t>(p)->m_name) == name) {
+                        return p;
+                    }
+                } else if (AST::is_a<AST::Subroutine_t>(*p)) {
+                    if (to_lower(AST::down_cast<AST::Subroutine_t>(p)->m_name) == name) {
+                        return p;
+                    }
+                }
+            }
+            return nullptr;
+        }
+
+        void visit(const AST::program_unit_t &p) {
+            if (visited.insert(&p).second) {
+                v.visit_program_unit(p);
+            } else {
+                // Access statements following the instantiation still apply
+                // to a procedure that was declared on demand.
+                const char *name = nullptr;
+                if (AST::is_a<AST::Function_t>(p)) {
+                    name = AST::down_cast<AST::Function_t>(&p)->m_name;
+                } else if (AST::is_a<AST::Subroutine_t>(p)) {
+                    name = AST::down_cast<AST::Subroutine_t>(&p)->m_name;
+                }
+                if (!name) return;
+                std::string sym_name = to_lower(name);
+                ASR::symbol_t *sym = scope->get_symbol(sym_name);
+                if (sym && ASR::is_a<ASR::Function_t>(*sym)) {
+                    ASR::down_cast<ASR::Function_t>(sym)->m_access =
+                        v.assgnd_access.count(sym_name)
+                            ? v.assgnd_access[sym_name] : v.dflt_access;
+                }
+            }
+        }
+    };
+
+    void declare_instantiation_procedure(const std::string &name) {
+        ContainedProcedureScope *procedures = contained_procedure_scope;
+        if (!procedures || procedures->scope != current_scope) return;
+        AST::program_unit_t *p = procedures->find(name);
+        if (!p || procedures->visited.count(p)) return;
+
+        // Unlike the final CONTAINS traversal, this visit interrupts the
+        // host's declarations. Preserve its declaration context, including
+        // when --continue-compilation recovers from an error in the procedure.
+        SymbolTable *scope = current_scope;
+        auto implicit = implicit_dictionary;
+        auto args = current_procedure_args;
+        auto simd = simd_variables;
+        auto externals = external_procedures;
+        auto intrinsics = explicit_intrinsic_procedures;
+        auto access = assgnd_access;
+        auto storage = assgnd_storage;
+        auto presence = assgnd_presence;
+        auto pointers = assgnd_pointer;
+        auto allocatables = assgnd_allocatable;
+        auto targets = assgnd_target;
+        auto abi = current_procedure_abi_type;
+        bool save = default_storage_save;
+        bool function = is_Function;
+        bool subroutine = in_Subroutine;
+        bool templated = is_template;
+        auto restore = [&]() {
+            current_scope = scope;
+            implicit_dictionary = implicit;
+            current_procedure_args = args;
+            simd_variables = simd;
+            external_procedures = externals;
+            explicit_intrinsic_procedures = intrinsics;
+            assgnd_access = access;
+            assgnd_storage = storage;
+            assgnd_presence = presence;
+            assgnd_pointer = pointers;
+            assgnd_allocatable = allocatables;
+            assgnd_target = targets;
+            current_procedure_abi_type = abi;
+            default_storage_save = save;
+            is_Function = function;
+            in_Subroutine = subroutine;
+            is_template = templated;
+        };
+        current_procedure_args.clear();
+        default_storage_save = false;
+        is_Function = false;
+        try {
+            procedures->visit(*p);
+        } catch (SemanticAbort &) {
+            restore();
+            throw;
+        }
+        restore();
+    }
+
     static bool is_equivalence_declaration(AST::decl_stmt_t* decl) {
         if (AST::is_a<AST::Declaration_t>(*decl)) {
             AST::Declaration_t* d = AST::down_cast<AST::Declaration_t>(decl);
@@ -442,6 +565,7 @@ public:
         class_procedures.clear();
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
         // Isolate this module's externals from a previous program unit, and
         // restore that unit's list when the module ends so a later sibling
         // does not inherit them.
@@ -592,7 +716,7 @@ public:
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
             try {
-                visit_program_unit(*x.m_contains[i]);
+                contained_procedures.visit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -756,6 +880,7 @@ public:
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Program);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
         ClassProcedureScope class_procedure_scope(*this);
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures.clear();
@@ -864,7 +989,7 @@ public:
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
             try {
-                visit_program_unit(*x.m_contains[i]);
+                contained_procedures.visit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -1649,6 +1774,7 @@ public:
             current_procedure_args.clear();
         }
 
+        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
         bool subroutine_has_alternate_returns = false;
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
@@ -1778,7 +1904,7 @@ public:
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
             try {
-                visit_program_unit(*x.m_contains[i]);
+                contained_procedures.visit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -2251,6 +2377,7 @@ public:
             current_procedure_args.clear();
         }
 
+        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             current_procedure_args.push_back(to_lower(arg));
@@ -2688,7 +2815,7 @@ public:
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
             try {
-                visit_program_unit(*x.m_contains[i]);
+                contained_procedures.visit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -5727,6 +5854,7 @@ public:
         ASR::accessType dflt_access_copy = dflt_access;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
 
         std::vector<std::string> deferred_args;
         for (size_t i=0; i<x.n_namelist; i++) {
@@ -5771,7 +5899,7 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             SymbolTable *template_scope = current_scope;
             try {
-                this->visit_program_unit(*x.m_contains[i]);
+                contained_procedures.visit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
                 // An abort in the declarations of a procedure leaves its scope
@@ -5941,6 +6069,7 @@ public:
                 if (ASR::is_a<ASR::Function_t>(*param_sym)) {
                     // Handling functions passed as instantiate's arguments
                     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
+                    declare_instantiation_procedure(arg);
                     ASR::symbol_t *f_arg0 = current_scope->resolve_symbol(arg);
                     if (!f_arg0
                             && ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(arg)) {

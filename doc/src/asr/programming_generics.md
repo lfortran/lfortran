@@ -134,7 +134,7 @@ instantiate array_t {integer, add_element_integer, set_to_zero_integer}, &
   only: array_sum_integer => array_sum
 ```
 
-First we pass the concrete symbols to the template in the form of a template call `array_t(integer, add_element_integer, set_to_zero_integer)`. We are replacing the deferred type `T` with a concrete type `integer`, `add_element` with a function that computes addition between two integers `add_element_integer`, and `set_to_zero` with a function that returns a zero integer value `set_to_zero_integer`. These functions would have to be defined prior to the instantiation for them to be passed as symbol arguments to a template:
+First we pass the concrete symbols to the template in the form of a template call `array_t(integer, add_element_integer, set_to_zero_integer)`. We are replacing the deferred type `T` with a concrete type `integer`, `add_element` with a function that computes addition between two integers `add_element_integer`, and `set_to_zero` with a function that returns a zero integer value `set_to_zero_integer`. These functions must be accessible in the instantiating scope. They may be defined later in that scope's `contains` section; their interfaces are resolved before checking the instantiation arguments. A contained procedure also takes precedence over a host-associated procedure or intrinsic of the same name:
 
 ```fortran
 function add_element_integer(x, y) result(z)
