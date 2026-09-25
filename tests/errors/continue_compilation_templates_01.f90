@@ -2077,3 +2077,26 @@ contains
     end subroutine
 
 end module
+
+! A deferred constant of a templated subprogram is spelled like one of a
+! template construct (lfortran/lfortran#13360).
+module templated_subprogram_deferred_const_1
+    implicit none
+contains
+    template integer function f{n}(x) result(res)
+        integer :: n  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+        integer, intent(in) :: x
+        res = x + n
+    end function
+
+    template subroutine s{n}(x)
+        integer :: n  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+        integer, intent(inout) :: x
+        x = x + n
+    end subroutine
+
+    template subroutine s2{m}(x)
+        integer, intent(inout) :: x
+        x = x + 1
+    end subroutine
+end module

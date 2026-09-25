@@ -1196,6 +1196,48 @@ semantic error: Second argument of modulo cannot be 0
 2056 |             integer, parameter :: k = modulo(n, n - 3)  ! {Error} Second argument of modulo cannot be 0
      |                                       ^^^^^^^^^^^^^^^^ 
 
+semantic error: 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+    --> tests/errors/continue_compilation_templates_01.f90:2087:20
+     |
+2087 |         integer :: n  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+     |                    ^ 
+
+semantic error: Template argument n has not been declared in templated function specification.
+    --> tests/errors/continue_compilation_templates_01.f90:2086:5 - 2090:16
+     |
+2086 |        template integer function f{n}(x) result(res)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2090 |        end function
+     | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+    --> tests/errors/continue_compilation_templates_01.f90:2093:20
+     |
+2093 |         integer :: n  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+     |                    ^ 
+
+semantic error: Template argument n has not been declared in templated subroutine specification.
+    --> tests/errors/continue_compilation_templates_01.f90:2092:5 - 2096:18
+     |
+2092 |        template subroutine s{n}(x)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2096 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Template argument m has not been declared in templated subroutine specification.
+    --> tests/errors/continue_compilation_templates_01.f90:2098:5 - 2101:18
+     |
+2098 |        template subroutine s2{m}(x)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2101 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
     |
@@ -1220,3 +1262,9 @@ semantic error: Operator `==` undefined for the types in the expression `t == t`
     |
 535 |             prop = bin(x,y) == bin(y,x)
     |                    ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'n' is not declared
+    --> tests/errors/continue_compilation_templates_01.f90:2089:19
+     |
+2089 |         res = x + n
+     |                   ^ 'n' is undeclared

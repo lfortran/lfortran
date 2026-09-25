@@ -1562,6 +1562,44 @@ public:
             selected.p, selected.size()));
     }
 
+    // A deferred constant (F2028 R1618) is a deferred argument, so in a
+    // templated subprogram its declaration belongs to the Template, exactly
+    // like a `deferred type` statement.
+    static bool is_deferred_const_item(const AST::decl_stmt_t *item) {
+        return AST::is_a<AST::Declaration_t>(*item) && is_deferred_const_decl(
+            *AST::down_cast<AST::Declaration_t>(item));
+    }
+
+    static std::string deferred_const_spelling_msg(const std::string &name) {
+        return "'" + name + "' is a deferred argument of the template, so a"
+            " type declaration of it declares a deferred constant, which is"
+            " spelled `deferred <type>, parameter :: " + name + "`";
+    }
+
+    // A plain type declaration of a deferred argument of a templated
+    // subprogram would declare an ordinary local of the subprogram and leave
+    // the deferred argument itself undeclared. It is rejected with the message
+    // that names the standard spelling, as in a template construct.
+    void check_templated_subprogram_decl(const AST::decl_stmt_t *item,
+            char **temp_args, size_t n_temp_args) {
+        if (!AST::is_a<AST::Declaration_t>(*item)) return;
+        const AST::Declaration_t &decl = *AST::down_cast<AST::Declaration_t>(item);
+        if (decl.m_vartype == nullptr || is_deferred_const_decl(decl)) return;
+        if (AST::is_a<AST::AttrType_t>(*decl.m_vartype)
+                && AST::down_cast<AST::AttrType_t>(decl.m_vartype)->m_type
+                    == AST::decl_typeType::TypeProcedure) return;
+        for (size_t i = 0; i < decl.n_syms; i++) {
+            std::string name = to_lower(decl.m_syms[i].m_name);
+            for (size_t j = 0; j < n_temp_args; j++) {
+                if (name != to_lower(temp_args[j])) continue;
+                diag.add(diag::Diagnostic(deferred_const_spelling_msg(name),
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {decl.m_syms[i].loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
     void visit_Subroutine(const AST::Subroutine_t &x) {
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
@@ -1638,6 +1676,9 @@ public:
                         al, x.m_items[i], x.m_temp_args, x.n_temp_args, true)) {
                     visit_decl_stmt(*deferred_part);
                 }
+                if (is_deferred_const_item(x.m_items[i])) {
+                    visit_decl_stmt(*x.m_items[i]);
+                }
             }
 
             ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
@@ -1708,6 +1749,14 @@ public:
             // substitutes.
             AST::decl_stmt_t *item = x.m_items[i];
             if (x.n_temp_args > 0) {
+                if (is_deferred_const_item(item)) continue;
+                try {
+                    check_templated_subprogram_decl(item, x.m_temp_args,
+                        x.n_temp_args);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                    continue;
+                }
                 item = deferred_procedure_part(al, item, x.m_temp_args,
                     x.n_temp_args, false);
                 if (!item) continue;
@@ -2046,6 +2095,16 @@ public:
             if ( !compiler_options.continue_compilation ) throw e;
         }
         if (x.n_temp_args > 0) {
+            for (size_t i=0; i<x.n_temp_args; i++) {
+                if (!parent_scope->get_symbol(to_lower(x.m_temp_args[i]))) {
+                    diag.add(diag::Diagnostic(
+                        "Template argument " + std::string(x.m_temp_args[i])
+                        + " has not been declared in templated subroutine specification.",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
             current_scope = grandparent_scope;
         } else {
             current_scope = parent_scope;
@@ -2241,6 +2300,9 @@ public:
                         al, x.m_items[i], x.m_temp_args, x.n_temp_args, true)) {
                     visit_decl_stmt(*deferred_part);
                 }
+                if (is_deferred_const_item(x.m_items[i])) {
+                    visit_decl_stmt(*x.m_items[i]);
+                }
             }
 
             ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
@@ -2304,6 +2366,14 @@ public:
             // substitutes.
             AST::decl_stmt_t *item = x.m_items[i];
             if (x.n_temp_args > 0) {
+                if (is_deferred_const_item(item)) continue;
+                try {
+                    check_templated_subprogram_decl(item, x.m_temp_args,
+                        x.n_temp_args);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                    continue;
+                }
                 item = deferred_procedure_part(al, item, x.m_temp_args,
                     x.n_temp_args, false);
                 if (!item) continue;
@@ -5681,10 +5751,7 @@ public:
                 deferred_args.end(), name) != deferred_args.end();
             std::string msg;
             if (is_deferred_arg && !is_procedure_decl) {
-                msg = "'" + name + "' is a deferred argument of the"
-                      " template, so a type declaration of it declares a"
-                      " deferred constant, which is spelled `deferred"
-                      " <type>, parameter :: " + name + "`";
+                msg = deferred_const_spelling_msg(name);
             } else if (is_procedure_decl) {
                 msg = "a template specification part cannot declare a"
                       " procedure pointer, so '" + name + "' must not have the"
