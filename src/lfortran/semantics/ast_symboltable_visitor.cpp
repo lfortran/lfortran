@@ -1745,6 +1745,11 @@ public:
         // external function call in a program that also has a CONTAINS section)
         // would wrongly be seen as having no interface.
         std::vector<std::string> saved_external_procedures = external_procedures;
+        // Pending `optional` statements apply only to the scoping unit in
+        // which they appear: start empty and restore the host's entries once
+        // this procedure (possibly an interface body) has been processed.
+        std::map<std::string, ASR::presenceType> saved_assgnd_presence = assgnd_presence;
+        assgnd_presence.clear();
         if (x.n_temp_args > 0) {
             is_template = true;
 
@@ -2177,6 +2182,7 @@ public:
         external_procedures = saved_external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
+        assgnd_presence = saved_assgnd_presence;
         if (subroutine_contains_entry_function(sym_name, x.m_items, x.n_items)) {
             /*
                 This subroutine contains an entry function, create
@@ -2346,6 +2352,11 @@ public:
         // procedure (dropping its explicitly declared type). This mirrors the
         // handling in visit_Subroutine.
         std::vector<std::string> saved_external_procedures = external_procedures;
+        // Pending `optional` statements apply only to the scoping unit in
+        // which they appear: start empty and restore the host's entries once
+        // this procedure (possibly an interface body) has been processed.
+        std::map<std::string, ASR::presenceType> saved_assgnd_presence = assgnd_presence;
+        assgnd_presence.clear();
         std::map<std::string, std::vector<std::pair<std::string, Location>>> ext_overloaded_op_procs;
 
         if (x.n_temp_args > 0) {
@@ -3028,6 +3039,7 @@ public:
         external_procedures = saved_external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
+        assgnd_presence = saved_assgnd_presence;
         if (subroutine_contains_entry_function(sym_name, x.m_items, x.n_items)) {
             /*
                 This subroutine contains an entry function, create
@@ -3774,6 +3786,28 @@ public:
         is_interface = old_is_interface;
         in_Subroutine = old_in_Subroutine;
         current_procedure_args = old_procedure_args;
+        // An `optional :: q` statement that precedes the interface body of
+        // the dummy procedure `q` is recorded in assgnd_presence; apply it
+        // now that `q` has been declared.
+        std::string proc_name;
+        if (AST::is_a<AST::Subroutine_t>(*x.m_proc)) {
+            proc_name = to_lower(AST::down_cast<AST::Subroutine_t>(x.m_proc)->m_name);
+        } else if (AST::is_a<AST::Function_t>(*x.m_proc)) {
+            proc_name = to_lower(AST::down_cast<AST::Function_t>(x.m_proc)->m_name);
+        }
+        if (!proc_name.empty() && assgnd_presence.count(proc_name) &&
+                assgnd_presence[proc_name] == ASR::presenceType::Optional &&
+                std::find(current_procedure_args.begin(),
+                    current_procedure_args.end(), proc_name)
+                    != current_procedure_args.end()) {
+            ASR::symbol_t* proc_sym = current_scope->get_symbol(proc_name);
+            if (proc_sym && ASR::is_a<ASR::Function_t>(*proc_sym)) {
+                make_optional_procedure_dummy(proc_name,
+                    ASR::down_cast<ASR::Function_t>(proc_sym),
+                    x.m_proc->base.loc);
+                assgnd_presence.erase(proc_name);
+            }
+        }
         return;
     }
 
