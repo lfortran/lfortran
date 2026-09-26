@@ -5924,6 +5924,40 @@ public:
         return value;
     }
 
+    // The default initialization of the fixed-size array `v` of a derived
+    // type that has no initializer of its own, as static data: every element
+    // holds the default values of the components, as a scalar of the type
+    // does. Returns nullptr when every element is all zeros, and for an
+    // element whose members are set up at run time instead (see
+    // `needs_struct_array_member_init`), leaving the caller's zero
+    // initializer in place.
+    llvm::Constant* get_struct_array_default_initializer(
+            const ASR::Variable_t& v, llvm::Type* type) {
+        if (!type->isArrayTy()) return nullptr;
+        if (ASRUtils::extract_physical_type(v.m_type)
+                != ASR::array_physical_typeType::FixedSizeArray) return nullptr;
+        ASR::ttype_t* el_type = ASRUtils::type_get_past_array(v.m_type);
+        if (!ASR::is_a<ASR::StructType_t>(*el_type)
+                || ASRUtils::is_class_type(el_type)) return nullptr;
+        ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(
+            al, v.base.base.loc, const_cast<ASR::symbol_t*>(&v.base)));
+        if (ASRUtils::needs_struct_array_member_init(var_expr, v.m_type)) {
+            return nullptr;
+        }
+        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(var_expr));
+        llvm::ArrayType* arr_type = llvm::cast<llvm::ArrayType>(type);
+        std::vector<llvm::Constant*> field_values;
+        get_type_default_field_values(struct_sym, field_values, struct_sym);
+        llvm::Constant* elem = llvm::ConstantStruct::get(
+            llvm::cast<llvm::StructType>(arr_type->getElementType()),
+            field_values);
+        if (elem->isNullValue()) return nullptr;
+        std::vector<llvm::Constant*> elements(
+            arr_type->getNumElements(), elem);
+        return llvm::ConstantArray::get(arr_type, elements);
+    }
+
     llvm::Constant* get_static_struct_array_initializer(ASR::Variable_t* v,
             llvm::Type* type) {
         ASR::expr_t* value = get_static_struct_array_value(v);
@@ -6439,6 +6473,10 @@ public:
                              llvm::Constant* initializer = get_const_array(value, type->getArrayElementType());
                              module->getNamedGlobal(llvm_var_name)->setInitializer(initializer);
                           }
+                      } else if (llvm::Constant* default_init =
+                              get_struct_array_default_initializer(x, type)) {
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
+                            default_init);
                       } else {
                         module->getNamedGlobal(llvm_var_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
                         set_global_variable_linkage_as_common(ptr, x);
@@ -8024,6 +8062,38 @@ public:
         return llvm::ConstantDataArray::getString(context, bytes, false);
     }
 
+    // The default initialization of the derived type member `member`, which
+    // has no default value of its own: a nonpointer, nonallocatable scalar
+    // of a derived type takes the default values of its own components.
+    // Returns nullptr for any other member, and for a type whose members are
+    // set up at run time instead (see `struct_needs_member_init`).
+    llvm::Constant* get_struct_member_default_constant(ASR::Variable_t* member) {
+        ASR::ttype_t* member_type = member->m_type;
+        if (!ASR::is_a<ASR::StructType_t>(*member_type)
+                || ASRUtils::is_class_type(member_type)) {
+            return nullptr;
+        }
+        ASR::symbol_t* member_struct = ASRUtils::symbol_get_past_external(
+            member->m_type_declaration);
+        if (member_struct == nullptr
+                || !ASR::is_a<ASR::Struct_t>(*member_struct)) {
+            return nullptr;
+        }
+        std::set<ASR::Struct_t*> visited;
+        if (ASRUtils::struct_needs_member_init(
+                ASR::down_cast<ASR::Struct_t>(member_struct), visited)) {
+            return nullptr;
+        }
+        std::vector<llvm::Constant*> field_values;
+        get_type_default_field_values(member_struct, field_values,
+            member_struct);
+        llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(
+            llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
+                ASR::make_Var_t(al, member->base.base.loc, &member->base)),
+                member_type, module.get()));
+        return llvm::ConstantStruct::get(llvm_struct_type, field_values);
+    }
+
     void get_type_default_field_values(ASR::symbol_t* struct_sym,
             std::vector<llvm::Constant*>& field_values, ASR::symbol_t* orig_struct_sym) {
         struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
@@ -8053,6 +8123,8 @@ public:
                 ASR::expr_t* init = var->m_value ? var->m_value : var->m_symbolic_value;
                 llvm::Constant* c = create_llvm_constant_from_asr_expr(init, var->m_type,
                     orig_struct_sym);
+                field_values.push_back(c);
+            } else if (llvm::Constant* c = get_struct_member_default_constant(var)) {
                 field_values.push_back(c);
             } else {
                 llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(
