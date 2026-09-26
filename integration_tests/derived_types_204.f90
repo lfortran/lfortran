@@ -12,12 +12,21 @@ type :: outer
     type(w) :: in
     character(len=3) :: d(2, 2)
 end type
+type :: holder
+    class(w), allocatable :: p(:)
+end type
 contains
 function f(x, y) result(r)
     type(w), intent(in) :: x, y
     type(w) :: r
     r%c = y%c
 end function
+
+subroutine check_reshaped(x)
+    type(w), intent(in) :: x(:, :)
+    if (any(x(2, 2)%c /= ['ab', 'cd', 'zz'])) error stop 22
+    if (any(x(1, 2)%c /= ['ab', 'cd', 'ef'])) error stop 23
+end subroutine
 end module
 
 program derived_types_204
@@ -30,6 +39,8 @@ type(w4) :: u, u2
 type(w) :: rs(4), rb(2, 2)
 type(w), allocatable :: ra(:), rab(:, :)
 type(outer) :: ro(4), rob(2, 2)
+type(holder) :: h, h2
+class(w), allocatable :: ca(:)
 integer :: i
 
 ! Whole derived-type assignment copies every element of a
@@ -102,4 +113,22 @@ ro(2)%d(1, 2) = 'xyz'
 rob = reshape(ro, [2, 2])
 if (any(rob(2, 2)%in%c /= ['ab', 'cd', 'zz'])) error stop 18
 if (rob(2, 1)%d(1, 2) /= 'xyz' .or. rob(2, 1)%d(2, 2) /= 'ddd') error stop 19
+
+! Elements of a class(w) array component are copied through their
+! dynamic type's copy function
+allocate(h%p(2))
+h%p(1)%c = ['ab', 'cd', 'ef']
+h%p(2)%c = ['gh', 'ij', 'kl']
+h2 = h
+print *, h2%p(2)%c
+if (any(h2%p(1)%c /= ['ab', 'cd', 'ef'])) error stop 20
+if (any(h2%p(2)%c /= ['gh', 'ij', 'kl'])) error stop 21
+
+! reshape of a class(w) array
+allocate(ca(4))
+do i = 1, 4
+    ca(i)%c = ['ab', 'cd', 'ef']
+end do
+ca(4)%c(3) = 'zz'
+call check_reshaped(reshape(ca, [2, 2]))
 end program

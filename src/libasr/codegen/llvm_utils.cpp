@@ -2829,14 +2829,27 @@ namespace LCompilers {
         ASR::String_t* src_str_type = ASRUtils::get_string_type(src_type);
         llvm::Type* i64 = llvm::Type::getInt64Ty(context);
 
-        // The destination owns a buffer of the same size, allocated together
-        // with its struct (see `allocate_array_members_of_struct`).
         llvm::Value* src_data = get_string_data(src_str_type, src);
         llvm::Value* src_len = get_string_length(src_str_type, src);
         llvm::Value* total_bytes = builder->CreateMul(src_len,
             llvm::ConstantInt::get(i64, ASRUtils::get_fixed_size_of_array(src_type)
                 * src_str_type->m_kind));
-        llvm::Value* dest_data = get_string_data(dest_str_type, dest);
+        // The destination buffer is normally allocated together with its
+        // struct (see `allocate_array_members_of_struct`). Elements of class
+        // arrays are an exception: `struct_deepcopy` (class array components)
+        // and `reshape` of a class array create them as zero-filled memory
+        // and fill them through the vtable `_copy_<T>` function, as their
+        // dynamic type is only known at runtime. Their buffer is still NULL
+        // here, so allocate it.
+        llvm::Value* dest_data_ptr = get_string_data(dest_str_type, dest, true);
+        llvm::Value* dest_is_null = builder->CreateICmpEQ(
+            CreateLoad2(character_type, dest_data_ptr),
+            llvm::ConstantPointerNull::get(character_type));
+        create_if_else(dest_is_null, [&]() {
+            builder->CreateStore(LLVMArrUtils::lfortran_malloc(
+                context, *module, *builder, total_bytes), dest_data_ptr);
+        }, [](){});
+        llvm::Value* dest_data = CreateLoad2(character_type, dest_data_ptr);
         // `memmove`, as `s = s` passes the same storage for src and dest.
         builder->CreateMemMove(dest_data, llvm::MaybeAlign(),
             src_data, llvm::MaybeAlign(), total_bytes);
