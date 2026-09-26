@@ -22096,7 +22096,8 @@ public:
             erase_failed_instantiation(target_scope, scope_before);
             throw SemanticAbort();
         }
-        instantiate_body(al, type_subs, symbol_subs, new_s, s);
+        std::set<ASR::symbol_t*> instantiated_bodies;
+        instantiate_body(al, type_subs, symbol_subs, new_s, s, instantiated_bodies);
 
         return new_func_name;
     }
