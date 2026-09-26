@@ -1506,20 +1506,24 @@ public:
 
     // The part of `item`, in the specification part of a templated
     // subprogram whose deferred arguments are `temp_args`, that declares
-    // deferred procedures (`deferred == true`), or the part that declares
-    // anything else (`deferred == false`); nullptr if that part is empty.
-    // Deferred procedures belong to the Template of the subprogram, like a
-    // `deferred type` statement, because instantiation only substitutes the
-    // deferred arguments it finds there; everything else belongs to the
-    // subprogram itself. A `deferred procedure` statement and a deferred
-    // interface block declare only deferred procedures. An ordinary interface
-    // block is accepted for a deferred argument too, as it is in a template
+    // deferred constants or procedures (`deferred == true`), or the part that
+    // declares anything else (`deferred == false`); nullptr if that part is empty.
+    // Deferred constants and procedures belong to the Template of the subprogram,
+    // like a `deferred type` statement, because instantiation only substitutes
+    // the deferred arguments it finds there; everything else belongs to the
+    // subprogram itself. An ordinary interface block is accepted for a
+    // deferred argument too, as it is in a template
     // construct: its interface bodies named by a deferred argument declare
     // deferred procedures, and its other items (e.g. external procedures)
     // stay in the subprogram, so a block that mixes both is split.
-    static AST::decl_stmt_t *deferred_procedure_part(Allocator &al,
+    static AST::decl_stmt_t *deferred_argument_part(Allocator &al,
             AST::decl_stmt_t *item, char **temp_args, size_t n_temp_args,
             bool deferred) {
+        if (AST::is_a<AST::Declaration_t>(*item)
+                && is_deferred_const_decl(
+                    *AST::down_cast<AST::Declaration_t>(item))) {
+            return deferred ? item : nullptr;
+        }
         if (AST::is_a<AST::DeferredProcedure_t>(*item)) {
             return deferred ? item : nullptr;
         }
@@ -1560,6 +1564,63 @@ public:
         return AST::down_cast<AST::decl_stmt_t>(AST::make_Interface_t(al,
             iface.base.base.loc, iface.m_header, iface.m_trivia,
             selected.p, selected.size()));
+    }
+
+    static std::string deferred_const_spelling_msg(const std::string &name) {
+        return "'" + name + "' is a deferred argument of the template, so a"
+            " type declaration of it declares a deferred constant, which is"
+            " spelled `deferred <type>, parameter :: " + name + "`";
+    }
+
+    // The entity `name` of a type declaration (not a procedure declaration)
+    // in `items`, or nullptr if there is none.
+    static const AST::var_sym_t *find_type_declaration(
+            AST::decl_stmt_t **items, size_t n_items, const std::string &name) {
+        for (size_t i = 0; i < n_items; i++) {
+            if (!AST::is_a<AST::Declaration_t>(*items[i])) continue;
+            const AST::Declaration_t &decl =
+                *AST::down_cast<AST::Declaration_t>(items[i]);
+            if (decl.m_vartype == nullptr) continue;
+            if (AST::is_a<AST::AttrType_t>(*decl.m_vartype)
+                    && AST::down_cast<AST::AttrType_t>(decl.m_vartype)->m_type
+                        == AST::decl_typeType::TypeProcedure) continue;
+            for (size_t j = 0; j < decl.n_syms; j++) {
+                if (decl.m_syms[j].m_name
+                        && to_lower(decl.m_syms[j].m_name) == name) {
+                    return &decl.m_syms[j];
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    void check_templated_subprogram_args(SymbolTable *scope,
+            const std::vector<std::string> &args, AST::decl_stmt_t **items,
+            size_t n_items, const std::string &kind, const Location &loc) {
+        // Deferred declarations belong to the Template, not to the child
+        // procedure or a host scope.
+        bool undeclared = false;
+        for (const std::string &arg: args) {
+            if (scope->get_symbol(arg)) continue;
+            undeclared = true;
+            // A type declaration such as `integer :: n` or
+            // `integer, parameter :: n = 7` declared an ordinary local of the
+            // subprogram, which keeps its uses in the body resolved, so this
+            // is the only error reported for it.
+            if (const AST::var_sym_t *sym = find_type_declaration(items,
+                    n_items, arg)) {
+                diag.add(diag::Diagnostic(deferred_const_spelling_msg(arg),
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {sym->loc})}));
+            } else {
+                diag.add(diag::Diagnostic(
+                    "template argument '" + arg + "' has not been declared in "
+                    "templated " + kind + " specification",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+            }
+        }
+        if (undeclared) throw SemanticAbort();
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
@@ -1635,11 +1696,9 @@ public:
                     }
                 }
 
-                // `deferred procedure` statements and interface bodies for
-                // deferred procedures declare deferred arguments, so they
-                // belong to the Template of the templated subprogram,
+                // Deferred constants and procedures belong to the Template,
                 // exactly like a `deferred type` statement.
-                if (AST::decl_stmt_t *deferred_part = deferred_procedure_part(
+                if (AST::decl_stmt_t *deferred_part = deferred_argument_part(
                         al, x.m_items[i], x.m_temp_args, x.n_temp_args, true)) {
                     visit_decl_stmt(*deferred_part);
                 }
@@ -1707,13 +1766,12 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
             if (is_common_declaration(x.m_items[i])) continue;
-            // The deferred procedures of a templated subprogram belong to its
-            // Template, where they were declared above; declaring them here as
-            // well would shadow them with a symbol that instantiation never
-            // substitutes.
+            // The deferred constants and procedures belong to the Template,
+            // where they were declared above; declaring them here as well would
+            // shadow them with a symbol that instantiation never substitutes.
             AST::decl_stmt_t *item = x.m_items[i];
             if (x.n_temp_args > 0) {
-                item = deferred_procedure_part(al, item, x.m_temp_args,
+                item = deferred_argument_part(al, item, x.m_temp_args,
                     x.n_temp_args, false);
                 if (!item) continue;
             }
@@ -2081,7 +2139,11 @@ public:
         // built for it. Checked last, once the enclosing context has been
         // restored, so that an abort here leaves the visitor in the same state
         // as a clean return.
-        if (x.n_temp_args > 0) check_no_save_in_template(parent_scope);
+        if (x.n_temp_args > 0) {
+            check_templated_subprogram_args(parent_scope, subroutine_temp_args,
+                x.m_items, x.n_items, "subroutine", x.base.base.loc);
+            check_no_save_in_template(parent_scope);
+        }
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -2244,11 +2306,9 @@ public:
                     }
                 }
 
-                // `deferred procedure` statements and interface bodies for
-                // deferred procedures declare deferred arguments, so they
-                // belong to the Template of the templated subprogram,
+                // Deferred constants and procedures belong to the Template,
                 // exactly like a `deferred type` statement.
-                if (AST::decl_stmt_t *deferred_part = deferred_procedure_part(
+                if (AST::decl_stmt_t *deferred_part = deferred_argument_part(
                         al, x.m_items[i], x.m_temp_args, x.n_temp_args, true)) {
                     visit_decl_stmt(*deferred_part);
                 }
@@ -2309,13 +2369,12 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
             if (is_common_declaration(x.m_items[i])) continue;
-            // The deferred procedures of a templated subprogram belong to its
-            // Template, where they were declared above; declaring them here as
-            // well would shadow them with a symbol that instantiation never
-            // substitutes.
+            // The deferred constants and procedures belong to the Template,
+            // where they were declared above; declaring them here as well would
+            // shadow them with a symbol that instantiation never substitutes.
             AST::decl_stmt_t *item = x.m_items[i];
             if (x.n_temp_args > 0) {
-                item = deferred_procedure_part(al, item, x.m_temp_args,
+                item = deferred_argument_part(al, item, x.m_temp_args,
                     x.n_temp_args, false);
                 if (!item) continue;
             }
@@ -2909,17 +2968,6 @@ public:
             for (auto &proc: ext_overloaded_op_procs) {
                 overloaded_op_procs[proc.first] = proc.second;
             }
-            for (size_t i=0; i<x.n_temp_args; i++) {
-                ASR::symbol_t *s = parent_scope->get_symbol(to_lower(x.m_temp_args[i]));
-                if (!s) {
-                    diag.add(diag::Diagnostic(
-                        "Template argument " + std::string(x.m_temp_args[i])
-                        + " has not been declared in templated function specification.",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
-            }
             current_scope = grandparent_scope;
         } else {
             current_scope = parent_scope;
@@ -2944,7 +2992,11 @@ public:
         // built for it. Checked last, once the enclosing context has been
         // restored, so that an abort here leaves the visitor in the same state
         // as a clean return.
-        if (x.n_temp_args > 0) check_no_save_in_template(parent_scope);
+        if (x.n_temp_args > 0) {
+            check_templated_subprogram_args(parent_scope, function_temp_args,
+                x.m_items, x.n_items, "function", x.base.base.loc);
+            check_no_save_in_template(parent_scope);
+        }
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -5715,10 +5767,7 @@ public:
                 deferred_args.end(), name) != deferred_args.end();
             std::string msg;
             if (is_deferred_arg && !is_procedure_decl) {
-                msg = "'" + name + "' is a deferred argument of the"
-                      " template, so a type declaration of it declares a"
-                      " deferred constant, which is spelled `deferred"
-                      " <type>, parameter :: " + name + "`";
+                msg = deferred_const_spelling_msg(name);
             } else if (is_procedure_decl) {
                 msg = "a template specification part cannot declare a"
                       " procedure pointer, so '" + name + "' must not have the"
