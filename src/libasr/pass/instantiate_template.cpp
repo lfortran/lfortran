@@ -2227,20 +2227,6 @@ public:
             m_a, m_pos, type, m_value);
     }
 
-    // An elemental intrinsic applied to deferred-type values, e.g.
-    // `merge(x, y, mask)`, has a deferred result type; give the specialized
-    // call the substituted type.
-    ASR::asr_t* duplicate_IntrinsicElementalFunction(
-            ASR::IntrinsicElementalFunction_t *x) {
-        ASR::IntrinsicElementalFunction_t *f =
-            ASR::down_cast<ASR::IntrinsicElementalFunction_t>(ASRUtils::EXPR(
-                BaseExprStmtDuplicator::duplicate_IntrinsicElementalFunction(x)));
-        if (ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(f->m_type))) {
-            f->m_type = substitute_type(nullptr, f->m_type);
-        }
-        return &f->base.base;
-    }
-
     ASR::asr_t* duplicate_Cast(ASR::Cast_t *x) {
         ASR::expr_t *arg = duplicate_expr(x->m_arg);
         ASR::ttype_t *type = substitute_type(x->m_arg, ASRUtils::expr_type(x->m_arg));
