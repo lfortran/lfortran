@@ -132,6 +132,18 @@ instantiate array_t {integer, add_integer, empty_integer}, only: array_sum_integ
 ```
 passes the type `integer`, an integer addition function `add_integer`, and a function describing empty integer value `empty_integer` as arguments to template `array_t`, then instantiates the function `array_sum` as a new function named `array_sum_integer`. This instantiation wants to replace `S` in `array_t` with the type `integer`, `op_temp` function calls with `add_integer` function calls, and `empty_temp` function calls with `empty_integer` function calls.
 
+A templated procedure can also be instantiated under its own name, for
+example `instantiate g {integer}, only: g => g`, `only: g`, or with no
+`only:` list, where `g` is a templated procedure imported by `use` from the
+module that defines it. This is an LFortran generics rule, not a Fortran
+one (Fortran does not allow redeclaring a use-associated name): the
+instantiated procedure takes over the use-associated name, so that `g` then
+denotes the instantiated procedure and no longer the templated one in that
+scope. A later `instantiate g {...}` in the same scope is therefore an error.
+In the scope that defines the templated procedure, instantiating it under its
+own name is an error. A templated procedure that is only host associated is
+shadowed by the instantiation, as with any local declaration.
+
 ### Type Checking
 
 Before a function is generated on ASR level by an instantiation, the compiler checks the consistency of its type substitution based on the given symbol arguments. Currently there is no notion of subtyping in LFortran, so checking is limited to exact type checks. This is done by tracking the type substitutions made by the symbol arguments and rejecting any contradicting type subsitutition. Checking is done during symbol table visit in `visit_Instantiate`.

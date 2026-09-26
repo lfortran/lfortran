@@ -6435,10 +6435,12 @@ public:
         instantiate_templates[x.base.base.loc.first] = sym;
     }
 
-    // A templated procedure instantiated under its own name, as in
-    // `instantiate g {integer}, only: g`, replaces the use-associated name of
-    // the template, like a local declaration of the name would. The template
-    // itself cannot be replaced in the scope that defines it.
+    // LFortran generics rule: a templated procedure instantiated under its own
+    // name, as in `instantiate g {integer}, only: g`, takes over the
+    // use-associated name of the template, which then no longer names the
+    // template in this scope. Fortran itself has no such rule: a use-associated
+    // name cannot be redeclared. The template cannot be replaced in the scope
+    // that defines it.
     bool release_instantiated_name(const std::string &name,
             ASR::symbol_t *template_sym, const Location &loc) {
         ASR::symbol_t *existing = current_scope->get_symbol(name);
