@@ -12321,13 +12321,16 @@ public:
     // unallocated allocatable of its component's type, like the component's
     // own `=> null()` default initializer; it must not take the type of the
     // variable being declared or assigned. `null_args` records, for each
-    // argument, whether it is a reference to the intrinsic `null()`.
+    // argument, whether it is a reference to the intrinsic `null()`. The
+    // arguments are the values of the components from `members[first_member]`
+    // on.
     void visit_struct_constructor_args(AST::fnarg_t *args, size_t n,
             const std::vector<ASR::symbol_t*>& members, Vec<ASR::call_arg_t>& vals,
-            std::vector<NullReference>& null_args) {
+            std::vector<NullReference>& null_args, size_t first_member = 0) {
         vals.reserve(al, n);
         for (size_t i = 0; i < n; i++) {
-            ASR::symbol_t* member = i < members.size() ? members[i] : nullptr;
+            size_t index = first_member + i;
+            ASR::symbol_t* member = index < members.size() ? members[index] : nullptr;
             Vec<ASR::call_arg_t> val;
             ASR::ttype_t* prev_variable_type = current_variable_type_;
             ASR::expr_t* prev_struct_type_var_expr = current_struct_type_var_expr;
@@ -12338,6 +12341,105 @@ public:
             vals.push_back(al, val[0]);
             null_args.push_back(get_null_reference(args[i].m_end, val[0].m_value));
         }
+    }
+
+    // The ancestor type of the extended type `struct_sym` that `value`, the
+    // first positional argument of a structure constructor for it, gives
+    // as a whole, or nullptr when `value` is the value of the first
+    // component `first_member`. Standard Fortran gives only components
+    // positionally, in component order, while giving the parent component
+    // positionally, `der_t(base_t(1, 2), 3)`, is a common extension. It is
+    // taken only when the first component cannot hold the value.
+    ASR::symbol_t* get_positional_ancestor(ASR::symbol_t* struct_sym,
+            ASR::expr_t* value, ASR::symbol_t* first_member) {
+        ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+        if (ASRUtils::is_array(value_type)
+                || !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
+            return nullptr;
+        }
+        ASR::symbol_t* value_sym = ASRUtils::get_struct_sym_from_struct_expr(value);
+        if (value_sym == nullptr) {
+            return nullptr;
+        }
+        value_sym = ASRUtils::symbol_get_past_external(value_sym);
+        ASR::symbol_t* ancestor = nullptr;
+        for (ASR::symbol_t* type_sym = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(struct_sym))->m_parent;
+                type_sym != nullptr; type_sym = ASR::down_cast<ASR::Struct_t>(
+                    type_sym)->m_parent) {
+            type_sym = ASRUtils::symbol_get_past_external(type_sym);
+            if (type_sym == value_sym) {
+                ancestor = type_sym;
+                break;
+            }
+        }
+        if (ancestor == nullptr) {
+            return nullptr;
+        }
+        if (first_member != nullptr && ASR::is_a<ASR::Variable_t>(*first_member)) {
+            // A component of the value's type, or of a type it extends, such
+            // as `class(base_t), pointer :: next`, takes the value.
+            ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(first_member);
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(member_var->m_type))
+                    && member_var->m_type_declaration != nullptr) {
+                ASR::symbol_t* member_type_sym = ASRUtils::symbol_get_past_external(
+                    member_var->m_type_declaration);
+                for (ASR::symbol_t* type_sym = value_sym; type_sym != nullptr;
+                        type_sym = ASR::down_cast<ASR::Struct_t>(type_sym)->m_parent) {
+                    type_sym = ASRUtils::symbol_get_past_external(type_sym);
+                    if (type_sym == member_type_sym) {
+                        return nullptr;
+                    }
+                }
+            }
+        }
+        return ancestor;
+    }
+
+    // Visits the first positional argument `arg` of a constructor for the
+    // derived type `struct_sym`, whose components are `members`, into `vals`
+    // and `null_args`, and returns how many leading components it gives: all
+    // the components of an ancestor type when it is a value of that type (an
+    // extension, see `get_positional_ancestor()`), and the first component
+    // otherwise.
+    size_t visit_first_struct_constructor_arg(AST::fnarg_t& arg,
+            ASR::symbol_t* struct_sym, const std::vector<ASR::symbol_t*>& members,
+            Vec<ASR::call_arg_t>& vals, std::vector<NullReference>& null_args) {
+        visit_struct_constructor_args(&arg, 1, members, vals, null_args);
+        ASR::expr_t* value = vals[0].m_value;
+        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(struct_sym));
+        if (value == nullptr || struct_type->m_parent == nullptr) {
+            return 1;
+        }
+        ASR::symbol_t* ancestor = get_positional_ancestor(struct_sym, value,
+            members.empty() ? nullptr : members[0]);
+        if (ancestor == nullptr) {
+            return 1;
+        }
+        std::string parent_name = to_lower(ASRUtils::symbol_name(struct_type->m_parent));
+        diag.semantic_warning_label(
+            "giving the parent component positionally in a structure "
+            "constructor is an extension",
+            {value->base.loc},
+            "use the parent component keyword instead: " + parent_name + "=...");
+        size_t n_ancestor_args = get_struct_constructor_info(ancestor).members.size();
+        std::string ancestor_name = to_lower(ASRUtils::symbol_name(ancestor));
+        Vec<ASR::call_arg_t> ancestor_vals;
+        ancestor_vals.reserve(al, n_ancestor_args);
+        for (size_t i = 0; i < n_ancestor_args; i++) {
+            ASR::call_arg_t empty_arg;
+            empty_arg.loc = value->base.loc;
+            empty_arg.m_value = nullptr;
+            ancestor_vals.push_back(al, empty_arg);
+        }
+        // When the value cannot be spread the error was reported and its
+        // components stay unset.
+        spread_parent_component_value(ancestor_vals, members, ancestor_name,
+            value, n_ancestor_args, diag);
+        vals = ancestor_vals;
+        null_args.assign(n_ancestor_args, NullReference::none);
+        return n_ancestor_args;
     }
 
     // The reference to the intrinsic `null()` that the argument `arg`, which
@@ -12682,7 +12784,9 @@ public:
                     {arg_loc}, "type parameters and components must be specified in their respective argument lists");
                 throw SemanticAbort();
             }
-        } else if (x.n_args > info.members.size()) {
+        } else if (x.n_args > info.members.size() && (is_pdt
+                || ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(v))->m_parent == nullptr)) {
             error_too_many_constructor_args(diag,
                 extra_argument_loc(x.m_args, x.n_args, info.members.size(), loc));
         }
@@ -12692,8 +12796,28 @@ public:
                 kind_members.push_back(info.members[index]);
             }
             visit_struct_constructor_args(x.m_args, x.n_args, kind_members, vals, null_args);
-        } else {
+        } else if (is_pdt || x.n_args == 0) {
             visit_struct_constructor_args(x.m_args, x.n_args, info.members, vals, null_args);
+        } else {
+            // The first argument of an extended type may give a whole
+            // ancestor, so the arguments after it give the components from
+            // the ones it covers on.
+            size_t n_given = visit_first_struct_constructor_arg(x.m_args[0], v,
+                info.members, vals, null_args);
+            size_t n_rest = x.n_args - 1;
+            if (n_given + n_rest > info.members.size()) {
+                error_too_many_constructor_args(diag, extra_argument_loc(x.m_args,
+                    x.n_args, 1 + info.members.size() - std::min(n_given,
+                        info.members.size()), loc));
+            }
+            Vec<ASR::call_arg_t> rest_vals;
+            std::vector<NullReference> rest_null_args;
+            visit_struct_constructor_args(x.m_args + 1, n_rest, info.members,
+                rest_vals, rest_null_args, n_given);
+            for (size_t i = 0; i < rest_vals.size(); i++) {
+                vals.push_back(al, rest_vals[i]);
+                null_args.push_back(rest_null_args[i]);
+            }
         }
         if (has_component_list) {
             std::vector<ASR::symbol_t*> component_members;
@@ -24369,21 +24493,13 @@ public:
         LCOMPILERS_ASSERT(n_parent_args <= args.size());
         this->visit_expr(*value);
         ASR::expr_t* parent_value = ASRUtils::EXPR(tmp);
-        ASR::call_arg_t* parent_args = nullptr;
-        [[maybe_unused]] size_t n_args = 0;
         ASR::symbol_t* value_sym = nullptr;
         if( ASR::is_a<ASR::StructConstructor_t>(*parent_value) ) {
-            ASR::StructConstructor_t* constructor =
-                ASR::down_cast<ASR::StructConstructor_t>(parent_value);
-            value_sym = constructor->m_dt_sym;
-            parent_args = constructor->m_args;
-            n_args = constructor->n_args;
+            value_sym = ASR::down_cast<ASR::StructConstructor_t>(
+                parent_value)->m_dt_sym;
         } else if( ASR::is_a<ASR::StructConstant_t>(*parent_value) ) {
-            ASR::StructConstant_t* constant =
-                ASR::down_cast<ASR::StructConstant_t>(parent_value);
-            value_sym = constant->m_dt_sym;
-            parent_args = constant->m_args;
-            n_args = constant->n_args;
+            value_sym = ASR::down_cast<ASR::StructConstant_t>(
+                parent_value)->m_dt_sym;
         } else if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
                 ASRUtils::expr_type(parent_value))) ) {
             value_sym = ASRUtils::get_struct_sym_from_struct_expr(parent_value);
@@ -24416,6 +24532,34 @@ public:
                 return ParentComponentKwarg::error;
             }
         }
+        return spread_parent_component_value(args, constructor_arg_syms,
+            name, parent_value, n_parent_args, diag)
+            ? ParentComponentKwarg::filled : ParentComponentKwarg::error;
+    }
+
+    // Sets the `n_parent_args` leading arguments in `args` to the components
+    // of `parent_value`, a scalar value of the type of the parent component
+    // `name` (or of a type it extends), whose components are the leading
+    // components `constructor_arg_syms`. Returns false after reporting that
+    // the value cannot be read component by component here.
+    bool spread_parent_component_value(Vec<ASR::call_arg_t>& args,
+            const std::vector<ASR::symbol_t*>& constructor_arg_syms,
+            const std::string& name, ASR::expr_t* parent_value,
+            size_t n_parent_args, diag::Diagnostics& diag) {
+        LCOMPILERS_ASSERT(n_parent_args <= args.size());
+        ASR::call_arg_t* parent_args = nullptr;
+        [[maybe_unused]] size_t n_args = 0;
+        if( ASR::is_a<ASR::StructConstructor_t>(*parent_value) ) {
+            ASR::StructConstructor_t* constructor =
+                ASR::down_cast<ASR::StructConstructor_t>(parent_value);
+            parent_args = constructor->m_args;
+            n_args = constructor->n_args;
+        } else if( ASR::is_a<ASR::StructConstant_t>(*parent_value) ) {
+            ASR::StructConstant_t* constant =
+                ASR::down_cast<ASR::StructConstant_t>(parent_value);
+            parent_args = constant->m_args;
+            n_args = constant->n_args;
+        }
         if( parent_args != nullptr ) {
             // A parent constructor already carries one argument per component
             // of the parent, in the same order as the leading arguments here.
@@ -24423,7 +24567,7 @@ public:
             for( size_t i = 0; i < n_parent_args; i++ ) {
                 args.p[i] = parent_args[i];
             }
-            return ParentComponentKwarg::filled;
+            return true;
         }
         // Any other expression is read component by component. It must be
         // evaluated exactly once, so anything that is not a designator is
@@ -24452,7 +24596,7 @@ public:
                 if( !compiler_options.continue_compilation ) {
                     throw SemanticAbort();
                 }
-                return ParentComponentKwarg::error;
+                return false;
             }
             base = base_tmp;
         }
@@ -24467,7 +24611,7 @@ public:
                     parent_value->base.loc, &base_i->base, base_sym,
                     constructor_arg_syms[i], current_scope));
         }
-        return ParentComponentKwarg::filled;
+        return true;
     }
 
     // `null_args`, if given, has an entry for each positional argument in

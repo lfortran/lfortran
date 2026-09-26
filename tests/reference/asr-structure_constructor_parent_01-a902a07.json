@@ -1,0 +1,13 @@
+{
+    "basename": "asr-structure_constructor_parent_01-a902a07",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/structure_constructor_parent_01.f90",
+    "infile_hash": "63cbe5ee7e5b88320d04c8019a54a754847773d1b1a45c9e997058be",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-structure_constructor_parent_01-a902a07.stdout",
+    "stdout_hash": "2e5947e55d4913aa2bf9f4b022a6c03ed7eb5bb25fae339b3d14d129",
+    "stderr": "asr-structure_constructor_parent_01-a902a07.stderr",
+    "stderr_hash": "2df6780e3ae21ba06555d8db142af41b8b52a6a010fad38bee59d313",
+    "returncode": 0
+}

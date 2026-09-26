@@ -1,0 +1,5 @@
+warning: giving the parent component positionally in a structure constructor is an extension
+  --> tests/warnings/structure_constructor_parent_01.f90:10:13
+   |
+10 |     e = e_t(base_t(11), 51)
+   |             ^^^^^^^^^^ use the parent component keyword instead: base_t=...
