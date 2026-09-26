@@ -1440,12 +1440,30 @@ public:
                 }
             }
         } else {
+            size_t attr_start = 0;
+            if (x.n_attributes > 0 &&
+                    is_a<SimpleAttribute_t>(*x.m_attributes[0]) &&
+                    down_cast<SimpleAttribute_t>(x.m_attributes[0])->m_attr ==
+                        simple_attributeType::AttrDeferred) {
+                // `deferred <type>, <attrs> :: <entities>` (F2028 R1618) is
+                // parsed as an ordinary Declaration with `deferred` prepended
+                // to the attribute list (see DEFERRED_CONST_DECL in
+                // semantics.h). The parser only accepts `deferred` printed
+                // before the type, not as an attribute after it, so it must
+                // be special-cased here instead of printed in attribute
+                // order like the rest of the list.
+                r += syn(gr::Type);
+                r.append("deferred");
+                r += syn();
+                r.append(" ");
+                attr_start = 1;
+            }
             if (x.m_vartype) {
                 visit_decl_attribute(*x.m_vartype);
                 r += s;
-                if (x.n_attributes > 0) r.append(", ");
+                if (x.n_attributes > attr_start) r.append(", ");
             }
-            for (size_t i=0; i<x.n_attributes; i++) {
+            for (size_t i=attr_start; i<x.n_attributes; i++) {
                 visit_decl_attribute(*x.m_attributes[i]);
                 r += s;
                 if (i < x.n_attributes-1) r.append(", ");
