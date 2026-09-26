@@ -129,6 +129,11 @@ public:
         }
     };
     ScopingUnitKind scoping_unit_kind = ScopingUnitKind::Other;
+    // Names of the symbols an INSTANTIATE statement adds to the specification
+    // part of the module being visited. They are entities of that module, so
+    // their accessibility comes from its PUBLIC/PRIVATE statements, which are
+    // only known once the whole specification part has been visited.
+    std::vector<std::string> module_instantiated_symbols;
     // Marks a template construct or a templated procedure, so that the
     // restrictions of clause 16.3 also apply to every scoping unit nested in
     // it. The enclosing value is restored on exit, including when a diagnostic
@@ -593,6 +598,7 @@ public:
         // does not inherit them.
         std::vector<std::string> saved_external_procedures = external_procedures;
         external_procedures.clear();
+        module_instantiated_symbols.clear();
         current_module_dependencies.reserve(al, 4);
         generic_procedures.clear();
         ASR::asr_t *tmp0 = nullptr;
@@ -730,6 +736,18 @@ public:
                 }
             }
         }
+        for (auto &name : module_instantiated_symbols) {
+            ASR::symbol_t *s = current_scope->get_symbol(name);
+            if (s == nullptr) continue;
+            ASR::accessType access = assgnd_access.count(name)
+                ? assgnd_access[name] : dflt_access;
+            if (ASR::is_a<ASR::Function_t>(*s)) {
+                ASR::down_cast<ASR::Function_t>(s)->m_access = access;
+            } else if (ASR::is_a<ASR::Struct_t>(*s)) {
+                ASR::down_cast<ASR::Struct_t>(s)->m_access = access;
+            }
+        }
+        module_instantiated_symbols.clear();
         // Module_t already exists, so persist before CONTAINS. Nested
         // procedures can then find these names via parent-scope mapping
         // lookup even while their own accumulator is isolated.
@@ -6599,6 +6617,15 @@ public:
         if (diag.diagnostics.size() > n_diagnostics) {
             erase_failed_instantiation(current_scope, scope_before);
             throw SemanticAbort();
+        }
+
+        if (scoping_unit_kind == ScopingUnitKind::Module
+                || scoping_unit_kind == ScopingUnitKind::Submodule) {
+            for (auto const &item : current_scope->get_scope()) {
+                if (scope_before.find(item.first) == scope_before.end()) {
+                    module_instantiated_symbols.push_back(item.first);
+                }
+            }
         }
 
         instantiate_types[x.base.base.loc.first] = type_subs;
