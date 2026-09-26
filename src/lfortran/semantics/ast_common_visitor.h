@@ -21795,6 +21795,98 @@ public:
         return ordered;
     }
 
+    // Records whether the expression it walks refers to a deferred constant
+    // of an enclosing template or requirement: a named constant declared
+    // without a value, whose value is known only once that template is
+    // instantiated.
+    class DeferredConstFinder : public ASR::BaseWalkVisitor<DeferredConstFinder> {
+        public:
+        bool found = false;
+
+        void visit_Var(const ASR::Var_t& x) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                if (v->m_storage == ASR::storage_typeType::Parameter
+                        && v->m_symbolic_value == nullptr
+                        && v->m_value == nullptr) {
+                    found = true;
+                }
+            }
+        }
+    };
+
+    // An instantiation argument that is an expression corresponds to a
+    // deferred constant and must be a constant expression (R1630). Binds the
+    // deferred constant `param` to a new named constant in `scope` that holds
+    // the value, so the instantiated body refers to it the same way it refers
+    // to a named constant passed as the argument.
+    ASR::symbol_t *make_instantiation_const_arg(const AST::AttrExpr_t &arg,
+            const std::string &param, ASR::symbol_t *param_sym,
+            SymbolTable *scope) {
+        const Location &arg_loc = arg.base.base.loc;
+        if (!param_sym || !ASR::is_a<ASR::Variable_t>(*param_sym)
+                || ASRUtils::is_type_parameter(*ASRUtils::symbol_type(param_sym))) {
+            diag.add(Diagnostic("the instantiation argument for '" + param
+                + "' is an expression, but '" + param
+                + "' is not a deferred constant", Level::Error,
+                Stage::Semantic, {Label("", {arg_loc})}));
+            throw SemanticAbort();
+        }
+        this->visit_expr(*arg.m_value);
+        ASR::expr_t *arg_expr = ASRUtils::EXPR(tmp);
+        ASR::expr_t *arg_value = ASRUtils::expr_value(arg_expr);
+        if (!arg_value) {
+            // A deferred constant is a named constant, so an expression of
+            // one is a constant expression, but its value is not known until
+            // the enclosing template is instantiated
+            DeferredConstFinder finder;
+            finder.visit_expr(*arg_expr);
+            if (finder.found) {
+                diag.add(Diagnostic("the argument for the deferred constant '"
+                    + param + "' refers to a deferred constant of an enclosing"
+                    " template or requirement; expressions of deferred"
+                    " constants are not supported yet",
+                    Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
+                throw SemanticAbort();
+            }
+            diag.add(Diagnostic("the instantiation argument for the deferred"
+                " constant '" + param + "' must be a constant expression",
+                Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
+            throw SemanticAbort();
+        }
+        ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg_expr);
+        if (!ASRUtils::check_equal_type(arg_type, param_type, arg_expr,
+                ASRUtils::get_expr_from_sym(al, param_sym))) {
+            diag.add(Diagnostic("the type of the instantiation argument, "
+                + ASRUtils::type_to_str_fortran_symbol(arg_type, nullptr, true)
+                + ", does not match the type of the deferred constant '"
+                + param + "', "
+                + ASRUtils::type_to_str_fortran_symbol(param_type, nullptr, true),
+                Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
+            throw SemanticAbort();
+        }
+        std::string name = scope->get_unique_name("~" + param + "_instantiation_arg");
+        // The expression is evaluated in `current_scope`; if the named
+        // constant lives in another scope, the names it refers to may not be
+        // visible there, so only its value is kept.
+        ASR::expr_t *symbolic_value = scope == current_scope ? arg_expr : arg_value;
+        SetChar deps;
+        deps.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, deps, arg_type,
+            symbolic_value, arg_value, name);
+        ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, arg_loc, scope,
+            s2c(al, name), deps.p, deps.n, ASR::intentType::Local, symbolic_value,
+            arg_value, ASR::storage_typeType::Parameter,
+            ASRUtils::duplicate_type(al, arg_type), nullptr,
+            ASR::abiType::Source, ASR::accessType::Private,
+            ASR::presenceType::Required, false);
+        ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(v);
+        scope->add_symbol(name, sym);
+        return sym;
+    }
+
     // Returns the indices of a template's deferred arguments in the order
     // their instantiation arguments must be processed: every deferred type
     // first, then everything else, each group in declaration order. A
@@ -21971,11 +22063,16 @@ public:
                     ASR::symbol_t* sym = current_scope->resolve_symbol(op_name);
                     ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
                     ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
+                    SymbolTable *op_scope = is_nested ? current_scope->parent : current_scope;
                     for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
                         ASR::symbol_t* proc = gen_proc->m_procs[i];
                         found = check_restriction(type_subs,
                                     symbol_subs, f, proc, loc, diag,
                                     []() { throw SemanticAbort(); }, false);
+                        if (found) {
+                            symbol_subs[f_name] = make_operator_proc_visible(
+                                proc, op_name, op_scope);
+                        }
                     }
                 }
 
@@ -22074,6 +22171,12 @@ public:
                     current_scope = parent_scope;
                     symbol_subs[f->m_name] = op_sym;
                 }
+            } else if (AST::is_a<AST::AttrExpr_t>(*arg_attr)) {
+                // Handling a constant expression passed for a deferred constant
+                SymbolTable *const_scope = is_nested ? current_scope->parent : current_scope;
+                symbol_subs[param] = make_instantiation_const_arg(
+                    *AST::down_cast<AST::AttrExpr_t>(arg_attr), param,
+                    param_sym, const_scope);
             } else {
                 throw LCompilersException("Unsupported argument to instantiate statement.");
             }
@@ -26104,6 +26207,39 @@ public:
 
         // make custom operators names distinct by appending "~~" to the begining of their names
         return "~~" + op;
+    }
+
+    // A specific procedure of a generic operator can be bound to a deferred
+    // procedure of a template even when only the operator, and not the
+    // procedure, is use-associated. The instantiation refers to the procedure
+    // by name, so make sure it is visible from `scope` under a name that
+    // resolves to it, importing it if needed.
+    ASR::symbol_t* make_operator_proc_visible(ASR::symbol_t *proc,
+            const std::string &op_name, SymbolTable *scope) {
+        ASR::symbol_t *proc_def = ASRUtils::symbol_get_past_external(proc);
+        std::string name = ASRUtils::symbol_name(proc_def);
+        ASR::symbol_t *existing = scope->resolve_symbol(name);
+        if (existing && ASRUtils::symbol_get_past_external(existing) == proc_def) {
+            return existing;
+        }
+        std::string local_name = name + "@" + op_name;
+        existing = scope->resolve_symbol(local_name);
+        if (existing && ASRUtils::symbol_get_past_external(existing) == proc_def) {
+            return existing;
+        }
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(proc_def);
+        if (owner == nullptr || !ASR::is_a<ASR::Module_t>(*owner)) {
+            return proc;
+        }
+        if (scope->get_symbol(local_name) != nullptr) {
+            local_name = scope->get_unique_name(local_name, false);
+        }
+        ASR::symbol_t *imported = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_ExternalSymbol_t(al, proc_def->base.loc, scope,
+                s2c(al, local_name), proc_def, ASRUtils::symbol_name(owner),
+                nullptr, 0, s2c(al, name), ASR::accessType::Private));
+        scope->add_symbol(local_name, imported);
+        return imported;
     }
 
     ASR::symbol_t* resolve_custom_operator_proc(const std::string& intrinsic_op_name, ASR::expr_t *left, ASR::expr_t *right,
