@@ -136,16 +136,22 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         expanded.reserve(al, sc->n_args);
         for (size_t i = 0; i < sc->n_args; i++) {
             ASR::expr_t* arg = sc->m_args[i].m_value;
-            // Refuse the whole constant rather than placing the rest of it:
-            // a partial expansion is what this is built to avoid.
-            if (arg == nullptr) {
-                return false;
-            }
             if (members[i] == nullptr ||
                     !ASR::is_a<ASR::Variable_t>(*members[i])) {
                 return false;
             }
             ASR::ttype_t* member_type = ASRUtils::symbol_type(members[i]);
+            if (arg == nullptr) {
+                // A constructor may leave out an allocatable component, or
+                // give it `null()`; either way it is unallocated, which the
+                // deallocation emit_struct_cleanup_stmts emits for every
+                // allocatable component already ensures, so nothing is
+                // assigned to it.  Any other component left without a value
+                // refuses the whole constant rather than placing the rest of
+                // it: a partial expansion is what this is built to avoid.
+                if (ASRUtils::is_allocatable(member_type)) continue;
+                return false;
+            }
             // `check_equal_type` compares the element types, so the ranks are
             // compared here: an array component given a scalar would otherwise
             // be assigned element-wise after the array passes have run.
@@ -202,7 +208,10 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             value);
         for (size_t i = 0; i < sc->n_args; i++) {
             ASR::expr_t* arg = sc->m_args[i].m_value;
-            if (arg == nullptr) return false;
+            // An allocatable component left out of the constructor, or given
+            // `null()`, has no argument; emit_value_assignment refuses one
+            // for any other component.
+            if (arg == nullptr) continue;
             if (ASR::is_a<ASR::StructConstant_t>(*arg)) {
                 if (!is_constant_struct_value(arg)) return false;
             } else if (!ASRUtils::is_value_constant(arg)) {
@@ -240,23 +249,42 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             SymbolTable* current_scope,
             const Location& loc,
             Vec<ASR::stmt_t*>& out_stmts) {
+        emit_per_element_stmts(arr_expr, "_intent_out_init_idx_",
+            current_scope, loc, out_stmts,
+            [&](ASR::expr_t* elem_ref, Vec<ASR::stmt_t*>& body) {
+                if (elem_value != nullptr) {
+                    // Nothing is pushed when this returns false.
+                    (void)emit_value_assignment(elem_ref, elem_value,
+                        current_scope, loc, body);
+                } else {
+                    emit_struct_default_init_stmts(elem_ref, elem_struct,
+                        current_scope, loc, body);
+                }
+            });
+    }
+
+    // Run the statements that `emit_body` emits for one element of
+    // `arr_expr` (given a reference to it) once for every element.  Nothing
+    // is emitted, and no index variable is left behind, when it emits
+    // nothing.
+    template <typename F>
+    void emit_per_element_stmts(
+            ASR::expr_t* arr_expr,
+            const std::string& idx_prefix,
+            SymbolTable* current_scope,
+            const Location& loc,
+            Vec<ASR::stmt_t*>& out_stmts,
+            F emit_body) {
         int n_dims = ASRUtils::extract_n_dims_from_ttype(
             ASRUtils::expr_type(arr_expr));
         Vec<ASR::expr_t*> idx_vars;
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope,
-            "_intent_out_init_idx_");
+            idx_prefix);
         ASR::expr_t* elem_ref = PassUtils::create_array_ref(arr_expr,
             idx_vars, al, current_scope);
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
-        if (elem_value != nullptr) {
-            // Nothing is pushed when this returns false.
-            (void)emit_value_assignment(elem_ref, elem_value, current_scope,
-                loc, body);
-        } else {
-            emit_struct_default_init_stmts(elem_ref, elem_struct,
-                current_scope, loc, body);
-        }
+        emit_body(elem_ref, body);
         if (body.size() == 0) {
             // The index variables are not used after all.
             for (size_t d = 0; d < idx_vars.size(); d++) {
@@ -618,10 +646,24 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 }
 
                 ASR::Struct_t* m_struct = component_struct_type(m_var);
-                if (m_struct == nullptr) continue;
+                if (m_struct != nullptr) {
+                    emit_struct_cleanup_stmts(member_expr, m_struct,
+                        current_scope, loc, logical_type, out_stmts);
+                    continue;
+                }
 
-                emit_struct_cleanup_stmts(member_expr, m_struct,
-                    current_scope, loc, logical_type, out_stmts);
+                // Every element of an array component of a derived type has
+                // its allocatable components deallocated as well.
+                ASR::Struct_t* elem_struct =
+                    array_component_struct_type(m_var);
+                if (elem_struct == nullptr) continue;
+                emit_per_element_stmts(member_expr,
+                    "_intent_out_dealloc_idx_", current_scope, loc,
+                    out_stmts,
+                    [&](ASR::expr_t* elem_ref, Vec<ASR::stmt_t*>& body) {
+                        emit_struct_cleanup_stmts(elem_ref, elem_struct,
+                            current_scope, loc, logical_type, body);
+                    });
             }
             if (st->m_parent != nullptr) {
                 st = ASR::down_cast<ASR::Struct_t>(

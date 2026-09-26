@@ -2,6 +2,8 @@
 ! and that includes the components that are themselves arrays of a derived
 ! type: one with a default of its own (a single structure constructor, which
 ! is broadcast to every element) and one that takes the default of its type.
+! A constructor that leaves out an allocatable component, or gives it
+! `null()`, leaves that component unallocated in every element.
 module intent_out_array_default_init_03_mod
 implicit none
 
@@ -27,6 +29,17 @@ type :: w
     type(u) :: inner
     type(u) :: inners(2)
 end type w
+
+type :: ta
+    integer :: h = 5
+    integer, allocatable :: z(:)
+end type ta
+
+type :: va
+    type(ta) :: c(2) = ta(8)
+    type(ta) :: d(2) = ta(9, null())
+    type(ta) :: e(2)
+end type va
 
 contains
 
@@ -94,6 +107,36 @@ contains
         call check_u(b(2)%inners(2), 30)
     end subroutine reset_nested
 
+    subroutine reset_optional(a, code)
+        type(u), intent(out), optional :: a(:)
+        integer, intent(in) :: code
+        if (present(a)) then
+            call check_u(a(1), code)
+            call check_u(a(2), code)
+        end if
+    end subroutine reset_optional
+
+    subroutine reset_class(a)
+        class(u), intent(out) :: a(:)
+        call check_u(a(1), 50)
+        call check_u(a(2), 50)
+    end subroutine reset_class
+
+    subroutine reset_alloc(a)
+        type(va), intent(out) :: a(:)
+        integer :: i, k
+        do k = 1, size(a)
+            do i = 1, 2
+                if (a(k)%c(i)%h /= 8) error stop 61
+                if (allocated(a(k)%c(i)%z)) error stop 62
+                if (a(k)%d(i)%h /= 9) error stop 63
+                if (allocated(a(k)%d(i)%z)) error stop 64
+                if (a(k)%e(i)%h /= 5) error stop 65
+                if (allocated(a(k)%e(i)%z)) error stop 66
+            end do
+        end do
+    end subroutine reset_alloc
+
 end module intent_out_array_default_init_03_mod
 
 program intent_out_array_default_init_03
@@ -101,7 +144,8 @@ use intent_out_array_default_init_03_mod
 implicit none
 type(u) :: q(2)
 type(w) :: ww(2)
-integer :: i
+type(va) :: vv(2)
+integer :: i, k
 
 call spoil_u(q(1))
 call spoil_u(q(2))
@@ -117,6 +161,25 @@ do i = 1, 2
     call spoil_u(ww(i)%inners(2))
 end do
 call reset_nested(ww)
+
+call spoil_u(q(1))
+call spoil_u(q(2))
+call reset_optional(q, 40)
+call reset_optional(code=40)
+
+call spoil_u(q(1))
+call spoil_u(q(2))
+call reset_class(q)
+
+do k = 1, 2
+    do i = 1, 2
+        vv(k)%c(i)%h = 99
+        vv(k)%d(i)%h = 99
+        vv(k)%e(i)%h = 99
+        allocate(vv(k)%c(i)%z(3), vv(k)%d(i)%z(3), vv(k)%e(i)%z(3))
+    end do
+end do
+call reset_alloc(vv)
 
 print *, "ok"
 end program intent_out_array_default_init_03
