@@ -12416,14 +12416,20 @@ public:
         if (ancestor == nullptr) {
             return 1;
         }
-        std::string parent_name = to_lower(ASRUtils::symbol_name(struct_type->m_parent));
-        diag.semantic_warning_label(
-            "giving the parent component positionally in a structure "
-            "constructor is an extension",
-            {value->base.loc},
-            "use the parent component keyword instead: " + parent_name + "=...");
-        size_t n_ancestor_args = get_struct_constructor_info(ancestor).members.size();
+        // The value is the parent component of `struct_sym`, or, for a more
+        // distant ancestor, the parent component that `struct_sym` inherits
+        // from one of its ancestors; either is given by the keyword named
+        // after the type of the value.
         std::string ancestor_name = to_lower(ASRUtils::symbol_name(ancestor));
+        bool is_direct_parent = ancestor
+            == ASRUtils::symbol_get_past_external(struct_type->m_parent);
+        diag.semantic_warning_label(
+            std::string(is_direct_parent ? "giving the parent component"
+                : "giving an inherited parent component")
+            + " positionally in a structure constructor is an extension",
+            {value->base.loc},
+            "use the parent component keyword instead: " + ancestor_name + "=...");
+        size_t n_ancestor_args = get_struct_constructor_info(ancestor).members.size();
         Vec<ASR::call_arg_t> ancestor_vals;
         ancestor_vals.reserve(al, n_ancestor_args);
         for (size_t i = 0; i < n_ancestor_args; i++) {

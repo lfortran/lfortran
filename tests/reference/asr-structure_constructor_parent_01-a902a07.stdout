@@ -17,6 +17,16 @@
                                     x
                                     Public
                                 ),
+                            1_e2_t_w:
+                                (ExternalSymbol
+                                    2
+                                    1_e2_t_w
+                                    5 w
+                                    e2_t
+                                    []
+                                    w
+                                    Public
+                                ),
                             1_e_t_z:
                                 (ExternalSymbol
                                     2
@@ -106,6 +116,85 @@
                                     ()
                                     []
                                 ),
+                            e2:
+                                (Variable
+                                    2
+                                    e2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 e2_t
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            e2_t:
+                                (Struct
+                                    (SymbolTable
+                                        5
+                                        {
+                                            w:
+                                                (Variable
+                                                    5
+                                                    w
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 7 (Integer 4) Decimal)
+                                                    (IntegerConstant 7 (Integer 4) Decimal)
+                                                    Save
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    e2_t
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [w]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    2 e_t
+                                    []
+                                ),
                             e_t:
                                 (Struct
                                     (SymbolTable
@@ -189,6 +278,53 @@
                             (StructInstanceMember
                                 (Var 2 e)
                                 2 1_e_t_z
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 e2)
+                        (StructConstructor
+                            2 e2_t
+                            [((IntegerConstant 21 (Integer 4) Decimal))
+                            ((IntegerConstant 52 (Integer 4) Decimal))
+                            ((IntegerConstant 72 (Integer 4) Decimal))]
+                            (StructType
+                                [(Integer 4)]
+                                []
+                                .true.
+                                .false.
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StructInstanceMember
+                                (Var 2 e2)
+                                2 1_base_t_x
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 2 e2)
+                                2 1_e_t_z
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 2 e2)
+                                2 1_e2_t_w
                                 (Integer 4)
                                 ()
                             )]
