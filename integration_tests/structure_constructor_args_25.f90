@@ -4,7 +4,8 @@
 ! must therefore see the target's old components, not the ones an earlier
 ! argument has already given a new value. Building the value in a temporary
 ! must not add a copy where none is needed either: a component's defined
-! assignment or a final procedure would run once more.
+! assignment or a final procedure would run once more. The last cases use a
+! type declared in the main program, assigned in its internal procedures.
 module structure_constructor_args_25_mod
    implicit none
 
@@ -151,6 +152,11 @@ end module structure_constructor_args_25_mod
 program structure_constructor_args_25
    use structure_constructor_args_25_mod
    implicit none
+   type :: pa_t
+      integer :: x = 0
+      integer :: y = 0
+   end type pa_t
+   type(pa_t) :: u
    type(a_t), target :: t
    type(a_t), pointer :: p
    type(a_t) :: arr(2)
@@ -249,5 +255,30 @@ program structure_constructor_args_25
    if (size(q%v) /= 2) error stop 21
    if (any(q%v /= [5, 6])) error stop 22
 
+   call swap_u()
+   if (u%x /= 2 .or. u%y /= 1) error stop 33
+   call init_u(3)
+   if (u%x /= 1 .or. u%y /= 3) error stop 34
+   u = pa_t(1, 2)
+   u = pa_t(5, read_ux())
+   if (u%x /= 5 .or. u%y /= 1) error stop 35
+
    print *, "ok"
+
+contains
+
+   subroutine swap_u()
+      u = pa_t(1, 2)
+      u = pa_t(u%y, u%x)
+   end subroutine swap_u
+
+   subroutine init_u(k)
+      integer, intent(in) :: k
+      u = pa_t(1, k)
+   end subroutine init_u
+
+   integer function read_ux()
+      read_ux = u%x
+   end function read_ux
+
 end program structure_constructor_args_25
