@@ -16380,7 +16380,8 @@ public:
             if (fsource->getType()->isIntegerTy()) fsource = builder->CreateSIToFP(fsource, type);
             else if (fsource->getType()->isFloatingPointTy()) fsource = builder->CreateFPCast(fsource, type);
         }
-        std::string func_name = a_kind == 4 ? "llvm.copysign.f32" : "llvm.copysign.f64";
+        std::string func_name = a_kind == 4 ? "llvm.copysign.f32" :
+                                a_kind == 16 ? "llvm.copysign.f128" : "llvm.copysign.f64";
         llvm::Function *fn_copysign = module->getFunction(func_name);
         if (!fn_copysign) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(

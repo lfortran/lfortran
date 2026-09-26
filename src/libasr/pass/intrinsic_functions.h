@@ -2034,8 +2034,17 @@ namespace Sign {
     static ASR::expr_t *eval_Sign(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (ASRUtils::is_real(*t1)) {
-            double rv1 = std::abs(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
-            double rv2 = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            ASR::RealConstant_t* c1 = ASR::down_cast<ASR::RealConstant_t>(args[0]);
+            ASR::RealConstant_t* c2 = ASR::down_cast<ASR::RealConstant_t>(args[1]);
+            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+                lf_float128 mag = lf_f128_abs(ASRUtils::real_constant_get_r16(c1));
+                if (lf_f128_signbit(ASRUtils::real_constant_get_r16(c2))) {
+                    mag = lf_f128_neg(mag);
+                }
+                return ASRUtils::make_RealConstant_r16(al, loc, mag, t1);
+            }
+            double rv1 = std::abs(c1->m_r);
+            double rv2 = c2->m_r;
             rv1 = copysign(rv1, rv2);
             return ASRUtils::make_RealConstant_util(al, loc, rv1, t1);
         } else {
