@@ -1,5 +1,3 @@
-#include <array>
-#include <cstring>
 #include <fstream>
 #include <set>
 
@@ -46,23 +44,23 @@ namespace LCompilers {
 namespace LCompilers {
 
 class StringDescriptor {
-    std::array<unsigned char, sizeof(char *) + sizeof(int64_t)> storage{};
+    struct Storage {
+        char *data;
+        int64_t length;
+    };
+    Storage storage{};
 
 public:
     void *pointer() {
-        return storage.data();
+        return &storage;
     }
 
     char *data() const {
-        char *data;
-        std::memcpy(&data, storage.data(), sizeof(data));
-        return data;
+        return storage.data;
     }
 
     int64_t length() const {
-        int64_t length;
-        std::memcpy(&length, storage.data() + sizeof(char *), sizeof(length));
-        return length;
+        return storage.length;
     }
 };
 

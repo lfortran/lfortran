@@ -4,7 +4,7 @@ target datalayout = "..."
 
 %array.1 = type { i32*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %dimension_descriptor = type { i64, i64, i64 }
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 %array.2 = type { float*, i64, i32, i8, i8, i8, i8, i64, [2 x %dimension_descriptor] }
 
 @0 = private unnamed_addr constant [4 x i8] c"arr\00", align 1
@@ -199,7 +199,7 @@ define i32 @main(i32 %0, i8** %1) {
   %10 = getelementptr %array.1, %array.1* %arr_desc, i32 0, i32 0
   store i32* null, i32** %10, align 8
   store %array.1* %arr_desc, %array.1** %arr, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %str, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %str, align 8
   %11 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
   %12 = load i8*, i8** %11, align 8
   %13 = icmp ne i8* %12, null
@@ -275,7 +275,7 @@ define void @internal_sub() {
   %12 = getelementptr %array.2, %array.2* %arr_desc, i32 0, i32 0
   store float* null, float** %12, align 8
   store %array.2* %arr_desc, %array.2** %arr_real, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %str, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %str, align 8
   br label %bl.start
 
 bl.start:                                         ; preds = %.entry
