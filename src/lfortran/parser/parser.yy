@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    196 // shift/reduce conflicts
+%expect    197 // shift/reduce conflicts
 %expect-rr 185 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -892,7 +892,7 @@ instantiate_symbol
     : var_type %dprec 2 { $$ = $1; }
     | KW_OPERATOR "(" operator_type ")" { $$ = DECL_OP($3, @$); }
     | KW_OPERATOR "(" "/)" { $$ = DECL_OP(OPERATOR(DIV, @$), @$); }
-    | id %dprec 1 { $$ = ATTR_NAME($1, @$); }
+    | expr %dprec 1 { $$ = instantiate_arg_expr(p.m_a, $1, @$); }
 
 end_type
     : KW_END_TYPE id_opt
