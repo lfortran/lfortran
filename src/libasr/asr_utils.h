@@ -10039,13 +10039,13 @@ static inline bool is_array_indexed_with_array_indices(T* x) {
 // whose shape the reference carries, or nullptr when it carries none.
 //
 // What such a reference denotes is a view of the base strided by the size of
-// an element of the base, and no `array_physical_type` says that. Giving it
-// the base's shape is therefore only sound where the lowering below knows how
-// to walk it: a whole array variable of a statically known shape, reached
-// through components that hold their value inline. A base behind a descriptor
-// or an indirection (`allocatable`, `pointer`, an assumed-shape dummy) and a
-// base that is already a section or an element are left alone, so that such a
-// reference keeps the type, and the behaviour, it has always had.
+// an element of the base, and no `array_physical_type` says that. It is never
+// handed to a backend as it is: the passes index the base element by element
+// and select the component out of each element. The base has to be reached
+// through components that hold their value inline, and has to bottom out in
+// an array variable (of any kind: fixed size, `allocatable`, `pointer`,
+// assumed-shape) or in a section of one, as in `w(2:4)%u(1)`. The array
+// passes bind such a section to a pointer, or copy it, before they index it.
 static inline ASR::expr_t* struct_base_lending_shape(ASR::ArrayItem_t* x) {
     if( is_array_indexed_with_array_indices(x->m_args, x->n_args) ||
         x->m_v == nullptr ||
@@ -10069,22 +10069,23 @@ static inline ASR::expr_t* struct_base_lending_shape(ASR::ArrayItem_t* x) {
         }
         root = member->m_v;
     }
-    // The chain has to bottom out in a whole array variable. A section or an
-    // element underneath carries an offset and a stride of its own, which the
-    // shape taken from it would not describe.
+    // The chain has to bottom out in an array variable, or in a section of
+    // one, as in `w(2:4)%u(1)`: a section is an array in its own right, whose
+    // shape the reference takes. An element underneath is a scalar. A
+    // section with a vector subscript is not supported here and is left
+    // alone.
+    if( ASR::is_a<ASR::ArraySection_t>(*root) ) {
+        ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(root);
+        if( is_array_indexed_with_array_indices(section) ) {
+            return nullptr;
+        }
+        root = section->m_v;
+    }
     if( !ASR::is_a<ASR::Var_t>(*root) ) {
         return nullptr;
     }
     ASR::ttype_t* root_type = ASRUtils::expr_type(root);
-    if( root_type == nullptr || ASRUtils::is_allocatable(root_type) ||
-        ASR::is_a<ASR::Pointer_t>(*root_type) ||
-        !ASRUtils::is_array(root_type) ) {
-        return nullptr;
-    }
-    // Only a statically shaped, contiguous base. Anything reached through a
-    // descriptor has neither the shape nor the stride this type would claim.
-    if( ASRUtils::extract_physical_type(root_type) !=
-            ASR::array_physical_typeType::FixedSizeArray ) {
+    if( root_type == nullptr || !ASRUtils::is_array(root_type) ) {
         return nullptr;
     }
     return base;

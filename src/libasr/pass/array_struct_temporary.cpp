@@ -691,6 +691,27 @@ bool set_allocation_size(
         }
         case ASR::exprType::ArrayItem: {
             ASR::ArrayItem_t* array_item_t = ASR::down_cast<ASR::ArrayItem_t>(value);
+            // `w%u(2)` with `w` an array is shaped like `w`, not like the
+            // subscripts, which select one element of the component.
+            if( ASRUtils::struct_base_lending_shape(array_item_t) != nullptr ) {
+                size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
+                    array_item_t->m_type);
+                allocate_dims.reserve(al, n_dims);
+                for( size_t i = 0; i < n_dims; i++ ) {
+                    ASR::dimension_t allocate_dim;
+                    allocate_dim.loc = loc;
+                    allocate_dim.m_start = int32_one;
+                    allocate_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
+                        al, loc, value, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, loc, i + 1, ASRUtils::expr_type(int32_one))),
+                        ASRUtils::expr_type(int32_one), nullptr, false));
+                    allocate_dims.push_back(al, allocate_dim);
+                }
+                if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
+                    len_allocte_expr = ASRUtils::ASRBuilder(al, loc).StringLen(array_item_t->m_v);
+                }
+                break;
+            }
             allocate_dims.reserve(al, array_item_t->n_args);
             for( size_t i = 0; i < array_item_t->n_args; i++ ) {
                 ASR::expr_t* start = array_item_t->m_args[i].m_left;
@@ -1926,6 +1947,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             xx.m_target = bind_struct_member_base_to_pointer(
                 xx.m_target, "assignment_target");
         }
+        // The same holds for `ps(1::2)%u(2)`, an element of an array
+        // component selected out of every element of a section.
+        if( ASR::is_a<ASR::ArrayItem_t>(*xx.m_target) &&
+            ASRUtils::struct_base_lending_shape(
+                ASR::down_cast<ASR::ArrayItem_t>(xx.m_target)) != nullptr ) {
+            ASR::ArrayItem_t* target = ASR::down_cast<ASR::ArrayItem_t>(xx.m_target);
+            target->m_v = bind_struct_member_base_to_pointer(
+                target->m_v, "assignment_target");
+        }
         ASR::expr_t* lhs_array_var = nullptr;
         if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
             lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
@@ -2855,6 +2885,19 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
                 !is_assignment_target_array_section_item) ||
                 is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v)) {
+                *current_expr = create_and_allocate_temporary_variable_for_array(
+                    *current_expr, "_array_item_", al, current_body,
+                    current_scope, exprs_with_target);
+            }
+            return ;
+        } else if( ASRUtils::struct_base_lending_shape(x) != nullptr ) {
+            // `ps(1::2)%u(2)` selects one element of the component out of
+            // every element of the section, so it is an array, and the
+            // section is replaced exactly as it is in `ps(1::2)%y`. What
+            // still shares storage with the target afterwards is copied as a
+            // whole, not as the scalar an element would be.
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
+            if( is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v) ) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_item_", al, current_body,
                     current_scope, exprs_with_target);
