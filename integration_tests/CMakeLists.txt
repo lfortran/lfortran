@@ -4854,6 +4854,7 @@ RUN(NAME structure_constructor_args_13 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_14 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_20 LABELS llvm)
 RUN(NAME structure_constructor_args_21 LABELS gfortran llvm)
+RUN(NAME structure_constructor_args_28 LABELS gfortran llvm)
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function

@@ -24469,12 +24469,14 @@ public:
     }
 
     // The parent component of an extended type is a component whose name is
-    // the name of the parent type (F2018 7.5.7.2), so a structure constructor
-    // may give it by keyword: `e_t(base_t=base_t(1), z=2)`. A constructor
-    // carries one argument per component, the components inherited from the
-    // parent first, so the parent's value is spread over those leading
-    // arguments, and `n_parent_args` reports how many of them the parent
-    // component owns (whether or not they could be filled).
+    // the name of the parent type (F2018 7.5.7.2), and it is inherited like
+    // any other component, so a structure constructor may give the parent
+    // component of the type or of any of its ancestors by keyword:
+    // `e_t(base_t=base_t(1), z=2)`. A constructor carries one argument per
+    // component, the components inherited from the parent first, so the
+    // value is spread over those leading arguments, and `n_parent_args`
+    // reports how many of them the parent component owns (whether or not
+    // they could be filled).
     ParentComponentKwarg set_parent_component_kwarg(Vec<ASR::call_arg_t>& args,
             const std::vector<ASR::symbol_t*>& constructor_arg_syms,
             ASR::symbol_t* struct_sym, const std::string& name,
@@ -24482,12 +24484,19 @@ public:
             size_t& n_parent_args) {
         ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
             ASRUtils::symbol_get_past_external(struct_sym));
-        if( struct_type->m_parent == nullptr ||
-            to_lower(ASRUtils::symbol_name(struct_type->m_parent)) != name ) {
+        ASR::symbol_t* parent_sym = nullptr;
+        while( struct_type->m_parent != nullptr ) {
+            ASR::symbol_t* ancestor = ASRUtils::symbol_get_past_external(
+                struct_type->m_parent);
+            if( to_lower(ASRUtils::symbol_name(struct_type->m_parent)) == name ) {
+                parent_sym = ancestor;
+                break;
+            }
+            struct_type = ASR::down_cast<ASR::Struct_t>(ancestor);
+        }
+        if( parent_sym == nullptr ) {
             return ParentComponentKwarg::not_parent;
         }
-        ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(
-            struct_type->m_parent);
         n_parent_args = get_struct_constructor_info(parent_sym).members.size();
         LCOMPILERS_ASSERT(n_parent_args <= args.size());
         this->visit_expr(*value);
