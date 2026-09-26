@@ -1624,6 +1624,259 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     return;
 }
 
+/* ------------------------------------------------------------------------
+ * real(16) editing. The double based handlers above cannot represent a
+ * binary128 value, so E, ES, D and F editing of real(16) work on the exact
+ * 34 digit decimal expansion instead.
+ * ------------------------------------------------------------------------ */
+
+// Decimal expansion of a binary128 value: digits[0..33] hold 34 significant
+// digits and value = d0.d1d2...d33 x 10^dec_exp. Returns 0 for a finite
+// value, 1 for NaN and 2 for an infinity.
+static int f128_decimal_digits(lf_float128 v, char digits[35], int *dec_exp, bool *negative) {
+    char buf[80];
+    format_float128_fortran(buf, v);   // [-]d.ddddddddddddddddddddddddddddddddddE+eeee
+    const char *q = buf;
+    *negative = (*q == '-');
+    if (*negative) q++;
+    if (*q == 'N') return 1;
+    if (*q == 'I') return 2;
+    digits[0] = q[0];
+    memcpy(digits + 1, q + 2, 33);
+    digits[34] = '\0';
+    const char *e = strchr(q, 'E');
+    *dec_exp = e ? atoi(e + 1) : 0;
+    return 0;
+}
+
+static bool f128_digits_all_zero(const char *digits) {
+    for (const char *q = digits; *q; q++) {
+        if (*q != '0') return false;
+    }
+    return true;
+}
+
+// Round the digit string to `keep` digits in place. Returns true when the
+// rounding carried out of the leading digit; the string is then "1000..."
+// of length `keep` and the caller has to raise the decimal exponent.
+static bool f128_round_digits(char *digits, int keep, char rounding_mode, bool negative) {
+    int len = (int)strlen(digits);
+    if (keep < 0) keep = 0;
+    if (keep >= len) {
+        return false;
+    }
+    bool up = should_round_up_digits(digits, keep, rounding_mode, negative);
+    digits[keep] = '\0';
+    if (!up) {
+        return false;
+    }
+    for (int i = keep - 1; i >= 0; i--) {
+        if (digits[i] == '9') {
+            digits[i] = '0';
+        } else {
+            digits[i]++;
+            return false;
+        }
+    }
+    // every kept digit was a 9 (or keep == 0): the value becomes 10^(...)
+    memmove(digits + 1, digits, keep);
+    digits[0] = '1';
+    digits[keep] = '\0';
+    if (keep == 0) {
+        digits[0] = '1';
+        digits[1] = '\0';
+    }
+    return true;
+}
+
+static void append_padded_or_stars(char **result, const char *text, int width) {
+    int len = (int)strlen(text);
+    if (width > 0 && len > width) {
+        for (int i = 0; i < width; i++) *result = append_to_string(*result, "*");
+        return;
+    }
+    for (int i = 0; i < width - len; i++) *result = append_to_string(*result, " ");
+    *result = append_to_string(*result, text);
+}
+
+static void append_special_real(char **result, int width, bool is_nan, bool negative, bool sign_plus) {
+    const char *text = is_nan ? "NaN" : negative ? "-Infinity" : sign_plus ? "+Infinity" : "Infinity";
+    const char *short_text = is_nan ? "NaN" : negative ? "-Inf" : sign_plus ? "+Inf" : "Inf";
+    if (width > 0 && (int)strlen(text) > width) text = short_text;
+    append_padded_or_stars(result, text, width);
+}
+
+// E, D and ES editing of a real(16) value.
+static void handle_decimal_f128(char* format, lf_float128 val, int scale, char** result,
+                                const char* c, bool is_signed_plus, char rounding_mode) {
+    int width_digits, decimal_digits, exp_digits;
+    parse_decimal_or_en_format(format, &width_digits, &decimal_digits, &exp_digits);
+    int width = width_digits;
+    int d = decimal_digits;
+
+    char digits[36];
+    int dec_exp;
+    bool negative;
+    int special = f128_decimal_digits(val, digits, &dec_exp, &negative);
+    if (special) {
+        append_special_real(result, width, special == 1, negative, is_signed_plus);
+        return;
+    }
+    bool is_es = (tolower((unsigned char)format[1]) == 's');
+    bool is_zero = f128_digits_all_zero(digits);
+    int k = is_es ? 1 : scale;                 // digits in front of the decimal point
+    int nkeep = (k > 0) ? d + 1 : d + k;       // significant digits shown
+    if (nkeep < 0) nkeep = 0;
+    int exp10 = 0;
+    if (is_zero) {
+        memset(digits, '0', nkeep);
+        digits[nkeep] = '\0';
+        negative = false;
+    } else {
+        exp10 = dec_exp + 1 - k;
+        if (f128_round_digits(digits, nkeep, rounding_mode, negative)) exp10++;
+    }
+
+    char mant[128];
+    int m = 0;
+    if (k > 0) {
+        for (int i = 0; i < k && i < nkeep; i++) mant[m++] = digits[i];
+        mant[m++] = '.';
+        for (int i = k; i < nkeep; i++) mant[m++] = digits[i];
+    } else {
+        mant[m++] = '0';
+        mant[m++] = '.';
+        for (int i = 0; i < -k; i++) mant[m++] = '0';
+        for (int i = 0; i < nkeep; i++) mant[m++] = digits[i];
+    }
+    mant[m] = '\0';
+
+    int ae = exp10 < 0 ? -exp10 : exp10;
+    char sign_e = exp10 < 0 ? '-' : '+';
+    char expo[24];
+    bool keep_e = true;
+    if (exp_digits > 0) {
+        long long limit = 1;
+        for (int i = 0; i < exp_digits && i < 18; i++) limit *= 10;
+        if (ae >= limit) {
+            append_padded_or_stars(result, "**********", width > 0 ? width : 10);
+            return;
+        }
+        snprintf(expo, sizeof(expo), "%c%0*d", sign_e, exp_digits, ae);
+    } else if (width_digits == 0) {
+        // E0.d: the exponent gets the digits the kind needs (4 for real(16))
+        snprintf(expo, sizeof(expo), "%c%04d", sign_e, ae);
+    } else if (ae <= 99) {
+        snprintf(expo, sizeof(expo), "%c%02d", sign_e, ae);
+    } else if (ae <= 999) {
+        snprintf(expo, sizeof(expo), "%c%03d", sign_e, ae);
+        keep_e = false;
+    } else {
+        append_padded_or_stars(result, "**********", width);
+        return;
+    }
+
+    char text[256];
+    snprintf(text, sizeof(text), "%s%s%s%s",
+             negative ? "-" : (is_signed_plus ? "+" : ""),
+             mant, keep_e ? c : "", expo);
+    int len = (int)strlen(text);
+    if (width == 0) width = len;
+    if (len > width) {
+        // drop the optional zero in front of the decimal point
+        char *z = strstr(text, "0.");
+        if (z == text || (z == text + 1 && (text[0] == '-' || text[0] == '+'))) {
+            memmove(z, z + 1, strlen(z));
+        }
+    }
+    append_padded_or_stars(result, text, width);
+}
+
+// F editing of a real(16) value.
+static void handle_float_f128(char* format, lf_float128 val, int scale, char** result,
+                              bool use_sign_plus, char rounding_mode) {
+    int width = atoi(format + 1);
+    int d = 0;
+    char* dot_pos = strchr(format, '.');
+    if (dot_pos != NULL) d = atoi(dot_pos + 1);
+
+    char digits[36];
+    int dec_exp;
+    bool negative;
+    int special = f128_decimal_digits(val, digits, &dec_exp, &negative);
+    if (special) {
+        append_special_real(result, width, special == 1, negative, use_sign_plus);
+        return;
+    }
+    bool is_zero = f128_digits_all_zero(digits);
+    dec_exp += scale;
+
+    // full = <integer digits><fraction digits>, point after int_len characters
+    char *full = (char*)internal_malloc(5100 + d);
+    int int_len;
+    if (is_zero) {
+        full[0] = '0'; full[1] = '\0';
+        int_len = 1;
+    } else if (dec_exp + 1 <= 0) {
+        full[0] = '0';
+        memset(full + 1, '0', -(dec_exp + 1));
+        memcpy(full + 1 - (dec_exp + 1), digits, 34);
+        full[1 - (dec_exp + 1) + 34] = '\0';
+        int_len = 1;
+    } else if (dec_exp + 1 >= 34) {
+        memcpy(full, digits, 34);
+        memset(full + 34, '0', dec_exp + 1 - 34);
+        full[dec_exp + 1] = '\0';
+        int_len = dec_exp + 1;
+    } else {
+        memcpy(full, digits, 34);
+        full[34] = '\0';
+        int_len = dec_exp + 1;
+    }
+    int len = (int)strlen(full);
+    int keep = int_len + d;
+    if (keep < len) {
+        if (f128_round_digits(full, keep, rounding_mode, negative)) {
+            // the carry added an integer digit; keep d fraction digits
+            int_len++;
+            full[keep] = '0';
+            full[keep + 1] = '\0';
+        }
+    } else {
+        memset(full + len, '0', keep - len);
+        full[keep] = '\0';
+    }
+    // strip leading zeros of the integer part, keeping one digit
+    int lead = 0;
+    while (lead < int_len - 1 && full[lead] == '0') lead++;
+    char *int_str = full + lead;
+    int int_digits = int_len - lead;
+    const char *frac = full + int_len;
+    bool frac_nonzero = !f128_digits_all_zero(frac);
+    if (is_zero) negative = false;
+
+    char *text = (char*)internal_malloc(int_digits + d + 8);
+    int t = 0;
+    if (negative) text[t++] = '-';
+    else if (use_sign_plus) text[t++] = '+';
+    bool int_is_zero = (int_digits == 1 && int_str[0] == '0');
+    int total = t + int_digits + 1 + d;
+    bool drop_zero = int_is_zero &&
+        ((width > 0 && total > width) || (format[1] == '0' && frac_nonzero));
+    if (!drop_zero) {
+        memcpy(text + t, int_str, int_digits);
+        t += int_digits;
+    }
+    text[t++] = '.';
+    memcpy(text + t, frac, d);
+    t += d;
+    text[t] = '\0';
+    if (width == 0) width = t;
+    append_padded_or_stars(result, text, width);
+    internal_free(text);
+    internal_free(full);
+}
+
 void handle_SP_specifier(char** result, bool is_positive_value){
     char positive_sign_string[] = "+";
     if(is_positive_value) append_to_string(*result, positive_sign_string);
@@ -3622,6 +3875,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 // We have to cast the pointers to int64 or double to avoid accessing beyond bounds.
                 int64_t integer_val = 0;
                 double double_val = 0;
+                lf_float128 f128_val;
+                memset(&f128_val, 0, sizeof(f128_val));
                 char* char_val = NULL;
                 bool bool_val = false;
                 switch(s_info.current_element_type ){
@@ -3644,9 +3899,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         double_val = (double)*(float*)s_info.current_arg_info.current_arg; 
                         break;
                     case FLOAT_128_TYPE: {
-                        lf_float128 q128;
-                        memcpy(&q128, s_info.current_arg_info.current_arg, 16);
-                        double_val = lf_f128_to_double(q128);
+                        memcpy(&f128_val, s_info.current_arg_info.current_arg, 16);
+                        double_val = lf_f128_to_double(f128_val);
                         break;
                     }
                     case CHAR_PTR_TYPE:
@@ -4059,7 +4313,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 } else if (tolower(value[0]) == 'd') {
                     // D Editing (D[w[.d]])
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
-                    handle_decimal(value, double_val, scale, &temp_buf, "D", is_SP_specifier, rounding_mode);
+                    if (s_info.current_element_type == FLOAT_128_TYPE) {
+                        handle_decimal_f128(value, f128_val, scale, &temp_buf, "D", is_SP_specifier, rounding_mode);
+                    } else {
+                        handle_decimal(value, double_val, scale, &temp_buf, "D", is_SP_specifier, rounding_mode);
+                    }
                     apply_decimal_edit_mode(temp_buf, decimal_mode);
                     int64_t temp_len = strlen(temp_buf);
                     result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
@@ -4078,6 +4336,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
                     if (format_type == 'n') {
                         handle_en(value, double_val, scale, &temp_buf, "E", is_SP_specifier);
+                    } else if (s_info.current_element_type == FLOAT_128_TYPE) {
+                        handle_decimal_f128(value, f128_val, scale, &temp_buf, "E", is_SP_specifier, rounding_mode);
                     } else {
                         handle_decimal(value, double_val, scale, &temp_buf, "E", is_SP_specifier, rounding_mode);
                     }
@@ -4096,7 +4356,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     } else {
                         float_fmt_type = FLOAT_FORMAT_CUSTOM;
                     }
-                    handle_float(float_fmt_type, value, double_val, scale, &temp_buf, is_SP_specifier, rounding_mode);
+                    if (s_info.current_element_type == FLOAT_128_TYPE && float_fmt_type == FLOAT_FORMAT_CUSTOM) {
+                        handle_float_f128(value, f128_val, scale, &temp_buf, is_SP_specifier, rounding_mode);
+                    } else {
+                        handle_float(float_fmt_type, value, double_val, scale, &temp_buf, is_SP_specifier, rounding_mode);
+                    }
                     apply_decimal_edit_mode(temp_buf, decimal_mode);
                     int64_t temp_len = strlen(temp_buf);
                     result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
@@ -9635,6 +9899,30 @@ static int parse_fortran_double_token(const char* buffer, double* result, int* c
     return ok;
 }
 
+// Parse a real token into binary128. Returns 1 on success, 0 on failure.
+static int parse_fortran_f128_token(const char* buffer, lf_float128* result, int* consumed_chars) {
+    size_t token_len = fortran_real_token_length(buffer);
+    if (token_len == 0) return 0;
+    char *temp = (char*)internal_malloc(token_len + 2);
+    if (!temp) {
+        return 0;
+    }
+    memcpy(temp, buffer, token_len);
+    temp[token_len] = '\0';
+    normalize_fortran_real_token(temp, token_len + 2);
+    // validate with strtod (syntax and trailing characters), then convert
+    // the same token at full precision
+    char* endptr;
+    strtod(temp, &endptr);
+    int ok = (endptr != temp && *endptr == '\0');
+    if (ok) {
+        *result = lf_float128_from_str(temp);
+        if (consumed_chars) *consumed_chars = (int)token_len;
+    }
+    internal_free(temp);
+    return ok;
+}
+
 // Helper to parse float with D exponent support and error checking
 // Returns 1 on success, 0 on failure
 static int parse_fortran_float(const char* buffer, float* result) {
@@ -10848,6 +11136,127 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
         }
         normalize_numeric_input(buffer, dmode);
         if (!parse_fortran_double(buffer, p)) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input from file.\n");
+            exit(1);
+        }
+        // If we didn't consume a trailing comma in the loop, try now
+        if (c != lsep) {
+            skip_trailing_comma(filep, lsep);
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_read_f128(lf_float128 *p, int32_t unit_num, int32_t *iostat)
+{
+    int dmode = _lfortran_get_decimal_mode(unit_num);
+    char lsep = list_directed_separator(unit_num);
+    if (iostat) *iostat = 0;
+
+    if (unit_num == -1) {
+        // Read as string to handle Fortran D exponent notation
+        char buffer[100];
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+            if (iostat) return;
+            fprintf(stderr, "Error: Failed to read real(16) from stdin.\n");
+            exit(1);
+        }
+        normalize_numeric_input(buffer, dmode);
+        if (!parse_fortran_f128_token(buffer, p, NULL)) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input from stdin.\n");
+            exit(1);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    int access_mode;
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
+    if (!filep) {
+        if (iostat) { *iostat = 1; return; }
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (access_mode == 0) {
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for real(16).\n");
+                exit(1);
+            }
+            if (find_unit(unit_num)->seq_unf_pending < (int32_t)sizeof(lf_float128)) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for real(16).\n");
+                exit(1);
+            }
+            if (fread(p, sizeof(lf_float128), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read real(16) from sequential binary file.\n");
+                exit(1);
+            }
+            find_unit(unit_num)->seq_unf_pending -= (int32_t)sizeof(lf_float128);
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker while reading real(16).\n");
+                exit(1);
+            }
+        } else {
+            if (fread(p, sizeof(*p), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read real(16) from binary file.\n");
+                exit(1);
+            }
+        }
+    } else {
+        if (list_directed_check_null_repeat(unit_num)) {
+            return;
+        }
+        int c;
+        while ((c = fgetc(filep)) != EOF && isspace(c)) {}
+        if (c == EOF) {
+            if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+            fprintf(stderr, "Error: Failed to read real(16) from file.\n");
+            exit(1);
+        }
+        // Leading comma = null value
+        if (c == lsep) {
+            return;
+        }
+        if (c == '/') {
+            ungetc(c, filep);
+            return;
+        }
+        char buffer[100];
+        int len = 0;
+        do {
+            if (len < 99) buffer[len++] = (char)c;
+            c = fgetc(filep);
+        } while (c != EOF && !isspace(c) && c != lsep && c != '/');
+        buffer[len] = '\0';
+        if (c == lsep) {
+            // Trailing comma consumed (separator for next value)
+        } else if (c != EOF) {
+            ungetc(c, filep);
+        }
+        int null_count = list_directed_parse_null_repeat(buffer);
+        if (null_count > 0) {
+            {
+                struct UNIT_FILE *uf_ = find_unit(unit_num);
+                if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
+            }
+            return;
+        }
+        normalize_numeric_input(buffer, dmode);
+        if (!parse_fortran_f128_token(buffer, p, NULL)) {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid input from file.\n");
             exit(1);
@@ -13431,6 +13840,52 @@ LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format
     if (iostat) *iostat = 0;
 }
 
+LFORTRAN_API void _lfortran_string_read_f128(char *str, int64_t len, char *format, lf_float128 *f, int32_t *iostat, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    // Internal files have no connection: only a DECIMAL= specifier on the
+    // statement can select the COMMA decimal edit mode here.
+    normalize_numeric_input(buf, _lfortran_get_decimal_mode(-1));
+    int rc;
+    if (offset) {
+        int skip = 0;
+
+        /* Handle empty fields like: 1.5, , 2.5 */
+        if (_lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+            internal_free(buf);
+            return;
+        }
+
+        int consumed = 0;
+        lf_float128 tmp_f;
+        parse_fortran_f128_token(buf + skip, &tmp_f, &consumed);
+        rc = 0;
+        if (consumed > 0) {
+            char next = buf[skip + consumed];
+            /*
+             * Fortran 2018 (13.10.2): valid separators
+             * comma, slash, or blanks
+             */
+            if (next == '\0' || next == ' ' || next == '\t' || next == '\n'
+                             || next == ',' || next == '/') {
+                *f = tmp_f;
+                *offset = off + skip + consumed;
+                rc = 1;
+            }
+        }
+    } else {
+        (void)format;
+        rc = parse_fortran_f128_token(buf, f, NULL);
+    }
+    internal_free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad real for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
+}
+
 char* remove_whitespace(char* str, int64_t* len) {
     if (!str || *len <= 0) return str;
     char* start = str;
@@ -13731,6 +14186,33 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
         if ((const char *)next > end) break;
         arr[count++] = value;
         pos = next;
+    }
+    internal_free(buf);
+    if (iostat) *iostat = (count < array_size) ? -1 : 0;
+}
+
+LFORTRAN_API void _lfortran_string_read_f128_array(char *str, int64_t len, char *format, lf_float128 *arr, int64_t array_size, int32_t *iostat) {
+    (void)format;
+    char *buf = to_c_string((const fchar*)str, len);
+    // Internal files have no connection: only a DECIMAL= specifier on the
+    // statement can select the COMMA decimal edit mode here.
+    normalize_numeric_input(buf, _lfortran_get_decimal_mode(-1));
+    convert_fortran_d_exponent(buf);
+    const char *pos = buf;
+    const char *end = buf + len;
+    char *next = NULL;
+    int64_t count = 0;
+    while (pos < end && count < array_size) {
+        while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
+            pos++;
+        }
+        if (pos >= end) break;
+        int consumed = 0;
+        lf_float128 value;
+        if (!parse_fortran_f128_token(pos, &value, &consumed)) break;
+        if (pos + consumed > end) break;
+        arr[count++] = value;
+        pos += consumed;
     }
     internal_free(buf);
     if (iostat) *iostat = (count < array_size) ? -1 : 0;

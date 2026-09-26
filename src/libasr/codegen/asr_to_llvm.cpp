@@ -3672,6 +3672,19 @@ public:
     void generate_Exp(ASR::expr_t* m_arg) {
         this->visit_expr_wrapper(m_arg, true);
         llvm::Value *item = tmp;
+        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(m_arg)) == 16) {
+            // llvm.exp.f128 is lowered to expl, which is only 64-bit on
+            // Apple ARM64; call the portable runtime instead (see sqrt).
+            llvm::Type *type = llvm_utils->getFPType(16);
+            llvm::Function *fn_exp = module->getFunction("lf_expq");
+            if (!fn_exp) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(type, {type}, false);
+                fn_exp = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, "lf_expq", module.get());
+            }
+            tmp = builder->CreateCall(fn_exp, {item});
+            return;
+        }
 #if LLVM_VERSION_MAJOR >= 12
         tmp = builder->CreateUnaryIntrinsic(llvm::Intrinsic::exp, item);
 #elif LLVM_VERSION_MAJOR >= 8
@@ -8095,6 +8108,13 @@ public:
                     return llvm::ConstantFP::get(llvm_type, static_cast<float>(rc->m_r));
                 } else if (llvm_type->isDoubleTy()) {
                     return llvm::ConstantFP::get(llvm_type, rc->m_r);
+                } else if (llvm_type->isFP128Ty()) {
+                    // kind=16: m_r holds a pointer to the binary128 bytes
+                    const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(rc);
+                    uint64_t words[2] = {0, 0};
+                    std::memcpy(words, bytes, 16);
+                    llvm::APInt bits(128, llvm::ArrayRef<uint64_t>(words, 2));
+                    return llvm::ConstantFP::get(context, llvm::APFloat(llvm::APFloat::IEEEquad(), bits));
                 }
                 break;
             }
@@ -16360,7 +16380,8 @@ public:
             if (fsource->getType()->isIntegerTy()) fsource = builder->CreateSIToFP(fsource, type);
             else if (fsource->getType()->isFloatingPointTy()) fsource = builder->CreateFPCast(fsource, type);
         }
-        std::string func_name = a_kind == 4 ? "llvm.copysign.f32" : "llvm.copysign.f64";
+        std::string func_name = a_kind == 4 ? "llvm.copysign.f32" :
+                                a_kind == 16 ? "llvm.copysign.f128" : "llvm.copysign.f64";
         llvm::Function *fn_copysign = module->getFunction(func_name);
         if (!fn_copysign) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
@@ -19041,6 +19062,9 @@ public:
                 if (a_kind == 4) {
                     runtime_func_name = "_lfortran_read_float";
                     type_arg = llvm::Type::getFloatTy(context);
+                } else if (a_kind == 16) {
+                    runtime_func_name = "_lfortran_read_f128";
+                    type_arg = llvm_utils->getFPType(16);
                 } else {
                     runtime_func_name = "_lfortran_read_double";
                     type_arg = llvm::Type::getDoubleTy(context);
