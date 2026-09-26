@@ -24697,13 +24697,14 @@ public:
             null_args->resize(args.size(), NullReference::none);
         }
 
-        // The leading arguments owned by a parent component keyword, if one
-        // was given, and the name of that parent component. When the keyword
-        // was rejected those arguments stay unset and are not reported again
-        // as missing.
-        size_t n_parent_component_args = 0;
-        bool parent_component_rejected = false;
-        std::string parent_component_name;
+        // For each argument, the parent component keyword that filled it, if
+        // any, and whether a rejected parent component keyword owns it. The
+        // arguments a rejected keyword owns stay unset and are not reported
+        // again as missing. Several parent component keywords may be given,
+        // one for the parent component of the type and others for inherited
+        // ones, so each argument is tracked separately.
+        std::vector<std::string> parent_component_filler(args.size());
+        std::vector<bool> parent_component_rejected(args.size(), false);
         for (size_t i = 0; i < n; i++) {
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(constructor_args.begin(),
@@ -24714,10 +24715,13 @@ public:
                     args, constructor_arg_syms, fn, name, kwargs[i].m_value,
                     diag, n_owned);
                 if (parent_result != ParentComponentKwarg::not_parent) {
-                    n_parent_component_args = n_owned;
-                    parent_component_name = name;
-                    parent_component_rejected |=
-                        parent_result == ParentComponentKwarg::error;
+                    for (size_t j = 0; j < n_owned; j++) {
+                        if (parent_result == ParentComponentKwarg::filled) {
+                            parent_component_filler[j] = name;
+                        } else {
+                            parent_component_rejected[j] = true;
+                        }
+                    }
                     continue;
                 }
                 diag.semantic_error_label(
@@ -24737,10 +24741,10 @@ public:
             current_struct_type_var_expr = prev_struct_type_var_expr;
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if (args[idx].m_value != nullptr) {
-                if (idx < n_parent_component_args) {
+                if (!parent_component_filler[idx].empty()) {
                     diag.add(Diagnostic("component '" + name + "' is already "
                         "specified by the parent component '"
-                        + parent_component_name + "'",
+                        + parent_component_filler[idx] + "'",
                         Level::Error, Stage::Semantic, {
                             Label("", {expr->base.loc})}));
                     if (!compiler_options.continue_compilation) {
@@ -24764,7 +24768,7 @@ public:
         // If value is not specified in args nor in keyword argument, set to default initializer if it exists
         for( size_t i = 0; i < args.size(); i++ ) {
             if( args[i].m_value == nullptr ) {
-                if( parent_component_rejected && i < n_parent_component_args ) {
+                if( parent_component_rejected[i] ) {
                     // The parent component keyword owns this argument; its
                     // error was already reported, so do not report the
                     // argument as missing too.
