@@ -2820,36 +2820,28 @@ namespace LCompilers {
         llvm::Value* dest, llvm::Value* src,
         ASR::ttype_t* dest_type, ASR::ttype_t* src_type) {
         LCOMPILERS_ASSERT(ASRUtils::is_array_of_strings(src_type));
-        LCOMPILERS_ASSERT(ASRUtils::is_fixed_size_array(src_type));
-        LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(src_type) == ASR::PointerArray);
-        LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(dest_type) == ASR::PointerArray);
+        if (!(ASRUtils::extract_physical_type(src_type) == ASR::PointerArray &&
+                ASRUtils::extract_physical_type(dest_type) == ASR::PointerArray &&
+                ASRUtils::is_fixed_size_array(src_type))) {
+            throw CodeGenError("Copying this kind of character array is not implemented yet");
+        }
         ASR::String_t* dest_str_type = ASRUtils::get_string_type(dest_type);
         ASR::String_t* src_str_type = ASRUtils::get_string_type(src_type);
         llvm::Type* i64 = llvm::Type::getInt64Ty(context);
 
+        // The destination owns a buffer of the same size, allocated together
+        // with its struct (see `allocate_array_members_of_struct`).
         llvm::Value* src_data = get_string_data(src_str_type, src);
         llvm::Value* src_len = get_string_length(src_str_type, src);
         llvm::Value* total_bytes = builder->CreateMul(src_len,
             llvm::ConstantInt::get(i64, ASRUtils::get_fixed_size_of_array(src_type)
                 * src_str_type->m_kind));
-        llvm::Value* dest_data_ptr = get_string_data(dest_str_type, dest, true);
-        llvm::Value* src_not_null = builder->CreateICmpNE(src_data,
-            llvm::ConstantPointerNull::get(character_type));
-        create_if_else(src_not_null, [&]() {
-            llvm::Value* dest_data = CreateLoad2(character_type, dest_data_ptr);
-            llvm::Value* dest_is_null = builder->CreateICmpEQ(dest_data,
-                llvm::ConstantPointerNull::get(character_type));
-            create_if_else(dest_is_null, [&]() {
-                builder->CreateStore(LLVMArrUtils::lfortran_malloc(
-                    context, *module, *builder, total_bytes), dest_data_ptr);
-            }, [](){});
-            dest_data = CreateLoad2(character_type, dest_data_ptr);
-            // `memmove`, as `s = s` passes the same storage for src and dest.
-            builder->CreateMemMove(dest_data, llvm::MaybeAlign(),
-                src_data, llvm::MaybeAlign(), total_bytes);
-            builder->CreateStore(src_len,
-                get_string_length(dest_str_type, dest, true));
-        }, [](){});
+        llvm::Value* dest_data = get_string_data(dest_str_type, dest);
+        // `memmove`, as `s = s` passes the same storage for src and dest.
+        builder->CreateMemMove(dest_data, llvm::MaybeAlign(),
+            src_data, llvm::MaybeAlign(), total_bytes);
+        builder->CreateStore(src_len,
+            get_string_length(dest_str_type, dest, true));
     }
 
     llvm::Value* LLVMUtils::lfortran_str_copy_with_data(
@@ -3830,10 +3822,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 break ;
             };
             case ASR::ttypeType::String:
-                if (ASRUtils::is_array(asr_src_type) &&
-                        ASRUtils::extract_physical_type(asr_src_type) == ASR::PointerArray &&
-                        ASRUtils::extract_physical_type(asr_dest_type) == ASR::PointerArray &&
-                        ASRUtils::is_fixed_size_array(asr_src_type)) {
+                if (ASRUtils::is_array(asr_src_type)) {
                     copy_fixed_size_array_of_strings(dest, src, asr_dest_type, asr_src_type);
                     break;
                 }

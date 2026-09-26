@@ -685,7 +685,8 @@ class ASRToLLVMVisitor;
             /*
                 Copies every element of a fixed-size `PointerArray` array of
                 strings (one string descriptor whose data holds all elements
-                back to back) from src into dest.
+                back to back) from src into dest. Other layouts of arrays of strings
+                are not supported (CodeGenError).
             */
             void copy_fixed_size_array_of_strings(
                 llvm::Value* dest, llvm::Value* src,

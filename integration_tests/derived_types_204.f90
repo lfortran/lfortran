@@ -1,8 +1,12 @@
 module derived_types_204_mod
 implicit none
 integer, parameter :: three = 3
+integer, parameter :: ck = selected_char_kind('ISO_10646')
 type :: w
     character(len=2) :: c(three)
+end type
+type :: w4
+    character(len=2, kind=ck) :: c(three)
 end type
 type :: outer
     type(w) :: in
@@ -22,6 +26,7 @@ implicit none
 type(w) :: s, s2, x, arr(2), arr2(2)
 type(w), allocatable :: a
 type(outer) :: o, o2
+type(w4) :: u, u2
 
 ! Whole derived-type assignment copies every element of a
 ! character-array component (#13478)
@@ -56,4 +61,13 @@ x%c = ['gh', 'ij', 'kl']
 s = f(s, x)
 print *, s%c
 if (any(s%c /= ['gh', 'ij', 'kl'])) error stop 9
+
+! Non-default character kind: every element is copied
+u%c(1) = ck_'ab'
+u%c(2) = ck_'cd'
+u%c(3) = ck_'ef'
+u2 = u
+if (u2%c(1) /= ck_'ab') error stop 10
+if (u2%c(2) /= ck_'cd') error stop 11
+if (u2%c(3) /= ck_'ef') error stop 12
 end program
