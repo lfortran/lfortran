@@ -24889,7 +24889,7 @@ public:
                 }
                 if(ASR::is_a<ASR::Allocatable_t>(*array_type)){
                     ASR::down_cast<ASR::Array_t>((ASR::down_cast<ASR::Allocatable_t>(array_type))->m_type)->m_type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(tmp2->m_type));
-                    tmp2->m_type = array_type;
+                    tmp2->m_type = ASRUtils::type_get_past_allocatable(array_type);
                 }
             }
             // Only the outermost member was given the array shape above. In a
