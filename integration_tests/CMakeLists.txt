@@ -4851,6 +4851,8 @@ RUN(NAME structure_constructor_args_10 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_11 LABELS llvm flang) # `pdt(k)(...)` constructors are not accepted by every supported gfortran
 RUN(NAME structure_constructor_args_12 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_13 LABELS gfortran llvm)
+RUN(NAME structure_constructor_args_22 LABELS gfortran llvm)
+RUN(NAME structure_constructor_args_23 LABELS llvm) # gfortran 13 miscompiles unallocated scalar allocatable data sources
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
