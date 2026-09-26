@@ -1396,6 +1396,13 @@ namespace LCompilers {
                     llvm_data_type, dest_data, idx_val);
 
                 ASR::ttype_t* elem_type = ASRUtils::extract_type(asr_data_type);
+                // Give the element the member storage a struct owns (e.g.
+                // fixed-size character array buffers), which deepcopy
+                // copies into.
+                llvm_utils->struct_api->allocate_struct_members(
+                    ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(array_expr))),
+                    dest_elem, elem_type);
                 llvm_utils->deepcopy(array_expr, src_elem, dest_elem,
                     elem_type, elem_type, module);
 

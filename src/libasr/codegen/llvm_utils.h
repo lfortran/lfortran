@@ -2905,6 +2905,14 @@ class ASRToLLVMVisitor;
 
             void fill_intrinsic_type_allocate_body(ASR::ttype_t* type, llvm::Function* func, llvm::Module* module);
 
+            // Allocate the member storage owned by the struct at `ptr` (array
+            // descriptors, fixed-size character array buffers, ...), as done
+            // for every newly created struct instance.
+            void allocate_struct_members(ASR::Struct_t* struct_t, llvm::Value* ptr,
+                ASR::ttype_t* struct_type) {
+                allocate_struct_array_members(struct_t, ptr, struct_type, false);
+            }
+
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
                 bool use_defined_assignment = false);
