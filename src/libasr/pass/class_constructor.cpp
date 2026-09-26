@@ -38,6 +38,77 @@ class ReplaceStructConstructor: public ASR::BaseExprReplacer<ReplaceStructConstr
     }
 };
 
+// Whether evaluating an expression may read the storage of an assignment
+// target. It errs on the side of `true`: a function may read the target
+// through host or use association, and a pointer or an associate name may
+// refer to it.
+class TargetReadFinder : public ASR::BaseWalkVisitor<TargetReadFinder> {
+
+    public:
+
+    ASR::symbol_t* target_root;
+    bool target_through_pointer;
+    bool found;
+
+    TargetReadFinder(ASR::symbol_t* target_root_, bool target_through_pointer_) :
+        target_root(target_root_), target_through_pointer(target_through_pointer_),
+        found(false) {}
+
+    void visit_Var(const ASR::Var_t& x) {
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_v);
+        if( sym == target_root || target_through_pointer ||
+                !ASR::is_a<ASR::Variable_t>(*sym) ||
+                ASRUtils::is_pointer(ASRUtils::symbol_type(sym)) ) {
+            found = true;
+        }
+    }
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+        if( ASRUtils::is_pointer(x.m_type) ) {
+            found = true;
+        }
+        ASR::BaseWalkVisitor<TargetReadFinder>::visit_StructInstanceMember(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        if( x.m_value == nullptr ) {
+            found = true;
+        }
+        ASR::BaseWalkVisitor<TargetReadFinder>::visit_FunctionCall(x);
+    }
+};
+
+// F2018 10.2.1.3: the value of an intrinsic assignment is evaluated before
+// the target is defined. A structure constructor written component by
+// component straight into the target breaks that when a component value
+// reads the target, as the components assigned before it have already been
+// overwritten. Returns whether `value` may do so.
+static bool value_may_read_target(ASR::expr_t* target, ASR::expr_t* value) {
+    bool target_through_pointer = false;
+    ASR::expr_t* root = target;
+    while( true ) {
+        if( ASRUtils::is_pointer(ASRUtils::expr_type(root)) ) {
+            target_through_pointer = true;
+        }
+        if( ASR::is_a<ASR::StructInstanceMember_t>(*root) ) {
+            root = ASR::down_cast<ASR::StructInstanceMember_t>(root)->m_v;
+        } else if( ASR::is_a<ASR::ArrayItem_t>(*root) ) {
+            root = ASR::down_cast<ASR::ArrayItem_t>(root)->m_v;
+        } else if( ASR::is_a<ASR::ArraySection_t>(*root) ) {
+            root = ASR::down_cast<ASR::ArraySection_t>(root)->m_v;
+        } else {
+            break;
+        }
+    }
+    if( !ASR::is_a<ASR::Var_t>(*root) ) {
+        return true;
+    }
+    TargetReadFinder finder(ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(root)->m_v), target_through_pointer);
+    finder.visit_expr(*value);
+    return finder.found;
+}
+
 class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<StructConstructorVisitor>
 {
     private:
@@ -112,6 +183,11 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
             if ((ASR::is_a<ASR::Allocatable_t>(*target_type) ||
                     ASRUtils::is_array(target_type)) &&
                     ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(target_type))) {
+                replacer.result_var = nullptr;
+            } else if( value_may_read_target(x.m_target, x.m_value) ) {
+                // Build the value in a temporary and assign that to the
+                // target, so no component value sees a component of the
+                // target already overwritten.
                 replacer.result_var = nullptr;
             } else {
                 replacer.result_var = x.m_target;
