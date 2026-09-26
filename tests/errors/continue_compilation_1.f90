@@ -1813,3 +1813,172 @@ contains
         print *, p
     end subroutine
 end subroutine
+
+module template_scope_restrictions_m
+    implicit none
+    template unary{t, op}
+        deferred type :: t
+        deferred interface
+            function op(x) result(value)
+                type(t), intent(in) :: x
+                type(t) :: value
+            end function
+        end interface
+    end template
+contains
+    subroutine check_forward_restrictions()
+        instantiate unary{integer, scalar}
+        ! Check every restriction against the completed actual, not its provisional interface.
+        instantiate unary{real, scalar}  ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, real_result}  ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, binary}  ! {Error} Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+        instantiate unary{integer, assign_value}  ! {Error} The restriction argument assign_value should have a return value
+    contains
+        integer function scalar(x) result(value)
+            integer, intent(in) :: x
+            value = x
+        end function
+        real function real_result(x) result(value)
+            integer, intent(in) :: x
+            value = real(x)
+        end function
+        integer function binary(x, y) result(value)
+            integer, intent(in) :: x, y
+            value = x + y
+        end function
+        subroutine assign_value(x)
+            integer, intent(in) :: x
+        end subroutine
+    end subroutine
+end module
+
+module template_scope_recovery_m
+    implicit none
+    template unary{t, op}
+        deferred type :: t
+        deferred interface
+            function op(x) result(value)
+                type(t), intent(in) :: x
+                type(t) :: value
+            end function
+        end interface
+        type :: holder
+            type(t) :: value
+        end type
+    contains
+        function apply(x) result(value)
+            type(t), intent(in) :: x
+            type(t) :: value
+            value = op(x)
+        end function
+    end template
+contains
+    subroutine check_rejected_bodies()
+        instantiate unary{real, scalar}, only: rejected_apply => apply, rejected_holder => holder ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, scalar}, only: apply_scalar => apply
+        instantiate unary{integer, real_result}, only: apply_real_result => apply ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, binary}, only: apply_binary => apply ! {Error} Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+        instantiate unary{integer, assign_value}, only: apply_assign_value => apply ! {Error} The restriction argument assign_value should have a return value
+        integer, parameter :: offset = 20
+        type(rejected_holder) :: item
+        procedure(rejected_apply), pointer :: rejected_callback
+        procedure(apply_scalar), pointer :: callback
+
+        item%value = 1.0
+        callback => apply_scalar
+        if (scalar(2) /= 22) error stop
+        if (apply_scalar(3) /= 23) error stop
+        if (callback(4) /= 24) error stop
+        print *, after_template_recovery_missing ! {Error} Variable 'after_template_recovery_missing' is not declared
+    contains
+        integer function scalar(x) result(value)
+            integer, intent(in) :: x
+            value = x + offset
+        end function
+        real function real_result(x) result(value)
+            integer, intent(in) :: x
+            value = real(x)
+        end function
+        integer function binary(x, y) result(value)
+            integer, intent(in) :: x, y
+            value = x + y
+        end function
+        subroutine assign_value(x)
+            integer, intent(in) :: x
+        end subroutine
+    end subroutine
+end module
+
+module template_scope_templated_function_m
+    implicit none
+    template unary{op}
+        deferred interface
+            integer function op(x)
+                integer, intent(in) :: x
+            end function
+        end interface
+    contains
+        integer function apply(x) result(value)
+            integer, intent(in) :: x
+            value = op(x)
+        end function
+    end template
+contains
+    subroutine check_templated_function()
+        instantiate unary{abs}, only: rejected_function => apply ! {Error} templated procedure 'abs' cannot be used as a procedure argument
+        instantiate unary{increment}, only: valid_function => apply
+        if (valid_function(2) /= 3) error stop
+        print *, after_templated_function_missing ! {Error} Variable 'after_templated_function_missing' is not declared
+    contains
+        template function abs{t}(x) result(value)
+            deferred type :: t
+            type(t), intent(in) :: x
+            type(t) :: value
+            value = x
+        end function
+        integer function increment(x) result(value)
+            integer, intent(in) :: x
+            value = x + 1
+        end function
+    end subroutine
+end module
+
+module template_scope_templated_subroutine_m
+    implicit none
+    template action{op}
+        deferred interface
+            subroutine op(x)
+                integer, intent(inout) :: x
+            end subroutine
+        end interface
+    contains
+        subroutine apply(x)
+            integer, intent(inout) :: x
+            call op(x)
+        end subroutine
+    end template
+contains
+    subroutine actual(x)
+        integer, intent(inout) :: x
+        x = x + 10
+    end subroutine
+    subroutine check_templated_subroutine()
+        instantiate action{op=actual}, only: rejected_subroutine => apply ! {Error} templated procedure 'actual' cannot be used as a procedure argument
+        instantiate action{assign_value}, only: valid_subroutine => apply
+        integer :: value
+        value = 2
+        call valid_subroutine(value)
+        if (value /= 3) error stop
+        print *, after_templated_subroutine_missing ! {Error} Variable 'after_templated_subroutine_missing' is not declared
+    contains
+        template subroutine actual{t}(x)
+            deferred type :: t
+            type(t), intent(inout) :: x
+            x = x
+        end subroutine
+        subroutine assign_value(x)
+            integer, intent(inout) :: x
+            x = x + 1
+        end subroutine
+    end subroutine
+end module

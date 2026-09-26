@@ -1286,6 +1286,42 @@ semantic error: the instantiation 'own_name_tmpl' cannot have the name of the te
 2167 |     instantiate own_name_tmpl {integer}, only: own_name_tmpl
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: the instantiation argument for the deferred constant 'n' must be a constant expression
+    --> tests/errors/continue_compilation_templates_01.f90:2188:46
+     |
+2188 |         instantiate tmpl_const_arg {integer, k + 1}  ! {Error} the instantiation argument for the deferred constant 'n' must be a constant expression
+     |                                              ^^^^^ 
+
+semantic error: the instantiation argument for 't' is an expression, but 't' is not a deferred constant
+    --> tests/errors/continue_compilation_templates_01.f90:2192:37
+     |
+2192 |         instantiate tmpl_const_arg {2, 3}  ! {Error} the instantiation argument for 't' is an expression, but 't' is not a deferred constant
+     |                                     ^ 
+
+semantic error: the type of the instantiation argument, integer(8), does not match the type of the deferred constant 'n', integer(4)
+    --> tests/errors/continue_compilation_templates_01.f90:2196:46
+     |
+2196 |         instantiate tmpl_const_arg {integer, 3_8}  ! {Error} the type of the instantiation argument, integer(8), does not match the type of the deferred constant 'n', integer(4)
+     |                                              ^^^ 
+
+semantic error: the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
+    --> tests/errors/continue_compilation_templates_01.f90:2222:34
+     |
+2222 |         require :: req_const_arg{n + 1}  ! {Error} the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
+     |                                  ^^^^^ 
+
+semantic error: the type of the instantiation argument, real(4), does not match the type of the deferred constant 'n', integer(4)
+    --> tests/errors/continue_compilation_templates_01.f90:2227:34
+     |
+2227 |         require :: req_const_arg{1.5}  ! {Error} the type of the instantiation argument, real(4), does not match the type of the deferred constant 'n', integer(4)
+     |                                  ^^^ 
+
+semantic error: the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
+    --> tests/errors/continue_compilation_templates_01.f90:2243:43
+     |
+2243 |             instantiate tmpl_inner_const {m + 1}, only: g1 => get_n  ! {Error} the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
+     |                                           ^^^^^ 
+
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
     |
@@ -1310,3 +1346,9 @@ semantic error: Operator `==` undefined for the types in the expression `t == t`
     |
 535 |             prop = bin(x,y) == bin(y,x)
     |                    ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the instantiation argument for 't' is an expression, but 't' is not a deferred constant
+    --> tests/errors/continue_compilation_templates_01.f90:2208:31
+     |
+2208 |         call inline_const_arg{2}(y)  ! {Error} the instantiation argument for 't' is an expression, but 't' is not a deferred constant
+     |                               ^ 
