@@ -2079,6 +2079,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "fmt_deferred_const_13548.f90"
+ast_f90 = true
+
+[[test]]
 filename = "assign.f90"
 ast = true
 ast_f90 = true
