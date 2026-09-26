@@ -682,6 +682,15 @@ class ASRToLLVMVisitor;
                 ASR::String_t* dest_str_type, ASR::String_t* src_str_type,
                 bool is_dest_allocatable);
 
+            /*
+                Copies every element of a fixed-size `PointerArray` array of
+                strings (one string descriptor whose data holds all elements
+                back to back) from src into dest.
+            */
+            void copy_fixed_size_array_of_strings(
+                llvm::Value* dest, llvm::Value* src,
+                ASR::ttype_t* dest_type, ASR::ttype_t* src_type);
+
 
             /*
                 *String copying src into destination,
