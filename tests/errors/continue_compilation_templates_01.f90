@@ -2250,6 +2250,19 @@ contains
     end subroutine
 end module
 
+module continue_compilation_templates_01_own_name_construct
+    implicit none
+    template own_tmpl {t}
+        deferred type :: t
+    contains
+        function five(x) result(y)
+            type(t), intent(in) :: x
+            type(t) :: y
+            y = x
+        end function
+    end template
+end module
+
 ! An instance must not take the name of the templated procedure it instantiates.
 module continue_compilation_templates_01_own_name
     use continue_compilation_templates_01_own_name_tmpl
@@ -2269,5 +2282,10 @@ contains
 
     subroutine own_name_subroutine()
         instantiate s {integer}, only: s  ! {Error} instantiated procedure 's' has the same name as the templated procedure 's' it instantiates
+    end subroutine
+
+    subroutine own_name_construct()
+        use continue_compilation_templates_01_own_name_construct
+        instantiate own_tmpl {integer}, only: own_tmpl => five  ! {Error} instantiated procedure 'own_tmpl' has the same name as the template 'own_tmpl' it instantiates
     end subroutine
 end module

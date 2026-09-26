@@ -6151,6 +6151,7 @@ public:
                 ->m_return_var == nullptr;
         }
         std::string local_name;
+        std::string remote_name;
         Location loc = x.base.base.loc;
         if (x.n_symbols == 0) {
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
@@ -6160,6 +6161,7 @@ public:
                         && !ASRUtils::is_template_arg(&temp->base, s_name)
                         && to_lower(s_name) == template_name) {
                     local_name = s_name;
+                    remote_name = s_name;
                     break;
                 }
             }
@@ -6171,6 +6173,7 @@ public:
                     ? use_symbol->m_local_rename : use_symbol->m_remote_sym);
                 if (name == template_name) {
                     local_name = name;
+                    remote_name = to_lower(use_symbol->m_remote_sym);
                     loc = use_symbol->base.base.loc;
                     break;
                 }
@@ -6182,7 +6185,7 @@ public:
         std::string what = is_templated_subprogram
             ? "the templated procedure" : "the template";
         std::string help = "help: give the instance a different local name,"
-            " e.g. `only: " + local_name + "_instance => " + local_name + "`";
+            " e.g. `only: " + local_name + "_instance => " + remote_name + "`";
         if (is_templated_subprogram) {
             help += ", or call it inline as `"
                 + std::string(is_subroutine ? "call " : "")
