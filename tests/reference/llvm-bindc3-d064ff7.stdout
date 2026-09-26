@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @bindc3.idx = internal global i32 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1

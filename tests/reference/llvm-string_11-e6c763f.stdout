@@ -2,20 +2,20 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @string_const_data = private constant [14 x i8] c"This is a test"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([14 x i8], [14 x i8]* @string_const_data, i32 0, i32 0), i64 14 }>
+@string_const = private global %string_descriptor { i8* getelementptr inbounds ([14 x i8], [14 x i8]* @string_const_data, i32 0, i32 0), i64 14 }
 @string_const_data.1 = private constant [4 x i8] c"test"
-@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data.1, i32 0, i32 0), i64 4 }>
+@string_const.2 = private global %string_descriptor { i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data.1, i32 0, i32 0), i64 4 }
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.3 = private constant [17 x i8] c"test is not found"
-@string_const.4 = private global %string_descriptor <{ i8* getelementptr inbounds ([17 x i8], [17 x i8]* @string_const_data.3, i32 0, i32 0), i64 17 }>
+@string_const.4 = private global %string_descriptor { i8* getelementptr inbounds ([17 x i8], [17 x i8]* @string_const_data.3, i32 0, i32 0), i64 17 }
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [16 x i8] c"S-DESC-K1-24,I4\00", align 1
 @string_const_data.5 = private constant [24 x i8] c"test is found at index: "
-@string_const.6 = private global %string_descriptor <{ i8* getelementptr inbounds ([24 x i8], [24 x i8]* @string_const_data.5, i32 0, i32 0), i64 24 }>
+@string_const.6 = private global %string_descriptor { i8* getelementptr inbounds ([24 x i8], [24 x i8]* @string_const_data.5, i32 0, i32 0), i64 24 }
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @_lcompilers_index_str(%string_descriptor* %str, %string_descriptor* %substr, i32* %back, i32* %kind) {
@@ -365,14 +365,14 @@ define i32 @main(i32 %0, i8** %1) {
   %teststring = alloca %string_descriptor, align 8
   %mystring = alloca %string_descriptor, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  store %string_descriptor zeroinitializer, %string_descriptor* %mystring, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %mystring, align 8
   %3 = getelementptr %string_descriptor, %string_descriptor* %mystring, i32 0, i32 1
   store i64 30, i64* %3, align 8
   %4 = getelementptr %string_descriptor, %string_descriptor* %mystring, i32 0, i32 0
   %5 = call i8* @_lfortran_get_default_allocator()
   %6 = call i8* @_lfortran_malloc_alloc(i8* %5, i64 30)
   store i8* %6, i8** %4, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %teststring, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %teststring, align 8
   %7 = getelementptr %string_descriptor, %string_descriptor* %teststring, i32 0, i32 1
   store i64 10, i64* %7, align 8
   %8 = getelementptr %string_descriptor, %string_descriptor* %teststring, i32 0, i32 0
