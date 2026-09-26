@@ -2989,7 +2989,7 @@ public:
             return;
         }
 
-        ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
+        ASR::symbol_t *sym = current_scope->resolve_symbol(to_lower(x.m_name));
         if (sym == nullptr) {
             return;
         }
