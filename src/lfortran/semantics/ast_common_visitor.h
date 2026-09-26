@@ -12349,7 +12349,11 @@ public:
     // component `first_member`. Standard Fortran gives only components
     // positionally, in component order, while giving the parent component
     // positionally, `der_t(base_t(1, 2), 3)`, is a common extension. It is
-    // taken only when the first component cannot hold the value.
+    // taken only when the first component cannot hold the value, that is,
+    // when the value is not type compatible with it (F2018 7.3.2.3): a
+    // nonpolymorphic `type(t)` component holds only a value of type `t`, a
+    // `class(t)` component also one of a type that extends `t`, and a
+    // `class(*)` component a value of any type.
     ASR::symbol_t* get_positional_ancestor(ASR::symbol_t* struct_sym,
             ASR::expr_t* value, ASR::symbol_t* first_member) {
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
@@ -12362,38 +12366,33 @@ public:
             return nullptr;
         }
         value_sym = ASRUtils::symbol_get_past_external(value_sym);
-        ASR::symbol_t* ancestor = nullptr;
-        for (ASR::symbol_t* type_sym = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(struct_sym))->m_parent;
-                type_sym != nullptr; type_sym = ASR::down_cast<ASR::Struct_t>(
-                    type_sym)->m_parent) {
-            type_sym = ASRUtils::symbol_get_past_external(type_sym);
-            if (type_sym == value_sym) {
-                ancestor = type_sym;
-                break;
-            }
-        }
-        if (ancestor == nullptr) {
+        if (!ASR::is_a<ASR::Struct_t>(*value_sym)) {
             return nullptr;
         }
-        if (first_member != nullptr && ASR::is_a<ASR::Variable_t>(*first_member)) {
-            // A component of the value's type, or of a type it extends, such
-            // as `class(base_t), pointer :: next`, takes the value.
-            ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(first_member);
-            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(member_var->m_type))
-                    && member_var->m_type_declaration != nullptr) {
-                ASR::symbol_t* member_type_sym = ASRUtils::symbol_get_past_external(
-                    member_var->m_type_declaration);
-                for (ASR::symbol_t* type_sym = value_sym; type_sym != nullptr;
-                        type_sym = ASR::down_cast<ASR::Struct_t>(type_sym)->m_parent) {
-                    type_sym = ASRUtils::symbol_get_past_external(type_sym);
-                    if (type_sym == member_type_sym) {
-                        return nullptr;
-                    }
-                }
-            }
+        ASR::Struct_t* value_struct = ASR::down_cast<ASR::Struct_t>(value_sym);
+        if (!ASRUtils::is_parent(value_struct, ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_sym)))) {
+            return nullptr;
         }
-        return ancestor;
+        if (first_member == nullptr || !ASR::is_a<ASR::Variable_t>(*first_member)) {
+            return value_sym;
+        }
+        ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(first_member);
+        ASR::ttype_t* member_type = ASRUtils::extract_type(member_var->m_type);
+        if (!ASR::is_a<ASR::StructType_t>(*member_type)
+                || member_var->m_type_declaration == nullptr) {
+            return value_sym;
+        }
+        ASR::symbol_t* member_type_sym = ASRUtils::symbol_get_past_external(
+            member_var->m_type_declaration);
+        if (!ASR::is_a<ASR::Struct_t>(*member_type_sym)) {
+            return value_sym;
+        }
+        ASR::Struct_t* member_struct = ASR::down_cast<ASR::Struct_t>(member_type_sym);
+        bool member_holds_value = ASRUtils::is_class_type(member_type)
+            ? ASRUtils::can_pass_derviedtype_arg_to_parameter(value_struct, member_struct)
+            : value_struct == member_struct;
+        return member_holds_value ? nullptr : value_sym;
     }
 
     // Visits the first positional argument `arg` of a constructor for the
