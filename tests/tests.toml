@@ -5122,6 +5122,10 @@ filename = "warnings/structure_constructor_parent_01.f90"
 asr = true
 
 [[test]]
+filename = "warnings/structure_constructor_parent_02.f90"
+asr = true
+
+[[test]]
 filename = "warnings/bindc_char_len_01.f90"
 asr = true
 

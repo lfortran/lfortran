@@ -12343,6 +12343,44 @@ public:
         }
     }
 
+    // A parent component of an extended type: the component's name and the
+    // ancestor type that is its type.
+    struct ParentComponent {
+        std::string name;
+        ASR::symbol_t* type;
+    };
+
+    // The parent components of the derived type `struct_sym`, its own and the
+    // ones it inherits, from the nearest ancestor outward. A parent component
+    // is named after the parent type as it is known in the scope that defines
+    // the type extending it (F2018 7.5.7.2), which is not the parent type's
+    // own name when that scope renamed it on `use`.
+    std::vector<ParentComponent> get_parent_components(ASR::symbol_t* struct_sym) {
+        std::vector<ParentComponent> parents;
+        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(struct_sym));
+        while (struct_type->m_parent != nullptr) {
+            ASR::symbol_t* ancestor = ASRUtils::symbol_get_past_external(
+                struct_type->m_parent);
+            parents.push_back({to_lower(ASRUtils::symbol_name(
+                struct_type->m_parent)), ancestor});
+            struct_type = ASR::down_cast<ASR::Struct_t>(ancestor);
+        }
+        return parents;
+    }
+
+    // The parent component in `parents` that the keyword `name` gives in a
+    // structure constructor, the nearest one of that name, or nullptr.
+    static const ParentComponent* find_parent_component(
+            const std::vector<ParentComponent>& parents, const std::string& name) {
+        for (const ParentComponent& parent : parents) {
+            if (parent.name == name) {
+                return &parent;
+            }
+        }
+        return nullptr;
+    }
+
     // The ancestor type of the extended type `struct_sym` that `value`, the
     // first positional argument of a structure constructor for it, gives
     // as a whole, or nullptr when `value` is the value of the first
@@ -12418,17 +12456,23 @@ public:
         }
         // The value is the parent component of `struct_sym`, or, for a more
         // distant ancestor, the parent component that `struct_sym` inherits
-        // from one of its ancestors; either is given by the keyword named
-        // after the type of the value.
-        std::string ancestor_name = to_lower(ASRUtils::symbol_name(ancestor));
-        bool is_direct_parent = ancestor
-            == ASRUtils::symbol_get_past_external(struct_type->m_parent);
+        // from one of its ancestors. The hint names the keyword that gives
+        // it, unless that keyword gives a nearer parent component of the
+        // same name.
+        std::vector<ParentComponent> parents = get_parent_components(struct_sym);
+        auto parent = std::find_if(parents.begin(), parents.end(),
+            [&](const ParentComponent& p) { return p.type == ancestor; });
+        LCOMPILERS_ASSERT(parent != parents.end());
+        const std::string& ancestor_name = parent->name;
         diag.semantic_warning_label(
-            std::string(is_direct_parent ? "giving the parent component"
+            std::string(parent == parents.begin() ? "giving the parent component"
                 : "giving an inherited parent component")
             + " positionally in a structure constructor is an extension",
             {value->base.loc},
-            "use the parent component keyword instead: " + ancestor_name + "=...");
+            find_parent_component(parents, ancestor_name) == &*parent
+                ? "use the parent component keyword instead: " + ancestor_name + "=..."
+                : "no keyword gives it here: '" + ancestor_name
+                    + "' names a nearer parent component");
         size_t n_ancestor_args = get_struct_constructor_info(ancestor).members.size();
         Vec<ASR::call_arg_t> ancestor_vals;
         ancestor_vals.reserve(al, n_ancestor_args);
@@ -24488,21 +24532,12 @@ public:
             ASR::symbol_t* struct_sym, const std::string& name,
             AST::expr_t* value, diag::Diagnostics& diag,
             size_t& n_parent_args) {
-        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
-            ASRUtils::symbol_get_past_external(struct_sym));
-        ASR::symbol_t* parent_sym = nullptr;
-        while( struct_type->m_parent != nullptr ) {
-            ASR::symbol_t* ancestor = ASRUtils::symbol_get_past_external(
-                struct_type->m_parent);
-            if( to_lower(ASRUtils::symbol_name(struct_type->m_parent)) == name ) {
-                parent_sym = ancestor;
-                break;
-            }
-            struct_type = ASR::down_cast<ASR::Struct_t>(ancestor);
-        }
-        if( parent_sym == nullptr ) {
+        std::vector<ParentComponent> parents = get_parent_components(struct_sym);
+        const ParentComponent* parent = find_parent_component(parents, name);
+        if( parent == nullptr ) {
             return ParentComponentKwarg::not_parent;
         }
+        ASR::symbol_t* parent_sym = parent->type;
         n_parent_args = get_struct_constructor_info(parent_sym).members.size();
         LCOMPILERS_ASSERT(n_parent_args <= args.size());
         this->visit_expr(*value);
