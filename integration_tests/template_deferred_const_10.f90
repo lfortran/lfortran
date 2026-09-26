@@ -2,7 +2,7 @@
 ! specification part of a template. The interface body must not end the
 ! template's context, so the later `deferred` declaration is still accepted.
 
-module template_deferred_const_08_m
+module template_deferred_const_10_m
     implicit none
     private
     public :: test_add
@@ -46,8 +46,8 @@ contains
 
 end module
 
-program template_deferred_const_08
-    use template_deferred_const_08_m, only: test_add
+program template_deferred_const_10
+    use template_deferred_const_10_m, only: test_add
     implicit none
     call test_add()
 end program
