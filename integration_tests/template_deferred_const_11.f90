@@ -3,7 +3,7 @@
 ! constants, keyword arguments, local named constants of an internal
 ! procedure and of a template procedure (#13411).
 
-module template_deferred_const_10_m
+module template_deferred_const_11_m
     implicit none
 contains
     template subroutine set_n{n}(r)
@@ -32,8 +32,8 @@ contains
     end subroutine
 end module
 
-program template_deferred_const_10
-    use template_deferred_const_10_m
+program template_deferred_const_11
+    use template_deferred_const_11_m
     implicit none
     integer, parameter :: two = 2
     integer :: r
