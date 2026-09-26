@@ -10076,17 +10076,11 @@ static inline ASR::expr_t* struct_base_lending_shape(ASR::ArrayItem_t* x) {
         return nullptr;
     }
     ASR::ttype_t* root_type = ASRUtils::expr_type(root);
-    if( root_type == nullptr || ASRUtils::is_allocatable(root_type) ||
-        ASR::is_a<ASR::Pointer_t>(*root_type) ||
+    if( root_type == nullptr ||
         !ASRUtils::is_array(root_type) ) {
         return nullptr;
     }
-    // Only a statically shaped, contiguous base. Anything reached through a
-    // descriptor has neither the shape nor the stride this type would claim.
-    if( ASRUtils::extract_physical_type(root_type) !=
-            ASR::array_physical_typeType::FixedSizeArray ) {
-        return nullptr;
-    }
+
     return base;
 }
 
