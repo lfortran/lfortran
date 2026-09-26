@@ -2150,3 +2150,19 @@ contains
         r = 0
     end function
 end module
+
+! An instantiation cannot take over the name of the template it instantiates
+! in the scope that defines the template.
+module template_instantiate_own_name_1
+    implicit none
+    template own_name_tmpl {t}
+        deferred type :: t
+    contains
+        function own_name_tmpl(x) result(r)
+            type(t), intent(in) :: x
+            type(t) :: r
+            r = x
+        end function
+    end template
+    instantiate own_name_tmpl {integer}, only: own_name_tmpl
+end module
