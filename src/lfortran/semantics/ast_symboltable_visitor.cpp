@@ -5580,8 +5580,7 @@ public:
                 // deferred constant of the requirement
                 ASR::symbol_t *const_arg = make_instantiation_const_arg(
                     *AST::down_cast<AST::AttrExpr_t>(attr), req_param,
-                    (req->m_symtab)->get_symbol(req_param), current_scope,
-                    true);
+                    (req->m_symtab)->get_symbol(req_param), current_scope);
                 req_arg = ASRUtils::symbol_name(const_arg);
             } else {
                 diag.add(diag::Diagnostic(

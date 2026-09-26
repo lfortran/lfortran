@@ -2130,12 +2130,31 @@ module continue_compilation_templates_01_require_const_arg
 
     template tmpl_require_deferred_expr {n}
         deferred integer, parameter :: n
-        require :: req_const_arg{n + 1}  ! {Error} the argument for the deferred constant 'n' in a require statement must be a constant expression with a known value; expressions of deferred constants are not supported yet
+        require :: req_const_arg{n + 1}  ! {Error} the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
     end template
 
     template tmpl_require_wrong_type {n}
         deferred integer, parameter :: n
         require :: req_const_arg{1.5}  ! {Error} the type of the instantiation argument, real(4), does not match the type of the deferred constant 'n', integer(4)
+    end template
+
+    template tmpl_inner_const {n}
+        deferred integer, parameter :: n
+    contains
+        function get_n() result(r)
+            integer :: r
+            r = n
+        end function
+    end template
+
+    template tmpl_instantiate_deferred_expr {m}
+        deferred integer, parameter :: m
+    contains
+        function get_m1() result(r)
+            instantiate tmpl_inner_const {m + 1}, only: g1 => get_n  ! {Error} the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
+            integer :: r
+            r = g1()
+        end function
     end template
 
 end module

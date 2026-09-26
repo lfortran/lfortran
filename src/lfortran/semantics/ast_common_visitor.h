@@ -21789,6 +21789,27 @@ public:
         return ordered;
     }
 
+    // Records whether the expression it walks refers to a deferred constant
+    // of an enclosing template or requirement: a named constant declared
+    // without a value, whose value is known only once that template is
+    // instantiated.
+    class DeferredConstFinder : public ASR::BaseWalkVisitor<DeferredConstFinder> {
+        public:
+        bool found = false;
+
+        void visit_Var(const ASR::Var_t& x) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                if (v->m_storage == ASR::storage_typeType::Parameter
+                        && v->m_symbolic_value == nullptr
+                        && v->m_value == nullptr) {
+                    found = true;
+                }
+            }
+        }
+    };
+
     // An instantiation argument that is an expression corresponds to a
     // deferred constant and must be a constant expression (R1630). Binds the
     // deferred constant `param` to a new named constant in `scope` that holds
@@ -21796,7 +21817,7 @@ public:
     // to a named constant passed as the argument.
     ASR::symbol_t *make_instantiation_const_arg(const AST::AttrExpr_t &arg,
             const std::string &param, ASR::symbol_t *param_sym,
-            SymbolTable *scope, bool in_require=false) {
+            SymbolTable *scope) {
         const Location &arg_loc = arg.base.base.loc;
         if (!param_sym || !ASR::is_a<ASR::Variable_t>(*param_sym)
                 || ASRUtils::is_type_parameter(*ASRUtils::symbol_type(param_sym))) {
@@ -21809,15 +21830,20 @@ public:
         this->visit_expr(*arg.m_value);
         ASR::expr_t *arg_expr = ASRUtils::EXPR(tmp);
         ASR::expr_t *arg_value = ASRUtils::expr_value(arg_expr);
-        if (!arg_value && in_require) {
-            diag.add(Diagnostic("the argument for the deferred constant '"
-                + param + "' in a require statement must be a constant"
-                " expression with a known value; expressions of deferred"
-                " constants are not supported yet",
-                Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
-            throw SemanticAbort();
-        }
         if (!arg_value) {
+            // A deferred constant is a named constant, so an expression of
+            // one is a constant expression, but its value is not known until
+            // the enclosing template is instantiated
+            DeferredConstFinder finder;
+            finder.visit_expr(*arg_expr);
+            if (finder.found) {
+                diag.add(Diagnostic("the argument for the deferred constant '"
+                    + param + "' refers to a deferred constant of an enclosing"
+                    " template or requirement; expressions of deferred"
+                    " constants are not supported yet",
+                    Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
+                throw SemanticAbort();
+            }
             diag.add(Diagnostic("the instantiation argument for the deferred"
                 " constant '" + param + "' must be a constant expression",
                 Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
