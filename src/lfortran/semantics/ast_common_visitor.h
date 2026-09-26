@@ -1364,10 +1364,17 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
         } else if (ASRUtils::is_real(*result_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(operand))) {
-                    double op_value = ASR::down_cast<ASR::RealConstant_t>(
-                                            ASRUtils::expr_value(operand))->m_r;
-                    value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
-                        al, x.base.base.loc, -op_value, result_type));
+                    ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
+                                            ASRUtils::expr_value(operand));
+                    if (ASRUtils::extract_kind_from_ttype_t(result_type) == 16) {
+                        // kind=16 m_r is a pointer to the binary128 payload
+                        value = ASRUtils::make_RealConstant_r16(al, x.base.base.loc,
+                            lf_f128_neg(ASRUtils::real_constant_get_r16(rc)), result_type);
+                    } else {
+                        double op_value = rc->m_r;
+                        value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
+                            al, x.base.base.loc, -op_value, result_type));
+                    }
                 } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(operand))) {
                     ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(operand));
                     int kind = ASRUtils::extract_kind_from_ttype_t(result_type);
