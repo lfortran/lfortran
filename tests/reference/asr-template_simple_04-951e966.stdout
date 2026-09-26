@@ -1301,11 +1301,7 @@
                                                                     ColMajor
                                                                     ()
                                                                 )
-                                                                (TypeParameter
-                                                                    t
-                                                                    NonExtensible
-                                                                    .false.
-                                                                )
+                                                                (Integer 4)
                                                                 ()
                                                                 (FunctionCall
                                                                     13 ~add_intrinsic
@@ -1509,11 +1505,7 @@
                                                                     ColMajor
                                                                     ()
                                                                 )
-                                                                (TypeParameter
-                                                                    t
-                                                                    NonExtensible
-                                                                    .false.
-                                                                )
+                                                                (Real 4)
                                                                 ()
                                                                 (FunctionCall
                                                                     13 ~add_intrinsic1

@@ -1196,40 +1196,124 @@ semantic error: Second argument of modulo cannot be 0
 2056 |             integer, parameter :: k = modulo(n, n - 3)  ! {Error} Second argument of modulo cannot be 0
      |                                       ^^^^^^^^^^^^^^^^ 
 
-semantic error: the instantiation argument for the deferred constant 'n' must be a constant expression
-    --> tests/errors/continue_compilation_templates_01.f90:2099:46
+semantic error: template argument 'n' has not been declared in templated subroutine specification
+    --> tests/errors/continue_compilation_templates_01.f90:2086:5 - 2087:18
      |
-2099 |         instantiate tmpl_const_arg {integer, k + 1}  ! {Error} the instantiation argument for the deferred constant 'n' must be a constant expression
+2086 |        template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2087 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated function specification
+    --> tests/errors/continue_compilation_templates_01.f90:2089:5 - 2091:16
+     |
+2089 |        template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2091 |        end function
+     | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+    --> tests/errors/continue_compilation_templates_01.f90:2101:20
+     |
+2101 |         integer :: n  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+     |                    ^ 
+
+semantic error: 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+    --> tests/errors/continue_compilation_templates_01.f90:2107:20
+     |
+2107 |         integer :: n  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+     |                    ^ 
+
+semantic error: 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+    --> tests/errors/continue_compilation_templates_01.f90:2118:31
+     |
+2118 |         integer, parameter :: n = 7  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+     |                               ^^^^^ 
+
+semantic error: 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+    --> tests/errors/continue_compilation_templates_01.f90:2122:31
+     |
+2122 |         integer, parameter :: n = 7  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+     |                               ^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated subroutine specification
+    --> tests/errors/continue_compilation_templates_01.f90:2132:5 - 2133:18
+     |
+2132 |        template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2133 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated function specification
+    --> tests/errors/continue_compilation_templates_01.f90:2135:5 - 2137:16
+     |
+2135 |        template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2137 |        end function
+     | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated subroutine specification
+    --> tests/errors/continue_compilation_templates_01.f90:2144:5 - 2146:18
+     |
+2144 |        template subroutine s{T, N}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2146 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: template argument 'n' has not been declared in templated function specification
+    --> tests/errors/continue_compilation_templates_01.f90:2148:5 - 2151:16
+     |
+2148 |        template integer function f{T, N}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2151 |        end function
+     | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: the instantiation argument for the deferred constant 'n' must be a constant expression
+    --> tests/errors/continue_compilation_templates_01.f90:2172:46
+     |
+2172 |         instantiate tmpl_const_arg {integer, k + 1}  ! {Error} the instantiation argument for the deferred constant 'n' must be a constant expression
      |                                              ^^^^^ 
 
 semantic error: the instantiation argument for 't' is an expression, but 't' is not a deferred constant
-    --> tests/errors/continue_compilation_templates_01.f90:2103:37
+    --> tests/errors/continue_compilation_templates_01.f90:2176:37
      |
-2103 |         instantiate tmpl_const_arg {2, 3}  ! {Error} the instantiation argument for 't' is an expression, but 't' is not a deferred constant
+2176 |         instantiate tmpl_const_arg {2, 3}  ! {Error} the instantiation argument for 't' is an expression, but 't' is not a deferred constant
      |                                     ^ 
 
 semantic error: the type of the instantiation argument, integer(8), does not match the type of the deferred constant 'n', integer(4)
-    --> tests/errors/continue_compilation_templates_01.f90:2107:46
+    --> tests/errors/continue_compilation_templates_01.f90:2180:46
      |
-2107 |         instantiate tmpl_const_arg {integer, 3_8}  ! {Error} the type of the instantiation argument, integer(8), does not match the type of the deferred constant 'n', integer(4)
+2180 |         instantiate tmpl_const_arg {integer, 3_8}  ! {Error} the type of the instantiation argument, integer(8), does not match the type of the deferred constant 'n', integer(4)
      |                                              ^^^ 
 
 semantic error: the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
-    --> tests/errors/continue_compilation_templates_01.f90:2133:34
+    --> tests/errors/continue_compilation_templates_01.f90:2206:34
      |
-2133 |         require :: req_const_arg{n + 1}  ! {Error} the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
+2206 |         require :: req_const_arg{n + 1}  ! {Error} the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
      |                                  ^^^^^ 
 
 semantic error: the type of the instantiation argument, real(4), does not match the type of the deferred constant 'n', integer(4)
-    --> tests/errors/continue_compilation_templates_01.f90:2138:34
+    --> tests/errors/continue_compilation_templates_01.f90:2211:34
      |
-2138 |         require :: req_const_arg{1.5}  ! {Error} the type of the instantiation argument, real(4), does not match the type of the deferred constant 'n', integer(4)
+2211 |         require :: req_const_arg{1.5}  ! {Error} the type of the instantiation argument, real(4), does not match the type of the deferred constant 'n', integer(4)
      |                                  ^^^ 
 
 semantic error: the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
-    --> tests/errors/continue_compilation_templates_01.f90:2154:43
+    --> tests/errors/continue_compilation_templates_01.f90:2227:43
      |
-2154 |             instantiate tmpl_inner_const {m + 1}, only: g1 => get_n  ! {Error} the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
+2227 |             instantiate tmpl_inner_const {m + 1}, only: g1 => get_n  ! {Error} the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
      |                                           ^^^^^ 
 
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
@@ -1258,7 +1342,7 @@ semantic error: Operator `==` undefined for the types in the expression `t == t`
     |                    ^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: the instantiation argument for 't' is an expression, but 't' is not a deferred constant
-    --> tests/errors/continue_compilation_templates_01.f90:2119:31
+    --> tests/errors/continue_compilation_templates_01.f90:2192:31
      |
-2119 |         call inline_const_arg{2}(y)  ! {Error} the instantiation argument for 't' is an expression, but 't' is not a deferred constant
+2192 |         call inline_const_arg{2}(y)  ! {Error} the instantiation argument for 't' is an expression, but 't' is not a deferred constant
      |                               ^ 
