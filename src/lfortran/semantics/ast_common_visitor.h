@@ -2255,6 +2255,7 @@ public:
     std::map<std::string, std::string> context_map;     // TODO: refactor treatment of context map
     std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
+    std::map<uint32_t, ASR::symbol_t*> &instantiate_templates;
     std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure;
     LCompilers::LocationManager &lm;
 
@@ -2319,6 +2320,7 @@ public:
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<uint32_t, ASR::symbol_t*> &instantiate_templates,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
@@ -2331,7 +2333,8 @@ public:
           explicit_intrinsic_procedures_mapping{explicit_intrinsic_procedures_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
-          instantiate_symbols{instantiate_symbols}, data_structure{data_structure}, lm{lm}
+          instantiate_symbols{instantiate_symbols},
+          instantiate_templates{instantiate_templates}, data_structure{data_structure}, lm{lm}
     {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
@@ -3235,6 +3238,12 @@ public:
         }
         for (auto &name: added) {
             scope->erase_symbol(name);
+        }
+        // Restore the names the instantiation took over.
+        for (auto &item: scope_before) {
+            if (scope->get_symbol(item.first) != item.second) {
+                scope->add_or_overwrite_symbol(item.first, item.second);
+            }
         }
     }
 

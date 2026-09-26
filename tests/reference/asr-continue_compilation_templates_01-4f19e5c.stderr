@@ -1280,6 +1280,12 @@ semantic error: template argument 'n' has not been declared in templated functio
 2151 |        end function
      | ...^^^^^^^^^^^^^^^^ 
 
+semantic error: the instantiation 'own_name_tmpl' cannot have the name of the template it instantiates in the scope that defines it
+    --> tests/errors/continue_compilation_templates_01.f90:2167:5
+     |
+2167 |     instantiate own_name_tmpl {integer}, only: own_name_tmpl
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
     |

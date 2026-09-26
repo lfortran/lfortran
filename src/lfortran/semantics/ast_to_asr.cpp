@@ -31,6 +31,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<uint32_t, ASR::symbol_t*> &instantiate_templates,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
@@ -48,6 +49,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<uint32_t, ASR::symbol_t*> &instantiate_templates,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
@@ -70,6 +72,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     std::map<uint64_t, std::vector<std::string>> explicit_intrinsic_procedures_mapping;
     std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> instantiate_symbols;
+    std::map<uint32_t, ASR::symbol_t*> instantiate_templates;
     std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> entry_functions;
     std::map<std::string, std::vector<int>> entry_function_arguments_mapping;
     std::map<uint32_t, std::vector<ASR::stmt_t*>> data_structure;
@@ -77,7 +80,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
         compiler_options, implicit_mapping, common_variables_hash, common_variables_byte_offset,
         external_procedures_mapping, explicit_intrinsic_procedures_mapping, instantiate_types,
-        instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm);
+        instantiate_symbols, instantiate_templates, entry_functions, entry_function_arguments_mapping, data_structure, lm);
     if (res.ok) {
         unit = res.result;
     } else {
@@ -111,7 +114,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             al, ast, diagnostics, unit, compiler_options,
             implicit_mapping, common_variables_hash, common_variables_byte_offset,
             external_procedures_mapping, explicit_intrinsic_procedures_mapping, instantiate_types,
-            instantiate_symbols, entry_functions, entry_function_arguments_mapping,
+            instantiate_symbols, instantiate_templates, entry_functions, entry_function_arguments_mapping,
             data_structure, lm
         );
         if (res.ok) {

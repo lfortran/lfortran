@@ -201,6 +201,7 @@ public:
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<uint32_t, ASR::symbol_t*> &instantiate_templates,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
@@ -209,7 +210,7 @@ public:
             common_variables_hash, common_variables_byte_offset,
             external_procedures_mapping,
             explicit_intrinsic_procedures_mapping,
-            instantiate_types, instantiate_symbols, entry_functions,
+            instantiate_types, instantiate_symbols, instantiate_templates, entry_functions,
             entry_function_arguments_mapping, data_structure, lm
         ) {}
 
@@ -6391,6 +6392,9 @@ public:
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
+                    if (!release_instantiated_name(s_name, sym, x.base.base.loc)) {
+                        continue;
+                    }
                     instantiate_symbol(al, current_scope, type_subs, symbol_subs, s_name, s,
                         diag);
                 }
@@ -6411,6 +6415,9 @@ public:
                 if (use_symbol->m_local_rename) {
                     new_sym_name = to_lower(use_symbol->m_local_rename);
                 }
+                if (!release_instantiated_name(new_sym_name, sym, x.base.base.loc)) {
+                    continue;
+                }
                 ASR::symbol_t* new_sym = instantiate_symbol(al, current_scope, type_subs, symbol_subs, new_sym_name, s,
                     diag);
                 symbol_subs[generic_name] = new_sym;
@@ -6424,6 +6431,31 @@ public:
 
         instantiate_types[x.base.base.loc.first] = type_subs;
         instantiate_symbols[x.base.base.loc.first] = symbol_subs;
+        // The template's name may now denote the instantiated procedure.
+        instantiate_templates[x.base.base.loc.first] = sym;
+    }
+
+    // A templated procedure instantiated under its own name, as in
+    // `instantiate g {integer}, only: g`, replaces the use-associated name of
+    // the template, like a local declaration of the name would. The template
+    // itself cannot be replaced in the scope that defines it.
+    bool release_instantiated_name(const std::string &name,
+            ASR::symbol_t *template_sym, const Location &loc) {
+        ASR::symbol_t *existing = current_scope->get_symbol(name);
+        if (existing == nullptr
+                || ASRUtils::symbol_get_past_external(existing) != template_sym) {
+            return true;
+        }
+        if (existing == template_sym) {
+            diag.add(diag::Diagnostic(
+                "the instantiation '" + name + "' cannot have the name of "
+                "the template it instantiates in the scope that defines it",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            return false;
+        }
+        current_scope->erase_symbol(name);
+        return true;
     }
 
     // TODO: give proper location to each symbol
@@ -6672,6 +6704,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<uint32_t, ASR::symbol_t*> &instantiate_templates,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
@@ -6680,7 +6713,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
                          implicit_mapping, common_variables_hash,
                          common_variables_byte_offset, external_procedures_mapping,
                          explicit_intrinsic_procedures_mapping,
-                         instantiate_types, instantiate_symbols, entry_functions,
+                         instantiate_types, instantiate_symbols, instantiate_templates, entry_functions,
                          entry_function_arguments_mapping, data_structure, lm);
     try {
         v.visit_TranslationUnit(ast);

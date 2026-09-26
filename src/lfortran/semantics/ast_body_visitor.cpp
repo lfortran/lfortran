@@ -178,6 +178,7 @@ public:
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<uint32_t, ASR::symbol_t*> &instantiate_templates,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
@@ -187,7 +188,7 @@ public:
             common_variables_hash, common_variables_byte_offset,
             external_procedures_mapping,
             explicit_intrinsic_procedures_mapping, instantiate_types,
-            instantiate_symbols, entry_functions, entry_function_arguments_mapping,
+            instantiate_symbols, instantiate_templates, entry_functions, entry_function_arguments_mapping,
             data_structure, lm
         ), asr{unit}, from_block{false} {}
 
@@ -2984,20 +2985,16 @@ public:
         // behind, but its bodies must not be built with missing substitutions.
         auto type_subs_it = instantiate_types.find(x.base.base.loc.first);
         auto symbol_subs_it = instantiate_symbols.find(x.base.base.loc.first);
+        auto template_it = instantiate_templates.find(x.base.base.loc.first);
         if (type_subs_it == instantiate_types.end()
-                || symbol_subs_it == instantiate_symbols.end()) {
+                || symbol_subs_it == instantiate_symbols.end()
+                || template_it == instantiate_templates.end()) {
             return;
         }
 
-        ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
-        if (sym == nullptr) {
-            return;
-        }
-        ASR::symbol_t *template_sym = ASRUtils::symbol_get_past_external(sym);
-        if (!ASR::is_a<ASR::Template_t>(*template_sym)) {
-            return;
-        }
-        ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(template_sym);
+        // Not resolved by name: the instantiation may have taken it over.
+        ASR::symbol_t *sym = template_it->second;
+        ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
 
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = type_subs_it->second;
         std::map<std::string, ASR::symbol_t*> symbol_subs = symbol_subs_it->second;
@@ -10919,6 +10916,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<uint32_t, ASR::symbol_t*> &instantiate_templates,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
@@ -10928,7 +10926,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         common_variables_hash, common_variables_byte_offset,
         external_procedures_mapping,
         explicit_intrinsic_procedures_mapping,
-        instantiate_types, instantiate_symbols, entry_functions,
+        instantiate_types, instantiate_symbols, instantiate_templates, entry_functions,
         entry_function_arguments_mapping, data_structure, lm
     );
     try {
