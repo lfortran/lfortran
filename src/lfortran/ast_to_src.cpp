@@ -1803,6 +1803,10 @@ public:
         s = r;
     }
 
+    void visit_AttrExpr(const AttrExpr_t &x) {
+        this->visit_expr(*x.m_value);
+    }
+
     void visit_AttrIntent(const AttrIntent_t &x) {
         std::string r;
         r += syn(gr::Type);

@@ -5831,9 +5831,17 @@ public:
                         arg_decl, attr->base.loc);
                 }
                 type_subs[req_param].first = ttype;
+            } else if (AST::is_a<AST::AttrExpr_t>(*attr)) {
+                // A REQUIRE statement passes instantiation arguments too
+                // (R1630), so a constant expression corresponds to a
+                // deferred constant of the requirement
+                ASR::symbol_t *const_arg = make_instantiation_const_arg(
+                    *AST::down_cast<AST::AttrExpr_t>(attr), req_param,
+                    (req->m_symtab)->get_symbol(req_param), current_scope);
+                req_arg = ASRUtils::symbol_name(const_arg);
             } else {
                 diag.add(diag::Diagnostic(
-                    "Unsupported decl_attribute for require statements.",
+                    "unsupported argument in require statement",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {attr->base.loc})}));
                 throw SemanticAbort();
@@ -6557,6 +6565,11 @@ public:
                     current_scope = parent_scope;
                     symbol_subs[f->m_name] = op_sym;
                 }
+            } else if (AST::is_a<AST::AttrExpr_t>(*arg_attr)) {
+                // Handling a constant expression passed for a deferred constant
+                symbol_subs[param] = make_instantiation_const_arg(
+                    *AST::down_cast<AST::AttrExpr_t>(arg_attr), param,
+                    param_sym, current_scope);
             } else {
                 diag.add(diag::Diagnostic(
                     "Unsupported template argument",

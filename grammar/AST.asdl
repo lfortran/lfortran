@@ -293,6 +293,10 @@ decl_attribute
 -- list (INSTANTIATE, REQUIRE and inline instantiation), where `value` is the
 -- instantiation argument itself.
     | AttrKeyword(identifier name, decl_attribute value)
+-- R1630: an instantiation argument that is a constant expression, which
+-- corresponds to a deferred constant. Only appears in an instantiation-argument
+-- list; a lone name is still an AttrName.
+    | AttrExpr(expr value)
     | AttrRank(expr* rank)
 
 simple_attribute
