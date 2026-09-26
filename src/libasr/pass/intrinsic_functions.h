@@ -4475,7 +4475,19 @@ namespace Merge {
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
 
         ASR::ttype_t *tsource_type = nullptr, *fsource_type = nullptr, *mask_type = nullptr;
-        std::string new_name = "_lcompilers_merge_" + get_type_code(ASRUtils::extract_type(arg_types[0]))
+        ASR::symbol_t *type_decl = nullptr;
+        bool is_struct_type_arg = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
+        if (is_struct_type_arg) {
+            type_decl = ASRUtils::get_struct_sym_from_struct_expr(new_args[0].m_value);
+            if (!type_decl) {
+                type_decl = ASRUtils::get_struct_sym_from_struct_expr(new_args[1].m_value);
+            }
+        }
+
+        std::string type_name = (is_struct_type_arg && type_decl)
+            ? ASRUtils::symbol_name(type_decl)
+            : get_type_code(ASRUtils::extract_type(arg_types[0]));
+        std::string new_name = "_lcompilers_merge_" + type_name
             + "_" + get_type_code(ASRUtils::extract_type(arg_types[2]));
         declare_basic_variables(new_name);
         
@@ -4502,13 +4514,22 @@ namespace Merge {
             return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
         }
 
-        auto tsource_arg = declare("tsource", tsource_type, In);
+        ASR::expr_t *tsource_arg = nullptr;
+        ASR::expr_t *fsource_arg = nullptr;
+        ASR::expr_t *result = nullptr;
+        if (is_struct_type_arg && type_decl) {
+            tsource_arg = b.Variable(fn_symtab, "tsource", tsource_type, ASR::intentType::In, type_decl);
+            fsource_arg = b.Variable(fn_symtab, "fsource", fsource_type, ASR::intentType::In, type_decl);
+            result = b.Variable(fn_symtab, "merge", return_type, ASR::intentType::ReturnVar, type_decl);
+        } else {
+            tsource_arg = declare("tsource", tsource_type, In);
+            fsource_arg = declare("fsource", fsource_type, In);
+            result = declare("merge", return_type, ReturnVar);
+        }
         args.push_back(al, tsource_arg);
-        auto fsource_arg = declare("fsource", fsource_type, In);
         args.push_back(al, fsource_arg);
         auto mask_arg = declare("mask", mask_type, In);
         args.push_back(al, mask_arg);
-        auto result = declare("merge", return_type, ReturnVar);
 
         {
             Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
