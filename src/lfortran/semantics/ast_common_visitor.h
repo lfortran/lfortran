@@ -21868,8 +21868,16 @@ public:
             throw SemanticAbort();
         }
         std::string name = scope->get_unique_name("~" + param + "_instantiation_arg");
+        // The expression is evaluated in `current_scope`; if the named
+        // constant lives in another scope, the names it refers to may not be
+        // visible there, so only its value is kept.
+        ASR::expr_t *symbolic_value = scope == current_scope ? arg_expr : arg_value;
+        SetChar deps;
+        deps.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, deps, arg_type,
+            symbolic_value, arg_value, name);
         ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, arg_loc, scope,
-            s2c(al, name), nullptr, 0, ASR::intentType::Local, arg_expr,
+            s2c(al, name), deps.p, deps.n, ASR::intentType::Local, symbolic_value,
             arg_value, ASR::storage_typeType::Parameter,
             ASRUtils::duplicate_type(al, arg_type), nullptr,
             ASR::abiType::Source, ASR::accessType::Private,
