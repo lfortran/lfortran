@@ -197,10 +197,8 @@ namespace LCompilers {
                 ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(arr_expr);
                 if( ASRUtils::is_array(item->m_type) &&
                     ASRUtils::struct_base_lending_shape(item) != nullptr ) {
-                    ASR::expr_t* base = item->m_v;
-                    while( ASR::is_a<ASR::StructInstanceMember_t>(*base) ) {
-                        base = ASR::down_cast<ASR::StructInstanceMember_t>(base)->m_v;
-                    }
+                    ASR::expr_t* base =
+                        ASRUtils::get_struct_member_chain_array_part(item->m_v);
                     ASR::expr_t* member = rebuild_struct_member_chain(al, item->m_v,
                         base, create_array_ref(base, idx_vars, al, current_scope,
                             false, cast_kind, nullptr));

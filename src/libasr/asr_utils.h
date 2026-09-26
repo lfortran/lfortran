@@ -10031,6 +10031,21 @@ static inline bool is_array_indexed_with_array_indices(T* x) {
     return is_array_indexed_with_array_indices(x->m_args, x->n_args);
 }
 
+// The part of nonzero rank of a chain of components, as in `w%nest` with `w`
+// an array, or `s%w` with `s` a scalar and `w` an array component: walk down
+// the chain for as long as the parent of a component is itself an array. What
+// is left is the array whose elements the chain takes its components from.
+static inline ASR::expr_t* get_struct_member_chain_array_part(ASR::expr_t* expr) {
+    while( ASR::is_a<ASR::StructInstanceMember_t>(*expr) ) {
+        ASR::expr_t* parent = ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v;
+        if( !ASRUtils::is_array(ASRUtils::expr_type(parent)) ) {
+            break;
+        }
+        expr = parent;
+    }
+    return expr;
+}
+
 // Selecting an element of an array component of an array, as in `w%u(2)` or
 // `w%nest%v(2)` with `w` an array, reads one element of the component out of
 // every element of the base. The subscripts consume the rank of the
@@ -10044,8 +10059,9 @@ static inline bool is_array_indexed_with_array_indices(T* x) {
 // and select the component out of each element. The base has to be reached
 // through components that hold their value inline, and has to bottom out in
 // an array variable (of any kind: fixed size, `allocatable`, `pointer`,
-// assumed-shape) or in a section of one, as in `w(2:4)%u(1)`. The array
-// passes bind such a section to a pointer, or copy it, before they index it.
+// assumed-shape), in an array component of a scalar, as in `s%w%u(1)`, or in
+// a section of either, as in `w(2:4)%u(1)`. The array passes bind such a
+// section to a pointer, or copy it, before they index it.
 static inline ASR::expr_t* struct_base_lending_shape(ASR::ArrayItem_t* x) {
     if( is_array_indexed_with_array_indices(x->m_args, x->n_args) ||
         x->m_v == nullptr ||
@@ -10058,22 +10074,24 @@ static inline ASR::expr_t* struct_base_lending_shape(ASR::ArrayItem_t* x) {
     }
     // Every component between the base array and the one being indexed must
     // hold its value inline, or the reference denotes an array of
-    // indirections, which this type representation cannot express.
-    ASR::expr_t* root = base;
-    while( ASR::is_a<ASR::StructInstanceMember_t>(*root) ) {
+    // indirections, which this type representation cannot express. The part
+    // of nonzero rank itself, such as the component `w` of a scalar in
+    // `s%w%u(1)`, may be of any kind.
+    ASR::expr_t* root = get_struct_member_chain_array_part(base);
+    for( ASR::expr_t* e = base; e != root;
+            e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v ) {
         ASR::StructInstanceMember_t* member =
-            ASR::down_cast<ASR::StructInstanceMember_t>(root);
+            ASR::down_cast<ASR::StructInstanceMember_t>(e);
         if( ASRUtils::is_allocatable(member->m_type) ||
             ASR::is_a<ASR::Pointer_t>(*member->m_type) ) {
             return nullptr;
         }
-        root = member->m_v;
     }
-    // The chain has to bottom out in an array variable, or in a section of
-    // one, as in `w(2:4)%u(1)`: a section is an array in its own right, whose
-    // shape the reference takes. An element underneath is a scalar. A
-    // section with a vector subscript is not supported here and is left
-    // alone.
+    // The chain has to bottom out in an array variable or an array component
+    // of a scalar, or in a section of one, as in `w(2:4)%u(1)`: a section is
+    // an array in its own right, whose shape the reference takes. An element
+    // underneath is a scalar. A section with a vector subscript is not
+    // supported here and is left alone.
     if( ASR::is_a<ASR::ArraySection_t>(*root) ) {
         ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(root);
         if( is_array_indexed_with_array_indices(section) ) {
@@ -10081,7 +10099,8 @@ static inline ASR::expr_t* struct_base_lending_shape(ASR::ArrayItem_t* x) {
         }
         root = section->m_v;
     }
-    if( !ASR::is_a<ASR::Var_t>(*root) ) {
+    if( !ASR::is_a<ASR::Var_t>(*root) &&
+        !ASR::is_a<ASR::StructInstanceMember_t>(*root) ) {
         return nullptr;
     }
     ASR::ttype_t* root_type = ASRUtils::expr_type(root);
