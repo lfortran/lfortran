@@ -856,6 +856,150 @@ semantic error: Symbol missing_symbol was not found
 1795 |     instantiate tmpl {real}, only: outer_real => outer, missing_symbol  ! {Error} Symbol missing_symbol was not found
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: templated procedure 'abs' cannot be used as a procedure argument
+    --> tests/errors/continue_compilation_1.f90:1928:27
+     |
+1928 |         instantiate unary{abs}, only: rejected_function => apply ! {Error} templated procedure 'abs' cannot be used as a procedure argument
+     |                           ^^^ 
+
+semantic error: templated procedure 'actual' cannot be used as a procedure argument
+    --> tests/errors/continue_compilation_1.f90:1966:31
+     |
+1966 |         instantiate action{op=actual}, only: rejected_subroutine => apply ! {Error} templated procedure 'actual' cannot be used as a procedure argument
+     |                               ^^^^^^ 
+
+semantic error: Restriction type mismatch with provided function argument
+    --> tests/errors/continue_compilation_1.f90:1832:33
+     |
+1832 |         instantiate unary{real, scalar}  ! {Error} Restriction type mismatch with provided function argument
+     |                                 ^^^^^^ 
+     |
+1822 |                function op(x) result(value)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1825 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ Restriction's parameter x of type real
+     |
+1837 |            integer function scalar(x) result(value)
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1840 |            end function
+     | ...^^^^^^^^^^^^^^^^^^^^ Function's parameter x of type integer
+
+semantic error: Restriction type mismatch with provided function argument
+    --> tests/errors/continue_compilation_1.f90:1833:36
+     |
+1833 |         instantiate unary{integer, real_result}  ! {Error} Restriction type mismatch with provided function argument
+     |                                    ^^^^^^^^^^^ 
+     |
+1822 |                function op(x) result(value)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1825 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ Requirement's return type integer
+     |
+1841 |            real function real_result(x) result(value)
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1844 |            end function
+     | ...^^^^^^^^^^^^^^^^^^^^ Function's return type real
+
+semantic error: Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+    --> tests/errors/continue_compilation_1.f90:1834:36
+     |
+1834 |         instantiate unary{integer, binary}  ! {Error} Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+     |                                    ^^^^^^ binary has 2 parameters
+     |
+1845 |            integer function binary(x, y) result(value)
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1848 |            end function
+     | ...^^^^^^^^^^^^^^^^^^^^ binary has 2 parameters
+     |
+1822 |                function op(x) result(value)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1825 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ op has 1 parameters
+
+semantic error: The restriction argument assign_value should have a return value
+    --> tests/errors/continue_compilation_1.f90:1835:36
+     |
+1835 |         instantiate unary{integer, assign_value}  ! {Error} The restriction argument assign_value should have a return value
+     |                                    ^^^^^^^^^^^^ 
+
+semantic error: Restriction type mismatch with provided function argument
+    --> tests/errors/continue_compilation_1.f90:1877:33
+     |
+1877 |         instantiate unary{real, scalar}, only: rejected_apply => apply, rejected_holder => holder ! {Error} Restriction type mismatch with provided function argument
+     |                                 ^^^^^^ 
+     |
+1860 |                function op(x) result(value)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1863 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ Restriction's parameter x of type real
+     |
+1894 |            integer function scalar(x) result(value)
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1897 |            end function
+     | ...^^^^^^^^^^^^^^^^^^^^ Function's parameter x of type integer
+
+semantic error: Restriction type mismatch with provided function argument
+    --> tests/errors/continue_compilation_1.f90:1879:36
+     |
+1879 |         instantiate unary{integer, real_result}, only: apply_real_result => apply ! {Error} Restriction type mismatch with provided function argument
+     |                                    ^^^^^^^^^^^ 
+     |
+1860 |                function op(x) result(value)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1863 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ Requirement's return type integer
+     |
+1898 |            real function real_result(x) result(value)
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1901 |            end function
+     | ...^^^^^^^^^^^^^^^^^^^^ Function's return type real
+
+semantic error: Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+    --> tests/errors/continue_compilation_1.f90:1880:36
+     |
+1880 |         instantiate unary{integer, binary}, only: apply_binary => apply ! {Error} Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+     |                                    ^^^^^^ binary has 2 parameters
+     |
+1902 |            integer function binary(x, y) result(value)
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1905 |            end function
+     | ...^^^^^^^^^^^^^^^^^^^^ binary has 2 parameters
+     |
+1860 |                function op(x) result(value)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1863 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ op has 1 parameters
+
+semantic error: The restriction argument assign_value should have a return value
+    --> tests/errors/continue_compilation_1.f90:1881:36
+     |
+1881 |         instantiate unary{integer, assign_value}, only: apply_assign_value => apply ! {Error} The restriction argument assign_value should have a return value
+     |                                    ^^^^^^^^^^^^ 
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
@@ -2812,3 +2956,21 @@ semantic error: Required argument `p` is missing in procedure call
      |
 1804 |     call oas_b()  ! {Error} Required argument `p` is missing in procedure call
      |     ^^^^^^^^^^^^ 
+
+semantic error: Variable 'after_template_recovery_missing' is not declared
+    --> tests/errors/continue_compilation_1.f90:1892:18
+     |
+1892 |         print *, after_template_recovery_missing ! {Error} Variable 'after_template_recovery_missing' is not declared
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'after_template_recovery_missing' is undeclared
+
+semantic error: Variable 'after_templated_function_missing' is not declared
+    --> tests/errors/continue_compilation_1.f90:1931:18
+     |
+1931 |         print *, after_templated_function_missing ! {Error} Variable 'after_templated_function_missing' is not declared
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'after_templated_function_missing' is undeclared
+
+semantic error: Variable 'after_templated_subroutine_missing' is not declared
+    --> tests/errors/continue_compilation_1.f90:1972:18
+     |
+1972 |         print *, after_templated_subroutine_missing ! {Error} Variable 'after_templated_subroutine_missing' is not declared
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'after_templated_subroutine_missing' is undeclared
