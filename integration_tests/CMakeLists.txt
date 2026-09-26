@@ -3614,6 +3614,7 @@ RUN(NAME template_deferred_const_06 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_deferred_const_07 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_deferred_const_08 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_deferred_const_09 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_deferred_const_10 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_deferred_const_11 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_add_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_add_01b LABELS llvm llvm_wasm llvm_wasm_emcc)             # FIXME: add visit_OverloadedBinOp to wasm

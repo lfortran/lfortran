@@ -1771,6 +1771,9 @@ public:
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
+        // Restored on exit: a subroutine nested in a template (e.g. a deferred
+        // interface body) must not end the enclosing template's context.
+        bool is_template_copy = is_template;
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
@@ -2282,7 +2285,7 @@ public:
 
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
-        is_template = false;
+        is_template = is_template_copy;
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
         // A templated subroutine is complete; `parent_scope` is the Template
