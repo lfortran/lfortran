@@ -84,6 +84,12 @@ Symbol table visit checks the variable declarations in `array_sum`. Since `S` is
 
 ASR representation of templates are also not compiled into the target language.
 
+Array-operation and intrinsic-function lowering leave these generic definitions
+intact and process their concrete specializations instead. Scalarizing an array
+expression or generating an intrinsic implementation requires the substituted
+element type; an unused template must not create runtime helpers with deferred
+types.
+
 ## Instantiations
 
 Generic functions need to be instantiated with concrete types and functions to be used in run-time. The process of instantiation replaces the generic types in the function definition with concrete types (such as `integer`, `real`) and replace the abstract functions with implemented functions. 
@@ -199,6 +205,16 @@ The symbol-table visitor records substitutions only after the entire
 instantiation succeeds. During error recovery (`--continue-compilation`),
 the body visitor skips declarations without this record, even if an earlier
 item in an erroneous `only:` list already created a procedure signature.
+
+Body instantiation also substitutes deferred types in expression results, not
+just in variable declarations and procedure signatures. The generated ASR
+duplicator recursively copies type wrappers, while `BodyInstantiator` replaces
+each `TypeParameter` leaf using `type_subs`. Thus array constructors and
+`reshape` results acquire the concrete element type and kind for each
+instantiation without changing the original template. Array wrappers are
+normalized after substituting their element types: for example, a fixed-size
+array of a deferred type becomes a pointer array when specialized for
+`character`. The duplicated dimensions and memory space are preserved.
 
 ## See Also
 

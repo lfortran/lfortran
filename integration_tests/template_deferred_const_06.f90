@@ -1,53 +1,45 @@
-! A deferred constant declared after a deferred subroutine interface in the
-! specification part of a template. The interface body must not end the
-! template's context, so the later `deferred` declaration is still accepted.
-
+! Bind deferred constants in the template scope rather than shadowing them in
+! the procedure, including constants used by local named-constant initializers.
 module template_deferred_const_06_m
     implicit none
-    private
-    public :: test_add
-
-    integer, parameter :: three = 3
-
-    template tmpl {n, op}
-        deferred interface
-            subroutine op(x)
-                integer, intent(inout) :: x
-            end subroutine
-        end interface
-        deferred integer, parameter :: n
-        private
-        public :: apply_n
-    contains
-        subroutine apply_n(x)
-            integer, intent(inout) :: x
-            integer :: i
-            do i = 1, n
-                call op(x)
-            end do
-        end subroutine
-    end template
-
 contains
+    template integer function add{n}(x) result(res)
+        deferred integer, parameter :: n
+        integer, intent(in) :: x
+        res = x + n
+    end function
 
-    subroutine add_two(x)
+    template subroutine add_in_place{n}(x)
+        deferred integer, parameter :: n
         integer, intent(inout) :: x
-        x = x + 2
+        integer, parameter :: offset = n
+        x = x + offset
     end subroutine
 
-    subroutine test_add()
-        instantiate tmpl {three, add_two}, only: apply_3 => apply_n
+    subroutine check()
+        integer, parameter :: seven = 7, minus_three = -3, zero = 0
+        instantiate :: add7 => add{seven}
+        instantiate :: addm3 => add{minus_three}
+        instantiate :: inc7 => add_in_place{seven}
+        instantiate :: incm3 => add_in_place{minus_three}
         integer :: x
-        x = 1
-        call apply_3(x)
-        if (x /= 7) error stop
-        print *, x
-    end subroutine
 
+        x = -5
+        if (add7(x) /= 2) error stop
+        if (addm3(x) /= -8) error stop
+        call inc7(x)
+        if (x /= 2) error stop
+        call incm3(x)
+        if (x /= -1) error stop
+        if (add7(x) /= 6) error stop
+        if (add{zero}(5) /= 5) error stop
+        call add_in_place{minus_three}(x)
+        if (x /= -4) error stop
+    end subroutine
 end module
 
 program template_deferred_const_06
-    use template_deferred_const_06_m, only: test_add
+    use template_deferred_const_06_m, only: check
     implicit none
-    call test_add()
+    call check()
 end program

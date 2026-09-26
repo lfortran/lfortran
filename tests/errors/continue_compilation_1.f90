@@ -1795,3 +1795,21 @@ module partial_template_instantiation
     instantiate tmpl {real}, only: outer_real => outer, missing_symbol  ! {Error} Symbol missing_symbol was not found
     instantiate tmpl {integer}, only: outer_integer => outer
 end module
+
+! The `optional` attribute given to `p` in `oas_a` applies only to that
+! procedure; the dummy `p` of `oas_b` is still required.
+subroutine optional_attribute_scope_in_continue_compilation_1()
+    implicit none
+    call oas_a()
+    call oas_b()  ! {Error} Required argument `p` is missing in procedure call
+contains
+    subroutine oas_a(p)
+        optional :: p
+        integer :: p
+        if (present(p)) print *, p
+    end subroutine
+    subroutine oas_b(p)
+        integer :: p
+        print *, p
+    end subroutine
+end subroutine
