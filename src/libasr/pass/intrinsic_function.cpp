@@ -377,6 +377,7 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
             pass_result.n = 0;
         }
 
+        void visit_Template(const ASR::Template_t& /*x*/) {}
 
         void call_replacer() {
             replacer.current_expr = current_expr;

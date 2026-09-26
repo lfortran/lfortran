@@ -1,4 +1,5 @@
 #include <cmath>
+#include <set>
 
 #include <libasr/asr_utils.h>
 #include <libasr/asr.h>
@@ -1731,7 +1732,29 @@ public:
             }
             case (ASR::ttypeType::StructType) : {
                 ASR::StructType_t *s = ASR::down_cast<ASR::StructType_t>(ttype);
-                std::string struct_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr)));
+                ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(expr));
+                std::string struct_name = ASRUtils::symbol_name(struct_sym);
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(struct_sym);
+                if (symbol_subs.find(struct_name) == symbol_subs.end()
+                        && owner != nullptr && ASR::is_a<ASR::Template_t>(*owner)) {
+                    // An ONLY list need not name a procedure's local types.
+                    // Instantiate the dependency in the corresponding template
+                    // scope, shared by all procedures of this instantiation.
+                    SymbolTable* source_scope = ASRUtils::symbol_parent_symtab(sym);
+                    SymbolTable* struct_scope = target_scope;
+                    SymbolTable* source_struct_scope = ASRUtils::symbol_parent_symtab(struct_sym);
+                    while (source_scope != source_struct_scope) {
+                        LCOMPILERS_ASSERT(source_scope != nullptr && struct_scope != nullptr);
+                        source_scope = source_scope->parent;
+                        struct_scope = struct_scope->parent;
+                    }
+                    LCOMPILERS_ASSERT(struct_scope != nullptr);
+                    std::string name = struct_scope->get_unique_name("__asr_" + struct_name, false);
+                    SymbolInstantiator t(al, struct_scope, type_subs, symbol_subs, name, struct_sym,
+                        diagnostics);
+                    t.instantiate();
+                }
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
                     return ASRUtils::make_StructType_t_util(
@@ -1780,6 +1803,7 @@ public:
     SymbolTable* new_scope;
     std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
     std::map<std::string,ASR::symbol_t*>& symbol_subs;
+    std::set<ASR::symbol_t*>& instantiated_bodies;
     ASR::symbol_t* new_sym;
     ASR::symbol_t* sym;
     SetChar dependencies;
@@ -1787,14 +1811,21 @@ public:
     BodyInstantiator(Allocator &al,
             std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs,
             std::map<std::string,ASR::symbol_t*>& symbol_subs,
-            ASR::symbol_t* new_sym, ASR::symbol_t* sym):
+            ASR::symbol_t* new_sym, ASR::symbol_t* sym,
+            std::set<ASR::symbol_t*>& instantiated_bodies):
         BaseExprStmtDuplicator(al),
         type_subs{type_subs},
         symbol_subs{symbol_subs},
+        instantiated_bodies{instantiated_bodies},
         new_sym{new_sym}, sym{sym}
         {}
 
     void instantiate() {
+        // A bound procedure's passed-object argument leads back to its type.
+        // Mark symbols before descending, sharing the state across selections.
+        if (!instantiated_bodies.insert(new_sym).second) {
+            return;
+        }
         switch (sym->type) {
             case (ASR::symbolType::Function) : {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*new_sym));
@@ -1809,6 +1840,7 @@ public:
                 break;
             }
             case (ASR::symbolType::Variable) : {
+                instantiate_Variable(ASR::down_cast<ASR::Variable_t>(sym));
                 break;
             }
             case (ASR::symbolType::Struct) : {
@@ -1847,7 +1879,8 @@ public:
             SymbolInstantiator t_i(al, new_scope, type_subs, symbol_subs, sym_pair.first, sym_i);
             ASR::symbol_t* new_sym_i = t_i.instantiate();
 
-            BodyInstantiator t_b(al, type_subs, symbol_subs, new_sym_i, sym_i);
+            BodyInstantiator t_b(al, type_subs, symbol_subs, new_sym_i, sym_i,
+                instantiated_bodies);
             t_b.instantiate();
         }
 
@@ -1877,6 +1910,28 @@ public:
         new_f->n_dependencies = deps_vec.size();
     }
 
+    void instantiate_Variable(ASR::Variable_t* x) {
+        ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(x->m_type_declaration);
+        if (type_decl == nullptr || !ASR::is_a<ASR::Struct_t>(*type_decl)) {
+            return;
+        }
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(type_decl);
+        if (owner == nullptr || !ASR::is_a<ASR::Template_t>(*owner)) {
+            return;
+        }
+        ASR::Variable_t* new_v = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(new_sym));
+        ASR::symbol_t* new_type_decl = ASRUtils::symbol_get_past_external(new_v->m_type_declaration);
+        LCOMPILERS_ASSERT(new_type_decl != nullptr && ASR::is_a<ASR::Struct_t>(*new_type_decl));
+        if (new_type_decl != type_decl) {
+            // Symbol instantiation creates implicit types and method signatures;
+            // complete their bodies here, once the template's bodies exist.
+            BodyInstantiator t(al, type_subs, symbol_subs, new_type_decl, type_decl,
+                instantiated_bodies);
+            t.instantiate();
+        }
+    }
+
     void instantiate_Template(ASR::Template_t* x) {
         ASR::Template_t* new_t = ASR::down_cast<ASR::Template_t>(new_sym);
 
@@ -1884,7 +1939,8 @@ public:
             ASR::symbol_t* new_sym_i = sym_pair.second;
             ASR::symbol_t* sym_i = x->m_symtab->get_symbol(sym_pair.first);
 
-            BodyInstantiator t(al, type_subs, symbol_subs, new_sym_i, sym_i);
+            BodyInstantiator t(al, type_subs, symbol_subs, new_sym_i, sym_i,
+                instantiated_bodies);
             t.instantiate();
         }
     }
@@ -1896,7 +1952,8 @@ public:
             ASR::symbol_t* new_sym_i = sym_pair.second;
             ASR::symbol_t* sym_i = x->m_symtab->get_symbol(sym_pair.first);
 
-            BodyInstantiator t(al, type_subs, symbol_subs, new_sym_i, sym_i);
+            BodyInstantiator t(al, type_subs, symbol_subs, new_sym_i, sym_i,
+                instantiated_bodies);
             t.instantiate();
         }
     }
@@ -1907,7 +1964,8 @@ public:
         ASR::symbol_t* new_proc = new_c->m_proc;
         ASR::symbol_t* proc = x->m_proc;
 
-        BodyInstantiator t(al, type_subs, symbol_subs, new_proc, proc);
+        BodyInstantiator t(al, type_subs, symbol_subs, new_proc, proc,
+            instantiated_bodies);
         t.instantiate();
     }
 
@@ -1919,7 +1977,8 @@ public:
         SymbolInstantiator t_i(al, new_scope, type_subs, symbol_subs, sym_name, x->m_v);
         ASR::symbol_t* sym = t_i.instantiate();
 
-        BodyInstantiator t_b(al, type_subs, symbol_subs, sym, x->m_v);
+        BodyInstantiator t_b(al, type_subs, symbol_subs, sym, x->m_v,
+            instantiated_bodies);
         t_b.instantiate();
 
         return ASR::make_Var_t(al, x->base.base.loc, sym);
@@ -1963,7 +2022,8 @@ public:
             name = t_i.instantiate();
             symbol_subs[call_name] = name;
 
-            BodyInstantiator t_b(al, type_subs, symbol_subs, name, nested_sym);
+            BodyInstantiator t_b(al, type_subs, symbol_subs, name, nested_sym,
+                instantiated_bodies);
             t_b.instantiate();
         }
 
@@ -1994,6 +2054,27 @@ public:
         // requirement function
         if (symbol_subs.find(call_name) != symbol_subs.end()) {
             name = symbol_subs[call_name];
+
+            // A sibling's import needs rebinding, but a visible procedure
+            // argument must keep its identity even when its name is shadowed.
+            if (!ASRUtils::is_visible_from(name, new_scope)) {
+                ASR::symbol_t* definition = ASRUtils::symbol_get_past_external(name);
+                ASR::symbol_t* scoped_sym = new_scope->resolve_symbol(ASRUtils::symbol_name(name));
+                if (ASRUtils::symbol_get_past_external(scoped_sym) == definition) {
+                    name = scoped_sym;
+                } else if (ASRUtils::is_visible_from(definition, new_scope)) {
+                    name = definition;
+                } else if (ASR::is_a<ASR::ExternalSymbol_t>(*name)) {
+                    ASRUtils::SymbolDuplicator duplicator(al);
+                    ASR::ExternalSymbol_t* imported = ASR::down_cast<ASR::ExternalSymbol_t>(
+                        duplicator.duplicate_ExternalSymbol(
+                            ASR::down_cast<ASR::ExternalSymbol_t>(name), new_scope));
+                    std::string local_name = new_scope->get_unique_name(imported->m_name);
+                    imported->m_name = s2c(al, local_name);
+                    name = &imported->base;
+                    new_scope->add_symbol(local_name, name);
+                }
+            }
         }
 
         // function call found in body that needs to be instantiated
@@ -2006,7 +2087,8 @@ public:
             name = t_i.instantiate();
             symbol_subs[call_name] = name;
 
-            BodyInstantiator t_b(al, type_subs, symbol_subs, name, nested_sym);
+            BodyInstantiator t_b(al, type_subs, symbol_subs, name, nested_sym,
+                instantiated_bodies);
             t_b.instantiate();
         }
 
@@ -2192,6 +2274,22 @@ public:
 
     /* utility */
 
+    // The generated duplicator visits expression types recursively, including
+    // array and allocatable wrappers, so substitute their deferred leaves.
+    ASR::asr_t* duplicate_TypeParameter(ASR::TypeParameter_t* x) {
+        return &substitute_type(nullptr, &x->base)->base;
+    }
+
+    ASR::asr_t* duplicate_Array(ASR::Array_t* x) {
+        ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(
+            ASRUtils::TYPE(BaseExprStmtDuplicator::duplicate_Array(x)));
+        // Substitution can change the layout: character arrays cannot be fixed-size.
+        return &ASRUtils::make_Array_t_util(al, array->base.base.loc,
+            array->m_type, array->m_dims, array->n_dims, ASR::abiType::Source,
+            false, array->m_physical_type, true, false, true,
+            array->m_memory_space)->base;
+    }
+
     // TODO: join this with the other substitute_type
     ASR::ttype_t* substitute_type(ASR::expr_t* expr, ASR::ttype_t *ttype) {
         switch (ttype->type) {
@@ -2264,8 +2362,9 @@ ASR::symbol_t* instantiate_symbol(Allocator &al,
 void instantiate_body(Allocator &al,
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs,
         std::map<std::string,ASR::symbol_t*>& symbol_subs,
-        ASR::symbol_t *new_sym, ASR::symbol_t *sym) {
-    BodyInstantiator t(al, type_subs, symbol_subs, new_sym, sym);
+        ASR::symbol_t *new_sym, ASR::symbol_t *sym,
+        std::set<ASR::symbol_t*>& instantiated_bodies) {
+    BodyInstantiator t(al, type_subs, symbol_subs, new_sym, sym, instantiated_bodies);
     t.instantiate();
 }
 
