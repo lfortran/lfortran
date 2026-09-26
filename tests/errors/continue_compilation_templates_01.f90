@@ -2231,3 +2231,43 @@ module continue_compilation_templates_01_require_const_arg
     end template
 
 end module
+
+module continue_compilation_templates_01_own_name_tmpl
+    implicit none
+contains
+    template function g{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        type(t) :: g
+        g = x
+    end function
+
+    template subroutine s{t}(x, y)
+        deferred type :: t
+        type(t), intent(in) :: x
+        type(t), intent(out) :: y
+        y = x
+    end subroutine
+end module
+
+! An instance must not take the name of the templated procedure it instantiates.
+module continue_compilation_templates_01_own_name
+    use continue_compilation_templates_01_own_name_tmpl
+    implicit none
+contains
+    subroutine own_name_rename()
+        instantiate g {integer}, only: g => g  ! {Error} instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+    end subroutine
+
+    subroutine own_name_only()
+        instantiate g {integer}, only: g  ! {Error} instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+    end subroutine
+
+    subroutine own_name_no_only()
+        instantiate g {integer}  ! {Error} instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+    end subroutine
+
+    subroutine own_name_subroutine()
+        instantiate s {integer}, only: s  ! {Error} instantiated procedure 's' has the same name as the templated procedure 's' it instantiates
+    end subroutine
+end module

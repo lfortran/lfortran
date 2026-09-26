@@ -6134,6 +6134,70 @@ public:
         }
     }
 
+    // An instantiated procedure is a new entity, so its local name must differ
+    // from the name of the template it instantiates, which is already a local
+    // identifier of this scope (F2028 20.3.1 p3). For a templated subprogram
+    // this rejects `only: g => g`, `only: g` and an instantiation without an
+    // only-list, which all name the instance after the templated subprogram.
+    void check_instantiation_local_names(const AST::Instantiate_t &x,
+            ASR::Template_t *temp) {
+        std::string template_name = to_lower(x.m_name);
+        bool is_templated_subprogram = false;
+        bool is_subroutine = false;
+        ASR::symbol_t *self = temp->m_symtab->get_symbol(temp->m_name);
+        if (self && ASR::is_a<ASR::Function_t>(*self)) {
+            is_templated_subprogram = true;
+            is_subroutine = ASR::down_cast<ASR::Function_t>(self)
+                ->m_return_var == nullptr;
+        }
+        std::string local_name;
+        Location loc = x.base.base.loc;
+        if (x.n_symbols == 0) {
+            for (auto const &sym_pair: temp->m_symtab->get_scope()) {
+                ASR::symbol_t *s = sym_pair.second;
+                std::string s_name = ASRUtils::symbol_name(s);
+                if (ASR::is_a<ASR::Function_t>(*s)
+                        && !ASRUtils::is_template_arg(&temp->base, s_name)
+                        && to_lower(s_name) == template_name) {
+                    local_name = s_name;
+                    break;
+                }
+            }
+        } else {
+            for (size_t i = 0; i < x.n_symbols; i++) {
+                AST::UseSymbol_t *use_symbol =
+                    AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
+                std::string name = to_lower(use_symbol->m_local_rename
+                    ? use_symbol->m_local_rename : use_symbol->m_remote_sym);
+                if (name == template_name) {
+                    local_name = name;
+                    loc = use_symbol->base.base.loc;
+                    break;
+                }
+            }
+        }
+        if (local_name.empty()) {
+            return;
+        }
+        std::string what = is_templated_subprogram
+            ? "the templated procedure" : "the template";
+        std::string help = "help: give the instance a different local name,"
+            " e.g. `only: " + local_name + "_instance => " + local_name + "`";
+        if (is_templated_subprogram) {
+            help += ", or call it inline as `"
+                + std::string(is_subroutine ? "call " : "")
+                + template_name + "{...}(...)`";
+        }
+        diag.add(diag::Diagnostic(
+            "instantiated procedure '" + local_name + "' has the same name as "
+            + what + " '" + template_name + "' it instantiates",
+            diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label("'" + local_name + "' already names " + what,
+                    {loc}),
+                diag::Label(help, {loc}, false)}));
+        throw SemanticAbort();
+    }
+
     void visit_Instantiate(const AST::Instantiate_t &x) {
         std::string template_name = x.m_name;
 
@@ -6159,6 +6223,7 @@ public:
         }
 
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
+        check_instantiation_local_names(x, temp);
 
         // R1630: the arguments may be given by keyword, so match them against
         // the template's deferred-argument list before using them
