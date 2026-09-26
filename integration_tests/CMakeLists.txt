@@ -3679,6 +3679,7 @@ RUN(NAME template_host_var_03 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_broadcast_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_derived_result_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_struct_deferred_dim_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_access_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
