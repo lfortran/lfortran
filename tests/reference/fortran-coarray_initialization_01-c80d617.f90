@@ -65,6 +65,7 @@ call __module_prif_prif_stop(.false.)
 contains
 
 subroutine __lfortran_global_init_coarray_initialization_01()
+    use coarray_saved_mod, only: __lfortran_global_init_coarray_saved_mod
     logical(4), save :: __lfortran_global_init_done = .false.
     integer(4) :: stat
     if (.not. __lfortran_global_init_done) then
