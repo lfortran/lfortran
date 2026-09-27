@@ -1612,35 +1612,70 @@ LFORTRAN_API void _lcompilers_init_teardown_all(void) {
     lcompilers_init_snapshot snapshot;
     lcompilers_init_discover(&snapshot);
     lcompilers_init_lock();
+    /* A lease on every table still live, held until the teardowns of its
+     * records have run: an image unloaded meanwhile waits for them before it
+     * takes its records' completions out of the log. */
+    lcompilers_init_lease *leases = NULL;
+    int *held = NULL;
+    if (snapshot.count > 0) {
+        leases = (lcompilers_init_lease *)malloc(snapshot.count * sizeof(*leases));
+        held = (int *)malloc(snapshot.count * sizeof(*held));
+        if (leases == NULL || held == NULL) lcompilers_init_fail("out of memory");
+    }
+    for (size_t t = 0; t < snapshot.count; t++) {
+        held[t] = lcompilers_init_lease_acquire(&leases[t], snapshot.items[t].entry,
+            snapshot.items[t].incarnation);
+    }
+    /* The log, split at once: the completions of the leased tables' records
+     * are taken out and torn down here, and every other one stays -- one of
+     * a table withdrawn before its lease, which its withdrawal takes out
+     * and tears down itself, or of a table discovered after the snapshot. */
     lcompilers_init_log_lock();
     int32_t **states = lcompilers_init_completed;
     size_t n = lcompilers_init_completed_count;
-    lcompilers_init_completed = NULL;
-    lcompilers_init_completed_count = lcompilers_init_completed_capacity = 0;
-    lcompilers_init_log_unlock();
-    for (size_t i = n; i-- > 0;) {
-        if (!lcompilers_init_last_completion(states, n, i)) continue;
-        /* A state no live table holds belongs to an image unloaded since. */
-        for (size_t t = 0; t < snapshot.count; t++) {
-            const lcompilers_init_found *f = &snapshot.items[t];
-            lcompilers_init_lease lease;
-            if (!lcompilers_init_lease_acquire(&lease, f->entry, f->incarnation)) continue;
-            const lcompilers_init_record *record = NULL;
-            for (uint32_t k = 0; k < f->table->count; k++) {
-                if (f->table->records[k].state == states[i]) {
-                    record = &f->table->records[k];
+    int32_t **taken = NULL;
+    const lcompilers_init_record **records = NULL;
+    if (n > 0) {
+        taken = (int32_t **)malloc(n * sizeof(*taken));
+        records = (const lcompilers_init_record **)malloc(n * sizeof(*records));
+        if (taken == NULL || records == NULL) lcompilers_init_fail_now("out of memory");
+    }
+    size_t kept = 0, m = 0;
+    for (size_t i = 0; i < n; i++) {
+        const lcompilers_init_record *record = NULL;
+        for (size_t t = 0; t < snapshot.count && record == NULL; t++) {
+            if (!held[t]) continue;
+            const lcompilers_init_table *table = snapshot.items[t].table;
+            for (uint32_t k = 0; k < table->count; k++) {
+                if (table->records[k].state == states[i]) {
+                    record = &table->records[k];
                     break;
                 }
             }
-            if (record != NULL && record->teardown != NULL
-                    && lcompilers_init_load_acquire(states[i]) == lcompilers_init_ready) {
-                record->teardown();
-            }
-            lcompilers_init_lease_release(&lease);
-            if (record != NULL) break;
+        }
+        if (record == NULL) {
+            states[kept++] = states[i];
+        } else {
+            taken[m] = states[i];
+            records[m++] = record;
         }
     }
-    free(states);
+    lcompilers_init_completed_count = kept;
+    lcompilers_init_log_unlock();
+    for (size_t i = m; i-- > 0;) {
+        if (!lcompilers_init_last_completion(taken, m, i)) continue;
+        if (records[i]->teardown != NULL
+                && lcompilers_init_load_acquire(taken[i]) == lcompilers_init_ready) {
+            records[i]->teardown();
+        }
+    }
+    free(taken);
+    free(records);
+    for (size_t t = snapshot.count; t-- > 0;) {
+        if (held[t]) lcompilers_init_lease_release(&leases[t]);
+    }
+    free(leases);
+    free(held);
     lcompilers_init_unlock();
     lcompilers_init_release(&snapshot);
 }
