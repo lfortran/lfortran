@@ -4,6 +4,10 @@
 ! is broadcast to every element) and one that takes the default of its type.
 ! A constructor that leaves out an allocatable component, or gives it
 ! `null()`, leaves that component unallocated in every element.
+! Allocated subcomponents of the elements of an array component are
+! deallocated on entry, for array and scalar dummies alike (F2018 9.7.3.2),
+! after the dummy has been finalized (F2018 7.5.6.3); an absent optional
+! dummy is left alone.
 module intent_out_array_default_init_03_mod
 implicit none
 
@@ -40,6 +44,26 @@ type :: va
     type(ta) :: d(2) = ta(9, null())
     type(ta) :: e(2)
 end type va
+
+type :: tb
+    type(ta) :: inner(2)
+end type tb
+
+type :: sbase
+    type(tb) :: outer(2)
+end type sbase
+
+type, extends(sbase) :: sext
+    integer :: k = 1
+end type sext
+
+type :: vf
+    type(ta) :: c(2)
+contains
+    final :: fin_vf
+end type vf
+
+integer :: nfin = 0, nfin_dealloc = 0
 
 contains
 
@@ -137,6 +161,46 @@ contains
         end do
     end subroutine reset_alloc
 
+    subroutine check_sext(x, code)
+        type(sext), intent(in) :: x
+        integer, intent(in) :: code
+        integer :: i, j
+        if (x%k /= 1) error stop code + 1
+        do i = 1, 2
+            do j = 1, 2
+                if (allocated(x%outer(i)%inner(j)%z)) error stop code + 2
+            end do
+        end do
+    end subroutine check_sext
+
+    subroutine reset_scalar(a)
+        type(sext), intent(out) :: a
+        call check_sext(a, 70)
+    end subroutine reset_scalar
+
+    subroutine reset_scalar_optional(a, code)
+        type(sext), intent(out), optional :: a
+        integer, intent(in) :: code
+        if (present(a)) call check_sext(a, code)
+    end subroutine reset_scalar_optional
+
+    subroutine fin_vf(x)
+        type(vf), intent(inout) :: x
+        nfin = nfin + 1
+        if (.not. allocated(x%c(1)%z)) nfin_dealloc = nfin_dealloc + 1
+        if (.not. allocated(x%c(2)%z)) nfin_dealloc = nfin_dealloc + 1
+    end subroutine fin_vf
+
+    subroutine reset_final(a)
+        type(vf), intent(out) :: a
+        integer :: i
+        if (nfin /= 1) error stop 91
+        if (nfin_dealloc /= 0) error stop 92
+        do i = 1, 2
+            if (allocated(a%c(i)%z)) error stop 93
+        end do
+    end subroutine reset_final
+
 end module intent_out_array_default_init_03_mod
 
 program intent_out_array_default_init_03
@@ -145,7 +209,9 @@ implicit none
 type(u) :: q(2)
 type(w) :: ww(2)
 type(va) :: vv(2)
-integer :: i, k
+type(sext) :: ss
+type(vf) :: ff
+integer :: i, j, k
 
 call spoil_u(q(1))
 call spoil_u(q(2))
@@ -180,6 +246,32 @@ do k = 1, 2
     end do
 end do
 call reset_alloc(vv)
+
+do i = 1, 2
+    do j = 1, 2
+        allocate(ss%outer(i)%inner(j)%z(2))
+    end do
+end do
+ss%k = 99
+call reset_scalar(ss)
+call check_sext(ss, 75)
+
+do i = 1, 2
+    do j = 1, 2
+        allocate(ss%outer(i)%inner(j)%z(2))
+    end do
+end do
+ss%k = 99
+call reset_scalar_optional(ss, 80)
+call check_sext(ss, 85)
+call reset_scalar_optional(code=80)
+
+do i = 1, 2
+    allocate(ff%c(i)%z(3))
+end do
+call reset_final(ff)
+if (nfin /= 1) error stop 94
+if (allocated(ff%c(1)%z) .or. allocated(ff%c(2)%z)) error stop 95
 
 print *, "ok"
 end program intent_out_array_default_init_03
