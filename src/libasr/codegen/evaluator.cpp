@@ -931,6 +931,7 @@ void write_file(const std::string &filename, const std::string &contents)
 std::string LLVMEvaluator::get_asm(llvm::Module &m)
 {
     configure_module(m);
+    lower_global_init_records(m);
     llvm::legacy::PassManager pass;
 #if LLVM_VERSION_MAJOR < 10
     llvm::LLVMTargetMachine::CodeGenFileType ft = llvm::LLVMTargetMachine::CGFT_AssemblyFile;
@@ -955,6 +956,7 @@ void LLVMEvaluator::save_asm_file(llvm::Module &m, const std::string &filename)
 
 void LLVMEvaluator::save_object_file(llvm::Module &m, const std::string &filename) {
     configure_module(m);
+    lower_global_init_records(m);
 
     llvm::legacy::PassManager pass;
 #if LLVM_VERSION_MAJOR < 10

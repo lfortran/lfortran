@@ -87,6 +87,10 @@ using ASRUtils::is_argument_of_type_CPtr;
 // Helper functions for LLVM function name mangling
 namespace {
 
+// The engine's entries the object-format-independent startup records use.
+constexpr char global_init_ctor_name[] = "_lcompilers_init_ctor";
+constexpr char global_init_add_records_name[] = "_lcompilers_init_add_records";
+
 bool is_dummy_procedure(const ASR::Function_t& fn) {
     ASR::symbol_t* owner = ASRUtils::get_asr_owner(&fn.base);
     if (owner && ASR::is_a<ASR::Function_t>(*owner)) {
@@ -474,12 +478,6 @@ public:
     // A procedure's entry dispatch, emitted where its frame is set up rather
     // than where the body is.
     std::set<const ASR::GlobalInitDispatch_t*> hoisted_entry_dispatches;
-    // The triple and data layout the module is compiled for. The module
-    // itself carries the host's layout while it is generated and gets the
-    // target's only once it is complete, but where the startup records go and
-    // how wide their pointers are is decided by the target.
-    std::string target_triple;
-    std::string target_data_layout;
     struct saved_struct_variable { /* A procedure's save variable of struct type, whose members are finalized at program exit */
         ASR::Variable_t* v;
         llvm::Value* target_var; // Corresponds to variable `v` in llvm IR.
@@ -7136,7 +7134,7 @@ public:
             llvm::FunctionType* add_type = llvm::FunctionType::get(
                 llvm::Type::getVoidTy(context), {i8_ptr}, false);
             llvm::Function* add = get_init_runtime_function(
-                "_lcompilers_init_add_records", add_type);
+                global_init_add_records_name, add_type);
             llvm::Function* remove = get_init_runtime_function(
                 "_lcompilers_init_remove_records", add_type);
             llvm::Function* dispatch = get_init_runtime_function(
@@ -7169,74 +7167,20 @@ public:
             return;
         }
 
-        if (target_triple.empty() || target_data_layout.empty()) {
-            throw CodeGenError("the target of the startup initialization "
-                "records is not known");
-        }
-        llvm::Triple triple(target_triple);
-        llvm::DataLayout target_layout(target_data_layout);
-        llvm::Constant* anchor = table;
-        std::vector<llvm::GlobalValue*> used = {table};
-        if (triple.isOSBinFormatMachO()) {
-            table->setSection(std::string(lcompilers_init_macho_segment) + ","
-                + lcompilers_init_macho_section + ",regular,no_dead_strip");
-        } else if (triple.isOSBinFormatCOFF()) {
-            table->setSection(lcompilers_init_coff_section);
-        } else if (triple.isOSBinFormatWasm()) {
-            // No loader to enumerate and no linker-made section bounds: an
-            // image is one module, and every object file adds its table at a
-            // constructor priority below any a user can give, so all of them
-            // are in before the first constructor that can run user code or
-            // dispatch.
-            llvm::Function* add = get_init_runtime_function(
-                "_lcompilers_init_add_records",
-                llvm::FunctionType::get(llvm::Type::getVoidTy(context), {i8_ptr}, false));
-            llvm::Function* publish = llvm::Function::Create(void_fn,
-                llvm::Function::InternalLinkage, "__lcompilers_init_publish",
-                module.get());
-            llvm::IRBuilder<> pb(context);
-            pb.SetInsertPoint(llvm::BasicBlock::Create(context, ".entry", publish));
-            pb.CreateCall(add, {llvm::ConstantExpr::getBitCast(table, i8_ptr)});
-            pb.CreateRetVoid();
-            llvm::appendToGlobalCtors(*module, publish, lcompilers_init_wasm_publish_priority);
-        } else {
-            // An allocated note naming the table: `dl_iterate_phdr` finds it
-            // in every loaded image through its PT_NOTE, stripped or not.
-            // The table pointer is relocated before any constructor runs.
-            LCOMPILERS_ASSERT(triple.isOSBinFormatELF());
-            llvm::StructType* note_type = llvm::StructType::get(context, {
-                i32, i32, i32, llvm::ArrayType::get(llvm::Type::getInt8Ty(context),
-                    sizeof(lcompilers_init_elf_note_owner)),
-                i8_ptr}, /*isPacked=*/true);
-            unsigned pointer_size = target_layout.getPointerSize();
-            llvm::GlobalVariable* note = new llvm::GlobalVariable(*module,
-                note_type, false, llvm::GlobalVariable::InternalLinkage,
-                llvm::ConstantStruct::get(note_type, {
-                    llvm::ConstantInt::get(i32, sizeof(lcompilers_init_elf_note_owner)),
-                    llvm::ConstantInt::get(i32, pointer_size),
-                    llvm::ConstantInt::get(i32, lcompilers_init_elf_note_type),
-                    llvm::ConstantDataArray::getString(context,
-                        llvm::StringRef(lcompilers_init_elf_note_owner,
-                            sizeof(lcompilers_init_elf_note_owner)), false),
-                    llvm::ConstantExpr::getBitCast(table, i8_ptr)}),
-                "__lcompilers_init_note");
-            note->setSection(lcompilers_init_elf_note_section);
-            note->setAlignment(llvm::MaybeAlign(4));
-            used.push_back(note);
-            anchor = note;
-        }
-        llvm::appendToUsed(*module, used);
-
-        // The constructor passes what it names, which keeps the records
-        // live through every link; the engine discovers them itself.
+        // The records are independent of the object format here: the table,
+        // kept by `llvm.used`, and a constructor that passes it to the
+        // engine. `lower_global_init_records` gives them the form the
+        // target's loader or linker finds them in, once the module is
+        // lowered for that target.
+        llvm::appendToUsed(*module, {table});
         llvm::Function* ctor_entry = get_init_runtime_function(
-            "_lcompilers_init_ctor",
+            global_init_ctor_name,
             llvm::FunctionType::get(llvm::Type::getVoidTy(context), {i8_ptr}, false));
         llvm::Function* trigger = llvm::Function::Create(void_fn,
             llvm::Function::InternalLinkage, "__lcompilers_init_trigger", module.get());
         llvm::IRBuilder<> b(context);
         b.SetInsertPoint(llvm::BasicBlock::Create(context, ".entry", trigger));
-        b.CreateCall(ctor_entry, {llvm::ConstantExpr::getBitCast(anchor, i8_ptr)});
+        b.CreateCall(ctor_entry, {llvm::ConstantExpr::getBitCast(table, i8_ptr)});
         b.CreateRetVoid();
         llvm::appendToGlobalCtors(*module, trigger, 65535);
         // An image can be unloaded; its records go before its code does.
@@ -28744,8 +28688,6 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         co.gpu_cuda_source = cuda_res.result;
     }
 
-    v.target_triple = target_config.triple;
-    v.target_data_layout = target_config.data_layout;
     t1 = std::chrono::high_resolution_clock::now();
     try {
         v.visit_asr((ASR::asr_t&)asr);
@@ -28784,6 +28726,103 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     }
 
     return res;
+}
+
+namespace {
+
+// Whether `add` is called with `table` already.
+bool publishes_table(llvm::Function &add, llvm::GlobalVariable &table) {
+    for (llvm::User* user : add.users()) {
+        llvm::CallInst* call = llvm::dyn_cast<llvm::CallInst>(user);
+        if (call != nullptr && call->getCalledFunction() == &add
+                && call->getArgOperand(0)->stripPointerCasts() == &table) {
+            return true;
+        }
+    }
+    return false;
+}
+
+} // namespace
+
+void lower_global_init_records(llvm::Module &module) {
+    llvm::Function* ctor_entry = module.getFunction(global_init_ctor_name);
+    if (ctor_entry == nullptr) return;
+    // Every table of the module, found through the constructor that passes
+    // it to the engine; a module linked from several has more than one.
+    std::vector<llvm::CallInst*> triggers;
+    for (llvm::User* user : ctor_entry->users()) {
+        if (llvm::CallInst* call = llvm::dyn_cast<llvm::CallInst>(user)) {
+            triggers.push_back(call);
+        }
+    }
+    llvm::LLVMContext &context = module.getContext();
+    llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
+    llvm::Type* i32 = llvm::Type::getInt32Ty(context);
+    llvm::FunctionType* void_fn = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(context), {}, false);
+    llvm::FunctionType* add_type = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(context), {i8_ptr}, false);
+    llvm::Triple triple(module.getTargetTriple());
+    for (llvm::CallInst* call : triggers) {
+        llvm::GlobalVariable* table = llvm::dyn_cast<llvm::GlobalVariable>(
+            call->getArgOperand(0)->stripPointerCasts());
+        LCOMPILERS_ASSERT(table != nullptr);
+        // A table in a section is already in the form of its object format.
+        if (table->hasSection()) continue;
+        if (triple.isOSBinFormatMachO()) {
+            table->setSection(std::string(lcompilers_init_macho_segment) + ","
+                + lcompilers_init_macho_section + ",regular,no_dead_strip");
+        } else if (triple.isOSBinFormatCOFF()) {
+            table->setSection(lcompilers_init_coff_section);
+        } else if (triple.isOSBinFormatWasm()) {
+            // No loader to enumerate and no linker-made section bounds: an
+            // image is one module, and every object file adds its table at a
+            // constructor priority below any a user can give, so all of them
+            // are in before the first constructor that can run user code or
+            // dispatch.
+            llvm::Function* add = module.getFunction(global_init_add_records_name);
+            if (add != nullptr && publishes_table(*add, *table)) continue;
+            if (add == nullptr) {
+                add = llvm::Function::Create(add_type, llvm::Function::ExternalLinkage,
+                    global_init_add_records_name, &module);
+            }
+            llvm::Function* publish = llvm::Function::Create(void_fn,
+                llvm::Function::InternalLinkage, "__lcompilers_init_publish", &module);
+            llvm::IRBuilder<> b(context);
+            b.SetInsertPoint(llvm::BasicBlock::Create(context, ".entry", publish));
+            b.CreateCall(add, {llvm::ConstantExpr::getBitCast(table, i8_ptr)});
+            b.CreateRetVoid();
+            llvm::appendToGlobalCtors(module, publish, lcompilers_init_wasm_publish_priority);
+        } else {
+            // An allocated note naming the table: `dl_iterate_phdr` finds it
+            // in every loaded image through its PT_NOTE, stripped or not.
+            // The table pointer is relocated before any constructor runs.
+            // The constructor passes the note, which keeps it live through
+            // every link.
+            LCOMPILERS_ASSERT(triple.isOSBinFormatELF());
+            llvm::StructType* note_type = llvm::StructType::get(context, {
+                i32, i32, i32, llvm::ArrayType::get(llvm::Type::getInt8Ty(context),
+                    sizeof(lcompilers_init_elf_note_owner)),
+                i8_ptr}, /*isPacked=*/true);
+            unsigned pointer_size = module.getDataLayout().getPointerSize();
+            llvm::GlobalVariable* note = new llvm::GlobalVariable(module,
+                note_type, false, llvm::GlobalVariable::InternalLinkage,
+                llvm::ConstantStruct::get(note_type, {
+                    llvm::ConstantInt::get(i32, sizeof(lcompilers_init_elf_note_owner)),
+                    llvm::ConstantInt::get(i32, pointer_size),
+                    llvm::ConstantInt::get(i32, lcompilers_init_elf_note_type),
+                    llvm::ConstantDataArray::getString(context,
+                        llvm::StringRef(lcompilers_init_elf_note_owner,
+                            sizeof(lcompilers_init_elf_note_owner)), false),
+                    llvm::ConstantExpr::getBitCast(table, i8_ptr)}),
+                "__lcompilers_init_note");
+            note->setSection(lcompilers_init_elf_note_section);
+            note->setAlignment(llvm::MaybeAlign(4));
+            llvm::appendToUsed(module, {note});
+            call->setArgOperand(0, llvm::ConstantExpr::getBitCast(note,
+                call->getArgOperand(0)->getType()));
+        }
+    }
 }
 
 } // namespace LCompilers
