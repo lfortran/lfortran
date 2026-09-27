@@ -69,7 +69,8 @@ def run_test(backend, std, test_pattern=None):
     common = (f" {generator_flags} -DCURRENT_BINARY_DIR={shlex.quote(str(cwd))}"
               f" -S {shlex.quote(BASE_DIR)} -B {shlex.quote(str(cwd))}")
     if backend == "gfortran":
-        run_cmd(f"FC=gfortran cmake" + common,
+        fc = shlex.quote(os.environ.get("FC") or "gfortran")
+        run_cmd(f"FC={fc} cmake" + common,
                 cwd=cwd)
     elif backend == "flang":
         # Resolve flang to find its LLVM install prefix, then use the

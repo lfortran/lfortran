@@ -52,6 +52,13 @@ pixi run integration_tests -j8 > integration.log 2>&1
 pixi run integration_tests -b gfortran -j8 > gfortran.log 2>&1
 ```
 
+The `gfortran` backend honors `FC` when set, otherwise it uses `gfortran`.
+On macOS ARM, the `llvm11` environment sets `FC="gfortran -B/usr/bin/"` to
+select Xcode's assembler and linker. Recent GFortran emits M1/LSE instructions
+that the LLVM 11 environment's bundled Clang assembler rejects by default.
+This tool selection does not pass GFortran-specific flags to LFortran or
+change the LLVM version used for reference outputs.
+
 The integration task uses Make from the selected environment. The runner is
 currently intended for Unix-like shells; use WSL
 for that suite on Windows. CTest uses the selected native build. Append `-t
