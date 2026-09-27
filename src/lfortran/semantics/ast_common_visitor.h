@@ -22095,18 +22095,18 @@ public:
     // TODO: extract commonality with visit_Instantiate
     std::string handle_templated(std::string name, bool is_nested,
             AST::decl_attribute_t** args, size_t n_args, const Location &loc) {
-        std::string func_name = name;
+        std::string func_name = to_lower(name);
 
         ASR::symbol_t *sym0 = current_scope->resolve_symbol(func_name);
         if (!sym0) {
-            diag.add(Diagnostic("Use of an unspecified templated function '" + func_name
+            diag.add(Diagnostic("Use of an unspecified templated function '" + name
                 + "'", Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
         }
 
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(sym0);
         if (!ASR::is_a<ASR::Template_t>(*sym)) {
-            diag.add(Diagnostic("Cannot instantiate a non-templated function '" + func_name
+            diag.add(Diagnostic("Cannot instantiate a non-templated function '" + name
                 + "'", Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
         }
