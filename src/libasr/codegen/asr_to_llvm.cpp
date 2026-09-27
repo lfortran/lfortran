@@ -5966,11 +5966,13 @@ public:
     // and emits such an initializer element by element, needing over a
     // hundred bytes of compiler memory per byte of data, so this keeps the
     // cost of all of them together to about ten megabytes and a few tens of
-    // milliseconds, however many arrays there are. The arrays that do not
-    // fit, in declaration order, start out zeroed, and their elements get
-    // their default values at run time instead, with the run time set up of
-    // the members of module arrays (`struct_array_global_members_details`),
-    // which costs the compiler the same for any size.
+    // milliseconds, however many arrays there are. The arrays are taken in
+    // the order the backend visits them, which is name order within a scope
+    // (deterministic across translation units); those that do not fit
+    // start out zeroed, and their elements get their default values at run
+    // time instead, with the run time set up of the members of module arrays
+    // (`struct_array_global_members_details`), which costs the compiler the
+    // same for any size.
     static constexpr uint64_t static_struct_array_default_budget = 65536;
     // The part of the budget used so far, and the choice made for each
     // array, by the hash of its variable, so that a variable visited twice
@@ -6500,11 +6502,15 @@ public:
                 // unit's budget (`take_static_struct_array_default`), which
                 // this one cannot know, so it always gets the run time set
                 // up here. For one laid out as static data, that stores the
-                // same values again.
+                // same values again. A `bind(c)` array is defined by every
+                // translation unit that uses its module (see `external`
+                // above), so it keeps the zeroed common definition, which the
+                // linker merges, and always gets the run time set up too.
                 if (x.m_symbolic_value == nullptr && x.m_value == nullptr) {
                     default_elem = get_struct_array_default_element(x, type);
                     fill_default_at_run_time = default_elem != nullptr
                         && (external
+                            || x.m_abi == ASR::abiType::BindC
                             || !take_static_struct_array_default(h, type));
                 }
                 if (!external) {
