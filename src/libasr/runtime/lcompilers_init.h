@@ -33,9 +33,14 @@
  * and a dispatch calls their initializers in `stable_id` order: the local
  * phase every record that is not collective, and the collective phase, only
  * at a collective boundary, the collective ones. A dispatch is entered from
- * an object file's constructor, from a foreign entry point, from a Fortran
- * main program, from `lcompilers_initialize` or after a batch of records was
- * added.
+ * an object file's constructor (the local phase), from a Fortran main
+ * program or from the host's `lfortran_initialize` (the collective phase),
+ * or after a batch of records was added.
+ *
+ * Nothing else enters it: a procedure a foreign caller calls does not
+ * dispatch. A host without a Fortran main program calls
+ * `lfortran_initialize`, declared in LFortran's ISO_Fortran_binding.h, on
+ * every image before it calls any Fortran procedure.
  */
 
 #include "lcompilers_init_abi.h"
@@ -59,31 +64,20 @@ LFORTRAN_API void _lcompilers_init_require_collective(void);
  * and it is discovered from now on until the object file's destructor
  * passes it to `_lcompilers_init_unload`, whether or not the loader lists it.
  * It may decline to dispatch where the loader cannot safely run initializers
- * (a DLL's constructor on Windows); a later entry then does the work.
+ * (a DLL's constructor on Windows); a later dispatch then does the work.
  *
  * On Windows a DLL's records are discovered only once its own constructor
  * has run (a DLL still being loaded, or whose load fails, is not taken in),
  * so a dispatch sees the records of the executable and of every DLL whose
- * attach has run, not those of a DLL that is still loading. What a foreign
- * entry point of such a DLL needs, it runs itself, through its explicit
- * calls of the initializers; the host's lcompilers_initialize() runs
- * everything attached by then. */
+ * attach has run, not those of a DLL that is still loading. A DLL loaded
+ * with LoadLibrary is initialized by the next lfortran_initialize(), which
+ * runs everything attached by then. */
 LFORTRAN_API void _lcompilers_init_ctor(const lcompilers_init_table *table);
 /* `lcompilers_init_dispatch_local` or `lcompilers_init_dispatch_collective`. */
 LFORTRAN_API void _lcompilers_init_dispatch(int32_t phase);
-/* The local dispatch of a foreign entry point. `entered` is a word of the
- * entry point's own, zero-initialized, writable data, zero again in every
- * new mapping of its image, which the engine alone uses: once a dispatch
- * through it has completed, a call returns after two atomic loads for as
- * long as no image with records is taken in or goes away and no host batch
- * is added or removed. An entry point of an image still being loaded, called
- * from one of the image's own constructors, thus dispatches in full, which
- * finds the records of its image (on Windows, those of the DLLs attached
- * already; see `_lcompilers_init_ctor`). */
-LFORTRAN_API void _lcompilers_init_enter(uint64_t *entered);
-/* The collective boundary a host calls, on every image, before user code
- * runs; equivalent to the one a Fortran main program enters. */
-LFORTRAN_API void lcompilers_initialize(void);
+/* `lfortran_initialize` and `lfortran_finalize`, the startup and the end a
+ * host without a Fortran main program calls, are declared in LFortran's
+ * ISO_Fortran_binding.h. */
 
 /* Records a loader cannot discover, such as those of JIT code. A batch is
  * identified by its address and has to be removed before its code or data

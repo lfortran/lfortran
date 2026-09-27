@@ -7,9 +7,7 @@
  * definition in an image loaded, unloaded and loaded again starts out
  * uninitialized again, and one in an image that stayed loaded stays ready.
  * What the engine caches is only the load generation it last dispatched,
- * which every image load, unload and host batch changes, and, in a word of
- * each foreign entry point's own image, the registry generation it last
- * dispatched at.
+ * which every image load, unload and host batch changes.
  *
  * Lifetimes: a table, its records, their ids and the code and state words
  * they point to belong to an image or a host batch, and can be unmapped as
@@ -114,25 +112,6 @@ static void lcompilers_init_store_u64(uint64_t *p, uint64_t v) {
     InterlockedExchange64((volatile LONG64 *)p, (LONG64)v);
 #else
     __atomic_store_n(p, v, __ATOMIC_RELEASE);
-#endif
-}
-
-/* Raises `*p` to `v` unless it is already at least `v`, with release: a
- * word only ever grows, however the stores of two threads interleave. */
-static void lcompilers_init_raise_u64(uint64_t *p, uint64_t v) {
-#if defined(_MSC_VER)
-    LONG64 seen = InterlockedCompareExchange64((volatile LONG64 *)p, 0, 0);
-    while ((uint64_t)seen < v) {
-        LONG64 was = InterlockedCompareExchange64((volatile LONG64 *)p,
-            (LONG64)v, seen);
-        if (was == seen) return;
-        seen = was;
-    }
-#else
-    uint64_t seen = __atomic_load_n(p, __ATOMIC_RELAXED);
-    while (seen < v && !__atomic_compare_exchange_n(p, &seen, v, 1,
-            __ATOMIC_RELEASE, __ATOMIC_RELAXED)) {
-    }
 #endif
 }
 
@@ -335,8 +314,7 @@ static lcompilers_init_entry *lcompilers_init_entries;
 static size_t lcompilers_init_entry_count, lcompilers_init_entry_capacity;
 /* Bumped whenever an entry is retired or comes back to life, is taken in
  * by its image's constructor, or a host batch is added or removed. Written
- * with the registry lock held, and read without it by the fast path of a
- * foreign entry point; see `_lcompilers_init_enter`. */
+ * and read with the registry lock held. */
 static uint64_t lcompilers_init_registry_generation;
 
 /* With the registry lock held. */
@@ -725,8 +703,8 @@ typedef struct {
  * table is taken in only once its own constructor has run, which the CRT
  * does in the DLL's attach, after binding; the executable's is always
  * complete. That loses nothing: a DLL's constructor declines to dispatch,
- * and every dispatch comes later, from the executable's constructor, an
- * entry point or lcompilers_initialize(). */
+ * and every dispatch comes later, from the executable's constructor, a
+ * Fortran main program or lfortran_initialize(). */
 static void lcompilers_init_visit_windows(const lcompilers_init_table *t,
         void *context) {
     lcompilers_init_windows_scan *scan = (lcompilers_init_windows_scan *)context;
@@ -1279,7 +1257,7 @@ LFORTRAN_API void _lcompilers_init_require_collective(void) {
     if (!lcompilers_init_collective_active || !lcompilers_init_bootstraps_ran) {
         lcompilers_init_fail("a saved coarray has to be allocated at the "
             "collective startup boundary, which every image enters: the "
-            "Fortran main program, or lcompilers_initialize() called by the "
+            "Fortran main program, or lfortran_initialize() called by the "
             "host on every image");
     }
 }
@@ -1443,17 +1421,15 @@ static void lcompilers_init_walk(int kind) {
 /* Set while a collective boundary runs. */
 static int32_t lcompilers_init_collective_running;
 
-/* A dispatch of phase `phase`. `entered` is the word of the foreign entry
- * point that dispatches, or NULL; see `_lcompilers_init_enter`. */
-static void lcompilers_init_run(int32_t phase, uint64_t *entered) {
+/* A dispatch of phase `phase`. */
+static void lcompilers_init_run(int32_t phase) {
     if (phase != lcompilers_init_dispatch_local
             && phase != lcompilers_init_dispatch_collective) {
         lcompilers_init_fail("unknown dispatch phase");
     }
     /* A thread that is dispatching, or that runs an initializer, does not
      * dispatch again: it could not complete what is already running, and it
-     * must not enumerate the loader while it holds the lock. What an entry
-     * point needs is run by its own explicit calls. */
+     * must not enumerate the loader while it holds the lock. */
     if (lcompilers_init_dispatch_depth > 0 || lcompilers_init_lock_held()) return;
     lcompilers_init_generation_t generation;
     lcompilers_init_generation(&generation);
@@ -1462,14 +1438,7 @@ static void lcompilers_init_run(int32_t phase, uint64_t *entered) {
         int done = lcompilers_init_dispatched_valid
             && lcompilers_init_same_generation(&lcompilers_init_dispatched, &generation);
         lcompilers_init_registry_unlock();
-        if (done) {
-            /* Arms the entry point's fast path, which a dispatch that
-             * completed at an older generation may have left behind. */
-            if (entered != NULL) {
-                lcompilers_init_raise_u64(entered, generation.registry + 1);
-            }
-            return;
-        }
+        if (done) return;
     }
     /* One thread of an image enters its collective boundary, once for every
      * set of collective records: two at once would start the runtime and
@@ -1510,7 +1479,6 @@ static void lcompilers_init_run(int32_t phase, uint64_t *entered) {
     lcompilers_init_dispatched = generation;
     lcompilers_init_dispatched_valid = 1;
     lcompilers_init_registry_unlock();
-    if (entered != NULL) lcompilers_init_raise_u64(entered, generation.registry + 1);
 }
 
 LFORTRAN_API void _lcompilers_init_ctor(const lcompilers_init_table *table) {
@@ -1533,8 +1501,8 @@ LFORTRAN_API void _lcompilers_init_ctor(const lcompilers_init_table *table) {
 #endif
 #if defined(_WIN32) && !defined(COMPILE_TO_WASM)
     /* A DLL's constructors run under the loader lock, where running
-     * initializers is unsafe. The executable's constructor, a foreign entry
-     * point or the host's lcompilers_initialize() then does the work, with
+     * initializers is unsafe. The executable's constructor, a Fortran main
+     * program or the host's lfortran_initialize() then does the work, with
      * this DLL's records discovered like any other image's. */
     HMODULE module = NULL;
     if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
@@ -1543,36 +1511,33 @@ LFORTRAN_API void _lcompilers_init_ctor(const lcompilers_init_table *table) {
         return;
     }
 #endif
-    lcompilers_init_run(lcompilers_init_dispatch_local, NULL);
+    lcompilers_init_run(lcompilers_init_dispatch_local);
 }
 
 LFORTRAN_API void _lcompilers_init_dispatch(int32_t phase) {
-    lcompilers_init_run(phase, NULL);
+    lcompilers_init_run(phase);
 }
 
-/* The fast path, which every call of a foreign entry point takes once
- * startup is done: the registry has not changed since a dispatch this entry
- * point made, after its image was loaded, completed or found one completed.
- * Every image with records changes the registry -- from its constructor,
- * which takes its table in, and its destructor -- and so does every host
- * batch. What a dispatch has not seen is a load in progress whose
- * constructors have not run yet, which only concerns that load's own entry
- * points: their words are zero in every new mapping of the image, so they
- * dispatch in full, from a constructor of their own image that runs before
- * the Fortran one too. The acquire pairs with the release of the dispatch
- * that raised the word, after every initializer it ran, or found a dispatch
- * that completed had run, was ready. */
-LFORTRAN_API void _lcompilers_init_enter(uint64_t *entered) {
-    uint64_t seen = lcompilers_init_load_u64(entered);
-    if (seen != 0 && seen
-            == lcompilers_init_load_u64(&lcompilers_init_registry_generation) + 1) {
-        return;
+/* The host startup of LFortran's ISO_Fortran_binding.h. The runtime's own
+ * state is set up once, as a Fortran main program sets it up, the command
+ * line by the first call that passes one; every call is a collective
+ * boundary, which also initializes what images loaded since the last one
+ * define. */
+static int32_t lcompilers_init_host_started, lcompilers_init_host_command_line;
+
+LFORTRAN_API void lfortran_initialize(int argc, char *argv[]) {
+    if (argc > 0 && argv != NULL
+            && lcompilers_init_claim(&lcompilers_init_host_command_line)) {
+        _lpython_set_argv(argc, argv);
     }
-    lcompilers_init_run(lcompilers_init_dispatch_local, entered);
+    if (lcompilers_init_claim(&lcompilers_init_host_started)) {
+        _lfortran_init_random_clock();
+    }
+    lcompilers_init_run(lcompilers_init_dispatch_collective);
 }
 
-LFORTRAN_API void lcompilers_initialize(void) {
-    lcompilers_init_run(lcompilers_init_dispatch_collective, NULL);
+LFORTRAN_API void lfortran_finalize(void) {
+    _lfortran_internal_alloc_finalize();
 }
 
 LFORTRAN_API void _lcompilers_init_add_records(const lcompilers_init_table *table) {
@@ -1656,8 +1621,7 @@ LFORTRAN_API void _lcompilers_init_unload(const lcompilers_init_table *table) {
 
 LFORTRAN_API void _lcompilers_init_teardown_all(void) {
     /* A teardown frees what the owners' storage holds and leaves every state
-     * ready, so a dispatch after it has nothing to run again: the entry
-     * points' fast paths stay armed. */
+     * ready, so a dispatch after it has nothing to run again. */
     lcompilers_init_snapshot snapshot;
     lcompilers_init_discover(&snapshot);
     lcompilers_init_lock();

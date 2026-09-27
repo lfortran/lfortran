@@ -29,7 +29,7 @@
  *   the runtime marks publication complete from one of priority
  *   `lcompilers_init_wasm_published_priority`, after every publisher and
  *   before any constructor user code can have. The engine refuses to
- *   dispatch before that mark: an entry that runs earlier -- or a host that
+ *   dispatch before that mark: a startup that runs earlier -- or a host that
  *   calls into the module before running its constructors, which WASI and
  *   Emscripten both require first -- is a fatal error, never a dispatch over
  *   a partial set.

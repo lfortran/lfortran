@@ -70,7 +70,7 @@ stmt
     | WhileLoop(identifier? name, expr test, stmt* body, stmt* orelse)
     | Nullify(expr* vars)
     | GlobalInitStorage(expr* targets)
-    | GlobalInitDispatch(init_dispatch_phase phase, stmt* ensures)
+    | GlobalInitDispatch()
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
     | SyncAll(expr? stat, expr? errmsg)
     | SyncImages(expr? image_set, expr? stat, expr? errmsg)
@@ -287,8 +287,6 @@ binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitR
 reduction_op = ReduceAdd | ReduceSub | ReduceMul | ReduceMIN | ReduceMAX | ReduceIAND | ReduceIOR | ReduceIEOR
 logicalbinop = And | Or | Xor | NEqv | Eqv
 cmpop = Eq | NotEq | Lt | LtE | Gt | GtE
-
-init_dispatch_phase = InitDispatchLocal | InitDispatchCollective
 integerboz = Binary | Hex | Octal | Decimal
 arraybound = LBound | UBound
 arraystorage = RowMajor | ColMajor

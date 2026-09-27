@@ -840,18 +840,6 @@ R"(#include <stdio.h>
 
             indentation_level += 1;
             std::string indent(indentation_level*indentation_spaces, ' ');
-            // A foreign entry point enters the startup engine before anything
-            // of it runs, the bounds and lengths its declarations evaluate
-            // included, so its dispatch (at most one, among the top-level
-            // statements, wherever passes left it) goes ahead of them.
-            std::string entry;
-            for (size_t i = 0; i < x.n_body; i++) {
-                if (ASR::is_a<ASR::GlobalInitDispatch_t>(*x.m_body[i])) {
-                    self().visit_stmt(*x.m_body[i]);
-                    entry = src;
-                    break;
-                }
-            }
             std::string decl;
             std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
             for (auto &item : var_order) {
@@ -878,12 +866,10 @@ R"(#include <stdio.h>
             current_function = &x;
 
             for (size_t i=0; i<x.n_body; i++) {
-                if (ASR::is_a<ASR::GlobalInitDispatch_t>(*x.m_body[i])) continue;
                 self().visit_stmt(*x.m_body[i]);
                 current_body += src;
             }
             decl += check_tmp_buffer();
-            decl = entry + decl;
             current_function = nullptr;
             bool visited_return = false;
 
@@ -2958,26 +2944,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = indent + "// SYNC ALL\n";
     }
 
-    // Enter the startup engine, then run the initializers this entry point
-    // needs itself, which are what guarantees them to a foreign caller even
-    // when the engine is already dispatching on this thread.
-    void visit_GlobalInitDispatch(const ASR::GlobalInitDispatch_t &x) {
+    // The collective startup boundary of a main program.
+    void visit_GlobalInitDispatch(const ASR::GlobalInitDispatch_t &/*x*/) {
         std::string indent(indentation_level*indentation_spaces, ' ');
-        std::string out;
-        if (x.m_phase == ASR::init_dispatch_phaseType::InitDispatchCollective) {
-            out = indent + "_lcompilers_init_dispatch("
-                "lcompilers_init_dispatch_collective);\n";
-        } else {
-            // A foreign entry point: the engine keeps, in a zero-initialized
-            // word of the entry's own, whether it may take the fast path.
-            out = indent + "static uint64_t __lcompilers_init_entered = 0;\n"
-                + indent + "_lcompilers_init_enter(&__lcompilers_init_entered);\n";
-        }
-        for (size_t i = 0; i < x.n_ensures; i++) {
-            self().visit_stmt(*x.m_ensures[i]);
-            out += src;
-        }
-        src = out;
+        src = indent + "_lcompilers_init_dispatch("
+            "lcompilers_init_dispatch_collective);\n";
     }
 
     // Whether the declaration this backend emits for variable `v` of a module

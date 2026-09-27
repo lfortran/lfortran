@@ -45,9 +45,11 @@ namespace LCompilers {
     // (runtime/lcompilers_init.h) serializes initialization, reports a cycle,
     // and runs the initializer of every module and translation unit of every
     // loaded image, discovered from the records the code generators emit, in
-    // stable id order before user code runs; `GlobalInitDispatch` is where
-    // generated code enters it. A program's own initializer is frame local
-    // and is called by the program itself, after the dispatch.
+    // stable id order before user code runs; `GlobalInitDispatch`, the first
+    // statement of a program, is where generated code enters it. A host
+    // without a Fortran main program enters it through
+    // `lfortran_initialize` instead. A program's own initializer is frame
+    // local and is called by the program itself, after the dispatch.
 
     namespace ASRUtils {
 
@@ -165,9 +167,10 @@ namespace LCompilers {
             bool coarrays);
 
         // For a target that sees the whole program: replace each
-        // `GlobalInitDispatch` by calls to every root, local ones first, and
-        // each guard by plain code on its state, so that nothing of the
-        // runtime engine is left.
+        // `GlobalInitDispatch` by calls to every root, the local ones first,
+        // then the collective bootstraps and the collective ones, and each
+        // guard by plain code on its state, so that nothing of the runtime
+        // engine is left.
         void expand_closed_world_dispatch(Allocator &al,
             ASR::TranslationUnit_t &unit);
 
@@ -175,8 +178,7 @@ namespace LCompilers {
 
     // Lower what static data does not hold into statements of the initializer
     // of the unit that owns it (for a procedure or a block, at the top of its
-    // own body), and prefix every user `bind(c)` procedure with the
-    // `GlobalInitDispatch` a foreign caller enters through.
+    // own body).
     void pass_global_init(Allocator &al, ASR::TranslationUnit_t &unit,
                           const PassOptions &pass_options);
 

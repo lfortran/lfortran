@@ -475,9 +475,6 @@ public:
         llvm::Value* n_elems_i64;
     };
     std::vector<CharConsolidationWriteback> pending_char_writebacks;
-    // A procedure's entry dispatch, emitted where its frame is set up rather
-    // than where the body is.
-    std::set<const ASR::GlobalInitDispatch_t*> hoisted_entry_dispatches;
     struct saved_struct_variable { /* A procedure's save variable of struct type, whose members are finalized at program exit */
         ASR::Variable_t* v;
         llvm::Value* target_var; // Corresponds to variable `v` in llvm IR.
@@ -7196,41 +7193,15 @@ public:
         llvm::appendToGlobalDtors(*module, unload, 65535);
     }
 
-    // Enter the engine, and then run, explicitly, the initializers an entry
-    // point needs. At the entry of a procedure this is emitted before
-    // anything of its frame is set up; see `define_function_entry`.
-    void emit_global_init_dispatch(const ASR::GlobalInitDispatch_t &x) {
-        llvm::Type* void_type = llvm::Type::getVoidTy(context);
-        if (x.m_phase == ASR::init_dispatch_phaseType::InitDispatchCollective) {
-            llvm::Type* i32 = llvm::Type::getInt32Ty(context);
-            llvm::Function* dispatch = get_init_runtime_function(
-                "_lcompilers_init_dispatch",
-                llvm::FunctionType::get(void_type, {i32}, false));
-            builder->CreateCall(dispatch, {llvm::ConstantInt::get(i32,
-                lcompilers_init_dispatch_collective)});
-        } else {
-            // A foreign entry point: the engine keeps, in a zero-initialized
-            // word of the entry's own, whether it may take the fast path.
-            llvm::Type* i64 = llvm::Type::getInt64Ty(context);
-            llvm::GlobalVariable* entered = new llvm::GlobalVariable(*module,
-                i64, false, llvm::GlobalVariable::InternalLinkage,
-                llvm::ConstantInt::get(i64, 0), "__lcompilers_init_entered");
-            entered->setAlignment(llvm::MaybeAlign(8));
-            llvm::Function* enter = get_init_runtime_function(
-                "_lcompilers_init_enter",
-                llvm::FunctionType::get(void_type, {i64->getPointerTo()}, false));
-            builder->CreateCall(enter, {entered});
-        }
-        for (size_t i = 0; i < x.n_ensures; i++) {
-            this->visit_stmt(*x.m_ensures[i]);
-        }
-    }
-
-    void visit_GlobalInitDispatch(const ASR::GlobalInitDispatch_t &x) {
-        if (hoisted_entry_dispatches.find(&x) != hoisted_entry_dispatches.end()) {
-            return;
-        }
-        emit_global_init_dispatch(x);
+    // The collective startup boundary of a main program: every initializer
+    // of every loaded image, before the program's first statement.
+    void visit_GlobalInitDispatch(const ASR::GlobalInitDispatch_t &/*x*/) {
+        llvm::Type* i32 = llvm::Type::getInt32Ty(context);
+        llvm::Function* dispatch = get_init_runtime_function(
+            "_lcompilers_init_dispatch",
+            llvm::FunctionType::get(llvm::Type::getVoidTy(context), {i32}, false));
+        builder->CreateCall(dispatch, {llvm::ConstantInt::get(i32,
+            lcompilers_init_dispatch_collective)});
     }
 
     // Create the storage of the owner's variables that static data cannot
@@ -9788,17 +9759,6 @@ public:
                 ".entry", F);
         builder->SetInsertPoint(BB);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
-        // A foreign entry point enters the startup engine before anything of
-        // its frame -- its arguments, the bounds of its automatic arrays --
-        // can read what the engine initializes.
-        for (size_t i = 0; i < x.n_body; i++) {
-            if (!ASR::is_a<ASR::GlobalInitDispatch_t>(*x.m_body[i])) continue;
-            const ASR::GlobalInitDispatch_t* d =
-                ASR::down_cast<ASR::GlobalInitDispatch_t>(x.m_body[i]);
-            emit_global_init_dispatch(*d);
-            hoisted_entry_dispatches.insert(d);
-            break;
-        }
         declare_args(x, *F);
 
         // For bind(C) functions, convert incoming CFI descriptor parameters

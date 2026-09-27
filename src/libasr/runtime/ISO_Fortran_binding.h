@@ -470,6 +470,40 @@ static inline int CFI_select_part(CFI_cdesc_t *result,
     return CFI_SUCCESS;
 }
 
+/*
+ * Starting and ending the Fortran runtime from a C main program.
+ *
+ * LFortran extension, not part of Fortran 2018 subclause 18.5. Test for it
+ * with `#ifdef LFORTRAN_HAS_INITIALIZE`.
+ *
+ * A Fortran main program starts the runtime before its first statement. A
+ * program whose main function is not Fortran calls lfortran_initialize()
+ * instead, on every image, before it calls any Fortran procedure: it passes
+ * on the command line for GET_COMMAND_ARGUMENT and COMMAND_ARGUMENT_COUNT
+ * (or 0 and NULL, when there is none), initializes the module variables of
+ * every Fortran object file, shared library and plugin loaded by then, and,
+ * in a program that uses coarrays, starts the coarray runtime and allocates
+ * the saved coarrays, as every image does at the start of a Fortran main
+ * program. Nothing is initialized on the way into a Fortran procedure, so a
+ * call of one before lfortran_initialize() -- from a C constructor, for
+ * instance -- may find its module variables not yet initialized.
+ *
+ * Calling it again is harmless: the command line is taken from the first
+ * call that passes one, and what is initialized already stays as it is. A call after
+ * loading a library with dlopen or LoadLibrary initializes that library's
+ * module variables too; they are initialized by the library's own
+ * constructors anyway where the loader runs them safely (not for a DLL on
+ * Windows), but a coarray of the library is allocated only at a call of
+ * lfortran_initialize().
+ *
+ * lfortran_finalize() does what the end of a Fortran main program does to
+ * the runtime: it flushes and closes every unit that is open. It is called
+ * once, after the last call of a Fortran procedure.
+ */
+#define LFORTRAN_HAS_INITIALIZE 1
+void lfortran_initialize(int argc, char *argv[]);
+void lfortran_finalize(void);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

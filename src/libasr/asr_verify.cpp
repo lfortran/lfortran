@@ -862,11 +862,10 @@ public:
 
     size_t global_init_dispatches = 0;
 
-    // An entry into the startup engine has to run before anything of the
-    // frame it enters is set up -- its arguments, the bounds and lengths of
-    // its automatic objects -- so a code generator emits it at the entry of
-    // the procedure. That is only possible for one statement of the body
-    // itself, which is what this requires.
+    // The main program is the one place generated code enters the startup
+    // engine, before its first statement; a host without one calls
+    // `lfortran_initialize` instead. So the dispatch is a statement of a
+    // program's own body, at most once.
     void verify_dispatch_placement(ASR::stmt_t **body, size_t n_body,
             size_t dispatches_before, const Location &loc) {
         size_t top_level = 0;
@@ -875,17 +874,12 @@ public:
         }
         ASRUtils::require_impl(top_level <= 1
                 && global_init_dispatches - dispatches_before == top_level,
-            "GlobalInitDispatch can only be a statement of a procedure's or a "
-            "program's own body, at most once", loc, diagnostics);
+            "GlobalInitDispatch can only be a statement of a program's own "
+            "body, at most once", loc, diagnostics);
     }
 
-    void visit_GlobalInitDispatch(const GlobalInitDispatch_t &x) {
+    void visit_GlobalInitDispatch(const GlobalInitDispatch_t &/*x*/) {
         global_init_dispatches++;
-        for (size_t i = 0; i < x.n_ensures; i++) {
-            require(ASR::is_a<ASR::SubroutineCall_t>(*x.m_ensures[i]),
-                "GlobalInitDispatch::m_ensures can only call initializers");
-            visit_stmt(*x.m_ensures[i]);
-        }
     }
 
     void visit_GlobalInitStorage(const GlobalInitStorage_t &x) {
@@ -969,7 +963,9 @@ public:
             LCOMPILERS_ASSERT(x.m_body[i]);
             visit_stmt(*x.m_body[i]);
         }
-        verify_dispatch_placement(x.m_body, x.n_body, dispatches_before, x.base.base.loc);
+        require(global_init_dispatches == dispatches_before,
+            "GlobalInitDispatch can only be a statement of a program's own "
+            "body, at most once");
         if (x.m_return_var) {
             require_own_symbol(x.m_return_var, func_name, "result variable");
             visit_expr(*x.m_return_var);

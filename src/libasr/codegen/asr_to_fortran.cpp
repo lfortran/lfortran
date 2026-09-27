@@ -179,7 +179,7 @@ public:
         }
     }
 
-    // A scope whose body enters the startup engine binds that entry
+    // A program whose body enters the startup engine binds that entry
     // explicitly, so the output names nothing it does not declare. Source
     // meant to be compiled on its own never gets here: its startup is
     // expanded into calls of the initializers it defines first (see
@@ -1197,7 +1197,6 @@ public:
             }
         }
         if (!interface_body_only) {
-            r += init_dispatch_interface(x);
             r += init_runtime_interfaces(x);
             visit_body(x, r, false);
         }
@@ -1858,19 +1857,10 @@ public:
         src = r;
     }
 
-    void visit_GlobalInitDispatch(const ASR::GlobalInitDispatch_t &x) {
+    void visit_GlobalInitDispatch(const ASR::GlobalInitDispatch_t &/*x*/) {
         LCOMPILERS_ASSERT(!init_dispatch_name.empty());
-        // The phase numbers of the engine's entry.
-        bool collective = x.m_phase
-            == ASR::init_dispatch_phaseType::InitDispatchCollective;
-        src = indent + "call " + init_dispatch_name + "("
-            + (collective ? "1" : "0") + ")\n";
-        std::string r = src;
-        for (size_t i = 0; i < x.n_ensures; i++) {
-            visit_stmt(*x.m_ensures[i]);
-            r += src;
-        }
-        src = r;
+        // The engine's number of the collective phase.
+        src = indent + "call " + init_dispatch_name + "(1)\n";
     }
 
     void visit_GlobalInitStorage(const ASR::GlobalInitStorage_t &x) {
