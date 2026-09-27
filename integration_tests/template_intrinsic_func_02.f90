@@ -27,6 +27,13 @@ contains
         r = f(x, y)
     end subroutine
 
+    template function outer{u}(x, y) result(r)
+        deferred type :: u
+        type(u), intent(in) :: x, y
+        integer :: r
+        r = g{max, integer}(3, 7) + g{min, integer}(3, 7)
+    end function
+
     subroutine check_real()
         if (abs(g{min, real}(2.5, -1.5) - (-1.5)) > 1e-6) error stop
         if (abs(g{max, real}(2.5, -1.5) - 2.5) > 1e-6) error stop
@@ -44,5 +51,6 @@ program template_intrinsic_func_02
     if (i /= -4) error stop
     call s{min}(-4, -9, i)
     if (i /= -9) error stop
+    if (outer{real}(1.0, 2.0) /= 10) error stop
     print *, g{max, integer}(3, 7), g{min, integer}(3, 7)
 end program
