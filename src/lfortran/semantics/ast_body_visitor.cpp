@@ -9343,26 +9343,41 @@ public:
             throw SemanticAbort();
         }
 
+        // 1. Create a temporary variable to hold the evaluated expression exactly once
         std::string temp_name = current_scope->get_unique_name("arith_if_val");
         char *temp_name_c = s2c(al, temp_name);
 
         ASR::symbol_t *temp_sym = ASR::down_cast<ASR::symbol_t>(
             ASR::make_Variable_t(al, x.base.base.loc,
                 current_scope, temp_name_c,
-                nullptr, 0, 
-                ASR::intentType::Local, nullptr, nullptr,
+                nullptr, 0,
+                ASR::intentType::Local,
+                nullptr, nullptr,
                 ASR::storage_typeType::Default, test_int_type,
-                nullptr, 
+                nullptr,
                 ASR::abiType::Source,
                 ASR::accessType::Public,
                 ASR::presenceType::Required,
-                false));
+                false,
+                false,
+                false, 
+                nullptr,
+                false, 
+                false, 
+                ASR::pass_attrType::Default,
+                nullptr,
+                nullptr, 0
+            ));
                 
         current_scope->add_symbol(temp_name, temp_sym);
         ASR::expr_t *test_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, temp_sym));
 
         ASR::stmt_t *assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
-            x.base.base.loc, test_var, test_int, nullptr));
+            x.base.base.loc, test_var, test_int, 
+            nullptr, 
+            false,
+            false  
+        ));
         current_body->push_back(al, assign_stmt);
 
         ASR::expr_t *test_lt, *test_gt;
