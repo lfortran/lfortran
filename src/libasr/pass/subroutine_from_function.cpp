@@ -66,6 +66,8 @@ public:
             for (auto &str_sym_pair : x.m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Function_t>(*str_sym_pair.second)) {
                     this->visit_Function(*down_cast<ASR::Function_t>(str_sym_pair.second));
+                } else if (ASR::is_a<ASR::Template_t>(*str_sym_pair.second)) {
+                    this->visit_Template(*down_cast<ASR::Template_t>(str_sym_pair.second));
                 }
             }
 
