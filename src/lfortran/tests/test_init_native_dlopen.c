@@ -5,7 +5,8 @@
  * (test_init_native_c.c). Loading the library initializes m:nc and nothing
  * the program already initialized; unloading it tears m:nc down, before the
  * library's code is gone; loading it again, if it really was unloaded,
- * initializes a fresh m:nc. The final teardown then finds only m:n2.
+ * initializes a fresh m:nc. The final teardown then finds only m:n2, or
+ * m:nc too where the loader never unloads a library (musl).
  */
 #include <dlfcn.h>
 #include <stdio.h>
@@ -45,6 +46,9 @@ int main(int argc, char **argv) {
         "constructor m:nc", "enter m:nc", "ready m:nc"};
     static const char *const unload[] = {"teardown m:nc"};
     static const char *const end[] = {"teardown m:n2"};
+    /* A loader that never unloads (musl) keeps m:nc, which the final
+     * teardown tears down first, as the one that became ready last. */
+    static const char *const end_loaded[] = {"teardown m:nc", "teardown m:n2"};
     int at = 0;
     if (argc < 2) return 2;
     expect_next(&at, startup, 3, "program startup");
@@ -72,7 +76,11 @@ int main(int argc, char **argv) {
         if (unloaded) expect_next(&at, unload, 1, "library unload");
     }
     _lcompilers_init_teardown_all();
-    expect_next(&at, end, 1, "final teardown");
+    if (unloaded) {
+        expect_next(&at, end, 1, "final teardown");
+    } else {
+        expect_next(&at, end_loaded, 2, "final teardown");
+    }
     if (at != nevents) {
         printf("FAIL: unexpected events after the final teardown\n");
         failures++;

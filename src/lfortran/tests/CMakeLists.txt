@@ -203,7 +203,14 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD AND NOT EMSCRIPTEN)
             -P ${CMAKE_CURRENT_SOURCE_DIR}/run_fatal_test.cmake)
         set_tests_properties(test_init_native_malformed PROPERTIES TIMEOUT 60)
         # glibc lists images of loads in progress; see test_init_native_barrier.c.
-        if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        # Other C libraries (musl) do not, which the test cannot observe.
+        include(CheckCSourceCompiles)
+        check_c_source_compiles("#include <features.h>
+#ifndef __GLIBC__
+#error not glibc
+#endif
+int main(void) { return 0; }" HAVE_GLIBC)
+        if (HAVE_GLIBC)
             add_executable(test_init_native_barrier test_init_native_barrier.c)
             target_link_libraries(test_init_native_barrier lfortran_runtime
                 Threads::Threads ${CMAKE_DL_LIBS})
