@@ -1681,9 +1681,12 @@ public:
     // construct: its interface bodies named by a deferred argument declare
     // deferred procedures, and its other items (e.g. external procedures)
     // stay in the subprogram, so a block that mixes both is split.
+    // An interface body named as the interface-name of a
+    // `deferred procedure(...)` statement (`deferred_ifaces`) belongs to the
+    // Template as well, so that the statement, visited there, sees it.
     static AST::decl_stmt_t *deferred_argument_part(Allocator &al,
             AST::decl_stmt_t *item, char **temp_args, size_t n_temp_args,
-            bool deferred) {
+            const std::set<std::string> &deferred_ifaces, bool deferred) {
         if (AST::is_a<AST::Declaration_t>(*item)
                 && is_deferred_const_decl(
                     *AST::down_cast<AST::Declaration_t>(item))) {
@@ -1699,7 +1702,9 @@ public:
         if (AST::is_a<AST::DeferredInterfaceHeader_t>(*iface.m_header)) {
             return deferred ? item : nullptr;
         }
-        if (!AST::is_a<AST::InterfaceHeader_t>(*iface.m_header)) {
+        bool is_abstract = AST::is_a<AST::AbstractInterfaceHeader_t>(
+            *iface.m_header);
+        if (!is_abstract && !AST::is_a<AST::InterfaceHeader_t>(*iface.m_header)) {
             return deferred ? nullptr : item;
         }
         Vec<AST::interface_item_t*> selected;
@@ -1715,11 +1720,15 @@ public:
                 } else if (AST::is_a<AST::Function_t>(*proc)) {
                     name = AST::down_cast<AST::Function_t>(proc)->m_name;
                 }
-                for (size_t j = 0; name && j < n_temp_args; j++) {
+                for (size_t j = 0; name && !is_abstract && j < n_temp_args;
+                        j++) {
                     if (to_lower(name) == to_lower(temp_args[j])) {
                         is_deferred = true;
                         break;
                     }
+                }
+                if (name && deferred_ifaces.count(to_lower(name)) > 0) {
+                    is_deferred = true;
                 }
             }
             if (is_deferred == deferred) selected.push_back(al, iface.m_items[i]);
@@ -1729,6 +1738,20 @@ public:
         return AST::down_cast<AST::decl_stmt_t>(AST::make_Interface_t(al,
             iface.base.base.loc, iface.m_header, iface.m_trivia,
             selected.p, selected.size()));
+    }
+
+    // The interface-names of the `deferred procedure(...)` statements in
+    // `items`.
+    static std::set<std::string> deferred_procedure_interfaces(
+            AST::decl_stmt_t **items, size_t n_items) {
+        std::set<std::string> names;
+        for (size_t i = 0; i < n_items; i++) {
+            if (AST::is_a<AST::DeferredProcedure_t>(*items[i])) {
+                names.insert(to_lower(AST::down_cast<AST::DeferredProcedure_t>(
+                    items[i])->m_interface_name));
+            }
+        }
+        return names;
     }
 
     static std::string deferred_const_spelling_msg(const std::string &name) {
@@ -1832,6 +1855,8 @@ public:
         // this procedure (possibly an interface body) has been processed.
         std::map<std::string, ASR::presenceType> saved_assgnd_presence = assgnd_presence;
         assgnd_presence.clear();
+        std::set<std::string> deferred_ifaces = deferred_procedure_interfaces(
+            x.m_items, x.n_items);
         if (x.n_temp_args > 0) {
             is_template = true;
 
@@ -1867,7 +1892,8 @@ public:
                 // Deferred constants and procedures belong to the Template,
                 // exactly like a `deferred type` statement.
                 if (AST::decl_stmt_t *deferred_part = deferred_argument_part(
-                        al, x.m_items[i], x.m_temp_args, x.n_temp_args, true)) {
+                        al, x.m_items[i], x.m_temp_args, x.n_temp_args,
+                        deferred_ifaces, true)) {
                     visit_decl_stmt(*deferred_part);
                 }
             }
@@ -1941,7 +1967,7 @@ public:
             AST::decl_stmt_t *item = x.m_items[i];
             if (x.n_temp_args > 0) {
                 item = deferred_argument_part(al, item, x.m_temp_args,
-                    x.n_temp_args, false);
+                    x.n_temp_args, deferred_ifaces, false);
                 if (!item) continue;
             }
             is_Function = true;
@@ -2441,6 +2467,8 @@ public:
         std::map<std::string, ASR::presenceType> saved_assgnd_presence = assgnd_presence;
         assgnd_presence.clear();
         std::map<std::string, std::vector<std::pair<std::string, Location>>> ext_overloaded_op_procs;
+        std::set<std::string> deferred_ifaces = deferred_procedure_interfaces(
+            x.m_items, x.n_items);
 
         if (x.n_temp_args > 0) {
             is_template = true;
@@ -2480,7 +2508,8 @@ public:
                 // Deferred constants and procedures belong to the Template,
                 // exactly like a `deferred type` statement.
                 if (AST::decl_stmt_t *deferred_part = deferred_argument_part(
-                        al, x.m_items[i], x.m_temp_args, x.n_temp_args, true)) {
+                        al, x.m_items[i], x.m_temp_args, x.n_temp_args,
+                        deferred_ifaces, true)) {
                     visit_decl_stmt(*deferred_part);
                 }
             }
@@ -2547,7 +2576,7 @@ public:
             AST::decl_stmt_t *item = x.m_items[i];
             if (x.n_temp_args > 0) {
                 item = deferred_argument_part(al, item, x.m_temp_args,
-                    x.n_temp_args, false);
+                    x.n_temp_args, deferred_ifaces, false);
                 if (!item) continue;
             }
             is_Function = true;
