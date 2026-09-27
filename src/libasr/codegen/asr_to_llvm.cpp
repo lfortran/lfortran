@@ -28177,7 +28177,7 @@ llvm::Value* LLVMUtils::get_array_size(llvm::Value* array_ptr, llvm::Type* array
         const auto array_size = ASRUtils::get_fixed_size_of_array(array_asr_type);
         return llvm::ConstantInt::get(context, llvm::APInt(RESULT_KIND * 8, array_size));
     } else if(array_t->m_physical_type == ASR::DescriptorArray) {
-        return arr_api->get_array_size(array_llvm_type, array_ptr, nullptr, RESULT_KIND);
+        return get_descriptor_array_size(array_ptr, array_llvm_type);
     } else {
         llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(8 * RESULT_KIND, 1));
         auto const n_dims = array_t->n_dims;
@@ -28197,6 +28197,10 @@ llvm::Value* LLVMUtils::get_array_size(llvm::Value* array_ptr, llvm::Type* array
         }
         return llvm_size;
     }
+}
+
+llvm::Value* LLVMUtils::get_descriptor_array_size(llvm::Value* array_ptr, llvm::Type* array_llvm_type){
+    return arr_api->get_array_size(array_llvm_type, array_ptr, nullptr, 8);
 }
 
 Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
