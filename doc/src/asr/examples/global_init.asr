@@ -374,23 +374,9 @@
                 :is_restriction false
                 :exec_space :Host
               )
-              :dependencies [
-                "__lcompilers_global_init_m"
-              ]
+              :dependencies []
               :args []
               :body [
-                (GlobalInitDispatch
-                  :phase :InitDispatchLocal
-                  :ensures [
-                    (SubroutineCall
-                      :name (SymbolRef 3 "__lcompilers_global_init_m")
-                      :original_name (SymbolRef 3 "__lcompilers_global_init_m")
-                      :args []
-                      :dt nil
-                      :strict_bounds_checking false
-                    )
-                  ]
-                )
                 (Print
                   :text (StructInstanceMember
                     :v (Var
@@ -595,10 +581,7 @@
           "m"
         ]
         :body [
-          (GlobalInitDispatch
-            :phase :InitDispatchCollective
-            :ensures []
-          )
+          (GlobalInitDispatch)
           (SubroutineCall
             :name (SymbolRef 7 "show")
             :original_name nil

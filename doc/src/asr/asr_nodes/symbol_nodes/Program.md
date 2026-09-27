@@ -65,9 +65,10 @@ apart is what decides where each piece of the work belongs:
   *Materialization policy* below).
 
 Whichever way a program is put together — a Fortran main program, a C driver
-calling `bind(c)` procedures, LFortran's output used as a library, separately
-compiled object files — every variable has to be initialized exactly once,
-before anything can observe it. Three rules follow from that:
+that starts the runtime and calls `bind(c)` procedures, LFortran's output
+used as a library, separately compiled object files — every variable has to
+be initialized exactly once, before anything can observe it. Three rules
+follow from that:
 
 * Code that runs at startup does only what the static data does not already
   hold. It never stores a static value back: static data is in place before
@@ -223,36 +224,36 @@ explicitly before any of it runs, and so does every object file of a
 WebAssembly image, from a constructor that runs before any other.
 
 `GlobalInitDispatch` is where generated code enters the engine: first thing in
-every program, with the collective phase, and at the entry of every `bind(c)`
-procedure the user wrote, with the local phase followed by explicit calls of
-the initializers that procedure needs, which is what guarantees them to a
-foreign caller. The declarations of a procedure are evaluated on entry, before
-its first statement, so a `bind(c)` procedure one of whose variables has
-bounds or a length that read a variable of another scope, or call a function,
-is split: the procedure stays the `bind(c)` entry, which dispatches and then
-calls an implementation that holds the user's declarations and body, with the
-same interface and no binding label. A derived type, named constant or
-interface the procedure declares for its dummies or result moves to the scope
-around it, which the two share. A procedure that cannot be split that way, one
-with an allocatable or pointer result or with a dummy declared with one of its
-local variables or with a procedure it contains, is reported as an error
-rather than entered before its state is initialized. The program's own
-initializer is not a root: it sets up the program's frame, so the program
-calls it itself, after the dispatch and before its first statement.
+every program, with the collective phase. The program's own initializer is
+not a root: it sets up the program's frame, so the program calls it itself,
+after the dispatch and before its first statement. No procedure enters the
+engine, `bind(c)` procedures included, so calling one costs nothing for the
+startup, however often it is called.
+
+A program whose main function is not Fortran, a C driver above all, enters
+the same collective boundary through `lfortran_initialize(argc, argv)`,
+declared in LFortran's `ISO_Fortran_binding.h`: that is the contract of such
+a host. It calls it on every image before it calls any Fortran procedure, and
+may call it again, which initializes what images loaded since define and
+leaves what is initialized as it is; `lfortran_finalize()` does what the end
+of a main program does. A Fortran procedure called before it, from a C
+constructor for instance, may find its module variables uninitialized,
+except for what static data holds.
 
 What the engine can see depends on the loader. On ELF (verified with glibc;
 musl and the BSD loaders are unverified) and on Mach-O, the first constructor
-that enters it sees the tables of every loaded image, constructed or not. On
-Windows a DLL's records are taken in only once that DLL's own constructor, its
-CRT attach, has run, and a DLL constructor does not run the engine under the
-loader lock; a DLL whose `LoadLibrary` is still in progress, or fails, is not
-taken in, so a dispatch does not see the tables of a DLL that is not
-constructed yet. This Windows behaviour is compiled but has not been run. The
-guarantee is therefore at the boundaries: a Fortran main program, or a host
-calling `lcompilers_initialize` after loading its libraries, sees everything
-attached by then, and a `bind(c)` entry point initializes the owners it needs,
-and their dependencies, by its explicit calls before it uses them, whether or
-not another DLL's table has been taken in yet. The bodies of initializers and
+that enters it sees the tables of every loaded image, constructed or not, and
+so does `lfortran_initialize` called from a constructor that runs before the
+object files' own. Each object file's constructor enters it too, with the
+local phase, so a library loaded with `dlopen` initializes itself when it is
+loaded. On Windows a DLL's records are taken in only once that DLL's own
+constructor, its CRT attach, has run, and a DLL constructor does not run the
+engine under the loader lock; a DLL whose `LoadLibrary` is still in progress,
+or fails, is not taken in, so a dispatch does not see the tables of a DLL
+that is not constructed yet. This Windows behaviour is compiled but has not
+been run. The guarantee is therefore at the boundaries: a Fortran main
+program, or a host calling `lfortran_initialize` after loading its
+libraries, sees everything attached by then. The bodies of initializers and
 teardowns make no calls into the loader; the coarray runtime's own
 initialization, which may, runs in the bootstrap, outside every guard.
 
@@ -296,7 +297,7 @@ initializer that allocates one first calls
 `global_init_collective` is set, as is that of every owner that depends on it.
 Such an initializer runs only in the collective phase of the engine, entered
 at a collective boundary every image reaches: the start of a main program, or
-a host calling `lcompilers_initialize`. There every image runs the same roots
+a host calling `lfortran_initialize`. There every image runs the same roots
 in the same stable id order, and each root makes the same dependency calls in
 the same order, so the collective allocations happen in the same sequence on
 every image.

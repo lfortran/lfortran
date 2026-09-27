@@ -112,10 +112,44 @@ static data already holds, and initialization that depends on other code
 having run is ordered by explicit calls in ASR rather than by the order in
 which a linker runs constructors: every initializer is guarded, calls the
 initializers it depends on first, and one startup engine, entered from
-constructors, main programs and foreign entry points alike, runs them all in a
-stable order. The *Startup initializers* section of
-[Program](asr/asr_nodes/symbol_nodes/Program.md) has the details, including
+object files' constructors and from main programs, runs them all in a stable
+order. No procedure enters it, so calling a procedure, `bind(c)` ones
+included, costs nothing for the startup. The *Startup initializers* section
+of [Program](asr/asr_nodes/symbol_nodes/Program.md) has the details, including
 what is lowered to startup code today and the intended materialization policy.
+
+### Starting the runtime from another language
+
+A program whose main function is not Fortran starts the runtime explicitly,
+the way a Fortran main program does before its first statement. LFortran's
+`ISO_Fortran_binding.h` declares, as an LFortran extension (test for
+`LFORTRAN_HAS_INITIALIZE`):
+
+```c
+void lfortran_initialize(int argc, char *argv[]);
+void lfortran_finalize(void);
+```
+
+The host calls `lfortran_initialize` on every image before it calls any
+Fortran procedure. It passes on the command line for `get_command_argument`
+(or `0` and `NULL`), initializes the module variables of every Fortran object
+file, shared library and plugin loaded by then, and, in a program that uses
+coarrays, runs the collective bootstrap that starts the coarray runtime and
+allocates the saved coarrays, as a Fortran main program does. Calling it again
+is harmless: the command line is taken from the first call that passes one,
+what is initialized stays as it is, and what images loaded since then define
+is initialized. `lfortran_finalize` does what the end of a Fortran main
+program does to the runtime, flushing and closing the open units, after the
+last call of a Fortran procedure.
+
+Nothing is initialized on the way into a Fortran procedure: a procedure
+called before `lfortran_initialize`, from a C constructor for instance, finds
+only what static data holds. A library loaded later with `dlopen` initializes
+its module variables from its own constructors when it is loaded (not a DLL
+on Windows, whose constructors do not run the engine under the loader lock),
+and a coarray of it is allocated at the next `lfortran_initialize`. The C
+interface is meant to become a common one that every Fortran compiler
+provides in its `ISO_Fortran_binding.h`; until then it is LFortran's own.
 
 ### Startup in each backend
 
@@ -166,14 +200,8 @@ set of initializers to run is found.
   name that is too long keeps its start and ends in a hash of all of it, so
   every file printed separately agrees on it. A dump of the passes
   (`--dump-all-passes-fortran`) shows the open-world form instead, with
-  explicit `bind(c)` interfaces to the engine. A `bind(c)` procedure's
-  dispatch becomes calls of every initializer that needs no collective
-  boundary as well, and one whose declarations read startup state is an entry
-  that makes those calls before it calls the implementation holding the
-  declarations, so a foreign caller that enters before the main program, from
-  a C constructor for instance, finds the state initialized. Only the
-  collective initializers, those of saved coarrays, wait for the main program.
-  Direct WebAssembly and MLIR report an error for a module compiled
+  explicit `bind(c)` interfaces to the engine. Direct WebAssembly and MLIR
+  report an error for a module compiled
   separately, whose initializer the output could not contain, and direct
   WebAssembly, only entered through its main program, also for modules
   compiled without one. Fortran source keeps calling the initializer of a
@@ -216,7 +244,7 @@ The object is compiled once and goes explicitly on the link line of every
 coarray program, next to the implementation's libraries; `--coarray` does not
 add it. Its `bind(c)` entry initializes the `prif` module it uses before it
 calls `prif_init`. A host that starts the runtime itself and calls
-`lcompilers_initialize()` needs no other arrangement: a runtime that is
+`lfortran_initialize()` needs no other arrangement: a runtime that is
 already started is not an error.
 
 ## Notes:
