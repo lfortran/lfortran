@@ -590,6 +590,9 @@ public:
                 ? ScopingUnitKind::Submodule : ScopingUnitKind::Module);
         assgn_proc_names_locations.clear();
         class_procedures.clear();
+        // Access assigned by name in an earlier module of the same file must
+        // not carry over to a same-named entity of this module.
+        assgnd_access.clear();
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
