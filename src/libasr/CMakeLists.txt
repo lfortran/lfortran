@@ -188,10 +188,12 @@ if (WITH_LLVM)
     endif()
 endif()
 
-# The driver also locates these scripts relative to the build-tree executable.
+# The driver locates these scripts and headers relative to the build-tree executable.
 if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
     configure_file(dwarf_convert.py dwarf_convert.py COPYONLY)
     configure_file(dat_convert.py dat_convert.py COPYONLY)
+    configure_file(runtime/lfortran_intrinsics.h runtime/lfortran_intrinsics.h COPYONLY)
+    configure_file(runtime/ISO_Fortran_binding.h runtime/ISO_Fortran_binding.h COPYONLY)
 endif()
 
 install(
