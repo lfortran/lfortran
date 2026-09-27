@@ -1362,10 +1362,16 @@ ASR::stmt_t* allocate_struct_expr(Allocator& al, ASR::expr_t* struct_expr) {
         al, struct_expr->base.loc, alloc_args.p, 1, nullptr, nullptr, nullptr));
 }
 
+// `copy_only_if_allocated` is set for the data source of an allocatable
+// component in a structure constructor. F2018 7.5.10 allows it to be an
+// unallocated allocatable object, and then the component is unallocated.
+// The temporary is then left unallocated instead of being copied from the
+// source.
 ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
     ASR::expr_t* struct_expr, const std::string& name_hint, Allocator& al,
     Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
-    ExprsWithTargetType& exprs_with_target, bool realloc_lhs) {
+    ExprsWithTargetType& exprs_with_target, bool realloc_lhs,
+    bool copy_only_if_allocated=false) {
     const Location& loc = struct_expr->base.loc;
     ASR::expr_t* struct_var_temporary = create_temporary_variable_for_struct(
         al, struct_expr, current_scope, name_hint);
@@ -1374,21 +1380,31 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, struct_var_temporary, struct_expr)));
     } else {
-        if (realloc_lhs && ASRUtils::is_allocatable(ASRUtils::expr_type(struct_var_temporary))) {
-            // Allocate the temporary struct type variable before assigning any value.
+        bool is_allocatable_temporary = ASRUtils::is_allocatable(
+            ASRUtils::expr_type(struct_var_temporary));
+        if ((realloc_lhs || copy_only_if_allocated) && is_allocatable_temporary) {
             ASRUtils::ASRBuilder builder(al, loc);
             Vec<ASR::expr_t*> allocated_args; allocated_args.reserve(al, 1);
             std::vector<ASR::stmt_t*> allocate_stmts;
-            if (!ASRUtils::is_array(ASRUtils::expr_type(struct_var_temporary))) {
+            if (realloc_lhs && !ASRUtils::is_array(ASRUtils::expr_type(struct_var_temporary))) {
+                // Allocate the temporary struct type variable before assigning any value.
                 allocate_stmts.push_back(allocate_struct_expr(al, struct_var_temporary));
             }
             allocate_stmts.push_back(ASRUtils::STMT(make_Assignment_t_util(
                 al, loc, struct_var_temporary, struct_expr, nullptr, exprs_with_target)));
+            std::vector<ASR::stmt_t*> unallocated_stmts;
+            if (copy_only_if_allocated) {
+                // Release a value left from an earlier execution, e.g. in a loop.
+                Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
+                dealloc_args.push_back(al, struct_var_temporary);
+                unallocated_stmts.push_back(ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
+                    al, loc, dealloc_args.p, dealloc_args.n)));
+            }
             allocated_args.push_back(al, struct_expr);
             ASR::stmt_t* assign_stmt = builder.If(ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, loc,
                 static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
                 allocated_args.p, allocated_args.n, 0, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)),
-            allocate_stmts, {});
+            allocate_stmts, unallocated_stmts);
             current_body->push_back(al, assign_stmt);
         } else {
             current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
@@ -1887,9 +1903,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                        !ASR::is_a<ASR::PointerNullConstant_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
                 visit_call_arg(x_m_args[i]);
+                // The copy also keeps the argument's value when the
+                // constructor is built in the assignment target that the
+                // argument reads, e.g. `b = p_t(b%q, b%p)`.
+                bool is_constructor_component_source = !is_call &&
+                    ASR::is_a<ASR::StructInstanceMember_t>(
+                        *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value));
                 ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
                     ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value), name_hint, al, current_body,
-                    current_scope, exprs_with_target, realloc_lhs);
+                    current_scope, exprs_with_target, realloc_lhs,
+                    is_constructor_component_source);
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
                     struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
