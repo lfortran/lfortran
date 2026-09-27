@@ -1,0 +1,5 @@
+semantic error: the instantiation argument 'operator(.minus.)' for 't' requires a deferred procedure
+  --> tests/errors/template_defined_op_arg_03.f90:41:20
+   |
+41 |     instantiate t {operator(.minus.), integer}, only: g => f
+   |                    ^^^^^^^^^^^^^^^^^ 

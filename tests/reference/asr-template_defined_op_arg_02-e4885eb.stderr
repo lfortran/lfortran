@@ -1,0 +1,5 @@
+semantic error: no specific procedure of the defined operator '.minus.' matches the interface of 'op'
+  --> tests/errors/template_defined_op_arg_02.f90:33:21
+   |
+33 |     print *, applyr{operator(.minus.)}(9.0, 2.0)
+   |                     ^^^^^^^^^^^^^^^^^ 

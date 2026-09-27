@@ -1,0 +1,5 @@
+semantic error: the defined operator '.plus.' is not declared
+  --> tests/errors/template_defined_op_arg_01.f90:19:20
+   |
+19 |     print *, apply{operator(.plus.)}(9, 2)
+   |                    ^^^^^^^^^^^^^^^^ 

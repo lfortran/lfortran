@@ -5768,6 +5768,18 @@ filename = "errors/continue_compilation_templates_01.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/template_defined_op_arg_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_defined_op_arg_02.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_defined_op_arg_03.f90"
+asr = true
+
+[[test]]
 filename = "coarray_collectives_01.f90"
 fortran = true
 pass = "coarray"   
