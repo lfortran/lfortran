@@ -3063,6 +3063,24 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string table = "{lcompilers_init_abi_version, "
             + std::to_string(roots.size())
             + ", __lcompilers_init_records, &__lcompilers_init_instance}";
+        // A name of this object file's own, after what it defines, which no
+        // other object file of a link defines.
+        std::vector<std::string> defined;
+        for (auto &item : x.m_symtab->get_scope()) {
+            ASR::symbol_t *s = item.second;
+            if (ASR::is_a<ASR::Program_t>(*s)
+                    || (ASR::is_a<ASR::Module_t>(*s)
+                        && !ASR::down_cast<ASR::Module_t>(s)->m_loaded_from_mod)
+                    || (ASR::is_a<ASR::Function_t>(*s)
+                        && ASRUtils::get_FunctionType(
+                            ASR::down_cast<ASR::Function_t>(s))->m_deftype
+                            == ASR::deftypeType::Implementation)) {
+                defined.push_back(item.first);
+            }
+        }
+        for (auto &root : roots) defined.push_back(root.stable_id);
+        std::sort(defined.begin(), defined.end());
+        std::string object_name = stable_hash_hex(join(",", defined));
         bool coff = false;
         switch (ASRUtils::init_object_format(platform)) {
             case ASRUtils::InitObjectFormat::MachO: {
@@ -3082,23 +3100,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 // pointer is external, so that `/include` keeps it however
                 // the objects are optimized, and named after what this
                 // object defines, which no other object of a link defines.
-                std::vector<std::string> defined;
-                for (auto &item : x.m_symtab->get_scope()) {
-                    ASR::symbol_t *s = item.second;
-                    if (ASR::is_a<ASR::Program_t>(*s)
-                            || (ASR::is_a<ASR::Module_t>(*s)
-                                && !ASR::down_cast<ASR::Module_t>(s)->m_loaded_from_mod)
-                            || (ASR::is_a<ASR::Function_t>(*s)
-                                && ASRUtils::get_FunctionType(
-                                    ASR::down_cast<ASR::Function_t>(s))->m_deftype
-                                    == ASR::deftypeType::Implementation)) {
-                        defined.push_back(item.first);
-                    }
-                }
-                for (auto &root : roots) defined.push_back(root.stable_id);
-                std::sort(defined.begin(), defined.end());
-                std::string ctor_ptr = "__lcompilers_init_ctor_"
-                    + stable_hash_hex(join(",", defined));
+                std::string ctor_ptr = "__lcompilers_init_ctor_" + object_name;
                 std::string ext = is_c ? "" : "extern \"C\" ";
                 r += "#if defined(_MSC_VER)\n"
                     "#pragma section(\"" + std::string(lcompilers_init_coff_section)
@@ -3128,26 +3130,38 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 break;
             }
             case ASRUtils::InitObjectFormat::ELF: {
-                // An allocated note, which every ELF loader maps and exposes
-                // through the program headers, pointing to the table. Notes
-                // are 4-byte aligned, and every producer's note has to be
-                // too for them to be read back to back, so this one is
-                // packed: the pointer in it is read with memcpy.
-                std::string owner = lcompilers_init_elf_note_owner;
-                r += "static const lcompilers_init_table __lcompilers_init_table = "
+                // An allocated, read-only note, which every ELF loader maps
+                // and exposes through the program headers, naming the table
+                // by its offset from the note. The linker
+                // resolves that offset, which C cannot spell as a constant,
+                // so the note is spelled in assembler directives, with the
+                // table under an assembler name of this object's own; a C
+                // section attribute would also give it the flags of
+                // relocated data. Notes are 4-byte aligned.
+                std::string table_name = "__lcompilers_init_table_" + object_name;
+                r += "static const lcompilers_init_table __lcompilers_init_table\n"
+                    "    __asm__(\"" + table_name + "\") __attribute__((used)) = "
                     + table + ";\n";
-                r += "static struct __attribute__((packed, aligned(4))) {\n"
-                    "    uint32_t namesz;\n"
-                    "    uint32_t descsz;\n"
-                    "    uint32_t type;\n"
-                    "    char name[" + std::to_string(owner.size() + 1) + "];\n"
-                    "    const lcompilers_init_table *table;\n"
-                    "} __lcompilers_init_note\n"
-                    "    __attribute__((used, section(\""
-                    + std::string(lcompilers_init_elf_note_section) + "\"))) = {"
-                    + std::to_string(owner.size() + 1) + ", sizeof(void *), "
-                    "lcompilers_init_elf_note_type, \"" + owner + "\", "
-                    "&__lcompilers_init_table};\n";
+                std::string owner = lcompilers_init_elf_note_owner;
+                for (int bytes : {8, 4}) {
+                    r += std::string(bytes == 8 ? "#if" : "#elif")
+                        + " __SIZEOF_POINTER__ == " + std::to_string(bytes) + "\n";
+                    r += "__asm__(\".pushsection "
+                        + std::string(lcompilers_init_elf_note_section)
+                        + ",\\\"a\\\",%note\\n\"\n"
+                        "    \".balign 4\\n\"\n"
+                        "    \"1: .long " + std::to_string(owner.size() + 1) + ", "
+                        + std::to_string(bytes) + ", "
+                        + std::to_string(lcompilers_init_elf_note_type) + "\\n\"\n"
+                        "    \".asciz \\\"" + owner + "\\\"\\n\"\n"
+                        "    \"" + (bytes == 8 ? ".quad " : ".long ") + table_name
+                        + " - 1b\\n\"\n"
+                        "    \".popsection\");\n";
+                }
+                r += "#else\n"
+                    "#error \"the startup initialization note needs a pointer "
+                    "size of 4 or 8 bytes\"\n"
+                    "#endif\n";
                 break;
             }
             case ASRUtils::InitObjectFormat::Wasm: {

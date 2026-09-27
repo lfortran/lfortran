@@ -9,10 +9,14 @@
  * Every object file that defines at least one startup initializer contributes
  * one `lcompilers_init_table`, pointing to its `lcompilers_init_record`s:
  *
- * - ELF: an allocated SHT_NOTE in section `.note.lcompilers.init` whose owner
- *   is "LCP", whose type is `lcompilers_init_elf_note_type` and whose
- *   descriptor is one native pointer to the table. The note is 4-byte aligned,
- *   so the pointer is read with `memcpy`.
+ * - ELF: an allocated, read-only SHT_NOTE in section `.note.lcompilers.init`
+ *   whose owner is "LCP", whose type is `lcompilers_init_elf_note_type` and
+ *   whose descriptor is one signed, pointer-sized offset: the table's address
+ *   minus the note's own (that of its `namesz`). The linker resolves it, so the note needs no
+ *   dynamic relocation and is right in the file as it is in memory: it stays
+ *   in the read-only segment with the other notes, and a PT_NOTE that also
+ *   spans the file's copy of something else still reads correctly. The note
+ *   is 4-byte aligned, so the offset is read with `memcpy`.
  * - Mach-O: the table itself in section `__DATA,__lcomp_init`.
  * - COFF: the table itself in section `.lcinit$m`.
  * - WebAssembly: this is not loader discovery. A module has no loader to
@@ -53,7 +57,7 @@ extern "C" {
 #endif
 
 enum {
-    lcompilers_init_abi_version = 2
+    lcompilers_init_abi_version = 3
 };
 
 /* The value of an initializer's state word. */
@@ -142,15 +146,17 @@ typedef struct lcompilers_init_table {
 } lcompilers_init_table;
 
 /* The ELF note of one object file: owner "LCP", type
- * `lcompilers_init_elf_note_type`, and a descriptor of one native pointer to
- * the object's table. Emitted in `lcompilers_init_elf_note_section`, 4-byte
- * aligned, allocated and writable, since the pointer is relocated. */
+ * `lcompilers_init_elf_note_type`, and a descriptor of the offset of the
+ * object's table from the note. Emitted in
+ * `lcompilers_init_elf_note_section`, 4-byte aligned, allocated and
+ * read-only; `table_offset` is a link-time constant, which C cannot spell as
+ * an initializer, so C emits the note with assembler directives. */
 typedef struct lcompilers_init_elf_note {
     uint32_t namesz;        /* sizeof(lcompilers_init_elf_note_owner) */
-    uint32_t descsz;        /* sizeof(void *) */
+    uint32_t descsz;        /* sizeof(intptr_t) */
     uint32_t type;          /* lcompilers_init_elf_note_type */
     char name[4];           /* "LCP" */
-    const lcompilers_init_table *table;
+    intptr_t table_offset;  /* (char *)table - (char *)&namesz */
 } lcompilers_init_elf_note;
 
 #ifdef __cplusplus

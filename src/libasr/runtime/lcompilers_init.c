@@ -868,16 +868,19 @@ static void lcompilers_init_image_generation(lcompilers_init_generation_t *g) {
 }
 
 
-static size_t lcompilers_init_align4(size_t n) {
-    return (n + 3) & ~(size_t)3;
+static size_t lcompilers_init_align_up(size_t n, size_t a) {
+    return (n + a - 1) & ~(a - 1);
 }
 
-/* Passes the tables the notes of the image `info` describe to `visit`. */
+/* Passes the tables the notes of the image `info` describe to `visit`. A
+ * note segment's entries are aligned to its own alignment, 4 or 8 (as glibc
+ * reads them); one of any other alignment is malformed and passed over. */
 static void lcompilers_init_image_notes(const struct dl_phdr_info *info,
         void (*visit)(const lcompilers_init_table *, void *), void *context) {
     for (ElfW(Half) i = 0; i < info->dlpi_phnum; i++) {
         const ElfW(Phdr) *ph = &info->dlpi_phdr[i];
-        if (ph->p_type != PT_NOTE) continue;
+        if (ph->p_type != PT_NOTE || ph->p_align > 8) continue;
+        size_t align = ph->p_align == 8 ? 8 : 4;
         const unsigned char *p = (const unsigned char *)(info->dlpi_addr + ph->p_vaddr);
         size_t len = ph->p_memsz;
         size_t off = 0;
@@ -887,17 +890,19 @@ static void lcompilers_init_image_notes(const struct dl_phdr_info *info,
             memcpy(&descsz, p + off + 4, 4);
             memcpy(&type, p + off + 8, 4);
             size_t name_off = off + 12;
-            size_t desc_off = name_off + lcompilers_init_align4(namesz);
-            size_t next = desc_off + lcompilers_init_align4(descsz);
+            size_t desc_off = lcompilers_init_align_up(name_off + namesz, align);
+            size_t next = lcompilers_init_align_up(desc_off + descsz, align);
             if (desc_off > len || next > len || next <= off) break;
             if (type == lcompilers_init_elf_note_type
                     && namesz == sizeof(lcompilers_init_elf_note_owner)
                     && memcmp(p + name_off, lcompilers_init_elf_note_owner,
                         namesz) == 0
-                    && descsz == sizeof(void *)) {
-                const lcompilers_init_table *table;
-                memcpy(&table, p + desc_off, sizeof(table));
-                if (table != NULL) visit(table, context);
+                    && descsz == sizeof(intptr_t)) {
+                intptr_t offset;
+                memcpy(&offset, p + desc_off, sizeof(offset));
+                /* The table's offset from the note. */
+                visit((const lcompilers_init_table *)(void *)
+                    ((uintptr_t)(p + off) + (uintptr_t)offset), context);
             }
             off = next;
         }
@@ -998,6 +1003,26 @@ LFORTRAN_API void _lcompilers_init_test_discovery_pause(void (*pause)(void)) {
 
 LFORTRAN_API uint64_t _lcompilers_init_test_discovery_retries(void) {
     return lcompilers_init_load_u64(&lcompilers_init_discovery_retries);
+}
+
+static void lcompilers_init_count_valid_note(const lcompilers_init_table *t,
+        void *context) {
+    if (t->abi_version == lcompilers_init_abi_version) (*(uint64_t *)context)++;
+}
+
+static int lcompilers_init_count_valid_notes(struct dl_phdr_info *info,
+        size_t size, void *data) {
+    (void)size;
+    lcompilers_init_image_notes(info, lcompilers_init_count_valid_note, data);
+    return 0;
+}
+
+/* For the engine's own tests: how many tables of this ABI the notes of the
+ * loaded images name, as discovery reads them. */
+LFORTRAN_API uint64_t _lcompilers_init_test_note_tables(void) {
+    uint64_t n = 0;
+    dl_iterate_phdr(lcompilers_init_count_valid_notes, &n);
+    return n;
 }
 
 /* The tables of the loaded images, as addresses only: none of them is

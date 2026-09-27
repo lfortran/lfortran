@@ -3,19 +3,22 @@
 # object format, and runs them:
 #
 # - global_init_16 (two modules with records, each in an object file of its
-#   own) compiled by LLC and linked by the C compiler CC, with LINK_FLAGS, in
-#   both link orders: nothing but the IR's own constructors and destructors
-#   registers the records;
+#   own) compiled by LLC and linked by the C compiler CC in both link orders:
+#   nothing but the IR's own constructors and destructors registers the
+#   records;
+# - the same compiled by LFORTRAN, with the records in the form of the
+#   object format, and linked the same way;
 # - the same IR joined into one module by LLVM_LINK, if given, and passed to
 #   LFORTRAN, which lowers a module with several tables for the target;
 # - global_init_01 passed to LFORTRAN as IR.
 #
-# SRC is the directory of the integration tests, RUNTIME that of the Fortran
-# runtime library and WORK a scratch directory.
+# Every link is made with the default linker and, for each of the ELF
+# linkers in LINKERS (e.g. lld), with `-fuse-ld=`. SRC is the directory of
+# the integration tests, RUNTIME that of the Fortran runtime library and WORK
+# a scratch directory.
 
 file(REMOVE_RECURSE ${WORK})
 file(MAKE_DIRECTORY ${WORK})
-separate_arguments(link_flags UNIX_COMMAND "${LINK_FLAGS}")
 
 function(run)
     execute_process(COMMAND ${ARGN} WORKING_DIRECTORY ${WORK}
@@ -45,8 +48,11 @@ endfunction()
 
 set(units global_init_16_a global_init_16_b global_init_16_s global_init_16)
 # The module files the IR of the modules' users is compiled against.
-run(${LFORTRAN} -c --separate-compilation ${SRC}/global_init_16_a.f90 -o a.o)
-run(${LFORTRAN} -c --separate-compilation ${SRC}/global_init_16_b.f90 -o b.o)
+set(lowered "")
+foreach(u ${units})
+    run(${LFORTRAN} -c --separate-compilation ${SRC}/${u}.f90 -o ${u}_lf.o)
+    list(APPEND lowered ${u}_lf.o)
+endforeach()
 set(objects "")
 foreach(u ${units})
     show_llvm(${u})
@@ -54,11 +60,20 @@ foreach(u ${units})
     list(APPEND objects ${u}.o)
 endforeach()
 set(libs -L${RUNTIME} -Wl,-rpath,${RUNTIME} -llfortran_runtime -lm)
-run(${CC} ${link_flags} ${objects} -o forward ${libs})
-expect(forward "ok")
-list(REVERSE objects)
-run(${CC} ${link_flags} ${objects} -o backward ${libs})
-expect(backward "ok")
+foreach(linker default ${LINKERS})
+    set(flags "")
+    if (NOT linker STREQUAL "default")
+        set(flags -fuse-ld=${linker})
+    endif()
+    foreach(kind objects lowered)
+        set(list ${${kind}})
+        run(${CC} ${flags} ${list} -o ${kind}_forward_${linker} ${libs})
+        expect(${kind}_forward_${linker} "ok")
+        list(REVERSE list)
+        run(${CC} ${flags} ${list} -o ${kind}_backward_${linker} ${libs})
+        expect(${kind}_backward_${linker} "ok")
+    endforeach()
+endforeach()
 
 if (LLVM_LINK)
     run(${LLVM_LINK} -S global_init_16_a.ll global_init_16_b.ll

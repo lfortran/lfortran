@@ -26,6 +26,8 @@ src/lfortran/tests/test_init_native_malformed_load
 src/lfortran/tests/test_init_native_order
 src/lfortran/tests/test_init_native_race
 src/lfortran/tests/test_init_native_reload
+src/lfortran/tests/test_init_native_*_lld
+src/lfortran/tests/test_init_c_note/
 src/lfortran/tests/test_init_show_llvm/
 src/lfortran/tests/asr_text_compile_01
 src/lfortran/tests/enum_constructor_external_symbol

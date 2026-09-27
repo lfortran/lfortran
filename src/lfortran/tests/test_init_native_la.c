@@ -52,18 +52,10 @@ __attribute__((used, section("__DATA,__lcomp_init")))
 static lcompilers_init_table table = {lcompilers_init_abi_version, 1, records,
     &instance};
 #elif !defined(_WIN32)
-static const lcompilers_init_table table = {
+static const lcompilers_init_table table __asm__("test_init_native_table")
+    __attribute__((used)) = {
     lcompilers_init_abi_version, 1, records, &instance};
-
-typedef struct {
-    uint32_t namesz, descsz, type;
-    char name[4];
-    const lcompilers_init_table *desc;
-} elf_note;
-
-__attribute__((used, section(".note.lcompilers.init"), aligned(4)))
-static elf_note note = {4, sizeof(void *), lcompilers_init_elf_note_type, "LCP",
-    &table};
+#include "test_init_native_note.h"
 #endif
 
 __attribute__((constructor)) static void startup(void) {

@@ -129,7 +129,7 @@ set of initializers to run is found.
   that enters the runtime engine, which finds the tables of every loaded image
   by itself, and a destructor that takes its records back out before the image
   is unloaded. The table and its records are laid out as
-  `runtime/lcompilers_init_abi.h` describes (ABI version 2): each record names
+  `runtime/lcompilers_init_abi.h` describes (ABI version 3): each record names
   an initializer, its state and teardown, and says whether it runs in the
   local phase, in the collective phase, or is a collective bootstrap, which
   initializes the coarray runtime once, outside every guard, before any
@@ -146,8 +146,9 @@ set of initializers to run is found.
   and adds the encoding of the target's object format only when the module
   is lowered to an object file or assembly (`lower_global_init_records`).
   The C and C++ backends emit the same
-  records with compiler attributes, or with MSVC's section pragmas when MSVC
-  compiles them. They lower `GlobalInitStorage` to nothing only for a variable
+  records with compiler attributes (the ELF note, whose descriptor is an
+  offset only the linker resolves, with assembler directives), or with
+  MSVC's section pragmas when MSVC compiles them. They lower `GlobalInitStorage` to nothing only for a variable
   whose declaration already is all of its storage; storage these backends
   would have to create at run time (module arrays, allocatables, C++ objects)
   is reported as not supported, as such module variables were not supported by

@@ -201,6 +201,7 @@ std::unique_ptr<llvm::Module> global_init_module(llvm::LLVMContext &context,
 // Whether constant `c` refers to `g`, however deep in its operands.
 bool refers_to(const llvm::Constant *c, const llvm::GlobalValue *g) {
     if (c == g) return true;
+    if (llvm::isa<llvm::GlobalValue>(c)) return false;
     for (const llvm::Value *op : c->operands()) {
         const llvm::Constant *oc = llvm::dyn_cast<llvm::Constant>(op);
         if (oc != nullptr && refers_to(oc, g)) return true;
@@ -254,6 +255,8 @@ TEST_CASE("global initialization records lowered per object format") {
             for (llvm::GlobalVariable &g : module->globals()) {
                 if (g.hasSection() && g.getSection() == lcompilers_init_elf_note_section
                         && refers_to(g.getInitializer(), table)) {
+                    // Read-only: its descriptor is resolved by the linker.
+                    CHECK(g.isConstant());
                     notes++;
                 }
             }

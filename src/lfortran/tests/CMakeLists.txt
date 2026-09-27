@@ -100,6 +100,29 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD AND NOT EMSCRIPTEN)
             target_link_libraries(${t} lfortran_runtime_static ${init_native_strip})
             add_test(NAME ${t} COMMAND ${t})
         endforeach()
+        # ELF linkers lay notes out differently; the tests that read them are
+        # linked with lld too, if the C compiler can use it.
+        set(init_linkers "")
+        if (NOT APPLE)
+            include(CheckCSourceCompiles)
+            set(CMAKE_REQUIRED_FLAGS -fuse-ld=lld)
+            check_c_source_compiles("int main(void) { return 0; }" HAVE_FUSE_LD_LLD)
+            unset(CMAKE_REQUIRED_FLAGS)
+            if (HAVE_FUSE_LD_LLD)
+                list(APPEND init_linkers lld)
+            endif()
+        endif()
+        foreach(l ${init_linkers})
+            add_executable(test_init_native_ab_${l} test_init_native.c
+                test_init_native_a.c test_init_native_b.c)
+            add_executable(test_init_native_ba_${l} test_init_native.c
+                test_init_native_b.c test_init_native_a.c)
+            foreach(t test_init_native_ab_${l} test_init_native_ba_${l})
+                target_link_libraries(${t} lfortran_runtime_static ${init_native_strip}
+                    -fuse-ld=${l})
+                add_test(NAME ${t} COMMAND ${t})
+            endforeach()
+        endforeach()
         # The program and the library it loads share the engine, so both use
         # the shared runtime; the library calls back into the program.
         add_library(test_init_native_c SHARED test_init_native_c.c)
@@ -114,6 +137,17 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD AND NOT EMSCRIPTEN)
         add_dependencies(test_init_native_dlopen test_init_native_c)
         add_test(NAME test_init_native_dlopen COMMAND test_init_native_dlopen
             $<TARGET_FILE:test_init_native_c>)
+        foreach(l ${init_linkers})
+            add_executable(test_init_native_dlopen_${l} test_init_native_dlopen.c
+                test_init_native_a.c)
+            set_target_properties(test_init_native_dlopen_${l} PROPERTIES
+                ENABLE_EXPORTS ON)
+            target_link_libraries(test_init_native_dlopen_${l} lfortran_runtime
+                ${CMAKE_DL_LIBS} -fuse-ld=${l})
+            add_dependencies(test_init_native_dlopen_${l} test_init_native_c)
+            add_test(NAME test_init_native_dlopen_${l} COMMAND test_init_native_dlopen_${l}
+                $<TARGET_FILE:test_init_native_c>)
+        endforeach()
         # Two shared libraries the program is linked with, the second
         # needing the first; see test_init_native_order.c.
         add_library(test_init_native_la SHARED test_init_native_la.c)
@@ -189,11 +223,33 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD AND NOT EMSCRIPTEN)
             add_test(NAME test_init_show_llvm COMMAND ${CMAKE_COMMAND}
                 -DLFORTRAN=$<TARGET_FILE:lfortran> -DLLC=${init_llc}
                 -DLLVM_LINK=${init_llvm_link} -DCC=${CMAKE_C_COMPILER}
+                "-DLINKERS=${init_linkers}"
                 -DRUNTIME=$<TARGET_FILE_DIR:lfortran_runtime>
                 -DSRC=${CMAKE_SOURCE_DIR}/integration_tests
                 -DWORK=${CMAKE_CURRENT_BINARY_DIR}/test_init_show_llvm
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/run_show_llvm_test.cmake)
             set_tests_properties(test_init_show_llvm PROPERTIES TIMEOUT 300)
+        endif()
+        # The notes the C backend emits, compiled by GCC and by Clang where
+        # they are there; see run_c_note_test.cmake.
+        if (NOT APPLE)
+            set(init_c_compilers ${CMAKE_C_COMPILER})
+            foreach(c gcc clang)
+                find_program(init_${c} ${c})
+                if (init_${c})
+                    list(APPEND init_c_compilers ${init_${c}})
+                endif()
+            endforeach()
+            list(REMOVE_DUPLICATES init_c_compilers)
+            add_test(NAME test_init_c_note COMMAND ${CMAKE_COMMAND}
+                -DLFORTRAN=$<TARGET_FILE:lfortran>
+                "-DCOMPILERS=${init_c_compilers}" "-DLINKERS=${init_linkers}"
+                -DINCLUDE=${CMAKE_SOURCE_DIR}/src/libasr/runtime
+                -DRUNTIME=$<TARGET_FILE_DIR:lfortran_runtime>
+                -DSRC=${CMAKE_CURRENT_SOURCE_DIR}
+                -DWORK=${CMAKE_CURRENT_BINARY_DIR}/test_init_c_note
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/run_c_note_test.cmake)
+            set_tests_properties(test_init_c_note PROPERTIES TIMEOUT 300)
         endif()
         foreach(s failed_load teardown_race reload_during_walk first_registration)
             add_test(NAME test_init_native_race_${s} COMMAND test_init_native_race

@@ -28743,18 +28743,23 @@ bool publishes_table(llvm::Function &add, llvm::GlobalVariable &table) {
     return false;
 }
 
+// Whether constant `c` refers to `g`, however deep in its operands.
+bool refers_to(const llvm::Constant &c, const llvm::GlobalValue &g) {
+    if (&c == &g) return true;
+    if (llvm::isa<llvm::GlobalValue>(c)) return false;
+    for (const llvm::Value* op : c.operands()) {
+        const llvm::Constant* oc = llvm::dyn_cast<llvm::Constant>(op);
+        if (oc != nullptr && refers_to(*oc, g)) return true;
+    }
+    return false;
+}
+
 // Whether an ELF note of `module` names `table` already.
 bool has_elf_note(llvm::Module &module, llvm::GlobalVariable &table) {
     for (llvm::GlobalVariable &g : module.globals()) {
-        if (!g.hasSection() || g.getSection() != lcompilers_init_elf_note_section
-                || !g.hasInitializer()) {
-            continue;
-        }
-        llvm::ConstantStruct* note = llvm::dyn_cast<llvm::ConstantStruct>(
-            g.getInitializer());
-        if (note == nullptr) continue;
-        for (llvm::Value* field : note->operands()) {
-            if (field->stripPointerCasts() == &table) return true;
+        if (g.hasSection() && g.getSection() == lcompilers_init_elf_note_section
+                && g.hasInitializer() && refers_to(*g.getInitializer(), table)) {
+            return true;
         }
     }
     return false;
@@ -28816,27 +28821,34 @@ void lower_global_init_records(llvm::Module &module) {
             b.CreateRetVoid();
             llvm::appendToGlobalCtors(module, publish, lcompilers_init_wasm_publish_priority);
         } else {
-            // An allocated note naming the table: `dl_iterate_phdr` finds it
-            // in every loaded image through its PT_NOTE, stripped or not.
-            // The table pointer is relocated before any constructor runs.
-            // Linkers keep an allocated note that nothing refers to.
+            // An allocated, read-only note naming the table by its offset
+            // from the note, which the linker resolves:
+            // `dl_iterate_phdr` finds it in every loaded image through its
+            // PT_NOTE, stripped or not, and nothing of it is relocated at
+            // load time. Linkers keep an allocated note that nothing refers
+            // to.
             LCOMPILERS_ASSERT(triple.isOSBinFormatELF());
+            unsigned pointer_size = module.getDataLayout().getPointerSize();
+            llvm::Type* offset_type = llvm::Type::getIntNTy(context, 8 * pointer_size);
             llvm::StructType* note_type = llvm::StructType::get(context, {
                 i32, i32, i32, llvm::ArrayType::get(llvm::Type::getInt8Ty(context),
                     sizeof(lcompilers_init_elf_note_owner)),
-                i8_ptr}, /*isPacked=*/true);
-            unsigned pointer_size = module.getDataLayout().getPointerSize();
+                offset_type}, /*isPacked=*/true);
             llvm::GlobalVariable* note = new llvm::GlobalVariable(module,
-                note_type, false, llvm::GlobalVariable::InternalLinkage,
-                llvm::ConstantStruct::get(note_type, {
-                    llvm::ConstantInt::get(i32, sizeof(lcompilers_init_elf_note_owner)),
-                    llvm::ConstantInt::get(i32, pointer_size),
-                    llvm::ConstantInt::get(i32, lcompilers_init_elf_note_type),
-                    llvm::ConstantDataArray::getString(context,
-                        llvm::StringRef(lcompilers_init_elf_note_owner,
-                            sizeof(lcompilers_init_elf_note_owner)), false),
-                    llvm::ConstantExpr::getBitCast(table, i8_ptr)}),
+                note_type, true, llvm::GlobalVariable::InternalLinkage, nullptr,
                 "__lcompilers_init_note");
+            // A difference of two globals of this object: no relocation is
+            // left for the loader, and LLVM keeps the note read-only.
+            note->setInitializer(llvm::ConstantStruct::get(note_type, {
+                llvm::ConstantInt::get(i32, sizeof(lcompilers_init_elf_note_owner)),
+                llvm::ConstantInt::get(i32, pointer_size),
+                llvm::ConstantInt::get(i32, lcompilers_init_elf_note_type),
+                llvm::ConstantDataArray::getString(context,
+                    llvm::StringRef(lcompilers_init_elf_note_owner,
+                        sizeof(lcompilers_init_elf_note_owner)), false),
+                llvm::ConstantExpr::getSub(
+                    llvm::ConstantExpr::getPtrToInt(table, offset_type),
+                    llvm::ConstantExpr::getPtrToInt(note, offset_type))}));
             note->setSection(lcompilers_init_elf_note_section);
             note->setAlignment(llvm::MaybeAlign(4));
             llvm::appendToUsed(module, {note});
