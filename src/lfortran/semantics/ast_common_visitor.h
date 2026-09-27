@@ -14766,7 +14766,7 @@ public:
             // if no GenericProcedure matches, we try matching it with
             // StructConstructor first, we do this before trying an intrinsic
             // procedure
-            ASR::symbol_t* tmp_v = current_scope->resolve_symbol(std::string(x.m_func));
+            ASR::symbol_t* tmp_v = current_scope->resolve_symbol(to_lower(x.m_func));
             if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
                 return create_DerivedTypeConstructor(x, tmp_v);
             }
@@ -14948,7 +14948,7 @@ public:
                         },
                     false, is_dt_present);
             if( idx == -1 ) {
-                ASR::symbol_t* tmp_v = current_scope->resolve_symbol(std::string(x.m_func));
+                ASR::symbol_t* tmp_v = current_scope->resolve_symbol(to_lower(x.m_func));
                 if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
                     return create_DerivedTypeConstructor(x, tmp_v);
                 }
