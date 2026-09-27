@@ -923,7 +923,19 @@ public:
             src += "use ";
             src.append(x.m_module_name);
             src += ", only: ";
-            append_import_name(src);
+            std::string import_name;
+            append_import_name(import_name);
+            if (src.size() + import_name.size() > 120) {
+                // Long names do not fit on a line; break it between tokens,
+                // where a continuation needs no leading ampersand.
+                std::string cont = "&\n" + indent + std::string(2 * indent_spaces, ' ');
+                src += cont + x.m_name;
+                if (std::strcmp(x.m_name, x.m_original_name) != 0) {
+                    src += " => " + cont + std::string(x.m_original_name);
+                }
+            } else {
+                src += import_name;
+            }
             src += "\n";
         }
     }
