@@ -974,6 +974,9 @@ public:
         if (x.m_is_abstract) {
             r += ", abstract";
         }
+        if (x.m_abi == ASR::abiType::BindC) {
+            r += ", bind(c)";
+        }
         r += " :: ";
         r.append(x.m_name);
         handle_line_truncation(r, 2);
