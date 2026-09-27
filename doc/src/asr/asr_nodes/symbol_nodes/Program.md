@@ -231,12 +231,14 @@ its first statement, so a `bind(c)` procedure one of whose variables has
 bounds or a length that read a variable of another scope, or call a function,
 is split: the procedure stays the `bind(c)` entry, which dispatches and then
 calls an implementation that holds the user's declarations and body, with the
-same interface and no binding label. A procedure that cannot be split that
-way, one with an allocatable or pointer result or with a dummy of a derived
-type it declares itself, is reported as an error rather than entered before
-its state is initialized. The program's own initializer is not a root: it sets
-up the program's frame, so the program calls it itself, after the dispatch and
-before its first statement.
+same interface and no binding label. A derived type, named constant or
+interface the procedure declares for its dummies or result moves to the scope
+around it, which the two share. A procedure that cannot be split that way, one
+with an allocatable or pointer result or with a dummy declared with one of its
+local variables or with a procedure it contains, is reported as an error
+rather than entered before its state is initialized. The program's own
+initializer is not a root: it sets up the program's frame, so the program
+calls it itself, after the dispatch and before its first statement.
 
 What the engine can see depends on the loader. On ELF (verified with glibc;
 musl and the BSD loaders are unverified) and on Mach-O, the first constructor

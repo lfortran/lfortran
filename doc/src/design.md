@@ -181,7 +181,7 @@ when one of the cell's initializers needs a collective boundary, as those of
 saved coarrays do. Definitions of earlier cells stay initialized; a module a
 later cell redefines is a new definition and is initialized anew. The matching
 `<run function>_shutdown` tears down what the cell's initializers set up,
-where leak detection asks for it, and takes the table back out; the evaluator
+with or without leak detection, and takes the table back out; the evaluator
 calls those, newest first, before the JIT's code goes away.
 
 ### Linking a coarray program
@@ -190,11 +190,14 @@ A program that uses coarrays is linked with a PRIF implementation, such as
 Caffeine, and with the adapter through which LFortran's startup starts it,
 `lcompilers_prif.f90`, installed in `share/lfortran/prif/`. The adapter has to
 be compiled with that implementation's own `prif` module, since only it knows
-the status the implementation gives when it was started already, and by the
-same LFortran that built that module and builds the program:
+the status the implementation gives when it was started already, and by a
+compiler that reads that module, with the implementation's module ABI. With
+LFortran, `--separate-compilation` keeps the object from defining anything of
+the implementation's module again:
 
 ```console
-$ lfortran -c -I<directory of the implementation's prif.mod> \
+$ lfortran -c --separate-compilation \
+      -I<directory of the implementation's prif.mod> \
       lcompilers_prif.f90 -o lcompilers_prif.o
 $ lfortran --coarray <objects> lcompilers_prif.o -L<caffeine>/lib -lcaffeine \
       -lgasnet-smp-seq

@@ -37,7 +37,8 @@
  * headers with `dl_iterate_phdr`, through the notifications dyld gives for
  * every image it maps and unmaps, or through the module list -- so an image
  * does not register anything and the first constructor already sees all of
- * them.
+ * them -- except on Windows, where a DLL's table is taken in only once its
+ * own constructor has run; see lcompilers_init.h.
  */
 
 #include <stddef.h>
