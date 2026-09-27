@@ -7861,6 +7861,23 @@ namespace IntrinsicArrayFunctionRegistry {
         }
     }
 
+    // The function that computes the compile-time value of the reduction
+    // `id` from the values of its array arguments (`m_args` of its
+    // IntrinsicArrayFunction, each an ArrayConstant) and its type, for
+    // `sum`, `product`, `maxval`, `minval` and `dot_product`; nullptr for
+    // all others.
+    static inline eval_intrinsic_function get_eval_function(int64_t id) {
+        switch (static_cast<IntrinsicArrayFunctions>(id)) {
+            case IntrinsicArrayFunctions::Sum: return &Sum::eval_Sum;
+            case IntrinsicArrayFunctions::Product: return &Product::eval_Product;
+            case IntrinsicArrayFunctions::MaxVal: return &MaxVal::eval_MaxVal;
+            case IntrinsicArrayFunctions::MinVal: return &MinVal::eval_MinVal;
+            case IntrinsicArrayFunctions::DotProduct:
+                return &DotProduct::eval_DotProduct;
+            default: return nullptr;
+        }
+    }
+
     static inline bool is_elemental(int64_t id) {
         // IntrinsicArrayFunctions id_ = static_cast<IntrinsicArrayFunctions>(id);
         // return (id_ == IntrinsicArrayFunctions::Merge);

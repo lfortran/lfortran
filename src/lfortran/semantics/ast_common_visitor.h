@@ -3258,13 +3258,14 @@ public:
         // is substituted: integer, real and logical operations and
         // comparisons (`ASRUtils::fold_binop_constants`,
         // `ASRUtils::fold_compare_constants`, `ASRUtils::fold_logical_binop`),
-        // numeric conversions (`ASRUtils::make_Cast_t_value`) and the numeric
+        // numeric conversions (`ASRUtils::make_Cast_t_value`), the numeric
         // and mathematical intrinsics with an evaluation function, such as
-        // `sin(real(n))`.
+        // `sin(real(n))`, and the reductions with an evaluation function of
+        // array constructors of such expressions, such as `sum([n, 2*n])`.
         Foldable,
         // Reads a deferred constant in any other way, such as
-        // `ishft(n, 1)`, `[n, 2*n]` or `-(n*0.1_16)`, which the
-        // instantiation cannot evaluate.
+        // `ishft(n, 1)`, `[n, 2*n]`, `sum([n], mask=[.true.])` or
+        // `-(n*0.1_16)`, which the instantiation cannot evaluate.
         Unsupported
     };
 
@@ -3324,6 +3325,54 @@ public:
                         int kind = real_kind(operand);
                         if (kind == 10 || (kind == 16 && !real16)) {
                             return false;
+                        }
+                    }
+                    return true;
+                }
+
+                // The array constructor `e`, possibly behind the change of
+                // its physical type for an argument; nullptr for any other
+                // expression.
+                static ASR::ArrayConstructor_t* array_constructor(ASR::expr_t *e) {
+                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                        e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+                    }
+                    return ASR::is_a<ASR::ArrayConstructor_t>(*e)
+                        ? ASR::down_cast<ASR::ArrayConstructor_t>(e) : nullptr;
+                }
+
+                // Whether `f` is a reduction with an evaluation function,
+                // such as `sum([n, n])` or `dot_product([n], [2])`, whose
+                // arguments are all array constructors of scalars of its own
+                // type (no `dim` or `mask`).
+                static bool reduces_array_constructors(
+                        const ASR::IntrinsicArrayFunction_t &f) {
+                    if (ASRUtils::IntrinsicArrayFunctionRegistry
+                            ::get_eval_function(f.m_arr_intrinsic_id) == nullptr
+                            || ASRUtils::is_array(f.m_type)) {
+                        return false;
+                    }
+                    size_t n_arrays = f.m_arr_intrinsic_id == static_cast<int64_t>(
+                        ASRUtils::IntrinsicArrayFunctions::DotProduct) ? 2 : 1;
+                    if (f.n_args != n_arrays) {
+                        return false;
+                    }
+                    for (size_t i = 0; i < f.n_args; i++) {
+                        ASR::ArrayConstructor_t *c = array_constructor(f.m_args[i]);
+                        if (c == nullptr) {
+                            return false;
+                        }
+                        if (c->n_args == 0 || c->m_struct_var != nullptr
+                                || !ASRUtils::check_equal_type(f.m_type,
+                                    ASRUtils::type_get_past_array(c->m_type),
+                                    nullptr, nullptr)) {
+                            return false;
+                        }
+                        for (size_t j = 0; j < c->n_args; j++) {
+                            if (ASRUtils::is_array(
+                                    ASRUtils::expr_type(c->m_args[j]))) {
+                                return false;
+                            }
                         }
                     }
                     return true;
@@ -3400,6 +3449,31 @@ public:
                                 ASR::down_cast<ASR::LogicalBinOp_t>(&x)->m_op,
                                 false, false, result);
                             break;
+                        }
+                        case ASR::exprType::IntrinsicArrayFunction: {
+                            // A reduction of array constructors of scalars,
+                            // such as `sum([n, n])`: the elements are
+                            // classified as scalar expressions, and the
+                            // reduction is evaluated by its evaluation
+                            // function once they are constants.
+                            ASR::IntrinsicArrayFunction_t *f =
+                                ASR::down_cast<ASR::IntrinsicArrayFunction_t>(
+                                    const_cast<ASR::expr_t*>(&x));
+                            supported = reduces_array_constructors(*f);
+                            if (!supported) {
+                                break;
+                            }
+                            if (!evaluates_real_kinds(x)) {
+                                foldable = false;
+                            }
+                            for (size_t i = 0; i < f->n_args; i++) {
+                                ASR::ArrayConstructor_t *c =
+                                    array_constructor(f->m_args[i]);
+                                for (size_t j = 0; j < c->n_args; j++) {
+                                    visit_expr(*c->m_args[j]);
+                                }
+                            }
+                            return;
                         }
                         default: {
                             supported = false;

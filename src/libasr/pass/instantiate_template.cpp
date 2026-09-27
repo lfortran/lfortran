@@ -5,6 +5,7 @@
 #include <libasr/asr.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/semantic_exception.h>
 
 namespace LCompilers {
@@ -1478,6 +1479,87 @@ public:
         }
         return ASRUtils::make_IntrinsicElementalFunction_t_util(al,
             x->base.base.loc, x->m_intrinsic_id, args.p, args.size(),
+            x->m_overload_id, type, value);
+    }
+
+    // An array constructor of scalars of a deferred constant, e.g.
+    // `[n, 2*n]`, becomes an array constant once its elements are.
+    ASR::asr_t* duplicate_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+        if (x->m_value != nullptr || x->m_struct_var != nullptr
+                || x->n_args == 0) {
+            return BaseExprStmtDuplicator::duplicate_ArrayConstructor(x);
+        }
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x->n_args);
+        bool all_constant = true;
+        for (size_t i = 0; i < x->n_args; i++) {
+            ASR::expr_t* arg = duplicate_expr(x->m_args[i]);
+            ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+            if (ASRUtils::is_array(ASRUtils::expr_type(arg))
+                    || arg_value == nullptr
+                    || !(ASR::is_a<ASR::IntegerConstant_t>(*arg_value)
+                        || ASR::is_a<ASR::RealConstant_t>(*arg_value)
+                        || ASR::is_a<ASR::LogicalConstant_t>(*arg_value))) {
+                all_constant = false;
+            }
+            args.push_back(al, arg);
+        }
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        if (all_constant) {
+            return ASRUtils::make_ArrayConstructor_t_util(al, x->base.base.loc,
+                args.p, args.size(), type, x->m_storage_format);
+        }
+        return ASR::make_ArrayConstructor_t(al, x->base.base.loc, args.p,
+            args.size(), type, nullptr, x->m_storage_format, nullptr);
+    }
+
+    // A reduction of array constructors of a deferred constant, e.g.
+    // `sum([n, n])`, evaluated by the reduction's own evaluation function.
+    ASR::asr_t* duplicate_IntrinsicArrayFunction(
+            ASR::IntrinsicArrayFunction_t* x) {
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            args.push_back(al, duplicate_expr(x->m_args[i]));
+        }
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        ASRUtils::eval_intrinsic_function eval =
+            ASRUtils::IntrinsicArrayFunctionRegistry::get_eval_function(
+                x->m_arr_intrinsic_id);
+        if (value == nullptr && eval && !ASRUtils::is_array(type)) {
+            Vec<ASR::expr_t*> arg_values;
+            arg_values.reserve(al, args.size());
+            for (size_t i = 0; i < args.size(); i++) {
+                // An array argument is passed through a change of its
+                // physical type, which carries no value of its own.
+                ASR::expr_t* arg = args[i];
+                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+                    arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+                }
+                ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+                if (arg_value == nullptr
+                        || !ASR::is_a<ASR::ArrayConstant_t>(*arg_value)) {
+                    break;
+                }
+                arg_values.push_back(al, arg_value);
+            }
+            if (arg_values.size() == args.size()) {
+                diag::Diagnostics eval_diagnostics;
+                value = eval(al, x->base.base.loc, type, arg_values,
+                    eval_diagnostics);
+                if (eval_diagnostics.has_error()) {
+                    value = nullptr;
+                    if (diagnostics) {
+                        for (auto &d: eval_diagnostics.diagnostics) {
+                            diagnostics->diagnostics.push_back(d);
+                        }
+                    }
+                }
+            }
+        }
+        return ASRUtils::make_IntrinsicArrayFunction_t_util(al,
+            x->base.base.loc, x->m_arr_intrinsic_id, args.p, args.size(),
             x->m_overload_id, type, value);
     }
 
