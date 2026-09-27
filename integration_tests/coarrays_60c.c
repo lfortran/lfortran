@@ -1,16 +1,17 @@
 #include <stdint.h>
 #include <stdio.h>
 
-/* The start of the coarray runtime (src/runtime/prif/lcompilers_prif.f90)
- * and the host startup entry of the LFortran runtime. */
-void lcompilers_prif_start(int32_t *stat);
+/* PRIF's prif_init, as the PRIF implementation compiled by LFortran
+ * (Caffeine) defines it, and the host startup entry of the LFortran
+ * runtime. */
+void __module_prif_prif_init(int32_t *stat);
 void lcompilers_initialize(void);
 int coarrays_60_run(void);
 int coarrays_60_again(void);
 
 int main(void) {
     int32_t stat = -1;
-    lcompilers_prif_start(&stat);
+    __module_prif_prif_init(&stat);
     if (stat != 0) {
         /* ci/test_caffeine.sh looks for this: the launcher does not always
          * pass an image's exit status on. */

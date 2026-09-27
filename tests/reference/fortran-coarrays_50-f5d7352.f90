@@ -83,6 +83,11 @@ interface
     end subroutine f__module_prif_prif_get
 end interface
 interface
+    subroutine f__module_prif_prif_init(stat)
+        integer(4), intent(out) :: stat
+    end subroutine f__module_prif_prif_init
+end interface
+interface
     subroutine f__module_prif_prif_initial_team_index(coarray_handle, sub, initial_team_index, stat)
         import prif_coarray_handle
         type(prif_coarray_handle), intent(in) :: coarray_handle
@@ -111,11 +116,6 @@ interface
         type(__module_prif_prif_team_type), intent(in), optional :: team
         integer(4), intent(out) :: this_image
     end subroutine f__module_prif_prif_this_image_no_coarray
-end interface
-interface
-    subroutine lcompilers_prif_start(stat) bind(c, name = "lcompilers_prif_start")
-        integer(4), intent(out) :: stat
-    end subroutine lcompilers_prif_start
 end interface
 interface
     subroutine prif_coarray_cleanup_interface(handle) bind(c)
@@ -176,10 +176,7 @@ end subroutine int_remote
 
 subroutine f__lcompilers_collective_bootstrap()
     integer(4) :: stat
-    call lcompilers_prif_start(stat)
-    if (stat /= 0) then
-        error stop
-    end if
+    call f__module_prif_prif_init(stat)
 end subroutine f__lcompilers_collective_bootstrap
 
 subroutine f__lcompilers_global_init_tu_coarrays_int_bump_int_remote()

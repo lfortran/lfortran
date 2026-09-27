@@ -4,14 +4,9 @@ target datalayout = "..."
 
 %string_descriptor = type { i8*, i64 }
 
-@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
-@string_const_data = private constant [72 x i8] c"the coarray runtime failed to start: prif_init returned a nonzero status"
-@string_const = private global %string_descriptor { i8* getelementptr inbounds ([72 x i8], [72 x i8]* @string_const_data, i32 0, i32 0), i64 72 }
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1 = private unnamed_addr constant [10 x i8] c"%s %.*s%s\00", align 1
-@2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
-@3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @__lcompilers_init_id = private constant [36 x i8] c"b:__lcompilers_collective_bootstrap\00"
 @__lcompilers_init_records = internal constant [1 x { i8*, void ()*, void ()*, i32*, i32, i32 }] [{ i8*, void ()*, void ()*, i32*, i32, i32 } { i8* getelementptr inbounds ([36 x i8], [36 x i8]* @__lcompilers_init_id, i32 0, i32 0), void ()* @__lcompilers_collective_bootstrap, void ()* null, i32* null, i32 2, i32 0 }]
 @__lcompilers_init_instance = internal global i32 0
@@ -23,42 +18,21 @@ target datalayout = "..."
 define internal void @__lcompilers_collective_bootstrap() {
 .entry:
   %stat = alloca i32, align 4
-  call void @lcompilers_prif_start(i32* %stat)
-  %0 = load i32, i32* %stat, align 4
-  %1 = icmp ne i32 %0, 0
-  br i1 %1, label %then, label %else
-
-then:                                             ; preds = %.entry
-  %2 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([10 x i8], [10 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i64 72, i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
-  call void @_lfortran_internal_alloc_finalize()
-  call void @exit(i32 1)
-  br label %ifcont
-
-else:                                             ; preds = %.entry
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
+  call void @__module_prif_prif_init(i32* %stat)
   br label %return
 
-return:                                           ; preds = %ifcont
+return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE___lcompilers_collective_bootstrap
 
 FINALIZE_SYMTABLE___lcompilers_collective_bootstrap: ; preds = %return
   ret void
 }
 
+declare void @__module_prif_prif_init(i32*)
+
 declare void @__module_prif_prif_stop(i8*, i32*, i32*, %string_descriptor*, i32*)
 
 declare void @__module_prif_prif_sync_all(i32*, i32*, %string_descriptor*, i32*, %string_descriptor*, i32*)
-
-declare void @lcompilers_prif_start(i32*)
-
-declare void @_lcompilers_print_error(i8*, ...)
-
-declare void @_lfortran_internal_alloc_finalize()
-
-declare void @exit(i32)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -108,7 +82,7 @@ define i32 @main(i32 %0, i8** %1) {
   %18 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
   %19 = load i64, i64* %18, align 8
   %20 = trunc i64 %19 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %17, i32 %20, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %17, i32 %20, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   %21 = icmp eq i8* %12, null
   br i1 %21, label %free_done, label %free_nonnull
 
@@ -162,6 +136,8 @@ declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i3
 declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
+
+declare void @_lfortran_internal_alloc_finalize()
 
 declare void @_lcompilers_init_ctor(i8*)
 

@@ -196,28 +196,18 @@ calls those, newest first, before the JIT's code goes away.
 ### Linking a coarray program
 
 A program that uses coarrays is linked with a PRIF implementation, such as
-Caffeine, and with the adapter through which LFortran's startup starts it,
-`lcompilers_prif.f90`, installed in `share/lfortran/prif/`. The adapter has to
-be compiled with that implementation's own `prif` module, since only it knows
-the status the implementation gives when it was started already, and by a
-compiler that reads that module, with the implementation's module ABI. With
-LFortran, `--separate-compilation` keeps the object from defining anything of
-the implementation's module again:
+Caffeine, and nothing else:
 
 ```console
-$ lfortran -c --separate-compilation \
-      -I<directory of the implementation's prif.mod> \
-      lcompilers_prif.f90 -o lcompilers_prif.o
-$ lfortran --coarray <objects> lcompilers_prif.o -L<caffeine>/lib -lcaffeine \
-      -lgasnet-smp-seq
+$ lfortran --coarray <objects> -L<caffeine>/lib -lcaffeine -lgasnet-smp-seq
 ```
 
-The object is compiled once and goes explicitly on the link line of every
-coarray program, next to the implementation's libraries; `--coarray` does not
-add it. Its `bind(c)` entry initializes the `prif` module it uses before it
-calls `prif_init`. A host that starts the runtime itself and calls
-`lcompilers_initialize()` needs no other arrangement: a runtime that is
-already started is not an error.
+Every object file that calls PRIF has a collective bootstrap, which calls
+`prif_init` directly and accepts whatever status it returns: 0 when it started
+the runtime, `PRIF_STAT_ALREADY_INIT` when the runtime was running already. A
+runtime that cannot start does not return from `prif_init`. A host that
+starts the runtime itself, by calling `prif_init`, and then calls
+`lcompilers_initialize()` therefore needs no other arrangement.
 
 ## Notes:
 

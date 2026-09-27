@@ -306,23 +306,17 @@ built from Fortran modules with startup state of its own, so starting it
 cannot happen inside another initializer's guard. Every translation unit that
 calls the coarray runtime therefore has a collective bootstrap, named by its
 `global_init_bootstrap`: an ordinary private subroutine without a guard, whose
-record carries the bootstrap flag. It calls `lcompilers_prif_start` and stops
-the program with "the coarray runtime failed to start: prif_init returned a
-nonzero status" unless that returns 0. The engine runs one bootstrap per
-stable id, outside every guard, after the local initializers and before any
-collective initializer. No initializer and no program calls `prif_init`
-itself.
-
-`lcompilers_prif_start` is a `bind(c)` adapter,
-`runtime/prif/lcompilers_prif.f90`, compiled with the module of the PRIF
-implementation in use and linked into every program that uses coarrays; the
-driver does not add it. Its `bind(c)` entry initializes the `prif` module it
-uses, then it calls `prif_init` and gives 0 both for success and for the
-implementation's own `PRIF_STAT_ALREADY_INIT`, which only that module defines:
-the runtime having been started already, by another bootstrap or by the host,
-is not a failure. Every collective initializer that allocates saved coarrays
-ends with a `sync all`, so their initial values are visible on every image
-once the collective boundary has run.
+record carries the bootstrap flag. It calls `prif_init` and treats every
+status it returns as a running runtime: 0 when this call started it, and
+`PRIF_STAT_ALREADY_INIT` when it was started already, by another bootstrap or
+by the host; a runtime that cannot start does not return from `prif_init`.
+The engine runs one bootstrap per stable id, outside every guard, after the
+local initializers, which initialize the startup state of the PRIF
+implementation's own modules, and before any collective initializer. No
+initializer and no program calls `prif_init` itself. Every collective
+initializer that allocates saved coarrays ends with a `sync all`, so their
+initial values are visible on every image once the collective boundary has
+run.
 
 Under separate compilation a saved coarray follows the same rule as an
 ordinary declaration initializer. A module read from a `.mod` file was

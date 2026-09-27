@@ -19,6 +19,11 @@ interface
     end subroutine f__module_prif_prif_allocate_coarray
 end interface
 interface
+    subroutine f__module_prif_prif_init(stat)
+        integer(4), intent(out) :: stat
+    end subroutine f__module_prif_prif_init
+end interface
+interface
     subroutine f__module_prif_prif_lcobound_with_dim(coarray, dim, lcobound)
         import prif_coarray_handle
         type(prif_coarray_handle), intent(in) :: coarray
@@ -49,11 +54,6 @@ interface
     end subroutine f__module_prif_prif_ucobound_with_dim
 end interface
 interface
-    subroutine lcompilers_prif_start(stat) bind(c, name = "lcompilers_prif_start")
-        integer(4), intent(out) :: stat
-    end subroutine lcompilers_prif_start
-end interface
-interface
     subroutine prif_coarray_cleanup_interface(handle) bind(c)
         import prif_coarray_handle
         type(prif_coarray_handle), intent(in), value :: handle
@@ -73,10 +73,7 @@ contains
 
 subroutine f__lcompilers_collective_bootstrap()
     integer(4) :: stat
-    call lcompilers_prif_start(stat)
-    if (stat /= 0) then
-        error stop
-    end if
+    call f__module_prif_prif_init(stat)
 end subroutine f__lcompilers_collective_bootstrap
 
 subroutine f__lcompilers_global_init_tu_coarrays_cobounds_01()

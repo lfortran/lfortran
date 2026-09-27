@@ -2,13 +2,12 @@
 #include <stdio.h>
 
 /*
- * A host that keeps the coarray runtime loaded (Caffeine and
- * src/runtime/prif/lcompilers_prif.f90 are linked into it) while the plugin
- * whose path is its argument, coarrays_61_p.f90, is loaded, closed and
- * loaded again on every image. Each load is followed by the collective
- * startup boundary, lcompilers_initialize(): the first starts the runtime,
- * and the second runs the bootstrap of the plugin loaded again, which finds
- * the runtime started and has to accept that.
+ * A host that keeps the coarray runtime loaded (Caffeine is linked into
+ * it) while the plugin whose path is its argument, coarrays_61_p.f90, is
+ * loaded, closed and loaded again on every image. Each load is followed by
+ * the collective startup boundary, lcompilers_initialize(): the first starts
+ * the runtime, and the second runs the bootstrap of the plugin loaded again,
+ * which finds the runtime started and has to accept that.
  */
 void lcompilers_initialize(void);
 typedef int (*run_fn)(void);

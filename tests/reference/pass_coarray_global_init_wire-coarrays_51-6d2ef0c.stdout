@@ -48,31 +48,14 @@
                         .false.
                         Host
                     )
-                    [lcompilers_prif_start]
+                    [__module_prif_prif_init]
                     []
                     [(SubroutineCall
-                        1 lcompilers_prif_start
+                        1 __module_prif_prif_init
                         ()
                         [((Var 20 stat))]
                         ()
                         .false.
-                    )
-                    (If
-                        ()
-                        (IntegerCompare
-                            (Var 20 stat)
-                            NotEq
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (Logical 4)
-                            ()
-                        )
-                        [(ErrorStop
-                            (StringConstant
-                                "the coarray runtime failed to start: prif_init returned a nonzero status"
-                                (String 1 (IntegerConstant 72 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                            )
-                        )]
-                        []
                     )]
                     ()
                     Private
@@ -473,6 +456,61 @@
                     (Var 18 stat)
                     (Var 18 errmsg)
                     (Var 18 errmsg_alloc)]
+                    []
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            __module_prif_prif_init:
+                (Function
+                    (SymbolTable
+                        21
+                        {
+                            stat:
+                                (Variable
+                                    21
+                                    stat
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    __module_prif_prif_init
+                    (FunctionType
+                        [(Integer 4)]
+                        ()
+                        Source
+                        Interface
+                        "__module_prif_prif_init"
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 21 stat)]
                     []
                     ()
                     Public
@@ -1974,61 +2012,6 @@
                         .false.
                     )]
                     (Var 17 result)
-                    Public
-                    .false.
-                    .false.
-                    ()
-                ),
-            lcompilers_prif_start:
-                (Function
-                    (SymbolTable
-                        21
-                        {
-                            stat:
-                                (Variable
-                                    21
-                                    stat
-                                    []
-                                    Out
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    BindC
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                )
-                        })
-                    lcompilers_prif_start
-                    (FunctionType
-                        [(Integer 4)]
-                        ()
-                        BindC
-                        Interface
-                        "lcompilers_prif_start"
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        []
-                        .false.
-                        Host
-                    )
-                    []
-                    [(Var 21 stat)]
-                    []
-                    ()
                     Public
                     .false.
                     .false.

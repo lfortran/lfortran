@@ -77,17 +77,15 @@ target datalayout = "..."
 @40 = private unnamed_addr constant [43 x i8] c"tests/../integration_tests/coarrays_52.f90\00", align 1
 @41 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
 @42 = private unnamed_addr constant [103 x i8] c"Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.\00", align 1
-@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
-@string_const_data = private constant [72 x i8] c"the coarray runtime failed to start: prif_init returned a nonzero status"
-@string_const = private global %string_descriptor { i8* getelementptr inbounds ([72 x i8], [72 x i8]* @string_const_data, i32 0, i32 0), i64 72 }
-@43 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@44 = private unnamed_addr constant [10 x i8] c"%s %.*s%s\00", align 1
 @global_array_6 = private constant [1 x i64] [i64 1]
 @global_array_7 = private constant [0 x i64] zeroinitializer
 @global_array_8 = private constant [1 x i64] [i64 1]
 @global_array_9 = private constant [0 x i64] zeroinitializer
 @global_array_10 = private constant [1 x i64] [i64 1]
 @global_array_11 = private constant [0 x i64] zeroinitializer
+@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@43 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@44 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
 @45 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @46 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
 @47 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
@@ -96,30 +94,28 @@ target datalayout = "..."
 @50 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
 @51 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @52 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
-@53 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@54 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
-@55 = private unnamed_addr constant [44 x i8] c"lcompilers_prif_get_integer(4)_integer____1\00", align 1
-@56 = private unnamed_addr constant [43 x i8] c"tests/../integration_tests/coarrays_52.f90\00", align 1
-@57 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@58 = private unnamed_addr constant [143 x i8] c"Runtime error: Array shape mismatch in subroutine '%s'\0A\0ATried to match size %d of dimension %d of argument number %d, but expected size is %d\0A\00", align 1
+@53 = private unnamed_addr constant [44 x i8] c"lcompilers_prif_get_integer(4)_integer____1\00", align 1
+@54 = private unnamed_addr constant [43 x i8] c"tests/../integration_tests/coarrays_52.f90\00", align 1
+@55 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@56 = private unnamed_addr constant [143 x i8] c"Runtime error: Array shape mismatch in subroutine '%s'\0A\0ATried to match size %d of dimension %d of argument number %d, but expected size is %d\0A\00", align 1
 @global_array_12 = private constant [1 x i64] [i64 1]
-@59 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@60 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
-@61 = private unnamed_addr constant [44 x i8] c"lcompilers_prif_get_integer(4)_integer____1\00", align 1
-@62 = private unnamed_addr constant [43 x i8] c"tests/../integration_tests/coarrays_52.f90\00", align 1
-@63 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@64 = private unnamed_addr constant [143 x i8] c"Runtime error: Array shape mismatch in subroutine '%s'\0A\0ATried to match size %d of dimension %d of argument number %d, but expected size is %d\0A\00", align 1
+@57 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@58 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
+@59 = private unnamed_addr constant [44 x i8] c"lcompilers_prif_get_integer(4)_integer____1\00", align 1
+@60 = private unnamed_addr constant [43 x i8] c"tests/../integration_tests/coarrays_52.f90\00", align 1
+@61 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@62 = private unnamed_addr constant [143 x i8] c"Runtime error: Array shape mismatch in subroutine '%s'\0A\0ATried to match size %d of dimension %d of argument number %d, but expected size is %d\0A\00", align 1
 @global_array_13 = private constant [1 x i64] [i64 1]
+@63 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@64 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
 @65 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@66 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
-@67 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@string_const_data.1 = private constant [2 x i8] c"ok"
-@string_const.2 = private global %string_descriptor { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data.1, i32 0, i32 0), i64 2 }
-@68 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@string_const_data = private constant [2 x i8] c"ok"
+@string_const = private global %string_descriptor { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data, i32 0, i32 0), i64 2 }
+@66 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @__lcompilers_init_id = private constant [36 x i8] c"b:__lcompilers_collective_bootstrap\00"
-@__lcompilers_init_id.3 = private constant [16 x i8] c"m:coarrays_52_m\00"
-@__lcompilers_init_id.4 = private constant [87 x i8] c"t:__lcompilers_global_init_tu_coarrays_coarrays_52_coarrays_52_int_sub_coarrays_52_sub\00"
-@__lcompilers_init_records = internal constant [3 x { i8*, void ()*, void ()*, i32*, i32, i32 }] [{ i8*, void ()*, void ()*, i32*, i32, i32 } { i8* getelementptr inbounds ([36 x i8], [36 x i8]* @__lcompilers_init_id, i32 0, i32 0), void ()* @__lcompilers_collective_bootstrap, void ()* null, i32* null, i32 2, i32 0 }, { i8*, void ()*, void ()*, i32*, i32, i32 } { i8* getelementptr inbounds ([16 x i8], [16 x i8]* @__lcompilers_init_id.3, i32 0, i32 0), void ()* @__module_coarrays_52_m___lcompilers_global_init_coarrays_52_m, void ()* null, i32* @__module_coarrays_52_m___lcompilers_global_init_state_coarrays_52_m, i32 1, i32 0 }, { i8*, void ()*, void ()*, i32*, i32, i32 } { i8* getelementptr inbounds ([87 x i8], [87 x i8]* @__lcompilers_init_id.4, i32 0, i32 0), void ()* @__lcompilers_global_init_tu_coarrays_coarrays_52_coarrays_52_int_sub_coarrays_52_sub, void ()* null, i32* @__lcompilers_global_init_tu_coarrays_coarrays_52_coarrays_52_int_sub_coarrays_52_sub_state, i32 1, i32 0 }]
+@__lcompilers_init_id.1 = private constant [16 x i8] c"m:coarrays_52_m\00"
+@__lcompilers_init_id.2 = private constant [87 x i8] c"t:__lcompilers_global_init_tu_coarrays_coarrays_52_coarrays_52_int_sub_coarrays_52_sub\00"
+@__lcompilers_init_records = internal constant [3 x { i8*, void ()*, void ()*, i32*, i32, i32 }] [{ i8*, void ()*, void ()*, i32*, i32, i32 } { i8* getelementptr inbounds ([36 x i8], [36 x i8]* @__lcompilers_init_id, i32 0, i32 0), void ()* @__lcompilers_collective_bootstrap, void ()* null, i32* null, i32 2, i32 0 }, { i8*, void ()*, void ()*, i32*, i32, i32 } { i8* getelementptr inbounds ([16 x i8], [16 x i8]* @__lcompilers_init_id.1, i32 0, i32 0), void ()* @__module_coarrays_52_m___lcompilers_global_init_coarrays_52_m, void ()* null, i32* @__module_coarrays_52_m___lcompilers_global_init_state_coarrays_52_m, i32 1, i32 0 }, { i8*, void ()*, void ()*, i32*, i32, i32 } { i8* getelementptr inbounds ([87 x i8], [87 x i8]* @__lcompilers_init_id.2, i32 0, i32 0), void ()* @__lcompilers_global_init_tu_coarrays_coarrays_52_coarrays_52_int_sub_coarrays_52_sub, void ()* null, i32* @__lcompilers_global_init_tu_coarrays_coarrays_52_coarrays_52_int_sub_coarrays_52_sub_state, i32 1, i32 0 }]
 @__lcompilers_init_instance = internal global i32 0
 @__lcompilers_init_table = internal constant { i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* } { i32 3, i32 3, { i8*, void ()*, void ()*, i32*, i32, i32 }* getelementptr inbounds ([3 x { i8*, void ()*, void ()*, i32*, i32, i32 }], [3 x { i8*, void ()*, void ()*, i32*, i32, i32 }]* @__lcompilers_init_records, i32 0, i32 0), i32* @__lcompilers_init_instance }, align 8
 @llvm.used = appending global [1 x i8*] [i8* bitcast ({ i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* }* @__lcompilers_init_table to i8*)], section "llvm.metadata"
@@ -129,25 +125,10 @@ target datalayout = "..."
 define internal void @__lcompilers_collective_bootstrap() {
 .entry:
   %stat = alloca i32, align 4
-  call void @lcompilers_prif_start(i32* %stat)
-  %0 = load i32, i32* %stat, align 4
-  %1 = icmp ne i32 %0, 0
-  br i1 %1, label %then, label %else
-
-then:                                             ; preds = %.entry
-  %2 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([10 x i8], [10 x i8]* @44, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i64 72, i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @43, i32 0, i32 0))
-  call void @_lfortran_internal_alloc_finalize()
-  call void @exit(i32 1)
-  br label %ifcont
-
-else:                                             ; preds = %.entry
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
+  call void @__module_prif_prif_init(i32* %stat)
   br label %return
 
-return:                                           ; preds = %ifcont
+return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE___lcompilers_collective_bootstrap
 
 FINALIZE_SYMTABLE___lcompilers_collective_bootstrap: ; preds = %return
@@ -449,6 +430,8 @@ declare void @__module_prif_prif_allocate_coarray(%array.1.0*, %array.1.0*, i64*
 
 declare void @__module_prif_prif_get(i32*, %prif_coarray_handle.9*, i64*, void*, i64*, i32*, i32*, %string_descriptor*, i32*, %string_descriptor*, i32*)
 
+declare void @__module_prif_prif_init(i32*)
+
 declare void @__module_prif_prif_initial_team_index_integer____1(%prif_coarray_handle.9*, i64*, i32*, i32*, i32*, i32*)
 
 declare void @__module_prif_prif_stop(i8*, i32*, i32*, %string_descriptor*, i32*)
@@ -543,8 +526,6 @@ Finalize_Variable___libasr_created_variable_3:    ; preds = %Finalize_Variable__
   %17 = load i32, i32* %result, align 4
   ret i32 %17
 }
-
-declare void @lcompilers_prif_start(i32*)
 
 define i32 @lcompilers_prif_this_image() {
 .entry:
@@ -1543,10 +1524,6 @@ declare void @exit(i32)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 
-declare void @_lcompilers_print_error(i8*, ...)
-
-declare void @_lfortran_internal_alloc_finalize()
-
 ; Function Attrs: argmemonly nounwind willreturn
 declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #0
 
@@ -1587,7 +1564,7 @@ define i32 @main(i32 %0, i8** %1) {
   br i1 %13, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @46, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @45, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @44, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @43, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont
@@ -1602,7 +1579,7 @@ ifcont:                                           ; preds = %else, %then
   br i1 %15, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @48, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @47, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @46, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @45, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 2)
   br label %ifcont3
@@ -1617,7 +1594,7 @@ ifcont3:                                          ; preds = %else2, %then1
   br i1 %17, label %then4, label %else5
 
 then4:                                            ; preds = %ifcont3
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @50, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @49, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @48, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @47, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 3)
   br label %ifcont6
@@ -1632,7 +1609,7 @@ ifcont6:                                          ; preds = %else5, %then4
   br i1 %19, label %then7, label %else8
 
 then7:                                            ; preds = %ifcont6
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @52, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @51, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @50, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @49, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 4)
   br label %ifcont9
@@ -1647,7 +1624,7 @@ ifcont9:                                          ; preds = %else8, %then7
   br i1 %22, label %then10, label %else11
 
 then10:                                           ; preds = %ifcont9
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @54, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @53, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @52, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @51, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 5)
   br label %ifcont12
@@ -1667,7 +1644,7 @@ then15:                                           ; preds = %ifcont12
   %24 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
   %25 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %24, i32 0, i32 0
   %26 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %25, i32 0, i32 0
-  store i8* getelementptr inbounds ([43 x i8], [43 x i8]* @56, i32 0, i32 0), i8** %26, align 8
+  store i8* getelementptr inbounds ([43 x i8], [43 x i8]* @54, i32 0, i32 0), i8** %26, align 8
   %27 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %25, i32 0, i32 1
   store i32 50, i32* %27, align 4
   %28 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %25, i32 0, i32 2
@@ -1676,7 +1653,7 @@ then15:                                           ; preds = %ifcont12
   store i32 50, i32* %29, align 4
   %30 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %25, i32 0, i32 4
   store i32 19, i32* %30, align 4
-  %31 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %2, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @57, i32 0, i32 0))
+  %31 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %2, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @55, i32 0, i32 0))
   %32 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %23, i32 0, i32 0
   %33 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %24, i32 0, i32 0
   %34 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %32, i32 0, i32 2
@@ -1688,7 +1665,7 @@ then15:                                           ; preds = %ifcont12
   %37 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %32, i32 0, i32 3
   store i32 1, i32* %37, align 4
   %38 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %23, i32 0, i32 0
-  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %38, i32 1, i8* getelementptr inbounds ([143 x i8], [143 x i8]* @58, i32 0, i32 0), i8* getelementptr inbounds ([44 x i8], [44 x i8]* @55, i32 0, i32 0), i32 1, i32 1, i32 2, i32 1)
+  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %38, i32 1, i8* getelementptr inbounds ([143 x i8], [143 x i8]* @56, i32 0, i32 0), i8* getelementptr inbounds ([44 x i8], [44 x i8]* @53, i32 0, i32 0), i32 1, i32 1, i32 2, i32 1)
   call void @exit(i32 1)
   unreachable
 
@@ -1700,7 +1677,7 @@ ifcont16:                                         ; preds = %ifcont12
   br i1 %40, label %then18, label %else19
 
 then18:                                           ; preds = %ifcont16
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @60, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 6, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @59, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @58, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 6, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @57, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 6)
   br label %ifcont20
@@ -1716,7 +1693,7 @@ then21:                                           ; preds = %ifcont20
   %42 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
   %43 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %42, i32 0, i32 0
   %44 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %43, i32 0, i32 0
-  store i8* getelementptr inbounds ([43 x i8], [43 x i8]* @62, i32 0, i32 0), i8** %44, align 8
+  store i8* getelementptr inbounds ([43 x i8], [43 x i8]* @60, i32 0, i32 0), i8** %44, align 8
   %45 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %43, i32 0, i32 1
   store i32 51, i32* %45, align 4
   %46 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %43, i32 0, i32 2
@@ -1725,7 +1702,7 @@ then21:                                           ; preds = %ifcont20
   store i32 51, i32* %47, align 4
   %48 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %43, i32 0, i32 4
   store i32 12, i32* %48, align 4
-  %49 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %2, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @63, i32 0, i32 0))
+  %49 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %2, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @61, i32 0, i32 0))
   %50 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %41, i32 0, i32 0
   %51 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %42, i32 0, i32 0
   %52 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %50, i32 0, i32 2
@@ -1737,7 +1714,7 @@ then21:                                           ; preds = %ifcont20
   %55 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %50, i32 0, i32 3
   store i32 1, i32* %55, align 4
   %56 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %41, i32 0, i32 0
-  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %56, i32 1, i8* getelementptr inbounds ([143 x i8], [143 x i8]* @64, i32 0, i32 0), i8* getelementptr inbounds ([44 x i8], [44 x i8]* @61, i32 0, i32 0), i32 1, i32 1, i32 2, i32 1)
+  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %56, i32 1, i8* getelementptr inbounds ([143 x i8], [143 x i8]* @62, i32 0, i32 0), i8* getelementptr inbounds ([44 x i8], [44 x i8]* @59, i32 0, i32 0), i32 1, i32 1, i32 2, i32 1)
   call void @exit(i32 1)
   unreachable
 
@@ -1749,7 +1726,7 @@ ifcont22:                                         ; preds = %ifcont20
   br i1 %58, label %then23, label %else24
 
 then23:                                           ; preds = %ifcont22
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @66, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @65, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @64, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @63, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 7)
   br label %ifcont25
@@ -1763,8 +1740,8 @@ ifcont25:                                         ; preds = %else24, %then23
   br i1 %60, label %then26, label %else27
 
 then26:                                           ; preds = %ifcont25
-  %61 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @68, i32 0, i32 0), i8* %61, i32 2, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @67, i32 0, i32 0), i32 1)
+  %61 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @66, i32 0, i32 0), i8* %61, i32 2, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @65, i32 0, i32 0), i32 1)
   br label %ifcont28
 
 else27:                                           ; preds = %ifcont25
@@ -1825,6 +1802,10 @@ FINALIZE_SYMTABLE_coarrays_52_int_sub:            ; preds = %return
 declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lcompilers_init_dispatch(i32)
+
+declare void @_lcompilers_print_error(i8*, ...)
+
+declare void @_lfortran_internal_alloc_finalize()
 
 declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 

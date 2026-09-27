@@ -74,6 +74,11 @@ interface
     end subroutine f__module_prif_prif_co_sum
 end interface
 interface
+    subroutine f__module_prif_prif_init(stat)
+        integer(4), intent(out) :: stat
+    end subroutine f__module_prif_prif_init
+end interface
+interface
     subroutine f__module_prif_prif_num_images(num_images)
         integer(4), intent(out) :: num_images
     end subroutine f__module_prif_prif_num_images
@@ -98,11 +103,6 @@ interface
         type(__module_prif_prif_team_type), intent(in), optional :: team
         integer(4), intent(out) :: this_image
     end subroutine f__module_prif_prif_this_image_no_coarray
-end interface
-interface
-    subroutine lcompilers_prif_start(stat) bind(c, name = "lcompilers_prif_start")
-        integer(4), intent(out) :: stat
-    end subroutine lcompilers_prif_start
 end interface
 type :: point
     real(4) :: x
@@ -143,10 +143,7 @@ contains
 
 subroutine f__lcompilers_collective_bootstrap()
     integer(4) :: stat
-    call lcompilers_prif_start(stat)
-    if (stat /= 0) then
-        error stop
-    end if
+    call f__module_prif_prif_init(stat)
 end subroutine f__lcompilers_collective_bootstrap
 
 integer(4) function lcompilers_prif_num_images()

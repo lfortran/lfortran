@@ -1,7 +1,7 @@
 ! coarrays_57 and coarrays_59 for a host that starts the coarray runtime
-! itself: coarrays_60c.c calls lcompilers_prif_start before the host startup
-! entry, lcompilers_initialize(), whose bootstrap then finds the runtime
-! already started and has to accept that. The saved coarray still has to be
+! itself: coarrays_60c.c calls prif_init before the host startup entry,
+! lcompilers_initialize(), whose bootstrap then finds the runtime already
+! started and has to accept that. The saved coarray still has to be
 ! allocated and hold its initial value on every image afterwards, and a
 ! second call of lcompilers_initialize() must neither fail nor allocate or
 ! initialize it again.
