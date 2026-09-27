@@ -25715,6 +25715,9 @@ public:
                 }
             } else if( ASR::is_a<ASR::Struct_t>(*item.second) ) {
                 ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(item.second);
+                if ((!to_submodule) && mv->m_access == ASR::accessType::Private) {
+                    continue;
+                }
                 // `mv` is the Variable in a module. Now we construct
                 // an ExternalSymbol that points to it.
                 Str name;
