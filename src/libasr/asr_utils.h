@@ -2272,6 +2272,18 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
     }
 }
 
+// A local that is neither saved nor a parameter is initialized on every entry
+// to its procedure or BLOCK. A non-constant initializer on such a local is
+// how a pass evaluates a specification expression, such as the bound of an
+// automatic array, exactly once on entry.
+static inline bool is_entry_initialized_local(const ASR::Variable_t &v) {
+    return v.m_intent == ASR::intentType::Local &&
+        v.m_storage == ASR::storage_typeType::Default &&
+        v.m_symbolic_value != nullptr && v.m_value == nullptr &&
+        ASR::is_a<ASR::Integer_t>(*v.m_type) &&
+        !is_value_constant(v.m_symbolic_value);
+}
+
 static inline bool is_value_constant(ASR::expr_t *a_value, int64_t& const_value) {
     if( a_value == nullptr ) {
         return false;

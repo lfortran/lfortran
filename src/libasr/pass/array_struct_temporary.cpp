@@ -3643,7 +3643,10 @@ class TransformVariableInitialiser:
                 x.m_storage == ASR::storage_typeType::Save &&
                 value &&
                 ASRUtils::is_value_constant(value)
-            )
+            ) ||
+            // It must be evaluated before the declarations that depend on
+            // it (e.g. an automatic array bound), not in the body.
+            ASRUtils::is_entry_initialized_local(x)
         ) {
             return;
         }

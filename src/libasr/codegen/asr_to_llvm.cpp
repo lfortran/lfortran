@@ -8487,7 +8487,11 @@ public:
                     if (m_dims[i].m_length != nullptr &&  ASR::is_a<ASR::Var_t>(*m_dims[i].m_length)) {
                         ASR::Var_t* m_length_var = ASR::down_cast<ASR::Var_t>(m_dims[i].m_length);
                         ASR::symbol_t* m_length_sym = ASRUtils::symbol_get_past_external(m_length_var->m_v);
-                        if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
+                        // A local initialized on entry already holds the
+                        // bound as evaluated on entry.
+                        if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym) &&
+                                !ASRUtils::is_entry_initialized_local(
+                                    *ASR::down_cast<ASR::Variable_t>(m_length_sym))) {
                             ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
                             uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
                             llvm::Type* deep_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length,
@@ -8721,7 +8725,8 @@ public:
             // type_->print(llvm::outs()); llvm::outs() << "\n";
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base));
             ASR::expr_t* init_expr = v->m_symbolic_value;
-            if( v->m_storage != ASR::storage_typeType::Parameter ) {
+            if( v->m_storage != ASR::storage_typeType::Parameter &&
+                    !ASRUtils::is_entry_initialized_local(*v) ) {
                 for( size_t i = 0; i < v->n_dependencies; i++ ) {
                     std::string variable_name = v->m_dependencies[i];
                     ASR::symbol_t* dep_sym = x.m_symtab->resolve_symbol(variable_name);
