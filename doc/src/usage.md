@@ -302,14 +302,10 @@ The LLVM backend's native linker selection is separate: it defaults to `clang`
 and can be changed with `--linker` / `--linker-path` or the
 `LFORTRAN_LINKER` / `LFORTRAN_LINKER_PATH` environment variables.
 
-For native LLVM OpenMP programs, pass `--openmp` during both compilation and
-linking. The GCC linker driver receives `-fopenmp`, letting it select its
-OpenMP runtime (`libgomp`) and platform-specific threading flags. This also
-applies to the GCC driver selected by Linux Pixi environments; no additional
-`-lgomp` option is needed. With Clang (including AppleClang), supply
-`--openmp-lib-dir=/path/to/lib` to link LLVM's `libomp`. When provided, this
-directory is added to the library search path and runtime search path for
-either driver.
+Native LLVM OpenMP programs use Clang with LLVM's `libomp`. Pass `--openmp`
+during both compilation and linking, and `--openmp-lib-dir=/path/to/lib`
+when linking. The Pixi `llvm_omp` integration backend uses the selected
+environment's `lib` directory.
 
 ## Differences from other compilers
 
