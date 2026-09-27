@@ -472,12 +472,6 @@ public:
         ASR::ttype_t* var_type; // The array type of `expr`.
     };
     std::vector<struct_array_global> struct_array_global_members_details;
-    // A module level array of a derived type defined in this translation
-    // unit, too large to lay its default value out as static data, and the
-    // default value of one element, stored into every element by a global
-    // constructor (see `emit_struct_array_default_fill_ctor`).
-    std::vector<std::pair<llvm::GlobalVariable*, llvm::Constant*>>
-        struct_array_default_fills;
     struct variable_inital_value { /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
         ASR::Variable_t* v;
         llvm::Value* target_var; // Corresponds to variable `v` in llvm IR.
@@ -2056,10 +2050,6 @@ public:
                 visit_symbol(*item.second);
             }
         }
-
-        // Before the translation unit's own initializer below, which may read
-        // the arrays.
-        emit_struct_array_default_fill_ctor();
 
         // An initializer this translation unit owns belongs to no program
         // unit, so nothing in ASR calls it: it is the target's own startup
@@ -5974,68 +5964,15 @@ public:
     // The largest module array, in bytes, whose default initialization is
     // laid out as static data. LLVM builds and emits such an initializer
     // element by element, needing around a hundred bytes of compiler memory
-    // per byte of data, so a larger array starts out zeroed and is filled by
-    // a global constructor instead.
+    // per byte of data, so a larger array starts out zeroed and its elements
+    // get their default values at run time instead, with the run time set
+    // up of the members of module arrays (`struct_array_global_members_details`).
     static constexpr uint64_t max_static_struct_array_default_size = 16384;
 
-    // Give the module array `gv` of a derived type, defined in this
-    // translation unit, the default value `elem` in every element.
-    void set_struct_array_default_initializer(llvm::GlobalVariable* gv,
-            llvm::Type* type, llvm::Constant* elem) {
+    bool is_static_struct_array_default(llvm::Type* type) {
         llvm::DataLayout data_layout(module->getDataLayout());
-        if (data_layout.getTypeAllocSize(type)
-                <= max_static_struct_array_default_size) {
-            std::vector<llvm::Constant*> elements(
-                type->getArrayNumElements(), elem);
-            gv->setInitializer(llvm::ConstantArray::get(
-                llvm::cast<llvm::ArrayType>(type), elements));
-        } else {
-            gv->setInitializer(llvm::ConstantArray::getNullValue(type));
-            struct_array_default_fills.push_back({gv, elem});
-        }
-    }
-
-    // Store the default value of the element into every element of each
-    // array in `struct_array_default_fills`, before main() runs. The
-    // constructor lives in the translation unit that defines the arrays, so
-    // under separate compilation the object file of the module fills its
-    // own arrays whichever program unit uses them.
-    void emit_struct_array_default_fill_ctor() {
-        if (struct_array_default_fills.empty()) return;
-        llvm::Type* i64 = llvm::Type::getInt64Ty(context);
-        llvm::Function* ctor_fn = llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false),
-            llvm::Function::InternalLinkage,
-            "__lfortran_module_array_default_init", module.get());
-        llvm::IRBuilder<> ctor_builder(
-            llvm::BasicBlock::Create(context, "entry", ctor_fn));
-        for (auto& fill : struct_array_default_fills) {
-            llvm::GlobalVariable* gv = fill.first;
-            llvm::Type* arr_type = gv->getValueType();
-            llvm::BasicBlock* preheader = ctor_builder.GetInsertBlock();
-            llvm::BasicBlock* loop = llvm::BasicBlock::Create(
-                context, "fill", ctor_fn);
-            llvm::BasicBlock* done = llvm::BasicBlock::Create(
-                context, "fill.done", ctor_fn);
-            ctor_builder.CreateBr(loop);
-            ctor_builder.SetInsertPoint(loop);
-            llvm::PHINode* i = ctor_builder.CreatePHI(i64, 2, "i");
-            i->addIncoming(llvm::ConstantInt::get(i64, 0), preheader);
-            llvm::Value* elem_ptr = ctor_builder.CreateInBoundsGEP(arr_type,
-                gv, {llvm::ConstantInt::get(i64, 0), i});
-            ctor_builder.CreateStore(fill.second, elem_ptr);
-            llvm::Value* next = ctor_builder.CreateAdd(i,
-                llvm::ConstantInt::get(i64, 1));
-            i->addIncoming(next, loop);
-            ctor_builder.CreateCondBr(ctor_builder.CreateICmpULT(next,
-                    llvm::ConstantInt::get(i64,
-                        arr_type->getArrayNumElements())),
-                loop, done);
-            ctor_builder.SetInsertPoint(done);
-        }
-        ctor_builder.CreateRetVoid();
-        struct_array_default_fills.clear();
-        llvm::appendToGlobalCtors(*module, ctor_fn, 65535);
+        return data_layout.getTypeAllocSize(type)
+            <= max_static_struct_array_default_size;
     }
 
     llvm::Constant* get_static_struct_array_initializer(ASR::Variable_t* v,
@@ -6514,6 +6451,11 @@ public:
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Array) {
             llvm::Constant *ptr{};
+            // The default value of an element of an array of a derived type
+            // without an initializer, and whether the array is too large for
+            // it to be laid out as static data.
+            llvm::Constant* default_elem = nullptr;
+            bool fill_default_at_run_time = false;
             if(ASRUtils::is_character(*x.m_type)){
                 ASR::expr_t* value = nullptr;
                 if( x.m_value ) {
@@ -6531,6 +6473,11 @@ public:
                     ASR::make_Var_t(al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))),
                     x.m_type, module.get());
                 ptr = module->getOrInsertGlobal(llvm_var_name, type);
+                if (x.m_symbolic_value == nullptr && x.m_value == nullptr) {
+                    default_elem = get_struct_array_default_element(x, type);
+                    fill_default_at_run_time = default_elem != nullptr
+                        && !is_static_struct_array_default(type);
+                }
                 if (!external) {
                     ASR::expr_t* value = nullptr;
                     if( x.m_value ) {
@@ -6553,11 +6500,13 @@ public:
                              llvm::Constant* initializer = get_const_array(value, type->getArrayElementType());
                              module->getNamedGlobal(llvm_var_name)->setInitializer(initializer);
                           }
-                      } else if (llvm::Constant* default_elem =
-                              get_struct_array_default_element(x, type)) {
-                        set_struct_array_default_initializer(
-                            module->getNamedGlobal(llvm_var_name), type,
-                            default_elem);
+                      } else if (default_elem != nullptr
+                              && !fill_default_at_run_time) {
+                        std::vector<llvm::Constant*> elements(
+                            type->getArrayNumElements(), default_elem);
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
+                            llvm::ConstantArray::get(
+                                llvm::cast<llvm::ArrayType>(type), elements));
                       } else {
                         module->getNamedGlobal(llvm_var_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
                         set_global_variable_linkage_as_common(ptr, x);
@@ -6576,11 +6525,15 @@ public:
             // and only the one that has the program can emit the setup. A
             // variable that has an initializer is left alone: its members are
             // either already described by the static initializer, or set up by
-            // the broadcast constructor above.
+            // the broadcast constructor above. An array too large to hold
+            // the default values of its elements as static data (see
+            // `is_static_struct_array_default`) is zeroed above, and gets them
+            // from the same set up.
             if (x.m_symbolic_value == nullptr && x.m_value == nullptr) {
                 ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
                     x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base)));
-                if (ASRUtils::needs_struct_array_member_init(var_expr, x.m_type)) {
+                if (fill_default_at_run_time
+                        || ASRUtils::needs_struct_array_member_init(var_expr, x.m_type)) {
                     struct_array_global_members_details.push_back(
                         { var_expr, ptr, x.m_type });
                 }
