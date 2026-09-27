@@ -461,42 +461,7 @@ public:
         }
         unit->m_items = items.p;
         unit->n_items = items.size();
-    }
-
-    static bool is_templated_procedure(const AST::program_unit_t &u) {
-        if (AST::is_a<AST::Subroutine_t>(u)) {
-            return AST::down_cast<AST::Subroutine_t>(&u)->n_temp_args > 0;
-        }
-        if (AST::is_a<AST::Function_t>(u)) {
-            return AST::down_cast<AST::Function_t>(&u)->n_temp_args > 0;
-        }
-        return false;
-    }
-
-    // An instantiation such as `call f{real}(...)` copies the body of the
-    // templated procedure `f` when it is visited, so the bodies of the
-    // templated procedures in `contains` must be built before the host body
-    // and the other contained procedures that may instantiate them (#13451).
-    // The contains loops of the hosts then skip these procedures.
-    void visit_templated_contains(AST::program_unit_t **m_contains,
-            size_t n_contains) {
-        AST::decl_stmt_t **old_m_body = starting_m_body;
-        size_t old_n_body = starting_n_body;
-        std::set<std::string> old_labels = labels;
-        for (size_t i=0; i<n_contains; i++) {
-            if (!is_templated_procedure(*m_contains[i])) continue;
-            try {
-                visit_program_unit(*m_contains[i]);
-            } catch (const SemanticAbort &a) {
-                if (!compiler_options.continue_compilation) {
-                    throw a;
-                }
-            }
-        }
-        starting_m_body = old_m_body;
-        starting_n_body = old_n_body;
-        labels = old_labels;
-        tmp = nullptr;
+        instantiate_pending_bodies();
     }
 
     template <typename T>
@@ -3037,7 +3002,7 @@ public:
 
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = type_subs_it->second;
         std::map<std::string, ASR::symbol_t*> symbol_subs = symbol_subs_it->second;
-        std::set<ASR::symbol_t*> instantiated_bodies;
+        std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> symbols;
 
         if (x.n_symbols == 0) {
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
@@ -3048,7 +3013,7 @@ public:
                     if (new_s == nullptr) {
                         continue;
                     }
-                    instantiate_body(al, type_subs, symbol_subs, new_s, s, instantiated_bodies);
+                    symbols.push_back({new_s, s});
                 }
             }
         } else {
@@ -3063,10 +3028,10 @@ public:
                 if (s == nullptr || new_s == nullptr) {
                     continue;
                 }
-                instantiate_body(al, type_subs, symbol_subs, new_s, s, instantiated_bodies);
+                symbols.push_back({new_s, s});
             }
         }
-
+        queue_body_instantiation(type_subs, symbol_subs, symbols);
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
@@ -5332,7 +5297,6 @@ public:
         current_module_dependencies.clear(al);
         current_scope = v->m_symtab;
         current_module = v;
-        visit_templated_contains(x.m_contains, x.n_contains);
 
         // Instantiations need bodies too; transform_stmts skips declarations.
         for (size_t i=0; i<x.n_items; i++) {
@@ -5358,7 +5322,6 @@ public:
         // Template is a unit_decl_2
 
         for (size_t i=0; i<x.n_contains; i++) {
-            if (is_templated_procedure(*x.m_contains[i])) continue;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (const SemanticAbort &a) {
@@ -5552,7 +5515,6 @@ public:
         }
         ASR::Program_t *v = ASR::down_cast<ASR::Program_t>(t);
         current_scope = v->m_symtab;
-        visit_templated_contains(x.m_contains, x.n_contains);
         starting_m_body = x.m_items;
         starting_n_body = x.n_items;
         collect_labels();
@@ -5580,7 +5542,6 @@ public:
         replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope, compiler_options.po.default_integer_kind);
 
         for (size_t i=0; i<x.n_contains; i++) {
-            if (is_templated_procedure(*x.m_contains[i])) continue;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (const SemanticAbort &a) {
@@ -6218,7 +6179,6 @@ public:
 
         ASR::Function_t* v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
-        visit_templated_contains(x.m_contains, x.n_contains);
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_items);
@@ -6256,7 +6216,6 @@ public:
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
         for (size_t i=0; i<x.n_contains; i++) {
-            if (is_templated_procedure(*x.m_contains[i])) continue;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (const SemanticAbort &a) {
@@ -6299,7 +6258,6 @@ public:
 
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
-        visit_templated_contains(x.m_contains, x.n_contains);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             is_Function = true;
@@ -6369,7 +6327,6 @@ public:
         replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope, compiler_options.po.default_integer_kind);
 
         for (size_t i=0; i<x.n_contains; i++) {
-            if (is_templated_procedure(*x.m_contains[i])) continue;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (const SemanticAbort &a) {
@@ -6410,7 +6367,6 @@ public:
 
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
-        visit_templated_contains(x.m_contains, x.n_contains);
         if (entry_functions.find(to_lower(v->m_name)) != entry_functions.end()) {
             /*
                 Subroutine is parent of entry function.
@@ -6472,7 +6428,6 @@ public:
         replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope, compiler_options.po.default_integer_kind);
 
         for (size_t i=0; i<x.n_contains; i++) {
-            if (is_templated_procedure(*x.m_contains[i])) continue;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (const SemanticAbort &a) {
