@@ -26,7 +26,8 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD AND NOT EMSCRIPTEN)
     target_link_libraries(test_init_engine lfortran_runtime_static)
     set(init_engine_scenarios order_forward order_reverse republish fast_path
         fast_path_rearm collective
-        publish_during_init publish_twice remove_during_init bootstrap_incarnation)
+        publish_during_init publish_twice remove_during_init remove_in_teardown
+        unload_in_teardown bootstrap_incarnation)
     if (NOT WIN32)
         find_package(Threads REQUIRED)
         target_link_libraries(test_init_engine Threads::Threads)

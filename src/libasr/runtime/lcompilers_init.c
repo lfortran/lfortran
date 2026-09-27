@@ -1234,6 +1234,12 @@ static void lcompilers_init_free_roots(lcompilers_init_root *roots, size_t n) {
  * log lock. */
 static int32_t **lcompilers_init_completed;
 static size_t lcompilers_init_completed_count, lcompilers_init_completed_capacity;
+/* The completions `_lcompilers_init_teardown_all` took out of the log and
+ * has not torn down yet, older than every one in the log, or NULL; an entry
+ * becomes NULL once it is torn down, or taken by a withdrawal of its table
+ * from inside a teardown. Protected by the log lock. */
+static int32_t **lcompilers_init_tearing;
+static size_t lcompilers_init_tearing_count;
 
 LFORTRAN_API int32_t _lcompilers_init_begin(int32_t *state) {
     if (lcompilers_init_load_acquire(state) == lcompilers_init_ready) return 0;
@@ -1286,13 +1292,23 @@ static int lcompilers_init_table_holds(const lcompilers_init_table *table,
     return 0;
 }
 
-/* Takes the state words of `table`'s records out of the completion log, in
- * the order they became ready; `table` is the caller's own, still mapped. */
+/* Takes the state words of `table`'s records out of the completion log, and
+ * out of what a teardown of everything running on this thread has yet to
+ * tear down, in the order they became ready; `table` is the caller's own,
+ * still mapped. */
 static int32_t **lcompilers_init_take_completed(const lcompilers_init_table *table,
         size_t *n) {
     int32_t **taken = NULL;
     size_t count = 0, capacity = 0;
     lcompilers_init_log_lock();
+    for (size_t i = 0; i < lcompilers_init_tearing_count; i++) {
+        int32_t *state = lcompilers_init_tearing[i];
+        if (state == NULL || !lcompilers_init_table_holds(table, state)) continue;
+        taken = (int32_t **)lcompilers_init_grow((void *)taken, &capacity,
+            count, sizeof(*taken));
+        taken[count++] = state;
+        lcompilers_init_tearing[i] = NULL;
+    }
     size_t kept = 0;
     for (size_t i = 0; i < lcompilers_init_completed_count; i++) {
         int32_t *state = lcompilers_init_completed[i];
@@ -1645,6 +1661,15 @@ LFORTRAN_API void _lcompilers_init_teardown_all(void) {
     lcompilers_init_snapshot snapshot;
     lcompilers_init_discover(&snapshot);
     lcompilers_init_lock();
+    /* Called from a teardown: the teardown running tears everything down. */
+    lcompilers_init_log_lock();
+    int nested = lcompilers_init_tearing != NULL;
+    lcompilers_init_log_unlock();
+    if (nested) {
+        lcompilers_init_unlock();
+        lcompilers_init_release(&snapshot);
+        return;
+    }
     /* A lease on every table still live, held until the teardowns of its
      * records have run: an image unloaded meanwhile waits for them before it
      * takes its records' completions out of the log. */
@@ -1694,14 +1719,36 @@ LFORTRAN_API void _lcompilers_init_teardown_all(void) {
         }
     }
     lcompilers_init_completed_count = kept;
+    /* Only the last completion of a state word is torn down: an image
+     * loaded again reuses the addresses of the one before. */
+    for (size_t i = 0; i < m; i++) {
+        if (!lcompilers_init_last_completion(taken, m, i)) taken[i] = NULL;
+    }
+    /* What is left to tear down, which a withdrawal from inside one of the
+     * teardowns -- of a host batch, or an image unloaded by a finalizer --
+     * takes out as it would take its completions out of the log: the
+     * withdrawn table is gone once the withdrawal returns, and those of its
+     * records' teardowns that are to run, the withdrawal runs. Every other
+     * table stays mapped meanwhile: a withdrawal on another thread waits for
+     * the leases held here. */
+    lcompilers_init_tearing = taken;
+    lcompilers_init_tearing_count = m;
     lcompilers_init_log_unlock();
     for (size_t i = m; i-- > 0;) {
-        if (!lcompilers_init_last_completion(taken, m, i)) continue;
+        lcompilers_init_log_lock();
+        int32_t *state = taken[i];
+        taken[i] = NULL;
+        lcompilers_init_log_unlock();
+        if (state == NULL) continue;
         if (records[i]->teardown != NULL
-                && lcompilers_init_load_acquire(taken[i]) == lcompilers_init_ready) {
+                && lcompilers_init_load_acquire(state) == lcompilers_init_ready) {
             records[i]->teardown();
         }
     }
+    lcompilers_init_log_lock();
+    lcompilers_init_tearing = NULL;
+    lcompilers_init_tearing_count = 0;
+    lcompilers_init_log_unlock();
     free(taken);
     free(records);
     for (size_t t = snapshot.count; t-- > 0;) {

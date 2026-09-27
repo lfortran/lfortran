@@ -103,7 +103,9 @@ LFORTRAN_API void _lcompilers_init_remove_records(
 LFORTRAN_API void _lcompilers_init_unload(const lcompilers_init_table *table);
 
 /* Runs the teardown of every ready record, in the reverse of the order they
- * became ready. */
+ * became ready. A teardown may withdraw another table (unload an image, or
+ * unload and remove a batch): the withdrawal runs, or skips, what is left to
+ * tear down of that table, and nothing of it is used after. */
 LFORTRAN_API void _lcompilers_init_teardown_all(void);
 
 #ifdef __cplusplus

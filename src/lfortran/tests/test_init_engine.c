@@ -954,6 +954,73 @@ static int scenario_remove_during_init(void) {
     return finish();
 }
 
+/* ---------------------------------------------------------------------- */
+/* A teardown that withdraws another batch while everything is torn down: */
+/* the teardown of everything no longer calls into the withdrawn batch,   */
+/* whose records the withdrawal may already have overwritten, and an      */
+/* unload that goes with the withdrawal runs the batch's teardowns        */
+/* itself, once.                                                          */
+/* ---------------------------------------------------------------------- */
+
+static int32_t st_withdrawer, st_withdrawn;
+static int withdrawn_teardowns = 0, stale_teardowns = 0, withdrawer_teardowns = 0;
+/* Whether the withdrawer's teardown unloads the withdrawn batch before
+ * removing it, as a JIT cell's shutdown does. */
+static int withdrawer_unloads = 0;
+
+static void ensure_withdrawn(void) {
+    if (_lcompilers_init_begin(&st_withdrawn)) _lcompilers_init_end(&st_withdrawn);
+}
+
+static void teardown_withdrawn(void) { withdrawn_teardowns++; }
+static void teardown_stale(void) { stale_teardowns++; }
+
+static lcompilers_init_record withdrawn_records[] = {
+    {"m:withdrawn", ensure_withdrawn, teardown_withdrawn, &st_withdrawn, 0, 0},
+};
+static const lcompilers_init_table withdrawn_table = {
+    lcompilers_init_abi_version, 1, withdrawn_records};
+
+static void ensure_withdrawer(void) {
+    if (_lcompilers_init_begin(&st_withdrawer)) {
+        ensure_withdrawn();
+        _lcompilers_init_end(&st_withdrawer);
+    }
+}
+
+static void teardown_withdrawer(void) {
+    withdrawer_teardowns++;
+    if (withdrawer_unloads) _lcompilers_init_unload(&withdrawn_table);
+    _lcompilers_init_remove_records(&withdrawn_table);
+    /* What reusing the withdrawn batch's memory would leave. */
+    withdrawn_records[0].teardown = teardown_stale;
+}
+
+static const lcompilers_init_record withdrawer_records[] = {
+    {"m:withdrawer", ensure_withdrawer, teardown_withdrawer, &st_withdrawer,
+        0, 0},
+};
+static const lcompilers_init_table withdrawer_table = {
+    lcompilers_init_abi_version, 1, withdrawer_records};
+
+static int scenario_withdraw_in_teardown(int unloads) {
+    withdrawer_unloads = unloads;
+    _lcompilers_init_add_records(&withdrawn_table);
+    _lcompilers_init_add_records(&withdrawer_table);
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
+    expect(st_withdrawn == lcompilers_init_ready
+        && st_withdrawer == lcompilers_init_ready,
+        "both batches initialized");
+    _lcompilers_init_teardown_all();
+    expect(withdrawer_teardowns == 1, "the withdrawing teardown ran once");
+    expect(stale_teardowns == 0, "no teardown through a withdrawn batch's record");
+    expect(withdrawn_teardowns == (unloads ? 1 : 0), unloads
+        ? "the unload tore the withdrawn batch down once"
+        : "a batch only removed is not torn down");
+    _lcompilers_init_remove_records(&withdrawer_table);
+    return finish();
+}
+
 #if !defined(_WIN32)
 
 /* The first root of the dispatch pauses, holding no engine lock, until the
@@ -1327,6 +1394,8 @@ int main(int argc, char **argv) {
     if (strcmp(s, "publish_during_init") == 0) return scenario_publish_during_init();
     if (strcmp(s, "publish_twice") == 0) return scenario_publish_twice();
     if (strcmp(s, "remove_during_init") == 0) return scenario_remove_during_init();
+    if (strcmp(s, "remove_in_teardown") == 0) return scenario_withdraw_in_teardown(0);
+    if (strcmp(s, "unload_in_teardown") == 0) return scenario_withdraw_in_teardown(1);
     if (strcmp(s, "malformed_record") == 0) return scenario_malformed_record();
     if (strcmp(s, "bootstrap_incarnation") == 0) return scenario_bootstrap_incarnation();
     if (strcmp(s, "malformed_bootstrap") == 0) return scenario_malformed_bootstrap();
