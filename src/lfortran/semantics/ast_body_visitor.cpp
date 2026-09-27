@@ -2989,7 +2989,7 @@ public:
             return;
         }
 
-        ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
+        ASR::symbol_t *sym = current_scope->resolve_symbol(to_lower(x.m_name));
         if (sym == nullptr) {
             return;
         }
@@ -3019,7 +3019,7 @@ public:
             for (size_t i = 0; i < x.n_symbols; i++){
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(to_lower(use_symbol->m_remote_sym));
-                std::string new_s_name = use_symbol->m_remote_sym;
+                std::string new_s_name = to_lower(use_symbol->m_remote_sym);
                 if (use_symbol->m_local_rename) {
                     new_s_name = to_lower(use_symbol->m_local_rename);
                 }

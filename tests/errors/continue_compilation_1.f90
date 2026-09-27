@@ -1982,3 +1982,22 @@ contains
         end subroutine
     end subroutine
 end module
+
+subroutine inherited_parent_component_keyword_conflicts()
+    implicit none
+    type :: ipck_base_t
+        integer :: b1
+    end type
+    type, extends(ipck_base_t) :: ipck_der_t
+        integer :: d1
+    end type
+    type, extends(ipck_der_t) :: ipck_der2_t
+        integer :: e1
+    end type
+    type(ipck_der2_t) :: e
+    e = ipck_der2_t(ipck_base_t=ipck_base_t(1), ipck_der_t=ipck_der_t(2, 3), e1=4)  ! {Error} component 'b1' is already specified, it cannot also be given by the parent component 'ipck_der_t'
+    e = ipck_der2_t(ipck_der_t=ipck_der_t(2, 3), ipck_base_t=ipck_base_t(1), e1=4)  ! {Error} component 'b1' is already specified, it cannot also be given by the parent component 'ipck_base_t'
+    e = ipck_der2_t(ipck_base_t=ipck_base_t(1), b1=2, d1=3, e1=4)  ! {Error} component 'b1' is already specified by the parent component 'ipck_base_t'
+    e = ipck_der2_t(b1=2, ipck_base_t=ipck_base_t(1), d1=3, e1=4)  ! {Error} component 'b1' is already specified, it cannot also be given by the parent component 'ipck_base_t'
+    e = ipck_der2_t(ipck_der_t=1.0, ipck_base_t=ipck_base_t(1), e1=3)  ! {Error} type mismatch in structure constructor: the parent component 'ipck_der_t' requires a scalar value of type type(ipck_der_t), not real(4)
+end subroutine
