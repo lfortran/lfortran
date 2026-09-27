@@ -1,0 +1,13 @@
+{
+    "basename": "asr-derived_type_nonconst_bound_01-4810fbe",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/derived_type_nonconst_bound_01.f90",
+    "infile_hash": "571c81b5d51a7c21680819e0d961de29d9c7620e202c11b90035d8f3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-derived_type_nonconst_bound_01-4810fbe.stderr",
+    "stderr_hash": "0c36f7e45f6276eefe738769f0bd06de9a506a984a2661a1ee8f7bec",
+    "returncode": 2
+}

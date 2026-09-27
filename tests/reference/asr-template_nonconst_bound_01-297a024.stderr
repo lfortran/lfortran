@@ -1,0 +1,5 @@
+semantic error: Explicit shaped array with nonconstant bounds
+ --> tests/errors/template_nonconst_bound_01.f90:8:26
+  |
+8 |             integer :: b(n*m)
+  |                          ^^^ 
