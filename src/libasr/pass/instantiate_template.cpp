@@ -1020,6 +1020,19 @@ public:
 
 };
 
+// The nested template's own parameters are not bound by the enclosing
+// instantiation: they stay deferred (and shadow any enclosing parameter of the
+// same name) until the nested template is instantiated itself.
+static std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>
+nested_template_type_subs(ASR::Template_t* x,
+        const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs) {
+    std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> result = type_subs;
+    for (size_t i=0; i<x->n_args; i++) {
+        result.erase(x->m_args[i]);
+    }
+    return result;
+}
+
 class SymbolInstantiator : public ASR::BaseExprStmtDuplicator<SymbolInstantiator>
 {
 public:
@@ -1565,14 +1578,8 @@ public:
     ASR::symbol_t* instantiate_Template(ASR::Template_t* x) {
         new_scope = al.make_new<SymbolTable>(target_scope);
 
-        // The nested template's own parameters are not bound by the enclosing
-        // instantiation: they stay deferred (and shadow any enclosing
-        // parameter of the same name) until the nested template is
-        // instantiated itself.
-        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> nested_type_subs = type_subs;
-        for (size_t i=0; i<x->n_args; i++) {
-            nested_type_subs.erase(x->m_args[i]);
-        }
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> nested_type_subs =
+            nested_template_type_subs(x, type_subs);
 
         // duplicate symbol table
         for (auto const &sym_pair: x->m_symtab->get_scope()) {
@@ -1952,12 +1959,14 @@ public:
 
     void instantiate_Template(ASR::Template_t* x) {
         ASR::Template_t* new_t = ASR::down_cast<ASR::Template_t>(new_sym);
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> nested_type_subs =
+            nested_template_type_subs(x, type_subs);
 
         for (auto const &sym_pair: new_t->m_symtab->get_scope()) {
             ASR::symbol_t* new_sym_i = sym_pair.second;
             ASR::symbol_t* sym_i = x->m_symtab->get_symbol(sym_pair.first);
 
-            BodyInstantiator t(al, type_subs, symbol_subs, new_sym_i, sym_i,
+            BodyInstantiator t(al, nested_type_subs, symbol_subs, new_sym_i, sym_i,
                 instantiated_bodies);
             t.instantiate();
         }
@@ -2299,6 +2308,10 @@ public:
         switch (ttype->type) {
             case (ASR::ttypeType::TypeParameter) : {
                 ASR::TypeParameter_t *param = ASR::down_cast<ASR::TypeParameter_t>(ttype);
+                if (type_subs.find(param->m_param) == type_subs.end()) {
+                    // A parameter of a nested template, left deferred
+                    return ASRUtils::duplicate_type(al, ttype);
+                }
                 return ASRUtils::substitute_class_type_parameter(al, param,
                     ASRUtils::duplicate_type(al, type_subs[param->m_param].first),
                     type_subs[param->m_param].second);
