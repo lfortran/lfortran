@@ -1316,6 +1316,51 @@ semantic error: the argument for the deferred constant 'n' refers to a deferred 
 2227 |             instantiate tmpl_inner_const {m + 1}, only: g1 => get_n  ! {Error} the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
      |                                           ^^^^^ 
 
+semantic error: instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+    --> tests/errors/continue_compilation_templates_01.f90:2272:40
+     |
+2272 |         instantiate g {integer}, only: g => g  ! {Error} instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+     |                                        ^^^^^^ 'g' already names the templated procedure
+     |
+2272 |         instantiate g {integer}, only: g => g  ! {Error} instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+     |                                        ~~~~~~ help: give the instance a different local name, e.g. `only: g_instance => g`, or call it inline as `g{...}(...)`
+
+semantic error: instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+    --> tests/errors/continue_compilation_templates_01.f90:2276:40
+     |
+2276 |         instantiate g {integer}, only: g  ! {Error} instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+     |                                        ^ 'g' already names the templated procedure
+     |
+2276 |         instantiate g {integer}, only: g  ! {Error} instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+     |                                        ~ help: give the instance a different local name, e.g. `only: g_instance => g`, or call it inline as `g{...}(...)`
+
+semantic error: instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+    --> tests/errors/continue_compilation_templates_01.f90:2280:9
+     |
+2280 |         instantiate g {integer}  ! {Error} instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'g' already names the templated procedure
+     |
+2280 |         instantiate g {integer}  ! {Error} instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+     |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ help: give the instance a different local name, e.g. `only: g_instance => g`, or call it inline as `g{...}(...)`
+
+semantic error: instantiated procedure 's' has the same name as the templated procedure 's' it instantiates
+    --> tests/errors/continue_compilation_templates_01.f90:2284:40
+     |
+2284 |         instantiate s {integer}, only: s  ! {Error} instantiated procedure 's' has the same name as the templated procedure 's' it instantiates
+     |                                        ^ 's' already names the templated procedure
+     |
+2284 |         instantiate s {integer}, only: s  ! {Error} instantiated procedure 's' has the same name as the templated procedure 's' it instantiates
+     |                                        ~ help: give the instance a different local name, e.g. `only: s_instance => s`, or call it inline as `call s{...}(...)`
+
+semantic error: instantiated procedure 'own_tmpl' has the same name as the template 'own_tmpl' it instantiates
+    --> tests/errors/continue_compilation_templates_01.f90:2289:47
+     |
+2289 |         instantiate own_tmpl {integer}, only: own_tmpl => five  ! {Error} instantiated procedure 'own_tmpl' has the same name as the template 'own_tmpl' it instantiates
+     |                                               ^^^^^^^^^^^^^^^^ 'own_tmpl' already names the template
+     |
+2289 |         instantiate own_tmpl {integer}, only: own_tmpl => five  ! {Error} instantiated procedure 'own_tmpl' has the same name as the template 'own_tmpl' it instantiates
+     |                                               ~~~~~~~~~~~~~~~~ help: give the instance a different local name, e.g. `only: own_tmpl_instance => five`
+
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
     |
