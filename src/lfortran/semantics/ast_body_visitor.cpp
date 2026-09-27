@@ -7342,7 +7342,11 @@ public:
                  ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic) ||
                 target->type == ASR::exprType::CoarrayRef
             );
+            // A deferred type of a template has no implicit conversion to or
+            // from any other type; the type check below reports the mismatch.
             if (lhs_supports_implicit_cast &&
+                !ASRUtils::is_type_parameter(*target_type) &&
+                !ASRUtils::is_type_parameter(*value_type) &&
                 !ASRUtils::check_equal_type(target_type, value_type, target, value)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
