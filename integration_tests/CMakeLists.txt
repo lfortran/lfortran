@@ -4854,9 +4854,13 @@ RUN(NAME structure_constructor_args_11 LABELS llvm flang) # `pdt(k)(...)` constr
 RUN(NAME structure_constructor_args_12 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_13 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_15 LABELS gfortran llvm)
+RUN(NAME structure_constructor_args_14 LABELS gfortran llvm)
+RUN(NAME structure_constructor_args_20 LABELS llvm)
+RUN(NAME structure_constructor_args_21 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_22 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_23 LABELS llvm) # gfortran 13 miscompiles unallocated scalar allocatable data sources
 RUN(NAME structure_constructor_args_24 LABELS llvm) # gfortran 13 miscompiles unallocated scalar allocatable data sources
+RUN(NAME structure_constructor_args_28 LABELS gfortran llvm)
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
