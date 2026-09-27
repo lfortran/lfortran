@@ -1523,8 +1523,8 @@ public:
     // of it. Returns nullptr for every variable that is copied, as before:
     // variables owned by the template itself (locals and arguments of its
     // procedures, struct members), named constants, which have no storage
-    // to share, and variables of a non-module host that the instantiated
-    // procedure is not placed directly in.
+    // to share, and variables of a non-module host that does not enclose
+    // the instantiated procedure.
     //
     // The decision depends only on where the variable and the instantiated
     // procedure live, so all host variables of one procedure are either
@@ -1565,11 +1565,13 @@ public:
             target_scope->add_symbol(x->m_name, e);
             return e;
         }
-        if (target_scope->parent == host_scope) {
-            // Any other host, e.g. a main program: the instantiated
-            // procedure is placed directly in the scope that declares the
-            // variable, so it is host associated there.
-            return var_sym;
+        // Any other host, e.g. a main program, is reachable by host
+        // association if it encloses the instantiated procedure, at any
+        // depth (e.g. instantiated inside an internal procedure).
+        for (SymbolTable* s = target_scope->parent; s != nullptr; s = s->parent) {
+            if (s == host_scope) {
+                return var_sym;
+            }
         }
         return nullptr;
     }
