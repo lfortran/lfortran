@@ -1584,7 +1584,8 @@ public:
         return builder->CreateCall(fn, args);
     }
 
-    llvm::Value* lfortran_strrepeat(llvm::Value* left_arg, llvm::Value* right_arg)
+    llvm::Value* lfortran_strrepeat(llvm::Value* left_arg, llvm::Value* left_len,
+            llvm::Value* right_arg)
     {
         std::string runtime_func_name = "_lfortran_strrepeat_alloc";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -1592,7 +1593,8 @@ public:
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), {
                         character_type,
-                        character_type->getPointerTo(),
+                        character_type,
+                        llvm::Type::getInt64Ty(context),
                         llvm::Type::getInt32Ty(context),
                         character_type->getPointerTo()
                     }, false);
@@ -1600,10 +1602,8 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
-        llvm::AllocaInst *pleft_arg = llvm_utils->CreateAlloca(*builder, character_type);
-        builder->CreateStore(left_arg, pleft_arg);
         llvm::AllocaInst *presult = llvm_utils->CreateAlloca(*builder, character_type);
-        std::vector<llvm::Value*> args = {allocator, pleft_arg, right_arg, presult};
+        std::vector<llvm::Value*> args = {allocator, left_arg, left_len, right_arg, presult};
         builder->CreateCall(fn, args);
         return llvm_utils->CreateLoad2(character_type, presult);
     }
@@ -16154,7 +16154,7 @@ public:
         std::tie(left_val, left_len) = get_string_data_and_length(x.m_left);
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
-        tmp = lfortran_strrepeat(left_val, right_val);
+        tmp = lfortran_strrepeat(left_val, left_len, right_val);
         right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt64Ty(context));
         tmp = llvm_utils->create_string_descriptor(tmp,
             builder->CreateMul(left_len, right_val), "strRepeat_desc");
