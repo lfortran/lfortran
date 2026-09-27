@@ -2184,7 +2184,7 @@ public:
         if (existing_sym_check) {
             existing_sym_check = ASRUtils::symbol_get_past_external(existing_sym_check);
         }
-        if ( interface_name == sym_name || generic_procedures.find(sym_name) != generic_procedures.end() ||
+        if ( interface_name == sym_name || is_pending_generic_procedure(sym_name, parent_scope, false) ||
              (existing_sym_check && ASR::is_a<ASR::GenericProcedure_t>(*existing_sym_check)) ) {
             sym_name = sym_name + "~genericprocedure";
         }
@@ -2951,7 +2951,7 @@ public:
         if (existing_sym_check) {
             existing_sym_check = ASRUtils::symbol_get_past_external(existing_sym_check);
         }
-        if (generic_procedures.find(sym_name) != generic_procedures.end()
+        if (is_pending_generic_procedure(sym_name, parent_scope, false)
             || interface_name == to_lower(sym_name) ||
             (existing_sym_check && ASR::is_a<ASR::GenericProcedure_t>(*existing_sym_check))) {
             // This specific procedure shares its generic interface's name, so
