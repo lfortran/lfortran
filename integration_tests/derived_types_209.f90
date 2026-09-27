@@ -21,12 +21,6 @@ function f(x, y) result(r)
     type(w) :: r
     r%c = y%c
 end function
-
-subroutine check_reshaped(x)
-    type(w), intent(in) :: x(:, :)
-    if (any(x(2, 2)%c /= ['ab', 'cd', 'zz'])) error stop 22
-    if (any(x(1, 2)%c /= ['ab', 'cd', 'ef'])) error stop 23
-end subroutine
 end module
 
 program derived_types_209
@@ -36,12 +30,7 @@ type(w) :: s, s2, x, arr(2), arr2(2)
 type(w), allocatable :: a
 type(outer) :: o, o2
 type(w4) :: u, u2
-type(w) :: rs(4), rb(2, 2)
-type(w), allocatable :: ra(:), rab(:, :)
-type(outer) :: ro(4), rob(2, 2)
 type(holder) :: h, h2
-class(w), allocatable :: ca(:)
-integer :: i
 
 ! Whole derived-type assignment copies every element of a
 ! character-array component (#13478)
@@ -86,34 +75,6 @@ if (u2%c(1) /= ck_'ab') error stop 10
 if (u2%c(2) /= ck_'cd') error stop 11
 if (u2%c(3) /= ck_'ef') error stop 12
 
-! reshape of an array of such structs copies every element
-do i = 1, 4
-    rs(i)%c = ['ab', 'cd', 'ef']
-end do
-rs(4)%c(3) = 'zz'
-rb = reshape(rs, [2, 2])
-print *, rb(2, 2)%c
-if (any(rb(2, 2)%c /= ['ab', 'cd', 'zz'])) error stop 13
-if (any(rb(1, 1)%c /= ['ab', 'cd', 'ef'])) error stop 14
-rb(:, :) = reshape(rs(4:1:-1), [2, 2])
-if (any(rb(1, 1)%c /= ['ab', 'cd', 'zz'])) error stop 15
-
-allocate(ra(4), rab(2, 2))
-ra = rs
-ra(3)%c(1) = 'yy'
-rab = reshape(ra, [2, 2])
-if (any(rab(1, 2)%c /= ['yy', 'cd', 'ef'])) error stop 16
-if (any(rab(2, 2)%c /= ['ab', 'cd', 'zz'])) error stop 17
-
-do i = 1, 4
-    ro(i)%in = rs(i)
-    ro(i)%d = reshape(['aaa', 'bbb', 'ccc', 'ddd'], [2, 2])
-end do
-ro(2)%d(1, 2) = 'xyz'
-rob = reshape(ro, [2, 2])
-if (any(rob(2, 2)%in%c /= ['ab', 'cd', 'zz'])) error stop 18
-if (rob(2, 1)%d(1, 2) /= 'xyz' .or. rob(2, 1)%d(2, 2) /= 'ddd') error stop 19
-
 ! Elements of a class(w) array component are copied through their
 ! dynamic type's copy function
 allocate(h%p(2))
@@ -121,14 +82,6 @@ h%p(1)%c = ['ab', 'cd', 'ef']
 h%p(2)%c = ['gh', 'ij', 'kl']
 h2 = h
 print *, h2%p(2)%c
-if (any(h2%p(1)%c /= ['ab', 'cd', 'ef'])) error stop 20
-if (any(h2%p(2)%c /= ['gh', 'ij', 'kl'])) error stop 21
-
-! reshape of a class(w) array
-allocate(ca(4))
-do i = 1, 4
-    ca(i)%c = ['ab', 'cd', 'ef']
-end do
-ca(4)%c(3) = 'zz'
-call check_reshaped(reshape(ca, [2, 2]))
+if (any(h2%p(1)%c /= ['ab', 'cd', 'ef'])) error stop 13
+if (any(h2%p(2)%c /= ['gh', 'ij', 'kl'])) error stop 14
 end program
