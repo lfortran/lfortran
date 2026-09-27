@@ -295,9 +295,11 @@ lfortran -c --coarray=true --separate-compilation -fPIC \
 ${CC:-cc} -c integration_tests/coarrays_61c.c -o coarrays_61c.o
 if [ $LINUX ] ; then
     lfortran --shared coarrays_61_p.o -o libcoarrays_61.so
+    # The driver puts -l options ahead of every -Wl option, so the
+    # archives go inside the one -Wl option that brackets them.
     lfortran coarrays_61c.o -o coarrays_61_lf.out \
-        -L"$PWD/caffeine/inst/lib" -Wl,--whole-archive -lcaffeine \
-        -lgasnet-smp-seq -Wl,--no-whole-archive -rdynamic -ldl
+        "-Wl,--whole-archive,$PWD/caffeine/inst/lib/libcaffeine.a,$PWD/caffeine/inst/lib/libgasnet-smp-seq.a,--no-whole-archive" \
+        -Wl,--export-dynamic -ldl
     plugin="$PWD/libcoarrays_61.so"
 else
     lfortran --shared coarrays_61_p.o -o libcoarrays_61.dylib \
