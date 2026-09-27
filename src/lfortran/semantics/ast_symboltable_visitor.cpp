@@ -6134,6 +6134,114 @@ public:
         }
     }
 
+    static std::string instantiation_intrinsic_op_str(AST::intrinsicopType op) {
+        switch (op) {
+            case AST::intrinsicopType::AND: return ".and.";
+            case AST::intrinsicopType::OR: return ".or.";
+            case AST::intrinsicopType::XOR: return ".xor.";
+            case AST::intrinsicopType::EQV: return ".eqv.";
+            case AST::intrinsicopType::NEQV: return ".neqv.";
+            case AST::intrinsicopType::PLUS: return "+";
+            case AST::intrinsicopType::MINUS: return "-";
+            case AST::intrinsicopType::STAR: return "*";
+            case AST::intrinsicopType::DIV: return "/";
+            case AST::intrinsicopType::POW: return "**";
+            case AST::intrinsicopType::NOT: return ".not.";
+            case AST::intrinsicopType::EQ: return "==";
+            case AST::intrinsicopType::GT: return ">";
+            case AST::intrinsicopType::GTE: return ">=";
+            case AST::intrinsicopType::LT: return "<";
+            case AST::intrinsicopType::LTE: return "<=";
+            case AST::intrinsicopType::NOTEQ: return "/=";
+            case AST::intrinsicopType::CONCAT: return "//";
+        }
+        return "";
+    }
+
+    // The only-list of an INSTANTIATE statement may name a generic spec
+    // (operator, assignment or defined input/output) as well as a name. A
+    // generic spec that the template does not define is an error; importing
+    // one the template does define is not supported yet.
+    void check_instantiation_generic_specs(const AST::Instantiate_t &x,
+            ASR::Template_t *temp) {
+        std::string template_name = to_lower(x.m_name);
+        for (size_t i = 0; i < x.n_symbols; i++) {
+            AST::use_symbol_t *item = x.m_symbols[i];
+            std::string remote_sym;
+            std::string spec;
+            switch (item->type) {
+                case AST::use_symbolType::UseSymbol: {
+                    continue;
+                }
+                case AST::use_symbolType::UseAssignment: {
+                    remote_sym = "~assign";
+                    spec = "assignment(=)";
+                    break;
+                }
+                case AST::use_symbolType::IntrinsicOperator: {
+                    AST::intrinsicopType op =
+                        AST::down_cast<AST::IntrinsicOperator_t>(item)->m_op;
+                    remote_sym = intrinsic2str[op];
+                    spec = "operator(" + instantiation_intrinsic_op_str(op) + ")";
+                    break;
+                }
+                case AST::use_symbolType::DefinedOperator: {
+                    std::string op_name = to_lower(
+                        AST::down_cast<AST::DefinedOperator_t>(item)->m_opName);
+                    remote_sym = update_custom_op_name(op_name);
+                    spec = "operator(." + op_name + ".)";
+                    break;
+                }
+                case AST::use_symbolType::RenameOperator: {
+                    std::string op_name = to_lower(
+                        AST::down_cast<AST::RenameOperator_t>(item)->m_use_defop);
+                    remote_sym = update_custom_op_name(op_name);
+                    spec = "operator(." + op_name + ".)";
+                    break;
+                }
+                case AST::use_symbolType::UseWrite:
+                case AST::use_symbolType::UseRead: {
+                    bool is_write = AST::is_a<AST::UseWrite_t>(*item);
+                    std::string id = to_lower(is_write
+                        ? AST::down_cast<AST::UseWrite_t>(item)->m_id
+                        : AST::down_cast<AST::UseRead_t>(item)->m_id);
+                    std::string kind = is_write ? "write" : "read";
+                    if (id != "formatted" && id != "unformatted") {
+                        diag.add(diag::Diagnostic(
+                            "Can only be `formatted` or `unformatted`",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {item->base.loc})}));
+                        throw SemanticAbort();
+                    }
+                    remote_sym = "~" + kind + "_" + id;
+                    spec = kind + "(" + id + ")";
+                    break;
+                }
+                default: {
+                    diag.add(diag::Diagnostic(
+                        "unsupported item in the only-list of an instantiation",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {item->base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+            if (temp->m_symtab->get_symbol(remote_sym) == nullptr) {
+                diag.add(diag::Diagnostic(
+                    spec + " is not defined in template '" + template_name + "'",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("'" + template_name + "' has no "
+                            + spec + " to instantiate", {item->base.loc})}));
+                throw SemanticAbort();
+            }
+            diag.add(diag::Diagnostic(
+                "importing " + spec + " from an instantiation of template '"
+                + template_name + "' is not supported yet",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {item->base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     // An instantiated procedure is a new entity, so its local name must differ
     // from the name of the template it instantiates, which is already a local
     // identifier of this scope (F2028 20.3.1 p3). For a templated subprogram
@@ -6226,6 +6334,7 @@ public:
         }
 
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
+        check_instantiation_generic_specs(x, temp);
         check_instantiation_local_names(x, temp);
 
         // R1630: the arguments may be given by keyword, so match them against

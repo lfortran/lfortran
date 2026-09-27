@@ -868,6 +868,24 @@ semantic error: templated procedure 'actual' cannot be used as a procedure argum
 1966 |         instantiate action{op=actual}, only: rejected_subroutine => apply ! {Error} templated procedure 'actual' cannot be used as a procedure argument
      |                               ^^^^^^ 
 
+semantic error: operator(+) is not defined in template 'instantiate_only_generic_spec_t'
+    --> tests/errors/continue_compilation_1.f90:2039:66
+     |
+2039 |     instantiate instantiate_only_generic_spec_t {integer}, only: operator(+)  ! {Error} operator(+) is not defined in template 'instantiate_only_generic_spec_t'
+     |                                                                  ^^^^^^^^^^^ 'instantiate_only_generic_spec_t' has no operator(+) to instantiate
+
+semantic error: assignment(=) is not defined in template 'instantiate_only_generic_spec_t'
+    --> tests/errors/continue_compilation_1.f90:2040:63
+     |
+2040 |     instantiate instantiate_only_generic_spec_t {real}, only: assignment(=)  ! {Error} assignment(=) is not defined in template 'instantiate_only_generic_spec_t'
+     |                                                               ^^^^^^^^^^^^^ 'instantiate_only_generic_spec_t' has no assignment(=) to instantiate
+
+semantic error: operator(.plus.) is not defined in template 'instantiate_only_generic_spec_t'
+    --> tests/errors/continue_compilation_1.f90:2041:63
+     |
+2041 |     instantiate instantiate_only_generic_spec_t {real}, only: operator(.plus.)  ! {Error} operator(.plus.) is not defined in template 'instantiate_only_generic_spec_t'
+     |                                                               ^^^^^^^^^^^^^^^^ 'instantiate_only_generic_spec_t' has no operator(.plus.) to instantiate
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
