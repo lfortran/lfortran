@@ -4,7 +4,9 @@
 # of the ELF linkers in LINKERS (e.g. lld), with `-fuse-ld=`, and checks that
 # the engine finds the notes of both: the note has to be a read-only, 4-byte
 # aligned SHT_NOTE whatever compiler emits it, which an assembler warning
-# about its section attributes also shows is not. SRC is the directory of
+# about its section attributes also shows is not. A compiler that has
+# `-flto-partition=max` (GCC) also compiles and links them with link-time
+# optimization, one partition per symbol. SRC is the directory of
 # the sources, INCLUDE that of the runtime's headers, RUNTIME that of the
 # runtime library and WORK a scratch directory.
 
@@ -55,4 +57,24 @@ foreach(cc ${COMPILERS})
         run(${WORK}/main_${n}_${linker})
         message("${cc}, ${linker} linker: ${out}")
     endforeach()
+    # GCC's link-time optimization with one partition per symbol, which
+    # separates the note's assembler from the table it names, for a
+    # compiler that has it.
+    execute_process(COMMAND ${cc} -flto -flto-partition=max -O2
+            ${SRC}/test_init_c_note.c -o probe_lto_${n} ${libs}
+        WORKING_DIRECTORY ${WORK} RESULT_VARIABLE status
+        OUTPUT_QUIET ERROR_QUIET)
+    if (NOT status EQUAL 0)
+        message("${cc}: no -flto-partition=max, skipped")
+        continue()
+    endif()
+    set(objects "")
+    foreach(m ${modules})
+        run(${cc} -fPIC -flto -O2 -c -I${INCLUDE} ${m}.c -o ${m}_${n}_lto.o)
+        list(APPEND objects ${m}_${n}_lto.o)
+    endforeach()
+    run(${cc} -flto -flto-partition=max -O2 ${SRC}/test_init_c_note.c
+        ${objects} -o main_${n}_lto ${libs})
+    run(${WORK}/main_${n}_lto)
+    message("${cc}, -flto -flto-partition=max: ${out}")
 endforeach()

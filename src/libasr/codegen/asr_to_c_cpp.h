@@ -3137,9 +3137,16 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 // so the note is spelled in assembler directives, with the
                 // table under an assembler name of this object's own; a C
                 // section attribute would also give it the flags of
-                // relocated data. Notes are 4-byte aligned.
+                // relocated data. Notes are 4-byte aligned. The table is
+                // not `static`: link-time optimization can put the assembler
+                // and the table into different partitions, where a local
+                // symbol is not defined for the assembler. Hidden, it is
+                // still resolved at link time, needing no dynamic
+                // relocation, and its name is not exported from the image.
                 std::string table_name = "__lcompilers_init_table_" + object_name;
-                r += "static const lcompilers_init_table __lcompilers_init_table\n"
+                r += std::string(is_c ? "" : "extern \"C\" ")
+                    + "__attribute__((visibility(\"hidden\"))) "
+                    "const lcompilers_init_table __lcompilers_init_table\n"
                     "    __asm__(\"" + table_name + "\") __attribute__((used)) = "
                     + table + ";\n";
                 std::string owner = lcompilers_init_elf_note_owner;
