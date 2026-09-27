@@ -22,6 +22,10 @@ Read `AGENTS.md` and use `gh` for GitHub operations. Keep triage separate from
 compiler fixes, reproducer generation, and PR review. Do not build or modify
 the compiler just to label an issue.
 
+If the task changes to reproduction or fixing, hand off to the corresponding
+skill; its default installation/build path is the Pixi workflow in `AGENTS.md`.
+Do not provision that toolchain for classification itself.
+
 ## 1. Establish scope and permission
 
 Accept an issue number or URL, an explicit list, a GitHub search URL, or a

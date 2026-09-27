@@ -4,6 +4,8 @@ import argparse
 import subprocess as sp
 import os
 import shlex
+from pathlib import Path
+import shutil
 
 # Initialization
 NO_OF_THREADS = 8 # default no of threads is 8
@@ -17,6 +19,7 @@ SUPPORTED_BACKENDS = ['llvm', 'llvm2', 'llvm_rtlib', 'c', 'cpp', 'x86', 'wasm',
 SUPPORTED_STANDARDS = ['lf', 'f23', 'legacy']
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 LFORTRAN_PATH = f"{BASE_DIR}/../src/bin"
+BUILD_DIR = Path(BASE_DIR)
 
 fast_tests = "no"
 detect_leaks_tests = "no"
@@ -33,7 +36,8 @@ def run_cmd(cmd, cwd=None):
         exit(1)
 
 def run_test(backend, std, test_pattern=None):
-    run_cmd(f"mkdir {BASE_DIR}/test-{backend}")
+    cwd = BUILD_DIR / f"test-{backend}"
+    cwd.mkdir(parents=True)
     if std == "f23":
         std_string = "-DSTD_F23=yes"
     elif std == "legacy":
@@ -42,8 +46,6 @@ def run_test(backend, std, test_pattern=None):
         std_string = ""
     else:
         raise Exception("Unsupported standard")
-
-    cwd=f"{BASE_DIR}/test-{backend}"
 
     # Skip CMake's Fortran compiler detection for lfortran, since it tries
     # `-c` which requires the LLVM backend (not available for all backends).
@@ -64,7 +66,8 @@ def run_test(backend, std, test_pattern=None):
         # Use default Make generator
         generator_flags = skip_fc_detection
 
-    common=f" {generator_flags} -DCURRENT_BINARY_DIR={BASE_DIR}/test-{backend} -S {BASE_DIR} -B {BASE_DIR}/test-{backend}"
+    common = (f" {generator_flags} -DCURRENT_BINARY_DIR={shlex.quote(str(cwd))}"
+              f" -S {shlex.quote(BASE_DIR)} -B {shlex.quote(str(cwd))}")
     if backend == "gfortran":
         run_cmd(f"FC=gfortran cmake" + common,
                 cwd=cwd)
@@ -97,10 +100,10 @@ def run_test(backend, std, test_pattern=None):
     # If a test pattern is provided, find matching tests and build only those
     if test_pattern:
         # Query ctest to find which tests match the pattern
-        result = sp.run(f"ctest -N -R {test_pattern}", shell=True, cwd=cwd,
+        result = sp.run(["ctest", "-N", "-R", test_pattern], cwd=cwd,
                        stdout=sp.PIPE, stderr=sp.PIPE, text=True)
         if result.returncode != 0:
-            print("Failed to query tests with ctest")
+            print(f"Failed to query tests with ctest:\n{result.stdout}{result.stderr}")
             exit(1)
 
         # Parse the output to extract test names
@@ -146,7 +149,7 @@ def run_test(backend, std, test_pattern=None):
     if verbose:
         ctest_cmd += " -V"
     if test_pattern:
-        ctest_cmd += f" -R {test_pattern}"
+        ctest_cmd += f" -R {shlex.quote(test_pattern)}"
     exclude = os.environ.get("LFORTRAN_CTEST_EXCLUDE", "").strip()
     if exclude:
         ctest_cmd += f" -E {shlex.quote(exclude)}"
@@ -209,6 +212,10 @@ def get_args():
                 help="Check that all module names are unique")
     parser.add_argument("-v", "--verbose", action='store_true',
                 help="Show compilation commands (verbose build output)")
+    parser.add_argument("--build-dir", type=Path, default=Path(BASE_DIR),
+                help="Directory for per-backend builds (default: integration_tests)")
+    parser.add_argument("--compiler-dir", type=Path,
+                help="Use lfortran from this directory instead of ../src/bin")
     return parser.parse_args()
 
 def main():
@@ -219,16 +226,24 @@ def main():
         return
 
     # Setup
-    global NO_OF_THREADS, fast_tests, detect_leaks_tests, std_f23_tests, separate_compilation, use_ninja, user_specified_threads, verbose
-    local_lfortran = os.path.join(LFORTRAN_PATH, "lfortran")
-    if os.path.isfile(local_lfortran):
-        os.environ["PATH"] = LFORTRAN_PATH + os.pathsep + os.environ["PATH"]
+    global NO_OF_THREADS, fast_tests, detect_leaks_tests, std_f23_tests, separate_compilation, use_ninja, user_specified_threads, verbose, BUILD_DIR
+    compiler_dir = str(args.compiler_dir.resolve()) if args.compiler_dir else LFORTRAN_PATH
+    if args.compiler_dir and shutil.which("lfortran", path=compiler_dir) is None:
+        raise SystemExit(f"lfortran not found in {compiler_dir}; build this configuration first")
+    if shutil.which("lfortran", path=compiler_dir):
+        os.environ["PATH"] = compiler_dir + os.pathsep + os.environ["PATH"]
 
     # Set environment variable for testing
     os.environ["LFORTRAN_TEST_ENV_VAR"] = "STATUS OK!"
     # delete previously created directories (if any)
-    for backend in SUPPORTED_BACKENDS:
-        run_cmd(f"rm -rf {BASE_DIR}/test-{backend}")
+    BUILD_DIR = args.build_dir.resolve()
+    for backend in args.backends:
+        if backend not in SUPPORTED_BACKENDS:
+            raise SystemExit(f"Unsupported backend: {backend}")
+    for backend in args.backends:
+        directory = BUILD_DIR / f"test-{backend}"
+        if directory.exists():
+            shutil.rmtree(directory)
 
     if args.no_of_threads:
         NO_OF_THREADS = args.no_of_threads

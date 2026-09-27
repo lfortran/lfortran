@@ -12,7 +12,10 @@ import pprint
 import shutil
 import subprocess
 import sys
-import tomli
+try:
+    import tomllib as tomli
+except ModuleNotFoundError:
+    import tomli
 from typing import Any, Mapping, List, Union
 
 level = logging.DEBUG
@@ -30,6 +33,7 @@ SRC_DIR = os.path.dirname(LIBASR_DIR)
 if "lpython" in SRC_DIR:
     SRC_DIR = os.path.join(os.path.dirname(os.path.dirname(SRC_DIR)), "src")
 ROOT_DIR = os.path.dirname(SRC_DIR)
+REFERENCE_DIR = os.path.join(ROOT_DIR, "tests", "reference")
 
 no_color = False
 
@@ -425,7 +429,7 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
     infile = os.path.join("tests", infile)
     jo = run(basename, cmd, os.path.join("tests", "output"), infile=infile,
              extra_args=extra_args)
-    jr = os.path.join("tests", "reference", os.path.basename(jo))
+    jr = os.path.join(REFERENCE_DIR, os.path.basename(jo))
     if not os.path.exists(jo):
         raise FileNotFoundError(
             f"The output json file '{jo}' for {testname} does not exist")
@@ -465,7 +469,7 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
             if not do[hash_field] and dr[hash_field]:
                 full_err_str += f"\n=== MISSING OUTPUT {field.upper()} ===\n"
                 full_err_str += f"Expected {field} to be generated but it was not.\n"
-                reference_file = os.path.join("tests", "reference", dr[field])
+                reference_file = os.path.join(REFERENCE_DIR, dr[field])
                 if os.path.exists(reference_file):
                     if field == "stdout":
                         # For stdout, show only first 10 lines
@@ -503,12 +507,12 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
                             full_err_str += f"(could not read output file: {e})\n"
                     else:
                         # For stderr and outfile, use get_error_diff
-                        reference_file = os.path.join("tests", "reference", dr[field] if dr[field] else "missing")
+                        reference_file = os.path.join(REFERENCE_DIR, dr[field] if dr[field] else "missing")
                         full_err_str = get_error_diff(
                             reference_file, output_file, full_err_str, field)
             elif do[hash_field] != dr[hash_field]:
                 output_file = os.path.join("tests", "output", do[field])
-                reference_file = os.path.join("tests", "reference", dr[field])
+                reference_file = os.path.join(REFERENCE_DIR, dr[field])
                 full_err_str = get_error_diff(
                     reference_file, output_file, full_err_str, field)
         raise RunException(
@@ -548,9 +552,15 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
                         help="Skip runtime tests with debugging information enabled")
     parser.add_argument("-s", "--sequential", action="store_true",
                         help="Run all tests sequentially")
+    parser.add_argument("-j", "--jobs", type=int,
+                        help="Maximum number of parallel test workers")
     parser.add_argument("--no-color", action="store_true",
                     help="Turn off colored tests output")
+    parser.add_argument("--compiler-dir",
+                        help="Use the compiler in this directory instead of src/bin")
     args = parser.parse_args()
+    if args.jobs is not None and args.jobs < 1:
+        parser.error("--jobs must be positive")
     update_reference = args.update
     verify_hash = args.verify_hash
     list_tests = args.list
@@ -570,22 +580,23 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
     global no_color
     no_color = args.no_color
 
+    # So that the tests find the `lcompiler` executable
+    if args.compiler_dir:
+        compiler_dir = os.path.abspath(args.compiler_dir)
+        if shutil.which(compiler.lower(), path=compiler_dir) is None:
+            parser.error(f"{compiler.lower()} not found in {compiler_dir}")
+        os.environ["PATH"] = compiler_dir + os.pathsep + os.environ["PATH"]
+    elif not is_lcompilers_executable_installed:
+        os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
+            + os.pathsep + os.environ["PATH"]
+
     # While updating references, only wipe the whole reference directory if the
     # user is updating the entire suite (no -t filters). For a targeted update
     # (via -t), deleting everything is unexpected and breaks unrelated tests.
     if update_reference and not specific_tests:
         log.debug("REMOVE: old test references")
-        cmd = "rm -rf ./tests/reference/*"
-        log.debug(f"+ {cmd}")
-        process = subprocess.run(cmd, shell=True)
-        if process.returncode != 0:
-            print("Removing Old test references failed!")
-            exit(1)
-
-    # So that the tests find the `lcompiler` executable
-    if not is_lcompilers_executable_installed:
-        os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
-            + os.pathsep + os.environ["PATH"]
+        for path in pathlib.Path(REFERENCE_DIR).iterdir():
+            path.unlink()
     with open(os.path.join(ROOT_DIR, "tests", "tests.toml"), "rb") as f:
          test_data = tomli.load(f)
     test_for_duplicates(test_data)
@@ -640,7 +651,7 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
             no_llvm=no_llvm,
             skip_run_with_dbg=skip_run_with_dbg,
             no_color=no_color)
-        with ThreadPoolExecutor() as ex:
+        with ThreadPoolExecutor(max_workers=args.jobs) as ex:
             futures = ex.map(single_tester_partial_args, filtered_tests)
             for f in futures:
                 if not f:
