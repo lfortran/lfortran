@@ -1011,28 +1011,23 @@ class PRIFInterface {
             }
         }
 
-        // The start of the coarray runtime, `lcompilers_prif_start(stat)`:
-        // the runtime's adapter, src/runtime/prif/lcompilers_prif.f90,
-        // compiled with the PRIF implementation's own module. It calls
-        // prif_init and gives 0 for success, the runtime having been started
-        // before included, and the nonzero status of a failure otherwise.
-        ASR::symbol_t* get_or_create_prif_start_sub(const Location &loc) {
+        ASR::symbol_t* get_or_create_prif_init_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = "lcompilers_prif_start";
+            std::string sym_name = prif_symbol_name("prif_init");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
             SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
             ASR::symbol_t *stat_sym = declare_variable(
                 fn_symtab, loc, "stat", int32, ASR::intentType::Out, nullptr,
-                ASR::abiType::BindC, ASR::accessType::Public,
+                ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false);
             Vec<ASR::expr_t*> args; args.reserve(al, 1);
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym)));
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                 al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
                 args.p, args.n, nullptr, 0, nullptr,
-                ASR::abiType::BindC, ASR::accessType::Public,
+                ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
                 false, false, false, false, false, nullptr, 0,
@@ -2326,9 +2321,9 @@ class PRIFInterface {
             return fn_name;
         }
 
-        // Emit `call lcompilers_prif_start(stat)` into body, declaring stat
-        // in the given scope: the collective bootstrap's. Returns stat.
-        ASR::expr_t* emit_prif_start_call(SymbolTable *scope, const Location &loc,
+        // Emit `call prif_init(stat)` into body, declaring stat in the given
+        // scope: the collective bootstrap's.
+        void emit_prif_init_call(SymbolTable *scope, const Location &loc,
                                  Vec<ASR::stmt_t*> &body) {
             ASR::symbol_t *stat_sym = declare_variable(
                 scope, loc, "stat", int32,
@@ -2336,13 +2331,12 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false);
             ASR::expr_t *stat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym));
-            ASR::symbol_t *start = get_or_create_prif_start_sub(loc);
+            ASR::symbol_t *init_sub = get_or_create_prif_init_sub(loc);
             Vec<ASR::call_arg_t> args; args.reserve(al, 1);
             ASR::call_arg_t arg; arg.loc = loc; arg.m_value = stat;
             args.push_back(al, arg);
             body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
-                al, loc, start, nullptr, args.p, args.n, nullptr, false)));
-            return stat;
+                al, loc, init_sub, nullptr, args.p, args.n, nullptr, false)));
         }
 
         // The unit whose startup initializer allocates `var`: the module
@@ -2422,10 +2416,14 @@ class PRIFInterface {
         // boundary -- a Fortran main program's, or the host's
         // lcompilers_initialize() -- before any collective initializer,
         // outside every guard and without its lock, since starting the
-        // runtime can itself load images. Starting it again is not a
-        // failure, so every object file that uses PRIF has one, private to
-        // it. What prif_init reads is initialized by the adapter's own entry,
-        // which runs the initializers of the PRIF module it uses.
+        // runtime can itself load images. It calls prif_init and treats
+        // every status it returns as a running runtime: 0 when this call
+        // started it, PRIF_STAT_ALREADY_INIT when it was started before --
+        // by another object file's bootstrap, or by the host. A runtime
+        // that cannot start does not return from prif_init in practice
+        // (Caffeine gives no other status). So every object file that uses
+        // PRIF has one, private to it. What prif_init reads is initialized
+        // by the local phase of the same boundary, before every bootstrap.
         void create_collective_bootstrap(const Location &loc) {
             if (!runtime_used || unit.m_global_init_bootstrap != nullptr) return;
             std::string name = "__lcompilers_collective_bootstrap";
@@ -2434,25 +2432,10 @@ class PRIFInterface {
                     + name + "' is already taken");
             }
             SymbolTable *fn_symtab = al.make_new<SymbolTable>(unit.m_symtab);
-            Vec<ASR::stmt_t*> body; body.reserve(al, 2);
-            ASR::expr_t *stat = emit_prif_start_call(fn_symtab, loc, body);
-            // A runtime that did not start stops the program here, before
-            // the boundary marks the bootstrap done and any coarray is
-            // allocated.
-            ASRUtils::ASRBuilder b(al, loc);
-            ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
-            ASR::expr_t *failed = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-                stat, ASR::cmpopType::NotEq, b.i32(0), logical_type, nullptr));
-            std::string message = "the coarray runtime failed to start: "
-                "prif_init returned a nonzero status";
-            ASR::ttype_t *message_type = ASRUtils::TYPE(ASR::make_String_t(al,
-                loc, 1, b.i32(message.size()),
-                ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::DescriptorString));
-            body.push_back(al, b.If(failed, {ASRUtils::STMT(ASR::make_ErrorStop_t(
-                al, loc, b.StringConstant(message, message_type)))}, {}));
+            Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+            emit_prif_init_call(fn_symtab, loc, body);
             Vec<char*> dep; dep.reserve(al, 1);
-            dep.push_back(al, s2c(al, "lcompilers_prif_start"));
+            dep.push_back(al, s2c(al, prif_symbol_name("prif_init")));
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                 al, loc, fn_symtab, s2c(al, name), dep.p, dep.n,
                 nullptr, 0, body.p, body.n, nullptr,

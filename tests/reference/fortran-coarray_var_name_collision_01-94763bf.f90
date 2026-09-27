@@ -5,6 +5,11 @@ end type prif_coarray_handle
 program coarray_var_name_collision_01
 implicit none
 interface
+    subroutine f__module_prif_prif_init(stat)
+        integer(4), intent(out) :: stat
+    end subroutine f__module_prif_prif_init
+end interface
+interface
     subroutine f__module_prif_prif_stop(quiet, stop_code_int, stop_code_char)
         logical(1), intent(in) :: quiet
         character(len=*, kind=1), intent(in), optional :: stop_code_char
@@ -18,11 +23,6 @@ interface
         integer(4), intent(out), optional :: stat
     end subroutine f__module_prif_prif_sync_all
 end interface
-interface
-    subroutine lcompilers_prif_start(stat) bind(c, name = "lcompilers_prif_start")
-        integer(4), intent(out) :: stat
-    end subroutine lcompilers_prif_start
-end interface
 integer(4) :: stat
 stat = 0
 call f__module_prif_prif_sync_all(stat)
@@ -33,10 +33,7 @@ contains
 
 subroutine f__lcompilers_collective_bootstrap()
     integer(4) :: stat
-    call lcompilers_prif_start(stat)
-    if (stat /= 0) then
-        error stop
-    end if
+    call f__module_prif_prif_init(stat)
 end subroutine f__lcompilers_collective_bootstrap
 
 end program coarray_var_name_collision_01

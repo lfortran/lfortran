@@ -33,6 +33,11 @@ interface
     end subroutine f__module_prif_prif_deallocate_coarray
 end interface
 interface
+    subroutine f__module_prif_prif_init(stat)
+        integer(4), intent(out) :: stat
+    end subroutine f__module_prif_prif_init
+end interface
+interface
     subroutine f__module_prif_prif_stop(quiet, stop_code_int, stop_code_char)
         logical(1), intent(in) :: quiet
         character(len=*, kind=1), intent(in), optional :: stop_code_char
@@ -45,11 +50,6 @@ interface
         type(__module_prif_prif_team_type), intent(in), optional :: team
         integer(4), intent(out) :: this_image
     end subroutine f__module_prif_prif_this_image_no_coarray
-end interface
-interface
-    subroutine lcompilers_prif_start(stat) bind(c, name = "lcompilers_prif_start")
-        integer(4), intent(out) :: stat
-    end subroutine lcompilers_prif_start
 end interface
 interface
     subroutine prif_coarray_cleanup_interface(handle) bind(c)
@@ -85,10 +85,7 @@ contains
 
 subroutine f__lcompilers_collective_bootstrap()
     integer(4) :: stat
-    call lcompilers_prif_start(stat)
-    if (stat /= 0) then
-        error stop
-    end if
+    call f__module_prif_prif_init(stat)
 end subroutine f__lcompilers_collective_bootstrap
 
 integer(4) function lcompilers_prif_this_image()

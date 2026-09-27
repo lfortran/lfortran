@@ -119,19 +119,6 @@ cd ..
 
 export PATH="$PWD/caffeine/inst/bin:$PATH"
 
-# The start of the coarray runtime, compiled with Caffeine's own prif module;
-# see src/runtime/prif/lcompilers_prif.f90. Every coarray program links it.
-prif_mod=$(find caffeine/build -name prif.mod | head -1)
-if [ -z "$prif_mod" ] || [ ! -s "$prif_mod" ]; then
-    echo "ERROR: Caffeine's prif.mod was not found under caffeine/build"
-    exit 1
-fi
-prif_mod_dir=$(dirname "$prif_mod")
-# --separate-compilation, so that its `use prif` reads Caffeine's module
-# rather than compiling Caffeine's procedures into this object again.
-lfortran -c --separate-compilation -I"$prif_mod_dir" src/runtime/prif/lcompilers_prif.f90 -o "$PWD/lcompilers_prif.o"
-prif_adapter="$PWD/lcompilers_prif.o"
-
 (set +x 
  echo "##[endgroup]"
  echo "##[group] Test setup"
@@ -230,7 +217,6 @@ if [[ " $extrafiles " == *".c "* ]]; then
     done
     lfortran $objects \
         -o "${base}_lf.out" \
-        "$prif_adapter" \
         -L"$PWD/caffeine/inst/lib" \
         -lcaffeine \
         -lgasnet-smp-seq
@@ -239,7 +225,6 @@ else
 lfortran $extrafiles $testfile \
     $extra_args \
     -o "${base}_lf.out" \
-    "$prif_adapter" \
     -L"$PWD/caffeine/inst/lib" \
     -lcaffeine \
     -lgasnet-smp-seq
@@ -311,14 +296,16 @@ lfortran -c --coarray=true --separate-compilation -fPIC \
 ${CC:-cc} $CPPFLAGS -c integration_tests/coarrays_61c.c -o coarrays_61c.o
 if [ $LINUX ] ; then
     lfortran --shared coarrays_61_p.o -o libcoarrays_61.so
-    lfortran coarrays_61c.o "$prif_adapter" -o coarrays_61_lf.out \
-        -L"$PWD/caffeine/inst/lib" -Wl,--whole-archive -lcaffeine \
-        -lgasnet-smp-seq -Wl,--no-whole-archive -rdynamic -ldl
+    # The driver puts -l options ahead of every -Wl option, so the
+    # archives go inside the one -Wl option that brackets them.
+    lfortran coarrays_61c.o -o coarrays_61_lf.out \
+        "-Wl,--whole-archive,$PWD/caffeine/inst/lib/libcaffeine.a,$PWD/caffeine/inst/lib/libgasnet-smp-seq.a,--no-whole-archive" \
+        -Wl,--export-dynamic -ldl
     plugin="$PWD/libcoarrays_61.so"
 else
     lfortran --shared coarrays_61_p.o -o libcoarrays_61.dylib \
         -Wl,-undefined,dynamic_lookup
-    lfortran coarrays_61c.o "$prif_adapter" -o coarrays_61_lf.out \
+    lfortran coarrays_61c.o -o coarrays_61_lf.out \
         "-Wl,-force_load,$PWD/caffeine/inst/lib/libcaffeine.a" \
         "-Wl,-force_load,$PWD/caffeine/inst/lib/libgasnet-smp-seq.a"
     plugin="$PWD/libcoarrays_61.dylib"
@@ -343,5 +330,4 @@ echo
 echo "All coarray runtime tests passed"
 
 rm -rf caffeine
-rm -f "$prif_adapter"
 rm -rf OpenCoarrays

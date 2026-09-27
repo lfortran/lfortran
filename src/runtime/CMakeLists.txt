@@ -81,10 +81,3 @@ install(
   FILES ${LFORTRAN_RUNTIME_MOD_FILES}
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
-
-# The start of the coarray runtime, compiled by whoever links a PRIF
-# implementation, with its module; see prif/lcompilers_prif.f90.
-install(
-  FILES ${CMAKE_CURRENT_SOURCE_DIR}/prif/lcompilers_prif.f90
-  DESTINATION share/lfortran/prif
-  )
