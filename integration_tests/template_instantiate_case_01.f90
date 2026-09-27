@@ -25,8 +25,10 @@ program template_instantiate_case_01
     INSTANTIATE G {integer}, only: gi => g
     INSTANTIATE TT {integer}, only: id_i => id
     instantiate tT {real}, only: ID_R => ID
+    INSTANTIATE Tt {real(8)}, only: ID
     if (gi(5) /= 5) error stop
     if (id_i(7) /= 7) error stop
     if (abs(id_r(2.5) - 2.5) > 1e-6) error stop
+    if (abs(ID(3.5d0) - 3.5d0) > 1d-12) error stop
     print *, gi(5), id_i(7), id_r(2.5)
 end program
