@@ -2330,4 +2330,10 @@ contains
         integer :: y(3)
         y = x  ! {Error} type mismatch (integer[:] and t[:])
     end subroutine
+
+    template subroutine assign_array_literal{t}(x)
+        deferred type :: t
+        type(t), intent(inout) :: x(3)
+        x = [1, 2, 3]  ! {Error} type mismatch (t[:] and integer[:])
+    end subroutine
 end module

@@ -1421,3 +1421,9 @@ semantic error: Type mismatch in assignment, the types must be compatible
      |
 2331 |         y = x  ! {Error} type mismatch (integer[:] and t[:])
      |         ^   ^ type mismatch (integer[:] and t[:])
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_templates_01.f90:2337:9
+     |
+2337 |         x = [1, 2, 3]  ! {Error} type mismatch (t[:] and integer[:])
+     |         ^   ^^^^^^^^^ type mismatch (t[:] and integer[:])
