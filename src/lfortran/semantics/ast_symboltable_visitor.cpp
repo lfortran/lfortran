@@ -6201,6 +6201,32 @@ public:
         throw SemanticAbort();
     }
 
+    // Instantiating a derived type of an only-list also instantiates, under a
+    // generated name, each type of the template its components use. When the
+    // only-list names such a type after the type that uses it, e.g.
+    // `only: o => outer, i => inner`, that instance must become the listed
+    // local entity `i`, so that `type(i)` and the component of `o` are the
+    // same type.
+    void rename_dependency_instance(const std::string &generic_name,
+            const std::string &new_sym_name,
+            std::map<std::string, ASR::symbol_t*> &symbol_subs,
+            const std::set<ASR::symbol_t*> &listed_instances) {
+        auto dep = symbol_subs.find(generic_name);
+        if (dep == symbol_subs.end() || !ASR::is_a<ASR::Struct_t>(*dep->second)
+                || listed_instances.find(dep->second) != listed_instances.end()
+                || current_scope->get_symbol(new_sym_name) != nullptr) {
+            return;
+        }
+        ASR::Struct_t *dep_struct = ASR::down_cast<ASR::Struct_t>(dep->second);
+        std::string dep_name = dep_struct->m_name;
+        if (current_scope->get_symbol(dep_name) != dep->second) {
+            return;
+        }
+        current_scope->erase_symbol(dep_name);
+        dep_struct->m_name = s2c(al, new_sym_name);
+        current_scope->add_symbol(new_sym_name, dep->second);
+    }
+
     void visit_Instantiate(const AST::Instantiate_t &x) {
         std::string template_name = to_lower(x.m_name);
 
@@ -6664,6 +6690,7 @@ public:
                 }
             }
         } else {
+            std::set<ASR::symbol_t*> listed_instances;
             for (size_t i = 0; i < x.n_symbols; i++){
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string generic_name = to_lower(use_symbol->m_remote_sym);
@@ -6679,9 +6706,12 @@ public:
                 if (use_symbol->m_local_rename) {
                     new_sym_name = to_lower(use_symbol->m_local_rename);
                 }
+                rename_dependency_instance(generic_name, new_sym_name,
+                    symbol_subs, listed_instances);
                 ASR::symbol_t* new_sym = instantiate_symbol(al, current_scope, type_subs, symbol_subs, new_sym_name, s,
                     diag);
                 symbol_subs[generic_name] = new_sym;
+                listed_instances.insert(new_sym);
             }
         }
 
