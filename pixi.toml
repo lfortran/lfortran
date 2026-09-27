@@ -163,7 +163,7 @@ start = {cmd = '"$LFORTRAN_BUILD_DIR/src/bin/lfortran"', default-environment = "
 clean = {cmd = 'cmake --build "$LFORTRAN_BUILD_DIR" --target clean', default-environment = "llvm11"}
 
 [feature.build.target.win.tasks]
-build = {cmd = 'bash ./build1.sh "$LFORTRAN_BUILD_DIR" -DCMAKE_BUILD_TYPE=Release', default-environment = "llvm11"}
+build = {cmd = 'bash ./build1.sh "$LFORTRAN_BUILD_DIR" -DCMAKE_BUILD_TYPE=Release -DWITH_STACKTRACE=no -DWITH_RUNTIME_STACKTRACE=no', default-environment = "llvm11"}
 
 # ─── WASM kernel / JupyterLite ("lab") ───────────────────────────────────────
 # See doc/src/jupyterlite.md. Three environments are involved:

@@ -23,7 +23,8 @@ There is no separate dependency-install or source-generation step:
 scripts. The default native environment is `llvm11`, which matches the reference
 test suite. Its executable is `build/llvm11/src/bin/lfortran`; run it through
 `pixi run start`, or use `pixi shell -e llvm11` to put it on your `PATH`.
-On Windows the executable has the `.exe` extension.
+On Windows the executable has the `.exe` extension. The native Windows task
+uses Release mode with compiler and runtime stacktraces disabled.
 
 Select another environment explicitly to keep multiple configurations:
 
