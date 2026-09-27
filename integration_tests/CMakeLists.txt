@@ -3865,6 +3865,8 @@ RUN(NAME nested_vars_11 LABELS gfortran llvm)
 RUN(NAME nested_vars_12 LABELS gfortran llvm EXTRAFILES nested_vars_12a.f90 nested_vars_12b.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME nested_vars_13 LABELS gfortran llvm)
 RUN(NAME nested_vars_14 LABELS gfortran llvm)
+RUN(NAME nested_vars_15 LABELS gfortran llvm)
+RUN(NAME nested_vars_16 LABELS gfortran llvm)
 
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
