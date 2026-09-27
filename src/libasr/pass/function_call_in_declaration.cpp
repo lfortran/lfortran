@@ -92,6 +92,12 @@ private :
         std::vector<std::pair<ASR::ExternalSymbol_t*,ASR::symbol_t**>> 
             externalSymbols_vec = get_externalSymbols(expr);
         for(auto &ext_sym : externalSymbols_vec){
+            // The same function may be called more than once in the expression.
+            ASR::symbol_t* already_duplicated = new_function_scope->get_symbol(ext_sym.first->m_name);
+            if (already_duplicated) {
+                *ext_sym.second = already_duplicated;
+                continue;
+            }
             ASRUtils::SymbolDuplicator sym_duplicator_instance(al);
             ASR::symbol_t* extSym_duplicated =  
                 sym_duplicator_instance.duplicate_ExternalSymbol(ext_sym.first, new_function_scope);
@@ -318,14 +324,17 @@ public:
         new_function_scope = new_function_scope_copy;
     }
 
-    /* 
-        *Replaces expressions returning non-scalar 
-        in the length member of the ASR::string type
-        * Handles : 
+    /*
+        *Replaces an expression that calls a function returning a non-scalar
+        (array, struct, character) by a call to a new integer helper function
+        that evaluates it. Used for the length member of the ASR::String type
+        and for the dimensions of a local array.
+        * Handles :
         - `ASR::StrLen`
         - `ASR::FunctionCall`
+        - Any other integer expression (when not processing FunctionParam)
     */
-    void stringLength_replacer(ASR::expr_t *x) {
+    void replace_with_helper_function_call(ASR::expr_t *x) {
         if( newargsp != nullptr /*Processing FunctionParam*/) {
             switch(x->type){
                 case ASR::StringLen:
@@ -358,8 +367,8 @@ public:
         Vec<ASR::call_arg_t> args_for_return_var; args_for_return_var.reserve(al, indices.size());
 
         Vec<ASR::stmt_t*> new_body; new_body.reserve(al, 1);
-        std::string new_function_name = global_scope->get_unique_name("__lcompilers_created_helper_function_", false);
-        ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.loc, 4));
+        std::string new_function_name = helper_parent->get_unique_name("__lcompilers_created_helper_function_", false);
+        ASR::ttype_t* integer_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(assignment_value));
         ASR::expr_t* return_var = b.Variable(new_scope, new_scope->get_unique_name("__lcompilers_return_var_", false), integer_type, ASR::intentType::ReturnVar);
 
         for (auto arg: indices) {
@@ -451,15 +460,21 @@ private:
             ASRUtils::is_array(type)      ||
             ASRUtils::is_struct(*type);
         }
+        // Whether only references to user procedures count.
+        bool function_calls_only = false;
         bool is_call_to_function(const ASR::expr_t* expr){
+            if (function_calls_only) {
+                return ASR::is_a<ASR::FunctionCall_t>(*expr);
+            }
             return ASR::is_a<ASR::FunctionCall_t>(*expr) || 
             ASR::is_a<ASR::IntrinsicArrayFunction_t>(*expr) ||
             ASR::is_a<ASR::IntrinsicElementalFunction_t>(*expr);
         }
     public :
-        static bool check(const ASR::expr_t* expr){
+        static bool check(const ASR::expr_t* expr, bool function_calls_only = false){
             LCOMPILERS_ASSERT(expr)
             expr_contains_functionCall_with_Nonscalar_return instance {};
+            instance.function_calls_only = function_calls_only;
             instance.visit_expr(*expr);
             return instance.found;
         }
@@ -499,7 +514,37 @@ public:
     }
 
 
+    /*
+        A specification expression of a local array may call a function
+        returning a non-scalar, e.g. `real :: tmp(comp(construct(3)))` with
+        `construct` returning a derived type. Later passes would evaluate
+        such a call as a statement at the start of the body, after the
+        array has already been sized. Evaluate the whole bound in a helper
+        function instead, so that the bound is self-contained and the
+        function result is finalized before the body executes.
+    */
+    void replace_nonscalar_calls_in_array_bounds(const ASR::Variable_t &x) {
+        if (x.m_intent != ASR::intentType::Local) return;
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(x.m_type);
+        if (!ASR::is_a<ASR::Array_t>(*type)) return;
+        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(type);
+        for (size_t i = 0; i < array_t->n_dims; i++) {
+            ASR::expr_t** bounds[2] = {&array_t->m_dims[i].m_start, &array_t->m_dims[i].m_length};
+            for (ASR::expr_t** bound : bounds) {
+                // Intrinsic array functions in a bound are handled by
+                // later passes as before.
+                if (*bound && expr_contains_functionCall_with_Nonscalar_return::check(*bound, true)) {
+                    replacer.current_expr = bound;
+                    replacer.assignment_value = *bound;
+                    replacer.replace_with_helper_function_call(*bound);
+                    replacer.assignment_value = nullptr;
+                }
+            }
+        }
+    }
+
     void visit_Variable(const ASR::Variable_t &x){
+        replace_nonscalar_calls_in_array_bounds(x);
         visit_ttype(*x.m_type);
     }
 
@@ -595,7 +640,7 @@ public:
             { // Same as `this->call_replacer_()`. We did in here to workaround. In general this needs a refactor.
                 replacer.current_expr = current_expr;
                 replacer.assignment_value = x.m_len;
-                replacer.stringLength_replacer(*current_expr);
+                replacer.replace_with_helper_function_call(*current_expr);
             }
             current_expr = current_expr_copy;
         }
