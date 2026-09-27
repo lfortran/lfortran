@@ -336,8 +336,8 @@ static int scenario_republish(void) {
 /* ---------------------------------------------------------------------- */
 /* Once a dispatch has completed and nothing that registers records has   */
 /* changed, a dispatch -- which every call of a foreign entry point makes */
-/* -- neither asks the loader nor takes a lock; a batch added and a       */
-/* teardown make the next one look again.                                */
+/* -- neither asks the loader nor takes a lock; a batch added makes the  */
+/* next one look again.                                                   */
 /* ---------------------------------------------------------------------- */
 
 uint64_t _lcompilers_init_test_generation_reads(void);
@@ -402,12 +402,38 @@ static int scenario_fast_path(void) {
     expect(_lcompilers_init_test_generation_reads() > reads,
         "a dispatch after a batch was added looks again");
 
-    _lcompilers_init_teardown_all();
-    reads = _lcompilers_init_test_generation_reads();
-    _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
-    expect(_lcompilers_init_test_generation_reads() > reads,
-        "a dispatch after a teardown looks again");
     expect(settled_bodies == 1 && later_bodies == 1, "nothing is initialized twice");
+    _lcompilers_init_remove_records(&later_table);
+    _lcompilers_init_remove_records(&settled_table);
+    return finish();
+}
+
+/* ---------------------------------------------------------------------- */
+/* A dispatch that finds the work done, as one after a teardown does,     */
+/* arms the fast path again: the dispatches after it look at nothing.     */
+/* ---------------------------------------------------------------------- */
+
+/* Whether dispatches with nothing changed take the fast path again after
+ * at most one that looks. */
+static int fast_again(void) {
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
+    uint64_t reads = _lcompilers_init_test_generation_reads();
+    for (int i = 0; i < 100; i++) {
+        _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
+    }
+    return _lcompilers_init_test_generation_reads() == reads;
+}
+
+static int scenario_fast_path_rearm(void) {
+    _lcompilers_init_add_records(&settled_table);
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
+    expect(fast_again(), "the fast path is armed after the first dispatch");
+    _lcompilers_init_teardown_all();
+    expect(fast_again(), "the fast path is armed again after a teardown");
+    _lcompilers_init_add_records(&later_table);
+    expect(fast_again(), "the fast path is armed again after a batch was added");
+    expect(settled_bodies == 1 && later_bodies == 1,
+        "each record is initialized once");
     _lcompilers_init_remove_records(&later_table);
     _lcompilers_init_remove_records(&settled_table);
     return finish();
@@ -1287,6 +1313,7 @@ int main(int argc, char **argv) {
 #endif
     if (strcmp(s, "republish") == 0) return scenario_republish();
     if (strcmp(s, "fast_path") == 0) return scenario_fast_path();
+    if (strcmp(s, "fast_path_rearm") == 0) return scenario_fast_path_rearm();
     if (strcmp(s, "collective") == 0) return scenario_collective();
     if (strcmp(s, "collective_outside") == 0) return scenario_collective_outside();
     if (strcmp(s, "publish_during_init") == 0) return scenario_publish_during_init();

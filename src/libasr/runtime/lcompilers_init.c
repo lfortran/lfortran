@@ -115,6 +115,25 @@ static void lcompilers_init_store_u64(uint64_t *p, uint64_t v) {
 #endif
 }
 
+/* Raises `*p` to `v` unless it is already at least `v`, with release: a
+ * word only ever grows, however the stores of two threads interleave. */
+static void lcompilers_init_raise_u64(uint64_t *p, uint64_t v) {
+#if defined(_MSC_VER)
+    LONG64 seen = InterlockedCompareExchange64((volatile LONG64 *)p, 0, 0);
+    while ((uint64_t)seen < v) {
+        LONG64 was = InterlockedCompareExchange64((volatile LONG64 *)p,
+            (LONG64)v, seen);
+        if (was == seen) return;
+        seen = was;
+    }
+#else
+    uint64_t seen = __atomic_load_n(p, __ATOMIC_RELAXED);
+    while (seen < v && !__atomic_compare_exchange_n(p, &seen, v, 1,
+            __ATOMIC_RELEASE, __ATOMIC_RELAXED)) {
+    }
+#endif
+}
+
 static void lcompilers_init_increment_u64(uint64_t *p) {
 #if defined(_MSC_VER)
     InterlockedIncrement64((volatile LONG64 *)p);
@@ -437,8 +456,9 @@ typedef struct {
  * lock. */
 static lcompilers_init_generation_t lcompilers_init_dispatched;
 static int lcompilers_init_dispatched_valid;
-/* One more than the registry generation at which the last dispatch that
- * completed saw every local record ready, or 0; see `lcompilers_init_run`. */
+/* One more than the latest registry generation at which a dispatch
+ * completed, or found one completed, with every local record ready, or 0;
+ * see `lcompilers_init_run`. It only grows. */
 static uint64_t lcompilers_init_ready_generation;
 
 /* The engine's registry and the loader notifications it installs live as
@@ -1417,8 +1437,9 @@ static void lcompilers_init_run(int32_t phase) {
      * so what this passes over is only a load in progress whose constructor
      * has not run yet: what an entry point of it needs, the entry point's
      * own explicit calls of the initializers run, and its constructor the
-     * rest. The acquire pairs with the release of the dispatch that stored
-     * it, after every initializer it ran was ready. */
+     * rest. The acquire pairs with the release of the dispatch that raised
+     * it, after every initializer it ran, or found a dispatch that completed
+     * had run, was ready. */
     if (phase == lcompilers_init_dispatch_local) {
         uint64_t ready = lcompilers_init_load_u64(&lcompilers_init_ready_generation);
         if (ready != 0 && ready
@@ -1442,7 +1463,13 @@ static void lcompilers_init_run(int32_t phase) {
         int done = lcompilers_init_dispatched_valid
             && lcompilers_init_same_generation(&lcompilers_init_dispatched, &generation);
         lcompilers_init_registry_unlock();
-        if (done) return;
+        if (done) {
+            /* Arms the fast path again, which a dispatch that completed at
+             * an older generation may have left behind. */
+            lcompilers_init_raise_u64(&lcompilers_init_ready_generation,
+                generation.registry + 1);
+            return;
+        }
     }
     /* One thread of an image enters its collective boundary, once for every
      * set of collective records: two at once would start the runtime and
@@ -1483,7 +1510,7 @@ static void lcompilers_init_run(int32_t phase) {
     lcompilers_init_dispatched = generation;
     lcompilers_init_dispatched_valid = 1;
     lcompilers_init_registry_unlock();
-    lcompilers_init_store_u64(&lcompilers_init_ready_generation, generation.registry + 1);
+    lcompilers_init_raise_u64(&lcompilers_init_ready_generation, generation.registry + 1);
 }
 
 LFORTRAN_API void _lcompilers_init_ctor(const lcompilers_init_table *table) {
@@ -1607,8 +1634,9 @@ LFORTRAN_API void _lcompilers_init_unload(const lcompilers_init_table *table) {
 }
 
 LFORTRAN_API void _lcompilers_init_teardown_all(void) {
-    /* A dispatch after the teardown walks again. */
-    lcompilers_init_store_u64(&lcompilers_init_ready_generation, 0);
+    /* A teardown frees what the owners' storage holds and leaves every state
+     * ready, so a dispatch after it has nothing to run again: the fast path
+     * stays armed. */
     lcompilers_init_snapshot snapshot;
     lcompilers_init_discover(&snapshot);
     lcompilers_init_lock();
