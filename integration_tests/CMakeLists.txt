@@ -2008,6 +2008,7 @@ RUN(NAME modules_72 LABELS gfortran llvm
         EXTRAFILES modules_72_stypemod.f90 modules_72_otypemod.f90)
 RUN(NAME modules_73 LABELS gfortran llvm EXTRAFILES modules_73_mod.f90)
 RUN(NAME module_func_generic_submodule LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME modules_74 LABELS gfortran llvm)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
 
@@ -3676,6 +3677,7 @@ RUN(NAME template_instantiate_rename_02_oracle LABELS gfortran llvm)
 RUN(NAME template_require_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_end_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_kwargs_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_instantiate_case_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_order_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_own_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
