@@ -1468,10 +1468,11 @@ namespace LCompilers {
             Vec<ASR::stmt_t*> body; body.reserve(al, 0);
 
             for (size_t i = 0; i < select_stmt->n_body; i++) {
-                ASR::caseStmt_t& case_stmt = select_stmt->m_body[i];
-                Vec<ASR::stmt_t*> case_body = process_stmts_for_exit(al, case_stmt.m_body, case_stmt.n_body, decrement_stmt);
-                case_stmt.m_body = case_body.p;
-                case_stmt.n_body = case_body.size();
+                ASR::CaseStmt_t* case_stmt = ASR::down_cast<ASR::CaseStmt_t>(select_stmt->m_body[i]);
+                
+                Vec<ASR::stmt_t*> case_body = process_stmts_for_exit(al, case_stmt->m_body, case_stmt->n_body, decrement_stmt);
+                case_stmt->m_body = case_body.p;
+                case_stmt->n_body = case_body.size();
             }
 
             if (select_stmt->n_default > 0) {
