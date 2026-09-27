@@ -3,7 +3,8 @@
 ! type: one with a default of its own (a single structure constructor, which
 ! is broadcast to every element) and one that takes the default of its type.
 ! A constructor that leaves out an allocatable component, or gives it
-! `null()`, leaves that component unallocated in every element.
+! `null()`, leaves that component unallocated in every element, and so does
+! such a constructor used as the default of a scalar component.
 ! Allocated subcomponents of the elements of an array component are
 ! deallocated on entry, for array and scalar dummies alike (F2018 9.7.3.2),
 ! after the dummy has been finalized (F2018 7.5.6.3); an absent optional
@@ -43,6 +44,8 @@ type :: va
     type(ta) :: c(2) = ta(8)
     type(ta) :: d(2) = ta(9, null())
     type(ta) :: e(2)
+    type(ta) :: s = ta(8)
+    type(ta) :: r = ta(9, null())
 end type va
 
 type :: tb
@@ -158,6 +161,10 @@ contains
                 if (a(k)%e(i)%h /= 5) error stop 65
                 if (allocated(a(k)%e(i)%z)) error stop 66
             end do
+            if (a(k)%s%h /= 8) error stop 67
+            if (allocated(a(k)%s%z)) error stop 68
+            if (a(k)%r%h /= 9) error stop 69
+            if (allocated(a(k)%r%z)) error stop 60
         end do
     end subroutine reset_alloc
 
@@ -244,6 +251,9 @@ do k = 1, 2
         vv(k)%e(i)%h = 99
         allocate(vv(k)%c(i)%z(3), vv(k)%d(i)%z(3), vv(k)%e(i)%z(3))
     end do
+    vv(k)%s%h = 99
+    vv(k)%r%h = 99
+    allocate(vv(k)%s%z(3), vv(k)%r%z(3))
 end do
 call reset_alloc(vv)
 

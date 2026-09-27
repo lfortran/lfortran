@@ -5041,6 +5041,9 @@ RUN(NAME intent_out_array_of_struct_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_array_default_init_01 LABELS gfortran llvm)
 RUN(NAME intent_out_array_default_init_02 LABELS gfortran llvm)
 RUN(NAME intent_out_array_default_init_03 LABELS gfortran llvm)
+# gfortran 13.3 does not apply these defaults to a scalar intent(out) dummy
+# of a finalizable type (it keeps the caller's values), so llvm only
+RUN(NAME intent_out_array_default_init_04 LABELS llvm)
 RUN(NAME array_shape_func_call LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_neg_extent_01 LABELS gfortran llvm)
 
