@@ -4626,6 +4626,14 @@ public:
         assgn_proc_names_locations.clear();
     }
 
+    // Whether `outer` is `scope` or one of its enclosing scopes.
+    static bool is_enclosing_scope(SymbolTable *outer, SymbolTable *scope) {
+        for (SymbolTable *t = scope; t != nullptr; t = t->parent) {
+            if (t == outer) return true;
+        }
+        return false;
+    }
+
     void add_generic_procedures() {
         // Interface blocks of the same name in different scopes declare
         // different generic interfaces: build one in each of those scopes.
@@ -4705,29 +4713,34 @@ public:
                     ASR::GenericProcedure_t *gp
                         = ASR::down_cast<ASR::GenericProcedure_t>(sym);
                     for (size_t i=0; i < gp->n_procs; i++) {
+                        ASR::symbol_t *host_specific = gp->m_procs[i];
+                        ASR::symbol_t *target
+                            = ASRUtils::symbol_get_past_external(host_specific);
                         std::string specific_name
-                            = ASRUtils::symbol_name(gp->m_procs[i]);
-                        ASR::symbol_t *s = current_scope->get_symbol(
+                            = ASRUtils::symbol_name(host_specific);
+                        // The extended generic keeps exactly the specifics of
+                        // the host generic: a name visible from this scope is
+                        // used only if it is the same procedure, since a
+                        // local entity may shadow the host specific.
+                        ASR::symbol_t *s = current_scope->resolve_symbol(
                             specific_name);
-                        if (s != nullptr) {
-                            // Append all the module procedure's in the scope
-                            symbols.push_back(al, s);
-                            continue;
-                        }
-                        // A specific visible from this scope (e.g. declared
-                        // in the host of a procedure-local generic) is
-                        // referenced directly.
-                        s = current_scope->resolve_symbol(specific_name);
                         if (s != nullptr &&
-                                ASRUtils::symbol_get_past_external(s) ==
-                                ASRUtils::symbol_get_past_external(
-                                    gp->m_procs[i])) {
+                                ASRUtils::symbol_get_past_external(s) == target) {
                             symbols.push_back(al, s);
                             continue;
                         }
-                        // If not available, import it from the module
-                        // Create an ExternalSymbol using it
-                        ASR::Module_t *m = ASRUtils::get_sym_module(sym);
+                        // A specific declared in an enclosing scope (the host
+                        // of a procedure-local generic) whose name is shadowed
+                        // here is referenced directly.
+                        if (is_enclosing_scope(
+                                ASRUtils::symbol_parent_symtab(host_specific),
+                                current_scope)) {
+                            symbols.push_back(al, host_specific);
+                            continue;
+                        }
+                        // Otherwise import it from its module, under a
+                        // unique name if its own name is taken in this scope.
+                        ASR::Module_t *m = ASRUtils::get_sym_module(target);
                         if (m == nullptr) {
                             diag.add(Diagnostic(
                                 "specific procedure '" + specific_name
@@ -4741,18 +4754,23 @@ public:
                             }
                             continue;
                         }
-                        s = m->m_symtab->get_symbol(specific_name);
-                        if (s && ASR::is_a<ASR::Function_t>(*s)) {
-                            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
-                            ASR::symbol_t *ep_s = (ASR::symbol_t *)
-                                ASR::make_ExternalSymbol_t(
-                                    al, fn->base.base.loc, current_scope,
-                                    fn->m_name, s, m->m_name, nullptr, 0,
-                                    fn->m_name, dflt_access);
-                            current_scope->add_symbol(fn->m_name, ep_s);
-                            // Append the ExternalSymbol
-                            symbols.push_back(al, ep_s);
+                        std::string target_name = ASRUtils::symbol_name(target);
+                        std::string local_name = target_name;
+                        if (current_scope->get_symbol(local_name) != nullptr) {
+                            local_name = current_scope->get_unique_name(
+                                "1_" + std::string(m->m_name) + "_"
+                                + target_name, false);
                         }
+                        Str local_str;
+                        local_str.from_str_view(local_name);
+                        ASR::symbol_t *ep_s = ASR::down_cast<ASR::symbol_t>(
+                            ASR::make_ExternalSymbol_t(
+                                al, target->base.loc, current_scope,
+                                local_str.c_str(al), target, m->m_name,
+                                nullptr, 0, s2c(al, target_name),
+                                dflt_access));
+                        current_scope->add_symbol(local_name, ep_s);
+                        symbols.push_back(al, ep_s);
                     }
                 }
             }
