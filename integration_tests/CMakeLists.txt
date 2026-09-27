@@ -5071,6 +5071,7 @@ RUN(NAME test_unsigned LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME test_str LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME test_ord LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME test_rep LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
+RUN(NAME test_rep_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --cpp GFORTRAN_ARGS -cpp)
 RUN(NAME str_to_char LABELS gfortran llvm)
 
 # test for polymorphic select type
