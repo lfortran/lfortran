@@ -8,7 +8,7 @@ The main program: the entry point of an executable.
 
 ```text
 Program(symbol_table symtab, identifier name, identifier* dependencies,
-    stmt* body, identifier? global_init, identifier? global_init_state,
+    stmt* body, symbol? global_init, symbol? global_init_state,
     location start_name, location end_name)
 ```
 
@@ -20,8 +20,8 @@ Program(symbol_table symtab, identifier name, identifier* dependencies,
 | `name` | the name of the program. |
 | `dependencies` | the names of the modules and procedures the body of the program refers to. The backends use it to order code generation. |
 | `body` | the statements of the program, in order. |
-| `global_init` | the name of this program's own initializer in `symtab`, or `nil`: what the program's frame needs set up before its first statement. See the description below. |
-| `global_init_state` | the name of the saved `integer(4)` variable in `symtab` that guards `global_init`, or `nil` exactly when `global_init` is. |
+| `global_init` | this program's own initializer, a symbol of `symtab`, or `nil`: what the program's frame needs set up before its first statement. See the description below. |
+| `global_init_state` | the saved `integer(4)` variable of `symtab` that guards `global_init`, or `nil` exactly when `global_init` is. |
 | `start_name` | the source span of the name in `program name`. |
 | `end_name` | the source span of the name in `end program name`, or an empty span when the end statement does not repeat it. |
 
@@ -91,8 +91,8 @@ before anything can observe it. Three rules follow from that:
 The `global_init` ASR pass moves a declaration initializer that the current
 lowering does not materialize as static data out of the declaration and into
 a **startup initializer**: an argument-less procedure in the owner's own
-symbol table, named by the owner's `global_init`. A [Module](Module.md) and a
-**Program** each name at most one, which is why the link lives on the owner
+symbol table, which the owner's `global_init` refers to. A [Module](Module.md)
+and a **Program** each have at most one, which is why the link lives on the owner
 rather than on the procedure. After the pass a variable carries its
 initializer in exactly one of the two places, never in both: both being
 filled is the compiler contradicting itself about who initializes the
@@ -165,14 +165,14 @@ initialized local means.
 #### The initializers and their guards
 
 Every user [Module](Module.md) and submodule owns a startup initializer from
-the moment semantics creates it, named by its `global_init`, whatever its
+the moment semantics creates it, referred to by its `global_init`, whatever its
 initialization lowers to later: its module file carries it, so every
 translation unit that depends on the module calls that one definition, and a
 translation unit that only uses a module read from a module file declares the
 initializer without defining it. A **Program** and the
 [TranslationUnit](../unit_nodes/TranslationUnit.md) get one when a pass has
 something to put into it. Each initializer is guarded by the state its owner's
-`global_init_state` names, and the `global_init_wire` pass, which runs after
+`global_init_state` refers to, and the `global_init_wire` pass, which runs after
 every pass that can add initialization (`coarray` among them), gives each
 initializer defined in the translation unit its final shape:
 

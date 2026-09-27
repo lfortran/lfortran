@@ -400,19 +400,8 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
     std::unordered_map<ASR::symbol_t*, std::string> &sn) : al(al_), sym_to_new_name(sn){}
 
 
-    // An owner names its startup initializer and its state, so a rename of
-    // either has to follow them there.
-    void relink_global_init(char *&link, ASR::symbol_t *sym) {
-        if (sym != nullptr && sym_to_new_name.find(sym) != sym_to_new_name.end()) {
-            link = s2c(al, sym_to_new_name[sym]);
-        }
-    }
-
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         ASR::TranslationUnit_t& xx = const_cast<ASR::TranslationUnit_t&>(x);
-        ASR::symbol_t *global_init = (ASR::symbol_t*)ASRUtils::get_global_init((ASR::asr_t*)&xx);
-        ASR::symbol_t *global_init_state = (ASR::symbol_t*)ASRUtils::get_global_init_state((ASR::asr_t*)&xx);
-        ASR::symbol_t *global_init_bootstrap = (ASR::symbol_t*)ASRUtils::get_global_init_bootstrap(xx);
         std::map<std::string, ASR::symbol_t*> current_scope_copy = current_scope;
         current_scope = x.m_symtab->get_scope();
         for (auto &a : xx.m_symtab->get_scope()) {
@@ -427,20 +416,12 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
                 }
             }
         }
-        relink_global_init(xx.m_global_init, global_init);
-        relink_global_init(xx.m_global_init_state, global_init_state);
-        relink_global_init(xx.m_global_init_bootstrap, global_init_bootstrap);
         current_scope = current_scope_copy;
     }
 
     template <typename T>
     void update_symbols_1(const T &x) {
         T& xx = const_cast<T&>(x);
-        ASR::symbol_t *global_init = nullptr, *global_init_state = nullptr;
-        if constexpr (!std::is_same_v<T, ASR::Function_t>) {
-            global_init = (ASR::symbol_t*)ASRUtils::get_global_init((ASR::asr_t*)&xx);
-            global_init_state = (ASR::symbol_t*)ASRUtils::get_global_init_state((ASR::asr_t*)&xx);
-        }
         std::map<std::string, ASR::symbol_t*> current_scope_copy = current_scope;
         ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
         if (sym_to_new_name.find(sym) != sym_to_new_name.end()) {
@@ -466,10 +447,6 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
                     xx.m_symtab->add_symbol(new_name, a.second);
                 }
             }
-        }
-        if constexpr (!std::is_same_v<T, ASR::Function_t>) {
-            relink_global_init(xx.m_global_init, global_init);
-            relink_global_init(xx.m_global_init_state, global_init_state);
         }
         current_scope = current_scope_copy;
     }

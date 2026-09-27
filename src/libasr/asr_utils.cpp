@@ -1730,11 +1730,13 @@ void set_intrinsic(ASR::symbol_t* sym) {
             // the initializer semantics gave it when its `.mod` file was
             // compiled has no object file to live in.
             if (module_sym->m_global_init != nullptr) {
-                module_sym->m_symtab->erase_symbol(module_sym->m_global_init);
+                module_sym->m_symtab->erase_symbol(
+                    ASRUtils::symbol_name(module_sym->m_global_init));
                 module_sym->m_global_init = nullptr;
             }
             if (module_sym->m_global_init_state != nullptr) {
-                module_sym->m_symtab->erase_symbol(module_sym->m_global_init_state);
+                module_sym->m_symtab->erase_symbol(
+                    ASRUtils::symbol_name(module_sym->m_global_init_state));
                 module_sym->m_global_init_state = nullptr;
             }
             module_sym->m_global_init_collective = false;

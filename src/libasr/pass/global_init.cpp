@@ -68,7 +68,7 @@ namespace {
 
     // The two links of `owner`, or nullptr for something that cannot own an
     // initializer.
-    std::pair<char**, char**> owner_links(ASR::asr_t *owner) {
+    std::pair<ASR::symbol_t**, ASR::symbol_t**> owner_links(ASR::asr_t *owner) {
         if (is_translation_unit(owner)) {
             ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(owner);
             return {&tu->m_global_init, &tu->m_global_init_state};
@@ -100,7 +100,7 @@ namespace {
 
     // Create the state word of an initializer in `scope`: saved, private and
     // statically `lcompilers_init_uninitialized`.
-    char* create_state(Allocator &al, SymbolTable *scope, const Location &loc,
+    ASR::symbol_t* create_state(Allocator &al, SymbolTable *scope, const Location &loc,
             const std::string &state_name, ASR::abiType abi) {
         std::string name = reserved_name(scope, state_name);
         ASR::expr_t *zero = int32_constant(al, loc, 0);
@@ -110,13 +110,13 @@ namespace {
                 ASR::storage_typeType::Save, state_type(al, loc), nullptr, abi,
                 ASR::accessType::Private, ASR::presenceType::Required, false));
         scope->add_symbol(name, state);
-        return s2c(al, name);
+        return state;
     }
 
     // Create an initializer with an empty body in `scope`: an ordinary
     // procedure of its owner, never a separate module procedure, which is
     // what `module` in a procedure's type says.
-    char* create_initializer(Allocator &al, SymbolTable *scope,
+    ASR::symbol_t* create_initializer(Allocator &al, SymbolTable *scope,
             const Location &loc, const std::string &name) {
         std::string fn_name = reserved_name(scope, name);
         SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
@@ -126,8 +126,9 @@ namespace {
             ASR::deftypeType::Implementation, nullptr,
             false, false, false, false, false, nullptr, 0,
             false, false, false, nullptr);
-        scope->add_symbol(fn_name, ASR::down_cast<ASR::symbol_t>(fn));
-        return s2c(al, fn_name);
+        ASR::symbol_t *fn_sym = ASR::down_cast<ASR::symbol_t>(fn);
+        scope->add_symbol(fn_name, fn_sym);
+        return fn_sym;
     }
 
     // A saved logical of `scope`, false until the initialization it guards
@@ -183,19 +184,15 @@ namespace {
 } // anonymous namespace
 
 ASR::Function_t* get_global_init(ASR::asr_t *owner) {
-    char **link = owner_links(owner).first;
+    ASR::symbol_t **link = owner_links(owner).first;
     if (link == nullptr || *link == nullptr) return nullptr;
-    ASR::symbol_t *sym = owner_symtab(owner)->get_symbol(*link);
-    if (sym == nullptr || !ASR::is_a<ASR::Function_t>(*sym)) return nullptr;
-    return ASR::down_cast<ASR::Function_t>(sym);
+    return ASR::down_cast<ASR::Function_t>(*link);
 }
 
 ASR::Variable_t* get_global_init_state(ASR::asr_t *owner) {
-    char **link = owner_links(owner).second;
+    ASR::symbol_t **link = owner_links(owner).second;
     if (link == nullptr || *link == nullptr) return nullptr;
-    ASR::symbol_t *sym = owner_symtab(owner)->get_symbol(*link);
-    if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
-    return ASR::down_cast<ASR::Variable_t>(sym);
+    return ASR::down_cast<ASR::Variable_t>(*link);
 }
 
 ASR::asr_t* global_init_owner(const ASR::Function_t *fn) {
@@ -236,7 +233,7 @@ std::string global_init_stable_id(ASR::asr_t *owner) {
     if (is_translation_unit(owner)) {
         ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(owner);
         LCOMPILERS_ASSERT(tu->m_global_init != nullptr);
-        return std::string("t:") + tu->m_global_init;
+        return std::string("t:") + ASRUtils::symbol_name(tu->m_global_init);
     }
     ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(owner);
     if (ASR::is_a<ASR::Module_t>(*sym)) {
@@ -252,9 +249,7 @@ std::string global_init_stable_id(ASR::asr_t *owner) {
 
 ASR::Function_t* get_global_init_bootstrap(ASR::TranslationUnit_t &unit) {
     if (unit.m_global_init_bootstrap == nullptr) return nullptr;
-    ASR::symbol_t *sym = unit.m_symtab->get_symbol(unit.m_global_init_bootstrap);
-    return sym != nullptr && ASR::is_a<ASR::Function_t>(*sym)
-        ? ASR::down_cast<ASR::Function_t>(sym) : nullptr;
+    return ASR::down_cast<ASR::Function_t>(unit.m_global_init_bootstrap);
 }
 
 bool is_global_init_bootstrap(const ASR::Function_t *fn) {
@@ -473,7 +468,7 @@ ASR::Function_t* get_or_create_global_init(Allocator &al,
         ASR::TranslationUnit_t &/*unit*/, ASR::asr_t *owner,
         const std::string &name) {
     if (ASR::Function_t *fn = get_global_init(owner)) return fn;
-    std::pair<char**, char**> links = owner_links(owner);
+    std::pair<ASR::symbol_t**, ASR::symbol_t**> links = owner_links(owner);
     if (links.first == nullptr) {
         throw LCompilersException("Only a module, a program or the "
             "translation unit can own a startup initializer");

@@ -9,8 +9,8 @@ A Fortran module or submodule.
 ```text
 Module(symbol_table symtab, identifier name, identifier? parent_module,
     identifier* dependencies, bool loaded_from_mod, bool intrinsic,
-    bool has_submodules, identifier? global_init,
-    identifier? global_init_state, bool global_init_collective,
+    bool has_submodules, symbol? global_init,
+    symbol? global_init_state, bool global_init_collective,
     location start_name, location end_name)
 ```
 
@@ -25,8 +25,8 @@ Module(symbol_table symtab, identifier name, identifier? parent_module,
 | `loaded_from_mod` | `true` when the module was read back from a module file rather than compiled from source in this run. |
 | `intrinsic` | `true` for a module defined by the language itself (`iso_c_binding`, `iso_fortran_env`, ...). The backends do not emit code for it. |
 | `has_submodules` | `true` when at least one submodule extends this module. A module procedure declared here may then be defined elsewhere. |
-| `global_init` | the name of this module's startup initializer in `symtab`: an argument-less procedure that initializes the module's variables, once, before any code can observe them. Every user module and submodule owns one from the moment semantics creates it, whatever its initialization later lowers to, so that its module file carries it and every translation unit that depends on the module calls that one definition. It is `nil` for an intrinsic module and for a module a pass creates without one, such as the one that holds a COMMON block, whose storage the translation unit's initializer sets up. See [Program](Program.md). |
-| `global_init_state` | the name of the saved `integer(4)` variable in `symtab` that guards `global_init`: not initialized, being initialized, or ready. `nil` exactly when `global_init` is. |
+| `global_init` | this module's startup initializer, a symbol of `symtab`: an argument-less procedure that initializes the module's variables, once, before any code can observe them. Every user module and submodule owns one from the moment semantics creates it, whatever its initialization later lowers to, so that its module file carries it and every translation unit that depends on the module calls that one definition. It is `nil` for an intrinsic module and for a module a pass creates without one, such as the one that holds a COMMON block, whose storage the translation unit's initializer sets up. See [Program](Program.md). |
+| `global_init_state` | the saved `integer(4)` variable of `symtab` that guards `global_init`: not initialized, being initialized, or ready. `nil` exactly when `global_init` is. |
 | `global_init_collective` | `true` when the initializer needs a collective boundary: the module allocates a saved coarray anywhere in its scope, or it depends on a module that does. Computed by the `coarray` pass and carried in the module file. |
 | `start_name` | the source span of the name in `module name`. |
 | `end_name` | the source span of the name in `end module name`. |

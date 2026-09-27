@@ -2460,8 +2460,9 @@ class PRIFInterface {
                 ASR::deftypeType::Implementation, nullptr,
                 false, false, false, false, false, nullptr, 0,
                 false, false, false, nullptr);
-            unit.m_symtab->add_symbol(name, ASR::down_cast<ASR::symbol_t>(fn));
-            unit.m_global_init_bootstrap = s2c(al, name);
+            ASR::symbol_t *fn_sym = ASR::down_cast<ASR::symbol_t>(fn);
+            unit.m_symtab->add_symbol(name, fn_sym);
+            unit.m_global_init_bootstrap = fn_sym;
         }
 
         void generate_saved_coarray_init(const Location &loc) {

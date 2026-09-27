@@ -57,7 +57,7 @@ ASDL consists of three fundamental constructs: ***types, constructors***, and
 Let's take an example of a node from [ASR.asdl](https://github.com/lfortran/lfortran/blob/main/src/libasr/ASR.asdl):
 
 ```text
-Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, identifier? global_init, location start_name, location end_name)
+Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, symbol? global_init, symbol? global_init_state, location start_name, location end_name)
 ```
 
 ### Types
@@ -77,14 +77,14 @@ We extend these by:
 
 > ***Note***: symbol_table contains `identifier` -> `symbol` mappings
 
-In the above example, `symbol_table`, `identifier`, `stmt`, and `location` are
-types.
+In the above example, `symbol_table`, `identifier`, `stmt`, `symbol`, and
+`location` are types.
 
 ### Constructors
 The **constructors** names must begin with an upper case. The `symbol` type has
 `Program`, `Module`, `Function` and the other constructors listed on the
 [symbol](asr_nodes/symbol_nodes/symbol.md) page, where the `Program`
-constructor has the four members above plus the two source locations. These
+constructor has the six members above plus the two source locations. These
 are, basically, subtrees.
 
 ## Symbol type

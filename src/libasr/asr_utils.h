@@ -7339,13 +7339,22 @@ class SymbolDuplicator {
         SymbolTable* destination_symtab) {
         SymbolTable* module_symtab = al.make_new<SymbolTable>(destination_symtab);
         duplicate_SymbolTable(module_t->m_symtab, module_symtab);
+        // The initializer and its state are symbols of the module, so the
+        // copy refers to their copies.
+        auto duplicated = [&](ASR::symbol_t *sym) -> ASR::symbol_t* {
+            if (sym == nullptr) return nullptr;
+            ASR::symbol_t *copy = module_symtab->get_symbol(
+                ASRUtils::symbol_name(sym));
+            LCOMPILERS_ASSERT(copy != nullptr && copy->type == sym->type);
+            return copy;
+        };
 
         return ASR::down_cast<ASR::symbol_t>(ASR::make_Module_t(
             al, module_t->base.base.loc, module_symtab,
             module_t->m_name, module_t->m_parent_module, module_t->m_dependencies,
             module_t->n_dependencies, module_t->m_loaded_from_mod, module_t->m_intrinsic,
-            module_t->m_has_submodules, module_t->m_global_init,
-            module_t->m_global_init_state, module_t->m_global_init_collective,
+            module_t->m_has_submodules, duplicated(module_t->m_global_init),
+            duplicated(module_t->m_global_init_state), module_t->m_global_init_collective,
             module_t->m_start_name, module_t->m_end_name
         ));
     }

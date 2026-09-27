@@ -12,11 +12,11 @@ namespace LCompilers {
     // Startup ("global") initialization.
     //
     // A `Module`, a `Program` and the `TranslationUnit` can each own one
-    // initializer: the function their `global_init` names, which takes no
-    // arguments and lives in the owner's own symbol table, and the state word
-    // their `global_init_state` names, a saved `integer(4)` variable of the
-    // same symbol table. That link is the only way anything recognises an
-    // initializer or its state; nothing may go by their names.
+    // initializer: the function their `global_init` points to, which takes
+    // no arguments and lives in the owner's own symbol table, and the state
+    // word their `global_init_state` points to, a saved `integer(4)` variable
+    // of the same symbol table. That link is the only way anything recognises
+    // an initializer or its state; nothing may go by their names.
     //
     // Every user module owns an initializer from the moment semantics creates
     // it, whatever its initialization later lowers to, so that its `.mod`
@@ -67,17 +67,17 @@ namespace LCompilers {
             bool bootstrap = false;
         };
 
-        // The procedure `unit.m_global_init_bootstrap` names, or nullptr.
+        // The procedure `unit.m_global_init_bootstrap` points to, or nullptr.
         ASR::Function_t* get_global_init_bootstrap(ASR::TranslationUnit_t &unit);
         // Whether `fn` is the collective bootstrap of its translation unit.
         bool is_global_init_bootstrap(const ASR::Function_t *fn);
 
-        // The initializer and the state `owner` names, or nullptr. `owner`
+        // The initializer and the state of `owner`, or nullptr. `owner`
         // is a `Module_t*`, a `Program_t*` or a `TranslationUnit_t*`.
         ASR::Function_t* get_global_init(ASR::asr_t *owner);
         ASR::Variable_t* get_global_init_state(ASR::asr_t *owner);
 
-        // The owner whose `global_init` names `fn`, or nullptr when `fn` is
+        // The owner whose `global_init` is `fn`, or nullptr when `fn` is
         // not an initializer.
         ASR::asr_t* global_init_owner(const ASR::Function_t *fn);
         // The symbol table of that owner, or nullptr.
@@ -138,7 +138,7 @@ namespace LCompilers {
         ASR::Function_t* create_module_global_init(Allocator &al,
             ASR::Module_t *m);
 
-        // The initializer `owner` names, creating it (and its state) if
+        // The initializer of `owner`, creating it (and its state) if
         // `owner` has none yet, named `name` when that is given. The name
         // of the translation unit's initializer is its stable id, so a pass
         // that creates one derives the name from what it initializes.

@@ -15,7 +15,7 @@ GlobalInitDispatch(init_dispatch_phase phase, stmt* ensures)
 | Argument | Description |
 |----------|-------------|
 | `phase` | which phase of the engine to run: [InitDispatchLocal or InitDispatchCollective](../enum_nodes/init_dispatch_phase.md). |
-| `ensures` | calls of the startup initializers this entry point needs itself, each an ordinary `SubroutineCall` of an initializer an owner's `global_init` names. They run after the dispatch. |
+| `ensures` | calls of the startup initializers this entry point needs itself, each an ordinary `SubroutineCall` of an initializer an owner's `global_init` refers to. They run after the dispatch. |
 
 ### Return values
 

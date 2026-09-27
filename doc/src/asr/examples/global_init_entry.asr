@@ -1128,8 +1128,8 @@
         :loaded_from_mod false
         :intrinsic false
         :has_submodules false
-        :global_init "__lcompilers_global_init_m"
-        :global_init_state "__lcompilers_global_init_state_m"
+        :global_init (SymbolRef 3 "__lcompilers_global_init_m")
+        :global_init_state (SymbolRef 3 "__lcompilers_global_init_state_m")
         :global_init_collective false
       )
       "main" (Program
