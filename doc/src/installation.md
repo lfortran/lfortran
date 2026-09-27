@@ -9,7 +9,8 @@ build LFortran. Install Pixi following its platform instructions, and install
 Git. On macOS, install Xcode Command Line Tools (`xcode-select --install`).
 On Windows, initialize the MSVC developer environment as described
 [below](#build-from-git-on-windows-with-visual-studio), with Git Bash available.
-Pixi supplies the Linux C/C++ compilers.
+Pixi supplies the Linux C/C++ compilers and selects its GCC driver for LLVM
+executable linking, so host Clang is not required.
 On macOS, the environment selects the Xcode C/C++ compilers; the C backend
 honors this selection for both compilation and linking (see
 [Selecting the C Compiler](usage.md#selecting-the-c-compiler)).

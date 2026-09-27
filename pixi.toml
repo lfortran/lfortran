@@ -110,8 +110,9 @@ cxx-compiler = "*"
 [feature.build.activation.env]
 LFORTRAN_BUILD_DIR = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME"
 
-[feature.build.target.unix.activation.env]
+[feature.build.target.linux.activation.env]
 PATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/src/bin:$PATH"
+LFORTRAN_LINKER = "gcc"
 
 [feature.build.target.osx.activation.env]
 PATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/src/bin:$PATH"
