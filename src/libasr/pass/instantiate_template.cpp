@@ -2070,14 +2070,23 @@ public:
 
     // A call through a generic interface declared in the templated procedure
     // refers to that generic's instantiation.
+    // Any other generic interface of the template, e.g. one declared in a
+    // template block, is not reachable from the instantiation: the call then
+    // only refers to its resolved specific.
     ASR::symbol_t* instantiate_original_name(ASR::symbol_t* original_name) {
-        if (original_name != nullptr
-                && ASR::is_a<ASR::GenericProcedure_t>(*original_name)
-                && ASRUtils::symbol_parent_symtab(original_name) == ASRUtils::symbol_symtab(sym)) {
+        if (original_name == nullptr
+                || !ASR::is_a<ASR::GenericProcedure_t>(*original_name)) {
+            return original_name;
+        }
+        SymbolTable* generic_scope = ASRUtils::symbol_parent_symtab(original_name);
+        if (generic_scope == ASRUtils::symbol_symtab(sym)) {
             ASR::symbol_t* new_original_name = new_scope->get_symbol(
                 ASRUtils::symbol_name(original_name));
             LCOMPILERS_ASSERT(new_original_name != nullptr);
             return new_original_name;
+        }
+        if (SymbolInstantiator::is_in_template(generic_scope)) {
+            return nullptr;
         }
         return original_name;
     }
