@@ -16,7 +16,7 @@ program derived_types_209
     implicit none
     ! A sequence type of the same name and components is the same type as
     ! the module's. The LLVM backend still gives the two definitions
-    ! different types, so this is not tested with it yet.
+    ! different types (#13782), so this is not tested with it yet.
     type :: pair
         sequence
         integer :: a, b
