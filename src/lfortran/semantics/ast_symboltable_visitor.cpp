@@ -2009,11 +2009,14 @@ public:
             std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
+            // An internal procedure resets it when it is done.
+            ASR::abiType current_procedure_abi_type_copy = current_procedure_abi_type;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
+            current_procedure_abi_type = current_procedure_abi_type_copy;
             implicit_dictionary = implicit_dictionary_copy;
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
@@ -2929,11 +2932,14 @@ public:
             default_storage_save = false;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
+            // An internal procedure resets it when it is done.
+            ASR::abiType current_procedure_abi_type_copy = current_procedure_abi_type;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
+            current_procedure_abi_type = current_procedure_abi_type_copy;
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
         }
