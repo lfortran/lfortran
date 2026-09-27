@@ -1110,6 +1110,10 @@ public:
                 ASR::CustomOperator_t* x = ASR::down_cast<ASR::CustomOperator_t>(sym);
                 return instantiate_CustomOperator(x);
             }
+            case (ASR::symbolType::GenericProcedure) : {
+                ASR::GenericProcedure_t* x = ASR::down_cast<ASR::GenericProcedure_t>(sym);
+                return instantiate_GenericProcedure(x);
+            }
             default: {
                 std::string sym_name = ASRUtils::symbol_name(sym);
                 throw LCompilersException("Instantiation of " + sym_name
@@ -1696,6 +1700,27 @@ public:
         return new_scope->resolve_symbol(x->m_name);
     }
 
+    // A generic interface declared in a templated procedure: each specific is
+    // instantiated in the same scope, so that a deferred procedure becomes
+    // the procedure it is instantiated with.
+    ASR::symbol_t* instantiate_GenericProcedure(ASR::GenericProcedure_t* x) {
+        Vec<ASR::symbol_t*> procs;
+        procs.reserve(al, x->n_procs);
+        for (size_t i = 0; i < x->n_procs; i++) {
+            ASR::symbol_t* proc = x->m_procs[i];
+            SymbolInstantiator t(al, target_scope, type_subs, symbol_subs,
+                ASRUtils::symbol_name(proc), proc, diagnostics);
+            procs.push_back(al, t.instantiate());
+        }
+
+        ASR::symbol_t* new_x = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_GenericProcedure_t(al, x->base.base.loc, target_scope,
+                s2c(al, new_sym_name), procs.p, procs.size(), x->m_access));
+        target_scope->add_symbol(new_sym_name, new_x);
+
+        return new_x;
+    }
+
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
 
@@ -1866,6 +1891,9 @@ public:
             case (ASR::symbolType::CustomOperator) : {
                 break;
             }
+            case (ASR::symbolType::GenericProcedure) : {
+                break;
+            }
             default: {
                 std::string sym_name = ASRUtils::symbol_name(sym);
                 throw LCompilersException("Instantiation body of " + sym_name
@@ -1989,6 +2017,20 @@ public:
         return ASR::make_Var_t(al, x->base.base.loc, sym);
     }
 
+    // A call through a generic interface declared in the templated procedure
+    // refers to that generic's instantiation.
+    ASR::symbol_t* instantiate_original_name(ASR::symbol_t* original_name) {
+        if (original_name != nullptr
+                && ASR::is_a<ASR::GenericProcedure_t>(*original_name)
+                && ASRUtils::symbol_parent_symtab(original_name) == ASRUtils::symbol_symtab(sym)) {
+            ASR::symbol_t* new_original_name = new_scope->get_symbol(
+                ASRUtils::symbol_name(original_name));
+            LCOMPILERS_ASSERT(new_original_name != nullptr);
+            return new_original_name;
+        }
+        return original_name;
+    }
+
     ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t* x) {
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
@@ -2038,7 +2080,8 @@ public:
         }
 
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name,
-            x->m_original_name, args.p, args.size(), type, value, dt);
+            instantiate_original_name(x->m_original_name), args.p, args.size(),
+            type, value, dt);
     }
 
     ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t* x) {
@@ -2103,7 +2146,8 @@ public:
         }
 
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name,
-            x->m_original_name, args.p, args.size(), dt, nullptr, false);
+            instantiate_original_name(x->m_original_name), args.p, args.size(),
+            dt, nullptr, false);
     }
 
     ASR::asr_t* duplicate_DoLoop(ASR::DoLoop_t *x) {
