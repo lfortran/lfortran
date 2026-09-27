@@ -25,6 +25,40 @@ type :: ptrs
     integer, pointer :: p => null()
     integer :: n = 6
 end type
+type :: handler
+    procedure(dbl), pointer, nopass :: fp => dbl
+end type
+type :: box
+    type(handler) :: h
+    integer :: n = 5
+end type
+type :: base
+    integer :: a = 5
+contains
+    procedure :: get => base_get
+end type
+type, extends(base) :: der
+    real :: b = 2.5
+contains
+    procedure :: get => der_get
+end type
+contains
+integer function dbl(x)
+    integer, intent(in) :: x
+    dbl = 2 * x
+end function
+integer function tpl(x)
+    integer, intent(in) :: x
+    tpl = 3 * x
+end function
+integer function base_get(self)
+    class(base), intent(in) :: self
+    base_get = self%a
+end function
+integer function der_get(self)
+    class(der), intent(in) :: self
+    der_get = self%a + 100
+end function
 end module
 
 module derived_types_211_vars
@@ -36,6 +70,10 @@ type(outer) :: o2(2, 3)
 type(child) :: ch(4)
 type(ptrs) :: pp(2)
 type(outer) :: os
+type(box) :: bx
+type(handler) :: handlers(3)
+type(der) :: ders(3)
+type(base) :: bases(0:2)
 end module
 
 program derived_types_211
@@ -75,5 +113,19 @@ arr(1)%z = 99
 o2(1, 1)%in%a = 99
 if (arr(2)%z /= 7) error stop 19
 if (o2(2, 1)%in%a /= 3) error stop 20
+if (bx%n /= 5) error stop 21
+if (bx%h%fp(3) /= 6) error stop 22
+do i = 1, 3
+    handlers(i)%fp => tpl
+end do
+if (handlers(2)%fp(2) /= 6) error stop 23
+do i = 1, 3
+    if (ders(i)%a /= 5) error stop 24
+    if (ders(i)%b /= 2.5) error stop 25
+    if (ders(i)%get() /= 105) error stop 26
+end do
+do i = 0, 2
+    if (bases(i)%get() /= 5) error stop 27
+end do
 print *, "ok"
 end program
