@@ -6215,6 +6215,8 @@ public:
             std::string proc_name = ASRUtils::symbol_name(proc);
             ASR::symbol_t *new_proc;
             if (symbol_subs.find(proc_name) != symbol_subs.end()) {
+                // A deferred procedure, replaced by its actual argument, or
+                // a procedure the only-list also names, already instantiated.
                 new_proc = symbol_subs[proc_name];
             } else {
                 // Not hiding a host entity, which the generic may extend.

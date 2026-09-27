@@ -3047,11 +3047,17 @@ public:
                         local_sym, spec)) {
                     // The specific procedures of a generic spec are recorded
                     // in the substitutions by their names in the template.
+                    // A deferred procedure is replaced by its actual argument,
+                    // which has no body to instantiate.
                     ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(
                         temp->m_symtab->get_symbol(remote_sym));
                     for (size_t j = 0; j < op->n_procs; j++) {
                         ASR::symbol_t *s = op->m_procs[j];
-                        ASR::symbol_t *new_s = symbol_subs[ASRUtils::symbol_name(s)];
+                        std::string s_name = ASRUtils::symbol_name(s);
+                        if (ASRUtils::is_template_arg(template_sym, s_name)) {
+                            continue;
+                        }
+                        ASR::symbol_t *new_s = symbol_subs[s_name];
                         instantiate_body(al, type_subs, symbol_subs, new_s, s,
                             instantiated_bodies);
                     }

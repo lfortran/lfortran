@@ -25,7 +25,25 @@ module template_instantiate_only_op_01_tm
             c%v = a
         end function
     end template
+    template dt {t, plus}
+        deferred type :: t
+        deferred interface
+            function plus(a, b) result(c)
+                type(t), intent(in) :: a, b
+                type(t) :: c
+            end function
+        end interface
+        interface operator(.pl.)
+            procedure plus
+        end interface
+    end template
     instantiate tt {integer}, only: operator(+), ibox => box, f, operator(.op.)
+contains
+    function iadd(a, b) result(c)
+        integer, intent(in) :: a, b
+        integer :: c
+        c = a + b
+    end function
 end module
 
 module template_instantiate_only_op_01_om
@@ -64,6 +82,7 @@ program template_instantiate_only_op_01
         end function
     end template
     instantiate ut {integer}, only: box, operator(+)
+    instantiate dt {integer, iadd}, only: operator(.pl.)
     type(box) :: x
     type(ibox) :: i
     type(pt) :: q
@@ -78,6 +97,7 @@ program template_instantiate_only_op_01
     if (i%v /= 3) error stop 4
     q = pt(1) + pt(2)
     if (q%k /= 3) error stop 5
+    if ((1 .pl. 2) /= 3) error stop 10
     call inner()
     print *, x%v, i%v, q%k
 contains
