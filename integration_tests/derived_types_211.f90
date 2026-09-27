@@ -74,6 +74,8 @@ type(box) :: bx
 type(handler) :: handlers(3)
 type(der) :: ders(3)
 type(base) :: bases(0:2)
+type(t) :: large(100000)
+type(outer) :: large2(50, 40)
 end module
 
 program derived_types_211
@@ -127,5 +129,17 @@ end do
 do i = 0, 2
     if (bases(i)%get() /= 5) error stop 27
 end do
+if (large(1)%z /= 7 .or. large(1)%r /= 1.5) error stop 28
+if (large(50001)%z /= 7 .or. large(50001)%r /= 1.5) error stop 29
+if (large(100000)%z /= 7 .or. large(100000)%r /= 1.5) error stop 30
+large(2)%z = 99
+if (large(1)%z /= 7 .or. large(3)%z /= 7) error stop 31
+do j = 1, 40, 39
+    do i = 1, 50, 49
+        if (large2(i, j)%k /= -4_8 .or. large2(i, j)%in%a /= 3) error stop 32
+        if (large2(i, j)%in2%d /= 1.0d0 .or. .not. large2(i, j)%l) error stop 33
+    end do
+end do
+if (large2(25, 20)%c /= (1.0, -2.0) .or. large2(25, 20)%in%d /= 2.5d0) error stop 34
 print *, "ok"
 end program
