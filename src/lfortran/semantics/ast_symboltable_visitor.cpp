@@ -4739,7 +4739,8 @@ public:
                             continue;
                         }
                         // Otherwise import it from its module, under a
-                        // unique name if its own name is taken in this scope.
+                        // unique name if its own name is visible here, so
+                        // that the import does not hide another entity.
                         ASR::Module_t *m = ASRUtils::get_sym_module(target);
                         if (m == nullptr) {
                             diag.add(Diagnostic(
@@ -4756,7 +4757,7 @@ public:
                         }
                         std::string target_name = ASRUtils::symbol_name(target);
                         std::string local_name = target_name;
-                        if (current_scope->get_symbol(local_name) != nullptr) {
+                        if (current_scope->resolve_symbol(local_name) != nullptr) {
                             local_name = current_scope->get_unique_name(
                                 "1_" + std::string(m->m_name) + "_"
                                 + target_name, false);
