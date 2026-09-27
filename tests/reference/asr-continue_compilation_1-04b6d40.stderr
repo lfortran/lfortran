@@ -1693,7 +1693,7 @@ semantic error: Arguments to min0 must be of real, integer or character type
 512 |     print *, min(c, c)
     |              ^^^^^^^^^ 
 
-semantic error: `exit` statements cannot be outside of loops or blocks
+semantic error: `exit` statements without a construct name cannot be outside of loops
    --> tests/errors/continue_compilation_1.f90:513:5
     |
 513 |     exit
@@ -3004,3 +3004,15 @@ semantic error: type mismatch in structure constructor: the parent component 'ip
      |
 2002 |     e = ipck_der2_t(ipck_der_t=1.0, ipck_base_t=ipck_base_t(1), e1=3)  ! {Error} type mismatch in structure constructor: the parent component 'ipck_der_t' requires a scalar value of type type(ipck_der_t), not real(4)
      |                                ^^^ 
+
+semantic error: `exit` statements without a construct name cannot be outside of loops
+    --> tests/errors/continue_compilation_1.f90:2013:21
+     |
+2013 |         if (n == 0) exit  ! {Error} `exit` statements without a construct name cannot be outside of loops
+     |                     ^^^^ 
+
+semantic error: `exit` statements cannot leave a `do concurrent` loop
+    --> tests/errors/continue_compilation_1.f90:2018:25
+     |
+2018 |             if (i == 2) exit  ! {Error} `exit` statements cannot leave a `do concurrent` loop
+     |                         ^^^^ 
