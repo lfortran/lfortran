@@ -1,11 +1,8 @@
 ! A bind(c) procedure with an automatic array whose extent comes from module
-! state and an internal procedure that reads that array by host
-! association. Its entry dispatches the module's initialization before the
-! extent is evaluated, as global_init_24 checks. The transformation that
-! makes that possible must keep the internal procedure where Fortran allows
-! one: CMakeLists.txt also compiles, with GFortran, the Fortran that the
-! `fortran` backend prints for it, and an internal procedure cannot contain
-! another.
+! state, which a loop of the module's initializer gives, and an internal
+! procedure that reads that array by host association. CMakeLists.txt also
+! compiles, with GFortran, the Fortran that the `fortran` backend prints for
+! it, whose startup is plain calls of the initializers.
 module global_init_30_m
     use iso_c_binding, only: c_int
     implicit none

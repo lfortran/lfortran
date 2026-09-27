@@ -1,11 +1,15 @@
+/* lfortran_initialize(), with LFortran; see ISO_Fortran_binding.h. */
+#include <ISO_Fortran_binding.h>
+
 int global_init_11_check(int changed);
 void global_init_11_change(void);
 
 /*
  * Changes the module's static data before the startup hook of the object
- * file that defines the module has run, which must not undo the change. The
- * constructor is registered the way global_init_10c.c describes, which is
- * what makes it run ahead of that hook.
+ * file that defines the module has run, and before the runtime is started,
+ * which must not undo the change; see global_init_10c.c. The constructor is
+ * registered the way global_init_10c.c describes, which is what makes it run
+ * ahead of that hook.
  */
 #if defined(_MSC_VER)
 static void change_before_module_startup(void);
@@ -23,6 +27,16 @@ static void change_before_module_startup(void) {
     global_init_11_change();
 }
 
-int main(void) {
-    return global_init_11_check(1) != 0;
+int main(int argc, char **argv) {
+#ifdef LFORTRAN_HAS_INITIALIZE
+    lfortran_initialize(argc, argv);
+#else
+    (void)argc;
+    (void)argv;
+#endif
+    int rc = global_init_11_check(1) != 0;
+#ifdef LFORTRAN_HAS_INITIALIZE
+    lfortran_finalize();
+#endif
+    return rc;
 }

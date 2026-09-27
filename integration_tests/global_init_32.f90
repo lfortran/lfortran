@@ -1,9 +1,7 @@
 ! A bind(c) procedure whose automatic local takes its extent from module state
 ! that startup code sets up, and which contains an internal procedure that
-! uses that local by host association. Splitting the procedure so that the
-! initialization runs before the extent is evaluated has to keep the internal
-! procedure one level deep, as Fortran requires; an internal bind(c)
-! procedure, which can contain nothing, is split within its host.
+! uses that local by host association, and an internal bind(c) procedure;
+! the program's startup initializes the state before either is called.
 module global_init_32_m
 use iso_c_binding, only: c_int
 implicit none

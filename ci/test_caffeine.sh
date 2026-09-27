@@ -94,7 +94,8 @@ echo "CXX=${CXX}"
 which clang
 clang --version
 
-# inject ISO_Fortran_binding.h into the C include path
+# inject ISO_Fortran_binding.h into the C include path, for Caffeine and for
+# the C hosts of the tests, which call lfortran_initialize()
 export CPPFLAGS="-I$(lfortran --print-c-include-dir)"
 
 # instruct Caffeine to import the iso_fortran_env constants from LFortran
@@ -221,7 +222,7 @@ if [[ " $extrafiles " == *".c "* ]]; then
     for f in $extrafiles $testfile; do
         o="$(basename "$f").o"
         if [[ "$f" == *.c ]]; then
-            ${CC:-cc} -c "$f" -o "$o"
+            ${CC:-cc} $CPPFLAGS -c "$f" -o "$o"
         else
             lfortran -c $extra_args "$f" -o "$o"
         fi
@@ -307,7 +308,7 @@ done 3<<< "$tests" # end of while loop over tests
 )
 lfortran -c --coarray=true --separate-compilation -fPIC \
     integration_tests/coarrays_61_p.f90 -o coarrays_61_p.o
-${CC:-cc} -c integration_tests/coarrays_61c.c -o coarrays_61c.o
+${CC:-cc} $CPPFLAGS -c integration_tests/coarrays_61c.c -o coarrays_61c.o
 if [ $LINUX ] ; then
     lfortran --shared coarrays_61_p.o -o libcoarrays_61.so
     lfortran coarrays_61c.o "$prif_adapter" -o coarrays_61_lf.out \

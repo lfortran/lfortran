@@ -1,14 +1,15 @@
 #include <stdint.h>
 #include <stdio.h>
 
-/* The start of the coarray runtime (src/runtime/prif/lcompilers_prif.f90)
- * and the host startup entry of the LFortran runtime. */
+/* lfortran_initialize(), the host startup of the LFortran runtime. */
+#include <ISO_Fortran_binding.h>
+
+/* The start of the coarray runtime (src/runtime/prif/lcompilers_prif.f90). */
 void lcompilers_prif_start(int32_t *stat);
-void lcompilers_initialize(void);
 int coarrays_60_run(void);
 int coarrays_60_again(void);
 
-int main(void) {
+int main(int argc, char **argv) {
     int32_t stat = -1;
     lcompilers_prif_start(&stat);
     if (stat != 0) {
@@ -17,18 +18,19 @@ int main(void) {
         printf("ERROR STOP 90 (the host's start of the runtime: %d)\n", (int)stat);
         return 1;
     }
-    lcompilers_initialize();
+    lfortran_initialize(argc, argv);
     int rc = coarrays_60_run();
     if (rc != 0) {
         printf("ERROR STOP %d\n", rc);
         return 1;
     }
-    lcompilers_initialize();
+    lfortran_initialize(argc, argv);
     rc = coarrays_60_again();
     if (rc != 0) {
         printf("ERROR STOP %d (after the second startup)\n", 10 + rc);
         return 1;
     }
+    lfortran_finalize();
     printf("ok\n");
     return 0;
 }

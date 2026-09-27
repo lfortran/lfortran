@@ -1,12 +1,18 @@
 #include <stdlib.h>
 
+/* lfortran_initialize(), with LFortran; see ISO_Fortran_binding.h. */
+#include <ISO_Fortran_binding.h>
+
 int global_init_10_initial(void);
 void global_init_10_set(void);
 void global_init_10_check(void);
 
 /*
  * Changes the module's variables before the startup hook of the object file
- * that defines the module has run, which must not undo the change. LLVM
+ * that defines the module has run, which must not undo the change. That
+ * is before the runtime is started too, which ISO_Fortran_binding.h does
+ * not promise to work; it does for variables whose initial state is static
+ * data, and startup never stores a value static data holds. LLVM
  * registers that hook with the default priority, and this constructor runs
  * ahead of it:
  * - on ELF, because of its priority;
@@ -37,7 +43,16 @@ static void change_before_module_startup(void) {
     global_init_10_set();
 }
 
-int main(void) {
+int main(int argc, char **argv) {
+#ifdef LFORTRAN_HAS_INITIALIZE
+    lfortran_initialize(argc, argv);
+#else
+    (void)argc;
+    (void)argv;
+#endif
     global_init_10_check();
+#ifdef LFORTRAN_HAS_INITIALIZE
+    lfortran_finalize();
+#endif
     return 0;
 }

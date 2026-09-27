@@ -24,8 +24,8 @@ endif()
 if (NOT XEUS_LFORTRAN_WASM_BUILD AND NOT EMSCRIPTEN)
     add_executable(test_init_engine test_init_engine.c)
     target_link_libraries(test_init_engine lfortran_runtime_static)
-    set(init_engine_scenarios order_forward order_reverse republish fast_path
-        fast_path_rearm collective
+    set(init_engine_scenarios order_forward order_reverse republish host_startup
+        collective
         publish_during_init publish_twice remove_during_init remove_in_teardown
         unload_in_teardown bootstrap_incarnation)
     if (NOT WIN32)
@@ -261,18 +261,19 @@ int main(void) { return 0; }" HAVE_GLIBC)
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/run_c_note_test.cmake)
             set_tests_properties(test_init_c_note PROPERTIES TIMEOUT 300)
         endif()
-        # An entry point called from a C constructor of its own library,
-        # before the library's Fortran constructors; see
-        # run_entry_load_test.cmake.
+        # The host startup of a C program with a Fortran library it loads,
+        # called from the library's C constructor too; see
+        # run_host_load_test.cmake.
         if (NOT APPLE AND WITH_LLVM)
-            add_test(NAME test_init_entry_load COMMAND ${CMAKE_COMMAND}
+            add_test(NAME test_init_host_load COMMAND ${CMAKE_COMMAND}
                 -DLFORTRAN=$<TARGET_FILE:lfortran> -DCC=${CMAKE_C_COMPILER}
                 "-DLINKERS=${init_linkers}"
+                -DINCLUDE=${CMAKE_SOURCE_DIR}/src/libasr/runtime
                 -DRUNTIME=$<TARGET_FILE_DIR:lfortran_runtime>
                 -DSRC=${CMAKE_CURRENT_SOURCE_DIR}
-                -DWORK=${CMAKE_CURRENT_BINARY_DIR}/test_init_entry_load
-                -P ${CMAKE_CURRENT_SOURCE_DIR}/run_entry_load_test.cmake)
-            set_tests_properties(test_init_entry_load PROPERTIES TIMEOUT 300)
+                -DWORK=${CMAKE_CURRENT_BINARY_DIR}/test_init_host_load
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/run_host_load_test.cmake)
+            set_tests_properties(test_init_host_load PROPERTIES TIMEOUT 300)
         endif()
         foreach(s failed_load teardown_race reload_during_walk first_registration)
             add_test(NAME test_init_native_race_${s} COMMAND test_init_native_race

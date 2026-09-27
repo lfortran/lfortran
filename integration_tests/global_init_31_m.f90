@@ -2,8 +2,8 @@
 ! procedure declares itself, with an automatic array whose extent comes from
 ! module state and an internal procedure that reads that array by host
 ! association. The module state is a default initialization that needs code
-! at startup, so the procedure's entry has to dispatch it before the extent
-! is evaluated. The program calls the procedure through its binding label,
+! at startup, which the program's startup runs before the extent is
+! evaluated. The program calls the procedure through its binding label,
 ! with a type of its own that is the same type because both are
 ! interoperable with the same components. The `fortran` backend cannot
 ! compile a program against a module compiled on its own, so the Fortran it

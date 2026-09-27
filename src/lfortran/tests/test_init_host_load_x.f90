@@ -1,7 +1,7 @@
-! A module of the program of run_entry_load_test.cmake, whose records the
-! engine dispatches from the program's constructor before the library is
-! loaded.
-module test_init_entry_load_x
+! A module of the program of run_host_load_test.cmake, whose records are
+! initialized, by the program's constructor and its lfortran_initialize(),
+! before the library is loaded.
+module test_init_host_load_x
 implicit none
 type :: node
     integer :: h = 0

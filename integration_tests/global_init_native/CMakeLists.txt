@@ -19,6 +19,10 @@
 
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/..)
 set(mod ${CMAKE_CURRENT_BINARY_DIR}/mod)
+# The C programs start the runtime as ISO_Fortran_binding.h describes.
+if (ISO_FORTRAN_BINDING_INCLUDE_DIR)
+    include_directories(${ISO_FORTRAN_BINDING_INCLUDE_DIR})
+endif()
 
 if (APPLE)
     set(strip -Wl,-dead_strip)

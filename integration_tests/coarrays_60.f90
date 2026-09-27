@@ -1,9 +1,9 @@
 ! coarrays_57 and coarrays_59 for a host that starts the coarray runtime
-! itself: coarrays_60c.c calls lcompilers_prif_start before the host startup
-! entry, lcompilers_initialize(), whose bootstrap then finds the runtime
+! itself: coarrays_60c.c calls lcompilers_prif_start before the host startup,
+! lfortran_initialize(), whose bootstrap then finds the runtime
 ! already started and has to accept that. The saved coarray still has to be
 ! allocated and hold its initial value on every image afterwards, and a
-! second call of lcompilers_initialize() must neither fail nor allocate or
+! second call of lfortran_initialize() must neither fail nor allocate or
 ! initialize it again.
 module coarrays_60_m
     use iso_c_binding, only: c_int
@@ -34,7 +34,7 @@ contains
         coarrays_60_run = 0
     end function coarrays_60_run
 
-    ! After the second lcompilers_initialize(): what coarrays_60_run left.
+    ! After the second lfortran_initialize(): what coarrays_60_run left.
     integer(c_int) function coarrays_60_again() bind(c)
         integer :: me, other
         me = this_image()

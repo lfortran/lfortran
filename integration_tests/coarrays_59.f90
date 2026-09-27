@@ -1,5 +1,5 @@
 ! Saved coarrays with initial values in a module that only C drives: once
-! coarrays_59c.c has called the host startup entry, lcompilers_initialize(),
+! coarrays_59c.c has called the host startup, lfortran_initialize(),
 ! on every image, another image's initial values can be read at once, with
 ! no SYNC ALL of the program's own: the startup that initialized them on
 ! every image waits for all of them before it returns.

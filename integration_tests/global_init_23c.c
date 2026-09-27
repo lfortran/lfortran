@@ -1,6 +1,9 @@
 #include <dlfcn.h>
 #include <stdio.h>
 
+/* lfortran_initialize(), with LFortran; see ISO_Fortran_binding.h. */
+#include <ISO_Fortran_binding.h>
+
 int global_init_20_check_initial(void);
 void global_init_20_mutate(void);
 int global_init_20_check_mutated(void);
@@ -13,15 +16,20 @@ typedef void (*mutate_fn)(void);
  * global_init_20_a and global_init_20_b are shared libraries this program is
  * linked with; the one whose path is the first argument, holding
  * global_init_20_c, is loaded twice with dlopen, and closed after each time.
- * Loading it must initialize its module, which depends on global_init_20_a,
- * without initializing global_init_20_a again: the change made to that before
- * the first load has to survive both. Whether dlclose unloads the library is
+ * The program starts the runtime once, first, so the library's own
+ * constructors initialize it when it is loaded. Loading it must initialize
+ * its module, which depends on global_init_20_a, without initializing
+ * global_init_20_a again: the change made to that before the first load has
+ * to survive both. Whether dlclose unloads the library is
  * up to the platform, so the second load expects global_init_20_c's storage
  * at its initial state only if the library was really unloaded.
  */
 int main(int argc, char **argv) {
     int rc, unloaded = 0;
     if (argc < 2) return 90;
+#ifdef LFORTRAN_HAS_INITIALIZE
+    lfortran_initialize(argc, argv);
+#endif
     rc = global_init_20_check_initial();
     if (rc) {
         printf("initial check %d\n", rc);
@@ -68,6 +76,9 @@ int main(int argc, char **argv) {
         printf("global_init_20_a_first\n");
         return 94;
     }
+#ifdef LFORTRAN_HAS_INITIALIZE
+    lfortran_finalize();
+#endif
     printf("ok (%s)\n", unloaded ? "unloaded" : "not unloaded");
     return 0;
 }

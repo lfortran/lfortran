@@ -1,5 +1,5 @@
 ! A saved coarray with an initial value in a module that only C drives:
-! after coarrays_58c.c calls the host startup entry, lcompilers_initialize(),
+! after coarrays_58c.c calls the host startup, lfortran_initialize(),
 ! on every image, the coarray is allocated and holds its initial value on
 ! both images, with no Fortran main program.
 module coarrays_58_m

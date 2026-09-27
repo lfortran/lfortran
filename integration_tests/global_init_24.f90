@@ -1,8 +1,8 @@
 ! A C-callable procedure whose automatic objects take their bounds and
 ! length from module state, called from a C constructor that runs before the
-! startup hook of the module's object file (see global_init_24c.c). The
-! module has to be initialized before those specification expressions are
-! evaluated on entry, not only before the first statement of the body.
+! startup hook of the module's object file, after it has started the runtime
+! (see global_init_24c.c). The module has to be initialized before those
+! specification expressions are evaluated on entry.
 integer(c_int) function global_init_24_probe() bind(c)
     use iso_c_binding, only: c_int
     use global_init_24_m, only: cfgs, nm

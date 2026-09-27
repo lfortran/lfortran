@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include <libasr/runtime/lfortran_intrinsics.h>
+#include <libasr/runtime/ISO_Fortran_binding.h>
 
 #if !defined(_WIN32)
 #include <pthread.h>
@@ -334,14 +335,11 @@ static int scenario_republish(void) {
 }
 
 /* ---------------------------------------------------------------------- */
-/* Once a dispatch through a foreign entry point's word has completed and */
-/* nothing that registers records has changed, a call of the entry point */
-/* neither asks the loader nor takes a lock; a batch added makes the next */
-/* one look again, and so does a word that is fresh -- that of an entry   */
-/* point of an image just loaded -- whatever other entry points found.    */
+/* The host startup of a C main program, lfortran_initialize(): it runs   */
+/* every record and takes the command line, and can be called again,      */
+/* which runs the records added since and nothing twice, and keeps the    */
+/* command line of the first call that passed one.                        */
 /* ---------------------------------------------------------------------- */
-
-uint64_t _lcompilers_init_test_generation_reads(void);
 
 static int32_t st_settled, st_later;
 static int settled_bodies = 0, later_bodies = 0;
@@ -364,84 +362,41 @@ static const lcompilers_init_record settled_records[] = {
     {"m:settled", ensure_settled, NULL, &st_settled, 0, 0},
 };
 static const lcompilers_init_record later_records[] = {
-    {"m:later", ensure_later, NULL, &st_later, 0, 0},
+    {"m:later", ensure_later, NULL, &st_later, lcompilers_init_collective, 0},
 };
 static const lcompilers_init_table settled_table = {
     lcompilers_init_abi_version, 1, settled_records};
 static const lcompilers_init_table later_table = {
     lcompilers_init_abi_version, 1, later_records};
 
-/* The word of the entry point these scenarios call. */
-static uint64_t entered;
+int32_t _lfortran_command_argument_count(void);
 
-#if !defined(_WIN32)
-static void *dispatch_often(void *unused) {
-    (void)unused;
-    for (int i = 0; i < 100000; i++) _lcompilers_init_enter(&entered);
-    return NULL;
-}
-#endif
-
-static int scenario_fast_path(void) {
+static int scenario_host_startup(void) {
+    char prog[] = "host", first[] = "first", other[] = "other";
+    char *argv1[] = {prog, first, NULL};
+    char *argv2[] = {prog, other, other, NULL};
     _lcompilers_init_add_records(&settled_table);
-    _lcompilers_init_enter(&entered);
-    expect(settled_bodies == 1, "the batch is initialized");
-    uint64_t reads = _lcompilers_init_test_generation_reads();
-    for (int i = 0; i < 1000; i++) _lcompilers_init_enter(&entered);
-#if !defined(_WIN32)
-    pthread_t threads[4];
-    for (int i = 0; i < 4; i++) pthread_create(&threads[i], NULL, dispatch_often, NULL);
-    for (int i = 0; i < 4; i++) pthread_join(threads[i], NULL);
-#endif
-    expect(_lcompilers_init_test_generation_reads() == reads,
-        "a dispatch with nothing changed looks at nothing");
-
-    uint64_t fresh = 0;
-    _lcompilers_init_enter(&fresh);
-    expect(_lcompilers_init_test_generation_reads() > reads,
-        "an entry point with a fresh word looks");
-    reads = _lcompilers_init_test_generation_reads();
-    _lcompilers_init_enter(&fresh);
-    _lcompilers_init_enter(&entered);
-    expect(_lcompilers_init_test_generation_reads() == reads,
-        "an entry point that looked takes the fast path");
-
+    lfortran_initialize(0, NULL);
+    expect(settled_bodies == 1, "the startup runs the records there are");
+    lfortran_initialize(2, argv1);
+    expect(settled_bodies == 1, "a second startup initializes nothing again");
+    expect(_lfortran_command_argument_count() == 1
+        && strcmp(_lpython_get_argv(1), "first") == 0,
+        "a startup takes the first command line passed");
+    lfortran_initialize(3, argv2);
+    expect(settled_bodies == 1, "a third startup initializes nothing again");
+    expect(_lfortran_command_argument_count() == 1
+        && strcmp(_lpython_get_argv(1), "first") == 0,
+        "a later startup keeps the command line of the first");
+    /* A collective record, as one of a library loaded later that allocates
+     * a saved coarray: the next startup is its collective boundary. */
     _lcompilers_init_add_records(&later_table);
-    _lcompilers_init_enter(&entered);
-    expect(later_bodies == 1, "a batch added later is initialized by the next dispatch");
-    expect(_lcompilers_init_test_generation_reads() > reads,
-        "a dispatch after a batch was added looks again");
-
-    expect(settled_bodies == 1 && later_bodies == 1, "nothing is initialized twice");
-    _lcompilers_init_remove_records(&later_table);
-    _lcompilers_init_remove_records(&settled_table);
-    return finish();
-}
-
-/* ---------------------------------------------------------------------- */
-/* A dispatch that finds the work done, as one after a teardown does,     */
-/* arms the fast path again: the dispatches after it look at nothing.     */
-/* ---------------------------------------------------------------------- */
-
-/* Whether calls of the entry point with nothing changed take the fast
- * path again after at most one that looks. */
-static int fast_again(void) {
-    _lcompilers_init_enter(&entered);
-    uint64_t reads = _lcompilers_init_test_generation_reads();
-    for (int i = 0; i < 100; i++) _lcompilers_init_enter(&entered);
-    return _lcompilers_init_test_generation_reads() == reads;
-}
-
-static int scenario_fast_path_rearm(void) {
-    _lcompilers_init_add_records(&settled_table);
     _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
-    expect(fast_again(), "the fast path is armed by a dispatch another made");
-    _lcompilers_init_teardown_all();
-    expect(fast_again(), "the fast path is armed again after a teardown");
-    _lcompilers_init_add_records(&later_table);
-    expect(fast_again(), "the fast path is armed again after a batch was added");
-    expect(settled_bodies == 1 && later_bodies == 1,
-        "each record is initialized once");
+    expect(later_bodies == 0, "a collective record waits for a boundary");
+    lfortran_initialize(0, NULL);
+    expect(later_bodies == 1, "a startup after a batch was added runs it");
+    expect(settled_bodies == 1 && later_bodies == 1, "nothing is initialized twice");
+    lfortran_finalize();
     _lcompilers_init_remove_records(&later_table);
     _lcompilers_init_remove_records(&settled_table);
     return finish();
@@ -505,14 +460,14 @@ static int scenario_collective(void) {
     expect(local1_bodies == 1, "local record of the first batch at the local phase");
     expect(coll1_bodies == 0 && st_coll1 == lcompilers_init_uninitialized,
         "collective record waits for the boundary");
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     expect(coll1_bodies == 1, "collective record at the boundary");
 
     _lcompilers_init_add_records(&batch2_table);
     _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
     expect(local2_bodies == 1, "local record of the second batch at the local phase");
     expect(coll2_bodies == 0, "second collective record waits for a boundary");
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     expect(coll2_bodies == 1, "second collective record at the second boundary");
     expect(coll1_bodies == 1 && local1_bodies == 1,
         "the first batch is not initialized again");
@@ -618,12 +573,12 @@ static const lcompilers_init_table boot_loaded_table = {
  * bootstrap reads is initialized by the boundary itself, first. */
 static int scenario_bootstrap(void) {
     _lcompilers_init_add_records(&boot_table);
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     static const char *const expected[] = {
         "ready m:b_local", "bootstrap b:boot", "ready m:b_local2",
         "ready m:b_coll", "ready m:b_coll2"};
     expect_events(expected, 5, "bootstrap between the local and collective records");
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     expect(bootstrap_calls == 1, "a bootstrap runs once");
     _lcompilers_init_remove_records(&boot_loaded_table);
     _lcompilers_init_remove_records(&boot_table);
@@ -655,7 +610,7 @@ static const lcompilers_init_table boot_bad_table = {
  * ends the process: images would disagree on the order. */
 static void *initialize_again(void *unused) {
     (void)unused;
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     return NULL;
 }
 
@@ -672,7 +627,7 @@ static const lcompilers_init_table boot_twice_table = {
 
 static int scenario_collective_twice(void) {
     _lcompilers_init_add_records(&boot_twice_table);
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     printf("two threads in the collective boundary not detected\n");
     return 1;
 }
@@ -706,17 +661,17 @@ static const lcompilers_init_table shared3_table = {
 static int scenario_bootstrap_shared(void) {
     _lcompilers_init_add_records(&shared1_table);
     _lcompilers_init_add_records(&shared2_table);
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     expect(shared_bootstrap_runs == 1, "two tables of one bootstrap start it once");
     _lcompilers_init_remove_records(&shared1_table);
     _lcompilers_init_add_records(&shared3_table);
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     expect(shared_bootstrap_runs == 1,
         "a table published while one that ran it is live does not start it again");
     _lcompilers_init_remove_records(&shared2_table);
     _lcompilers_init_remove_records(&shared3_table);
     _lcompilers_init_add_records(&shared1_table);
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     expect(shared_bootstrap_runs == 2, "once every table that ran it is gone, it runs again");
     _lcompilers_init_remove_records(&shared1_table);
     return finish();
@@ -724,7 +679,7 @@ static int scenario_bootstrap_shared(void) {
 
 static int scenario_bootstrap_collective_work(void) {
     _lcompilers_init_add_records(&boot_bad_table);
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     printf("collective work from a bootstrap not detected\n");
     return 1;
 }
@@ -1243,18 +1198,18 @@ static int scenario_bootstrap_incarnation(void) {
     _lcompilers_init_add_records(&bootstrap_table);
     _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
     expect(incarnation_bootstrap_runs == 0, "a local dispatch runs no bootstrap");
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     expect_events(first, 4, "local, then bootstrap, then collective");
     expect(incarnation_bootstrap_runs == 1, "the bootstrap ran once");
     expect(st_bs_late == lcompilers_init_ready,
         "a batch the bootstrap published initialized at the same boundary");
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     expect(incarnation_bootstrap_runs == 1, "a second boundary does not run it again");
     /* A new incarnation of the table, as a library loaded again. */
     _lcompilers_init_remove_records(&bootstrap_table);
     st_bs_local = st_bs_coll = lcompilers_init_uninitialized;
     _lcompilers_init_add_records(&bootstrap_table);
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     expect(incarnation_bootstrap_runs == 2, "a table added again bootstraps again");
     _lcompilers_init_remove_records(&bootstrap_table);
     _lcompilers_init_remove_records(&late_table);
@@ -1271,7 +1226,7 @@ static const lcompilers_init_table bad_bootstrap_table = {
 
 static int scenario_malformed_bootstrap(void) {
     _lcompilers_init_add_records(&bad_bootstrap_table);
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     printf("bootstrap with a state word not detected\n");
     return 1;
 }
@@ -1286,7 +1241,7 @@ static const lcompilers_init_table both_flags_table = {
 
 static int scenario_both_flags(void) {
     _lcompilers_init_add_records(&both_flags_table);
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     printf("record with both flags not detected\n");
     return 1;
 }
@@ -1361,7 +1316,7 @@ static int scenario_unknown_phase(void) {
 static int scenario_duplicate_collective(void) {
     _lcompilers_init_add_records(&duplicate1_table);
     _lcompilers_init_add_records(&duplicate2_table);
-    lcompilers_initialize();
+    lfortran_initialize(0, NULL);
     printf("duplicate collective stable id not detected\n");
     return 1;
 }
@@ -1387,8 +1342,7 @@ int main(int argc, char **argv) {
     }
 #endif
     if (strcmp(s, "republish") == 0) return scenario_republish();
-    if (strcmp(s, "fast_path") == 0) return scenario_fast_path();
-    if (strcmp(s, "fast_path_rearm") == 0) return scenario_fast_path_rearm();
+    if (strcmp(s, "host_startup") == 0) return scenario_host_startup();
     if (strcmp(s, "collective") == 0) return scenario_collective();
     if (strcmp(s, "collective_outside") == 0) return scenario_collective_outside();
     if (strcmp(s, "publish_during_init") == 0) return scenario_publish_during_init();

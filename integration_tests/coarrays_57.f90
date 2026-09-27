@@ -1,6 +1,6 @@
 ! Allocatable coarrays of a module that only C drives: coarrays_57c.c calls
-! the host startup entry, lcompilers_initialize(), on every image and then
-! this procedure. There is no Fortran main program, so that entry is what
+! the host startup, lfortran_initialize(), on every image and then
+! this procedure. There is no Fortran main program, so that startup is what
 ! has to start the coarray runtime.
 module coarrays_57_m
     use iso_c_binding, only: c_int

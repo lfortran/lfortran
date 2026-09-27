@@ -52,7 +52,7 @@ foreach(cc ${COMPILERS})
         if (NOT linker STREQUAL "default")
             set(flags -fuse-ld=${linker})
         endif()
-        run(${cc} ${flags} ${SRC}/test_init_c_note.c ${objects}
+        run(${cc} ${flags} -I${INCLUDE} ${SRC}/test_init_c_note.c ${objects}
             -o main_${n}_${linker} ${libs})
         run(${WORK}/main_${n}_${linker})
         message("${cc}, ${linker} linker: ${out}")
@@ -61,7 +61,7 @@ foreach(cc ${COMPILERS})
     # separates the note's assembler from the table it names, for a
     # compiler that has it.
     execute_process(COMMAND ${cc} -flto -flto-partition=max -O2 -c
-            ${SRC}/test_init_c_note.c -o probe_lto_${n}.o
+            -I${INCLUDE} ${SRC}/test_init_c_note.c -o probe_lto_${n}.o
         WORKING_DIRECTORY ${WORK} RESULT_VARIABLE status
         OUTPUT_QUIET ERROR_QUIET)
     if (NOT status EQUAL 0)
@@ -73,7 +73,7 @@ foreach(cc ${COMPILERS})
         run(${cc} -fPIC -flto -O2 -c -I${INCLUDE} ${m}.c -o ${m}_${n}_lto.o)
         list(APPEND objects ${m}_${n}_lto.o)
     endforeach()
-    run(${cc} -flto -flto-partition=max -O2 ${SRC}/test_init_c_note.c
+    run(${cc} -flto -flto-partition=max -O2 -I${INCLUDE} ${SRC}/test_init_c_note.c
         ${objects} -o main_${n}_lto ${libs})
     run(${WORK}/main_${n}_lto)
     message("${cc}, -flto -flto-partition=max: ${out}")

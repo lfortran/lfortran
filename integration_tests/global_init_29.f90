@@ -1,8 +1,7 @@
-! A bind(c) procedure, called from C (global_init_29c.c), whose dummy is of a
-! derived type the procedure declares itself and whose automatic array takes
-! its extent from module state. The procedure's entry dispatches the module's
-! initialization before that extent is evaluated, as global_init_24 checks;
-! a dummy of a locally declared type must not stop it from compiling.
+! A bind(c) procedure, called from C (global_init_29c.c) once the runtime is
+! started, whose dummy is of a derived type the procedure declares itself and
+! whose automatic array takes its extent from module state, which the
+! startup has initialized by then.
 module global_init_29_m
     use iso_c_binding, only: c_int
     implicit none

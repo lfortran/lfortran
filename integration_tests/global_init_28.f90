@@ -1,9 +1,7 @@
 ! A bind(c) procedure whose allocatable dummy is passed through a C
 ! descriptor and whose automatic array takes its extent from module state,
-! which a declaration initializer gives. The procedure's entry dispatches the
-! module's initialization before that extent is evaluated, as global_init_24
-! checks from a C constructor; that must not stop such a procedure from
-! compiling.
+! which a declaration initializer gives, and which the startup of the
+! program initializes before that extent is evaluated.
 module global_init_28_m
     implicit none
     type :: config
