@@ -626,12 +626,6 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     ASR::symbol_t* derived_type_or_class_type = nullptr;
                     ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(var_type_);
                     derived_type_or_class_type = var->m_type_declaration;
-                    auto moved_it = moved_program_structs.find(derived_type_or_class_type);
-                    if (moved_it != moved_program_structs.end()) {
-                        // The program's type was already moved into another
-                        // context module; import it from there.
-                        derived_type_or_class_type = moved_it->second;
-                    }
                     if( current_scope->get_counter() != ASRUtils::symbol_parent_symtab(derived_type_or_class_type)->get_counter() ) {
                         m_derived_type_or_class_type = current_scope->get_symbol(
                             ASRUtils::symbol_name(derived_type_or_class_type));
