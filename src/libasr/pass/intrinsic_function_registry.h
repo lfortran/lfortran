@@ -882,6 +882,21 @@ namespace IntrinsicElementalFunctionRegistry {
             case IntrinsicElementalFunctions::Sign: return &Sign::eval_Sign;
             case IntrinsicElementalFunctions::Dim: return &Dim::eval_Dim;
             case IntrinsicElementalFunctions::Sqrt: return &Sqrt::eval_Sqrt;
+            case IntrinsicElementalFunctions::Sin: return &Sin::eval_Sin;
+            case IntrinsicElementalFunctions::Cos: return &Cos::eval_Cos;
+            case IntrinsicElementalFunctions::Tan: return &Tan::eval_Tan;
+            case IntrinsicElementalFunctions::Asin: return &Asin::eval_Asin;
+            case IntrinsicElementalFunctions::Acos: return &Acos::eval_Acos;
+            case IntrinsicElementalFunctions::Atan: return &Atan::eval_Atan;
+            case IntrinsicElementalFunctions::Sinh: return &Sinh::eval_Sinh;
+            case IntrinsicElementalFunctions::Cosh: return &Cosh::eval_Cosh;
+            case IntrinsicElementalFunctions::Tanh: return &Tanh::eval_Tanh;
+            case IntrinsicElementalFunctions::Asinh: return &Asinh::eval_Asinh;
+            case IntrinsicElementalFunctions::Acosh: return &Acosh::eval_Acosh;
+            case IntrinsicElementalFunctions::Atanh: return &Atanh::eval_Atanh;
+            case IntrinsicElementalFunctions::Exp: return &Exp::eval_Exp;
+            case IntrinsicElementalFunctions::Log: return &Log::eval_Log;
+            case IntrinsicElementalFunctions::Log10: return &Log10::eval_Log10;
             default: return nullptr;
         }
     }

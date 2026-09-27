@@ -1169,8 +1169,8 @@ semantic error: No requirement 'r_undeclared' is defined
 semantic error: initialization of named constant `x` with this expression of a deferred constant is not supported yet
     --> tests/errors/continue_compilation_templates_01.f90:2006:36
      |
-2006 |             real, parameter :: x = sin(real(n))  ! {Error} initialization of named constant `x` with this expression of a deferred constant is not supported yet
-     |                                    ^^^^^^^^^^^^ 
+2006 |             real, parameter :: x = real(ibset(n, 2))  ! {Error} initialization of named constant `x` with this expression of a deferred constant is not supported yet
+     |                                    ^^^^^^^^^^^^^^^^^ 
 
 semantic error: initialization of named constant `k` with this expression of a deferred constant is not supported yet
     --> tests/errors/continue_compilation_templates_01.f90:2026:39

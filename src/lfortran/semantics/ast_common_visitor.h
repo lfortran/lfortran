@@ -3259,10 +3259,11 @@ public:
         // comparisons (`ASRUtils::fold_binop_constants`,
         // `ASRUtils::fold_compare_constants`, `ASRUtils::fold_logical_binop`),
         // numeric conversions (`ASRUtils::make_Cast_t_value`) and the numeric
-        // intrinsics with an evaluation function.
+        // and mathematical intrinsics with an evaluation function, such as
+        // `sin(real(n))`.
         Foldable,
         // Reads a deferred constant in any other way, such as
-        // `sin(real(n))`, `[n, 2*n]` or `-(n*0.1_16)`, which the
+        // `ishft(n, 1)`, `[n, 2*n]` or `-(n*0.1_16)`, which the
         // instantiation cannot evaluate.
         Unsupported
     };
