@@ -5672,12 +5672,28 @@ public:
 
         Vec<ASR::require_instantiation_t*> reqs;
         reqs.reserve(al, x.n_items);
+        // A REQUIRE statement whose actual argument is not one of this
+        // requirement's parameters (an intrinsic or derived type, or a
+        // constant expression) binds that actual into the requirement's
+        // scope under its own name. Such a symbol is part of the requirement
+        // reference, not a declaration of the requirement, so remember it
+        // for the parameter check below.
+        std::set<std::string> require_actuals;
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
                 AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_items[i]);
                 for (size_t i=0; i<r->n_reqs; i++) {
+                    std::set<std::string> before;
+                    for (auto &item: current_scope->get_scope()) {
+                        before.insert(item.first);
+                    }
                     visit_unit_require(*r->m_reqs[i]);
+                    for (auto &item: current_scope->get_scope()) {
+                        if (before.find(item.first) == before.end()) {
+                            require_actuals.insert(item.first);
+                        }
+                    }
                     reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                     tmp = nullptr;
                 }
@@ -5711,8 +5727,8 @@ public:
         }
 
         for (auto &item: current_scope->get_scope()) {
-            bool defined = false;
             std::string sym = item.first;
+            bool defined = require_actuals.find(sym) != require_actuals.end();
             for (size_t i=0; i<x.n_namelist; i++) {
                 std::string arg = to_lower(x.m_namelist[i].m_arg);
                 if (sym.compare(arg) == 0) {

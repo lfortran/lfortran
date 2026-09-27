@@ -3708,6 +3708,7 @@ RUN(NAME template_struct_member_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_merge_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_access_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_inline_case_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_require_intrinsic_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
