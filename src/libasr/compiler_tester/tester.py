@@ -265,6 +265,20 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
 def get_error_diff(reference_file, output_file, full_err_str, field="") -> str:
     import tempfile
 
+    def diff_files(reference, output):
+        try:
+            result = subprocess.run(
+                ["diff", "--", reference, output],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
+        except OSError as error:
+            return f"(diff failed to execute: {error})\n"
+        if result.returncode == 0:
+            return "(files are identical)\n"
+        if result.returncode == 1:
+            return result.stdout
+        return (f"(diff failed with exit code {result.returncode})\n"
+                f"{result.stdout}{result.stderr}")
+
     ref_exists = os.path.exists(reference_file)
     out_exists = os.path.exists(output_file)
 
@@ -286,16 +300,7 @@ def get_error_diff(reference_file, output_file, full_err_str, field="") -> str:
             temp_out.close()
             out_to_use = temp_out.name
 
-        # Run diff
-        diff_list = subprocess.Popen(
-            f"diff {ref_to_use} {out_to_use}",
-            stdout=subprocess.PIPE,
-            shell=True,
-            encoding='utf-8')
-        diff_str = ""
-        diffs = diff_list.stdout.readlines()
-        for d in diffs:
-            diff_str += d
+        diff_str = diff_files(ref_to_use, out_to_use)
 
         full_err_str += f"\n=== STDERR DIFF ===\n"
         if not ref_exists:
@@ -306,7 +311,7 @@ def get_error_diff(reference_file, output_file, full_err_str, field="") -> str:
             full_err_str += f"Output:    (missing - no stderr produced)\n"
         else:
             full_err_str += f"Output:    {output_file}\n"
-        full_err_str += diff_str if diff_str else "(files are identical)\n"
+        full_err_str += diff_str
 
         # Cleanup temp files
         if temp_ref:
@@ -348,20 +353,12 @@ def get_error_diff(reference_file, output_file, full_err_str, field="") -> str:
         return full_err_str
 
     # Both files exist - show diff
-    diff_list = subprocess.Popen(
-        f"diff {reference_file} {output_file}",
-        stdout=subprocess.PIPE,
-        shell=True,
-        encoding='utf-8')
-    diff_str = ""
-    diffs = diff_list.stdout.readlines()
-    for d in diffs:
-        diff_str += d
+    diff_str = diff_files(reference_file, output_file)
 
     full_err_str += f"\n=== DIFF ===\n"
     full_err_str += f"Reference: {reference_file}\n"
     full_err_str += f"Output:    {output_file}\n"
-    full_err_str += diff_str if diff_str else "(files are identical)\n"
+    full_err_str += diff_str
 
     return full_err_str
 
