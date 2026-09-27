@@ -71,6 +71,16 @@ LFORTRAN_API void _lcompilers_init_require_collective(void);
 LFORTRAN_API void _lcompilers_init_ctor(const lcompilers_init_table *table);
 /* `lcompilers_init_dispatch_local` or `lcompilers_init_dispatch_collective`. */
 LFORTRAN_API void _lcompilers_init_dispatch(int32_t phase);
+/* The local dispatch of a foreign entry point. `entered` is a word of the
+ * entry point's own, zero-initialized, writable data, zero again in every
+ * new mapping of its image, which the engine alone uses: once a dispatch
+ * through it has completed, a call returns after two atomic loads for as
+ * long as no image with records is taken in or goes away and no host batch
+ * is added or removed. An entry point of an image still being loaded, called
+ * from one of the image's own constructors, thus dispatches in full, which
+ * finds the records of its image (on Windows, those of the DLLs attached
+ * already; see `_lcompilers_init_ctor`). */
+LFORTRAN_API void _lcompilers_init_enter(uint64_t *entered);
 /* The collective boundary a host calls, on every image, before user code
  * runs; equivalent to the one a Fortran main program enters. */
 LFORTRAN_API void lcompilers_initialize(void);

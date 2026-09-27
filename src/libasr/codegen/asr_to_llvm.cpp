@@ -7200,13 +7200,27 @@ public:
     // point needs. At the entry of a procedure this is emitted before
     // anything of its frame is set up; see `define_function_entry`.
     void emit_global_init_dispatch(const ASR::GlobalInitDispatch_t &x) {
-        llvm::Type* i32 = llvm::Type::getInt32Ty(context);
-        llvm::Function* dispatch = get_init_runtime_function(
-            "_lcompilers_init_dispatch",
-            llvm::FunctionType::get(llvm::Type::getVoidTy(context), {i32}, false));
-        int32_t phase = x.m_phase == ASR::init_dispatch_phaseType::InitDispatchCollective
-            ? lcompilers_init_dispatch_collective : lcompilers_init_dispatch_local;
-        builder->CreateCall(dispatch, {llvm::ConstantInt::get(i32, phase)});
+        llvm::Type* void_type = llvm::Type::getVoidTy(context);
+        if (x.m_phase == ASR::init_dispatch_phaseType::InitDispatchCollective) {
+            llvm::Type* i32 = llvm::Type::getInt32Ty(context);
+            llvm::Function* dispatch = get_init_runtime_function(
+                "_lcompilers_init_dispatch",
+                llvm::FunctionType::get(void_type, {i32}, false));
+            builder->CreateCall(dispatch, {llvm::ConstantInt::get(i32,
+                lcompilers_init_dispatch_collective)});
+        } else {
+            // A foreign entry point: the engine keeps, in a zero-initialized
+            // word of the entry's own, whether it may take the fast path.
+            llvm::Type* i64 = llvm::Type::getInt64Ty(context);
+            llvm::GlobalVariable* entered = new llvm::GlobalVariable(*module,
+                i64, false, llvm::GlobalVariable::InternalLinkage,
+                llvm::ConstantInt::get(i64, 0), "__lcompilers_init_entered");
+            entered->setAlignment(llvm::MaybeAlign(8));
+            llvm::Function* enter = get_init_runtime_function(
+                "_lcompilers_init_enter",
+                llvm::FunctionType::get(void_type, {i64->getPointerTo()}, false));
+            builder->CreateCall(enter, {entered});
+        }
         for (size_t i = 0; i < x.n_ensures; i++) {
             this->visit_stmt(*x.m_ensures[i]);
         }

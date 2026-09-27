@@ -334,10 +334,11 @@ static int scenario_republish(void) {
 }
 
 /* ---------------------------------------------------------------------- */
-/* Once a dispatch has completed and nothing that registers records has   */
-/* changed, a dispatch -- which every call of a foreign entry point makes */
-/* -- neither asks the loader nor takes a lock; a batch added makes the  */
-/* next one look again.                                                   */
+/* Once a dispatch through a foreign entry point's word has completed and */
+/* nothing that registers records has changed, a call of the entry point */
+/* neither asks the loader nor takes a lock; a batch added makes the next */
+/* one look again, and so does a word that is fresh -- that of an entry   */
+/* point of an image just loaded -- whatever other entry points found.    */
 /* ---------------------------------------------------------------------- */
 
 uint64_t _lcompilers_init_test_generation_reads(void);
@@ -370,24 +371,23 @@ static const lcompilers_init_table settled_table = {
 static const lcompilers_init_table later_table = {
     lcompilers_init_abi_version, 1, later_records};
 
+/* The word of the entry point these scenarios call. */
+static uint64_t entered;
+
 #if !defined(_WIN32)
 static void *dispatch_often(void *unused) {
     (void)unused;
-    for (int i = 0; i < 100000; i++) {
-        _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
-    }
+    for (int i = 0; i < 100000; i++) _lcompilers_init_enter(&entered);
     return NULL;
 }
 #endif
 
 static int scenario_fast_path(void) {
     _lcompilers_init_add_records(&settled_table);
-    _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
+    _lcompilers_init_enter(&entered);
     expect(settled_bodies == 1, "the batch is initialized");
     uint64_t reads = _lcompilers_init_test_generation_reads();
-    for (int i = 0; i < 1000; i++) {
-        _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
-    }
+    for (int i = 0; i < 1000; i++) _lcompilers_init_enter(&entered);
 #if !defined(_WIN32)
     pthread_t threads[4];
     for (int i = 0; i < 4; i++) pthread_create(&threads[i], NULL, dispatch_often, NULL);
@@ -396,8 +396,18 @@ static int scenario_fast_path(void) {
     expect(_lcompilers_init_test_generation_reads() == reads,
         "a dispatch with nothing changed looks at nothing");
 
+    uint64_t fresh = 0;
+    _lcompilers_init_enter(&fresh);
+    expect(_lcompilers_init_test_generation_reads() > reads,
+        "an entry point with a fresh word looks");
+    reads = _lcompilers_init_test_generation_reads();
+    _lcompilers_init_enter(&fresh);
+    _lcompilers_init_enter(&entered);
+    expect(_lcompilers_init_test_generation_reads() == reads,
+        "an entry point that looked takes the fast path");
+
     _lcompilers_init_add_records(&later_table);
-    _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
+    _lcompilers_init_enter(&entered);
     expect(later_bodies == 1, "a batch added later is initialized by the next dispatch");
     expect(_lcompilers_init_test_generation_reads() > reads,
         "a dispatch after a batch was added looks again");
@@ -413,21 +423,19 @@ static int scenario_fast_path(void) {
 /* arms the fast path again: the dispatches after it look at nothing.     */
 /* ---------------------------------------------------------------------- */
 
-/* Whether dispatches with nothing changed take the fast path again after
- * at most one that looks. */
+/* Whether calls of the entry point with nothing changed take the fast
+ * path again after at most one that looks. */
 static int fast_again(void) {
-    _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
+    _lcompilers_init_enter(&entered);
     uint64_t reads = _lcompilers_init_test_generation_reads();
-    for (int i = 0; i < 100; i++) {
-        _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
-    }
+    for (int i = 0; i < 100; i++) _lcompilers_init_enter(&entered);
     return _lcompilers_init_test_generation_reads() == reads;
 }
 
 static int scenario_fast_path_rearm(void) {
     _lcompilers_init_add_records(&settled_table);
     _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
-    expect(fast_again(), "the fast path is armed after the first dispatch");
+    expect(fast_again(), "the fast path is armed by a dispatch another made");
     _lcompilers_init_teardown_all();
     expect(fast_again(), "the fast path is armed again after a teardown");
     _lcompilers_init_add_records(&later_table);

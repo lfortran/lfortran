@@ -46,7 +46,11 @@ A backend emits it at the actual entry of the procedure, before the
 arguments are converted and before any specification expression or automatic
 object is evaluated, whichever top-level position the passes left it in. A
 backend whose output is linked with other code lowers it to a call of the
-runtime engine, `_lcompilers_init_dispatch`, followed by the `ensures`. A
+runtime engine followed by the `ensures`: `_lcompilers_init_dispatch` for the
+collective phase, and for the local phase `_lcompilers_init_enter`, passed a
+zero-initialized word of the procedure's own, through which a call returns
+at once while nothing that registers records has changed since a dispatch
+through it completed. A
 backend whose output is the whole program lowers it through
 `ASRUtils::expand_closed_world_dispatch` instead, into calls of every
 initializer the program has.

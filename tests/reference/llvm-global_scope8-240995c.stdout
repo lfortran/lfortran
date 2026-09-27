@@ -3,10 +3,11 @@ source_filename = "LFortran"
 target datalayout = "..."
 
 @x = global i32 0
+@__lcompilers_init_entered = internal global i64 0, align 8
 
 define i32 @__lfortran_evaluate_1() {
 .entry:
-  call void @_lcompilers_init_dispatch(i32 0)
+  call void @_lcompilers_init_enter(i64* @__lcompilers_init_entered)
   %__lfortran_evaluate_11 = alloca i32, align 4
   store i32 6, i32* @x, align 4
   %0 = load i32, i32* @x, align 4
@@ -21,4 +22,4 @@ FINALIZE_SYMTABLE___lfortran_evaluate_1:          ; preds = %return
   ret i32 %1
 }
 
-declare void @_lcompilers_init_dispatch(i32)
+declare void @_lcompilers_init_enter(i64*)

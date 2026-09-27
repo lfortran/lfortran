@@ -2963,11 +2963,16 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     // when the engine is already dispatching on this thread.
     void visit_GlobalInitDispatch(const ASR::GlobalInitDispatch_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
-        std::string phase = x.m_phase
-            == ASR::init_dispatch_phaseType::InitDispatchCollective
-            ? "lcompilers_init_dispatch_collective"
-            : "lcompilers_init_dispatch_local";
-        std::string out = indent + "_lcompilers_init_dispatch(" + phase + ");\n";
+        std::string out;
+        if (x.m_phase == ASR::init_dispatch_phaseType::InitDispatchCollective) {
+            out = indent + "_lcompilers_init_dispatch("
+                "lcompilers_init_dispatch_collective);\n";
+        } else {
+            // A foreign entry point: the engine keeps, in a zero-initialized
+            // word of the entry's own, whether it may take the fast path.
+            out = indent + "static uint64_t __lcompilers_init_entered = 0;\n"
+                + indent + "_lcompilers_init_enter(&__lcompilers_init_entered);\n";
+        }
         for (size_t i = 0; i < x.n_ensures; i++) {
             self().visit_stmt(*x.m_ensures[i]);
             out += src;

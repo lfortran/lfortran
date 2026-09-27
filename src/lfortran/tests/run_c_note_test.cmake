@@ -60,8 +60,8 @@ foreach(cc ${COMPILERS})
     # GCC's link-time optimization with one partition per symbol, which
     # separates the note's assembler from the table it names, for a
     # compiler that has it.
-    execute_process(COMMAND ${cc} -flto -flto-partition=max -O2
-            ${SRC}/test_init_c_note.c -o probe_lto_${n} ${libs}
+    execute_process(COMMAND ${cc} -flto -flto-partition=max -O2 -c
+            ${SRC}/test_init_c_note.c -o probe_lto_${n}.o
         WORKING_DIRECTORY ${WORK} RESULT_VARIABLE status
         OUTPUT_QUIET ERROR_QUIET)
     if (NOT status EQUAL 0)
