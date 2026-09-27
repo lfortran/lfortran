@@ -2421,7 +2421,7 @@ int link_executable(const std::vector<std::string> &infiles,
         run_cmd = outfile;
     } else if (LCompilers::startswith(t, "wasm")) {
         if (LCompilers::endswith(t, "wasi")) {
-            run_cmd = "wasmtime " + outfile + " --dir=.";
+            run_cmd = "wasmtime --dir=. " + outfile;
         } else if (LCompilers::endswith(t, "emscripten")) {
             run_cmd = "node " + outfile +
                 (compiler_options.wasm_html ? ".js" : "");
