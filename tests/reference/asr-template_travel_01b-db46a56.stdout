@@ -5,11 +5,11 @@
             template_travel_01b:
                 (Program
                     (SymbolTable
-                        25
+                        26
                         {
                             operation:
                                 (ExternalSymbol
-                                    25
+                                    26
                                     operation
                                     2 operation
                                     template_travel_01b_m
@@ -19,7 +19,7 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    25
+                                    26
                                     test_template
                                     2 test_template
                                     template_travel_01b_m
@@ -29,7 +29,7 @@
                                 ),
                             travel_tmpl:
                                 (ExternalSymbol
-                                    25
+                                    26
                                     travel_tmpl
                                     2 travel_tmpl
                                     template_travel_01b_m
@@ -41,12 +41,13 @@
                     template_travel_01b
                     [template_travel_01b_m]
                     [(SubroutineCall
-                        25 test_template
+                        26 test_template
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             template_travel_01b_m:
@@ -54,6 +55,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_travel_01b_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_travel_01b_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_travel_01b_m:
+                                (Function
+                                    (SymbolTable
+                                        25
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_travel_01b_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             operation:
                                 (Requirement
                                     (SymbolTable
@@ -3375,9 +3432,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_template_travel_01b_m
+                    __lcompilers_global_init_state_template_travel_01b_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

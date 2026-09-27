@@ -27,6 +27,7 @@ namespace {
 void main2() {
     int32_t marks;
     int32_t out;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     marks = 81;
     if (91 <= marks <= 100) {
         out = 0;

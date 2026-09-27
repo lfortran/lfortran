@@ -91,6 +91,122 @@ is usually the default mode used by most other Fortran compilers. We create obje
 
 Note: **_If you enable separate compilation mode, you have to enable it for all the files._**
 
+## Initialization of Variables
+
+LFortran keeps three parts of initializing a variable apart: the initial state
+the language defines, which ASR states; the physical setup a backend's
+representation of the storage needs, such as array descriptors and character
+buffers; and the choice of materializing an initial value as static data or by
+code that runs once at startup. That choice is made in the ASR lowering, by
+the `global_init` pass, which turns each declaration initializer static data
+does not hold, and each default of a module variable it does not hold, into a
+statement of a startup initializer. A backend only carries the choice out: it
+lays the rest out as static data, and creates the storage the layout needs,
+without storing a value, where the initializer's `GlobalInitStorage` says.
+Today the choice follows a fixed rule; a policy the user can select, for large
+arrays in particular, is the intended design but not implemented. Every
+variable has to be initialized exactly once, before anything can observe it,
+whether a Fortran main program, a C `main` or a library user drives the code
+and whatever the compilation mode. Startup code never stores back a value that
+static data already holds, and initialization that depends on other code
+having run is ordered by explicit calls in ASR rather than by the order in
+which a linker runs constructors: every initializer is guarded, calls the
+initializers it depends on first, and one startup engine, entered from
+constructors, main programs and foreign entry points alike, runs them all in a
+stable order. The *Startup initializers* section of
+[Program](asr/asr_nodes/symbol_nodes/Program.md) has the details, including
+what is lowered to startup code today and the intended materialization policy.
+
+### Startup in each backend
+
+Every backend consumes the same ASR: the owner-linked initializers with their
+guards, `GlobalInitStorage` and `GlobalInitDispatch`. What differs is how the
+set of initializers to run is found.
+
+* **LLVM, C and C++** produce object files that are linked with other code, so
+  the set is open. Each object file carries a static table of records for the
+  initializers it defines, in the encoding of its object format, a constructor
+  that enters the runtime engine, which finds the tables of every loaded image
+  by itself, and a destructor that takes its records back out before the image
+  is unloaded. The table and its records are laid out as
+  `runtime/lcompilers_init_abi.h` describes (ABI version 2): each record names
+  an initializer, its state and teardown, and says whether it runs in the
+  local phase, in the collective phase, or is a collective bootstrap, which
+  initializes the coarray runtime once, outside every guard, before any
+  collective initializer. A table a loader lists also points to a private
+  writable word of its object, through which the engine tells one mapping of
+  an image from a later one loaded at the same address. WebAssembly has no
+  loader to ask, so there each object instead publishes its table from a
+  constructor that runs before any other. The C and C++ backends emit the same
+  records with compiler attributes, or with MSVC's section pragmas when MSVC
+  compiles them. They lower `GlobalInitStorage` to nothing only for a variable
+  whose declaration already is all of its storage; storage these backends
+  would have to create at run time (module arrays, allocatables, C++ objects)
+  is reported as not supported, as such module variables were not supported by
+  them before either.
+* **Direct WebAssembly, MLIR and Fortran source** are closed worlds: the
+  output is the whole program, or is compiled on its own without the
+  LCompilers runtime. `ASRUtils::expand_closed_world_dispatch` replaces each
+  `GlobalInitDispatch` by calls of the initializers in stable id order (the
+  local ones, then the collective bootstraps, then the collective ones) and
+  each guard by plain code on its state, so nothing of the runtime engine is
+  left. Fortran source (`--show-fortran`, `--backend=fortran`) therefore needs
+  no runtime to start up, and the names the passes created that are not
+  Fortran names, such as those starting with an underscore or longer than 63
+  characters, are renamed the way `--apply-fortran-mangling` renames them: a
+  name that is too long keeps its start and ends in a hash of all of it, so
+  every file printed separately agrees on it. A dump of the passes
+  (`--dump-all-passes-fortran`) shows the open-world form instead, with
+  explicit `bind(c)` interfaces to the engine. A `bind(c)` procedure's
+  dispatch becomes calls of every initializer that needs no collective
+  boundary as well, and one whose declarations read startup state is an entry
+  that makes those calls before it calls the implementation holding the
+  declarations, so a foreign caller that enters before the main program, from
+  a C constructor for instance, finds the state initialized. Only the
+  collective initializers, those of saved coarrays, wait for the main program.
+  Direct WebAssembly and MLIR report an error for a module compiled
+  separately, whose initializer the output could not contain, and direct
+  WebAssembly, only entered through its main program, also for modules
+  compiled without one. Fortran source keeps calling the initializer of a
+  module compiled separately, which that module's own source defines.
+* **x86** has no module variables and runs none of these passes.
+
+In interactive mode each cell is compiled into code the JIT holds in memory,
+which no loader discovers and whose constructors the JIT does not run. A cell
+that defines initializers gets an entry, `<run function>_startup`, that hands
+its whole table of records to the engine and dispatches; the evaluator calls
+it right after adding the cell and before running anything of it, so a cell
+that only defines a module initializes it there. The dispatch is collective
+when one of the cell's initializers needs a collective boundary, as those of
+saved coarrays do. Definitions of earlier cells stay initialized; a module a
+later cell redefines is a new definition and is initialized anew. The matching
+`<run function>_shutdown` tears down what the cell's initializers set up,
+where leak detection asks for it, and takes the table back out; the evaluator
+calls those, newest first, before the JIT's code goes away.
+
+### Linking a coarray program
+
+A program that uses coarrays is linked with a PRIF implementation, such as
+Caffeine, and with the adapter through which LFortran's startup starts it,
+`lcompilers_prif.f90`, installed in `share/lfortran/prif/`. The adapter has to
+be compiled with that implementation's own `prif` module, since only it knows
+the status the implementation gives when it was started already, and by the
+same LFortran that built that module and builds the program:
+
+```console
+$ lfortran -c -I<directory of the implementation's prif.mod> \
+      lcompilers_prif.f90 -o lcompilers_prif.o
+$ lfortran --coarray <objects> lcompilers_prif.o -L<caffeine>/lib -lcaffeine \
+      -lgasnet-smp-seq
+```
+
+The object is compiled once and goes explicitly on the link line of every
+coarray program, next to the implementation's libraries; `--coarray` does not
+add it. Its `bind(c)` entry initializes the `prif` module it uses before it
+calls `prif_init`. A host that starts the runtime itself and calls
+`lcompilers_initialize()` needs no other arrangement: a runtime that is
+already started is not an error.
+
 ## Notes:
 
 Information that is lost when parsing source to AST:

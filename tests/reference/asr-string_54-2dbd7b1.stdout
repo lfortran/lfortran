@@ -5,11 +5,11 @@
             string_54:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             char:
                                 (Variable
-                                    5
+                                    6
                                     char
                                     []
                                     Local
@@ -33,7 +33,7 @@
                                 ),
                             double:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     double
                                     2 double
                                     string_54_mod
@@ -43,7 +43,7 @@
                                 ),
                             double_:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     double_
                                     2 double_
                                     string_54_mod
@@ -53,7 +53,7 @@
                                 ),
                             foo_sub:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     foo_sub
                                     2 foo_sub
                                     string_54_mod
@@ -63,7 +63,7 @@
                                 ),
                             x:
                                 (Variable
-                                    5
+                                    6
                                     x
                                     []
                                     Local
@@ -89,17 +89,17 @@
                     string_54
                     [string_54_mod]
                     [(Assignment
-                        (Var 5 x)
+                        (Var 6 x)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (SubroutineCall
-                        5 foo_sub
+                        6 foo_sub
                         ()
-                        [((Var 5 x))
-                        ((Var 5 char))]
+                        [((Var 6 x))
+                        ((Var 6 char))]
                         ()
                         .false.
                     )
@@ -107,7 +107,7 @@
                         ()
                         (IntegerCompare
                             (StringLen
-                                (Var 5 char)
+                                (Var 6 char)
                                 (Integer 4)
                                 (IntegerConstant 10 (Integer 4) Decimal)
                             )
@@ -125,12 +125,69 @@
                         []
                     )]
                     ()
+                    ()
                 ),
             string_54_mod:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_string_54_mod:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_string_54_mod
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_string_54_mod:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_string_54_mod
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             double:
                                 (GenericProcedure
                                     2
@@ -353,9 +410,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_string_54_mod
+                    __lcompilers_global_init_state_string_54_mod
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

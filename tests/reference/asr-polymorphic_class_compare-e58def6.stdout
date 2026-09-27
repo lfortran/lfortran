@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_gftl2_integer32complex32map:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_gftl2_integer32complex32map
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_gftl2_integer32complex32map:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_gftl2_integer32complex32map
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             map_s_iter_equal:
                                 (Function
                                     (SymbolTable
@@ -392,16 +448,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_gftl2_integer32complex32map
+                    __lcompilers_global_init_state_gftl2_integer32complex32map
+                    .false.
                 ),
             polymorphic_class_compare:
                 (Program
                     (SymbolTable
-                        6
+                        7
                         {
                             1_map_setiterator_i:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_map_setiterator_i
                                     3 i
                                     gftl2_integer32complex32map
@@ -411,7 +469,7 @@
                                 ),
                             iter1:
                                 (Variable
-                                    6
+                                    7
                                     iter1
                                     []
                                     Local
@@ -424,7 +482,7 @@
                                         .true.
                                         .false.
                                     )
-                                    6 map_setiterator
+                                    7 map_setiterator
                                     Source
                                     Public
                                     Required
@@ -440,7 +498,7 @@
                                 ),
                             iter2:
                                 (Variable
-                                    6
+                                    7
                                     iter2
                                     []
                                     Local
@@ -453,7 +511,7 @@
                                         .true.
                                         .false.
                                     )
-                                    6 map_setiterator
+                                    7 map_setiterator
                                     Source
                                     Public
                                     Required
@@ -469,7 +527,7 @@
                                 ),
                             map_s_iter_equal:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     map_s_iter_equal
                                     2 map_s_iter_equal
                                     gftl2_integer32complex32map
@@ -479,7 +537,7 @@
                                 ),
                             map_s_iter_not_equal:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     map_s_iter_not_equal
                                     2 map_s_iter_not_equal
                                     gftl2_integer32complex32map
@@ -489,7 +547,7 @@
                                 ),
                             map_setiterator:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     map_setiterator
                                     2 map_setiterator
                                     gftl2_integer32complex32map
@@ -499,7 +557,7 @@
                                 ),
                             ~eq:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     ~eq
                                     2 ~eq
                                     gftl2_integer32complex32map
@@ -509,7 +567,7 @@
                                 ),
                             ~noteq:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     ~noteq
                                     2 ~noteq
                                     gftl2_integer32complex32map
@@ -522,8 +580,8 @@
                     [gftl2_integer32complex32map]
                     [(Assignment
                         (StructInstanceMember
-                            (Var 6 iter1)
-                            6 1_map_setiterator_i
+                            (Var 7 iter1)
+                            7 1_map_setiterator_i
                             (Integer 4)
                             ()
                         )
@@ -534,8 +592,8 @@
                     )
                     (Assignment
                         (StructInstanceMember
-                            (Var 6 iter2)
-                            6 1_map_setiterator_i
+                            (Var 7 iter2)
+                            7 1_map_setiterator_i
                             (Integer 4)
                             ()
                         )
@@ -547,16 +605,16 @@
                     (If
                         ()
                         (OverloadedCompare
-                            (Var 6 iter1)
+                            (Var 7 iter1)
                             NotEq
-                            (Var 6 iter2)
+                            (Var 7 iter2)
                             (Logical 4)
                             ()
                             (FunctionCall
-                                6 map_s_iter_not_equal
-                                6 ~noteq
-                                [((Var 6 iter1))
-                                ((Var 6 iter2))]
+                                7 map_s_iter_not_equal
+                                7 ~noteq
+                                [((Var 7 iter1))
+                                ((Var 7 iter2))]
                                 (Logical 4)
                                 ()
                                 ()
@@ -571,8 +629,12 @@
                         []
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

@@ -19,6 +19,174 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD)
     ADDTEST(test_stacktrace)
 endif()
 
+# The startup initialization engine of the runtime, one process per scenario;
+# see test_init_engine.c.
+if (NOT XEUS_LFORTRAN_WASM_BUILD AND NOT EMSCRIPTEN)
+    add_executable(test_init_engine test_init_engine.c)
+    target_link_libraries(test_init_engine lfortran_runtime_static)
+    set(init_engine_scenarios order_forward order_reverse republish collective
+        publish_during_init publish_twice remove_during_init bootstrap_incarnation)
+    if (NOT WIN32)
+        find_package(Threads REQUIRED)
+        target_link_libraries(test_init_engine Threads::Threads)
+        list(APPEND init_engine_scenarios concurrent remove_concurrent
+            withdraw_unrelated bootstrap bootstrap_local bootstrap_shared)
+    endif()
+    foreach(s ${init_engine_scenarios})
+        add_test(NAME test_init_engine_${s} COMMAND test_init_engine ${s})
+        # A lock-order bug hangs rather than fails.
+        set_tests_properties(test_init_engine_${s} PROPERTIES TIMEOUT 60)
+    endforeach()
+    # These end the process, which has to exit with a nonzero status and the
+    # engine's diagnostic; see run_fatal_test.cmake.
+    add_test(NAME test_init_engine_cycle COMMAND ${CMAKE_COMMAND}
+        -DPROGRAM=$<TARGET_FILE:test_init_engine> -DSCENARIO=cycle
+        "-DEXPECT=startup initialization: .*depends on itself"
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/run_fatal_test.cmake)
+    add_test(NAME test_init_engine_collective_outside COMMAND ${CMAKE_COMMAND}
+        -DPROGRAM=$<TARGET_FILE:test_init_engine> -DSCENARIO=collective_outside
+        "-DEXPECT=startup initialization: .*collective startup boundary"
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/run_fatal_test.cmake)
+    add_test(NAME test_init_engine_malformed_record COMMAND ${CMAKE_COMMAND}
+        -DPROGRAM=$<TARGET_FILE:test_init_engine> -DSCENARIO=malformed_record
+        "-DEXPECT=startup initialization: .*malformed"
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/run_fatal_test.cmake)
+    add_test(NAME test_init_engine_malformed_bootstrap COMMAND ${CMAKE_COMMAND}
+        -DPROGRAM=$<TARGET_FILE:test_init_engine> -DSCENARIO=malformed_bootstrap
+        "-DEXPECT=startup initialization: .*malformed"
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/run_fatal_test.cmake)
+    add_test(NAME test_init_engine_both_flags COMMAND ${CMAKE_COMMAND}
+        -DPROGRAM=$<TARGET_FILE:test_init_engine> -DSCENARIO=both_flags
+        "-DEXPECT=startup initialization: .*malformed"
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/run_fatal_test.cmake)
+    add_test(NAME test_init_engine_old_abi COMMAND ${CMAKE_COMMAND}
+        -DPROGRAM=$<TARGET_FILE:test_init_engine> -DSCENARIO=old_abi
+        "-DEXPECT=startup initialization: a batch was compiled for another version"
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/run_fatal_test.cmake)
+    add_test(NAME test_init_engine_unknown_phase COMMAND ${CMAKE_COMMAND}
+        -DPROGRAM=$<TARGET_FILE:test_init_engine> -DSCENARIO=unknown_phase
+        "-DEXPECT=startup initialization: unknown dispatch phase"
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/run_fatal_test.cmake)
+    add_test(NAME test_init_engine_duplicate_collective COMMAND ${CMAKE_COMMAND}
+        -DPROGRAM=$<TARGET_FILE:test_init_engine> -DSCENARIO=duplicate_collective
+        "-DEXPECT=startup initialization: two collective initializers have the stable id 'm:dup'"
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/run_fatal_test.cmake)
+    if (NOT WIN32)
+        add_test(NAME test_init_engine_collective_twice COMMAND ${CMAKE_COMMAND}
+            -DPROGRAM=$<TARGET_FILE:test_init_engine> -DSCENARIO=collective_twice
+            "-DEXPECT=startup initialization: two threads entered the collective startup boundary at once"
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/run_fatal_test.cmake)
+        add_test(NAME test_init_engine_bootstrap_collective_work COMMAND ${CMAKE_COMMAND}
+            -DPROGRAM=$<TARGET_FILE:test_init_engine> -DSCENARIO=bootstrap_collective_work
+            "-DEXPECT=startup initialization: .*collective startup boundary"
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/run_fatal_test.cmake)
+        add_test(NAME test_init_engine_remove_inside_while_pinned COMMAND ${CMAKE_COMMAND}
+            -DPROGRAM=$<TARGET_FILE:test_init_engine> -DSCENARIO=remove_inside_while_pinned
+            "-DEXPECT=startup initialization: records were withdrawn from inside an initializer"
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/run_fatal_test.cmake)
+    endif()
+    # Discovery of the records of every loaded image; see test_init_native.c.
+    if (NOT WIN32)
+        if (APPLE)
+            set(init_native_strip -Wl,-dead_strip)
+        else()
+            set(init_native_strip -Wl,--gc-sections)
+        endif()
+        add_executable(test_init_native_ab test_init_native.c
+            test_init_native_a.c test_init_native_b.c)
+        add_executable(test_init_native_ba test_init_native.c
+            test_init_native_b.c test_init_native_a.c)
+        foreach(t test_init_native_ab test_init_native_ba)
+            target_link_libraries(${t} lfortran_runtime_static ${init_native_strip})
+            add_test(NAME ${t} COMMAND ${t})
+        endforeach()
+        # The program and the library it loads share the engine, so both use
+        # the shared runtime; the library calls back into the program.
+        add_library(test_init_native_c SHARED test_init_native_c.c)
+        target_link_libraries(test_init_native_c lfortran_runtime)
+        add_executable(test_init_native_dlopen test_init_native_dlopen.c
+            test_init_native_a.c)
+        set_target_properties(test_init_native_dlopen PROPERTIES ENABLE_EXPORTS ON)
+        target_link_libraries(test_init_native_dlopen lfortran_runtime ${CMAKE_DL_LIBS})
+        if (APPLE)
+            target_link_libraries(test_init_native_c -Wl,-undefined,dynamic_lookup)
+        endif()
+        add_dependencies(test_init_native_dlopen test_init_native_c)
+        add_test(NAME test_init_native_dlopen COMMAND test_init_native_dlopen
+            $<TARGET_FILE:test_init_native_c>)
+        # Two shared libraries the program is linked with, the second
+        # needing the first; see test_init_native_order.c.
+        add_library(test_init_native_la SHARED test_init_native_la.c)
+        target_link_libraries(test_init_native_la lfortran_runtime)
+        add_library(test_init_native_lb SHARED test_init_native_lb.c)
+        target_link_libraries(test_init_native_lb test_init_native_la lfortran_runtime)
+        add_executable(test_init_native_order test_init_native_order.c)
+        target_link_libraries(test_init_native_order test_init_native_lb
+            test_init_native_la)
+        add_test(NAME test_init_native_order COMMAND test_init_native_order)
+        # Loader events racing the engine; see test_init_native_race.c.
+        foreach(l test_init_native_d test_init_native_bad)
+            add_library(${l} SHARED ${l}.c)
+            target_link_libraries(${l} lfortran_runtime)
+            if (APPLE)
+                target_link_libraries(${l} -Wl,-undefined,dynamic_lookup)
+            endif()
+        endforeach()
+        add_executable(test_init_native_race test_init_native_race.c)
+        set_target_properties(test_init_native_race PROPERTIES ENABLE_EXPORTS ON)
+        target_link_libraries(test_init_native_race lfortran_runtime
+            Threads::Threads ${CMAKE_DL_LIBS})
+        add_dependencies(test_init_native_race test_init_native_d test_init_native_bad)
+        # A load at the address of an unloaded one, initialized before its
+        # own constructor runs; see test_init_native_reload.c.
+        add_library(test_init_native_f SHARED test_init_native_f.c)
+        add_library(test_init_native_e SHARED test_init_native_e.c)
+        target_link_libraries(test_init_native_f lfortran_runtime)
+        target_link_libraries(test_init_native_e test_init_native_f lfortran_runtime)
+        if (APPLE)
+            target_link_libraries(test_init_native_f -Wl,-undefined,dynamic_lookup)
+            target_link_libraries(test_init_native_e -Wl,-undefined,dynamic_lookup)
+        endif()
+        add_executable(test_init_native_reload test_init_native_reload.c)
+        set_target_properties(test_init_native_reload PROPERTIES ENABLE_EXPORTS ON)
+        target_link_libraries(test_init_native_reload lfortran_runtime ${CMAKE_DL_LIBS})
+        add_dependencies(test_init_native_reload test_init_native_e)
+        add_test(NAME test_init_native_reload COMMAND test_init_native_reload
+            $<TARGET_FILE:test_init_native_e>)
+        set_tests_properties(test_init_native_reload PROPERTIES SKIP_RETURN_CODE 77)
+        # A malformed table found by the scan ends the process; see
+        # test_init_native_malformed.c.
+        add_library(test_init_native_malformed SHARED test_init_native_malformed.c)
+        target_link_libraries(test_init_native_malformed lfortran_runtime)
+        add_executable(test_init_native_malformed_load test_init_native_malformed_load.c)
+        target_link_libraries(test_init_native_malformed_load lfortran_runtime
+            ${CMAKE_DL_LIBS})
+        add_dependencies(test_init_native_malformed_load test_init_native_malformed)
+        add_test(NAME test_init_native_malformed COMMAND ${CMAKE_COMMAND}
+            -DPROGRAM=$<TARGET_FILE:test_init_native_malformed_load>
+            -DSCENARIO=$<TARGET_FILE:test_init_native_malformed>
+            "-DEXPECT=startup initialization: an initialization table of an image is malformed"
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/run_fatal_test.cmake)
+        set_tests_properties(test_init_native_malformed PROPERTIES TIMEOUT 60)
+        # glibc lists images of loads in progress; see test_init_native_barrier.c.
+        if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            add_executable(test_init_native_barrier test_init_native_barrier.c)
+            target_link_libraries(test_init_native_barrier lfortran_runtime
+                Threads::Threads ${CMAKE_DL_LIBS})
+            add_dependencies(test_init_native_barrier test_init_native_bad)
+            add_test(NAME test_init_native_barrier COMMAND test_init_native_barrier
+                $<TARGET_FILE:test_init_native_bad>)
+            set_tests_properties(test_init_native_barrier PROPERTIES TIMEOUT 60)
+        endif()
+        foreach(s failed_load teardown_race reload_during_walk first_registration)
+            add_test(NAME test_init_native_race_${s} COMMAND test_init_native_race
+                ${s} $<TARGET_FILE:test_init_native_d>
+                $<TARGET_FILE:test_init_native_bad>)
+            set_tests_properties(test_init_native_race_${s} PROPERTIES TIMEOUT 120)
+        endforeach()
+    endif()
+endif()
+
 set(SRC
     test_parse.cpp
     test_ast.cpp

@@ -5,11 +5,11 @@
             template_simple_04:
                 (Program
                     (SymbolTable
-                        14
+                        15
                         {
                             cast_integer:
                                 (ExternalSymbol
-                                    14
+                                    15
                                     cast_integer
                                     2 cast_integer
                                     template_simple_04_m
@@ -19,7 +19,7 @@
                                 ),
                             cast_r:
                                 (ExternalSymbol
-                                    14
+                                    15
                                     cast_r
                                     2 cast_r
                                     template_simple_04_m
@@ -29,7 +29,7 @@
                                 ),
                             cast_real:
                                 (ExternalSymbol
-                                    14
+                                    15
                                     cast_real
                                     2 cast_real
                                     template_simple_04_m
@@ -39,7 +39,7 @@
                                 ),
                             generic_sum:
                                 (ExternalSymbol
-                                    14
+                                    15
                                     generic_sum
                                     2 generic_sum
                                     template_simple_04_m
@@ -49,7 +49,7 @@
                                 ),
                             operator_r:
                                 (ExternalSymbol
-                                    14
+                                    15
                                     operator_r
                                     2 operator_r
                                     template_simple_04_m
@@ -59,7 +59,7 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    14
+                                    15
                                     test_template
                                     2 test_template
                                     template_simple_04_m
@@ -71,12 +71,13 @@
                     template_simple_04
                     [template_simple_04_m]
                     [(SubroutineCall
-                        14 test_template
+                        15 test_template
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             template_simple_04_m:
@@ -84,6 +85,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_simple_04_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_simple_04_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_simple_04_m:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_simple_04_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             cast_integer:
                                 (Function
                                     (SymbolTable
@@ -1132,11 +1189,11 @@
                                             __instantiated_generic_sum:
                                                 (Function
                                                     (SymbolTable
-                                                        16
+                                                        17
                                                         {
                                                             a:
                                                                 (Variable
-                                                                    16
+                                                                    17
                                                                     a
                                                                     []
                                                                     In
@@ -1166,7 +1223,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    16
+                                                                    17
                                                                     i
                                                                     []
                                                                     Local
@@ -1190,7 +1247,7 @@
                                                                 ),
                                                             n:
                                                                 (Variable
-                                                                    16
+                                                                    17
                                                                     n
                                                                     []
                                                                     Local
@@ -1214,7 +1271,7 @@
                                                                 ),
                                                             res:
                                                                 (Variable
-                                                                    16
+                                                                    17
                                                                     res
                                                                     []
                                                                     ReturnVar
@@ -1261,9 +1318,9 @@
                                                     )
                                                     [cast_integer
                                                     ~add_intrinsic]
-                                                    [(Var 16 a)]
+                                                    [(Var 17 a)]
                                                     [(Assignment
-                                                        (Var 16 res)
+                                                        (Var 17 res)
                                                         (FunctionCall
                                                             2 cast_integer
                                                             ()
@@ -1278,24 +1335,24 @@
                                                     )
                                                     (DoLoop
                                                         ()
-                                                        ((Var 16 i)
+                                                        ((Var 17 i)
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         (ArraySize
-                                                            (Var 16 a)
+                                                            (Var 17 a)
                                                             ()
                                                             (Integer 4)
                                                             ()
                                                         )
                                                         ())
                                                         [(Assignment
-                                                            (Var 16 res)
+                                                            (Var 17 res)
                                                             (OverloadedBinOp
-                                                                (Var 16 res)
+                                                                (Var 17 res)
                                                                 Add
                                                                 (ArrayItem
-                                                                    (Var 16 a)
+                                                                    (Var 17 a)
                                                                     [(()
-                                                                    (Var 16 i)
+                                                                    (Var 17 i)
                                                                     ())]
                                                                     (Integer 4)
                                                                     ColMajor
@@ -1306,11 +1363,11 @@
                                                                 (FunctionCall
                                                                     13 ~add_intrinsic
                                                                     10 ~add
-                                                                    [((Var 16 res))
+                                                                    [((Var 17 res))
                                                                     ((ArrayItem
-                                                                        (Var 16 a)
+                                                                        (Var 17 a)
                                                                         [(()
-                                                                        (Var 16 i)
+                                                                        (Var 17 i)
                                                                         ())]
                                                                         (Integer 4)
                                                                         ColMajor
@@ -1327,7 +1384,7 @@
                                                         )]
                                                         []
                                                     )]
-                                                    (Var 16 res)
+                                                    (Var 17 res)
                                                     Public
                                                     .true.
                                                     .true.
@@ -1336,11 +1393,11 @@
                                             __instantiated_generic_sum1:
                                                 (Function
                                                     (SymbolTable
-                                                        18
+                                                        19
                                                         {
                                                             a:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     a
                                                                     []
                                                                     In
@@ -1370,7 +1427,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     i
                                                                     []
                                                                     Local
@@ -1394,7 +1451,7 @@
                                                                 ),
                                                             n:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     n
                                                                     []
                                                                     Local
@@ -1418,7 +1475,7 @@
                                                                 ),
                                                             res:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     res
                                                                     []
                                                                     ReturnVar
@@ -1465,9 +1522,9 @@
                                                     )
                                                     [cast_real
                                                     ~add_intrinsic1]
-                                                    [(Var 18 a)]
+                                                    [(Var 19 a)]
                                                     [(Assignment
-                                                        (Var 18 res)
+                                                        (Var 19 res)
                                                         (FunctionCall
                                                             2 cast_real
                                                             ()
@@ -1482,24 +1539,24 @@
                                                     )
                                                     (DoLoop
                                                         ()
-                                                        ((Var 18 i)
+                                                        ((Var 19 i)
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         (ArraySize
-                                                            (Var 18 a)
+                                                            (Var 19 a)
                                                             ()
                                                             (Integer 4)
                                                             ()
                                                         )
                                                         ())
                                                         [(Assignment
-                                                            (Var 18 res)
+                                                            (Var 19 res)
                                                             (OverloadedBinOp
-                                                                (Var 18 res)
+                                                                (Var 19 res)
                                                                 Add
                                                                 (ArrayItem
-                                                                    (Var 18 a)
+                                                                    (Var 19 a)
                                                                     [(()
-                                                                    (Var 18 i)
+                                                                    (Var 19 i)
                                                                     ())]
                                                                     (Real 4)
                                                                     ColMajor
@@ -1510,11 +1567,11 @@
                                                                 (FunctionCall
                                                                     13 ~add_intrinsic1
                                                                     10 ~add
-                                                                    [((Var 18 res))
+                                                                    [((Var 19 res))
                                                                     ((ArrayItem
-                                                                        (Var 18 a)
+                                                                        (Var 19 a)
                                                                         [(()
-                                                                        (Var 18 i)
+                                                                        (Var 19 i)
                                                                         ())]
                                                                         (Real 4)
                                                                         ColMajor
@@ -1531,7 +1588,7 @@
                                                         )]
                                                         []
                                                     )]
-                                                    (Var 18 res)
+                                                    (Var 19 res)
                                                     Public
                                                     .true.
                                                     .true.
@@ -1672,11 +1729,11 @@
                                             ~add_intrinsic:
                                                 (Function
                                                     (SymbolTable
-                                                        15
+                                                        16
                                                         {
                                                             arg0:
                                                                 (Variable
-                                                                    15
+                                                                    16
                                                                     arg0
                                                                     []
                                                                     In
@@ -1700,7 +1757,7 @@
                                                                 ),
                                                             arg1:
                                                                 (Variable
-                                                                    15
+                                                                    16
                                                                     arg1
                                                                     []
                                                                     In
@@ -1724,7 +1781,7 @@
                                                                 ),
                                                             ret:
                                                                 (Variable
-                                                                    15
+                                                                    16
                                                                     ret
                                                                     []
                                                                     ReturnVar
@@ -1765,14 +1822,14 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 15 arg0)
-                                                    (Var 15 arg1)]
+                                                    [(Var 16 arg0)
+                                                    (Var 16 arg1)]
                                                     [(Assignment
-                                                        (Var 15 ret)
+                                                        (Var 16 ret)
                                                         (IntegerBinOp
-                                                            (Var 15 arg0)
+                                                            (Var 16 arg0)
                                                             Add
-                                                            (Var 15 arg1)
+                                                            (Var 16 arg1)
                                                             (Integer 4)
                                                             ()
                                                         )
@@ -1780,7 +1837,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 15 ret)
+                                                    (Var 16 ret)
                                                     Public
                                                     .false.
                                                     .true.
@@ -1789,11 +1846,11 @@
                                             ~add_intrinsic1:
                                                 (Function
                                                     (SymbolTable
-                                                        17
+                                                        18
                                                         {
                                                             arg0:
                                                                 (Variable
-                                                                    17
+                                                                    18
                                                                     arg0
                                                                     []
                                                                     In
@@ -1817,7 +1874,7 @@
                                                                 ),
                                                             arg1:
                                                                 (Variable
-                                                                    17
+                                                                    18
                                                                     arg1
                                                                     []
                                                                     In
@@ -1841,7 +1898,7 @@
                                                                 ),
                                                             ret:
                                                                 (Variable
-                                                                    17
+                                                                    18
                                                                     ret
                                                                     []
                                                                     ReturnVar
@@ -1882,14 +1939,14 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 17 arg0)
-                                                    (Var 17 arg1)]
+                                                    [(Var 18 arg0)
+                                                    (Var 18 arg1)]
                                                     [(Assignment
-                                                        (Var 17 ret)
+                                                        (Var 18 ret)
                                                         (RealBinOp
-                                                            (Var 17 arg0)
+                                                            (Var 18 arg0)
                                                             Add
-                                                            (Var 17 arg1)
+                                                            (Var 18 arg1)
                                                             (Real 4)
                                                             ()
                                                         )
@@ -1897,7 +1954,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 17 ret)
+                                                    (Var 18 ret)
                                                     Public
                                                     .false.
                                                     .true.
@@ -2110,9 +2167,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_template_simple_04_m
+                    __lcompilers_global_init_state_template_simple_04_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

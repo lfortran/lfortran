@@ -654,6 +654,11 @@ R"(
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
                 unit_src_tmp = convert_variable_decl(*v);
+                if (is_translation_unit_private(v->m_parent_symtab, v->m_access)
+                        && !unit_src_tmp.empty()
+                        && !startswith(unit_src_tmp, "static ")) {
+                    unit_src_tmp = "static " + unit_src_tmp;
+                }
                 unit_src += unit_src_tmp;
                 if(unit_src_tmp.size() > 0) {
                     unit_src += ";\n";
@@ -740,6 +745,8 @@ R"(
                 unit_src += src;
             }
         }
+
+        unit_src += global_init_records(x);
 
         forward_decl_functions += "\n\n";
         src = get_final_combined_src(head, unit_src);

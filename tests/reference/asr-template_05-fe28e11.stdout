@@ -5,16 +5,16 @@
             template_05:
                 (Program
                     (SymbolTable
-                        16
+                        17
                         {
                             integer_minus:
                                 (Function
                                     (SymbolTable
-                                        27
+                                        28
                                         {
                                             r:
                                                 (Variable
-                                                    27
+                                                    28
                                                     r
                                                     []
                                                     ReturnVar
@@ -38,7 +38,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    27
+                                                    28
                                                     x
                                                     []
                                                     In
@@ -62,7 +62,7 @@
                                                 ),
                                             y:
                                                 (Variable
-                                                    27
+                                                    28
                                                     y
                                                     []
                                                     In
@@ -103,15 +103,15 @@
                                         Host
                                     )
                                     [~sub_intrinsic]
-                                    [(Var 27 x)
-                                    (Var 27 y)]
+                                    [(Var 28 x)
+                                    (Var 28 y)]
                                     [(Assignment
-                                        (Var 27 r)
+                                        (Var 28 r)
                                         (FunctionCall
-                                            16 ~sub_intrinsic
+                                            17 ~sub_intrinsic
                                             ()
-                                            [((Var 27 x))
-                                            ((Var 27 y))]
+                                            [((Var 28 x))
+                                            ((Var 28 y))]
                                             (Integer 4)
                                             ()
                                             ()
@@ -120,7 +120,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 27 r)
+                                    (Var 28 r)
                                     Public
                                     .true.
                                     .true.
@@ -129,11 +129,11 @@
                             integer_plus:
                                 (Function
                                     (SymbolTable
-                                        18
+                                        19
                                         {
                                             r:
                                                 (Variable
-                                                    18
+                                                    19
                                                     r
                                                     []
                                                     ReturnVar
@@ -157,7 +157,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    18
+                                                    19
                                                     x
                                                     []
                                                     In
@@ -181,7 +181,7 @@
                                                 ),
                                             y:
                                                 (Variable
-                                                    18
+                                                    19
                                                     y
                                                     []
                                                     In
@@ -222,15 +222,15 @@
                                         Host
                                     )
                                     [~add_intrinsic]
-                                    [(Var 18 x)
-                                    (Var 18 y)]
+                                    [(Var 19 x)
+                                    (Var 19 y)]
                                     [(Assignment
-                                        (Var 18 r)
+                                        (Var 19 r)
                                         (FunctionCall
-                                            16 ~add_intrinsic
+                                            17 ~add_intrinsic
                                             ()
-                                            [((Var 18 x))
-                                            ((Var 18 y))]
+                                            [((Var 19 x))
+                                            ((Var 19 y))]
                                             (Integer 4)
                                             ()
                                             ()
@@ -239,7 +239,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 18 r)
+                                    (Var 19 r)
                                     Public
                                     .true.
                                     .true.
@@ -248,128 +248,9 @@
                             integer_tmp_minus:
                                 (Template
                                     (SymbolTable
-                                        19
+                                        20
                                         {
                                             g_minus:
-                                                (Function
-                                                    (SymbolTable
-                                                        20
-                                                        {
-                                                            r:
-                                                                (Variable
-                                                                    20
-                                                                    r
-                                                                    []
-                                                                    ReturnVar
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            x:
-                                                                (Variable
-                                                                    20
-                                                                    x
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            y:
-                                                                (Variable
-                                                                    20
-                                                                    y
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                )
-                                                        })
-                                                    g_minus
-                                                    (FunctionType
-                                                        [(Integer 4)
-                                                        (Integer 4)]
-                                                        (Integer 4)
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .false.
-                                                        Host
-                                                    )
-                                                    [minus]
-                                                    [(Var 20 x)
-                                                    (Var 20 y)]
-                                                    [(Assignment
-                                                        (Var 20 r)
-                                                        (FunctionCall
-                                                            19 minus
-                                                            ()
-                                                            [((Var 20 x))
-                                                            ((Var 20 y))]
-                                                            (Integer 4)
-                                                            ()
-                                                            ()
-                                                        )
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                    )]
-                                                    (Var 20 r)
-                                                    Public
-                                                    .true.
-                                                    .true.
-                                                    ()
-                                                ),
-                                            minus:
                                                 (Function
                                                     (SymbolTable
                                                         21
@@ -447,6 +328,125 @@
                                                                     []
                                                                 )
                                                         })
+                                                    g_minus
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    [minus]
+                                                    [(Var 21 x)
+                                                    (Var 21 y)]
+                                                    [(Assignment
+                                                        (Var 21 r)
+                                                        (FunctionCall
+                                                            20 minus
+                                                            ()
+                                                            [((Var 21 x))
+                                                            ((Var 21 y))]
+                                                            (Integer 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 21 r)
+                                                    Public
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            minus:
+                                                (Function
+                                                    (SymbolTable
+                                                        22
+                                                        {
+                                                            r:
+                                                                (Variable
+                                                                    22
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            x:
+                                                                (Variable
+                                                                    22
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            y:
+                                                                (Variable
+                                                                    22
+                                                                    y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
                                                     minus
                                                     (FunctionType
                                                         [(Integer 4)
@@ -465,10 +465,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 21 x)
-                                                    (Var 21 y)]
+                                                    [(Var 22 x)
+                                                    (Var 22 y)]
                                                     []
-                                                    (Var 21 r)
+                                                    (Var 22 r)
                                                     Public
                                                     .true.
                                                     .true.
@@ -476,7 +476,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    19
+                                                    20
                                                     t
                                                     []
                                                     In
@@ -501,16 +501,16 @@
                                             tmp_mult:
                                                 (Template
                                                     (SymbolTable
-                                                        22
+                                                        23
                                                         {
                                                             mult:
                                                                 (Function
                                                                     (SymbolTable
-                                                                        23
+                                                                        24
                                                                         {
                                                                             r:
                                                                                 (Variable
-                                                                                    23
+                                                                                    24
                                                                                     r
                                                                                     []
                                                                                     ReturnVar
@@ -534,7 +534,7 @@
                                                                                 ),
                                                                             x:
                                                                                 (Variable
-                                                                                    23
+                                                                                    24
                                                                                     x
                                                                                     []
                                                                                     In
@@ -558,7 +558,7 @@
                                                                                 ),
                                                                             y:
                                                                                 (Variable
-                                                                                    23
+                                                                                    24
                                                                                     y
                                                                                     []
                                                                                     In
@@ -599,10 +599,10 @@
                                                                         Host
                                                                     )
                                                                     []
-                                                                    [(Var 23 x)
-                                                                    (Var 23 y)]
+                                                                    [(Var 24 x)
+                                                                    (Var 24 y)]
                                                                     []
-                                                                    (Var 23 r)
+                                                                    (Var 24 r)
                                                                     Public
                                                                     .true.
                                                                     .true.
@@ -610,7 +610,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    22
+                                                                    23
                                                                     t
                                                                     []
                                                                     In
@@ -635,16 +635,16 @@
                                                             tmp_div:
                                                                 (Template
                                                                     (SymbolTable
-                                                                        24
+                                                                        25
                                                                         {
                                                                             div:
                                                                                 (Function
                                                                                     (SymbolTable
-                                                                                        25
+                                                                                        26
                                                                                         {
                                                                                             r:
                                                                                                 (Variable
-                                                                                                    25
+                                                                                                    26
                                                                                                     r
                                                                                                     []
                                                                                                     ReturnVar
@@ -668,7 +668,7 @@
                                                                                                 ),
                                                                                             x:
                                                                                                 (Variable
-                                                                                                    25
+                                                                                                    26
                                                                                                     x
                                                                                                     []
                                                                                                     In
@@ -692,7 +692,7 @@
                                                                                                 ),
                                                                                             y:
                                                                                                 (Variable
-                                                                                                    25
+                                                                                                    26
                                                                                                     y
                                                                                                     []
                                                                                                     In
@@ -733,10 +733,10 @@
                                                                                         Host
                                                                                     )
                                                                                     []
-                                                                                    [(Var 25 x)
-                                                                                    (Var 25 y)]
+                                                                                    [(Var 26 x)
+                                                                                    (Var 26 y)]
                                                                                     []
-                                                                                    (Var 25 r)
+                                                                                    (Var 26 r)
                                                                                     Public
                                                                                     .true.
                                                                                     .true.
@@ -744,7 +744,7 @@
                                                                                 ),
                                                                             t:
                                                                                 (Variable
-                                                                                    24
+                                                                                    25
                                                                                     t
                                                                                     []
                                                                                     In
@@ -801,16 +801,16 @@
                             integer_tmp_mult:
                                 (Template
                                     (SymbolTable
-                                        28
+                                        29
                                         {
                                             mult:
                                                 (Function
                                                     (SymbolTable
-                                                        29
+                                                        30
                                                         {
                                                             r:
                                                                 (Variable
-                                                                    29
+                                                                    30
                                                                     r
                                                                     []
                                                                     ReturnVar
@@ -834,7 +834,7 @@
                                                                 ),
                                                             x:
                                                                 (Variable
-                                                                    29
+                                                                    30
                                                                     x
                                                                     []
                                                                     In
@@ -858,7 +858,7 @@
                                                                 ),
                                                             y:
                                                                 (Variable
-                                                                    29
+                                                                    30
                                                                     y
                                                                     []
                                                                     In
@@ -899,10 +899,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 29 x)
-                                                    (Var 29 y)]
+                                                    [(Var 30 x)
+                                                    (Var 30 y)]
                                                     []
-                                                    (Var 29 r)
+                                                    (Var 30 r)
                                                     Public
                                                     .true.
                                                     .true.
@@ -910,7 +910,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    28
+                                                    29
                                                     t
                                                     []
                                                     In
@@ -935,16 +935,16 @@
                                             tmp_div:
                                                 (Template
                                                     (SymbolTable
-                                                        30
+                                                        31
                                                         {
                                                             div:
                                                                 (Function
                                                                     (SymbolTable
-                                                                        31
+                                                                        32
                                                                         {
                                                                             r:
                                                                                 (Variable
-                                                                                    31
+                                                                                    32
                                                                                     r
                                                                                     []
                                                                                     ReturnVar
@@ -968,7 +968,7 @@
                                                                                 ),
                                                                             x:
                                                                                 (Variable
-                                                                                    31
+                                                                                    32
                                                                                     x
                                                                                     []
                                                                                     In
@@ -992,7 +992,7 @@
                                                                                 ),
                                                                             y:
                                                                                 (Variable
-                                                                                    31
+                                                                                    32
                                                                                     y
                                                                                     []
                                                                                     In
@@ -1033,10 +1033,10 @@
                                                                         Host
                                                                     )
                                                                     []
-                                                                    [(Var 31 x)
-                                                                    (Var 31 y)]
+                                                                    [(Var 32 x)
+                                                                    (Var 32 y)]
                                                                     []
-                                                                    (Var 31 r)
+                                                                    (Var 32 r)
                                                                     Public
                                                                     .true.
                                                                     .true.
@@ -1044,7 +1044,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    30
+                                                                    31
                                                                     t
                                                                     []
                                                                     In
@@ -1087,11 +1087,11 @@
                             real_minus:
                                 (Function
                                     (SymbolTable
-                                        42
+                                        43
                                         {
                                             r:
                                                 (Variable
-                                                    42
+                                                    43
                                                     r
                                                     []
                                                     ReturnVar
@@ -1115,7 +1115,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    42
+                                                    43
                                                     x
                                                     []
                                                     In
@@ -1139,7 +1139,7 @@
                                                 ),
                                             y:
                                                 (Variable
-                                                    42
+                                                    43
                                                     y
                                                     []
                                                     In
@@ -1180,15 +1180,15 @@
                                         Host
                                     )
                                     [~sub_intrinsic1]
-                                    [(Var 42 x)
-                                    (Var 42 y)]
+                                    [(Var 43 x)
+                                    (Var 43 y)]
                                     [(Assignment
-                                        (Var 42 r)
+                                        (Var 43 r)
                                         (FunctionCall
-                                            16 ~sub_intrinsic1
+                                            17 ~sub_intrinsic1
                                             ()
-                                            [((Var 42 x))
-                                            ((Var 42 y))]
+                                            [((Var 43 x))
+                                            ((Var 43 y))]
                                             (Real 4)
                                             ()
                                             ()
@@ -1197,7 +1197,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 42 r)
+                                    (Var 43 r)
                                     Public
                                     .true.
                                     .true.
@@ -1206,11 +1206,11 @@
                             real_plus:
                                 (Function
                                     (SymbolTable
-                                        33
+                                        34
                                         {
                                             r:
                                                 (Variable
-                                                    33
+                                                    34
                                                     r
                                                     []
                                                     ReturnVar
@@ -1234,7 +1234,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    33
+                                                    34
                                                     x
                                                     []
                                                     In
@@ -1258,7 +1258,7 @@
                                                 ),
                                             y:
                                                 (Variable
-                                                    33
+                                                    34
                                                     y
                                                     []
                                                     In
@@ -1299,15 +1299,15 @@
                                         Host
                                     )
                                     [~add_intrinsic1]
-                                    [(Var 33 x)
-                                    (Var 33 y)]
+                                    [(Var 34 x)
+                                    (Var 34 y)]
                                     [(Assignment
-                                        (Var 33 r)
+                                        (Var 34 r)
                                         (FunctionCall
-                                            16 ~add_intrinsic1
+                                            17 ~add_intrinsic1
                                             ()
-                                            [((Var 33 x))
-                                            ((Var 33 y))]
+                                            [((Var 34 x))
+                                            ((Var 34 y))]
                                             (Real 4)
                                             ()
                                             ()
@@ -1316,7 +1316,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 33 r)
+                                    (Var 34 r)
                                     Public
                                     .true.
                                     .true.
@@ -1325,128 +1325,9 @@
                             real_tmp_minus:
                                 (Template
                                     (SymbolTable
-                                        34
+                                        35
                                         {
                                             g_minus:
-                                                (Function
-                                                    (SymbolTable
-                                                        35
-                                                        {
-                                                            r:
-                                                                (Variable
-                                                                    35
-                                                                    r
-                                                                    []
-                                                                    ReturnVar
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            x:
-                                                                (Variable
-                                                                    35
-                                                                    x
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            y:
-                                                                (Variable
-                                                                    35
-                                                                    y
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                )
-                                                        })
-                                                    g_minus
-                                                    (FunctionType
-                                                        [(Real 4)
-                                                        (Real 4)]
-                                                        (Real 4)
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .false.
-                                                        Host
-                                                    )
-                                                    [minus]
-                                                    [(Var 35 x)
-                                                    (Var 35 y)]
-                                                    [(Assignment
-                                                        (Var 35 r)
-                                                        (FunctionCall
-                                                            34 minus
-                                                            ()
-                                                            [((Var 35 x))
-                                                            ((Var 35 y))]
-                                                            (Real 4)
-                                                            ()
-                                                            ()
-                                                        )
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                    )]
-                                                    (Var 35 r)
-                                                    Public
-                                                    .true.
-                                                    .true.
-                                                    ()
-                                                ),
-                                            minus:
                                                 (Function
                                                     (SymbolTable
                                                         36
@@ -1524,6 +1405,125 @@
                                                                     []
                                                                 )
                                                         })
+                                                    g_minus
+                                                    (FunctionType
+                                                        [(Real 4)
+                                                        (Real 4)]
+                                                        (Real 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    [minus]
+                                                    [(Var 36 x)
+                                                    (Var 36 y)]
+                                                    [(Assignment
+                                                        (Var 36 r)
+                                                        (FunctionCall
+                                                            35 minus
+                                                            ()
+                                                            [((Var 36 x))
+                                                            ((Var 36 y))]
+                                                            (Real 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 36 r)
+                                                    Public
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            minus:
+                                                (Function
+                                                    (SymbolTable
+                                                        37
+                                                        {
+                                                            r:
+                                                                (Variable
+                                                                    37
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            x:
+                                                                (Variable
+                                                                    37
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            y:
+                                                                (Variable
+                                                                    37
+                                                                    y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
                                                     minus
                                                     (FunctionType
                                                         [(Real 4)
@@ -1542,10 +1542,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 36 x)
-                                                    (Var 36 y)]
+                                                    [(Var 37 x)
+                                                    (Var 37 y)]
                                                     []
-                                                    (Var 36 r)
+                                                    (Var 37 r)
                                                     Public
                                                     .true.
                                                     .true.
@@ -1553,7 +1553,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    34
+                                                    35
                                                     t
                                                     []
                                                     In
@@ -1578,16 +1578,16 @@
                                             tmp_mult:
                                                 (Template
                                                     (SymbolTable
-                                                        37
+                                                        38
                                                         {
                                                             mult:
                                                                 (Function
                                                                     (SymbolTable
-                                                                        38
+                                                                        39
                                                                         {
                                                                             r:
                                                                                 (Variable
-                                                                                    38
+                                                                                    39
                                                                                     r
                                                                                     []
                                                                                     ReturnVar
@@ -1611,7 +1611,7 @@
                                                                                 ),
                                                                             x:
                                                                                 (Variable
-                                                                                    38
+                                                                                    39
                                                                                     x
                                                                                     []
                                                                                     In
@@ -1635,7 +1635,7 @@
                                                                                 ),
                                                                             y:
                                                                                 (Variable
-                                                                                    38
+                                                                                    39
                                                                                     y
                                                                                     []
                                                                                     In
@@ -1676,10 +1676,10 @@
                                                                         Host
                                                                     )
                                                                     []
-                                                                    [(Var 38 x)
-                                                                    (Var 38 y)]
+                                                                    [(Var 39 x)
+                                                                    (Var 39 y)]
                                                                     []
-                                                                    (Var 38 r)
+                                                                    (Var 39 r)
                                                                     Public
                                                                     .true.
                                                                     .true.
@@ -1687,7 +1687,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    37
+                                                                    38
                                                                     t
                                                                     []
                                                                     In
@@ -1712,16 +1712,16 @@
                                                             tmp_div:
                                                                 (Template
                                                                     (SymbolTable
-                                                                        39
+                                                                        40
                                                                         {
                                                                             div:
                                                                                 (Function
                                                                                     (SymbolTable
-                                                                                        40
+                                                                                        41
                                                                                         {
                                                                                             r:
                                                                                                 (Variable
-                                                                                                    40
+                                                                                                    41
                                                                                                     r
                                                                                                     []
                                                                                                     ReturnVar
@@ -1745,7 +1745,7 @@
                                                                                                 ),
                                                                                             x:
                                                                                                 (Variable
-                                                                                                    40
+                                                                                                    41
                                                                                                     x
                                                                                                     []
                                                                                                     In
@@ -1769,7 +1769,7 @@
                                                                                                 ),
                                                                                             y:
                                                                                                 (Variable
-                                                                                                    40
+                                                                                                    41
                                                                                                     y
                                                                                                     []
                                                                                                     In
@@ -1810,10 +1810,10 @@
                                                                                         Host
                                                                                     )
                                                                                     []
-                                                                                    [(Var 40 x)
-                                                                                    (Var 40 y)]
+                                                                                    [(Var 41 x)
+                                                                                    (Var 41 y)]
                                                                                     []
-                                                                                    (Var 40 r)
+                                                                                    (Var 41 r)
                                                                                     Public
                                                                                     .true.
                                                                                     .true.
@@ -1821,7 +1821,7 @@
                                                                                 ),
                                                                             t:
                                                                                 (Variable
-                                                                                    39
+                                                                                    40
                                                                                     t
                                                                                     []
                                                                                     In
@@ -1878,16 +1878,16 @@
                             real_tmp_mult:
                                 (Template
                                     (SymbolTable
-                                        43
+                                        44
                                         {
                                             mult:
                                                 (Function
                                                     (SymbolTable
-                                                        44
+                                                        45
                                                         {
                                                             r:
                                                                 (Variable
-                                                                    44
+                                                                    45
                                                                     r
                                                                     []
                                                                     ReturnVar
@@ -1911,7 +1911,7 @@
                                                                 ),
                                                             x:
                                                                 (Variable
-                                                                    44
+                                                                    45
                                                                     x
                                                                     []
                                                                     In
@@ -1935,7 +1935,7 @@
                                                                 ),
                                                             y:
                                                                 (Variable
-                                                                    44
+                                                                    45
                                                                     y
                                                                     []
                                                                     In
@@ -1976,10 +1976,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 44 x)
-                                                    (Var 44 y)]
+                                                    [(Var 45 x)
+                                                    (Var 45 y)]
                                                     []
-                                                    (Var 44 r)
+                                                    (Var 45 r)
                                                     Public
                                                     .true.
                                                     .true.
@@ -1987,7 +1987,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    43
+                                                    44
                                                     t
                                                     []
                                                     In
@@ -2012,16 +2012,16 @@
                                             tmp_div:
                                                 (Template
                                                     (SymbolTable
-                                                        45
+                                                        46
                                                         {
                                                             div:
                                                                 (Function
                                                                     (SymbolTable
-                                                                        46
+                                                                        47
                                                                         {
                                                                             r:
                                                                                 (Variable
-                                                                                    46
+                                                                                    47
                                                                                     r
                                                                                     []
                                                                                     ReturnVar
@@ -2045,7 +2045,7 @@
                                                                                 ),
                                                                             x:
                                                                                 (Variable
-                                                                                    46
+                                                                                    47
                                                                                     x
                                                                                     []
                                                                                     In
@@ -2069,7 +2069,7 @@
                                                                                 ),
                                                                             y:
                                                                                 (Variable
-                                                                                    46
+                                                                                    47
                                                                                     y
                                                                                     []
                                                                                     In
@@ -2110,10 +2110,10 @@
                                                                         Host
                                                                     )
                                                                     []
-                                                                    [(Var 46 x)
-                                                                    (Var 46 y)]
+                                                                    [(Var 47 x)
+                                                                    (Var 47 y)]
                                                                     []
-                                                                    (Var 46 r)
+                                                                    (Var 47 r)
                                                                     Public
                                                                     .true.
                                                                     .true.
@@ -2121,7 +2121,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    45
+                                                                    46
                                                                     t
                                                                     []
                                                                     In
@@ -2163,7 +2163,7 @@
                                 ),
                             req:
                                 (ExternalSymbol
-                                    16
+                                    17
                                     req
                                     2 req
                                     template_05_m
@@ -2173,7 +2173,7 @@
                                 ),
                             tmp:
                                 (ExternalSymbol
-                                    16
+                                    17
                                     tmp
                                     2 tmp
                                     template_05_m
@@ -2184,11 +2184,11 @@
                             ~add_intrinsic:
                                 (Function
                                     (SymbolTable
-                                        17
+                                        18
                                         {
                                             arg0:
                                                 (Variable
-                                                    17
+                                                    18
                                                     arg0
                                                     []
                                                     In
@@ -2212,7 +2212,7 @@
                                                 ),
                                             arg1:
                                                 (Variable
-                                                    17
+                                                    18
                                                     arg1
                                                     []
                                                     In
@@ -2236,7 +2236,7 @@
                                                 ),
                                             ret:
                                                 (Variable
-                                                    17
+                                                    18
                                                     ret
                                                     []
                                                     ReturnVar
@@ -2277,14 +2277,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 17 arg0)
-                                    (Var 17 arg1)]
+                                    [(Var 18 arg0)
+                                    (Var 18 arg1)]
                                     [(Assignment
-                                        (Var 17 ret)
+                                        (Var 18 ret)
                                         (IntegerBinOp
-                                            (Var 17 arg0)
+                                            (Var 18 arg0)
                                             Add
-                                            (Var 17 arg1)
+                                            (Var 18 arg1)
                                             (Integer 4)
                                             ()
                                         )
@@ -2292,7 +2292,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 17 ret)
+                                    (Var 18 ret)
                                     Public
                                     .true.
                                     .true.
@@ -2301,11 +2301,11 @@
                             ~add_intrinsic1:
                                 (Function
                                     (SymbolTable
-                                        32
+                                        33
                                         {
                                             arg0:
                                                 (Variable
-                                                    32
+                                                    33
                                                     arg0
                                                     []
                                                     In
@@ -2329,7 +2329,7 @@
                                                 ),
                                             arg1:
                                                 (Variable
-                                                    32
+                                                    33
                                                     arg1
                                                     []
                                                     In
@@ -2353,7 +2353,7 @@
                                                 ),
                                             ret:
                                                 (Variable
-                                                    32
+                                                    33
                                                     ret
                                                     []
                                                     ReturnVar
@@ -2394,14 +2394,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 32 arg0)
-                                    (Var 32 arg1)]
+                                    [(Var 33 arg0)
+                                    (Var 33 arg1)]
                                     [(Assignment
-                                        (Var 32 ret)
+                                        (Var 33 ret)
                                         (RealBinOp
-                                            (Var 32 arg0)
+                                            (Var 33 arg0)
                                             Add
-                                            (Var 32 arg1)
+                                            (Var 33 arg1)
                                             (Real 4)
                                             ()
                                         )
@@ -2409,7 +2409,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 32 ret)
+                                    (Var 33 ret)
                                     Public
                                     .true.
                                     .true.
@@ -2418,11 +2418,11 @@
                             ~sub_intrinsic:
                                 (Function
                                     (SymbolTable
-                                        26
+                                        27
                                         {
                                             arg0:
                                                 (Variable
-                                                    26
+                                                    27
                                                     arg0
                                                     []
                                                     In
@@ -2446,7 +2446,7 @@
                                                 ),
                                             arg1:
                                                 (Variable
-                                                    26
+                                                    27
                                                     arg1
                                                     []
                                                     In
@@ -2470,7 +2470,7 @@
                                                 ),
                                             ret:
                                                 (Variable
-                                                    26
+                                                    27
                                                     ret
                                                     []
                                                     ReturnVar
@@ -2511,14 +2511,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 26 arg0)
-                                    (Var 26 arg1)]
+                                    [(Var 27 arg0)
+                                    (Var 27 arg1)]
                                     [(Assignment
-                                        (Var 26 ret)
+                                        (Var 27 ret)
                                         (IntegerBinOp
-                                            (Var 26 arg0)
+                                            (Var 27 arg0)
                                             Sub
-                                            (Var 26 arg1)
+                                            (Var 27 arg1)
                                             (Integer 4)
                                             ()
                                         )
@@ -2526,7 +2526,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 26 ret)
+                                    (Var 27 ret)
                                     Public
                                     .true.
                                     .true.
@@ -2535,11 +2535,11 @@
                             ~sub_intrinsic1:
                                 (Function
                                     (SymbolTable
-                                        41
+                                        42
                                         {
                                             arg0:
                                                 (Variable
-                                                    41
+                                                    42
                                                     arg0
                                                     []
                                                     In
@@ -2563,7 +2563,7 @@
                                                 ),
                                             arg1:
                                                 (Variable
-                                                    41
+                                                    42
                                                     arg1
                                                     []
                                                     In
@@ -2587,7 +2587,7 @@
                                                 ),
                                             ret:
                                                 (Variable
-                                                    41
+                                                    42
                                                     ret
                                                     []
                                                     ReturnVar
@@ -2628,14 +2628,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 41 arg0)
-                                    (Var 41 arg1)]
+                                    [(Var 42 arg0)
+                                    (Var 42 arg1)]
                                     [(Assignment
-                                        (Var 41 ret)
+                                        (Var 42 ret)
                                         (RealBinOp
-                                            (Var 41 arg0)
+                                            (Var 42 arg0)
                                             Sub
-                                            (Var 41 arg1)
+                                            (Var 42 arg1)
                                             (Real 4)
                                             ()
                                         )
@@ -2643,7 +2643,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 41 ret)
+                                    (Var 42 ret)
                                     Public
                                     .true.
                                     .true.
@@ -2654,12 +2654,69 @@
                     [template_05_m]
                     []
                     ()
+                    ()
                 ),
             template_05_m:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_05_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_05_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_05_m:
+                                (Function
+                                    (SymbolTable
+                                        16
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_05_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             req:
                                 (Requirement
                                     (SymbolTable
@@ -3948,9 +4005,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_template_05_m
+                    __lcompilers_global_init_state_template_05_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

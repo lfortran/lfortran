@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_data_12_module:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_data_12_module
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_data_12_module:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_data_12_module
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             b:
                                 (Variable
                                     2
@@ -294,16 +350,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_data_12_module
+                    __lcompilers_global_init_state_data_12_module
+                    .false.
                 ),
             data_12_program:
                 (Program
                     (SymbolTable
-                        3
+                        4
                         {
                             b:
                                 (ExternalSymbol
-                                    3
+                                    4
                                     b
                                     2 b
                                     data_12_module
@@ -313,7 +371,7 @@
                                 ),
                             bf1:
                                 (ExternalSymbol
-                                    3
+                                    4
                                     bf1
                                     2 bf1
                                     data_12_module
@@ -323,7 +381,7 @@
                                 ),
                             c1:
                                 (ExternalSymbol
-                                    3
+                                    4
                                     c1
                                     2 c1
                                     data_12_module
@@ -333,7 +391,7 @@
                                 ),
                             td:
                                 (ExternalSymbol
-                                    3
+                                    4
                                     td
                                     2 td
                                     data_12_module
@@ -343,7 +401,7 @@
                                 ),
                             x:
                                 (ExternalSymbol
-                                    3
+                                    4
                                     x
                                     2 x
                                     data_12_module
@@ -353,7 +411,7 @@
                                 ),
                             xx90:
                                 (ExternalSymbol
-                                    3
+                                    4
                                     xx90
                                     2 xx90
                                     data_12_module
@@ -363,7 +421,7 @@
                                 ),
                             xx95:
                                 (ExternalSymbol
-                                    3
+                                    4
                                     xx95
                                     2 xx95
                                     data_12_module
@@ -373,7 +431,7 @@
                                 ),
                             y:
                                 (ExternalSymbol
-                                    3
+                                    4
                                     y
                                     2 y
                                     data_12_module
@@ -383,7 +441,7 @@
                                 ),
                             z:
                                 (ExternalSymbol
-                                    3
+                                    4
                                     z
                                     2 z
                                     data_12_module
@@ -397,7 +455,7 @@
                     [(Print
                         (StringFormat
                             ()
-                            [(Var 3 x)]
+                            [(Var 4 x)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -408,7 +466,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 3 x)
+                            (Var 4 x)
                             NotEq
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
@@ -422,7 +480,7 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 3 y)]
+                            [(Var 4 y)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -436,7 +494,7 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (Var 3 y)
+                                    (Var 4 y)
                                     Sub
                                     (RealConstant
                                         2.000000
@@ -465,7 +523,7 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 3 z)]
+                            [(Var 4 z)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -479,7 +537,7 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (Var 3 z)
+                                    (Var 4 z)
                                     Sub
                                     (RealConstant
                                         3.000000
@@ -509,7 +567,7 @@
                         (StringFormat
                             ()
                             [(ArrayItem
-                                (Var 3 c1)
+                                (Var 4 c1)
                                 [(()
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
@@ -531,7 +589,7 @@
                                 Abs
                                 [(RealBinOp
                                     (ArrayItem
-                                        (Var 3 c1)
+                                        (Var 4 c1)
                                         [(()
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ())]
@@ -568,7 +626,7 @@
                         (StringFormat
                             ()
                             [(ArrayItem
-                                (Var 3 c1)
+                                (Var 4 c1)
                                 [(()
                                 (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
@@ -590,7 +648,7 @@
                                 Abs
                                 [(RealBinOp
                                     (ArrayItem
-                                        (Var 3 c1)
+                                        (Var 4 c1)
                                         [(()
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         ())]
@@ -627,7 +685,7 @@
                         (StringFormat
                             ()
                             [(ArrayItem
-                                (Var 3 c1)
+                                (Var 4 c1)
                                 [(()
                                 (IntegerConstant 4 (Integer 4) Decimal)
                                 ())]
@@ -649,7 +707,7 @@
                                 Abs
                                 [(RealBinOp
                                     (ArrayItem
-                                        (Var 3 c1)
+                                        (Var 4 c1)
                                         [(()
                                         (IntegerConstant 4 (Integer 4) Decimal)
                                         ())]
@@ -685,7 +743,7 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 3 bf1)]
+                            [(Var 4 bf1)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -699,7 +757,7 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (Var 3 bf1)
+                                    (Var 4 bf1)
                                     Sub
                                     (RealConstant
                                         0.800000
@@ -728,7 +786,7 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 3 xx90)]
+                            [(Var 4 xx90)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -742,7 +800,7 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (Var 3 xx90)
+                                    (Var 4 xx90)
                                     Sub
                                     (RealConstant
                                         0.550000
@@ -771,7 +829,7 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 3 xx95)]
+                            [(Var 4 xx95)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -785,7 +843,7 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (Var 3 xx95)
+                                    (Var 4 xx95)
                                     Sub
                                     (RealConstant
                                         0.620000
@@ -812,8 +870,12 @@
                         []
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

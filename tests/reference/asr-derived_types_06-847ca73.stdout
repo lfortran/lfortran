@@ -5,18 +5,74 @@
             tomlf_datetime:
                 (Module
                     (SymbolTable
-                        7
+                        8
                         {
+                            __lcompilers_global_init_state_tomlf_datetime:
+                                (Variable
+                                    8
+                                    __lcompilers_global_init_state_tomlf_datetime
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_datetime:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_datetime
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             date_to_string:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        13
                                         {
                                             1_toml_date_day:
                                                 (ExternalSymbol
-                                                    11
+                                                    13
                                                     1_toml_date_day
-                                                    8 day
+                                                    9 day
                                                     tomlf_datetime
                                                     [toml_date]
                                                     day
@@ -24,9 +80,9 @@
                                                 ),
                                             1_toml_date_month:
                                                 (ExternalSymbol
-                                                    11
+                                                    13
                                                     1_toml_date_month
-                                                    8 month
+                                                    9 month
                                                     tomlf_datetime
                                                     [toml_date]
                                                     month
@@ -34,9 +90,9 @@
                                                 ),
                                             1_toml_date_year:
                                                 (ExternalSymbol
-                                                    11
+                                                    13
                                                     1_toml_date_year
-                                                    8 year
+                                                    9 year
                                                     tomlf_datetime
                                                     [toml_date]
                                                     year
@@ -44,7 +100,7 @@
                                                 ),
                                             lfortran_iomsg:
                                                 (Variable
-                                                    11
+                                                    13
                                                     lfortran_iomsg
                                                     []
                                                     Local
@@ -68,7 +124,7 @@
                                                 ),
                                             lhs:
                                                 (Variable
-                                                    11
+                                                    13
                                                     lhs
                                                     []
                                                     Out
@@ -94,7 +150,7 @@
                                                 ),
                                             rhs:
                                                 (Variable
-                                                    11
+                                                    13
                                                     rhs
                                                     []
                                                     In
@@ -109,7 +165,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    7 toml_date
+                                                    8 toml_date
                                                     Source
                                                     Private
                                                     Required
@@ -151,10 +207,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 11 lhs)
-                                    (Var 11 rhs)]
+                                    [(Var 13 lhs)
+                                    (Var 13 rhs)]
                                     [(Allocate
-                                        [((Var 11 lhs)
+                                        [((Var 13 lhs)
                                         []
                                         []
                                         (IntegerConstant 10 (Integer 4) Decimal)
@@ -166,8 +222,8 @@
                                     )
                                     (FileWrite
                                         0
-                                        (Var 11 lhs)
-                                        (Var 11 lfortran_iomsg)
+                                        (Var 13 lhs)
+                                        (Var 13 lfortran_iomsg)
                                         ()
                                         ()
                                         [(StringFormat
@@ -176,20 +232,20 @@
                                                 (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             [(StructInstanceMember
-                                                (Var 11 rhs)
-                                                11 1_toml_date_year
+                                                (Var 13 rhs)
+                                                13 1_toml_date_year
                                                 (Integer 4)
                                                 ()
                                             )
                                             (StructInstanceMember
-                                                (Var 11 rhs)
-                                                11 1_toml_date_month
+                                                (Var 13 rhs)
+                                                13 1_toml_date_month
                                                 (Integer 4)
                                                 ()
                                             )
                                             (StructInstanceMember
-                                                (Var 11 rhs)
-                                                11 1_toml_date_day
+                                                (Var 13 rhs)
+                                                13 1_toml_date_day
                                                 (Integer 4)
                                                 ()
                                             )]
@@ -218,13 +274,13 @@
                             datetime_to_string:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        14
                                         {
                                             1_toml_date_to_string:
                                                 (ExternalSymbol
-                                                    12
+                                                    14
                                                     1_toml_date_to_string
-                                                    8 to_string
+                                                    9 to_string
                                                     tomlf_datetime
                                                     [toml_date]
                                                     to_string
@@ -232,9 +288,9 @@
                                                 ),
                                             1_toml_datetime_date:
                                                 (ExternalSymbol
-                                                    12
+                                                    14
                                                     1_toml_datetime_date
-                                                    9 date
+                                                    10 date
                                                     tomlf_datetime
                                                     [toml_datetime]
                                                     date
@@ -242,9 +298,9 @@
                                                 ),
                                             1_toml_datetime_time:
                                                 (ExternalSymbol
-                                                    12
+                                                    14
                                                     1_toml_datetime_time
-                                                    9 time
+                                                    10 time
                                                     tomlf_datetime
                                                     [toml_datetime]
                                                     time
@@ -252,9 +308,9 @@
                                                 ),
                                             1_toml_time_to_string:
                                                 (ExternalSymbol
-                                                    12
+                                                    14
                                                     1_toml_time_to_string
-                                                    10 to_string
+                                                    11 to_string
                                                     tomlf_datetime
                                                     [toml_time]
                                                     to_string
@@ -262,7 +318,7 @@
                                                 ),
                                             lhs:
                                                 (Variable
-                                                    12
+                                                    14
                                                     lhs
                                                     []
                                                     Out
@@ -288,7 +344,7 @@
                                                 ),
                                             rhs:
                                                 (Variable
-                                                    12
+                                                    14
                                                     rhs
                                                     []
                                                     In
@@ -326,7 +382,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    7 toml_datetime
+                                                    8 toml_datetime
                                                     Source
                                                     Private
                                                     Required
@@ -342,7 +398,7 @@
                                                 ),
                                             temporary:
                                                 (Variable
-                                                    12
+                                                    14
                                                     temporary
                                                     []
                                                     Local
@@ -368,9 +424,9 @@
                                                 ),
                                             time_to_string:
                                                 (ExternalSymbol
-                                                    12
+                                                    14
                                                     time_to_string
-                                                    7 time_to_string
+                                                    8 time_to_string
                                                     tomlf_datetime
                                                     []
                                                     time_to_string
@@ -427,15 +483,15 @@
                                         Host
                                     )
                                     []
-                                    [(Var 12 lhs)
-                                    (Var 12 rhs)]
+                                    [(Var 14 lhs)
+                                    (Var 14 rhs)]
                                     [(If
                                         ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember
-                                                (Var 12 rhs)
-                                                12 1_toml_datetime_date
+                                                (Var 14 rhs)
+                                                14 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
                                                         [(Integer 4)
@@ -453,12 +509,12 @@
                                             ()
                                         )
                                         [(SubroutineCall
-                                            12 1_toml_date_to_string
+                                            14 1_toml_date_to_string
                                             ()
-                                            [((Var 12 lhs))
+                                            [((Var 14 lhs))
                                             ((StructInstanceMember
-                                                (Var 12 rhs)
-                                                12 1_toml_datetime_date
+                                                (Var 14 rhs)
+                                                14 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
                                                         [(Integer 4)
@@ -472,8 +528,8 @@
                                                 ()
                                             ))]
                                             (StructInstanceMember
-                                                (Var 12 rhs)
-                                                12 1_toml_datetime_date
+                                                (Var 14 rhs)
+                                                14 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
                                                         [(Integer 4)
@@ -493,8 +549,8 @@
                                             (IntrinsicImpureFunction
                                                 Allocated
                                                 [(StructInstanceMember
-                                                    (Var 12 rhs)
-                                                    12 1_toml_datetime_time
+                                                    (Var 14 rhs)
+                                                    14 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
                                                             [(Integer 4)
@@ -518,12 +574,12 @@
                                                 ()
                                             )
                                             [(SubroutineCall
-                                                12 1_toml_time_to_string
+                                                14 1_toml_time_to_string
                                                 ()
-                                                [((Var 12 temporary))
+                                                [((Var 14 temporary))
                                                 ((StructInstanceMember
-                                                    (Var 12 rhs)
-                                                    12 1_toml_datetime_time
+                                                    (Var 14 rhs)
+                                                    14 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
                                                             [(Integer 4)
@@ -543,8 +599,8 @@
                                                     ()
                                                 ))]
                                                 (StructInstanceMember
-                                                    (Var 12 rhs)
-                                                    12 1_toml_datetime_time
+                                                    (Var 14 rhs)
+                                                    14 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
                                                             [(Integer 4)
@@ -566,11 +622,11 @@
                                                 .false.
                                             )
                                             (Assignment
-                                                (Var 12 lhs)
+                                                (Var 14 lhs)
                                                 (IntrinsicElementalFunction
                                                     StringConcat
-                                                    [(Var 12 lhs)
-                                                    (Var 12 temporary)]
+                                                    [(Var 14 lhs)
+                                                    (Var 14 temporary)]
                                                     0
                                                     (String 1 () DeferredLength DescriptorString)
                                                     ()
@@ -586,8 +642,8 @@
                                             (IntrinsicImpureFunction
                                                 Allocated
                                                 [(StructInstanceMember
-                                                    (Var 12 rhs)
-                                                    12 1_toml_datetime_time
+                                                    (Var 14 rhs)
+                                                    14 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
                                                             [(Integer 4)
@@ -611,10 +667,10 @@
                                                 ()
                                             )
                                             [(Assignment
-                                                (Var 12 lhs)
+                                                (Var 14 lhs)
                                                 (StructInstanceMember
-                                                    (Var 12 rhs)
-                                                    12 1_toml_datetime_time
+                                                    (Var 14 rhs)
+                                                    14 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
                                                             [(Integer 4)
@@ -634,12 +690,12 @@
                                                     ()
                                                 )
                                                 (SubroutineCall
-                                                    12 time_to_string
-                                                    12 time_to_string
-                                                    [((Var 12 lhs))
+                                                    14 time_to_string
+                                                    14 time_to_string
+                                                    [((Var 14 lhs))
                                                     ((StructInstanceMember
-                                                        (Var 12 rhs)
-                                                        12 1_toml_datetime_time
+                                                        (Var 14 rhs)
+                                                        14 1_toml_datetime_time
                                                         (Allocatable
                                                             (StructType
                                                                 [(Integer 4)
@@ -676,13 +732,13 @@
                             new_toml_time:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        15
                                         {
                                             1_toml_time_hour:
                                                 (ExternalSymbol
-                                                    13
+                                                    15
                                                     1_toml_time_hour
-                                                    10 hour
+                                                    11 hour
                                                     tomlf_datetime
                                                     [toml_time]
                                                     hour
@@ -690,9 +746,9 @@
                                                 ),
                                             1_toml_time_millisec:
                                                 (ExternalSymbol
-                                                    13
+                                                    15
                                                     1_toml_time_millisec
-                                                    10 millisec
+                                                    11 millisec
                                                     tomlf_datetime
                                                     [toml_time]
                                                     millisec
@@ -700,9 +756,9 @@
                                                 ),
                                             1_toml_time_minute:
                                                 (ExternalSymbol
-                                                    13
+                                                    15
                                                     1_toml_time_minute
-                                                    10 minute
+                                                    11 minute
                                                     tomlf_datetime
                                                     [toml_time]
                                                     minute
@@ -710,9 +766,9 @@
                                                 ),
                                             1_toml_time_second:
                                                 (ExternalSymbol
-                                                    13
+                                                    15
                                                     1_toml_time_second
-                                                    10 second
+                                                    11 second
                                                     tomlf_datetime
                                                     [toml_time]
                                                     second
@@ -720,9 +776,9 @@
                                                 ),
                                             1_toml_time_zone:
                                                 (ExternalSymbol
-                                                    13
+                                                    15
                                                     1_toml_time_zone
-                                                    10 zone
+                                                    11 zone
                                                     tomlf_datetime
                                                     [toml_time]
                                                     zone
@@ -730,7 +786,7 @@
                                                 ),
                                             hour:
                                                 (Variable
-                                                    13
+                                                    15
                                                     hour
                                                     []
                                                     In
@@ -754,7 +810,7 @@
                                                 ),
                                             millisec:
                                                 (Variable
-                                                    13
+                                                    15
                                                     millisec
                                                     []
                                                     In
@@ -778,7 +834,7 @@
                                                 ),
                                             minute:
                                                 (Variable
-                                                    13
+                                                    15
                                                     minute
                                                     []
                                                     In
@@ -802,7 +858,7 @@
                                                 ),
                                             second:
                                                 (Variable
-                                                    13
+                                                    15
                                                     second
                                                     []
                                                     In
@@ -826,7 +882,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    13
+                                                    15
                                                     self
                                                     []
                                                     ReturnVar
@@ -847,7 +903,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    7 toml_time
+                                                    8 toml_time
                                                     Source
                                                     Private
                                                     Required
@@ -863,7 +919,7 @@
                                                 ),
                                             zone:
                                                 (Variable
-                                                    13
+                                                    15
                                                     zone
                                                     []
                                                     In
@@ -920,28 +976,28 @@
                                         Host
                                     )
                                     []
-                                    [(Var 13 hour)
-                                    (Var 13 minute)
-                                    (Var 13 second)
-                                    (Var 13 millisec)
-                                    (Var 13 zone)]
+                                    [(Var 15 hour)
+                                    (Var 15 minute)
+                                    (Var 15 second)
+                                    (Var 15 millisec)
+                                    (Var 15 zone)]
                                     [(If
                                         ()
                                         (IntrinsicElementalFunction
                                             Present
-                                            [(Var 13 hour)]
+                                            [(Var 15 hour)]
                                             0
                                             (Logical 4)
                                             ()
                                         )
                                         [(Assignment
                                             (StructInstanceMember
-                                                (Var 13 self)
-                                                13 1_toml_time_hour
+                                                (Var 15 self)
+                                                15 1_toml_time_hour
                                                 (Integer 4)
                                                 ()
                                             )
-                                            (Var 13 hour)
+                                            (Var 15 hour)
                                             ()
                                             .false.
                                             .false.
@@ -952,19 +1008,19 @@
                                         ()
                                         (IntrinsicElementalFunction
                                             Present
-                                            [(Var 13 minute)]
+                                            [(Var 15 minute)]
                                             0
                                             (Logical 4)
                                             ()
                                         )
                                         [(Assignment
                                             (StructInstanceMember
-                                                (Var 13 self)
-                                                13 1_toml_time_minute
+                                                (Var 15 self)
+                                                15 1_toml_time_minute
                                                 (Integer 4)
                                                 ()
                                             )
-                                            (Var 13 minute)
+                                            (Var 15 minute)
                                             ()
                                             .false.
                                             .false.
@@ -975,19 +1031,19 @@
                                         ()
                                         (IntrinsicElementalFunction
                                             Present
-                                            [(Var 13 second)]
+                                            [(Var 15 second)]
                                             0
                                             (Logical 4)
                                             ()
                                         )
                                         [(Assignment
                                             (StructInstanceMember
-                                                (Var 13 self)
-                                                13 1_toml_time_second
+                                                (Var 15 self)
+                                                15 1_toml_time_second
                                                 (Integer 4)
                                                 ()
                                             )
-                                            (Var 13 second)
+                                            (Var 15 second)
                                             ()
                                             .false.
                                             .false.
@@ -998,21 +1054,21 @@
                                         ()
                                         (IntrinsicElementalFunction
                                             Present
-                                            [(Var 13 millisec)]
+                                            [(Var 15 millisec)]
                                             0
                                             (Logical 4)
                                             ()
                                         )
                                         [(Assignment
                                             (StructInstanceMember
-                                                (Var 13 self)
-                                                13 1_toml_time_millisec
+                                                (Var 15 self)
+                                                15 1_toml_time_millisec
                                                 (Allocatable
                                                     (Integer 4)
                                                 )
                                                 ()
                                             )
-                                            (Var 13 millisec)
+                                            (Var 15 millisec)
                                             ()
                                             .false.
                                             .false.
@@ -1023,28 +1079,28 @@
                                         ()
                                         (IntrinsicElementalFunction
                                             Present
-                                            [(Var 13 zone)]
+                                            [(Var 15 zone)]
                                             0
                                             (Logical 4)
                                             ()
                                         )
                                         [(Assignment
                                             (StructInstanceMember
-                                                (Var 13 self)
-                                                13 1_toml_time_zone
+                                                (Var 15 self)
+                                                15 1_toml_time_zone
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )
-                                            (Var 13 zone)
+                                            (Var 15 zone)
                                             ()
                                             .false.
                                             .false.
                                         )]
                                         []
                                     )]
-                                    (Var 13 self)
+                                    (Var 15 self)
                                     Private
                                     .true.
                                     .true.
@@ -1053,13 +1109,13 @@
                             time_to_string:
                                 (Function
                                     (SymbolTable
-                                        14
+                                        16
                                         {
                                             1_toml_time_hour:
                                                 (ExternalSymbol
-                                                    14
+                                                    16
                                                     1_toml_time_hour
-                                                    10 hour
+                                                    11 hour
                                                     tomlf_datetime
                                                     [toml_time]
                                                     hour
@@ -1067,9 +1123,9 @@
                                                 ),
                                             1_toml_time_millisec:
                                                 (ExternalSymbol
-                                                    14
+                                                    16
                                                     1_toml_time_millisec
-                                                    10 millisec
+                                                    11 millisec
                                                     tomlf_datetime
                                                     [toml_time]
                                                     millisec
@@ -1077,9 +1133,9 @@
                                                 ),
                                             1_toml_time_minute:
                                                 (ExternalSymbol
-                                                    14
+                                                    16
                                                     1_toml_time_minute
-                                                    10 minute
+                                                    11 minute
                                                     tomlf_datetime
                                                     [toml_time]
                                                     minute
@@ -1087,9 +1143,9 @@
                                                 ),
                                             1_toml_time_second:
                                                 (ExternalSymbol
-                                                    14
+                                                    16
                                                     1_toml_time_second
-                                                    10 second
+                                                    11 second
                                                     tomlf_datetime
                                                     [toml_time]
                                                     second
@@ -1097,9 +1153,9 @@
                                                 ),
                                             1_toml_time_zone:
                                                 (ExternalSymbol
-                                                    14
+                                                    16
                                                     1_toml_time_zone
-                                                    10 zone
+                                                    11 zone
                                                     tomlf_datetime
                                                     [toml_time]
                                                     zone
@@ -1107,7 +1163,7 @@
                                                 ),
                                             lfortran_iomsg:
                                                 (Variable
-                                                    14
+                                                    16
                                                     lfortran_iomsg
                                                     []
                                                     Local
@@ -1131,7 +1187,7 @@
                                                 ),
                                             lfortran_iomsg1:
                                                 (Variable
-                                                    14
+                                                    16
                                                     lfortran_iomsg1
                                                     []
                                                     Local
@@ -1155,7 +1211,7 @@
                                                 ),
                                             lhs:
                                                 (Variable
-                                                    14
+                                                    16
                                                     lhs
                                                     []
                                                     Out
@@ -1181,7 +1237,7 @@
                                                 ),
                                             rhs:
                                                 (Variable
-                                                    14
+                                                    16
                                                     rhs
                                                     []
                                                     In
@@ -1202,7 +1258,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    7 toml_time
+                                                    8 toml_time
                                                     Source
                                                     Private
                                                     Required
@@ -1250,15 +1306,15 @@
                                         Host
                                     )
                                     []
-                                    [(Var 14 lhs)
-                                    (Var 14 rhs)]
+                                    [(Var 16 lhs)
+                                    (Var 16 rhs)]
                                     [(If
                                         ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember
-                                                (Var 14 rhs)
-                                                14 1_toml_time_millisec
+                                                (Var 16 rhs)
+                                                16 1_toml_time_millisec
                                                 (Allocatable
                                                     (Integer 4)
                                                 )
@@ -1269,7 +1325,7 @@
                                             ()
                                         )
                                         [(Allocate
-                                            [((Var 14 lhs)
+                                            [((Var 16 lhs)
                                             []
                                             []
                                             (IntegerConstant 12 (Integer 4) Decimal)
@@ -1281,8 +1337,8 @@
                                         )
                                         (FileWrite
                                             0
-                                            (Var 14 lhs)
-                                            (Var 14 lfortran_iomsg)
+                                            (Var 16 lhs)
+                                            (Var 16 lfortran_iomsg)
                                             ()
                                             ()
                                             [(StringFormat
@@ -1291,26 +1347,26 @@
                                                     (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 [(StructInstanceMember
-                                                    (Var 14 rhs)
-                                                    14 1_toml_time_hour
+                                                    (Var 16 rhs)
+                                                    16 1_toml_time_hour
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 (StructInstanceMember
-                                                    (Var 14 rhs)
-                                                    14 1_toml_time_minute
+                                                    (Var 16 rhs)
+                                                    16 1_toml_time_minute
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 (StructInstanceMember
-                                                    (Var 14 rhs)
-                                                    14 1_toml_time_second
+                                                    (Var 16 rhs)
+                                                    16 1_toml_time_second
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 (StructInstanceMember
-                                                    (Var 14 rhs)
-                                                    14 1_toml_time_millisec
+                                                    (Var 16 rhs)
+                                                    16 1_toml_time_millisec
                                                     (Allocatable
                                                         (Integer 4)
                                                     )
@@ -1333,7 +1389,7 @@
                                             ()
                                         )]
                                         [(Allocate
-                                            [((Var 14 lhs)
+                                            [((Var 16 lhs)
                                             []
                                             []
                                             (IntegerConstant 8 (Integer 4) Decimal)
@@ -1345,8 +1401,8 @@
                                         )
                                         (FileWrite
                                             0
-                                            (Var 14 lhs)
-                                            (Var 14 lfortran_iomsg1)
+                                            (Var 16 lhs)
+                                            (Var 16 lfortran_iomsg1)
                                             ()
                                             ()
                                             [(StringFormat
@@ -1355,20 +1411,20 @@
                                                     (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 [(StructInstanceMember
-                                                    (Var 14 rhs)
-                                                    14 1_toml_time_hour
+                                                    (Var 16 rhs)
+                                                    16 1_toml_time_hour
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 (StructInstanceMember
-                                                    (Var 14 rhs)
-                                                    14 1_toml_time_minute
+                                                    (Var 16 rhs)
+                                                    16 1_toml_time_minute
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 (StructInstanceMember
-                                                    (Var 14 rhs)
-                                                    14 1_toml_time_second
+                                                    (Var 16 rhs)
+                                                    16 1_toml_time_second
                                                     (Integer 4)
                                                     ()
                                                 )]
@@ -1394,8 +1450,8 @@
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember
-                                                (Var 14 rhs)
-                                                14 1_toml_time_zone
+                                                (Var 16 rhs)
+                                                16 1_toml_time_zone
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1406,15 +1462,15 @@
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 14 lhs)
+                                            (Var 16 lhs)
                                             (IntrinsicElementalFunction
                                                 StringConcat
-                                                [(Var 14 lhs)
+                                                [(Var 16 lhs)
                                                 (IntrinsicElementalFunction
                                                     StringTrim
                                                     [(StructInstanceMember
-                                                        (Var 14 rhs)
-                                                        14 1_toml_time_zone
+                                                        (Var 16 rhs)
+                                                        16 1_toml_time_zone
                                                         (Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
                                                         )
@@ -1445,11 +1501,11 @@
                             toml_date:
                                 (Struct
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             day:
                                                 (Variable
-                                                    8
+                                                    9
                                                     day
                                                     []
                                                     Local
@@ -1473,7 +1529,7 @@
                                                 ),
                                             month:
                                                 (Variable
-                                                    8
+                                                    9
                                                     month
                                                     []
                                                     Local
@@ -1497,18 +1553,18 @@
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
-                                                    8
+                                                    9
                                                     to_string
                                                     rhs
                                                     date_to_string
-                                                    7 date_to_string
+                                                    8 date_to_string
                                                     Source
                                                     .false.
                                                     .false.
                                                 ),
                                             year:
                                                 (Variable
-                                                    8
+                                                    9
                                                     year
                                                     []
                                                     Local
@@ -1532,9 +1588,9 @@
                                                 ),
                                             ~assign:
                                                 (CustomOperator
-                                                    8
+                                                    9
                                                     ~assign
-                                                    [8 to_string]
+                                                    [9 to_string]
                                                     Public
                                                 )
                                         })
@@ -1565,11 +1621,11 @@
                             toml_datetime:
                                 (Struct
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             date:
                                                 (Variable
-                                                    9
+                                                    10
                                                     date
                                                     []
                                                     Local
@@ -1586,7 +1642,7 @@
                                                             .false.
                                                         )
                                                     )
-                                                    7 toml_date
+                                                    8 toml_date
                                                     Source
                                                     Private
                                                     Required
@@ -1602,7 +1658,7 @@
                                                 ),
                                             time:
                                                 (Variable
-                                                    9
+                                                    10
                                                     time
                                                     []
                                                     Local
@@ -1625,7 +1681,7 @@
                                                             .false.
                                                         )
                                                     )
-                                                    7 toml_time
+                                                    8 toml_time
                                                     Source
                                                     Private
                                                     Required
@@ -1641,20 +1697,20 @@
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
-                                                    9
+                                                    10
                                                     to_string
                                                     rhs
                                                     datetime_to_string
-                                                    7 datetime_to_string
+                                                    8 datetime_to_string
                                                     Source
                                                     .false.
                                                     .false.
                                                 ),
                                             ~assign:
                                                 (CustomOperator
-                                                    9
+                                                    10
                                                     ~assign
-                                                    [9 to_string]
+                                                    [10 to_string]
                                                     Public
                                                 )
                                         })
@@ -1707,11 +1763,11 @@
                             toml_time:
                                 (Struct
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             hour:
                                                 (Variable
-                                                    10
+                                                    11
                                                     hour
                                                     []
                                                     Local
@@ -1735,7 +1791,7 @@
                                                 ),
                                             millisec:
                                                 (Variable
-                                                    10
+                                                    11
                                                     millisec
                                                     []
                                                     Local
@@ -1761,7 +1817,7 @@
                                                 ),
                                             minute:
                                                 (Variable
-                                                    10
+                                                    11
                                                     minute
                                                     []
                                                     Local
@@ -1785,7 +1841,7 @@
                                                 ),
                                             second:
                                                 (Variable
-                                                    10
+                                                    11
                                                     second
                                                     []
                                                     Local
@@ -1809,18 +1865,18 @@
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
-                                                    10
+                                                    11
                                                     to_string
                                                     rhs
                                                     time_to_string
-                                                    7 time_to_string
+                                                    8 time_to_string
                                                     Source
                                                     .false.
                                                     .false.
                                                 ),
                                             zone:
                                                 (Variable
-                                                    10
+                                                    11
                                                     zone
                                                     []
                                                     Local
@@ -1846,9 +1902,9 @@
                                                 ),
                                             ~assign:
                                                 (CustomOperator
-                                                    10
+                                                    11
                                                     ~assign
-                                                    [10 to_string]
+                                                    [11 to_string]
                                                     Public
                                                 )
                                         })
@@ -1886,9 +1942,9 @@
                                 ),
                             ~toml_time:
                                 (GenericProcedure
-                                    7
+                                    8
                                     ~toml_time
-                                    [7 new_toml_time]
+                                    [8 new_toml_time]
                                     Public
                                 )
                         })
@@ -1898,13 +1954,71 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_tomlf_datetime
+                    __lcompilers_global_init_state_tomlf_datetime
+                    .false.
                 ),
             tomlf_utils:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_tomlf_utils:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_tomlf_utils
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_utils:
+                                (Function
+                                    (SymbolTable
+                                        17
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_utils
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             convert_raw:
                                 (ExternalSymbol
                                     2
@@ -1919,7 +2033,7 @@
                                 (ExternalSymbol
                                     2
                                     new_toml_time@~toml_time
-                                    7 new_toml_time
+                                    8 new_toml_time
                                     tomlf_datetime
                                     []
                                     new_toml_time
@@ -1929,7 +2043,7 @@
                                 (ExternalSymbol
                                     2
                                     toml_date
-                                    7 toml_date
+                                    8 toml_date
                                     tomlf_datetime
                                     []
                                     toml_date
@@ -1939,7 +2053,7 @@
                                 (ExternalSymbol
                                     2
                                     toml_datetime
-                                    7 toml_datetime
+                                    8 toml_datetime
                                     tomlf_datetime
                                     []
                                     toml_datetime
@@ -1959,7 +2073,7 @@
                                 (ExternalSymbol
                                     2
                                     toml_time
-                                    7 toml_time
+                                    8 toml_time
                                     tomlf_datetime
                                     []
                                     toml_time
@@ -1969,7 +2083,7 @@
                                 (ExternalSymbol
                                     2
                                     ~toml_time
-                                    7 ~toml_time
+                                    8 ~toml_time
                                     tomlf_datetime
                                     []
                                     ~toml_time
@@ -1983,13 +2097,71 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_tomlf_utils
+                    __lcompilers_global_init_state_tomlf_utils
+                    .false.
                 ),
             tomlf_utils_convert:
                 (Module
                     (SymbolTable
                         4
                         {
+                            __lcompilers_global_init_state_tomlf_utils_convert:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_tomlf_utils_convert
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_utils_convert:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_utils_convert
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             convert_raw:
                                 (GenericProcedure
                                     4
@@ -2001,7 +2173,7 @@
                                 (ExternalSymbol
                                     4
                                     new_toml_time@~toml_time
-                                    7 new_toml_time
+                                    8 new_toml_time
                                     tomlf_datetime
                                     []
                                     new_toml_time
@@ -2011,7 +2183,7 @@
                                 (ExternalSymbol
                                     4
                                     toml_date
-                                    7 toml_date
+                                    8 toml_date
                                     tomlf_datetime
                                     []
                                     toml_date
@@ -2021,7 +2193,7 @@
                                 (ExternalSymbol
                                     4
                                     toml_datetime
-                                    7 toml_datetime
+                                    8 toml_datetime
                                     tomlf_datetime
                                     []
                                     toml_datetime
@@ -2030,13 +2202,13 @@
                             toml_raw_to_timestamp:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        6
                                         {
                                             1_toml_datetime_date:
                                                 (ExternalSymbol
-                                                    5
+                                                    6
                                                     1_toml_datetime_date
-                                                    9 date
+                                                    10 date
                                                     tomlf_datetime
                                                     [toml_datetime]
                                                     date
@@ -2044,7 +2216,7 @@
                                                 ),
                                             dot_pos:
                                                 (Variable
-                                                    5
+                                                    6
                                                     dot_pos
                                                     []
                                                     Local
@@ -2068,7 +2240,7 @@
                                                 ),
                                             err:
                                                 (Variable
-                                                    5
+                                                    6
                                                     err
                                                     []
                                                     Local
@@ -2092,7 +2264,7 @@
                                                 ),
                                             first:
                                                 (Variable
-                                                    5
+                                                    6
                                                     first
                                                     []
                                                     Local
@@ -2116,7 +2288,7 @@
                                                 ),
                                             raw:
                                                 (Variable
-                                                    5
+                                                    6
                                                     raw
                                                     []
                                                     In
@@ -2140,7 +2312,7 @@
                                                 ),
                                             stat:
                                                 (Variable
-                                                    5
+                                                    6
                                                     stat
                                                     []
                                                     ReturnVar
@@ -2164,7 +2336,7 @@
                                                 ),
                                             timestamp:
                                                 (Variable
-                                                    5
+                                                    6
                                                     timestamp
                                                     []
                                                     Out
@@ -2265,10 +2437,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 raw)
-                                    (Var 5 timestamp)]
+                                    [(Var 6 raw)
+                                    (Var 6 timestamp)]
                                     [(Assignment
-                                        (Var 5 first)
+                                        (Var 6 first)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                         .false.
@@ -2276,8 +2448,8 @@
                                     )
                                     (Assignment
                                         (StructInstanceMember
-                                            (Var 5 timestamp)
-                                            5 1_toml_datetime_date
+                                            (Var 6 timestamp)
+                                            6 1_toml_datetime_date
                                             (Allocatable
                                                 (StructType
                                                     [(Integer 4)
@@ -2310,9 +2482,9 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 5 stat)
+                                        (Var 6 stat)
                                         (IntegerCompare
-                                            (Var 5 err)
+                                            (Var 6 err)
                                             Eq
                                             (IntegerConstant 0 (Integer 4) Decimal)
                                             (Logical 4)
@@ -2322,7 +2494,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 5 stat)
+                                    (Var 6 stat)
                                     Public
                                     .true.
                                     .true.
@@ -2332,7 +2504,7 @@
                                 (ExternalSymbol
                                     4
                                     toml_time
-                                    7 toml_time
+                                    8 toml_time
                                     tomlf_datetime
                                     []
                                     toml_time
@@ -2342,7 +2514,7 @@
                                 (ExternalSymbol
                                     4
                                     ~toml_time
-                                    7 ~toml_time
+                                    8 ~toml_time
                                     tomlf_datetime
                                     []
                                     ~toml_time
@@ -2355,9 +2527,14 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_tomlf_utils_convert
+                    __lcompilers_global_init_state_tomlf_utils_convert
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

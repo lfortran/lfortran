@@ -4,6 +4,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/unused_functions.h>
+#include <libasr/pass/global_init.h>
 
 #include <cstring>
 
@@ -28,6 +29,11 @@ public:
         if (ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC
          && ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindPython) {
             fn_declarations[h] = x.m_name;
+        }
+        // A startup initializer is run by the engine, through the record
+        // its owner gets, and not by any call ASR can see.
+        if (ASRUtils::is_owner_global_init(&x) || ASRUtils::is_global_init_bootstrap(&x)) {
+            fn_used[h] = x.m_name;
         }
 
         for( size_t i = 0; i < x.n_args; i++ ) {

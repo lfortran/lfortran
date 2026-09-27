@@ -75,7 +75,6 @@ class PRIFInterface {
     private:
         Allocator &al;
         ASR::TranslationUnit_t &unit;
-        bool separate_compilation;
 
         ASR::symbol_t* get_or_create_dummy_struct(const Location &loc, std::string &struct_name) {
             SymbolTable *global_scope = unit.m_symtab;
@@ -146,10 +145,10 @@ class PRIFInterface {
             SymbolTable *global_scope = unit.m_symtab;
 
             if (symbol_name.empty()) {
-                symbol_name = get_mangled_name("prif", "prif_get");
+                symbol_name = prif_symbol_name("prif_get");
             }
             else {
-                symbol_name = get_mangled_name("prif", symbol_name);
+                symbol_name = prif_symbol_name(symbol_name);
             }
 
             if (global_scope->get_symbol(symbol_name)) {
@@ -205,7 +204,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_initial_team_index_subroutine(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_initial_team_index");
+            std::string sym_name = prif_symbol_name("prif_initial_team_index");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -346,8 +345,8 @@ class PRIFInterface {
                 al, loc, prif_get_sym, nullptr, call_args.p, call_args.n, nullptr, false)));
 
             Vec<char*> dep; dep.reserve(al, 2);
-            dep.push_back(al, s2c(al, get_mangled_name("prif", "prif_initial_team_index")));
-            dep.push_back(al, s2c(al, get_mangled_name("prif", "prif_get")));
+            dep.push_back(al, s2c(al, prif_symbol_name("prif_initial_team_index")));
+            dep.push_back(al, s2c(al, prif_symbol_name("prif_get")));
 
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                 al, loc, fn_symtab, s2c(al, symbol_name), dep.p, dep.n,
@@ -450,8 +449,8 @@ class PRIFInterface {
                 al, loc, prif_sym, nullptr, call_args.p, call_args.n, nullptr, false)));
 
             Vec<char*> dep; dep.reserve(al, 2);
-            dep.push_back(al, s2c(al, get_mangled_name("prif", "prif_initial_team_index")));
-            dep.push_back(al, s2c(al, get_mangled_name("prif", "prif_put")));
+            dep.push_back(al, s2c(al, prif_symbol_name("prif_initial_team_index")));
+            dep.push_back(al, s2c(al, prif_symbol_name("prif_put")));
 
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                 al, loc, fn_symtab, s2c(al, symbol_name), dep.p, dep.n,
@@ -781,29 +780,36 @@ class PRIFInterface {
             return {hsym, dsym};
         }
 
-        PRIFInterface(Allocator &al_, ASR::TranslationUnit_t &unit_,
-                bool separate_compilation_)
-            : al(al_), unit(unit_),
-              separate_compilation(separate_compilation_) {
+        PRIFInterface(Allocator &al_, ASR::TranslationUnit_t &unit_)
+            : al(al_), unit(unit_) {
                 saved_coarrays.reserve(al, 0);
             }
 
-        // A module read from a `.mod` file is compiled into an object file of
-        // its own. That object file allocates the module's saved coarrays and
-        // binds them, so this translation unit only names that initializer
-        // and must not allocate or rebind anything of the module itself: the
+        // A module whose initializer another object file defines allocates
+        // its saved coarrays and binds them there, so this translation unit
+        // must not allocate or rebind anything of the module itself: the
         // companions it would bind to are its own, not the ones the defining
         // object file allocated.
         bool coarrays_defined_elsewhere(ASR::asr_t *owner) {
-            if (!separate_compilation) return false;
             if (owner == (ASR::asr_t*)&unit) return false;
             ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(owner);
             if (!ASR::is_a<ASR::Module_t>(*sym)) return false;
-            return ASR::down_cast<ASR::Module_t>(sym)->m_loaded_from_mod;
+            ASR::Function_t *fn = ASRUtils::get_global_init(owner);
+            return fn != nullptr && !ASRUtils::global_init_defined_here(fn);
         }
 
         std::string get_mangled_name(const std::string& module_name, const std::string& symbol_name) {
             return "__module_" + module_name + "_" + symbol_name;
+        }
+
+        // Whether this translation unit refers to the PRIF runtime, which
+        // then has to be started before any of it runs: every PRIF procedure
+        // it calls is named through `prif_symbol_name`.
+        bool runtime_used = false;
+
+        std::string prif_symbol_name(const std::string &symbol_name) {
+            runtime_used = true;
+            return get_mangled_name("prif", symbol_name);
         }
 
         // Create the prif_coarray_cleanup_interface Function symbol.
@@ -834,7 +840,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_deallocate_coarray_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_deallocate_coarray");
+            std::string sym_name = prif_symbol_name("prif_deallocate_coarray");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -863,7 +869,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_allocate_coarray_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_allocate_coarray");
+            std::string sym_name = prif_symbol_name("prif_allocate_coarray");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -933,7 +939,7 @@ class PRIFInterface {
         
         ASR::symbol_t* get_or_create_prif_team_type_struct(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string symbol_name = get_mangled_name("prif", "prif_team_type");
+            std::string symbol_name = prif_symbol_name("prif_team_type");
             if (ASR::symbol_t *existing = global_scope->get_symbol(symbol_name)) return existing;
 
             SymbolTable *struct_symtab = al.make_new<SymbolTable>(global_scope);
@@ -946,7 +952,7 @@ class PRIFInterface {
             ASR::symbol_t *struct_sym = ASR::down_cast<ASR::symbol_t>(struct_asr);
             ASR::Struct_t *struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
             global_scope->add_symbol(symbol_name, struct_sym);
-            std::string type_info_symbol_name = get_mangled_name("prif", "prif_dummy_team_descriptor");
+            std::string type_info_symbol_name = prif_symbol_name("prif_dummy_team_descriptor");
             ASR::symbol_t* type_info_sym = get_or_create_dummy_struct(loc, type_info_symbol_name);
             ASR::ttype_t* type_info_type = ASRUtils::make_StructType_t_util(al, loc, type_info_sym, true);
             ASR::ttype_t *info_ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type_info_type ));
@@ -1005,27 +1011,28 @@ class PRIFInterface {
             }
         }
 
-        ASR::symbol_t* get_or_create_prif_init_sub(const Location &loc) {
+        // The start of the coarray runtime, `lcompilers_prif_start(stat)`:
+        // the runtime's adapter, src/runtime/prif/lcompilers_prif.f90,
+        // compiled with the PRIF implementation's own module. It calls
+        // prif_init and gives 0 for success, the runtime having been started
+        // before included, and the nonzero status of a failure otherwise.
+        ASR::symbol_t* get_or_create_prif_start_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_init");
+            std::string sym_name = "lcompilers_prif_start";
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
             SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
-            ASRUtils::ASRBuilder b(al, loc);
-            ASR::ttype_t *int32_type = int32;
-            // exit_code: integer(c_int), intent(out), optional
-            ASR::symbol_t *ec_sym = declare_variable(
-                fn_symtab, loc, "stat", int32_type, ASR::intentType::Out, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
+            ASR::symbol_t *stat_sym = declare_variable(
+                fn_symtab, loc, "stat", int32, ASR::intentType::Out, nullptr,
+                ASR::abiType::BindC, ASR::accessType::Public,
                 ASR::presenceType::Required, false);
-            ASR::expr_t *ec_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ec_sym));
             Vec<ASR::expr_t*> args; args.reserve(al, 1);
-            args.push_back(al, ec_expr);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym)));
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                 al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
                 args.p, args.n, nullptr, 0, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::abiType::BindC, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
                 false, false, false, false, false, nullptr, 0,
@@ -1036,7 +1043,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_num_images_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_num_images");
+            std::string sym_name = prif_symbol_name("prif_num_images");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1065,7 +1072,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_this_image_no_coarray_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_this_image_no_coarray");
+            std::string sym_name = prif_symbol_name("prif_this_image_no_coarray");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1106,7 +1113,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_stop_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_stop");
+            std::string sym_name = prif_symbol_name("prif_stop");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1151,7 +1158,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_change_team_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_change_team");
+            std::string sym_name = prif_symbol_name("prif_change_team");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1210,7 +1217,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_end_team_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_end_team");
+            std::string sym_name = prif_symbol_name("prif_end_team");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1255,7 +1262,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_form_team_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_form_team");
+            std::string sym_name = prif_symbol_name("prif_form_team");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1344,7 +1351,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_sync_all_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_sync_all");
+            std::string sym_name = prif_symbol_name("prif_sync_all");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1367,7 +1374,7 @@ class PRIFInterface {
         }
         ASR::symbol_t* get_or_create_prif_sync_images_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_sync_images");
+            std::string sym_name = prif_symbol_name("prif_sync_images");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1406,7 +1413,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_sync_memory_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_sync_memory");
+            std::string sym_name = prif_symbol_name("prif_sync_memory");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1428,7 +1435,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_sync_team_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_sync_team");
+            std::string sym_name = prif_symbol_name("prif_sync_team");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1494,7 +1501,7 @@ class PRIFInterface {
                 const std::string &image_arg_name = "result_image",
                 ASR::presenceType image_presence = ASR::presenceType::Optional) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", prif_name);
+            std::string sym_name = prif_symbol_name(prif_name);
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1552,7 +1559,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_co_minmax_character_sub(const Location &loc, const std::string &prif_name) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", prif_name);
+            std::string sym_name = prif_symbol_name(prif_name);
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1600,7 +1607,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_co_broadcast_cptr_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_co_broadcast_cptr");
+            std::string sym_name = prif_symbol_name("prif_co_broadcast_cptr");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1962,14 +1969,18 @@ class PRIFInterface {
                     bool module_owned = sc_owner != (ASR::asr_t*)&unit
                         && ASR::is_a<ASR::Module_t>(
                             *ASR::down_cast<ASR::symbol_t>(sc_owner));
-                    // Only a coarray a procedure declares is hoisted. One a
-                    // module or a program declares is already somewhere that
-                    // unit's initializer can see, and an allocatable one is
-                    // bound by the ALLOCATE statement rather than at startup.
+                    // A coarray a procedure or a program declares is hoisted:
+                    // the initializer that binds it is the translation
+                    // unit's, which runs before any frame of the program
+                    // exists. One a module declares is already somewhere its
+                    // initializer can see, and an allocatable one is bound by
+                    // the ALLOCATE statement rather than at startup.
                     bool procedure_local = scope->asr_owner != nullptr
                         && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
-                        && ASR::is_a<ASR::Function_t>(
-                            *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))
+                        && (ASR::is_a<ASR::Function_t>(
+                                *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))
+                            || ASR::is_a<ASR::Program_t>(
+                                *ASR::down_cast<ASR::symbol_t>(scope->asr_owner)))
                         && !ASRUtils::is_allocatable(var->m_type);
                     if (module_owned) {
                         // Deterministic, so a unit that only uses the module
@@ -2260,13 +2271,13 @@ class PRIFInterface {
             new_body.push_back(al, nullify_stmt);
         }
 
-        // Nothing is emitted here for a saved coarray. Every one of them is
-        // bound to the storage its companion holds by the startup initializer
-        // of the unit that owns it, which runs before anything can observe it
-        // -- a coarray a procedure declares as well, since `hoist_saved_pointer`
-        // put its pointer where that initializer can reach it. Binding one
-        // again on entry to a scope would only repeat work already done.
-        void allocate_coarrays(SymbolTable *scope) {
+        // Rejects the coarrays of `scope` this pass cannot give storage to.
+        // A saved coarray is allocated and bound by the startup initializer
+        // of the unit that owns it, before anything can observe it -- a
+        // coarray a procedure declares as well, since `hoist_saved_pointer`
+        // put its pointer where that initializer can reach it -- and an
+        // allocatable one by the ALLOCATE statements that name it.
+        void reject_unsupported_coarrays(SymbolTable *scope) {
             for (auto &item : scope->get_scope()) {
                 ASR::symbol_t *sym = item.second;
                 if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
@@ -2299,7 +2310,7 @@ class PRIFInterface {
         // translation unit, so another one's of the same name cannot clash
         // with it at link time.
         std::string get_tu_init_function_name(const std::vector<size_t> &indices) {
-            std::string fn_name = "__lfortran_coarray_init";
+            std::string fn_name = "__lcompilers_global_init_tu_coarrays";
             std::set<std::string> parent_names;
             for (size_t i : indices) {
                 SymbolTable *var_scope = saved_coarrays.p[i].decl_scope;
@@ -2315,43 +2326,41 @@ class PRIFInterface {
             return fn_name;
         }
 
-        // Emit a prif_init(exit_code) call into body, declaring exit_code
-        // in the given scope. Reusable by both generate_tu_init_function
-        // and visit_Program.
-        void emit_prif_init_call(SymbolTable *scope, const Location &loc,
+        // Emit `call lcompilers_prif_start(stat)` into body, declaring stat
+        // in the given scope: the collective bootstrap's. Returns stat.
+        ASR::expr_t* emit_prif_start_call(SymbolTable *scope, const Location &loc,
                                  Vec<ASR::stmt_t*> &body) {
-            ASR::ttype_t *int32_type = ASRUtils::TYPE(
-                ASR::make_Integer_t(al, loc, 4));
-            ASR::symbol_t *ec_sym = declare_variable(
-                scope, loc, "stat", int32_type,
+            ASR::symbol_t *stat_sym = declare_variable(
+                scope, loc, "stat", int32,
                 ASR::intentType::Local, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false);
-            ASR::expr_t *ec_expr = ASRUtils::EXPR(
-                ASR::make_Var_t(al, loc, ec_sym));
-            ASR::symbol_t *init_sub = get_or_create_prif_init_sub(loc);
-            Vec<ASR::call_arg_t> init_args; init_args.reserve(al, 1);
-            ASR::call_arg_t ec_arg; ec_arg.loc = loc;
-            ec_arg.m_value = ec_expr;
-            init_args.push_back(al, ec_arg);
+            ASR::expr_t *stat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym));
+            ASR::symbol_t *start = get_or_create_prif_start_sub(loc);
+            Vec<ASR::call_arg_t> args; args.reserve(al, 1);
+            ASR::call_arg_t arg; arg.loc = loc; arg.m_value = stat;
+            args.push_back(al, arg);
             body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
-                al, loc, init_sub, nullptr,
-                init_args.p, init_args.n, nullptr, false)));
+                al, loc, start, nullptr, args.p, args.n, nullptr, false)));
+            return stat;
         }
 
-        // The program unit that owns `var`, which is the unit whose startup
-        // initializer allocates it. A saved coarray of an external procedure
-        // is owned by no program unit, so the translation unit itself takes
-        // it and the target's startup has to run that one.
+        // The unit whose startup initializer allocates `var`: the module
+        // that declares it, directly or in a procedure, and otherwise the
+        // translation unit. A program's own initializer cannot: it runs in
+        // the program's frame, after startup, while every saved coarray has
+        // to be allocated by startup, collectively and in the same order on
+        // every image.
         ASR::asr_t* saved_coarray_owner(ASR::Variable_t *var) {
             SymbolTable *scope = ASRUtils::symbol_parent_symtab(&var->base);
             while (scope != nullptr && scope != unit.m_symtab) {
                 if (scope->asr_owner == nullptr ||
                         !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) break;
                 ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
-                if (ASR::is_a<ASR::Module_t>(*sym) || ASR::is_a<ASR::Program_t>(*sym)) {
+                if (ASR::is_a<ASR::Module_t>(*sym)) {
                     return (ASR::asr_t*)sym;
                 }
+                if (ASR::is_a<ASR::Program_t>(*sym)) break;
                 scope = ASRUtils::symbol_parent_symtab(sym);
             }
             return (ASR::asr_t*)&unit;
@@ -2407,6 +2416,54 @@ class PRIFInterface {
         // the program unit that declares it. Those initializers are called
         // from ASR — a module's from the program that uses it — so nothing
         // depends on the link order or on a target running constructors.
+        // The collective bootstrap of this translation unit, when it refers
+        // to the PRIF runtime at all: an ordinary procedure of its scope that
+        // starts the runtime, which the engine runs at the collective
+        // boundary -- a Fortran main program's, or the host's
+        // lcompilers_initialize() -- before any collective initializer,
+        // outside every guard and without its lock, since starting the
+        // runtime can itself load images. Starting it again is not a
+        // failure, so every object file that uses PRIF has one, private to
+        // it. What prif_init reads is initialized by the adapter's own entry,
+        // which runs the initializers of the PRIF module it uses.
+        void create_collective_bootstrap(const Location &loc) {
+            if (!runtime_used || unit.m_global_init_bootstrap != nullptr) return;
+            std::string name = "__lcompilers_collective_bootstrap";
+            if (unit.m_symtab->get_symbol(name) != nullptr) {
+                throw LCompilersException("the startup initialization name '"
+                    + name + "' is already taken");
+            }
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(unit.m_symtab);
+            Vec<ASR::stmt_t*> body; body.reserve(al, 2);
+            ASR::expr_t *stat = emit_prif_start_call(fn_symtab, loc, body);
+            // A runtime that did not start stops the program here, before
+            // the boundary marks the bootstrap done and any coarray is
+            // allocated.
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+            ASR::expr_t *failed = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                stat, ASR::cmpopType::NotEq, b.i32(0), logical_type, nullptr));
+            std::string message = "the coarray runtime failed to start: "
+                "prif_init returned a nonzero status";
+            ASR::ttype_t *message_type = ASRUtils::TYPE(ASR::make_String_t(al,
+                loc, 1, b.i32(message.size()),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString));
+            body.push_back(al, b.If(failed, {ASRUtils::STMT(ASR::make_ErrorStop_t(
+                al, loc, b.StringConstant(message, message_type)))}, {}));
+            Vec<char*> dep; dep.reserve(al, 1);
+            dep.push_back(al, s2c(al, "lcompilers_prif_start"));
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, name), dep.p, dep.n,
+                nullptr, 0, body.p, body.n, nullptr,
+                ASR::abiType::Source, ASR::accessType::Private,
+                ASR::deftypeType::Implementation, nullptr,
+                false, false, false, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            unit.m_symtab->add_symbol(name, ASR::down_cast<ASR::symbol_t>(fn));
+            unit.m_global_init_bootstrap = s2c(al, name);
+        }
+
         void generate_saved_coarray_init(const Location &loc) {
             if (saved_coarrays.n == 0) return;
             std::vector<ASR::asr_t*> owners;
@@ -2417,24 +2474,31 @@ class PRIFInterface {
                 by_owner[owner].push_back(i);
             }
             for (ASR::asr_t *owner : owners) {
+                // The object file that defines the module allocates them.
+                if (coarrays_defined_elsewhere(owner)) continue;
+                ASR::Function_t *fn;
                 if (owner == (ASR::asr_t*)&unit) {
-                    generate_tu_init_function(loc, by_owner[owner]);
-                    continue;
+                    fn = ASRUtils::get_or_create_global_init(al, unit, owner,
+                        get_tu_init_function_name(by_owner[owner]));
+                    unit.m_global_init_collective = true;
+                } else {
+                    fn = ASRUtils::get_or_create_global_init(al, unit, owner);
+                    ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(owner))
+                        ->m_global_init_collective = true;
                 }
-                if (coarrays_defined_elsewhere(owner)) {
-                    // Name the initializer the defining object file emits, so
-                    // the call the global-init pass adds to the program
-                    // resolves to that one definition, and leave it bodyless.
-                    ASRUtils::get_or_create_global_init(al, unit, owner, true);
-                    continue;
-                }
-                ASR::Function_t *fn = ASRUtils::get_or_create_global_init(
-                    al, unit, owner);
                 Vec<ASR::stmt_t*> body;
-                body.reserve(al, by_owner[owner].size() * 3 + 1);
-                // prif_init is idempotent and this initializer can be the
-                // first thing in the program that needs the runtime.
-                emit_prif_init_call(fn->m_symtab, loc, body);
+                body.reserve(al, by_owner[owner].size() * 3 + 2);
+                // Allocating a saved coarray is a collective: only a
+                // collective startup boundary, which every image reaches in
+                // the same order, may run it. The PRIF implementation is
+                // itself Fortran with startup state of its own, which the
+                // local phase before that boundary has initialized, and the
+                // runtime is started by the collective bootstrap, which runs
+                // before every collective initializer.
+                ASR::symbol_t *require = ASRUtils::get_init_runtime_function(al,
+                    unit, ASRUtils::InitRuntimeFn::RequireCollective);
+                body.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
+                    al, loc, require, require, nullptr, 0, nullptr, nullptr, false)));
                 for (size_t i : by_owner[owner]) {
                     emit_saved_coarray_init(saved_coarrays.p[i], fn->m_symtab,
                         loc, body);
@@ -2445,47 +2509,13 @@ class PRIFInterface {
                 std::vector<ASR::stmt_t*> stmts;
                 for (size_t j = 0; j < body.n; j++) stmts.push_back(body[j]);
                 ASRUtils::global_init_prepend_stmts(al, fn, stmts);
+                // Once every image has initialized them, another image may
+                // read them: every image runs the same collective
+                // initializers in the same order, so each one waits here for
+                // all, whichever boundary -- a Fortran main program, or a
+                // host's lcompilers_initialize() -- started them.
+                ASRUtils::global_init_append_stmt(al, fn, make_prif_sync_all_call(loc));
             }
-        }
-
-        // A saved coarray of an external procedure belongs to no program unit,
-        // so nothing in Fortran can call its initializer: the translation unit
-        // names it and each backend runs it the way that target starts up.
-        void generate_tu_init_function(const Location &loc,
-                const std::vector<size_t> &indices) {
-            SymbolTable *global_scope = unit.m_symtab;
-            std::string fn_name = get_tu_init_function_name(indices);
-
-            // Avoid creating duplicate if already present
-            if (global_scope->get_symbol(fn_name)) return;
-
-            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
-
-            Vec<ASR::stmt_t*> body;
-            body.reserve(al, indices.size() * 3 + 1);
-
-            // prif_init() must run first since the target starts this before
-            // main(), before the program body's own prif_init call.
-            emit_prif_init_call(fn_symtab, loc, body);
-
-            for (size_t i : indices) {
-                emit_saved_coarray_init(saved_coarrays.p[i], fn_symtab, loc, body);
-            }
-
-            Vec<char*> deps; deps.reserve(al, 2);
-            deps.push_back(al, s2c(al, get_mangled_name("prif", "prif_init")));
-            deps.push_back(al, s2c(al, get_mangled_name("prif", "prif_allocate_coarray")));
-
-            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
-                al, loc, fn_symtab, s2c(al, fn_name), deps.p, deps.n,
-                nullptr, 0, body.p, body.n, nullptr,
-                ASR::abiType::Source, ASR::accessType::Private,
-                ASR::deftypeType::Implementation, nullptr,
-                false, false, false, false, false, nullptr, 0,
-                false, false, false, nullptr);
-
-            global_scope->add_symbol(fn_name, ASR::down_cast<ASR::symbol_t>(fn));
-            unit.m_global_init = s2c(al, fn_name);
         }
 
         ASR::expr_t* make_prif_get_call(const Location &loc,
@@ -2605,7 +2635,7 @@ class PRIFInterface {
         ASR::expr_t* make_prif_num_images_call(const Location &loc, ASR::ttype_t *type) {
             SymbolTable *global_scope = unit.m_symtab;
             std::string sym_name = "lcompilers_prif_num_images";
-            std::string dep_name = get_mangled_name("prif", "prif_num_images");
+            std::string dep_name = prif_symbol_name("prif_num_images");
             ASR::symbol_t *wrapper_fn = global_scope->get_symbol(sym_name);
             if (!wrapper_fn) {
                 SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
@@ -2647,7 +2677,7 @@ class PRIFInterface {
         ASR::expr_t* make_prif_this_image_call(const Location &loc, ASR::ttype_t *type) {
             SymbolTable *global_scope = unit.m_symtab;
             std::string sym_name = "lcompilers_prif_this_image";
-            std::string dep_name = get_mangled_name("prif", "prif_this_image_no_coarray");
+            std::string dep_name = prif_symbol_name("prif_this_image_no_coarray");
             ASR::symbol_t *wrapper_fn = global_scope->get_symbol(sym_name);
             if (!wrapper_fn) {
                 SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
@@ -2692,7 +2722,7 @@ class PRIFInterface {
         }
         ASR::symbol_t* get_or_create_prif_lcobound_with_dim_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_lcobound_with_dim");
+            std::string sym_name = prif_symbol_name("prif_lcobound_with_dim");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) return existing;
             SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
             ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
@@ -2714,7 +2744,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_ucobound_with_dim_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_ucobound_with_dim");
+            std::string sym_name = prif_symbol_name("prif_ucobound_with_dim");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) return existing;
             SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
             ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
@@ -2739,7 +2769,7 @@ class PRIFInterface {
             SymbolTable *global_scope = unit.m_symtab;
             int result_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::type_get_past_array(type));
             std::string sym_name = "lcompilers_prif_lcobound_with_dim_k" + std::to_string(result_kind);
-            std::string dep_name = get_mangled_name("prif", "prif_lcobound_with_dim");
+            std::string dep_name = prif_symbol_name("prif_lcobound_with_dim");
             ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
             ASR::ttype_t *handle_struct_type = ASRUtils::make_StructType_t_util(al, loc, handle_sym, true);
             ASR::symbol_t *wrapper_fn = global_scope->get_symbol(sym_name);
@@ -2826,7 +2856,7 @@ class PRIFInterface {
             SymbolTable *global_scope = unit.m_symtab;
             int result_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::type_get_past_array(type));
             std::string sym_name = "lcompilers_prif_ucobound_with_dim_k" + std::to_string(result_kind);
-            std::string dep_name = get_mangled_name("prif", "prif_ucobound_with_dim");
+            std::string dep_name = prif_symbol_name("prif_ucobound_with_dim");
             ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
             ASR::ttype_t *handle_struct_type = ASRUtils::make_StructType_t_util(al, loc, handle_sym, true);
             ASR::symbol_t *wrapper_fn = global_scope->get_symbol(sym_name);
@@ -2910,7 +2940,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_coshape_subroutine(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_coshape");
+            std::string sym_name = prif_symbol_name("prif_coshape");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -2998,7 +3028,7 @@ class PRIFInterface {
                 body.push_back(al, b.Assignment(return_var, b.i2i_t(sizes, return_type)));
 
                 Vec<char*> dep; dep.reserve(al, 1);
-                dep.push_back(al, s2c(al, get_mangled_name("prif", "prif_coshape")));
+                dep.push_back(al, s2c(al, prif_symbol_name("prif_coshape")));
 
                 ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                     al, loc, fn_symtab, s2c(al, symbol_name), dep.p, dep.n,
@@ -3485,10 +3515,10 @@ class CoarrayCompanionVisitor : public ASR::BaseWalkVisitor<CoarrayCompanionVisi
         }
 };
 
-// CoarrayInitVisitor traverses the AST and inserts initialization
-// code for coarrays in each scope (Program, Function, Module).
-// It emits a call to prif_allocate_coarray. It also ensures the
-// global PRIF runtime initialization and cleanup routines are called.
+// CoarrayInitVisitor rejects the coarrays this pass cannot give storage to,
+// gives the saved ones to the startup initializers of their owners, and ends
+// a main program with prif_stop. The runtime itself is started by the
+// translation unit's collective bootstrap; see pass_replace_coarray.
 class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
     private:
     public:
@@ -3508,6 +3538,9 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
         }
 
         void visit_Module(const ASR::Module_t &x) {
+            if (!prif.coarrays_defined_elsewhere((ASR::asr_t*)&x.base)) {
+                prif.reject_unsupported_coarrays(x.m_symtab);
+            }
             for (auto &item : x.m_symtab->get_scope()) {
                 visit_symbol(*item.second);
             }
@@ -3520,28 +3553,11 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
             new_body.reserve(al, xx.n_body + 16);
             Location loc = xx.base.base.loc;
 
-            ASRUtils::ASRBuilder b(al, loc);
-
-            // Insert prif_init() call first
-            prif.emit_prif_init_call(xx.m_symtab, loc, new_body);
-
-            // Allocate coarrays for all used modules first
-            for (auto &item : prif.get_global_scope()->get_scope()) {
-                if (ASR::is_a<ASR::Module_t>(*item.second)) {
-                    ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(item.second);
-                    if (prif.coarrays_defined_elsewhere(
-                            (ASR::asr_t*)&mod->base)) continue;
-                    prif.allocate_coarrays(mod->m_symtab);
-                }
-            }
-
-            // Allocate coarrays in Program scope
-            prif.allocate_coarrays(xx.m_symtab);
-
-            // Need to synchronize all the images after completing 
-            // initialization of any save coarrays allocated above,
-            // to prevent potential races with coindexed access below.
-            new_body.push_back(al, prif.make_prif_sync_all_call(loc));
+            // The runtime is started, and every saved coarray allocated and
+            // initialized on every image, by the collective boundary the
+            // program's own startup dispatch is: see
+            // `create_collective_bootstrap` and `generate_saved_coarray_init`.
+            prif.reject_unsupported_coarrays(xx.m_symtab);
 
             // Append original body
             for (size_t i = 0; i < xx.n_body; i++) {
@@ -3573,7 +3589,7 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
             // Nothing is prepended to a procedure's body: a saved coarray it
             // declares is allocated and bound by a startup initializer, and
             // the rest are rejected here.
-            prif.allocate_coarrays(x.m_symtab);
+            prif.reject_unsupported_coarrays(x.m_symtab);
             for (auto &item : x.m_symtab->get_scope()) {
                 visit_symbol(*item.second);
             }
@@ -3585,7 +3601,7 @@ void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
     if (po.coarray != true) {
         return;
     }
-    PRIFInterface prif(al, unit, po.separate_compilation);
+    PRIFInterface prif(al, unit);
     // Phase 1: Declare coarray companion variables
     CoarrayCompanionVisitor comp_v(prif);
     comp_v.visit_TranslationUnit(unit);
@@ -3597,6 +3613,11 @@ void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
     // Phase 3: Replace coarray expressions
     CoarrayPrifVisitor v(al, prif);
     v.visit_TranslationUnit(unit);
+
+    // Whatever of PRIF this translation unit calls, the runtime has to be
+    // started first.
+    Location loc; loc.first = 1; loc.last = 1;
+    prif.create_collective_bootstrap(loc);
 
     // Phase 4: Update dependencies
     PassUtils::UpdateDependenciesVisitor(al).visit_TranslationUnit(unit);

@@ -22,6 +22,7 @@ message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
 
 set(SRC
     ../../../src/libasr/runtime/lfortran_intrinsics.c
+    ../../../src/libasr/runtime/lcompilers_init.c
     ../impure/lfortran_intrinsic_sin_c.c
     ../builtin/lfortran_intrinsic_builtin.f90
     ../pure/lfortran_intrinsic_iso_fortran_env.f90
@@ -30,6 +31,8 @@ set(SRC
 )
 add_library(lfortran_runtime SHARED ${SRC})
 add_library(lfortran_runtime_static STATIC ${SRC})
+target_link_libraries(lfortran_runtime PRIVATE ${CMAKE_DL_LIBS})
+target_link_libraries(lfortran_runtime_static PRIVATE ${CMAKE_DL_LIBS})
 
 macro(ADDTEST name)
     add_executable(${name} ${name}.f90)

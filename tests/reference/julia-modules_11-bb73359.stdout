@@ -1,5 +1,7 @@
 module modules_11_module11
 
+function __lcompilers_global_init_modules_11_module11() end
+
 function access_internally()
     println("i = ", " ", i)
 end

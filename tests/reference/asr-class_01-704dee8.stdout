@@ -5,11 +5,11 @@
             circle_test:
                 (Program
                     (SymbolTable
-                        6
+                        7
                         {
                             1_circle_print:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_circle_print
                                     3 print
                                     class_circle1
@@ -19,7 +19,7 @@
                                 ),
                             1_circle_radius:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_circle_radius
                                     3 radius
                                     class_circle1
@@ -29,7 +29,7 @@
                                 ),
                             c:
                                 (Variable
-                                    6
+                                    7
                                     c
                                     []
                                     Local
@@ -42,7 +42,7 @@
                                         .true.
                                         .false.
                                     )
-                                    6 circle
+                                    7 circle
                                     Source
                                     Public
                                     Required
@@ -58,7 +58,7 @@
                                 ),
                             circle:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     circle
                                     2 circle
                                     class_circle1
@@ -70,9 +70,9 @@
                     circle_test
                     [class_circle1]
                     [(Assignment
-                        (Var 6 c)
+                        (Var 7 c)
                         (StructConstructor
-                            6 circle
+                            7 circle
                             [((RealConstant
                                 1.500000
                                 (Real 4)
@@ -90,16 +90,16 @@
                         .false.
                     )
                     (SubroutineCall
-                        6 1_circle_print
+                        7 1_circle_print
                         ()
-                        [((Var 6 c))]
-                        (Var 6 c)
+                        [((Var 7 c))]
+                        (Var 7 c)
                         .false.
                     )
                     (Assignment
                         (StructInstanceMember
-                            (Var 6 c)
-                            6 1_circle_radius
+                            (Var 7 c)
+                            7 1_circle_radius
                             (Real 4)
                             ()
                         )
@@ -112,12 +112,13 @@
                         .false.
                     )
                     (SubroutineCall
-                        6 1_circle_print
+                        7 1_circle_print
                         ()
-                        [((Var 6 c))]
-                        (Var 6 c)
+                        [((Var 7 c))]
+                        (Var 7 c)
                         .false.
                     )]
+                    ()
                     ()
                 ),
             class_circle1:
@@ -125,6 +126,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_class_circle1:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_class_circle1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_class_circle1:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_class_circle1
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             circle:
                                 (Struct
                                     (SymbolTable
@@ -512,9 +569,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_class_circle1
+                    __lcompilers_global_init_state_class_circle1
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

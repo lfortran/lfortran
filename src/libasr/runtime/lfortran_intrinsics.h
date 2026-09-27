@@ -2,6 +2,7 @@
 #define LFORTRAN_INTRINSICS_H
 
 #include <stdarg.h>
+#include <stddef.h>
 #include <complex.h>
 #include <inttypes.h>
 #include <stdbool.h>
@@ -532,5 +533,7 @@ __lfortran_dynamic_cast(const void* static_ptr,
 #ifdef __cplusplus
 }
 #endif
+
+#include "lcompilers_init.h"
 
 #endif

@@ -28,6 +28,7 @@ namespace {
 void main2() {
     static float x=sin(  1.50000000000000000e+00);
     double y;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     y = sin(  1.50000000000000000e+00);
     std::cout << x << " " << y << std::endl;
     if (fabs(x -   9.97494995594024658e-01) >   9.99999997475242708e-07) {

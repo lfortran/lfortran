@@ -5,11 +5,11 @@
             template_array_03:
                 (Program
                     (SymbolTable
-                        21
+                        23
                         {
                             add_integer:
                                 (ExternalSymbol
-                                    21
+                                    23
                                     add_integer
                                     2 add_integer
                                     template_array_03_math
@@ -19,7 +19,7 @@
                                 ),
                             add_real:
                                 (ExternalSymbol
-                                    21
+                                    23
                                     add_real
                                     2 add_real
                                     template_array_03_math
@@ -29,9 +29,9 @@
                                 ),
                             array_tmpl:
                                 (ExternalSymbol
-                                    21
+                                    23
                                     array_tmpl
-                                    9 array_tmpl
+                                    10 array_tmpl
                                     template_array_03_m
                                     []
                                     array_tmpl
@@ -39,7 +39,7 @@
                                 ),
                             mult_integer:
                                 (ExternalSymbol
-                                    21
+                                    23
                                     mult_integer
                                     2 mult_integer
                                     template_array_03_math
@@ -49,7 +49,7 @@
                                 ),
                             mult_real:
                                 (ExternalSymbol
-                                    21
+                                    23
                                     mult_real
                                     2 mult_real
                                     template_array_03_math
@@ -59,9 +59,9 @@
                                 ),
                             operations:
                                 (ExternalSymbol
-                                    21
+                                    23
                                     operations
-                                    9 operations
+                                    10 operations
                                     template_array_03_m
                                     []
                                     operations
@@ -69,9 +69,9 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    21
+                                    23
                                     test_template
-                                    9 test_template
+                                    10 test_template
                                     template_array_03_m
                                     []
                                     test_template
@@ -79,7 +79,7 @@
                                 ),
                             zero_integer:
                                 (ExternalSymbol
-                                    21
+                                    23
                                     zero_integer
                                     2 zero_integer
                                     template_array_03_math
@@ -89,7 +89,7 @@
                                 ),
                             zero_real:
                                 (ExternalSymbol
-                                    21
+                                    23
                                     zero_real
                                     2 zero_real
                                     template_array_03_math
@@ -102,22 +102,79 @@
                     [template_array_03_m
                     template_array_03_math]
                     [(SubroutineCall
-                        21 test_template
+                        23 test_template
                         ()
                         []
                         ()
                         .false.
                     )]
                     ()
+                    ()
                 ),
             template_array_03_m:
                 (Module
                     (SymbolTable
-                        9
+                        10
                         {
+                            __lcompilers_global_init_state_template_array_03_m:
+                                (Variable
+                                    10
+                                    __lcompilers_global_init_state_template_array_03_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_array_03_m:
+                                (Function
+                                    (SymbolTable
+                                        22
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_array_03_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             add_integer:
                                 (ExternalSymbol
-                                    9
+                                    10
                                     add_integer
                                     2 add_integer
                                     template_array_03_math
@@ -127,7 +184,7 @@
                                 ),
                             add_real:
                                 (ExternalSymbol
-                                    9
+                                    10
                                     add_real
                                     2 add_real
                                     template_array_03_math
@@ -138,16 +195,16 @@
                             array_tmpl:
                                 (Template
                                     (SymbolTable
-                                        14
+                                        15
                                         {
                                             mult_t:
                                                 (Function
                                                     (SymbolTable
-                                                        17
+                                                        18
                                                         {
                                                             l:
                                                                 (Variable
-                                                                    17
+                                                                    18
                                                                     l
                                                                     []
                                                                     In
@@ -175,7 +232,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    17
+                                                                    18
                                                                     r
                                                                     []
                                                                     In
@@ -203,7 +260,7 @@
                                                                 ),
                                                             result:
                                                                 (Variable
-                                                                    17
+                                                                    18
                                                                     result
                                                                     []
                                                                     ReturnVar
@@ -260,10 +317,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 17 l)
-                                                    (Var 17 r)]
+                                                    [(Var 18 l)
+                                                    (Var 18 r)]
                                                     []
-                                                    (Var 17 result)
+                                                    (Var 18 result)
                                                     Private
                                                     .true.
                                                     .true.
@@ -272,11 +329,11 @@
                                             mymatmul_t:
                                                 (Function
                                                     (SymbolTable
-                                                        18
+                                                        19
                                                         {
                                                             a:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     a
                                                                     [i
                                                                     j]
@@ -291,9 +348,9 @@
                                                                             .false.
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 18 i))
+                                                                        (Var 19 i))
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 18 j))]
+                                                                        (Var 19 j))]
                                                                         PointerArray
                                                                         Global
                                                                     )
@@ -313,7 +370,7 @@
                                                                 ),
                                                             b:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     b
                                                                     [j
                                                                     k]
@@ -328,9 +385,9 @@
                                                                             .false.
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 18 j))
+                                                                        (Var 19 j))
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 18 k))]
+                                                                        (Var 19 k))]
                                                                         PointerArray
                                                                         Global
                                                                     )
@@ -350,7 +407,7 @@
                                                                 ),
                                                             elem:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     elem
                                                                     []
                                                                     Local
@@ -378,7 +435,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     i
                                                                     []
                                                                     In
@@ -402,7 +459,7 @@
                                                                 ),
                                                             j:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     j
                                                                     []
                                                                     In
@@ -426,7 +483,7 @@
                                                                 ),
                                                             k:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     k
                                                                     []
                                                                     In
@@ -450,7 +507,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     r
                                                                     [i
                                                                     k]
@@ -465,9 +522,9 @@
                                                                             .false.
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 18 i))
+                                                                        (Var 19 i))
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 18 k))]
+                                                                        (Var 19 k))]
                                                                         PointerArray
                                                                         Global
                                                                     )
@@ -487,7 +544,7 @@
                                                                 ),
                                                             x:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     x
                                                                     []
                                                                     Local
@@ -511,7 +568,7 @@
                                                                 ),
                                                             y:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     y
                                                                     []
                                                                     Local
@@ -535,7 +592,7 @@
                                                                 ),
                                                             z:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     z
                                                                     []
                                                                     Local
@@ -642,31 +699,31 @@
                                                     [zero_t
                                                     mult_t
                                                     plus_t]
-                                                    [(Var 18 i)
-                                                    (Var 18 j)
-                                                    (Var 18 k)
-                                                    (Var 18 a)
-                                                    (Var 18 b)
-                                                    (Var 18 r)]
+                                                    [(Var 19 i)
+                                                    (Var 19 j)
+                                                    (Var 19 k)
+                                                    (Var 19 a)
+                                                    (Var 19 b)
+                                                    (Var 19 r)]
                                                     [(DoLoop
                                                         ()
-                                                        ((Var 18 x)
+                                                        ((Var 19 x)
                                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Var 18 i)
+                                                        (Var 19 i)
                                                         ())
                                                         [(DoLoop
                                                             ()
-                                                            ((Var 18 z)
+                                                            ((Var 19 z)
                                                             (IntegerConstant 1 (Integer 4) Decimal)
-                                                            (Var 18 k)
+                                                            (Var 19 k)
                                                             ())
                                                             [(Assignment
-                                                                (Var 18 elem)
+                                                                (Var 19 elem)
                                                                 (FunctionCall
-                                                                    14 zero_t
+                                                                    15 zero_t
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 18 a)
+                                                                        (Var 19 a)
                                                                         [(()
                                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                                         ())
@@ -695,26 +752,26 @@
                                                             )
                                                             (DoLoop
                                                                 ()
-                                                                ((Var 18 y)
+                                                                ((Var 19 y)
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
-                                                                (Var 18 j)
+                                                                (Var 19 j)
                                                                 ())
                                                                 [(Assignment
-                                                                    (Var 18 elem)
+                                                                    (Var 19 elem)
                                                                     (FunctionCall
-                                                                        14 plus_t
+                                                                        15 plus_t
                                                                         ()
-                                                                        [((Var 18 elem))
+                                                                        [((Var 19 elem))
                                                                         ((FunctionCall
-                                                                            14 mult_t
+                                                                            15 mult_t
                                                                             ()
                                                                             [((ArrayItem
-                                                                                (Var 18 a)
+                                                                                (Var 19 a)
                                                                                 [(()
-                                                                                (Var 18 x)
+                                                                                (Var 19 x)
                                                                                 ())
                                                                                 (()
-                                                                                (Var 18 y)
+                                                                                (Var 19 y)
                                                                                 ())]
                                                                                 (TypeParameter
                                                                                     t
@@ -725,12 +782,12 @@
                                                                                 ()
                                                                             ))
                                                                             ((ArrayItem
-                                                                                (Var 18 b)
+                                                                                (Var 19 b)
                                                                                 [(()
-                                                                                (Var 18 y)
+                                                                                (Var 19 y)
                                                                                 ())
                                                                                 (()
-                                                                                (Var 18 z)
+                                                                                (Var 19 z)
                                                                                 ())]
                                                                                 (TypeParameter
                                                                                     t
@@ -764,12 +821,12 @@
                                                             )
                                                             (Assignment
                                                                 (ArrayItem
-                                                                    (Var 18 r)
+                                                                    (Var 19 r)
                                                                     [(()
-                                                                    (Var 18 x)
+                                                                    (Var 19 x)
                                                                     ())
                                                                     (()
-                                                                    (Var 18 z)
+                                                                    (Var 19 z)
                                                                     ())]
                                                                     (TypeParameter
                                                                         t
@@ -779,7 +836,7 @@
                                                                     ColMajor
                                                                     ()
                                                                 )
-                                                                (Var 18 elem)
+                                                                (Var 19 elem)
                                                                 ()
                                                                 .false.
                                                                 .false.
@@ -797,11 +854,11 @@
                                             plus_t:
                                                 (Function
                                                     (SymbolTable
-                                                        15
+                                                        16
                                                         {
                                                             l:
                                                                 (Variable
-                                                                    15
+                                                                    16
                                                                     l
                                                                     []
                                                                     In
@@ -829,7 +886,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    15
+                                                                    16
                                                                     r
                                                                     []
                                                                     In
@@ -857,7 +914,7 @@
                                                                 ),
                                                             result:
                                                                 (Variable
-                                                                    15
+                                                                    16
                                                                     result
                                                                     []
                                                                     ReturnVar
@@ -914,10 +971,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 15 l)
-                                                    (Var 15 r)]
+                                                    [(Var 16 l)
+                                                    (Var 16 r)]
                                                     []
-                                                    (Var 15 result)
+                                                    (Var 16 result)
                                                     Private
                                                     .true.
                                                     .true.
@@ -925,7 +982,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    14
+                                                    15
                                                     t
                                                     []
                                                     In
@@ -954,11 +1011,11 @@
                                             zero_t:
                                                 (Function
                                                     (SymbolTable
-                                                        16
+                                                        17
                                                         {
                                                             result:
                                                                 (Variable
-                                                                    16
+                                                                    17
                                                                     result
                                                                     []
                                                                     ReturnVar
@@ -986,7 +1043,7 @@
                                                                 ),
                                                             x:
                                                                 (Variable
-                                                                    16
+                                                                    17
                                                                     x
                                                                     []
                                                                     In
@@ -1038,9 +1095,9 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 16 x)]
+                                                    [(Var 17 x)]
                                                     []
-                                                    (Var 16 result)
+                                                    (Var 17 result)
                                                     Private
                                                     .true.
                                                     .true.
@@ -1062,7 +1119,7 @@
                                 ),
                             mult_integer:
                                 (ExternalSymbol
-                                    9
+                                    10
                                     mult_integer
                                     2 mult_integer
                                     template_array_03_math
@@ -1072,7 +1129,7 @@
                                 ),
                             mult_real:
                                 (ExternalSymbol
-                                    9
+                                    10
                                     mult_real
                                     2 mult_real
                                     template_array_03_math
@@ -1083,16 +1140,16 @@
                             operations:
                                 (Requirement
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             mult_t:
                                                 (Function
                                                     (SymbolTable
-                                                        13
+                                                        14
                                                         {
                                                             l:
                                                                 (Variable
-                                                                    13
+                                                                    14
                                                                     l
                                                                     []
                                                                     In
@@ -1120,7 +1177,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    13
+                                                                    14
                                                                     r
                                                                     []
                                                                     In
@@ -1148,7 +1205,7 @@
                                                                 ),
                                                             result:
                                                                 (Variable
-                                                                    13
+                                                                    14
                                                                     result
                                                                     []
                                                                     ReturnVar
@@ -1205,10 +1262,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 13 l)
-                                                    (Var 13 r)]
+                                                    [(Var 14 l)
+                                                    (Var 14 r)]
                                                     []
-                                                    (Var 13 result)
+                                                    (Var 14 result)
                                                     Private
                                                     .true.
                                                     .true.
@@ -1217,11 +1274,11 @@
                                             plus_t:
                                                 (Function
                                                     (SymbolTable
-                                                        11
+                                                        12
                                                         {
                                                             l:
                                                                 (Variable
-                                                                    11
+                                                                    12
                                                                     l
                                                                     []
                                                                     In
@@ -1249,7 +1306,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    11
+                                                                    12
                                                                     r
                                                                     []
                                                                     In
@@ -1277,7 +1334,7 @@
                                                                 ),
                                                             result:
                                                                 (Variable
-                                                                    11
+                                                                    12
                                                                     result
                                                                     []
                                                                     ReturnVar
@@ -1334,10 +1391,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 11 l)
-                                                    (Var 11 r)]
+                                                    [(Var 12 l)
+                                                    (Var 12 r)]
                                                     []
-                                                    (Var 11 result)
+                                                    (Var 12 result)
                                                     Private
                                                     .true.
                                                     .true.
@@ -1345,7 +1402,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    10
+                                                    11
                                                     t
                                                     []
                                                     In
@@ -1374,11 +1431,11 @@
                                             zero_t:
                                                 (Function
                                                     (SymbolTable
-                                                        12
+                                                        13
                                                         {
                                                             result:
                                                                 (Variable
-                                                                    12
+                                                                    13
                                                                     result
                                                                     []
                                                                     ReturnVar
@@ -1406,7 +1463,7 @@
                                                                 ),
                                                             x:
                                                                 (Variable
-                                                                    12
+                                                                    13
                                                                     x
                                                                     []
                                                                     In
@@ -1458,9 +1515,9 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 12 x)]
+                                                    [(Var 13 x)]
                                                     []
-                                                    (Var 12 result)
+                                                    (Var 13 result)
                                                     Private
                                                     .true.
                                                     .true.
@@ -1477,11 +1534,11 @@
                             test_template:
                                 (Function
                                     (SymbolTable
-                                        19
+                                        20
                                         {
                                             arr:
                                                 (Variable
-                                                    19
+                                                    20
                                                     arr
                                                     []
                                                     Local
@@ -1514,11 +1571,11 @@
                                             mymatmul_int:
                                                 (Function
                                                     (SymbolTable
-                                                        20
+                                                        21
                                                         {
                                                             a:
                                                                 (Variable
-                                                                    20
+                                                                    21
                                                                     a
                                                                     [i
                                                                     j]
@@ -1529,9 +1586,9 @@
                                                                     (Array
                                                                         (Integer 4)
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 20 i))
+                                                                        (Var 21 i))
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 20 j))]
+                                                                        (Var 21 j))]
                                                                         PointerArray
                                                                         Global
                                                                     )
@@ -1551,7 +1608,7 @@
                                                                 ),
                                                             b:
                                                                 (Variable
-                                                                    20
+                                                                    21
                                                                     b
                                                                     [j
                                                                     k]
@@ -1562,9 +1619,9 @@
                                                                     (Array
                                                                         (Integer 4)
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 20 j))
+                                                                        (Var 21 j))
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 20 k))]
+                                                                        (Var 21 k))]
                                                                         PointerArray
                                                                         Global
                                                                     )
@@ -1584,7 +1641,7 @@
                                                                 ),
                                                             elem:
                                                                 (Variable
-                                                                    20
+                                                                    21
                                                                     elem
                                                                     []
                                                                     Local
@@ -1608,7 +1665,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    20
+                                                                    21
                                                                     i
                                                                     []
                                                                     In
@@ -1632,7 +1689,7 @@
                                                                 ),
                                                             j:
                                                                 (Variable
-                                                                    20
+                                                                    21
                                                                     j
                                                                     []
                                                                     In
@@ -1656,7 +1713,7 @@
                                                                 ),
                                                             k:
                                                                 (Variable
-                                                                    20
+                                                                    21
                                                                     k
                                                                     []
                                                                     In
@@ -1680,7 +1737,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    20
+                                                                    21
                                                                     r
                                                                     [i
                                                                     k]
@@ -1691,9 +1748,9 @@
                                                                     (Array
                                                                         (Integer 4)
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 20 i))
+                                                                        (Var 21 i))
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 20 k))]
+                                                                        (Var 21 k))]
                                                                         PointerArray
                                                                         Global
                                                                     )
@@ -1713,7 +1770,7 @@
                                                                 ),
                                                             x:
                                                                 (Variable
-                                                                    20
+                                                                    21
                                                                     x
                                                                     []
                                                                     Local
@@ -1737,7 +1794,7 @@
                                                                 ),
                                                             y:
                                                                 (Variable
-                                                                    20
+                                                                    21
                                                                     y
                                                                     []
                                                                     Local
@@ -1761,7 +1818,7 @@
                                                                 ),
                                                             z:
                                                                 (Variable
-                                                                    20
+                                                                    21
                                                                     z
                                                                     []
                                                                     Local
@@ -1854,31 +1911,31 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 20 i)
-                                                    (Var 20 j)
-                                                    (Var 20 k)
-                                                    (Var 20 a)
-                                                    (Var 20 b)
-                                                    (Var 20 r)]
+                                                    [(Var 21 i)
+                                                    (Var 21 j)
+                                                    (Var 21 k)
+                                                    (Var 21 a)
+                                                    (Var 21 b)
+                                                    (Var 21 r)]
                                                     [(DoLoop
                                                         ()
-                                                        ((Var 20 x)
+                                                        ((Var 21 x)
                                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Var 20 i)
+                                                        (Var 21 i)
                                                         ())
                                                         [(DoLoop
                                                             ()
-                                                            ((Var 20 z)
+                                                            ((Var 21 z)
                                                             (IntegerConstant 1 (Integer 4) Decimal)
-                                                            (Var 20 k)
+                                                            (Var 21 k)
                                                             ())
                                                             [(Assignment
-                                                                (Var 20 elem)
+                                                                (Var 21 elem)
                                                                 (FunctionCall
-                                                                    9 zero_integer
+                                                                    10 zero_integer
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 20 a)
+                                                                        (Var 21 a)
                                                                         [(()
                                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                                         ())
@@ -1899,38 +1956,38 @@
                                                             )
                                                             (DoLoop
                                                                 ()
-                                                                ((Var 20 y)
+                                                                ((Var 21 y)
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
-                                                                (Var 20 j)
+                                                                (Var 21 j)
                                                                 ())
                                                                 [(Assignment
-                                                                    (Var 20 elem)
+                                                                    (Var 21 elem)
                                                                     (FunctionCall
-                                                                        9 add_integer
+                                                                        10 add_integer
                                                                         ()
-                                                                        [((Var 20 elem))
+                                                                        [((Var 21 elem))
                                                                         ((FunctionCall
-                                                                            9 mult_integer
+                                                                            10 mult_integer
                                                                             ()
                                                                             [((ArrayItem
-                                                                                (Var 20 a)
+                                                                                (Var 21 a)
                                                                                 [(()
-                                                                                (Var 20 x)
+                                                                                (Var 21 x)
                                                                                 ())
                                                                                 (()
-                                                                                (Var 20 y)
+                                                                                (Var 21 y)
                                                                                 ())]
                                                                                 (Integer 4)
                                                                                 ColMajor
                                                                                 ()
                                                                             ))
                                                                             ((ArrayItem
-                                                                                (Var 20 b)
+                                                                                (Var 21 b)
                                                                                 [(()
-                                                                                (Var 20 y)
+                                                                                (Var 21 y)
                                                                                 ())
                                                                                 (()
-                                                                                (Var 20 z)
+                                                                                (Var 21 z)
                                                                                 ())]
                                                                                 (Integer 4)
                                                                                 ColMajor
@@ -1952,18 +2009,18 @@
                                                             )
                                                             (Assignment
                                                                 (ArrayItem
-                                                                    (Var 20 r)
+                                                                    (Var 21 r)
                                                                     [(()
-                                                                    (Var 20 x)
+                                                                    (Var 21 x)
                                                                     ())
                                                                     (()
-                                                                    (Var 20 z)
+                                                                    (Var 21 z)
                                                                     ())]
                                                                     (Integer 4)
                                                                     ColMajor
                                                                     ()
                                                                 )
-                                                                (Var 20 elem)
+                                                                (Var 21 elem)
                                                                 ()
                                                                 .false.
                                                                 .false.
@@ -1980,7 +2037,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    19
+                                                    20
                                                     r
                                                     []
                                                     Local
@@ -2031,7 +2088,7 @@
                                     []
                                     [(Assignment
                                         (ArrayItem
-                                            (Var 19 arr)
+                                            (Var 20 arr)
                                             [(()
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
@@ -2049,7 +2106,7 @@
                                     )
                                     (Assignment
                                         (ArrayItem
-                                            (Var 19 arr)
+                                            (Var 20 arr)
                                             [(()
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
@@ -2067,7 +2124,7 @@
                                     )
                                     (Assignment
                                         (ArrayItem
-                                            (Var 19 arr)
+                                            (Var 20 arr)
                                             [(()
                                             (IntegerConstant 2 (Integer 4) Decimal)
                                             ())
@@ -2085,7 +2142,7 @@
                                     )
                                     (Assignment
                                         (ArrayItem
-                                            (Var 19 arr)
+                                            (Var 20 arr)
                                             [(()
                                             (IntegerConstant 2 (Integer 4) Decimal)
                                             ())
@@ -2102,13 +2159,13 @@
                                         .false.
                                     )
                                     (SubroutineCall
-                                        19 mymatmul_int
+                                        20 mymatmul_int
                                         ()
                                         [((IntegerConstant 2 (Integer 4) Decimal))
                                         ((IntegerConstant 2 (Integer 4) Decimal))
                                         ((IntegerConstant 2 (Integer 4) Decimal))
                                         ((ArrayPhysicalCast
-                                            (Var 19 arr)
+                                            (Var 20 arr)
                                             FixedSizeArray
                                             PointerArray
                                             (Array
@@ -2123,7 +2180,7 @@
                                             ()
                                         ))
                                         ((ArrayPhysicalCast
-                                            (Var 19 arr)
+                                            (Var 20 arr)
                                             FixedSizeArray
                                             PointerArray
                                             (Array
@@ -2138,7 +2195,7 @@
                                             ()
                                         ))
                                         ((ArrayPhysicalCast
-                                            (Var 19 r)
+                                            (Var 20 r)
                                             FixedSizeArray
                                             PointerArray
                                             (Array
@@ -2159,7 +2216,7 @@
                                         (StringFormat
                                             ()
                                             [(ArrayItem
-                                                (Var 19 r)
+                                                (Var 20 r)
                                                 [(()
                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())
@@ -2181,7 +2238,7 @@
                                         (StringFormat
                                             ()
                                             [(ArrayItem
-                                                (Var 19 r)
+                                                (Var 20 r)
                                                 [(()
                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())
@@ -2203,7 +2260,7 @@
                                         (StringFormat
                                             ()
                                             [(ArrayItem
-                                                (Var 19 r)
+                                                (Var 20 r)
                                                 [(()
                                                 (IntegerConstant 2 (Integer 4) Decimal)
                                                 ())
@@ -2225,7 +2282,7 @@
                                         (StringFormat
                                             ()
                                             [(ArrayItem
-                                                (Var 19 r)
+                                                (Var 20 r)
                                                 [(()
                                                 (IntegerConstant 2 (Integer 4) Decimal)
                                                 ())
@@ -2251,7 +2308,7 @@
                                 ),
                             zero_integer:
                                 (ExternalSymbol
-                                    9
+                                    10
                                     zero_integer
                                     2 zero_integer
                                     template_array_03_math
@@ -2261,7 +2318,7 @@
                                 ),
                             zero_real:
                                 (ExternalSymbol
-                                    9
+                                    10
                                     zero_real
                                     2 zero_real
                                     template_array_03_math
@@ -2277,13 +2334,71 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_template_array_03_m
+                    __lcompilers_global_init_state_template_array_03_m
+                    .false.
                 ),
             template_array_03_math:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_array_03_math:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_array_03_math
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_array_03_math:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_array_03_math
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             add_integer:
                                 (Function
                                     (SymbolTable
@@ -2938,9 +3053,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_template_array_03_math
+                    __lcompilers_global_init_state_template_array_03_math
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

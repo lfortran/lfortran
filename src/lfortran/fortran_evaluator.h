@@ -153,6 +153,10 @@ private:
     // by the passes on every evaluation; redefining them would be rejected by
     // the JIT, so later modules only declare them. See drop_redefinitions().
     std::set<std::string> defined_symbols;
+    // The entry of each evaluated cell that tears down the cell's startup
+    // state and takes its records back out of the runtime, oldest first. The records point into code the
+    // JIT owns, so they are unpublished before that code goes away.
+    std::vector<std::string> startup_shutdown_fns;
 #endif
 #ifdef __EMSCRIPTEN__
     std::unique_ptr<WasmLFortranExecutor> wasm_exec;

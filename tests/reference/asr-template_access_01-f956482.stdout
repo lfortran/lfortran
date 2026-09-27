@@ -5,13 +5,13 @@
             template_access_01:
                 (Program
                     (SymbolTable
-                        13
+                        16
                         {
                             1_rbox_v:
                                 (ExternalSymbol
-                                    13
+                                    16
                                     1_rbox_v
-                                    9 v
+                                    10 v
                                     template_access_01_inst_m
                                     [rbox]
                                     v
@@ -19,7 +19,7 @@
                                 ),
                             b:
                                 (Variable
-                                    13
+                                    16
                                     b
                                     []
                                     Local
@@ -32,7 +32,7 @@
                                         .true.
                                         .false.
                                     )
-                                    13 rbox
+                                    16 rbox
                                     Source
                                     Public
                                     Required
@@ -48,9 +48,9 @@
                                 ),
                             g:
                                 (ExternalSymbol
-                                    13
+                                    16
                                     g
-                                    7 g
+                                    8 g
                                     template_access_01_inst_m
                                     []
                                     g
@@ -58,9 +58,9 @@
                                 ),
                             h:
                                 (ExternalSymbol
-                                    13
+                                    16
                                     h
-                                    11 h
+                                    13 h
                                     template_access_01_priv_m
                                     []
                                     h
@@ -68,9 +68,9 @@
                                 ),
                             rbox:
                                 (ExternalSymbol
-                                    13
+                                    16
                                     rbox
-                                    7 rbox
+                                    8 rbox
                                     template_access_01_inst_m
                                     []
                                     rbox
@@ -78,9 +78,9 @@
                                 ),
                             rmk:
                                 (ExternalSymbol
-                                    13
+                                    16
                                     rmk
-                                    7 rmk
+                                    8 rmk
                                     template_access_01_inst_m
                                     []
                                     rmk
@@ -88,7 +88,7 @@
                                 ),
                             t_tmpl:
                                 (ExternalSymbol
-                                    13
+                                    16
                                     t_tmpl
                                     2 t_tmpl
                                     template_access_01_tmpl_m
@@ -102,9 +102,9 @@
                     template_access_01_tmpl_m
                     template_access_01_priv_m]
                     [(Assignment
-                        (Var 13 b)
+                        (Var 16 b)
                         (FunctionCall
-                            13 rmk
+                            16 rmk
                             ()
                             [((RealConstant
                                 2.500000
@@ -130,8 +130,8 @@
                                 Abs
                                 [(RealBinOp
                                     (StructInstanceMember
-                                        (Var 13 b)
-                                        13 1_rbox_v
+                                        (Var 16 b)
+                                        16 1_rbox_v
                                         (Real 4)
                                         ()
                                     )
@@ -167,7 +167,7 @@
                                 Abs
                                 [(RealBinOp
                                     (FunctionCall
-                                        13 g
+                                        16 g
                                         ()
                                         [((RealConstant
                                             3.000000
@@ -206,7 +206,7 @@
                         ()
                         (IntegerCompare
                             (FunctionCall
-                                13 h
+                                16 h
                                 ()
                                 [((IntegerConstant 7 (Integer 4) Decimal))]
                                 (Integer 4)
@@ -227,7 +227,7 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                13 g
+                                16 g
                                 ()
                                 [((RealConstant
                                     3.000000
@@ -238,7 +238,7 @@
                                 ()
                             )
                             (FunctionCall
-                                13 h
+                                16 h
                                 ()
                                 [((IntegerConstant 7 (Integer 4) Decimal))]
                                 (Integer 4)
@@ -246,8 +246,8 @@
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 13 b)
-                                13 1_rbox_v
+                                (Var 16 b)
+                                16 1_rbox_v
                                 (Real 4)
                                 ()
                             )]
@@ -259,20 +259,77 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             template_access_01_inst_m:
                 (Module
                     (SymbolTable
-                        7
+                        8
                         {
+                            __lcompilers_global_init_state_template_access_01_inst_m:
+                                (Variable
+                                    8
+                                    __lcompilers_global_init_state_template_access_01_inst_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_access_01_inst_m:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_access_01_inst_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             g:
                                 (Function
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             r:
                                                 (Variable
-                                                    8
+                                                    9
                                                     r
                                                     []
                                                     ReturnVar
@@ -296,7 +353,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    8
+                                                    9
                                                     x
                                                     []
                                                     In
@@ -336,15 +393,15 @@
                                         Host
                                     )
                                     []
-                                    [(Var 8 x)]
+                                    [(Var 9 x)]
                                     [(Assignment
-                                        (Var 8 r)
-                                        (Var 8 x)
+                                        (Var 9 r)
+                                        (Var 9 x)
                                         ()
                                         .false.
                                         .false.
                                     )]
-                                    (Var 8 r)
+                                    (Var 9 r)
                                     Public
                                     .true.
                                     .true.
@@ -353,11 +410,11 @@
                             rbox:
                                 (Struct
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             v:
                                                 (Variable
-                                                    9
+                                                    10
                                                     v
                                                     []
                                                     Local
@@ -403,13 +460,13 @@
                             rmk:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             1_rbox_v:
                                                 (ExternalSymbol
-                                                    10
+                                                    11
                                                     1_rbox_v
-                                                    9 v
+                                                    10 v
                                                     rbox
                                                     []
                                                     v
@@ -417,7 +474,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    10
+                                                    11
                                                     r
                                                     []
                                                     ReturnVar
@@ -430,7 +487,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    7 rbox
+                                                    8 rbox
                                                     Source
                                                     Private
                                                     Required
@@ -446,7 +503,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    10
+                                                    11
                                                     x
                                                     []
                                                     In
@@ -491,20 +548,20 @@
                                         Host
                                     )
                                     []
-                                    [(Var 10 x)]
+                                    [(Var 11 x)]
                                     [(Assignment
                                         (StructInstanceMember
-                                            (Var 10 r)
-                                            10 1_rbox_v
+                                            (Var 11 r)
+                                            11 1_rbox_v
                                             (Real 4)
                                             ()
                                         )
-                                        (Var 10 x)
+                                        (Var 11 x)
                                         ()
                                         .false.
                                         .false.
                                     )]
-                                    (Var 10 r)
+                                    (Var 11 r)
                                     Public
                                     .true.
                                     .true.
@@ -512,7 +569,7 @@
                                 ),
                             t_tmpl:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     t_tmpl
                                     2 t_tmpl
                                     template_access_01_tmpl_m
@@ -527,21 +584,79 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_template_access_01_inst_m
+                    __lcompilers_global_init_state_template_access_01_inst_m
+                    .false.
                 ),
             template_access_01_priv_m:
                 (Module
                     (SymbolTable
-                        11
+                        13
                         {
+                            __lcompilers_global_init_state_template_access_01_priv_m:
+                                (Variable
+                                    13
+                                    __lcompilers_global_init_state_template_access_01_priv_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_access_01_priv_m:
+                                (Function
+                                    (SymbolTable
+                                        15
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_access_01_priv_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             h:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        14
                                         {
                                             r:
                                                 (Variable
-                                                    12
+                                                    14
                                                     r
                                                     []
                                                     ReturnVar
@@ -565,7 +680,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    12
+                                                    14
                                                     x
                                                     []
                                                     In
@@ -605,15 +720,15 @@
                                         Host
                                     )
                                     []
-                                    [(Var 12 x)]
+                                    [(Var 14 x)]
                                     [(Assignment
-                                        (Var 12 r)
-                                        (Var 12 x)
+                                        (Var 14 r)
+                                        (Var 14 x)
                                         ()
                                         .false.
                                         .false.
                                     )]
-                                    (Var 12 r)
+                                    (Var 14 r)
                                     Public
                                     .true.
                                     .true.
@@ -621,7 +736,7 @@
                                 ),
                             t_tmpl:
                                 (ExternalSymbol
-                                    11
+                                    13
                                     t_tmpl
                                     2 t_tmpl
                                     template_access_01_tmpl_m
@@ -636,13 +751,71 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_template_access_01_priv_m
+                    __lcompilers_global_init_state_template_access_01_priv_m
+                    .false.
                 ),
             template_access_01_tmpl_m:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_access_01_tmpl_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_access_01_tmpl_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_access_01_tmpl_m:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_access_01_tmpl_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             t_tmpl:
                                 (Template
                                     (SymbolTable
@@ -977,9 +1150,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_template_access_01_tmpl_m
+                    __lcompilers_global_init_state_template_access_01_tmpl_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

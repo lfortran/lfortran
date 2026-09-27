@@ -21,6 +21,7 @@ deftype
 enumtype
 exec_space
 exec_target
+init_dispatch_phase
 integerboz
 intent
 logicalbinop

@@ -1208,6 +1208,38 @@ namespace LCompilers {
             );
         }
 
+        llvm::Constant* SimpleCMODescriptor::get_unallocated_descriptor(
+                llvm::StructType* type, int n_dims, llvm::Constant* base_addr) {
+            std::vector<llvm::Constant*> fields;
+            for (unsigned i = 0; i < type->getNumElements(); i++) {
+                fields.push_back(llvm::Constant::getNullValue(type->getElementType(i)));
+            }
+            if (base_addr != nullptr) {
+                fields[FIELD_BASE_ADDR] = llvm::ConstantExpr::getBitCast(
+                    base_addr, type->getElementType(FIELD_BASE_ADDR));
+            }
+            fields[FIELD_RANK] = llvm::ConstantInt::get(
+                type->getElementType(FIELD_RANK), n_dims);
+            // What `fill_dimension_descriptor` stores: every dimension has
+            // lower bound 1, extent 1 and stride 0 until it is allocated.
+            llvm::ArrayType* dims_type = llvm::cast<llvm::ArrayType>(
+                type->getElementType(FIELD_DIMS));
+            llvm::StructType* dim_type = llvm::cast<llvm::StructType>(
+                dims_type->getElementType());
+            std::vector<llvm::Constant*> dim_fields(dim_type->getNumElements());
+            for (unsigned i = 0; i < dim_type->getNumElements(); i++) {
+                dim_fields[i] = llvm::Constant::getNullValue(dim_type->getElementType(i));
+            }
+            dim_fields[DIM_LOWER_BOUND] = llvm::ConstantInt::get(
+                dim_type->getElementType(DIM_LOWER_BOUND), 1);
+            dim_fields[DIM_EXTENT] = llvm::ConstantInt::get(
+                dim_type->getElementType(DIM_EXTENT), 1);
+            std::vector<llvm::Constant*> dims(dims_type->getNumElements(),
+                llvm::ConstantStruct::get(dim_type, dim_fields));
+            fields[FIELD_DIMS] = llvm::ConstantArray::get(dims_type, dims);
+            return llvm::ConstantStruct::get(type, fields);
+        }
+
         llvm::Value* SimpleCMODescriptor::get_array_size(llvm::Type* type, llvm::Value* array, llvm::Value* dim, int kind, int dim_kind) {
             llvm::Value* dim_des_val = this->get_pointer_to_dimension_descriptor_array(type, array);
             llvm::Value* tmp = nullptr;

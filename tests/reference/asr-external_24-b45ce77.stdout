@@ -5,16 +5,16 @@
             apply_fun:
                 (Function
                     (SymbolTable
-                        10
+                        11
                         {
                             h:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             h_return_var_name:
                                                 (Variable
-                                                    11
+                                                    12
                                                     h_return_var_name
                                                     []
                                                     ReturnVar
@@ -56,7 +56,7 @@
                                     []
                                     []
                                     []
-                                    (Var 11 h_return_var_name)
+                                    (Var 12 h_return_var_name)
                                     Public
                                     .false.
                                     .false.
@@ -65,11 +65,11 @@
                             h~fpcast:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        16
                                         {
                                             h~arg_0:
                                                 (Variable
-                                                    15
+                                                    16
                                                     h~arg_0
                                                     []
                                                     Unspecified
@@ -93,7 +93,7 @@
                                                 ),
                                             h~result:
                                                 (Variable
-                                                    15
+                                                    16
                                                     h~result
                                                     []
                                                     ReturnVar
@@ -133,9 +133,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 15 h~arg_0)]
+                                    [(Var 16 h~arg_0)]
                                     []
-                                    (Var 15 h~result)
+                                    (Var 16 h~result)
                                     Public
                                     .false.
                                     .false.
@@ -143,7 +143,7 @@
                                 ),
                             h~fpcast_ptr:
                                 (Variable
-                                    10
+                                    11
                                     h~fpcast_ptr
                                     []
                                     Local
@@ -167,7 +167,7 @@
                                             Host
                                         )
                                     )
-                                    10 h~fpcast
+                                    11 h~fpcast
                                     Source
                                     Public
                                     Required
@@ -183,7 +183,7 @@
                                 ),
                             i:
                                 (Variable
-                                    10
+                                    11
                                     i
                                     []
                                     Unspecified
@@ -238,13 +238,13 @@
                         Host
                     )
                     []
-                    [(Var 10 h)
-                    (Var 10 i)]
+                    [(Var 11 h)
+                    (Var 11 i)]
                     [(Associate
-                        (Var 10 h~fpcast_ptr)
+                        (Var 11 h~fpcast_ptr)
                         (FunctionPointerCast
-                            (Var 10 h)
-                            10 h~fpcast
+                            (Var 11 h)
+                            11 h~fpcast
                             (FunctionType
                                 [(Integer 4)]
                                 (Integer 4)
@@ -264,11 +264,11 @@
                         )
                     )
                     (Assignment
-                        (Var 10 i)
+                        (Var 11 i)
                         (FunctionCall
-                            10 h~fpcast_ptr
+                            11 h~fpcast_ptr
                             ()
-                            [((Var 10 i))]
+                            [((Var 11 i))]
                             (Integer 4)
                             ()
                             ()
@@ -286,12 +286,12 @@
             apply_sub:
                 (Function
                     (SymbolTable
-                        8
+                        9
                         {
                             g:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             
                                         })
@@ -323,11 +323,11 @@
                             g~fpcast:
                                 (Function
                                     (SymbolTable
-                                        14
+                                        15
                                         {
                                             g~arg_0:
                                                 (Variable
-                                                    14
+                                                    15
                                                     g~arg_0
                                                     []
                                                     Unspecified
@@ -367,7 +367,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 14 g~arg_0)]
+                                    [(Var 15 g~arg_0)]
                                     []
                                     ()
                                     Public
@@ -377,7 +377,7 @@
                                 ),
                             g~fpcast_ptr:
                                 (Variable
-                                    8
+                                    9
                                     g~fpcast_ptr
                                     []
                                     Local
@@ -401,7 +401,7 @@
                                             Host
                                         )
                                     )
-                                    8 g~fpcast
+                                    9 g~fpcast
                                     Source
                                     Public
                                     Required
@@ -417,7 +417,7 @@
                                 ),
                             i:
                                 (Variable
-                                    8
+                                    9
                                     i
                                     []
                                     Unspecified
@@ -472,13 +472,13 @@
                         Host
                     )
                     []
-                    [(Var 8 g)
-                    (Var 8 i)]
+                    [(Var 9 g)
+                    (Var 9 i)]
                     [(Associate
-                        (Var 8 g~fpcast_ptr)
+                        (Var 9 g~fpcast_ptr)
                         (FunctionPointerCast
-                            (Var 8 g)
-                            8 g~fpcast
+                            (Var 9 g)
+                            9 g~fpcast
                             (FunctionType
                                 [(Integer 4)]
                                 ()
@@ -498,9 +498,9 @@
                         )
                     )
                     (SubroutineCall
-                        8 g~fpcast_ptr
-                        8 g
-                        [((Var 8 i))]
+                        9 g~fpcast_ptr
+                        9 g
+                        [((Var 9 i))]
                         ()
                         .false.
                     )]
@@ -513,12 +513,12 @@
             external_24:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             apply_fun:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             
                                         })
@@ -550,11 +550,11 @@
                             apply_fun~fpcast:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        14
                                         {
                                             apply_fun~arg_1:
                                                 (Variable
-                                                    13
+                                                    14
                                                     apply_fun~arg_1
                                                     []
                                                     Unspecified
@@ -609,8 +609,8 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 twice)
-                                    (Var 13 apply_fun~arg_1)]
+                                    [(Var 6 twice)
+                                    (Var 14 apply_fun~arg_1)]
                                     []
                                     ()
                                     Public
@@ -620,7 +620,7 @@
                                 ),
                             apply_fun~fpcast_ptr:
                                 (Variable
-                                    5
+                                    6
                                     apply_fun~fpcast_ptr
                                     []
                                     Local
@@ -659,7 +659,7 @@
                                             Host
                                         )
                                     )
-                                    5 apply_fun~fpcast
+                                    6 apply_fun~fpcast
                                     Source
                                     Public
                                     Required
@@ -676,7 +676,7 @@
                             apply_sub:
                                 (Function
                                     (SymbolTable
-                                        6
+                                        7
                                         {
                                             
                                         })
@@ -708,11 +708,11 @@
                             apply_sub~fpcast:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             apply_sub~arg_1:
                                                 (Variable
-                                                    12
+                                                    13
                                                     apply_sub~arg_1
                                                     []
                                                     Unspecified
@@ -767,8 +767,8 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 incr)
-                                    (Var 12 apply_sub~arg_1)]
+                                    [(Var 6 incr)
+                                    (Var 13 apply_sub~arg_1)]
                                     []
                                     ()
                                     Public
@@ -778,7 +778,7 @@
                                 ),
                             apply_sub~fpcast_ptr:
                                 (Variable
-                                    5
+                                    6
                                     apply_sub~fpcast_ptr
                                     []
                                     Local
@@ -817,7 +817,7 @@
                                             Host
                                         )
                                     )
-                                    5 apply_sub~fpcast
+                                    6 apply_sub~fpcast
                                     Source
                                     Public
                                     Required
@@ -833,7 +833,7 @@
                                 ),
                             i:
                                 (Variable
-                                    5
+                                    6
                                     i
                                     []
                                     Local
@@ -857,7 +857,7 @@
                                 ),
                             incr:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     incr
                                     2 incr
                                     external_24_mod
@@ -867,7 +867,7 @@
                                 ),
                             twice:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     twice
                                     2 twice
                                     external_24_mod
@@ -879,17 +879,17 @@
                     external_24
                     [external_24_mod]
                     [(Assignment
-                        (Var 5 i)
+                        (Var 6 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Associate
-                        (Var 5 apply_sub~fpcast_ptr)
+                        (Var 6 apply_sub~fpcast_ptr)
                         (FunctionPointerCast
-                            (Var 5 apply_sub)
-                            5 apply_sub~fpcast
+                            (Var 6 apply_sub)
+                            6 apply_sub~fpcast
                             (FunctionType
                                 [(FunctionType
                                     [(Integer 4)]
@@ -924,17 +924,17 @@
                         )
                     )
                     (SubroutineCall
-                        5 apply_sub~fpcast_ptr
-                        5 apply_sub
-                        [((Var 5 incr))
-                        ((Var 5 i))]
+                        6 apply_sub~fpcast_ptr
+                        6 apply_sub
+                        [((Var 6 incr))
+                        ((Var 6 i))]
                         ()
                         .false.
                     )
                     (If
                         ()
                         (IntegerCompare
-                            (Var 5 i)
+                            (Var 6 i)
                             NotEq
                             (IntegerConstant 2 (Integer 4) Decimal)
                             (Logical 4)
@@ -946,10 +946,10 @@
                         []
                     )
                     (Associate
-                        (Var 5 apply_sub~fpcast_ptr)
+                        (Var 6 apply_sub~fpcast_ptr)
                         (FunctionPointerCast
-                            (Var 5 apply_sub)
-                            5 apply_sub~fpcast
+                            (Var 6 apply_sub)
+                            6 apply_sub~fpcast
                             (FunctionType
                                 [(FunctionType
                                     [(Integer 4)]
@@ -984,17 +984,17 @@
                         )
                     )
                     (SubroutineCall
-                        5 apply_sub~fpcast_ptr
-                        5 apply_sub
-                        [((Var 5 incr))
-                        ((Var 5 i))]
+                        6 apply_sub~fpcast_ptr
+                        6 apply_sub
+                        [((Var 6 incr))
+                        ((Var 6 i))]
                         ()
                         .false.
                     )
                     (If
                         ()
                         (IntegerCompare
-                            (Var 5 i)
+                            (Var 6 i)
                             NotEq
                             (IntegerConstant 3 (Integer 4) Decimal)
                             (Logical 4)
@@ -1006,10 +1006,10 @@
                         []
                     )
                     (Associate
-                        (Var 5 apply_fun~fpcast_ptr)
+                        (Var 6 apply_fun~fpcast_ptr)
                         (FunctionPointerCast
-                            (Var 5 apply_fun)
-                            5 apply_fun~fpcast
+                            (Var 6 apply_fun)
+                            6 apply_fun~fpcast
                             (FunctionType
                                 [(FunctionType
                                     [(Integer 4)]
@@ -1044,17 +1044,17 @@
                         )
                     )
                     (SubroutineCall
-                        5 apply_fun~fpcast_ptr
-                        5 apply_fun
-                        [((Var 5 twice))
-                        ((Var 5 i))]
+                        6 apply_fun~fpcast_ptr
+                        6 apply_fun
+                        [((Var 6 twice))
+                        ((Var 6 i))]
                         ()
                         .false.
                     )
                     (If
                         ()
                         (IntegerCompare
-                            (Var 5 i)
+                            (Var 6 i)
                             NotEq
                             (IntegerConstant 6 (Integer 4) Decimal)
                             (Logical 4)
@@ -1068,7 +1068,7 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 5 i)]
+                            [(Var 6 i)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -1077,12 +1077,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             external_24_mod:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_external_24_mod:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_external_24_mod
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_external_24_mod:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_external_24_mod
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             incr:
                                 (Function
                                     (SymbolTable
@@ -1248,9 +1305,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_external_24_mod
+                    __lcompilers_global_init_state_external_24_mod
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

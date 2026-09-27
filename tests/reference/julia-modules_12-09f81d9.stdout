@@ -1,5 +1,7 @@
 module module_12
 
+function __lcompilers_global_init_module_12() end
+
 end
 
 function main()

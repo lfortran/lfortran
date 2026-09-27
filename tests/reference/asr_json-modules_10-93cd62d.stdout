@@ -8,12 +8,183 @@
                     "node": "Module",
                     "fields": {
                         "symtab": {
-                            "node": "SymbolTable4",
+                            "node": "SymbolTable5",
                             "fields": {
+                                "__lcompilers_global_init_modules_10": {
+                                    "node": "Function",
+                                    "fields": {
+                                        "symtab": {
+                                            "node": "SymbolTable7",
+                                            "fields": {}
+                                        },
+                                        "name": "__lcompilers_global_init_modules_10",
+                                        "function_signature": {
+                                            "node": "FunctionType",
+                                            "fields": {
+                                                "arg_types": [],
+                                                "return_var_type": [],
+                                                "abi": "Source",
+                                                "deftype": "Implementation",
+                                                "bindc_name": [],
+                                                "elemental": false,
+                                                "pure": false,
+                                                "module": false,
+                                                "inline": false,
+                                                "static": false,
+                                                "restrictions": [],
+                                                "is_restriction": false,
+                                                "exec_space": "Host"
+                                            },
+                                            "loc": {
+                                                "first": 148,
+                                                "last": 344,
+                                                "first_filename": "tests/modules_10.f90",
+                                                "first_line": 9,
+                                                "first_column": 1,
+                                                "last_filename": "tests/modules_10.f90",
+                                                "last_line": 17,
+                                                "last_column": 10
+                                            }
+                                        },
+                                        "dependencies": [],
+                                        "args": [],
+                                        "body": [],
+                                        "return_var": [],
+                                        "access": "Private",
+                                        "deterministic": false,
+                                        "side_effect_free": false,
+                                        "module_file": []
+                                    },
+                                    "loc": {
+                                        "first": 148,
+                                        "last": 344,
+                                        "first_filename": "tests/modules_10.f90",
+                                        "first_line": 9,
+                                        "first_column": 1,
+                                        "last_filename": "tests/modules_10.f90",
+                                        "last_line": 17,
+                                        "last_column": 10
+                                    }
+                                },
+                                "__lcompilers_global_init_state_modules_10": {
+                                    "node": "Variable",
+                                    "fields": {
+                                        "parent_symtab": 5,
+                                        "name": "__lcompilers_global_init_state_modules_10",
+                                        "dependencies": [],
+                                        "intent": "Local",
+                                        "symbolic_value": {
+                                            "node": "IntegerConstant",
+                                            "fields": {
+                                                "n": 0,
+                                                "type": {
+                                                    "node": "Integer",
+                                                    "fields": {
+                                                        "kind": 4
+                                                    },
+                                                    "loc": {
+                                                        "first": 148,
+                                                        "last": 344,
+                                                        "first_filename": "tests/modules_10.f90",
+                                                        "first_line": 9,
+                                                        "first_column": 1,
+                                                        "last_filename": "tests/modules_10.f90",
+                                                        "last_line": 17,
+                                                        "last_column": 10
+                                                    }
+                                                },
+                                                "intboz_type": "Decimal"
+                                            },
+                                            "loc": {
+                                                "first": 148,
+                                                "last": 344,
+                                                "first_filename": "tests/modules_10.f90",
+                                                "first_line": 9,
+                                                "first_column": 1,
+                                                "last_filename": "tests/modules_10.f90",
+                                                "last_line": 17,
+                                                "last_column": 10
+                                            }
+                                        },
+                                        "value": {
+                                            "node": "IntegerConstant",
+                                            "fields": {
+                                                "n": 0,
+                                                "type": {
+                                                    "node": "Integer",
+                                                    "fields": {
+                                                        "kind": 4
+                                                    },
+                                                    "loc": {
+                                                        "first": 148,
+                                                        "last": 344,
+                                                        "first_filename": "tests/modules_10.f90",
+                                                        "first_line": 9,
+                                                        "first_column": 1,
+                                                        "last_filename": "tests/modules_10.f90",
+                                                        "last_line": 17,
+                                                        "last_column": 10
+                                                    }
+                                                },
+                                                "intboz_type": "Decimal"
+                                            },
+                                            "loc": {
+                                                "first": 148,
+                                                "last": 344,
+                                                "first_filename": "tests/modules_10.f90",
+                                                "first_line": 9,
+                                                "first_column": 1,
+                                                "last_filename": "tests/modules_10.f90",
+                                                "last_line": 17,
+                                                "last_column": 10
+                                            }
+                                        },
+                                        "storage": "Save",
+                                        "type": {
+                                            "node": "Integer",
+                                            "fields": {
+                                                "kind": 4
+                                            },
+                                            "loc": {
+                                                "first": 148,
+                                                "last": 344,
+                                                "first_filename": "tests/modules_10.f90",
+                                                "first_line": 9,
+                                                "first_column": 1,
+                                                "last_filename": "tests/modules_10.f90",
+                                                "last_line": 17,
+                                                "last_column": 10
+                                            }
+                                        },
+                                        "type_declaration": [],
+                                        "abi": "Source",
+                                        "access": "Private",
+                                        "presence": "Required",
+                                        "value_attr": false,
+                                        "target_attr": false,
+                                        "contiguous_attr": false,
+                                        "bindc_name": [],
+                                        "is_volatile": false,
+                                        "is_protected": false,
+                                        "pass_attr": "NotMethod",
+                                        "self_argument": [],
+                                        "codims": []
+                                    },
+                                    "loc": {
+                                        "first": 148,
+                                        "last": 344,
+                                        "first_filename": "tests/modules_10.f90",
+                                        "first_line": 9,
+                                        "first_column": 1,
+                                        "last_filename": "tests/modules_10.f90",
+                                        "last_line": 17,
+                                        "last_column": 10
+                                    }
+                                },
                                 "my_global": {
                                     "node": "ExternalSymbol",
                                     "fields": {
-                                        "parent_symtab": 4,
+                                        "parent_symtab": 5,
                                         "name": "my_global",
                                         "external": "my_global (SymbolTable2)",
                                         "module_name": "my_other_module",
@@ -36,12 +207,12 @@
                                     "node": "Function",
                                     "fields": {
                                         "symtab": {
-                                            "node": "SymbolTable5",
+                                            "node": "SymbolTable6",
                                             "fields": {
                                                 "my_other_proc": {
                                                     "node": "ExternalSymbol",
                                                     "fields": {
-                                                        "parent_symtab": 5,
+                                                        "parent_symtab": 6,
                                                         "name": "my_other_proc",
                                                         "external": "my_other_proc (SymbolTable2)",
                                                         "module_name": "my_other_module",
@@ -97,7 +268,7 @@
                                             {
                                                 "node": "SubroutineCall",
                                                 "fields": {
-                                                    "name": "my_other_proc (SymbolTable5)",
+                                                    "name": "my_other_proc (SymbolTable6)",
                                                     "original_name": [],
                                                     "args": [],
                                                     "dt": [],
@@ -142,7 +313,9 @@
                         "loaded_from_mod": false,
                         "intrinsic": false,
                         "has_submodules": false,
-                        "global_init": []
+                        "global_init": "__lcompilers_global_init_modules_10",
+                        "global_init_state": "__lcompilers_global_init_state_modules_10",
+                        "global_init_collective": false
                     },
                     "loc": {
                         "first": 148,
@@ -161,6 +334,177 @@
                         "symtab": {
                             "node": "SymbolTable2",
                             "fields": {
+                                "__lcompilers_global_init_my_other_module": {
+                                    "node": "Function",
+                                    "fields": {
+                                        "symtab": {
+                                            "node": "SymbolTable4",
+                                            "fields": {}
+                                        },
+                                        "name": "__lcompilers_global_init_my_other_module",
+                                        "function_signature": {
+                                            "node": "FunctionType",
+                                            "fields": {
+                                                "arg_types": [],
+                                                "return_var_type": [],
+                                                "abi": "Source",
+                                                "deftype": "Implementation",
+                                                "bindc_name": [],
+                                                "elemental": false,
+                                                "pure": false,
+                                                "module": false,
+                                                "inline": false,
+                                                "static": false,
+                                                "restrictions": [],
+                                                "is_restriction": false,
+                                                "exec_space": "Host"
+                                            },
+                                            "loc": {
+                                                "first": 0,
+                                                "last": 145,
+                                                "first_filename": "tests/modules_10.f90",
+                                                "first_line": 1,
+                                                "first_column": 1,
+                                                "last_filename": "tests/modules_10.f90",
+                                                "last_line": 7,
+                                                "last_column": 10
+                                            }
+                                        },
+                                        "dependencies": [],
+                                        "args": [],
+                                        "body": [],
+                                        "return_var": [],
+                                        "access": "Private",
+                                        "deterministic": false,
+                                        "side_effect_free": false,
+                                        "module_file": []
+                                    },
+                                    "loc": {
+                                        "first": 0,
+                                        "last": 145,
+                                        "first_filename": "tests/modules_10.f90",
+                                        "first_line": 1,
+                                        "first_column": 1,
+                                        "last_filename": "tests/modules_10.f90",
+                                        "last_line": 7,
+                                        "last_column": 10
+                                    }
+                                },
+                                "__lcompilers_global_init_state_my_other_module": {
+                                    "node": "Variable",
+                                    "fields": {
+                                        "parent_symtab": 2,
+                                        "name": "__lcompilers_global_init_state_my_other_module",
+                                        "dependencies": [],
+                                        "intent": "Local",
+                                        "symbolic_value": {
+                                            "node": "IntegerConstant",
+                                            "fields": {
+                                                "n": 0,
+                                                "type": {
+                                                    "node": "Integer",
+                                                    "fields": {
+                                                        "kind": 4
+                                                    },
+                                                    "loc": {
+                                                        "first": 0,
+                                                        "last": 145,
+                                                        "first_filename": "tests/modules_10.f90",
+                                                        "first_line": 1,
+                                                        "first_column": 1,
+                                                        "last_filename": "tests/modules_10.f90",
+                                                        "last_line": 7,
+                                                        "last_column": 10
+                                                    }
+                                                },
+                                                "intboz_type": "Decimal"
+                                            },
+                                            "loc": {
+                                                "first": 0,
+                                                "last": 145,
+                                                "first_filename": "tests/modules_10.f90",
+                                                "first_line": 1,
+                                                "first_column": 1,
+                                                "last_filename": "tests/modules_10.f90",
+                                                "last_line": 7,
+                                                "last_column": 10
+                                            }
+                                        },
+                                        "value": {
+                                            "node": "IntegerConstant",
+                                            "fields": {
+                                                "n": 0,
+                                                "type": {
+                                                    "node": "Integer",
+                                                    "fields": {
+                                                        "kind": 4
+                                                    },
+                                                    "loc": {
+                                                        "first": 0,
+                                                        "last": 145,
+                                                        "first_filename": "tests/modules_10.f90",
+                                                        "first_line": 1,
+                                                        "first_column": 1,
+                                                        "last_filename": "tests/modules_10.f90",
+                                                        "last_line": 7,
+                                                        "last_column": 10
+                                                    }
+                                                },
+                                                "intboz_type": "Decimal"
+                                            },
+                                            "loc": {
+                                                "first": 0,
+                                                "last": 145,
+                                                "first_filename": "tests/modules_10.f90",
+                                                "first_line": 1,
+                                                "first_column": 1,
+                                                "last_filename": "tests/modules_10.f90",
+                                                "last_line": 7,
+                                                "last_column": 10
+                                            }
+                                        },
+                                        "storage": "Save",
+                                        "type": {
+                                            "node": "Integer",
+                                            "fields": {
+                                                "kind": 4
+                                            },
+                                            "loc": {
+                                                "first": 0,
+                                                "last": 145,
+                                                "first_filename": "tests/modules_10.f90",
+                                                "first_line": 1,
+                                                "first_column": 1,
+                                                "last_filename": "tests/modules_10.f90",
+                                                "last_line": 7,
+                                                "last_column": 10
+                                            }
+                                        },
+                                        "type_declaration": [],
+                                        "abi": "Source",
+                                        "access": "Private",
+                                        "presence": "Required",
+                                        "value_attr": false,
+                                        "target_attr": false,
+                                        "contiguous_attr": false,
+                                        "bindc_name": [],
+                                        "is_volatile": false,
+                                        "is_protected": false,
+                                        "pass_attr": "NotMethod",
+                                        "self_argument": [],
+                                        "codims": []
+                                    },
+                                    "loc": {
+                                        "first": 0,
+                                        "last": 145,
+                                        "first_filename": "tests/modules_10.f90",
+                                        "first_line": 1,
+                                        "first_column": 1,
+                                        "last_filename": "tests/modules_10.f90",
+                                        "last_line": 7,
+                                        "last_column": 10
+                                    }
+                                },
                                 "my_global": {
                                     "node": "Variable",
                                     "fields": {
@@ -426,7 +770,9 @@
                         "loaded_from_mod": false,
                         "intrinsic": false,
                         "has_submodules": false,
-                        "global_init": []
+                        "global_init": "__lcompilers_global_init_my_other_module",
+                        "global_init_state": "__lcompilers_global_init_state_my_other_module",
+                        "global_init_collective": false
                     },
                     "loc": {
                         "first": 0,
@@ -442,7 +788,10 @@
             }
         },
         "items": [],
-        "global_init": []
+        "global_init": [],
+        "global_init_state": [],
+        "global_init_collective": false,
+        "global_init_bootstrap": []
     },
     "loc": {
         "first": 0,

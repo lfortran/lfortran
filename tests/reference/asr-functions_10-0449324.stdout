@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_kwarg_gp:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_kwarg_gp
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_kwarg_gp:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_kwarg_gp
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             mergegp:
                                 (GenericProcedure
                                     2
@@ -524,16 +580,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_kwarg_gp
+                    __lcompilers_global_init_state_kwarg_gp
+                    .false.
                 ),
             kwarg_use:
                 (Program
                     (SymbolTable
-                        6
+                        7
                         {
                             a1:
                                 (Variable
-                                    6
+                                    7
                                     a1
                                     []
                                     Local
@@ -563,7 +621,7 @@
                                 ),
                             a2:
                                 (Variable
-                                    6
+                                    7
                                     a2
                                     []
                                     Local
@@ -593,7 +651,7 @@
                                 ),
                             b1:
                                 (Variable
-                                    6
+                                    7
                                     b1
                                     []
                                     Local
@@ -623,7 +681,7 @@
                                 ),
                             b2:
                                 (Variable
-                                    6
+                                    7
                                     b2
                                     []
                                     Local
@@ -653,7 +711,7 @@
                                 ),
                             m1:
                                 (Variable
-                                    6
+                                    7
                                     m1
                                     []
                                     Local
@@ -683,7 +741,7 @@
                                 ),
                             m2:
                                 (Variable
-                                    6
+                                    7
                                     m2
                                     []
                                     Local
@@ -713,7 +771,7 @@
                                 ),
                             mergegp:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     mergegp
                                     2 mergegp
                                     kwarg_gp
@@ -723,7 +781,7 @@
                                 ),
                             mergegp@mergei32:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     mergegp@mergei32
                                     2 mergei32
                                     kwarg_gp
@@ -733,7 +791,7 @@
                                 ),
                             mergegp@merger32:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     mergegp@merger32
                                     2 merger32
                                     kwarg_gp
@@ -743,7 +801,7 @@
                                 ),
                             mergei32:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     mergei32
                                     2 mergei32
                                     kwarg_gp
@@ -753,7 +811,7 @@
                                 ),
                             merger32:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     merger32
                                     2 merger32
                                     kwarg_gp
@@ -763,7 +821,7 @@
                                 ),
                             merger64:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     merger64
                                     2 merger64
                                     kwarg_gp
@@ -778,10 +836,10 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                6 mergegp@mergei32
-                                6 mergegp
+                                7 mergegp@mergei32
+                                7 mergegp
                                 [((ArrayPhysicalCast
-                                    (Var 6 a1)
+                                    (Var 7 a1)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -794,7 +852,7 @@
                                     ()
                                 ))
                                 ((ArrayPhysicalCast
-                                    (Var 6 b1)
+                                    (Var 7 b1)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -822,10 +880,10 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                6 mergegp@mergei32
-                                6 mergegp
+                                7 mergegp@mergei32
+                                7 mergegp
                                 [((ArrayPhysicalCast
-                                    (Var 6 a1)
+                                    (Var 7 a1)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -838,7 +896,7 @@
                                     ()
                                 ))
                                 ((ArrayPhysicalCast
-                                    (Var 6 b1)
+                                    (Var 7 b1)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -851,7 +909,7 @@
                                     ()
                                 ))
                                 ((ArrayPhysicalCast
-                                    (Var 6 m1)
+                                    (Var 7 m1)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -878,10 +936,10 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                6 mergegp@mergei32
-                                6 mergegp
+                                7 mergegp@mergei32
+                                7 mergegp
                                 [((ArrayPhysicalCast
-                                    (Var 6 a1)
+                                    (Var 7 a1)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -894,7 +952,7 @@
                                     ()
                                 ))
                                 ((ArrayPhysicalCast
-                                    (Var 6 b1)
+                                    (Var 7 b1)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -907,7 +965,7 @@
                                     ()
                                 ))
                                 ((ArrayPhysicalCast
-                                    (Var 6 m1)
+                                    (Var 7 m1)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -934,10 +992,10 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                6 mergegp@merger32
-                                6 mergegp
+                                7 mergegp@merger32
+                                7 mergegp
                                 [((ArrayPhysicalCast
-                                    (Var 6 a2)
+                                    (Var 7 a2)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -950,7 +1008,7 @@
                                     ()
                                 ))
                                 ((ArrayPhysicalCast
-                                    (Var 6 b2)
+                                    (Var 7 b2)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -978,10 +1036,10 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                6 mergegp@merger32
-                                6 mergegp
+                                7 mergegp@merger32
+                                7 mergegp
                                 [((ArrayPhysicalCast
-                                    (Var 6 a2)
+                                    (Var 7 a2)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -994,7 +1052,7 @@
                                     ()
                                 ))
                                 ((ArrayPhysicalCast
-                                    (Var 6 b2)
+                                    (Var 7 b2)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -1007,7 +1065,7 @@
                                     ()
                                 ))
                                 ((ArrayPhysicalCast
-                                    (Var 6 m2)
+                                    (Var 7 m2)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -1034,10 +1092,10 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                6 mergegp@merger32
-                                6 mergegp
+                                7 mergegp@merger32
+                                7 mergegp
                                 [((ArrayPhysicalCast
-                                    (Var 6 a2)
+                                    (Var 7 a2)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -1050,7 +1108,7 @@
                                     ()
                                 ))
                                 ((ArrayPhysicalCast
-                                    (Var 6 b2)
+                                    (Var 7 b2)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -1063,7 +1121,7 @@
                                     ()
                                 ))
                                 ((ArrayPhysicalCast
-                                    (Var 6 m2)
+                                    (Var 7 m2)
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
@@ -1087,8 +1145,12 @@
                         )
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

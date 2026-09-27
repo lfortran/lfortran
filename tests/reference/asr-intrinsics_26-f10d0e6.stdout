@@ -5,11 +5,11 @@
             intrinsics_26:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
                             all_set:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     all_set
                                     2 all_set
                                     stdlib_bitsets_64
@@ -19,7 +19,7 @@
                                 ),
                             i:
                                 (Variable
-                                    4
+                                    5
                                     i
                                     []
                                     Local
@@ -48,9 +48,9 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                4 all_set
+                                5 all_set
                                 ()
-                                [((Var 4 i))
+                                [((Var 5 i))
                                 ((IntegerConstant 5 (Integer 4) Decimal))]
                                 (Logical 4)
                                 ()
@@ -64,12 +64,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             stdlib_bitsets_64:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_stdlib_bitsets_64:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_stdlib_bitsets_64
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_stdlib_bitsets_64:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_stdlib_bitsets_64
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             all_set:
                                 (Function
                                     (SymbolTable
@@ -255,9 +312,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_stdlib_bitsets_64
+                    __lcompilers_global_init_state_stdlib_bitsets_64
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

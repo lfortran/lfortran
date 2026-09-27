@@ -46,6 +46,7 @@ define i32 @main(i32 %0, i8** %1) {
   %9 = call i8* @_lfortran_get_default_allocator()
   %10 = call i8* @_lfortran_malloc_alloc(i8* %9, i64 10)
   store i8* %10, i8** %8, align 8
+  call void @_lcompilers_init_dispatch(i32 1)
   store i32 1, i32* %call_arg_value, align 4
   store i32 0, i32* %call_arg_value1, align 4
   call void @check(i32* %call_arg_value, %string_descriptor* %__libasr_created_variable_, i32* %call_arg_value1)
@@ -225,6 +226,8 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 declare i8* @_lfortran_get_default_allocator()
+
+declare void @_lcompilers_init_dispatch(i32)
 
 declare void @_lfortran_strcpy_alloc(i8*, i8**, i64*, i8, i8, i8*, i64, i32)
 

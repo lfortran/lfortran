@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_fpm_cmd_install_modules_34:
+                                (Function
+                                    (SymbolTable
+                                        21
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_cmd_install_modules_34
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_cmd_install_modules_34:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_fpm_cmd_install_modules_34
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             build_model:
                                 (ExternalSymbol
                                     2
@@ -24,18 +80,76 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_fpm_cmd_install_modules_34
+                    __lcompilers_global_init_state_fpm_cmd_install_modules_34
+                    .false.
                 ),
             fpm_manifest_modules_34:
                 (Module
                     (SymbolTable
-                        8
+                        9
                         {
+                            __lcompilers_global_init_fpm_manifest_modules_34:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_manifest_modules_34
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_manifest_modules_34:
+                                (Variable
+                                    9
+                                    __lcompilers_global_init_state_fpm_manifest_modules_34
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             package_config_t:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     package_config_t
-                                    10 package_config_t
+                                    12 package_config_t
                                     fpm_manifest_package_modules_34
                                     []
                                     package_config_t
@@ -48,21 +162,79 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_fpm_manifest_modules_34
+                    __lcompilers_global_init_state_fpm_manifest_modules_34
+                    .false.
                 ),
             fpm_manifest_package_modules_34:
                 (Module
                     (SymbolTable
-                        10
+                        12
                         {
+                            __lcompilers_global_init_fpm_manifest_package_modules_34:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_manifest_package_modules_34
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_manifest_package_modules_34:
+                                (Variable
+                                    12
+                                    __lcompilers_global_init_state_fpm_manifest_package_modules_34
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             package_config_t:
                                 (Struct
                                     (SymbolTable
-                                        11
+                                        13
                                         {
                                             name:
                                                 (Variable
-                                                    11
+                                                    13
                                                     name
                                                     []
                                                     Local
@@ -88,7 +260,7 @@
                                                 ),
                                             version:
                                                 (Variable
-                                                    11
+                                                    13
                                                     version
                                                     []
                                                     Local
@@ -109,7 +281,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    10 version_t
+                                                    12 version_t
                                                     Source
                                                     Public
                                                     Required
@@ -163,9 +335,9 @@
                                 ),
                             version_t:
                                 (ExternalSymbol
-                                    10
+                                    12
                                     version_t
-                                    13 version_t
+                                    16 version_t
                                     fpm_versioning_modules_34
                                     []
                                     version_t
@@ -178,28 +350,86 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_fpm_manifest_package_modules_34
+                    __lcompilers_global_init_state_fpm_manifest_package_modules_34
+                    .false.
                 ),
             fpm_modules_34:
                 (Module
                     (SymbolTable
                         4
                         {
-                            build_model:
+                            __lcompilers_global_init_fpm_modules_34:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_modules_34
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_modules_34:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_fpm_modules_34
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            build_model:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
                                             associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
-                                                        6
+                                                        7
                                                         {
                                                             1_package_config_t_version:
                                                                 (ExternalSymbol
-                                                                    6
+                                                                    7
                                                                     1_package_config_t_version
-                                                                    11 version
+                                                                    13 version
                                                                     fpm_manifest_package_modules_34
                                                                     [package_config_t]
                                                                     version
@@ -207,9 +437,9 @@
                                                                 ),
                                                             1_version_t:
                                                                 (ExternalSymbol
-                                                                    6
+                                                                    7
                                                                     1_version_t
-                                                                    13 version_t
+                                                                    16 version_t
                                                                     fpm_versioning_modules_34
                                                                     []
                                                                     version_t
@@ -217,9 +447,9 @@
                                                                 ),
                                                             1_version_t_to_string:
                                                                 (ExternalSymbol
-                                                                    6
+                                                                    7
                                                                     1_version_t_to_string
-                                                                    14 to_string
+                                                                    17 to_string
                                                                     fpm_versioning_modules_34
                                                                     [version_t]
                                                                     to_string
@@ -227,7 +457,7 @@
                                                                 ),
                                                             ii:
                                                                 (Variable
-                                                                    6
+                                                                    7
                                                                     ii
                                                                     []
                                                                     Local
@@ -254,13 +484,13 @@
                                                         })
                                                     associate_block
                                                     [(Associate
-                                                        (Var 6 ii)
-                                                        (Var 5 i)
+                                                        (Var 7 ii)
+                                                        (Var 6 i)
                                                     )
                                                     (Print
                                                         (StringFormat
                                                             ()
-                                                            [(Var 6 ii)]
+                                                            [(Var 7 ii)]
                                                             FormatFortran
                                                             (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
@@ -269,11 +499,11 @@
                                                         )
                                                     )
                                                     (SubroutineCall
-                                                        6 1_version_t_to_string
+                                                        7 1_version_t_to_string
                                                         ()
                                                         [((StructInstanceMember
-                                                            (Var 5 package)
-                                                            6 1_package_config_t_version
+                                                            (Var 6 package)
+                                                            7 1_package_config_t_version
                                                             (StructType
                                                                 [(Allocatable
                                                                     (Array
@@ -290,10 +520,10 @@
                                                             )
                                                             ()
                                                         ))
-                                                        ((Var 5 version))]
+                                                        ((Var 6 version))]
                                                         (StructInstanceMember
-                                                            (Var 5 package)
-                                                            6 1_package_config_t_version
+                                                            (Var 6 package)
+                                                            7 1_package_config_t_version
                                                             (StructType
                                                                 [(Allocatable
                                                                     (Array
@@ -315,7 +545,7 @@
                                                 ),
                                             i:
                                                 (Variable
-                                                    5
+                                                    6
                                                     i
                                                     []
                                                     Local
@@ -339,7 +569,7 @@
                                                 ),
                                             package:
                                                 (Variable
-                                                    5
+                                                    6
                                                     package
                                                     []
                                                     In
@@ -384,7 +614,7 @@
                                                 ),
                                             version:
                                                 (Variable
-                                                    5
+                                                    6
                                                     version
                                                     []
                                                     Local
@@ -447,9 +677,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 package)]
+                                    [(Var 6 package)]
                                     [(AssociateBlockCall
-                                        5 associate_block
+                                        6 associate_block
                                     )]
                                     ()
                                     Public
@@ -461,7 +691,7 @@
                                 (ExternalSymbol
                                     4
                                     package_config_t
-                                    10 package_config_t
+                                    12 package_config_t
                                     fpm_manifest_package_modules_34
                                     []
                                     package_config_t
@@ -476,23 +706,81 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_fpm_modules_34
+                    __lcompilers_global_init_state_fpm_modules_34
+                    .false.
                 ),
             fpm_versioning_modules_34:
                 (Module
                     (SymbolTable
-                        13
+                        16
                         {
+                            __lcompilers_global_init_fpm_versioning_modules_34:
+                                (Function
+                                    (SymbolTable
+                                        18
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_versioning_modules_34
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_versioning_modules_34:
+                                (Variable
+                                    16
+                                    __lcompilers_global_init_state_fpm_versioning_modules_34
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             as_string:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        19
                                         {
                                             1_version_t_to_string:
                                                 (ExternalSymbol
-                                                    15
+                                                    19
                                                     1_version_t_to_string
-                                                    14 to_string
+                                                    17 to_string
                                                     fpm_versioning_modules_34
                                                     [version_t]
                                                     to_string
@@ -500,7 +788,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    15
+                                                    19
                                                     self
                                                     []
                                                     In
@@ -521,7 +809,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    13 version_t
+                                                    16 version_t
                                                     Source
                                                     Public
                                                     Required
@@ -537,7 +825,7 @@
                                                 ),
                                             string:
                                                 (Variable
-                                                    15
+                                                    19
                                                     string
                                                     []
                                                     ReturnVar
@@ -594,16 +882,16 @@
                                         Host
                                     )
                                     []
-                                    [(Var 15 self)]
+                                    [(Var 19 self)]
                                     [(SubroutineCall
-                                        15 1_version_t_to_string
+                                        19 1_version_t_to_string
                                         ()
-                                        [((Var 15 self))
-                                        ((Var 15 string))]
-                                        (Var 15 self)
+                                        [((Var 19 self))
+                                        ((Var 19 string))]
+                                        (Var 19 self)
                                         .false.
                                     )]
-                                    (Var 15 string)
+                                    (Var 19 string)
                                     Public
                                     .true.
                                     .true.
@@ -611,19 +899,19 @@
                                 ),
                             char:
                                 (GenericProcedure
-                                    13
+                                    16
                                     char
-                                    [13 as_string]
+                                    [16 as_string]
                                     Public
                                 ),
                             to_string:
                                 (Function
                                     (SymbolTable
-                                        16
+                                        20
                                         {
                                             self:
                                                 (Variable
-                                                    16
+                                                    20
                                                     self
                                                     []
                                                     In
@@ -644,7 +932,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    13 version_t
+                                                    16 version_t
                                                     Source
                                                     Public
                                                     Required
@@ -660,7 +948,7 @@
                                                 ),
                                             string:
                                                 (Variable
-                                                    16
+                                                    20
                                                     string
                                                     []
                                                     Out
@@ -718,8 +1006,8 @@
                                         Host
                                     )
                                     []
-                                    [(Var 16 self)
-                                    (Var 16 string)]
+                                    [(Var 20 self)
+                                    (Var 20 string)]
                                     []
                                     ()
                                     Public
@@ -730,11 +1018,11 @@
                             version_t:
                                 (Struct
                                     (SymbolTable
-                                        14
+                                        17
                                         {
                                             num:
                                                 (Variable
-                                                    14
+                                                    17
                                                     num
                                                     []
                                                     Local
@@ -766,11 +1054,11 @@
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
-                                                    14
+                                                    17
                                                     to_string
                                                     ()
                                                     to_string
-                                                    13 to_string
+                                                    16 to_string
                                                     Source
                                                     .false.
                                                     .false.
@@ -811,12 +1099,14 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_fpm_versioning_modules_34
+                    __lcompilers_global_init_state_fpm_versioning_modules_34
+                    .false.
                 ),
             modules_34:
                 (Program
                     (SymbolTable
-                        17
+                        22
                         {
                             
                         })
@@ -829,8 +1119,12 @@
                         )
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

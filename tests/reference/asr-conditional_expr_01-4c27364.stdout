@@ -5,11 +5,11 @@
             conditional_expr_01:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
                             dbl:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     dbl
                                     2 dbl
                                     conditional_expr_01_mod
@@ -19,7 +19,7 @@
                                 ),
                             i:
                                 (Variable
-                                    4
+                                    5
                                     i
                                     []
                                     Local
@@ -43,7 +43,7 @@
                                 ),
                             s:
                                 (Variable
-                                    4
+                                    5
                                     s
                                     []
                                     Local
@@ -73,7 +73,7 @@
                                 ),
                             x:
                                 (Variable
-                                    4
+                                    5
                                     x
                                     []
                                     Local
@@ -97,7 +97,7 @@
                                 ),
                             ~~dbl:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     ~~dbl
                                     2 ~~dbl
                                     conditional_expr_01_mod
@@ -109,7 +109,7 @@
                     conditional_expr_01
                     [conditional_expr_01_mod]
                     [(Assignment
-                        (Var 4 x)
+                        (Var 5 x)
                         (IfExp
                             (LogicalConstant
                                 .true.
@@ -127,7 +127,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 4 x)
+                            (Var 5 x)
                             NotEq
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
@@ -139,17 +139,17 @@
                         []
                     )
                     (Assignment
-                        (Var 4 i)
+                        (Var 5 i)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 4 x)
+                        (Var 5 x)
                         (IfExp
                             (IntegerCompare
-                                (Var 4 i)
+                                (Var 5 i)
                                 Gt
                                 (IntegerConstant 0 (Integer 4) Decimal)
                                 (Logical 4)
@@ -158,7 +158,7 @@
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (IfExp
                                 (IntegerCompare
-                                    (Var 4 i)
+                                    (Var 5 i)
                                     Lt
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -183,7 +183,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 4 x)
+                            (Var 5 x)
                             NotEq
                             (IntegerConstant 0 (Integer 4) Decimal)
                             (Logical 4)
@@ -195,17 +195,17 @@
                         []
                     )
                     (Assignment
-                        (Var 4 i)
+                        (Var 5 i)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 4 x)
+                        (Var 5 x)
                         (IfExp
                             (IntegerCompare
-                                (Var 4 i)
+                                (Var 5 i)
                                 Gt
                                 (IntegerConstant 0 (Integer 4) Decimal)
                                 (Logical 4)
@@ -214,7 +214,7 @@
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (IfExp
                                 (IntegerCompare
-                                    (Var 4 i)
+                                    (Var 5 i)
                                     Lt
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -239,7 +239,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 4 x)
+                            (Var 5 x)
                             NotEq
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
@@ -251,7 +251,7 @@
                         []
                     )
                     (Assignment
-                        (Var 4 i)
+                        (Var 5 i)
                         (IntegerUnaryMinus
                             (IntegerConstant 3 (Integer 4) Decimal)
                             (Integer 4)
@@ -262,10 +262,10 @@
                         .false.
                     )
                     (Assignment
-                        (Var 4 x)
+                        (Var 5 x)
                         (IfExp
                             (IntegerCompare
-                                (Var 4 i)
+                                (Var 5 i)
                                 Gt
                                 (IntegerConstant 0 (Integer 4) Decimal)
                                 (Logical 4)
@@ -274,7 +274,7 @@
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (IfExp
                                 (IntegerCompare
-                                    (Var 4 i)
+                                    (Var 5 i)
                                     Lt
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -299,7 +299,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 4 x)
+                            (Var 5 x)
                             NotEq
                             (IntegerUnaryMinus
                                 (IntegerConstant 1 (Integer 4) Decimal)
@@ -315,7 +315,7 @@
                         []
                     )
                     (Assignment
-                        (Var 4 x)
+                        (Var 5 x)
                         (IfExp
                             (LogicalConstant
                                 .true.
@@ -342,7 +342,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 4 x)
+                            (Var 5 x)
                             NotEq
                             (IntegerConstant 2 (Integer 4) Decimal)
                             (Logical 4)
@@ -354,7 +354,7 @@
                         []
                     )
                     (Assignment
-                        (Var 4 x)
+                        (Var 5 x)
                         (IfExp
                             (LogicalConstant
                                 .false.
@@ -381,7 +381,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 4 x)
+                            (Var 5 x)
                             NotEq
                             (IntegerConstant 3 (Integer 4) Decimal)
                             (Logical 4)
@@ -393,7 +393,7 @@
                         []
                     )
                     (Assignment
-                        (Var 4 x)
+                        (Var 5 x)
                         (IntegerBinOp
                             (IntegerConstant 10 (Integer 4) Decimal)
                             Add
@@ -423,7 +423,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 4 x)
+                            (Var 5 x)
                             NotEq
                             (IntegerConstant 18 (Integer 4) Decimal)
                             (Logical 4)
@@ -435,7 +435,7 @@
                         []
                     )
                     (Assignment
-                        (Var 4 x)
+                        (Var 5 x)
                         (IntegerBinOp
                             (IfExp
                                 (LogicalConstant
@@ -459,7 +459,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 4 x)
+                            (Var 5 x)
                             NotEq
                             (IntegerConstant 5 (Integer 4) Decimal)
                             (Logical 4)
@@ -471,7 +471,7 @@
                         []
                     )
                     (Assignment
-                        (Var 4 x)
+                        (Var 5 x)
                         (IfExp
                             (IntegerCompare
                                 (IntegerConstant 1 (Integer 4) Decimal)
@@ -495,7 +495,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 4 x)
+                            (Var 5 x)
                             NotEq
                             (IntegerConstant 42 (Integer 4) Decimal)
                             (Logical 4)
@@ -509,7 +509,7 @@
                     (If
                         ()
                         (StringCompare
-                            (Var 4 s)
+                            (Var 5 s)
                             NotEq
                             (StringConstant
                                 "what?"
@@ -527,10 +527,10 @@
                         []
                     )
                     (Assignment
-                        (Var 4 x)
+                        (Var 5 x)
                         (FunctionCall
-                            4 dbl
-                            4 ~~dbl
+                            5 dbl
+                            5 ~~dbl
                             [((IfExp
                                 (LogicalConstant
                                     .true.
@@ -552,7 +552,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 4 x)
+                            (Var 5 x)
                             NotEq
                             (IntegerConstant 6 (Integer 4) Decimal)
                             (Logical 4)
@@ -564,7 +564,7 @@
                         []
                     )
                     (Assignment
-                        (Var 4 x)
+                        (Var 5 x)
                         (IntegerBinOp
                             (IntegerConstant 1 (Integer 4) Decimal)
                             Add
@@ -594,7 +594,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 4 x)
+                            (Var 5 x)
                             NotEq
                             (IntegerConstant 6 (Integer 4) Decimal)
                             (Logical 4)
@@ -606,12 +606,69 @@
                         []
                     )]
                     ()
+                    ()
                 ),
             conditional_expr_01_mod:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_conditional_expr_01_mod:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_conditional_expr_01_mod
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_conditional_expr_01_mod:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_conditional_expr_01_mod
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             dbl:
                                 (Function
                                     (SymbolTable
@@ -717,9 +774,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_conditional_expr_01_mod
+                    __lcompilers_global_init_state_conditional_expr_01_mod
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

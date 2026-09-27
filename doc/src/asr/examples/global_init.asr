@@ -1,0 +1,620 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "_lcompilers_init_begin" (Function
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "run" (Variable
+              :parent_symtab 1
+              :name "run"
+              :dependencies []
+              :intent :ReturnVar
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :BindC
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "state" (Variable
+              :parent_symtab 1
+              :name "state"
+              :dependencies []
+              :intent :InOut
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :BindC
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "_lcompilers_init_begin"
+        :function_signature (FunctionType
+          :arg_types [
+            (Integer
+              :kind 4
+            )
+          ]
+          :return_var_type (Integer
+            :kind 4
+          )
+          :abi :BindC
+          :deftype :Interface
+          :bindc_name "_lcompilers_init_begin"
+          :elemental false
+          :pure false
+          :module false
+          :inline false
+          :static false
+          :restrictions []
+          :is_restriction false
+          :exec_space :Host
+        )
+        :dependencies []
+        :args [
+          (Var
+            :v (SymbolRef 1 "state")
+          )
+        ]
+        :body []
+        :return_var (Var
+          :v (SymbolRef 1 "run")
+        )
+        :access :Public
+        :deterministic false
+        :side_effect_free false
+        :module_file nil
+      )
+      "_lcompilers_init_end" (Function
+        :symtab (SymbolTable
+          :id 2
+          :symbols {
+            "state" (Variable
+              :parent_symtab 2
+              :name "state"
+              :dependencies []
+              :intent :InOut
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :BindC
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "_lcompilers_init_end"
+        :function_signature (FunctionType
+          :arg_types [
+            (Integer
+              :kind 4
+            )
+          ]
+          :return_var_type nil
+          :abi :BindC
+          :deftype :Interface
+          :bindc_name "_lcompilers_init_end"
+          :elemental false
+          :pure false
+          :module false
+          :inline false
+          :static false
+          :restrictions []
+          :is_restriction false
+          :exec_space :Host
+        )
+        :dependencies []
+        :args [
+          (Var
+            :v (SymbolRef 2 "state")
+          )
+        ]
+        :body []
+        :return_var nil
+        :access :Public
+        :deterministic false
+        :side_effect_free false
+        :module_file nil
+      )
+      "m" (Module
+        :symtab (SymbolTable
+          :id 3
+          :symbols {
+            "__lcompilers_global_init_m" (Function
+              :symtab (SymbolTable
+                :id 4
+                :symbols {
+                  "1_t_s" (ExternalSymbol
+                    :parent_symtab 4
+                    :name "1_t_s"
+                    :external (SymbolRef 6 "s")
+                    :module_name "m"
+                    :scope_names [
+                      "t"
+                    ]
+                    :original_name "s"
+                    :access :Public
+                  )
+                }
+              )
+              :name "__lcompilers_global_init_m"
+              :function_signature (FunctionType
+                :arg_types []
+                :return_var_type nil
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies [
+                "_lcompilers_init_begin"
+                "_lcompilers_init_end"
+              ]
+              :args []
+              :body [
+                (If
+                  :name nil
+                  :test (IntegerCompare
+                    :left (FunctionCall
+                      :name (SymbolRef 0 "_lcompilers_init_begin")
+                      :original_name (SymbolRef 0 "_lcompilers_init_begin")
+                      :args [
+                        (call_arg
+                          :value (Var
+                            :v (SymbolRef 3 "__lcompilers_global_init_state_m")
+                          )
+                        )
+                      ]
+                      :type (Integer
+                        :kind 4
+                      )
+                      :value nil
+                      :dt nil
+                    )
+                    :op :NotEq
+                    :right (IntegerConstant
+                      :n 0
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :type (Logical
+                      :kind 4
+                    )
+                    :value nil
+                  )
+                  :body [
+                    (GlobalInitStorage
+                      :targets [
+                        (Var
+                          :v (SymbolRef 3 "x")
+                        )
+                      ]
+                    )
+                    (Assignment
+                      :target (StructInstanceMember
+                        :v (Var
+                          :v (SymbolRef 3 "x")
+                        )
+                        :m (SymbolRef 4 "1_t_s")
+                        :type (String
+                          :kind 1
+                          :len (IntegerConstant
+                            :n 3
+                            :type (Integer
+                              :kind 4
+                            )
+                            :intboz_type :Decimal
+                          )
+                          :len_kind :ExpressionLength
+                          :physical_type :DescriptorString
+                        )
+                        :value nil
+                      )
+                      :value (StringConstant
+                        :s "abc"
+                        :type (String
+                          :kind 1
+                          :len (IntegerConstant
+                            :n 3
+                            :type (Integer
+                              :kind 4
+                            )
+                            :intboz_type :Decimal
+                          )
+                          :len_kind :ExpressionLength
+                          :physical_type :DescriptorString
+                        )
+                      )
+                      :overloaded nil
+                      :realloc_lhs false
+                      :move_allocation false
+                    )
+                    (SubroutineCall
+                      :name (SymbolRef 0 "_lcompilers_init_end")
+                      :original_name (SymbolRef 0 "_lcompilers_init_end")
+                      :args [
+                        (call_arg
+                          :value (Var
+                            :v (SymbolRef 3 "__lcompilers_global_init_state_m")
+                          )
+                        )
+                      ]
+                      :dt nil
+                      :strict_bounds_checking false
+                    )
+                  ]
+                  :orelse []
+                )
+              ]
+              :return_var nil
+              :access :Private
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+            "__lcompilers_global_init_state_m" (Variable
+              :parent_symtab 3
+              :name "__lcompilers_global_init_state_m"
+              :dependencies []
+              :intent :Local
+              :symbolic_value (IntegerConstant
+                :n 0
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :value (IntegerConstant
+                :n 0
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :storage :Save
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Private
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "show" (Function
+              :symtab (SymbolTable
+                :id 5
+                :symbols {
+                  "1_t_s" (ExternalSymbol
+                    :parent_symtab 5
+                    :name "1_t_s"
+                    :external (SymbolRef 6 "s")
+                    :module_name "m"
+                    :scope_names [
+                      "t"
+                    ]
+                    :original_name "s"
+                    :access :Public
+                  )
+                }
+              )
+              :name "show"
+              :function_signature (FunctionType
+                :arg_types []
+                :return_var_type nil
+                :abi :BindC
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies [
+                "__lcompilers_global_init_m"
+              ]
+              :args []
+              :body [
+                (GlobalInitDispatch
+                  :phase :InitDispatchLocal
+                  :ensures [
+                    (SubroutineCall
+                      :name (SymbolRef 3 "__lcompilers_global_init_m")
+                      :original_name (SymbolRef 3 "__lcompilers_global_init_m")
+                      :args []
+                      :dt nil
+                      :strict_bounds_checking false
+                    )
+                  ]
+                )
+                (Print
+                  :text (StructInstanceMember
+                    :v (Var
+                      :v (SymbolRef 3 "x")
+                    )
+                    :m (SymbolRef 5 "1_t_s")
+                    :type (String
+                      :kind 1
+                      :len (IntegerConstant
+                        :n 3
+                        :type (Integer
+                          :kind 4
+                        )
+                        :intboz_type :Decimal
+                      )
+                      :len_kind :ExpressionLength
+                      :physical_type :DescriptorString
+                    )
+                    :value nil
+                  )
+                )
+              ]
+              :return_var nil
+              :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+            "t" (Struct
+              :symtab (SymbolTable
+                :id 6
+                :symbols {
+                  "s" (Variable
+                    :parent_symtab 6
+                    :name "s"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value (StringConstant
+                      :s "abc"
+                      :type (String
+                        :kind 1
+                        :len (IntegerConstant
+                          :n 3
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                        :len_kind :ExpressionLength
+                        :physical_type :DescriptorString
+                      )
+                    )
+                    :value (StringConstant
+                      :s "abc"
+                      :type (String
+                        :kind 1
+                        :len (IntegerConstant
+                          :n 3
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                        :len_kind :ExpressionLength
+                        :physical_type :DescriptorString
+                      )
+                    )
+                    :storage :Save
+                    :type (String
+                      :kind 1
+                      :len (IntegerConstant
+                        :n 3
+                        :type (Integer
+                          :kind 4
+                        )
+                        :intboz_type :Decimal
+                      )
+                      :len_kind :ExpressionLength
+                      :physical_type :DescriptorString
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "t"
+              :struct_signature (StructType
+                :data_member_types [
+                  (String
+                    :kind 1
+                    :len (IntegerConstant
+                      :n 3
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :len_kind :ExpressionLength
+                    :physical_type :DescriptorString
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct true
+                :is_unlimited_polymorphic false
+              )
+              :dependencies []
+              :members [
+                "s"
+              ]
+              :member_functions []
+              :abi :Source
+              :access :Public
+              :is_packed false
+              :is_abstract false
+              :is_sequence false
+              :initializers []
+              :alignment nil
+              :parent nil
+              :kind_params []
+            )
+            "x" (Variable
+              :parent_symtab 3
+              :name "x"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (StructType
+                :data_member_types [
+                  (String
+                    :kind 1
+                    :len (IntegerConstant
+                      :n 3
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :len_kind :ExpressionLength
+                    :physical_type :DescriptorString
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct true
+                :is_unlimited_polymorphic false
+              )
+              :type_declaration (SymbolRef 3 "t")
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+        :global_init "__lcompilers_global_init_m"
+        :global_init_state "__lcompilers_global_init_state_m"
+        :global_init_collective false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 7
+          :symbols {
+            "show" (ExternalSymbol
+              :parent_symtab 7
+              :name "show"
+              :external (SymbolRef 3 "show")
+              :module_name "m"
+              :scope_names []
+              :original_name "show"
+              :access :Public
+            )
+          }
+        )
+        :name "main"
+        :dependencies [
+          "m"
+        ]
+        :body [
+          (GlobalInitDispatch
+            :phase :InitDispatchCollective
+            :ensures []
+          )
+          (SubroutineCall
+            :name (SymbolRef 7 "show")
+            :original_name nil
+            :args []
+            :dt nil
+            :strict_bounds_checking false
+          )
+        ]
+        :global_init nil
+        :global_init_state nil
+      )
+    }
+  )
+  :items []
+  :global_init nil
+  :global_init_state nil
+  :global_init_collective false
+  :global_init_bootstrap nil
+)

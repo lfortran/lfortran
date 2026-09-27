@@ -5,11 +5,11 @@
             main:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             1_test_type_test_subroutine:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     1_test_type_test_subroutine
                                     3 test_subroutine
                                     test_module
@@ -19,7 +19,7 @@
                                 ),
                             test_subroutine:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     test_subroutine
                                     2 test_subroutine
                                     test_module
@@ -29,7 +29,7 @@
                                 ),
                             test_type:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     test_type
                                     2 test_type
                                     test_module
@@ -39,7 +39,7 @@
                                 ),
                             test_type_instance:
                                 (Variable
-                                    5
+                                    6
                                     test_type_instance
                                     []
                                     Local
@@ -52,7 +52,7 @@
                                         .true.
                                         .false.
                                     )
-                                    5 test_type
+                                    6 test_type
                                     Source
                                     Public
                                     Required
@@ -70,12 +70,13 @@
                     main
                     [test_module]
                     [(SubroutineCall
-                        5 1_test_type_test_subroutine
+                        6 1_test_type_test_subroutine
                         ()
                         [(())]
-                        (Var 5 test_type_instance)
+                        (Var 6 test_type_instance)
                         .false.
                     )]
+                    ()
                     ()
                 ),
             test_module:
@@ -83,6 +84,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_test_module:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_test_module
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_test_module:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_test_module
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             test_subroutine:
                                 (Function
                                     (SymbolTable
@@ -211,9 +268,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_test_module
+                    __lcompilers_global_init_state_test_module
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

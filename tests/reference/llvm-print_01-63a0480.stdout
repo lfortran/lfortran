@@ -27,6 +27,7 @@ define i32 @main(i32 %0, i8** %1) {
   %6 = call i8* @_lfortran_malloc_alloc(i8* %5, i64 1)
   store i8* %6, i8** %4, align 8
   %x = alloca i32, align 4
+  call void @_lcompilers_init_dispatch(i32 1)
   store i32 25, i32* %x, align 4
   %7 = alloca i64, align 8
   %8 = alloca i32, align 4
@@ -112,6 +113,8 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 declare i8* @_lfortran_get_default_allocator()
+
+declare void @_lcompilers_init_dispatch(i32)
 
 declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...)
 

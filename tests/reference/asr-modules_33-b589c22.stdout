@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_fpm_cmd_install:
+                                (Function
+                                    (SymbolTable
+                                        22
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_cmd_install
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_cmd_install:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_fpm_cmd_install
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             build_model:
                                 (ExternalSymbol
                                     2
@@ -24,21 +80,79 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_fpm_cmd_install
+                    __lcompilers_global_init_state_fpm_cmd_install
+                    .false.
                 ),
             fpm_dependency_modules_33:
                 (Module
                     (SymbolTable
-                        7
+                        8
                         {
+                            __lcompilers_global_init_fpm_dependency_modules_33:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_dependency_modules_33
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_dependency_modules_33:
+                                (Variable
+                                    8
+                                    __lcompilers_global_init_state_fpm_dependency_modules_33
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             add_project:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        15
                                         {
                                             error:
                                                 (Variable
-                                                    13
+                                                    15
                                                     error
                                                     []
                                                     Out
@@ -55,7 +169,7 @@
                                                             .false.
                                                         )
                                                     )
-                                                    7 error_t
+                                                    8 error_t
                                                     Source
                                                     Public
                                                     Required
@@ -71,7 +185,7 @@
                                                 ),
                                             package:
                                                 (Variable
-                                                    13
+                                                    15
                                                     package
                                                     []
                                                     In
@@ -86,7 +200,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    7 package_config_t
+                                                    8 package_config_t
                                                     Source
                                                     Public
                                                     Required
@@ -102,7 +216,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    13
+                                                    15
                                                     self
                                                     []
                                                     InOut
@@ -144,7 +258,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    7 dependency_tree_t
+                                                    8 dependency_tree_t
                                                     Source
                                                     Public
                                                     Required
@@ -228,9 +342,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 13 self)
-                                    (Var 13 package)
-                                    (Var 13 error)]
+                                    [(Var 15 self)
+                                    (Var 15 package)
+                                    (Var 15 error)]
                                     []
                                     ()
                                     Public
@@ -241,11 +355,11 @@
                             add_project_dependencies:
                                 (Function
                                     (SymbolTable
-                                        14
+                                        16
                                         {
                                             error:
                                                 (Variable
-                                                    14
+                                                    16
                                                     error
                                                     []
                                                     Out
@@ -262,7 +376,7 @@
                                                             .false.
                                                         )
                                                     )
-                                                    7 error_t
+                                                    8 error_t
                                                     Source
                                                     Public
                                                     Required
@@ -278,7 +392,7 @@
                                                 ),
                                             main:
                                                 (Variable
-                                                    14
+                                                    16
                                                     main
                                                     []
                                                     In
@@ -302,7 +416,7 @@
                                                 ),
                                             root:
                                                 (Variable
-                                                    14
+                                                    16
                                                     root
                                                     []
                                                     In
@@ -326,7 +440,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    14
+                                                    16
                                                     self
                                                     []
                                                     InOut
@@ -368,7 +482,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    7 dependency_tree_t
+                                                    8 dependency_tree_t
                                                     Source
                                                     Public
                                                     Required
@@ -446,10 +560,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 14 self)
-                                    (Var 14 root)
-                                    (Var 14 main)
-                                    (Var 14 error)]
+                                    [(Var 16 self)
+                                    (Var 16 root)
+                                    (Var 16 main)
+                                    (Var 16 error)]
                                     []
                                     ()
                                     Public
@@ -460,11 +574,11 @@
                             dependency_config_t:
                                 (Struct
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             name:
                                                 (Variable
-                                                    8
+                                                    9
                                                     name
                                                     []
                                                     Local
@@ -490,7 +604,7 @@
                                                 ),
                                             path:
                                                 (Variable
-                                                    8
+                                                    9
                                                     path
                                                     []
                                                     Local
@@ -544,11 +658,11 @@
                             dependency_node_t:
                                 (Struct
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             done:
                                                 (Variable
-                                                    9
+                                                    10
                                                     done
                                                     []
                                                     Local
@@ -578,7 +692,7 @@
                                                 ),
                                             proj_dir:
                                                 (Variable
-                                                    9
+                                                    10
                                                     proj_dir
                                                     []
                                                     Local
@@ -604,7 +718,7 @@
                                                 ),
                                             revision:
                                                 (Variable
-                                                    9
+                                                    10
                                                     revision
                                                     []
                                                     Local
@@ -630,7 +744,7 @@
                                                 ),
                                             update:
                                                 (Variable
-                                                    9
+                                                    10
                                                     update
                                                     []
                                                     Local
@@ -686,47 +800,47 @@
                                     .false.
                                     []
                                     ()
-                                    7 dependency_config_t
+                                    8 dependency_config_t
                                     []
                                 ),
                             dependency_tree_t:
                                 (Struct
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             add:
                                                 (GenericProcedure
-                                                    10
+                                                    11
                                                     add
-                                                    [10 add_project
-                                                    10 add_project_dependencies]
+                                                    [11 add_project
+                                                    11 add_project_dependencies]
                                                     Public
                                                 ),
                                             add_project:
                                                 (StructMethodDeclaration
-                                                    10
+                                                    11
                                                     add_project
                                                     ()
                                                     add_project
-                                                    7 add_project
+                                                    8 add_project
                                                     Source
                                                     .false.
                                                     .false.
                                                 ),
                                             add_project_dependencies:
                                                 (StructMethodDeclaration
-                                                    10
+                                                    11
                                                     add_project_dependencies
                                                     ()
                                                     add_project_dependencies
-                                                    7 add_project_dependencies
+                                                    8 add_project_dependencies
                                                     Source
                                                     .false.
                                                     .false.
                                                 ),
                                             cache:
                                                 (Variable
-                                                    10
+                                                    11
                                                     cache
                                                     []
                                                     Local
@@ -752,7 +866,7 @@
                                                 ),
                                             dep:
                                                 (Variable
-                                                    10
+                                                    11
                                                     dep
                                                     []
                                                     Local
@@ -780,7 +894,7 @@
                                                             Global
                                                         )
                                                     )
-                                                    7 dependency_node_t
+                                                    8 dependency_node_t
                                                     Source
                                                     Public
                                                     Required
@@ -796,7 +910,7 @@
                                                 ),
                                             dep_dir:
                                                 (Variable
-                                                    10
+                                                    11
                                                     dep_dir
                                                     []
                                                     Local
@@ -822,7 +936,7 @@
                                                 ),
                                             ndep:
                                                 (Variable
-                                                    10
+                                                    11
                                                     ndep
                                                     []
                                                     Local
@@ -846,7 +960,7 @@
                                                 ),
                                             unit:
                                                 (Variable
-                                                    10
+                                                    11
                                                     unit
                                                     []
                                                     Local
@@ -870,25 +984,25 @@
                                                 ),
                                             update:
                                                 (GenericProcedure
-                                                    10
+                                                    11
                                                     update
-                                                    [10 update_dependency]
+                                                    [11 update_dependency]
                                                     Public
                                                 ),
                                             update_dependency:
                                                 (StructMethodDeclaration
-                                                    10
+                                                    11
                                                     update_dependency
                                                     ()
                                                     update_dependency
-                                                    7 update_dependency
+                                                    8 update_dependency
                                                     Source
                                                     .false.
                                                     .false.
                                                 ),
                                             verbosity:
                                                 (Variable
-                                                    10
+                                                    11
                                                     verbosity
                                                     []
                                                     Local
@@ -968,11 +1082,11 @@
                             error_t:
                                 (Struct
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             message:
                                                 (Variable
-                                                    11
+                                                    12
                                                     message
                                                     []
                                                     Local
@@ -1022,11 +1136,11 @@
                             package_config_t:
                                 (Struct
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             name:
                                                 (Variable
-                                                    12
+                                                    13
                                                     name
                                                     []
                                                     Local
@@ -1076,11 +1190,11 @@
                             update_dependency:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        17
                                         {
                                             error:
                                                 (Variable
-                                                    15
+                                                    17
                                                     error
                                                     []
                                                     Out
@@ -1097,7 +1211,7 @@
                                                             .false.
                                                         )
                                                     )
-                                                    7 error_t
+                                                    8 error_t
                                                     Source
                                                     Public
                                                     Required
@@ -1113,7 +1227,7 @@
                                                 ),
                                             name:
                                                 (Variable
-                                                    15
+                                                    17
                                                     name
                                                     []
                                                     In
@@ -1137,7 +1251,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    15
+                                                    17
                                                     self
                                                     []
                                                     InOut
@@ -1179,7 +1293,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    7 dependency_tree_t
+                                                    8 dependency_tree_t
                                                     Source
                                                     Public
                                                     Required
@@ -1256,9 +1370,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 15 self)
-                                    (Var 15 name)
-                                    (Var 15 error)]
+                                    [(Var 17 self)
+                                    (Var 17 name)
+                                    (Var 17 error)]
                                     []
                                     ()
                                     Public
@@ -1273,18 +1387,76 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_fpm_dependency_modules_33
+                    __lcompilers_global_init_state_fpm_dependency_modules_33
+                    .false.
                 ),
             fpm_model_modules_33:
                 (Module
                     (SymbolTable
-                        17
+                        19
                         {
+                            __lcompilers_global_init_fpm_model_modules_33:
+                                (Function
+                                    (SymbolTable
+                                        21
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_model_modules_33
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_model_modules_33:
+                                (Variable
+                                    19
+                                    __lcompilers_global_init_state_fpm_model_modules_33
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             dependency_tree_t:
                                 (ExternalSymbol
-                                    17
+                                    19
                                     dependency_tree_t
-                                    7 dependency_tree_t
+                                    8 dependency_tree_t
                                     fpm_dependency_modules_33
                                     []
                                     dependency_tree_t
@@ -1293,11 +1465,11 @@
                             fpm_model_t:
                                 (Struct
                                     (SymbolTable
-                                        18
+                                        20
                                         {
                                             build_prefix:
                                                 (Variable
-                                                    18
+                                                    20
                                                     build_prefix
                                                     []
                                                     Local
@@ -1323,7 +1495,7 @@
                                                 ),
                                             c_compile_flags:
                                                 (Variable
-                                                    18
+                                                    20
                                                     c_compile_flags
                                                     []
                                                     Local
@@ -1349,7 +1521,7 @@
                                                 ),
                                             cxx_compile_flags:
                                                 (Variable
-                                                    18
+                                                    20
                                                     cxx_compile_flags
                                                     []
                                                     Local
@@ -1375,7 +1547,7 @@
                                                 ),
                                             deps:
                                                 (Variable
-                                                    18
+                                                    20
                                                     deps
                                                     []
                                                     Local
@@ -1417,7 +1589,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    17 dependency_tree_t
+                                                    19 dependency_tree_t
                                                     Source
                                                     Public
                                                     Required
@@ -1433,7 +1605,7 @@
                                                 ),
                                             fortran_compile_flags:
                                                 (Variable
-                                                    18
+                                                    20
                                                     fortran_compile_flags
                                                     []
                                                     Local
@@ -1459,7 +1631,7 @@
                                                 ),
                                             include_tests:
                                                 (Variable
-                                                    18
+                                                    20
                                                     include_tests
                                                     []
                                                     Local
@@ -1489,7 +1661,7 @@
                                                 ),
                                             link_flags:
                                                 (Variable
-                                                    18
+                                                    20
                                                     link_flags
                                                     []
                                                     Local
@@ -1515,7 +1687,7 @@
                                                 ),
                                             package_name:
                                                 (Variable
-                                                    18
+                                                    20
                                                     package_name
                                                     []
                                                     Local
@@ -1627,23 +1799,81 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_fpm_model_modules_33
+                    __lcompilers_global_init_state_fpm_model_modules_33
+                    .false.
                 ),
             fpm_modules_33:
                 (Module
                     (SymbolTable
                         4
                         {
-                            build_model:
+                            __lcompilers_global_init_fpm_modules_33:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_modules_33
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_modules_33:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_fpm_modules_33
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            build_model:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
                                             1_add:
                                                 (ExternalSymbol
-                                                    5
+                                                    6
                                                     1_add
-                                                    10 add
+                                                    11 add
                                                     1_dependency_tree_t
                                                     []
                                                     add
@@ -1651,9 +1881,9 @@
                                                 ),
                                             1_dependency_tree_t:
                                                 (ExternalSymbol
-                                                    5
+                                                    6
                                                     1_dependency_tree_t
-                                                    7 dependency_tree_t
+                                                    8 dependency_tree_t
                                                     fpm_dependency_modules_33
                                                     []
                                                     dependency_tree_t
@@ -1661,9 +1891,9 @@
                                                 ),
                                             1_dependency_tree_t_add_project:
                                                 (ExternalSymbol
-                                                    5
+                                                    6
                                                     1_dependency_tree_t_add_project
-                                                    10 add_project
+                                                    11 add_project
                                                     fpm_dependency_modules_33
                                                     [dependency_tree_t]
                                                     add_project
@@ -1671,9 +1901,9 @@
                                                 ),
                                             1_fpm_model_t_deps:
                                                 (ExternalSymbol
-                                                    5
+                                                    6
                                                     1_fpm_model_t_deps
-                                                    18 deps
+                                                    20 deps
                                                     fpm_model_modules_33
                                                     [fpm_model_t]
                                                     deps
@@ -1681,7 +1911,7 @@
                                                 ),
                                             error:
                                                 (Variable
-                                                    5
+                                                    6
                                                     error
                                                     []
                                                     Out
@@ -1714,7 +1944,7 @@
                                                 ),
                                             model:
                                                 (Variable
-                                                    5
+                                                    6
                                                     model
                                                     []
                                                     Out
@@ -1796,7 +2026,7 @@
                                                 ),
                                             package:
                                                 (Variable
-                                                    5
+                                                    6
                                                     package
                                                     []
                                                     In
@@ -1919,15 +2149,15 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 model)
-                                    (Var 5 package)
-                                    (Var 5 error)]
+                                    [(Var 6 model)
+                                    (Var 6 package)
+                                    (Var 6 error)]
                                     [(SubroutineCall
-                                        5 1_dependency_tree_t_add_project
-                                        5 1_add
+                                        6 1_dependency_tree_t_add_project
+                                        6 1_add
                                         [((StructInstanceMember
-                                            (Var 5 model)
-                                            5 1_fpm_model_t_deps
+                                            (Var 6 model)
+                                            6 1_fpm_model_t_deps
                                             (StructType
                                                 [(Integer 4)
                                                 (Integer 4)
@@ -1965,11 +2195,11 @@
                                             )
                                             ()
                                         ))
-                                        ((Var 5 package))
-                                        ((Var 5 error))]
+                                        ((Var 6 package))
+                                        ((Var 6 error))]
                                         (StructInstanceMember
-                                            (Var 5 model)
-                                            5 1_fpm_model_t_deps
+                                            (Var 6 model)
+                                            6 1_fpm_model_t_deps
                                             (StructType
                                                 [(Integer 4)
                                                 (Integer 4)
@@ -2019,7 +2249,7 @@
                                 (ExternalSymbol
                                     4
                                     error_t
-                                    7 error_t
+                                    8 error_t
                                     fpm_dependency_modules_33
                                     []
                                     error_t
@@ -2029,7 +2259,7 @@
                                 (ExternalSymbol
                                     4
                                     fpm_model_t
-                                    17 fpm_model_t
+                                    19 fpm_model_t
                                     fpm_model_modules_33
                                     []
                                     fpm_model_t
@@ -2039,7 +2269,7 @@
                                 (ExternalSymbol
                                     4
                                     package_config_t
-                                    7 package_config_t
+                                    8 package_config_t
                                     fpm_dependency_modules_33
                                     []
                                     package_config_t
@@ -2053,12 +2283,14 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_fpm_modules_33
+                    __lcompilers_global_init_state_fpm_modules_33
+                    .false.
                 ),
             modules_33:
                 (Program
                     (SymbolTable
-                        19
+                        23
                         {
                             
                         })
@@ -2071,8 +2303,12 @@
                         )
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

@@ -5,11 +5,11 @@
             nested_call_filter_01:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
                             modproc:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     modproc
                                     2 modproc
                                     nested_call_filter_mod
@@ -20,11 +20,11 @@
                             outer:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        6
                                         {
                                             a:
                                                 (Variable
-                                                    5
+                                                    6
                                                     a
                                                     []
                                                     Local
@@ -49,7 +49,7 @@
                                             inner:
                                                 (Function
                                                     (SymbolTable
-                                                        6
+                                                        7
                                                         {
                                                             
                                                         })
@@ -72,9 +72,9 @@
                                                     []
                                                     []
                                                     [(Assignment
-                                                        (Var 5 a)
+                                                        (Var 6 a)
                                                         (IntegerBinOp
-                                                            (Var 5 a)
+                                                            (Var 6 a)
                                                             Add
                                                             (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
@@ -110,23 +110,23 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 5 a)
+                                        (Var 6 a)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                         .false.
                                         .false.
                                     )
                                     (SubroutineCall
-                                        5 inner
+                                        6 inner
                                         ()
                                         []
                                         ()
                                         .false.
                                     )
                                     (SubroutineCall
-                                        4 modproc
+                                        5 modproc
                                         ()
-                                        [((Var 5 a))]
+                                        [((Var 6 a))]
                                         ()
                                         .false.
                                     )]
@@ -140,12 +140,13 @@
                     nested_call_filter_01
                     [nested_call_filter_mod]
                     [(SubroutineCall
-                        4 outer
+                        5 outer
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             nested_call_filter_mod:
@@ -153,6 +154,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_nested_call_filter_mod:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_nested_call_filter_mod
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_nested_call_filter_mod:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_nested_call_filter_mod
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             modproc:
                                 (Function
                                     (SymbolTable
@@ -227,9 +284,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_nested_call_filter_mod
+                    __lcompilers_global_init_state_nested_call_filter_mod
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

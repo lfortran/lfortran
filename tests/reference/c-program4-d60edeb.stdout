@@ -39,6 +39,7 @@ int main(int argc, char* argv[])
     float x;
     float y;
     float z;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     x =   1.00000000000000000e+00;
     y =   2.00000000000000000e+00;
     z = func1(x, y);

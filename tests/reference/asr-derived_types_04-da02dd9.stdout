@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_tomlf_datetime:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_tomlf_datetime
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_datetime:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_datetime
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             date_to_string:
                                 (Function
                                     (SymbolTable
@@ -1898,9 +1954,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_tomlf_datetime
+                    __lcompilers_global_init_state_tomlf_datetime
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

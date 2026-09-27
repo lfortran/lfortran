@@ -5,11 +5,11 @@
             modules_39:
                 (Program
                     (SymbolTable
-                        8
+                        10
                         {
                             build_model:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     build_model
                                     2 build_model
                                     modules_39_fpm_39
@@ -19,7 +19,7 @@
                                 ),
                             join_path:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     join_path
                                     4 join_path
                                     modules_39_module_fpm_filesystem_39
@@ -32,7 +32,7 @@
                     [modules_39_fpm_39
                     modules_39_module_fpm_filesystem_39]
                     [(SubroutineCall
-                        8 build_model
+                        10 build_model
                         ()
                         []
                         ()
@@ -45,20 +45,77 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             modules_39_fpm_39:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_modules_39_fpm_39:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_39_fpm_39
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_39_fpm_39:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_modules_39_fpm_39
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             build_model:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             __libasr_created_variable_:
                                                 (Variable
-                                                    7
+                                                    8
                                                     __libasr_created_variable_
                                                     []
                                                     Local
@@ -82,7 +139,7 @@
                                                 ),
                                             __libasr_created_variable_1:
                                                 (Variable
-                                                    7
+                                                    8
                                                     __libasr_created_variable_1
                                                     []
                                                     Local
@@ -106,7 +163,7 @@
                                                 ),
                                             __libasr_created_variable_2:
                                                 (Variable
-                                                    7
+                                                    8
                                                     __libasr_created_variable_2
                                                     []
                                                     Local
@@ -161,17 +218,17 @@
                                                 ".gitignore"
                                                 (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             ))
-                                            ((Var 7 __libasr_created_variable_))
+                                            ((Var 8 __libasr_created_variable_))
                                             ((LogicalConstant
                                                 .false.
                                                 (Logical 4)
                                             ))
-                                            ((Var 7 __libasr_created_variable_1))
+                                            ((Var 8 __libasr_created_variable_1))
                                             ((LogicalConstant
                                                 .false.
                                                 (Logical 4)
                                             ))
-                                            ((Var 7 __libasr_created_variable_2))
+                                            ((Var 8 __libasr_created_variable_2))
                                             ((LogicalConstant
                                                 .false.
                                                 (Logical 4)
@@ -231,21 +288,79 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_modules_39_fpm_39
+                    __lcompilers_global_init_state_modules_39_fpm_39
+                    .false.
                 ),
             modules_39_module_fpm_filesystem_39:
                 (Module
                     (SymbolTable
                         4
                         {
+                            __lcompilers_global_init_modules_39_module_fpm_filesystem_39:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_39_module_fpm_filesystem_39
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_39_module_fpm_filesystem_39:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_modules_39_module_fpm_filesystem_39
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             filewrite_string____1:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        11
                                         {
                                             __1filedata:
                                                 (Variable
-                                                    9
+                                                    11
                                                     __1filedata
                                                     []
                                                     In
@@ -269,7 +384,7 @@
                                                 ),
                                             filedata:
                                                 (Variable
-                                                    9
+                                                    11
                                                     filedata
                                                     [__1filedata]
                                                     In
@@ -279,7 +394,7 @@
                                                     (Array
                                                         (String 1 () AssumedLength DescriptorString)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Var 9 __1filedata))]
+                                                        (Var 11 __1filedata))]
                                                         PointerArray
                                                         Global
                                                     )
@@ -299,7 +414,7 @@
                                                 ),
                                             filename:
                                                 (Variable
-                                                    9
+                                                    11
                                                     filename
                                                     []
                                                     In
@@ -351,9 +466,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 9 filename)
-                                    (Var 9 filedata)
-                                    (Var 9 __1filedata)]
+                                    [(Var 11 filename)
+                                    (Var 11 filedata)
+                                    (Var 11 __1filedata)]
                                     []
                                     ()
                                     Public
@@ -364,11 +479,11 @@
                             join_path:
                                 (Function
                                     (SymbolTable
-                                        6
+                                        7
                                         {
                                             __libasr_is_present_a3:
                                                 (Variable
-                                                    6
+                                                    7
                                                     __libasr_is_present_a3
                                                     []
                                                     In
@@ -392,7 +507,7 @@
                                                 ),
                                             __libasr_is_present_a4:
                                                 (Variable
-                                                    6
+                                                    7
                                                     __libasr_is_present_a4
                                                     []
                                                     In
@@ -416,7 +531,7 @@
                                                 ),
                                             __libasr_is_present_a5:
                                                 (Variable
-                                                    6
+                                                    7
                                                     __libasr_is_present_a5
                                                     []
                                                     In
@@ -440,7 +555,7 @@
                                                 ),
                                             a1:
                                                 (Variable
-                                                    6
+                                                    7
                                                     a1
                                                     []
                                                     In
@@ -464,7 +579,7 @@
                                                 ),
                                             a2:
                                                 (Variable
-                                                    6
+                                                    7
                                                     a2
                                                     []
                                                     In
@@ -488,7 +603,7 @@
                                                 ),
                                             a3:
                                                 (Variable
-                                                    6
+                                                    7
                                                     a3
                                                     []
                                                     In
@@ -512,7 +627,7 @@
                                                 ),
                                             a4:
                                                 (Variable
-                                                    6
+                                                    7
                                                     a4
                                                     []
                                                     In
@@ -536,7 +651,7 @@
                                                 ),
                                             a5:
                                                 (Variable
-                                                    6
+                                                    7
                                                     a5
                                                     []
                                                     In
@@ -560,7 +675,7 @@
                                                 ),
                                             path:
                                                 (Variable
-                                                    6
+                                                    7
                                                     path
                                                     []
                                                     ReturnVar
@@ -611,16 +726,16 @@
                                         Host
                                     )
                                     []
-                                    [(Var 6 a1)
-                                    (Var 6 a2)
-                                    (Var 6 a3)
-                                    (Var 6 __libasr_is_present_a3)
-                                    (Var 6 a4)
-                                    (Var 6 __libasr_is_present_a4)
-                                    (Var 6 a5)
-                                    (Var 6 __libasr_is_present_a5)]
+                                    [(Var 7 a1)
+                                    (Var 7 a2)
+                                    (Var 7 a3)
+                                    (Var 7 __libasr_is_present_a3)
+                                    (Var 7 a4)
+                                    (Var 7 __libasr_is_present_a4)
+                                    (Var 7 a5)
+                                    (Var 7 __libasr_is_present_a5)]
                                     []
-                                    (Var 6 path)
+                                    (Var 7 path)
                                     Public
                                     .true.
                                     .true.
@@ -633,9 +748,14 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_modules_39_module_fpm_filesystem_39
+                    __lcompilers_global_init_state_modules_39_module_fpm_filesystem_39
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

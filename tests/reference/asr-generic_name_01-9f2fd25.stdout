@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_complex_module:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_complex_module
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_complex_module:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_complex_module
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             complextype:
                                 (Struct
                                     (SymbolTable
@@ -588,16 +644,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_complex_module
+                    __lcompilers_global_init_state_complex_module
+                    .false.
                 ),
             generic_name_01:
                 (Program
                     (SymbolTable
-                        6
+                        7
                         {
                             1_add:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_add
                                     3 add
                                     complextype
@@ -607,7 +665,7 @@
                                 ),
                             1_complextype_i:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_complextype_i
                                     3 i
                                     complex_module
@@ -617,7 +675,7 @@
                                 ),
                             1_complextype_integer_add_subrout:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_complextype_integer_add_subrout
                                     3 integer_add_subrout
                                     complex_module
@@ -627,7 +685,7 @@
                                 ),
                             1_complextype_r:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_complextype_r
                                     3 r
                                     complex_module
@@ -637,7 +695,7 @@
                                 ),
                             1_complextype_real_add_subrout:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_complextype_real_add_subrout
                                     3 real_add_subrout
                                     complex_module
@@ -647,7 +705,7 @@
                                 ),
                             a:
                                 (Variable
-                                    6
+                                    7
                                     a
                                     []
                                     Local
@@ -661,7 +719,7 @@
                                         .true.
                                         .false.
                                     )
-                                    6 complextype
+                                    7 complextype
                                     Source
                                     Public
                                     Required
@@ -677,7 +735,7 @@
                                 ),
                             c:
                                 (Variable
-                                    6
+                                    7
                                     c
                                     []
                                     Local
@@ -691,7 +749,7 @@
                                         .true.
                                         .false.
                                     )
-                                    6 complextype
+                                    7 complextype
                                     Source
                                     Public
                                     Required
@@ -707,7 +765,7 @@
                                 ),
                             complextype:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     complextype
                                     2 complextype
                                     complex_module
@@ -717,7 +775,7 @@
                                 ),
                             fpone:
                                 (Variable
-                                    6
+                                    7
                                     fpone
                                     []
                                     Local
@@ -741,7 +799,7 @@
                                 ),
                             fptwo:
                                 (Variable
-                                    6
+                                    7
                                     fptwo
                                     []
                                     Local
@@ -765,7 +823,7 @@
                                 ),
                             fpzero:
                                 (Variable
-                                    6
+                                    7
                                     fpzero
                                     []
                                     Local
@@ -789,7 +847,7 @@
                                 ),
                             ione:
                                 (Variable
-                                    6
+                                    7
                                     ione
                                     []
                                     Local
@@ -813,7 +871,7 @@
                                 ),
                             izero:
                                 (Variable
-                                    6
+                                    7
                                     izero
                                     []
                                     Local
@@ -837,7 +895,7 @@
                                 ),
                             negfpone:
                                 (Variable
-                                    6
+                                    7
                                     negfpone
                                     []
                                     Local
@@ -863,7 +921,7 @@
                     generic_name_01
                     [complex_module]
                     [(Assignment
-                        (Var 6 fpone)
+                        (Var 7 fpone)
                         (RealConstant
                             1.000000
                             (Real 4)
@@ -873,7 +931,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 fptwo)
+                        (Var 7 fptwo)
                         (RealConstant
                             2.000000
                             (Real 4)
@@ -883,7 +941,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 fpzero)
+                        (Var 7 fpzero)
                         (RealConstant
                             0.000000
                             (Real 4)
@@ -893,21 +951,21 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 ione)
+                        (Var 7 ione)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 6 izero)
+                        (Var 7 izero)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 6 negfpone)
+                        (Var 7 negfpone)
                         (RealUnaryMinus
                             (RealConstant
                                 1.000000
@@ -924,11 +982,11 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 c)
+                        (Var 7 c)
                         (StructConstructor
-                            6 complextype
-                            [((Var 6 fpone))
-                            ((Var 6 fptwo))]
+                            7 complextype
+                            [((Var 7 fpone))
+                            ((Var 7 fptwo))]
                             (StructType
                                 [(Real 4)
                                 (Real 4)]
@@ -943,27 +1001,27 @@
                         .false.
                     )
                     (SubroutineCall
-                        6 1_complextype_integer_add_subrout
-                        6 1_add
-                        [((Var 6 c))
-                        ((Var 6 ione))
-                        ((Var 6 izero))
-                        ((Var 6 a))]
-                        (Var 6 c)
+                        7 1_complextype_integer_add_subrout
+                        7 1_add
+                        [((Var 7 c))
+                        ((Var 7 ione))
+                        ((Var 7 izero))
+                        ((Var 7 a))]
+                        (Var 7 c)
                         .false.
                     )
                     (Print
                         (StringFormat
                             ()
                             [(StructInstanceMember
-                                (Var 6 a)
-                                6 1_complextype_r
+                                (Var 7 a)
+                                7 1_complextype_r
                                 (Real 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 6 a)
-                                6 1_complextype_i
+                                (Var 7 a)
+                                7 1_complextype_i
                                 (Real 4)
                                 ()
                             )]
@@ -978,8 +1036,8 @@
                         ()
                         (RealCompare
                             (StructInstanceMember
-                                (Var 6 a)
-                                6 1_complextype_r
+                                (Var 7 a)
+                                7 1_complextype_r
                                 (Real 4)
                                 ()
                             )
@@ -1000,8 +1058,8 @@
                         ()
                         (RealCompare
                             (StructInstanceMember
-                                (Var 6 a)
-                                6 1_complextype_i
+                                (Var 7 a)
+                                7 1_complextype_i
                                 (Real 4)
                                 ()
                             )
@@ -1019,27 +1077,27 @@
                         []
                     )
                     (SubroutineCall
-                        6 1_complextype_real_add_subrout
-                        6 1_add
-                        [((Var 6 c))
-                        ((Var 6 fpzero))
-                        ((Var 6 negfpone))
-                        ((Var 6 a))]
-                        (Var 6 c)
+                        7 1_complextype_real_add_subrout
+                        7 1_add
+                        [((Var 7 c))
+                        ((Var 7 fpzero))
+                        ((Var 7 negfpone))
+                        ((Var 7 a))]
+                        (Var 7 c)
                         .false.
                     )
                     (Print
                         (StringFormat
                             ()
                             [(StructInstanceMember
-                                (Var 6 a)
-                                6 1_complextype_r
+                                (Var 7 a)
+                                7 1_complextype_r
                                 (Real 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 6 a)
-                                6 1_complextype_i
+                                (Var 7 a)
+                                7 1_complextype_i
                                 (Real 4)
                                 ()
                             )]
@@ -1054,8 +1112,8 @@
                         ()
                         (RealCompare
                             (StructInstanceMember
-                                (Var 6 a)
-                                6 1_complextype_r
+                                (Var 7 a)
+                                7 1_complextype_r
                                 (Real 4)
                                 ()
                             )
@@ -1076,8 +1134,8 @@
                         ()
                         (RealCompare
                             (StructInstanceMember
-                                (Var 6 a)
-                                6 1_complextype_i
+                                (Var 7 a)
+                                7 1_complextype_i
                                 (Real 4)
                                 ()
                             )
@@ -1095,8 +1153,12 @@
                         []
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

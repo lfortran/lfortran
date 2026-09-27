@@ -4,6 +4,7 @@ target datalayout = "..."
 
 define float @__lfortran_evaluate_1() {
 .entry:
+  call void @_lcompilers_init_dispatch(i32 0)
   %__lfortran_evaluate_11 = alloca float, align 4
   %__lfortran_evaluate_12 = alloca float, align 4
   %__lfortran_evaluate_13 = alloca float, align 4
@@ -25,3 +26,5 @@ FINALIZE_SYMTABLE___lfortran_evaluate_1:          ; preds = %return
   %0 = load float, float* %__lfortran_evaluate_16, align 4
   ret float %0
 }
+
+declare void @_lcompilers_init_dispatch(i32)

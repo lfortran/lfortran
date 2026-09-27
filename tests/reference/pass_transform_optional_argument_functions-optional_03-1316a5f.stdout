@@ -5,11 +5,11 @@
             optional_03:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             __libasr_created_dummy_variable_:
                                 (Variable
-                                    5
+                                    6
                                     __libasr_created_dummy_variable_
                                     []
                                     Local
@@ -33,7 +33,7 @@
                                 ),
                             __libasr_created_dummy_variable_1:
                                 (Variable
-                                    5
+                                    6
                                     __libasr_created_dummy_variable_1
                                     []
                                     Local
@@ -57,7 +57,7 @@
                                 ),
                             __libasr_created_dummy_variable_2:
                                 (Variable
-                                    5
+                                    6
                                     __libasr_created_dummy_variable_2
                                     []
                                     Local
@@ -81,7 +81,7 @@
                                 ),
                             __libasr_created_variable_pointer_:
                                 (Variable
-                                    5
+                                    6
                                     __libasr_created_variable_pointer_
                                     []
                                     Local
@@ -107,7 +107,7 @@
                                 ),
                             __libasr_created_variable_pointer_1:
                                 (Variable
-                                    5
+                                    6
                                     __libasr_created_variable_pointer_1
                                     []
                                     Local
@@ -133,7 +133,7 @@
                                 ),
                             __libasr_created_variable_pointer_2:
                                 (Variable
-                                    5
+                                    6
                                     __libasr_created_variable_pointer_2
                                     []
                                     Local
@@ -159,7 +159,7 @@
                                 ),
                             f1:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     f1
                                     2 f1
                                     optional_03_m
@@ -169,7 +169,7 @@
                                 ),
                             i:
                                 (Variable
-                                    5
+                                    6
                                     i
                                     []
                                     Local
@@ -195,7 +195,7 @@
                                 ),
                             lfortran_tmp:
                                 (Variable
-                                    5
+                                    6
                                     lfortran_tmp
                                     []
                                     Local
@@ -221,7 +221,7 @@
                                 ),
                             lfortran_tmp1:
                                 (Variable
-                                    5
+                                    6
                                     lfortran_tmp1
                                     []
                                     Local
@@ -247,7 +247,7 @@
                                 ),
                             my_sub:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     my_sub
                                     2 my_sub
                                     optional_03_m
@@ -259,7 +259,7 @@
                     optional_03
                     [optional_03_m]
                     [(Assignment
-                        (Var 5 i)
+                        (Var 6 i)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
                         .false.
@@ -269,30 +269,30 @@
                         ()
                         (IntrinsicImpureFunction
                             Allocated
-                            [(Var 5 i)]
+                            [(Var 6 i)]
                             0
                             (Logical 4)
                             ()
                         )
                         [(Associate
-                            (Var 5 __libasr_created_variable_pointer_)
-                            (Var 5 i)
+                            (Var 6 __libasr_created_variable_pointer_)
+                            (Var 6 i)
                         )]
                         [(Associate
-                            (Var 5 __libasr_created_variable_pointer_)
-                            (Var 5 __libasr_created_dummy_variable_)
+                            (Var 6 __libasr_created_variable_pointer_)
+                            (Var 6 __libasr_created_dummy_variable_)
                         )]
                     )
                     (Assignment
-                        (Var 5 lfortran_tmp)
+                        (Var 6 lfortran_tmp)
                         (FunctionCall
-                            5 f1
+                            6 f1
                             ()
-                            [((Var 5 __libasr_created_variable_pointer_))
+                            [((Var 6 __libasr_created_variable_pointer_))
                             ((LogicalBinOp
                                 (IntrinsicImpureFunction
                                     Allocated
-                                    [(Var 5 i)]
+                                    [(Var 6 i)]
                                     0
                                     (Logical 4)
                                     ()
@@ -319,30 +319,30 @@
                         ()
                         (IntrinsicImpureFunction
                             Allocated
-                            [(Var 5 lfortran_tmp)]
+                            [(Var 6 lfortran_tmp)]
                             0
                             (Logical 4)
                             ()
                         )
                         [(Associate
-                            (Var 5 __libasr_created_variable_pointer_1)
-                            (Var 5 lfortran_tmp)
+                            (Var 6 __libasr_created_variable_pointer_1)
+                            (Var 6 lfortran_tmp)
                         )]
                         [(Associate
-                            (Var 5 __libasr_created_variable_pointer_1)
-                            (Var 5 __libasr_created_dummy_variable_1)
+                            (Var 6 __libasr_created_variable_pointer_1)
+                            (Var 6 __libasr_created_dummy_variable_1)
                         )]
                     )
                     (Assignment
-                        (Var 5 lfortran_tmp1)
+                        (Var 6 lfortran_tmp1)
                         (FunctionCall
-                            5 f1
+                            6 f1
                             ()
-                            [((Var 5 __libasr_created_variable_pointer_1))
+                            [((Var 6 __libasr_created_variable_pointer_1))
                             ((LogicalBinOp
                                 (IntrinsicImpureFunction
                                     Allocated
-                                    [(Var 5 lfortran_tmp)]
+                                    [(Var 6 lfortran_tmp)]
                                     0
                                     (Logical 4)
                                     ()
@@ -369,31 +369,31 @@
                         ()
                         (IntrinsicImpureFunction
                             Allocated
-                            [(Var 5 lfortran_tmp1)]
+                            [(Var 6 lfortran_tmp1)]
                             0
                             (Logical 4)
                             ()
                         )
                         [(Associate
-                            (Var 5 __libasr_created_variable_pointer_2)
-                            (Var 5 lfortran_tmp1)
+                            (Var 6 __libasr_created_variable_pointer_2)
+                            (Var 6 lfortran_tmp1)
                         )]
                         [(Associate
-                            (Var 5 __libasr_created_variable_pointer_2)
-                            (Var 5 __libasr_created_dummy_variable_2)
+                            (Var 6 __libasr_created_variable_pointer_2)
+                            (Var 6 __libasr_created_dummy_variable_2)
                         )]
                     )
                     (SubroutineCall
-                        5 my_sub
+                        6 my_sub
                         ()
                         [((FunctionCall
-                            5 f1
+                            6 f1
                             ()
-                            [((Var 5 __libasr_created_variable_pointer_2))
+                            [((Var 6 __libasr_created_variable_pointer_2))
                             ((LogicalBinOp
                                 (IntrinsicImpureFunction
                                     Allocated
-                                    [(Var 5 lfortran_tmp1)]
+                                    [(Var 6 lfortran_tmp1)]
                                     0
                                     (Logical 4)
                                     ()
@@ -416,12 +416,69 @@
                         .false.
                     )]
                     ()
+                    ()
                 ),
             optional_03_m:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_optional_03_m:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_optional_03_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_optional_03_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_optional_03_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             f1:
                                 (Function
                                     (SymbolTable
@@ -613,9 +670,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_optional_03_m
+                    __lcompilers_global_init_state_optional_03_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

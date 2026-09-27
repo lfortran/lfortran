@@ -5,11 +5,11 @@
             modules_02:
                 (Program
                     (SymbolTable
-                        7
+                        9
                         {
                             b:
                                 (ExternalSymbol
-                                    7
+                                    9
                                     b
                                     2 b
                                     modules_02_a
@@ -19,9 +19,9 @@
                                 ),
                             e:
                                 (ExternalSymbol
-                                    7
+                                    9
                                     e
-                                    4 e
+                                    5 e
                                     modules_02_c
                                     []
                                     e
@@ -29,9 +29,9 @@
                                 ),
                             x:
                                 (ExternalSymbol
-                                    7
+                                    9
                                     x
-                                    4 d
+                                    5 d
                                     modules_02_c
                                     []
                                     d
@@ -42,26 +42,27 @@
                     [modules_02_a
                     modules_02_c]
                     [(SubroutineCall
-                        7 b
+                        9 b
                         ()
                         []
                         ()
                         .false.
                     )
                     (SubroutineCall
-                        7 x
+                        9 x
                         ()
                         []
                         ()
                         .false.
                     )
                     (SubroutineCall
-                        7 e
+                        9 e
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             modules_02_a:
@@ -69,6 +70,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_modules_02_a:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_02_a
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_02_a:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_modules_02_a
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             b:
                                 (Function
                                     (SymbolTable
@@ -113,17 +170,75 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_modules_02_a
+                    __lcompilers_global_init_state_modules_02_a
+                    .false.
                 ),
             modules_02_c:
                 (Module
                     (SymbolTable
-                        4
+                        5
                         {
+                            __lcompilers_global_init_modules_02_c:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_02_c
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_02_c:
+                                (Variable
+                                    5
+                                    __lcompilers_global_init_state_modules_02_c
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             d:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        6
                                         {
                                             
                                         })
@@ -160,7 +275,7 @@
                             e:
                                 (Function
                                     (SymbolTable
-                                        6
+                                        7
                                         {
                                             
                                         })
@@ -201,9 +316,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_modules_02_c
+                    __lcompilers_global_init_state_modules_02_c
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

@@ -5,11 +5,11 @@
             finalize_01:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             arr:
                                 (Variable
-                                    5
+                                    6
                                     arr
                                     []
                                     Local
@@ -42,11 +42,11 @@
                             internal_sub:
                                 (Function
                                     (SymbolTable
-                                        6
+                                        7
                                         {
                                             arr_real:
                                                 (Variable
-                                                    6
+                                                    7
                                                     arr_real
                                                     []
                                                     Local
@@ -81,11 +81,11 @@
                                             bl:
                                                 (Block
                                                     (SymbolTable
-                                                        7
+                                                        8
                                                         {
                                                             arr_in_block:
                                                                 (Variable
-                                                                    7
+                                                                    8
                                                                     arr_in_block
                                                                     []
                                                                     Local
@@ -124,7 +124,7 @@
                                                 ),
                                             str:
                                                 (Variable
-                                                    6
+                                                    7
                                                     str
                                                     []
                                                     Local
@@ -169,7 +169,7 @@
                                     []
                                     [(BlockCall
                                         -1
-                                        6 bl
+                                        7 bl
                                     )
                                     (WhileLoop
                                         ()
@@ -188,7 +188,7 @@
                                 ),
                             ss:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     ss
                                     2 ss
                                     finalize_01_mod
@@ -198,7 +198,7 @@
                                 ),
                             str:
                                 (Variable
-                                    5
+                                    6
                                     str
                                     []
                                     Local
@@ -224,7 +224,7 @@
                                 ),
                             test_01:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     test_01
                                     2 test_01
                                     finalize_01_mod
@@ -236,7 +236,7 @@
                     finalize_01
                     [finalize_01_mod]
                     [(Allocate
-                        [((Var 5 str)
+                        [((Var 6 str)
                         []
                         []
                         (IntegerConstant 10 (Integer 4) Decimal)
@@ -247,14 +247,14 @@
                         ()
                     )
                     (SubroutineCall
-                        5 ss
+                        6 ss
                         ()
                         []
                         ()
                         .false.
                     )
                     (SubroutineCall
-                        5 internal_sub
+                        6 internal_sub
                         ()
                         []
                         ()
@@ -262,12 +262,69 @@
                     )
                     (Return)]
                     ()
+                    ()
                 ),
             finalize_01_mod:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_finalize_01_mod:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_finalize_01_mod
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_finalize_01_mod:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_finalize_01_mod
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             ss:
                                 (Function
                                     (SymbolTable
@@ -459,9 +516,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_finalize_01_mod
+                    __lcompilers_global_init_state_finalize_01_mod
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

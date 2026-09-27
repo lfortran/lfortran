@@ -5,11 +5,11 @@
             derived_types_16:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             1_fpm_run_settings_bool:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     1_fpm_run_settings_bool
                                     3 bool
                                     fpm_command_line
@@ -19,7 +19,7 @@
                                 ),
                             1_fpm_run_settings_float:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     1_fpm_run_settings_float
                                     3 float
                                     fpm_command_line
@@ -29,7 +29,7 @@
                                 ),
                             1_fpm_run_settings_int:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     1_fpm_run_settings_int
                                     3 int
                                     fpm_command_line
@@ -39,7 +39,7 @@
                                 ),
                             fpm_run_settings:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     fpm_run_settings
                                     2 fpm_run_settings
                                     fpm_command_line
@@ -49,7 +49,7 @@
                                 ),
                             get_command_line_settings:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     get_command_line_settings
                                     2 get_command_line_settings
                                     fpm_command_line
@@ -59,7 +59,7 @@
                                 ),
                             settings:
                                 (Variable
-                                    5
+                                    6
                                     settings
                                     []
                                     Local
@@ -76,7 +76,7 @@
                                             .false.
                                         )
                                     )
-                                    5 fpm_run_settings
+                                    6 fpm_run_settings
                                     Source
                                     Public
                                     Required
@@ -94,7 +94,7 @@
                     derived_types_16
                     [fpm_command_line]
                     [(Allocate
-                        [((Var 5 settings)
+                        [((Var 6 settings)
                         []
                         []
                         ()
@@ -105,9 +105,9 @@
                         ()
                     )
                     (SubroutineCall
-                        5 get_command_line_settings
+                        6 get_command_line_settings
                         ()
-                        [((Var 5 settings))]
+                        [((Var 6 settings))]
                         ()
                         .false.
                     )
@@ -115,8 +115,8 @@
                         ()
                         (IntegerCompare
                             (StructInstanceMember
-                                (Var 5 settings)
-                                5 1_fpm_run_settings_int
+                                (Var 6 settings)
+                                6 1_fpm_run_settings_int
                                 (Integer 4)
                                 ()
                             )
@@ -137,8 +137,8 @@
                                 Abs
                                 [(RealBinOp
                                     (StructInstanceMember
-                                        (Var 5 settings)
-                                        5 1_fpm_run_settings_float
+                                        (Var 6 settings)
+                                        6 1_fpm_run_settings_float
                                         (Real 4)
                                         ()
                                     )
@@ -171,8 +171,8 @@
                         ()
                         (LogicalBinOp
                             (StructInstanceMember
-                                (Var 5 settings)
-                                5 1_fpm_run_settings_bool
+                                (Var 6 settings)
+                                6 1_fpm_run_settings_bool
                                 (Logical 4)
                                 ()
                             )
@@ -190,12 +190,69 @@
                         []
                     )]
                     ()
+                    ()
                 ),
             fpm_command_line:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_fpm_command_line:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_command_line
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_command_line:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_fpm_command_line
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             fpm_run_settings:
                                 (Struct
                                     (SymbolTable
@@ -404,9 +461,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_fpm_command_line
+                    __lcompilers_global_init_state_fpm_command_line
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

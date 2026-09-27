@@ -5,11 +5,11 @@
             nested_03:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             b:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     b
                                     2 b
                                     nested_03_a
@@ -21,12 +21,13 @@
                     nested_03
                     [nested_03_a]
                     [(SubroutineCall
-                        5 b
+                        6 b
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             nested_03_a:
@@ -34,6 +35,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_nested_03_a:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_nested_03_a
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_nested_03_a:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_nested_03_a
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             b:
                                 (Function
                                     (SymbolTable
@@ -177,9 +234,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_nested_03_a
+                    __lcompilers_global_init_state_nested_03_a
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

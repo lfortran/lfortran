@@ -5,11 +5,11 @@
             template_array_02:
                 (Program
                     (SymbolTable
-                        19
+                        21
                         {
                             add_integer:
                                 (ExternalSymbol
-                                    19
+                                    21
                                     add_integer
                                     2 add_integer
                                     template_array_02_math
@@ -19,7 +19,7 @@
                                 ),
                             add_real:
                                 (ExternalSymbol
-                                    19
+                                    21
                                     add_real
                                     2 add_real
                                     template_array_02_math
@@ -29,9 +29,9 @@
                                 ),
                             array_tmpl:
                                 (ExternalSymbol
-                                    19
+                                    21
                                     array_tmpl
-                                    7 array_tmpl
+                                    8 array_tmpl
                                     template_array_02_m
                                     []
                                     array_tmpl
@@ -39,9 +39,9 @@
                                 ),
                             operations:
                                 (ExternalSymbol
-                                    19
+                                    21
                                     operations
-                                    7 operations
+                                    8 operations
                                     template_array_02_m
                                     []
                                     operations
@@ -49,9 +49,9 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    19
+                                    21
                                     test_template
-                                    7 test_template
+                                    8 test_template
                                     template_array_02_m
                                     []
                                     test_template
@@ -59,7 +59,7 @@
                                 ),
                             zero_integer:
                                 (ExternalSymbol
-                                    19
+                                    21
                                     zero_integer
                                     2 zero_integer
                                     template_array_02_math
@@ -69,7 +69,7 @@
                                 ),
                             zero_real:
                                 (ExternalSymbol
-                                    19
+                                    21
                                     zero_real
                                     2 zero_real
                                     template_array_02_math
@@ -82,22 +82,79 @@
                     [template_array_02_math
                     template_array_02_m]
                     [(SubroutineCall
-                        19 test_template
+                        21 test_template
                         ()
                         []
                         ()
                         .false.
                     )]
                     ()
+                    ()
                 ),
             template_array_02_m:
                 (Module
                     (SymbolTable
-                        7
+                        8
                         {
+                            __lcompilers_global_init_state_template_array_02_m:
+                                (Variable
+                                    8
+                                    __lcompilers_global_init_state_template_array_02_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_array_02_m:
+                                (Function
+                                    (SymbolTable
+                                        20
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_array_02_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             add_integer:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     add_integer
                                     2 add_integer
                                     template_array_02_math
@@ -107,7 +164,7 @@
                                 ),
                             add_real:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     add_real
                                     2 add_real
                                     template_array_02_math
@@ -118,16 +175,16 @@
                             array_tmpl:
                                 (Template
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             mysum_t:
                                                 (Function
                                                     (SymbolTable
-                                                        14
+                                                        15
                                                         {
                                                             a:
                                                                 (Variable
-                                                                    14
+                                                                    15
                                                                     a
                                                                     []
                                                                     In
@@ -161,7 +218,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    14
+                                                                    15
                                                                     i
                                                                     []
                                                                     Local
@@ -185,7 +242,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    14
+                                                                    15
                                                                     r
                                                                     []
                                                                     ReturnVar
@@ -244,14 +301,14 @@
                                                     )
                                                     [zero_t
                                                     plus_t]
-                                                    [(Var 14 a)]
+                                                    [(Var 15 a)]
                                                     [(Assignment
-                                                        (Var 14 r)
+                                                        (Var 15 r)
                                                         (FunctionCall
-                                                            11 zero_t
+                                                            12 zero_t
                                                             ()
                                                             [((ArrayItem
-                                                                (Var 14 a)
+                                                                (Var 15 a)
                                                                 [(()
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
@@ -277,25 +334,25 @@
                                                     )
                                                     (DoLoop
                                                         ()
-                                                        ((Var 14 i)
+                                                        ((Var 15 i)
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         (ArraySize
-                                                            (Var 14 a)
+                                                            (Var 15 a)
                                                             ()
                                                             (Integer 4)
                                                             ()
                                                         )
                                                         ())
                                                         [(Assignment
-                                                            (Var 14 r)
+                                                            (Var 15 r)
                                                             (FunctionCall
-                                                                11 plus_t
+                                                                12 plus_t
                                                                 ()
-                                                                [((Var 14 r))
+                                                                [((Var 15 r))
                                                                 ((ArrayItem
-                                                                    (Var 14 a)
+                                                                    (Var 15 a)
                                                                     [(()
-                                                                    (Var 14 i)
+                                                                    (Var 15 i)
                                                                     ())]
                                                                     (TypeParameter
                                                                         t
@@ -319,7 +376,7 @@
                                                         )]
                                                         []
                                                     )]
-                                                    (Var 14 r)
+                                                    (Var 15 r)
                                                     Public
                                                     .true.
                                                     .true.
@@ -328,11 +385,11 @@
                                             mysum_t_n:
                                                 (Function
                                                     (SymbolTable
-                                                        15
+                                                        16
                                                         {
                                                             a:
                                                                 (Variable
-                                                                    15
+                                                                    16
                                                                     a
                                                                     [n]
                                                                     In
@@ -346,7 +403,7 @@
                                                                             .false.
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 15 n))]
+                                                                        (Var 16 n))]
                                                                         PointerArray
                                                                         Global
                                                                     )
@@ -366,7 +423,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    15
+                                                                    16
                                                                     i
                                                                     []
                                                                     Local
@@ -390,7 +447,7 @@
                                                                 ),
                                                             n:
                                                                 (Variable
-                                                                    15
+                                                                    16
                                                                     n
                                                                     []
                                                                     In
@@ -414,7 +471,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    15
+                                                                    16
                                                                     r
                                                                     []
                                                                     ReturnVar
@@ -478,15 +535,15 @@
                                                     )
                                                     [zero_t
                                                     plus_t]
-                                                    [(Var 15 n)
-                                                    (Var 15 a)]
+                                                    [(Var 16 n)
+                                                    (Var 16 a)]
                                                     [(Assignment
-                                                        (Var 15 r)
+                                                        (Var 16 r)
                                                         (FunctionCall
-                                                            11 zero_t
+                                                            12 zero_t
                                                             ()
                                                             [((ArrayItem
-                                                                (Var 15 a)
+                                                                (Var 16 a)
                                                                 [(()
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
@@ -512,25 +569,25 @@
                                                     )
                                                     (DoLoop
                                                         ()
-                                                        ((Var 15 i)
+                                                        ((Var 16 i)
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         (ArraySize
-                                                            (Var 15 a)
+                                                            (Var 16 a)
                                                             ()
                                                             (Integer 4)
                                                             ()
                                                         )
                                                         ())
                                                         [(Assignment
-                                                            (Var 15 r)
+                                                            (Var 16 r)
                                                             (FunctionCall
-                                                                11 plus_t
+                                                                12 plus_t
                                                                 ()
-                                                                [((Var 15 r))
+                                                                [((Var 16 r))
                                                                 ((ArrayItem
-                                                                    (Var 15 a)
+                                                                    (Var 16 a)
                                                                     [(()
-                                                                    (Var 15 i)
+                                                                    (Var 16 i)
                                                                     ())]
                                                                     (TypeParameter
                                                                         t
@@ -554,170 +611,13 @@
                                                         )]
                                                         []
                                                     )]
-                                                    (Var 15 r)
+                                                    (Var 16 r)
                                                     Private
                                                     .true.
                                                     .true.
                                                     ()
                                                 ),
                                             plus_t:
-                                                (Function
-                                                    (SymbolTable
-                                                        12
-                                                        {
-                                                            l:
-                                                                (Variable
-                                                                    12
-                                                                    l
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            r:
-                                                                (Variable
-                                                                    12
-                                                                    r
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            rs:
-                                                                (Variable
-                                                                    12
-                                                                    rs
-                                                                    []
-                                                                    ReturnVar
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                )
-                                                        })
-                                                    plus_t
-                                                    (FunctionType
-                                                        [(TypeParameter
-                                                            t
-                                                            NonExtensible
-                                                            .false.
-                                                        )
-                                                        (TypeParameter
-                                                            t
-                                                            NonExtensible
-                                                            .false.
-                                                        )]
-                                                        (TypeParameter
-                                                            t
-                                                            NonExtensible
-                                                            .false.
-                                                        )
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .true.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .true.
-                                                        Host
-                                                    )
-                                                    []
-                                                    [(Var 12 l)
-                                                    (Var 12 r)]
-                                                    []
-                                                    (Var 12 rs)
-                                                    Private
-                                                    .true.
-                                                    .true.
-                                                    ()
-                                                ),
-                                            t:
-                                                (Variable
-                                                    11
-                                                    t
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (TypeParameter
-                                                        t
-                                                        NonExtensible
-                                                        .false.
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            zero_t:
                                                 (Function
                                                     (SymbolTable
                                                         13
@@ -750,121 +650,9 @@
                                                                     ()
                                                                     []
                                                                 ),
-                                                            rs:
-                                                                (Variable
-                                                                    13
-                                                                    rs
-                                                                    []
-                                                                    ReturnVar
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                )
-                                                        })
-                                                    zero_t
-                                                    (FunctionType
-                                                        [(TypeParameter
-                                                            t
-                                                            NonExtensible
-                                                            .false.
-                                                        )]
-                                                        (TypeParameter
-                                                            t
-                                                            NonExtensible
-                                                            .false.
-                                                        )
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .true.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .true.
-                                                        Host
-                                                    )
-                                                    []
-                                                    [(Var 13 l)]
-                                                    []
-                                                    (Var 13 rs)
-                                                    Private
-                                                    .true.
-                                                    .true.
-                                                    ()
-                                                )
-                                        })
-                                    array_tmpl
-                                    [t
-                                    plus_t
-                                    zero_t]
-                                    [(Require
-                                        operations
-                                        [t
-                                        plus_t
-                                        zero_t]
-                                    )]
-                                ),
-                            operations:
-                                (Requirement
-                                    (SymbolTable
-                                        8
-                                        {
-                                            plus_t:
-                                                (Function
-                                                    (SymbolTable
-                                                        9
-                                                        {
-                                                            l:
-                                                                (Variable
-                                                                    9
-                                                                    l
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
                                                             r:
                                                                 (Variable
-                                                                    9
+                                                                    13
                                                                     r
                                                                     []
                                                                     In
@@ -892,7 +680,7 @@
                                                                 ),
                                                             rs:
                                                                 (Variable
-                                                                    9
+                                                                    13
                                                                     rs
                                                                     []
                                                                     ReturnVar
@@ -949,10 +737,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 9 l)
-                                                    (Var 9 r)]
+                                                    [(Var 13 l)
+                                                    (Var 13 r)]
                                                     []
-                                                    (Var 9 rs)
+                                                    (Var 13 rs)
                                                     Private
                                                     .true.
                                                     .true.
@@ -960,7 +748,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    8
+                                                    12
                                                     t
                                                     []
                                                     In
@@ -989,12 +777,152 @@
                                             zero_t:
                                                 (Function
                                                     (SymbolTable
+                                                        14
+                                                        {
+                                                            l:
+                                                                (Variable
+                                                                    14
+                                                                    l
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            rs:
+                                                                (Variable
+                                                                    14
+                                                                    rs
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    zero_t
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 14 l)]
+                                                    []
+                                                    (Var 14 rs)
+                                                    Private
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                )
+                                        })
+                                    array_tmpl
+                                    [t
+                                    plus_t
+                                    zero_t]
+                                    [(Require
+                                        operations
+                                        [t
+                                        plus_t
+                                        zero_t]
+                                    )]
+                                ),
+                            operations:
+                                (Requirement
+                                    (SymbolTable
+                                        9
+                                        {
+                                            plus_t:
+                                                (Function
+                                                    (SymbolTable
                                                         10
                                                         {
                                                             l:
                                                                 (Variable
                                                                     10
                                                                     l
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    10
+                                                                    r
                                                                     []
                                                                     In
                                                                     ()
@@ -1048,6 +976,135 @@
                                                                     []
                                                                 )
                                                         })
+                                                    plus_t
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 10 l)
+                                                    (Var 10 r)]
+                                                    []
+                                                    (Var 10 rs)
+                                                    Private
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    9
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                        NonExtensible
+                                                        .false.
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            zero_t:
+                                                (Function
+                                                    (SymbolTable
+                                                        11
+                                                        {
+                                                            l:
+                                                                (Variable
+                                                                    11
+                                                                    l
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            rs:
+                                                                (Variable
+                                                                    11
+                                                                    rs
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
                                                     zero_t
                                                     (FunctionType
                                                         [(TypeParameter
@@ -1073,9 +1130,9 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 10 l)]
+                                                    [(Var 11 l)]
                                                     []
-                                                    (Var 10 rs)
+                                                    (Var 11 rs)
                                                     Private
                                                     .true.
                                                     .true.
@@ -1091,11 +1148,11 @@
                             test_template:
                                 (Function
                                     (SymbolTable
-                                        16
+                                        17
                                         {
                                             a:
                                                 (Variable
-                                                    16
+                                                    17
                                                     a
                                                     []
                                                     Local
@@ -1125,7 +1182,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    16
+                                                    17
                                                     b
                                                     []
                                                     Local
@@ -1155,7 +1212,7 @@
                                                 ),
                                             i:
                                                 (Variable
-                                                    16
+                                                    17
                                                     i
                                                     []
                                                     Local
@@ -1180,11 +1237,11 @@
                                             mysum_integer:
                                                 (Function
                                                     (SymbolTable
-                                                        17
+                                                        18
                                                         {
                                                             a:
                                                                 (Variable
-                                                                    17
+                                                                    18
                                                                     a
                                                                     []
                                                                     In
@@ -1214,7 +1271,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    17
+                                                                    18
                                                                     i
                                                                     []
                                                                     Local
@@ -1238,7 +1295,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    17
+                                                                    18
                                                                     r
                                                                     []
                                                                     ReturnVar
@@ -1284,14 +1341,14 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 17 a)]
+                                                    [(Var 18 a)]
                                                     [(Assignment
-                                                        (Var 17 r)
+                                                        (Var 18 r)
                                                         (FunctionCall
-                                                            7 zero_integer
+                                                            8 zero_integer
                                                             ()
                                                             [((ArrayItem
-                                                                (Var 17 a)
+                                                                (Var 18 a)
                                                                 [(()
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
@@ -1309,25 +1366,25 @@
                                                     )
                                                     (DoLoop
                                                         ()
-                                                        ((Var 17 i)
+                                                        ((Var 18 i)
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         (ArraySize
-                                                            (Var 17 a)
+                                                            (Var 18 a)
                                                             ()
                                                             (Integer 4)
                                                             ()
                                                         )
                                                         ())
                                                         [(Assignment
-                                                            (Var 17 r)
+                                                            (Var 18 r)
                                                             (FunctionCall
-                                                                7 add_integer
+                                                                8 add_integer
                                                                 ()
-                                                                [((Var 17 r))
+                                                                [((Var 18 r))
                                                                 ((ArrayItem
-                                                                    (Var 17 a)
+                                                                    (Var 18 a)
                                                                     [(()
-                                                                    (Var 17 i)
+                                                                    (Var 18 i)
                                                                     ())]
                                                                     (Integer 4)
                                                                     ColMajor
@@ -1343,7 +1400,7 @@
                                                         )]
                                                         []
                                                     )]
-                                                    (Var 17 r)
+                                                    (Var 18 r)
                                                     Public
                                                     .true.
                                                     .true.
@@ -1352,11 +1409,11 @@
                                             mysum_integer_n:
                                                 (Function
                                                     (SymbolTable
-                                                        18
+                                                        19
                                                         {
                                                             a:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     a
                                                                     [n]
                                                                     In
@@ -1366,7 +1423,7 @@
                                                                     (Array
                                                                         (Integer 4)
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 18 n))]
+                                                                        (Var 19 n))]
                                                                         PointerArray
                                                                         Global
                                                                     )
@@ -1386,7 +1443,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     i
                                                                     []
                                                                     Local
@@ -1410,7 +1467,7 @@
                                                                 ),
                                                             n:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     n
                                                                     []
                                                                     In
@@ -1434,7 +1491,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     r
                                                                     []
                                                                     ReturnVar
@@ -1485,15 +1542,15 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 18 n)
-                                                    (Var 18 a)]
+                                                    [(Var 19 n)
+                                                    (Var 19 a)]
                                                     [(Assignment
-                                                        (Var 18 r)
+                                                        (Var 19 r)
                                                         (FunctionCall
-                                                            7 zero_integer
+                                                            8 zero_integer
                                                             ()
                                                             [((ArrayItem
-                                                                (Var 18 a)
+                                                                (Var 19 a)
                                                                 [(()
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
@@ -1511,25 +1568,25 @@
                                                     )
                                                     (DoLoop
                                                         ()
-                                                        ((Var 18 i)
+                                                        ((Var 19 i)
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         (ArraySize
-                                                            (Var 18 a)
+                                                            (Var 19 a)
                                                             ()
                                                             (Integer 4)
                                                             ()
                                                         )
                                                         ())
                                                         [(Assignment
-                                                            (Var 18 r)
+                                                            (Var 19 r)
                                                             (FunctionCall
-                                                                7 add_integer
+                                                                8 add_integer
                                                                 ()
-                                                                [((Var 18 r))
+                                                                [((Var 19 r))
                                                                 ((ArrayItem
-                                                                    (Var 18 a)
+                                                                    (Var 19 a)
                                                                     [(()
-                                                                    (Var 18 i)
+                                                                    (Var 19 i)
                                                                     ())]
                                                                     (Integer 4)
                                                                     ColMajor
@@ -1545,7 +1602,7 @@
                                                         )]
                                                         []
                                                     )]
-                                                    (Var 18 r)
+                                                    (Var 19 r)
                                                     Private
                                                     .true.
                                                     .true.
@@ -1553,7 +1610,7 @@
                                                 ),
                                             sa:
                                                 (Variable
-                                                    16
+                                                    17
                                                     sa
                                                     []
                                                     Local
@@ -1577,7 +1634,7 @@
                                                 ),
                                             sb:
                                                 (Variable
-                                                    16
+                                                    17
                                                     sb
                                                     []
                                                     Local
@@ -1620,10 +1677,10 @@
                                     []
                                     [(DoLoop
                                         ()
-                                        ((Var 16 i)
+                                        ((Var 17 i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (ArraySize
-                                            (Var 16 a)
+                                            (Var 17 a)
                                             ()
                                             (Integer 4)
                                             (IntegerConstant 10 (Integer 4) Decimal)
@@ -1631,30 +1688,30 @@
                                         ())
                                         [(Assignment
                                             (ArrayItem
-                                                (Var 16 a)
+                                                (Var 17 a)
                                                 [(()
-                                                (Var 16 i)
+                                                (Var 17 i)
                                                 ())]
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
                                             )
-                                            (Var 16 i)
+                                            (Var 17 i)
                                             ()
                                             .false.
                                             .false.
                                         )
                                         (Assignment
                                             (ArrayItem
-                                                (Var 16 b)
+                                                (Var 17 b)
                                                 [(()
-                                                (Var 16 i)
+                                                (Var 17 i)
                                                 ())]
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
                                             )
-                                            (Var 16 i)
+                                            (Var 17 i)
                                             ()
                                             .false.
                                             .false.
@@ -1662,12 +1719,12 @@
                                         []
                                     )
                                     (Assignment
-                                        (Var 16 sa)
+                                        (Var 17 sa)
                                         (FunctionCall
-                                            16 mysum_integer
+                                            17 mysum_integer
                                             ()
                                             [((ArrayPhysicalCast
-                                                (Var 16 a)
+                                                (Var 17 a)
                                                 FixedSizeArray
                                                 DescriptorArray
                                                 (Array
@@ -1688,18 +1745,18 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 16 sb)
+                                        (Var 17 sb)
                                         (FunctionCall
-                                            16 mysum_integer_n
+                                            17 mysum_integer_n
                                             ()
                                             [((ArraySize
-                                                (Var 16 b)
+                                                (Var 17 b)
                                                 ()
                                                 (Integer 4)
                                                 (IntegerConstant 10 (Integer 4) Decimal)
                                             ))
                                             ((ArrayPhysicalCast
-                                                (Var 16 b)
+                                                (Var 17 b)
                                                 FixedSizeArray
                                                 PointerArray
                                                 (Array
@@ -1728,7 +1785,7 @@
                                     (Print
                                         (StringFormat
                                             ()
-                                            [(Var 16 sa)]
+                                            [(Var 17 sa)]
                                             FormatFortran
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
@@ -1739,7 +1796,7 @@
                                     (Print
                                         (StringFormat
                                             ()
-                                            [(Var 16 sb)]
+                                            [(Var 17 sb)]
                                             FormatFortran
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
@@ -1755,7 +1812,7 @@
                                 ),
                             zero_integer:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     zero_integer
                                     2 zero_integer
                                     template_array_02_math
@@ -1765,7 +1822,7 @@
                                 ),
                             zero_real:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     zero_real
                                     2 zero_real
                                     template_array_02_math
@@ -1781,13 +1838,71 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_template_array_02_m
+                    __lcompilers_global_init_state_template_array_02_m
+                    .false.
                 ),
             template_array_02_math:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_array_02_math:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_array_02_math
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_array_02_math:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_array_02_math
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             add_integer:
                                 (Function
                                     (SymbolTable
@@ -2208,9 +2323,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_template_array_02_math
+                    __lcompilers_global_init_state_template_array_02_math
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

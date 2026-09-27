@@ -5,11 +5,11 @@
             subroutines_07:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
                             f:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     f
                                     2 f
                                     subroutines_07_mod
@@ -19,7 +19,7 @@
                                 ),
                             f_int:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     f_int
                                     2 f_int
                                     subroutines_07_mod
@@ -29,7 +29,7 @@
                                 ),
                             f_int@f:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     f_int@f
                                     2 f
                                     subroutines_07_mod
@@ -39,7 +39,7 @@
                                 ),
                             i:
                                 (Variable
-                                    4
+                                    5
                                     i
                                     []
                                     Local
@@ -63,7 +63,7 @@
                                 ),
                             j:
                                 (Variable
-                                    4
+                                    5
                                     j
                                     []
                                     Local
@@ -87,7 +87,7 @@
                                 ),
                             k:
                                 (Variable
-                                    4
+                                    5
                                     k
                                     []
                                     Local
@@ -111,7 +111,7 @@
                                 ),
                             l:
                                 (Variable
-                                    4
+                                    5
                                     l
                                     []
                                     Local
@@ -137,40 +137,40 @@
                     subroutines_07
                     [subroutines_07_mod]
                     [(Assignment
-                        (Var 4 i)
+                        (Var 5 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 4 j)
+                        (Var 5 j)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 4 k)
+                        (Var 5 k)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 4 l)
+                        (Var 5 l)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (SubroutineCall
-                        4 f_int@f
-                        4 f_int
-                        [((Var 4 i))
-                        ((Var 4 j))
-                        ((Var 4 k))
-                        ((Var 4 l))
+                        5 f_int@f
+                        5 f_int
+                        [((Var 5 i))
+                        ((Var 5 j))
+                        ((Var 5 k))
+                        ((Var 5 l))
                         (())]
                         ()
                         .false.
@@ -178,7 +178,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 4 j)
+                            (Var 5 j)
                             NotEq
                             (IntegerConstant 4 (Integer 4) Decimal)
                             (Logical 4)
@@ -190,12 +190,69 @@
                         []
                     )]
                     ()
+                    ()
                 ),
             subroutines_07_mod:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_subroutines_07_mod:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_subroutines_07_mod
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_subroutines_07_mod:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_subroutines_07_mod
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             f:
                                 (Function
                                     (SymbolTable
@@ -393,9 +450,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_subroutines_07_mod
+                    __lcompilers_global_init_state_subroutines_07_mod
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_math_integer_m:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_math_integer_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_math_integer_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_math_integer_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             add_integer:
                                 (Function
                                     (SymbolTable
@@ -606,367 +662,72 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_math_integer_m
+                    __lcompilers_global_init_state_math_integer_m
+                    .false.
                 ),
             math_real_m:
                 (Module
                     (SymbolTable
-                        9
+                        10
                         {
+                            __lcompilers_global_init_math_real_m:
+                                (Function
+                                    (SymbolTable
+                                        18
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_math_real_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_math_real_m:
+                                (Variable
+                                    10
+                                    __lcompilers_global_init_state_math_real_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             add_real:
-                                (Function
-                                    (SymbolTable
-                                        10
-                                        {
-                                            result:
-                                                (Variable
-                                                    10
-                                                    result
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            x:
-                                                (Variable
-                                                    10
-                                                    x
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            y:
-                                                (Variable
-                                                    10
-                                                    y
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    add_real
-                                    (FunctionType
-                                        [(Real 4)
-                                        (Real 4)]
-                                        (Real 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 10 x)
-                                    (Var 10 y)]
-                                    [(Assignment
-                                        (Var 10 result)
-                                        (RealBinOp
-                                            (Var 10 x)
-                                            Add
-                                            (Var 10 y)
-                                            (Real 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )]
-                                    (Var 10 result)
-                                    Public
-                                    .true.
-                                    .true.
-                                    ()
-                                ),
-                            max_real:
-                                (Function
-                                    (SymbolTable
-                                        13
-                                        {
-                                            result:
-                                                (Variable
-                                                    13
-                                                    result
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            x:
-                                                (Variable
-                                                    13
-                                                    x
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            y:
-                                                (Variable
-                                                    13
-                                                    y
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    max_real
-                                    (FunctionType
-                                        [(Real 4)
-                                        (Real 4)]
-                                        (Real 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 13 x)
-                                    (Var 13 y)]
-                                    [(Assignment
-                                        (Var 13 result)
-                                        (IntrinsicElementalFunction
-                                            Max
-                                            [(Var 13 x)
-                                            (Var 13 y)]
-                                            0
-                                            (Real 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )]
-                                    (Var 13 result)
-                                    Public
-                                    .true.
-                                    .true.
-                                    ()
-                                ),
-                            min_real:
-                                (Function
-                                    (SymbolTable
-                                        14
-                                        {
-                                            result:
-                                                (Variable
-                                                    14
-                                                    result
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            x:
-                                                (Variable
-                                                    14
-                                                    x
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            y:
-                                                (Variable
-                                                    14
-                                                    y
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    min_real
-                                    (FunctionType
-                                        [(Real 4)
-                                        (Real 4)]
-                                        (Real 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 14 x)
-                                    (Var 14 y)]
-                                    [(Assignment
-                                        (Var 14 result)
-                                        (IntrinsicElementalFunction
-                                            Min
-                                            [(Var 14 x)
-                                            (Var 14 y)]
-                                            0
-                                            (Real 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )]
-                                    (Var 14 result)
-                                    Public
-                                    .true.
-                                    .true.
-                                    ()
-                                ),
-                            minus_real:
                                 (Function
                                     (SymbolTable
                                         11
@@ -1044,7 +805,7 @@
                                                     []
                                                 )
                                         })
-                                    minus_real
+                                    add_real
                                     (FunctionType
                                         [(Real 4)
                                         (Real 4)]
@@ -1068,7 +829,7 @@
                                         (Var 11 result)
                                         (RealBinOp
                                             (Var 11 x)
-                                            Sub
+                                            Add
                                             (Var 11 y)
                                             (Real 4)
                                             ()
@@ -1083,14 +844,14 @@
                                     .true.
                                     ()
                                 ),
-                            one_real:
+                            max_real:
                                 (Function
                                     (SymbolTable
-                                        16
+                                        14
                                         {
                                             result:
                                                 (Variable
-                                                    16
+                                                    14
                                                     result
                                                     []
                                                     ReturnVar
@@ -1111,11 +872,60 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                ),
+                                            x:
+                                                (Variable
+                                                    14
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            y:
+                                                (Variable
+                                                    14
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
-                                    one_real
+                                    max_real
                                     (FunctionType
-                                        []
+                                        [(Real 4)
+                                        (Real 4)]
                                         (Real 4)
                                         Source
                                         Implementation
@@ -1130,24 +940,147 @@
                                         Host
                                     )
                                     []
-                                    []
+                                    [(Var 14 x)
+                                    (Var 14 y)]
                                     [(Assignment
-                                        (Var 16 result)
-                                        (RealConstant
-                                            1.000000
+                                        (Var 14 result)
+                                        (IntrinsicElementalFunction
+                                            Max
+                                            [(Var 14 x)
+                                            (Var 14 y)]
+                                            0
                                             (Real 4)
+                                            ()
                                         )
                                         ()
                                         .false.
                                         .false.
                                     )]
-                                    (Var 16 result)
+                                    (Var 14 result)
                                     Public
                                     .true.
                                     .true.
                                     ()
                                 ),
-                            slash_real:
+                            min_real:
+                                (Function
+                                    (SymbolTable
+                                        15
+                                        {
+                                            result:
+                                                (Variable
+                                                    15
+                                                    result
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            x:
+                                                (Variable
+                                                    15
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            y:
+                                                (Variable
+                                                    15
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    min_real
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 15 x)
+                                    (Var 15 y)]
+                                    [(Assignment
+                                        (Var 15 result)
+                                        (IntrinsicElementalFunction
+                                            Min
+                                            [(Var 15 x)
+                                            (Var 15 y)]
+                                            0
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 15 result)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            minus_real:
                                 (Function
                                     (SymbolTable
                                         12
@@ -1225,7 +1158,7 @@
                                                     []
                                                 )
                                         })
-                                    slash_real
+                                    minus_real
                                     (FunctionType
                                         [(Real 4)
                                         (Real 4)]
@@ -1249,7 +1182,7 @@
                                         (Var 12 result)
                                         (RealBinOp
                                             (Var 12 x)
-                                            Div
+                                            Sub
                                             (Var 12 y)
                                             (Real 4)
                                             ()
@@ -1264,14 +1197,195 @@
                                     .true.
                                     ()
                                 ),
-                            zero_real:
+                            one_real:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        17
                                         {
                                             result:
                                                 (Variable
-                                                    15
+                                                    17
+                                                    result
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    one_real
+                                    (FunctionType
+                                        []
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    [(Assignment
+                                        (Var 17 result)
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 17 result)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            slash_real:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            result:
+                                                (Variable
+                                                    13
+                                                    result
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            x:
+                                                (Variable
+                                                    13
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            y:
+                                                (Variable
+                                                    13
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    slash_real
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 13 x)
+                                    (Var 13 y)]
+                                    [(Assignment
+                                        (Var 13 result)
+                                        (RealBinOp
+                                            (Var 13 x)
+                                            Div
+                                            (Var 13 y)
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 13 result)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            zero_real:
+                                (Function
+                                    (SymbolTable
+                                        16
+                                        {
+                                            result:
+                                                (Variable
+                                                    16
                                                     result
                                                     []
                                                     ReturnVar
@@ -1313,7 +1427,7 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 15 result)
+                                        (Var 16 result)
                                         (RealConstant
                                             0.000000
                                             (Real 4)
@@ -1322,7 +1436,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 15 result)
+                                    (Var 16 result)
                                     Public
                                     .true.
                                     .true.
@@ -1335,16 +1449,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_math_real_m
+                    __lcompilers_global_init_state_math_real_m
+                    .false.
                 ),
             template_triple:
                 (Program
                     (SymbolTable
-                        34
+                        38
                         {
                             add_integer:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     add_integer
                                     2 add_integer
                                     math_integer_m
@@ -1354,9 +1470,9 @@
                                 ),
                             add_real:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     add_real
-                                    9 add_real
+                                    10 add_real
                                     math_real_m
                                     []
                                     add_real
@@ -1364,9 +1480,9 @@
                                 ),
                             magma_r:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     magma_r
-                                    17 magma_r
+                                    19 magma_r
                                     triple_m
                                     []
                                     magma_r
@@ -1374,7 +1490,7 @@
                                 ),
                             max_integer:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     max_integer
                                     2 max_integer
                                     math_integer_m
@@ -1384,9 +1500,9 @@
                                 ),
                             max_real:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     max_real
-                                    9 max_real
+                                    10 max_real
                                     math_real_m
                                     []
                                     max_real
@@ -1394,7 +1510,7 @@
                                 ),
                             min_integer:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     min_integer
                                     2 min_integer
                                     math_integer_m
@@ -1404,9 +1520,9 @@
                                 ),
                             min_real:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     min_real
-                                    9 min_real
+                                    10 min_real
                                     math_real_m
                                     []
                                     min_real
@@ -1414,7 +1530,7 @@
                                 ),
                             minus_integer:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     minus_integer
                                     2 minus_integer
                                     math_integer_m
@@ -1424,9 +1540,9 @@
                                 ),
                             minus_real:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     minus_real
-                                    9 minus_real
+                                    10 minus_real
                                     math_real_m
                                     []
                                     minus_real
@@ -1434,7 +1550,7 @@
                                 ),
                             one_integer:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     one_integer
                                     2 one_integer
                                     math_integer_m
@@ -1444,9 +1560,9 @@
                                 ),
                             one_real:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     one_real
-                                    9 one_real
+                                    10 one_real
                                     math_real_m
                                     []
                                     one_real
@@ -1454,9 +1570,9 @@
                                 ),
                             slash_real:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     slash_real
-                                    9 slash_real
+                                    10 slash_real
                                     math_real_m
                                     []
                                     slash_real
@@ -1464,9 +1580,9 @@
                                 ),
                             test_add_triples:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     test_add_triples
-                                    24 test_add_triples
+                                    27 test_add_triples
                                     use_triple_m
                                     []
                                     test_add_triples
@@ -1474,9 +1590,9 @@
                                 ),
                             test_max_triples:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     test_max_triples
-                                    24 test_max_triples
+                                    27 test_max_triples
                                     use_triple_m
                                     []
                                     test_max_triples
@@ -1484,9 +1600,9 @@
                                 ),
                             test_minus_triples:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     test_minus_triples
-                                    24 test_minus_triples
+                                    27 test_minus_triples
                                     use_triple_m
                                     []
                                     test_minus_triples
@@ -1494,9 +1610,9 @@
                                 ),
                             triple_tmpl:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     triple_tmpl
-                                    17 triple_tmpl
+                                    19 triple_tmpl
                                     triple_m
                                     []
                                     triple_tmpl
@@ -1504,7 +1620,7 @@
                                 ),
                             zero_integer:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     zero_integer
                                     2 zero_integer
                                     math_integer_m
@@ -1514,9 +1630,9 @@
                                 ),
                             zero_real:
                                 (ExternalSymbol
-                                    34
+                                    38
                                     zero_real
-                                    9 zero_real
+                                    10 zero_real
                                     math_real_m
                                     []
                                     zero_real
@@ -1529,203 +1645,92 @@
                     math_real_m
                     triple_m]
                     [(SubroutineCall
-                        34 test_add_triples
+                        38 test_add_triples
                         ()
                         []
                         ()
                         .false.
                     )
                     (SubroutineCall
-                        34 test_minus_triples
+                        38 test_minus_triples
                         ()
                         []
                         ()
                         .false.
                     )
                     (SubroutineCall
-                        34 test_max_triples
+                        38 test_max_triples
                         ()
                         []
                         ()
                         .false.
                     )]
                     ()
+                    ()
                 ),
             triple_m:
                 (Module
                     (SymbolTable
-                        17
+                        19
                         {
-                            magma_r:
-                                (Requirement
-                                    (SymbolTable
-                                        18
-                                        {
-                                            plus_t:
-                                                (Function
-                                                    (SymbolTable
-                                                        19
-                                                        {
-                                                            l:
-                                                                (Variable
-                                                                    19
-                                                                    l
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            r:
-                                                                (Variable
-                                                                    19
-                                                                    r
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            total:
-                                                                (Variable
-                                                                    19
-                                                                    total
-                                                                    []
-                                                                    ReturnVar
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                )
-                                                        })
-                                                    plus_t
-                                                    (FunctionType
-                                                        [(TypeParameter
-                                                            t
-                                                            NonExtensible
-                                                            .false.
-                                                        )
-                                                        (TypeParameter
-                                                            t
-                                                            NonExtensible
-                                                            .false.
-                                                        )]
-                                                        (TypeParameter
-                                                            t
-                                                            NonExtensible
-                                                            .false.
-                                                        )
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .true.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .true.
-                                                        Host
-                                                    )
-                                                    []
-                                                    [(Var 19 l)
-                                                    (Var 19 r)]
-                                                    []
-                                                    (Var 19 total)
-                                                    Private
-                                                    .true.
-                                                    .true.
-                                                    ()
-                                                ),
-                                            t:
-                                                (Variable
-                                                    18
-                                                    t
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (TypeParameter
-                                                        t
-                                                        NonExtensible
-                                                        .false.
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    magma_r
-                                    [t
-                                    plus_t]
+                            __lcompilers_global_init_state_triple_m:
+                                (Variable
+                                    19
+                                    __lcompilers_global_init_state_triple_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
                                     []
                                 ),
-                            triple_tmpl:
-                                (Template
+                            __lcompilers_global_init_triple_m:
+                                (Function
+                                    (SymbolTable
+                                        26
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_triple_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            magma_r:
+                                (Requirement
                                     (SymbolTable
                                         20
                                         {
@@ -1885,15 +1890,183 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                )
+                                        })
+                                    magma_r
+                                    [t
+                                    plus_t]
+                                    []
+                                ),
+                            triple_tmpl:
+                                (Template
+                                    (SymbolTable
+                                        22
+                                        {
+                                            plus_t:
+                                                (Function
+                                                    (SymbolTable
+                                                        23
+                                                        {
+                                                            l:
+                                                                (Variable
+                                                                    23
+                                                                    l
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    23
+                                                                    r
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            total:
+                                                                (Variable
+                                                                    23
+                                                                    total
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    plus_t
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 23 l)
+                                                    (Var 23 r)]
+                                                    []
+                                                    (Var 23 total)
+                                                    Private
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    22
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                        NonExtensible
+                                                        .false.
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             triple_l:
                                                 (Function
                                                     (SymbolTable
-                                                        22
+                                                        24
                                                         {
                                                             result:
                                                                 (Variable
-                                                                    22
+                                                                    24
                                                                     result
                                                                     []
                                                                     ReturnVar
@@ -1921,7 +2094,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    22
+                                                                    24
                                                                     t
                                                                     []
                                                                     In
@@ -1973,17 +2146,17 @@
                                                         Host
                                                     )
                                                     [plus_t]
-                                                    [(Var 22 t)]
+                                                    [(Var 24 t)]
                                                     [(Assignment
-                                                        (Var 22 result)
+                                                        (Var 24 result)
                                                         (FunctionCall
-                                                            20 plus_t
+                                                            22 plus_t
                                                             ()
                                                             [((FunctionCall
-                                                                20 plus_t
+                                                                22 plus_t
                                                                 ()
-                                                                [((Var 22 t))
-                                                                ((Var 22 t))]
+                                                                [((Var 24 t))
+                                                                ((Var 24 t))]
                                                                 (TypeParameter
                                                                     t
                                                                     NonExtensible
@@ -1992,7 +2165,7 @@
                                                                 ()
                                                                 ()
                                                             ))
-                                                            ((Var 22 t))]
+                                                            ((Var 24 t))]
                                                             (TypeParameter
                                                                 t
                                                                 NonExtensible
@@ -2005,7 +2178,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 22 result)
+                                                    (Var 24 result)
                                                     Public
                                                     .true.
                                                     .true.
@@ -2014,11 +2187,11 @@
                                             triple_r:
                                                 (Function
                                                     (SymbolTable
-                                                        23
+                                                        25
                                                         {
                                                             result:
                                                                 (Variable
-                                                                    23
+                                                                    25
                                                                     result
                                                                     []
                                                                     ReturnVar
@@ -2046,7 +2219,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    23
+                                                                    25
                                                                     t
                                                                     []
                                                                     In
@@ -2098,18 +2271,18 @@
                                                         Host
                                                     )
                                                     [plus_t]
-                                                    [(Var 23 t)]
+                                                    [(Var 25 t)]
                                                     [(Assignment
-                                                        (Var 23 result)
+                                                        (Var 25 result)
                                                         (FunctionCall
-                                                            20 plus_t
+                                                            22 plus_t
                                                             ()
-                                                            [((Var 23 t))
+                                                            [((Var 25 t))
                                                             ((FunctionCall
-                                                                20 plus_t
+                                                                22 plus_t
                                                                 ()
-                                                                [((Var 23 t))
-                                                                ((Var 23 t))]
+                                                                [((Var 25 t))
+                                                                ((Var 25 t))]
                                                                 (TypeParameter
                                                                     t
                                                                     NonExtensible
@@ -2130,7 +2303,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 23 result)
+                                                    (Var 25 result)
                                                     Public
                                                     .true.
                                                     .true.
@@ -2153,16 +2326,74 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_triple_m
+                    __lcompilers_global_init_state_triple_m
+                    .false.
                 ),
             use_triple_m:
                 (Module
                     (SymbolTable
-                        24
+                        27
                         {
+                            __lcompilers_global_init_state_use_triple_m:
+                                (Variable
+                                    27
+                                    __lcompilers_global_init_state_use_triple_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_use_triple_m:
+                                (Function
+                                    (SymbolTable
+                                        37
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_use_triple_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             add_integer:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     add_integer
                                     2 add_integer
                                     math_integer_m
@@ -2172,9 +2403,9 @@
                                 ),
                             add_real:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     add_real
-                                    9 add_real
+                                    10 add_real
                                     math_real_m
                                     []
                                     add_real
@@ -2182,9 +2413,9 @@
                                 ),
                             magma_r:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     magma_r
-                                    17 magma_r
+                                    19 magma_r
                                     triple_m
                                     []
                                     magma_r
@@ -2192,7 +2423,7 @@
                                 ),
                             max_integer:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     max_integer
                                     2 max_integer
                                     math_integer_m
@@ -2202,9 +2433,9 @@
                                 ),
                             max_real:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     max_real
-                                    9 max_real
+                                    10 max_real
                                     math_real_m
                                     []
                                     max_real
@@ -2212,7 +2443,7 @@
                                 ),
                             min_integer:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     min_integer
                                     2 min_integer
                                     math_integer_m
@@ -2222,9 +2453,9 @@
                                 ),
                             min_real:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     min_real
-                                    9 min_real
+                                    10 min_real
                                     math_real_m
                                     []
                                     min_real
@@ -2232,7 +2463,7 @@
                                 ),
                             minus_integer:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     minus_integer
                                     2 minus_integer
                                     math_integer_m
@@ -2242,9 +2473,9 @@
                                 ),
                             minus_real:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     minus_real
-                                    9 minus_real
+                                    10 minus_real
                                     math_real_m
                                     []
                                     minus_real
@@ -2252,7 +2483,7 @@
                                 ),
                             one_integer:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     one_integer
                                     2 one_integer
                                     math_integer_m
@@ -2262,9 +2493,9 @@
                                 ),
                             one_real:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     one_real
-                                    9 one_real
+                                    10 one_real
                                     math_real_m
                                     []
                                     one_real
@@ -2272,9 +2503,9 @@
                                 ),
                             slash_real:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     slash_real
-                                    9 slash_real
+                                    10 slash_real
                                     math_real_m
                                     []
                                     slash_real
@@ -2283,11 +2514,11 @@
                             test_add_triples:
                                 (Function
                                     (SymbolTable
-                                        25
+                                        28
                                         {
                                             tal:
                                                 (Variable
-                                                    25
+                                                    28
                                                     tal
                                                     []
                                                     Local
@@ -2311,7 +2542,7 @@
                                                 ),
                                             tar:
                                                 (Variable
-                                                    25
+                                                    28
                                                     tar
                                                     []
                                                     Local
@@ -2336,11 +2567,11 @@
                                             triple_add_l:
                                                 (Function
                                                     (SymbolTable
-                                                        26
+                                                        29
                                                         {
                                                             result:
                                                                 (Variable
-                                                                    26
+                                                                    29
                                                                     result
                                                                     []
                                                                     ReturnVar
@@ -2364,7 +2595,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    26
+                                                                    29
                                                                     t
                                                                     []
                                                                     In
@@ -2404,22 +2635,22 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 26 t)]
+                                                    [(Var 29 t)]
                                                     [(Assignment
-                                                        (Var 26 result)
+                                                        (Var 29 result)
                                                         (FunctionCall
-                                                            24 add_integer
+                                                            27 add_integer
                                                             ()
                                                             [((FunctionCall
-                                                                24 add_integer
+                                                                27 add_integer
                                                                 ()
-                                                                [((Var 26 t))
-                                                                ((Var 26 t))]
+                                                                [((Var 29 t))
+                                                                ((Var 29 t))]
                                                                 (Integer 4)
                                                                 ()
                                                                 ()
                                                             ))
-                                                            ((Var 26 t))]
+                                                            ((Var 29 t))]
                                                             (Integer 4)
                                                             ()
                                                             ()
@@ -2428,7 +2659,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 26 result)
+                                                    (Var 29 result)
                                                     Public
                                                     .true.
                                                     .true.
@@ -2437,11 +2668,11 @@
                                             triple_add_r:
                                                 (Function
                                                     (SymbolTable
-                                                        27
+                                                        30
                                                         {
                                                             result:
                                                                 (Variable
-                                                                    27
+                                                                    30
                                                                     result
                                                                     []
                                                                     ReturnVar
@@ -2465,7 +2696,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    27
+                                                                    30
                                                                     t
                                                                     []
                                                                     In
@@ -2505,18 +2736,18 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 27 t)]
+                                                    [(Var 30 t)]
                                                     [(Assignment
-                                                        (Var 27 result)
+                                                        (Var 30 result)
                                                         (FunctionCall
-                                                            24 add_integer
+                                                            27 add_integer
                                                             ()
-                                                            [((Var 27 t))
+                                                            [((Var 30 t))
                                                             ((FunctionCall
-                                                                24 add_integer
+                                                                27 add_integer
                                                                 ()
-                                                                [((Var 27 t))
-                                                                ((Var 27 t))]
+                                                                [((Var 30 t))
+                                                                ((Var 30 t))]
                                                                 (Integer 4)
                                                                 ()
                                                                 ()
@@ -2529,7 +2760,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 27 result)
+                                                    (Var 30 result)
                                                     Public
                                                     .true.
                                                     .true.
@@ -2555,9 +2786,9 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 25 tal)
+                                        (Var 28 tal)
                                         (FunctionCall
-                                            25 triple_add_l
+                                            28 triple_add_l
                                             ()
                                             [((IntegerConstant 7 (Integer 4) Decimal))]
                                             (Integer 4)
@@ -2569,9 +2800,9 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 25 tar)
+                                        (Var 28 tar)
                                         (FunctionCall
-                                            25 triple_add_r
+                                            28 triple_add_r
                                             ()
                                             [((IntegerConstant 7 (Integer 4) Decimal))]
                                             (Integer 4)
@@ -2589,12 +2820,12 @@
                                                 "tal = "
                                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
-                                            (Var 25 tal)
+                                            (Var 28 tal)
                                             (StringConstant
                                                 " tar = "
                                                 (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
-                                            (Var 25 tar)]
+                                            (Var 28 tar)]
                                             FormatFortran
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
@@ -2611,11 +2842,11 @@
                             test_max_triples:
                                 (Function
                                     (SymbolTable
-                                        31
+                                        34
                                         {
                                             tmaxl:
                                                 (Variable
-                                                    31
+                                                    34
                                                     tmaxl
                                                     []
                                                     Local
@@ -2639,7 +2870,7 @@
                                                 ),
                                             tmaxr:
                                                 (Variable
-                                                    31
+                                                    34
                                                     tmaxr
                                                     []
                                                     Local
@@ -2662,6 +2893,340 @@
                                                     []
                                                 ),
                                             triple_max_l:
+                                                (Function
+                                                    (SymbolTable
+                                                        35
+                                                        {
+                                                            result:
+                                                                (Variable
+                                                                    35
+                                                                    result
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            t:
+                                                                (Variable
+                                                                    35
+                                                                    t
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    triple_max_l
+                                                    (FunctionType
+                                                        [(Real 4)]
+                                                        (Real 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 35 t)]
+                                                    [(Assignment
+                                                        (Var 35 result)
+                                                        (FunctionCall
+                                                            27 max_real
+                                                            ()
+                                                            [((FunctionCall
+                                                                27 max_real
+                                                                ()
+                                                                [((Var 35 t))
+                                                                ((Var 35 t))]
+                                                                (Real 4)
+                                                                ()
+                                                                ()
+                                                            ))
+                                                            ((Var 35 t))]
+                                                            (Real 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 35 result)
+                                                    Public
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            triple_max_r:
+                                                (Function
+                                                    (SymbolTable
+                                                        36
+                                                        {
+                                                            result:
+                                                                (Variable
+                                                                    36
+                                                                    result
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            t:
+                                                                (Variable
+                                                                    36
+                                                                    t
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    triple_max_r
+                                                    (FunctionType
+                                                        [(Real 4)]
+                                                        (Real 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 36 t)]
+                                                    [(Assignment
+                                                        (Var 36 result)
+                                                        (FunctionCall
+                                                            27 max_real
+                                                            ()
+                                                            [((Var 36 t))
+                                                            ((FunctionCall
+                                                                27 max_real
+                                                                ()
+                                                                [((Var 36 t))
+                                                                ((Var 36 t))]
+                                                                (Real 4)
+                                                                ()
+                                                                ()
+                                                            ))]
+                                                            (Real 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 36 result)
+                                                    Public
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                )
+                                        })
+                                    test_max_triples
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    [(Assignment
+                                        (Var 34 tmaxl)
+                                        (FunctionCall
+                                            34 triple_max_l
+                                            ()
+                                            [((RealConstant
+                                                7.000000
+                                                (Real 4)
+                                            ))]
+                                            (Real 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 34 tmaxr)
+                                        (FunctionCall
+                                            34 triple_max_r
+                                            ()
+                                            [((RealConstant
+                                                7.000000
+                                                (Real 4)
+                                            ))]
+                                            (Real 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Print
+                                        (StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "tmaxl ="
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )
+                                            (Var 34 tmaxl)
+                                            (StringConstant
+                                                " tmaxr ="
+                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )
+                                            (Var 34 tmaxr)]
+                                            FormatFortran
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            ()
+                                        )
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            test_minus_triples:
+                                (Function
+                                    (SymbolTable
+                                        31
+                                        {
+                                            tml:
+                                                (Variable
+                                                    31
+                                                    tml
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            tmr:
+                                                (Variable
+                                                    31
+                                                    tmr
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            triple_minus_l:
                                                 (Function
                                                     (SymbolTable
                                                         32
@@ -2715,7 +3280,7 @@
                                                                     []
                                                                 )
                                                         })
-                                                    triple_max_l
+                                                    triple_minus_l
                                                     (FunctionType
                                                         [(Real 4)]
                                                         (Real 4)
@@ -2736,10 +3301,10 @@
                                                     [(Assignment
                                                         (Var 32 result)
                                                         (FunctionCall
-                                                            24 max_real
+                                                            27 minus_real
                                                             ()
                                                             [((FunctionCall
-                                                                24 max_real
+                                                                27 minus_real
                                                                 ()
                                                                 [((Var 32 t))
                                                                 ((Var 32 t))]
@@ -2762,7 +3327,7 @@
                                                     .true.
                                                     ()
                                                 ),
-                                            triple_max_r:
+                                            triple_minus_r:
                                                 (Function
                                                     (SymbolTable
                                                         33
@@ -2816,7 +3381,7 @@
                                                                     []
                                                                 )
                                                         })
-                                                    triple_max_r
+                                                    triple_minus_r
                                                     (FunctionType
                                                         [(Real 4)]
                                                         (Real 4)
@@ -2837,11 +3402,11 @@
                                                     [(Assignment
                                                         (Var 33 result)
                                                         (FunctionCall
-                                                            24 max_real
+                                                            27 minus_real
                                                             ()
                                                             [((Var 33 t))
                                                             ((FunctionCall
-                                                                24 max_real
+                                                                27 minus_real
                                                                 ()
                                                                 [((Var 33 t))
                                                                 ((Var 33 t))]
@@ -2858,340 +3423,6 @@
                                                         .false.
                                                     )]
                                                     (Var 33 result)
-                                                    Public
-                                                    .true.
-                                                    .true.
-                                                    ()
-                                                )
-                                        })
-                                    test_max_triples
-                                    (FunctionType
-                                        []
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    []
-                                    [(Assignment
-                                        (Var 31 tmaxl)
-                                        (FunctionCall
-                                            31 triple_max_l
-                                            ()
-                                            [((RealConstant
-                                                7.000000
-                                                (Real 4)
-                                            ))]
-                                            (Real 4)
-                                            ()
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )
-                                    (Assignment
-                                        (Var 31 tmaxr)
-                                        (FunctionCall
-                                            31 triple_max_r
-                                            ()
-                                            [((RealConstant
-                                                7.000000
-                                                (Real 4)
-                                            ))]
-                                            (Real 4)
-                                            ()
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )
-                                    (Print
-                                        (StringFormat
-                                            ()
-                                            [(StringConstant
-                                                "tmaxl ="
-                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                            )
-                                            (Var 31 tmaxl)
-                                            (StringConstant
-                                                " tmaxr ="
-                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                            )
-                                            (Var 31 tmaxr)]
-                                            FormatFortran
-                                            (Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
-                                            )
-                                            ()
-                                        )
-                                    )]
-                                    ()
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            test_minus_triples:
-                                (Function
-                                    (SymbolTable
-                                        28
-                                        {
-                                            tml:
-                                                (Variable
-                                                    28
-                                                    tml
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            tmr:
-                                                (Variable
-                                                    28
-                                                    tmr
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            triple_minus_l:
-                                                (Function
-                                                    (SymbolTable
-                                                        29
-                                                        {
-                                                            result:
-                                                                (Variable
-                                                                    29
-                                                                    result
-                                                                    []
-                                                                    ReturnVar
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            t:
-                                                                (Variable
-                                                                    29
-                                                                    t
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                )
-                                                        })
-                                                    triple_minus_l
-                                                    (FunctionType
-                                                        [(Real 4)]
-                                                        (Real 4)
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .true.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .false.
-                                                        Host
-                                                    )
-                                                    []
-                                                    [(Var 29 t)]
-                                                    [(Assignment
-                                                        (Var 29 result)
-                                                        (FunctionCall
-                                                            24 minus_real
-                                                            ()
-                                                            [((FunctionCall
-                                                                24 minus_real
-                                                                ()
-                                                                [((Var 29 t))
-                                                                ((Var 29 t))]
-                                                                (Real 4)
-                                                                ()
-                                                                ()
-                                                            ))
-                                                            ((Var 29 t))]
-                                                            (Real 4)
-                                                            ()
-                                                            ()
-                                                        )
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                    )]
-                                                    (Var 29 result)
-                                                    Public
-                                                    .true.
-                                                    .true.
-                                                    ()
-                                                ),
-                                            triple_minus_r:
-                                                (Function
-                                                    (SymbolTable
-                                                        30
-                                                        {
-                                                            result:
-                                                                (Variable
-                                                                    30
-                                                                    result
-                                                                    []
-                                                                    ReturnVar
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            t:
-                                                                (Variable
-                                                                    30
-                                                                    t
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                )
-                                                        })
-                                                    triple_minus_r
-                                                    (FunctionType
-                                                        [(Real 4)]
-                                                        (Real 4)
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .true.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .false.
-                                                        Host
-                                                    )
-                                                    []
-                                                    [(Var 30 t)]
-                                                    [(Assignment
-                                                        (Var 30 result)
-                                                        (FunctionCall
-                                                            24 minus_real
-                                                            ()
-                                                            [((Var 30 t))
-                                                            ((FunctionCall
-                                                                24 minus_real
-                                                                ()
-                                                                [((Var 30 t))
-                                                                ((Var 30 t))]
-                                                                (Real 4)
-                                                                ()
-                                                                ()
-                                                            ))]
-                                                            (Real 4)
-                                                            ()
-                                                            ()
-                                                        )
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                    )]
-                                                    (Var 30 result)
                                                     Public
                                                     .true.
                                                     .true.
@@ -3217,9 +3448,9 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 28 tml)
+                                        (Var 31 tml)
                                         (FunctionCall
-                                            28 triple_minus_l
+                                            31 triple_minus_l
                                             ()
                                             [((RealConstant
                                                 7.000000
@@ -3234,9 +3465,9 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 28 tmr)
+                                        (Var 31 tmr)
                                         (FunctionCall
-                                            28 triple_minus_r
+                                            31 triple_minus_r
                                             ()
                                             [((RealConstant
                                                 7.000000
@@ -3257,12 +3488,12 @@
                                                 "tml = "
                                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
-                                            (Var 28 tml)
+                                            (Var 31 tml)
                                             (StringConstant
                                                 " tmr = "
                                                 (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
-                                            (Var 28 tmr)]
+                                            (Var 31 tmr)]
                                             FormatFortran
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
@@ -3278,9 +3509,9 @@
                                 ),
                             triple_tmpl:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     triple_tmpl
-                                    17 triple_tmpl
+                                    19 triple_tmpl
                                     triple_m
                                     []
                                     triple_tmpl
@@ -3288,7 +3519,7 @@
                                 ),
                             zero_integer:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     zero_integer
                                     2 zero_integer
                                     math_integer_m
@@ -3298,9 +3529,9 @@
                                 ),
                             zero_real:
                                 (ExternalSymbol
-                                    24
+                                    27
                                     zero_real
-                                    9 zero_real
+                                    10 zero_real
                                     math_real_m
                                     []
                                     zero_real
@@ -3316,9 +3547,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_use_triple_m
+                    __lcompilers_global_init_state_use_triple_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

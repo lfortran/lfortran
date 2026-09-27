@@ -97,7 +97,8 @@
                                 }
                             }
                         ],
-                        "global_init": []
+                        "global_init": [],
+                        "global_init_state": []
                     },
                     "loc": {
                         "first": 0,
@@ -113,7 +114,10 @@
             }
         },
         "items": [],
-        "global_init": []
+        "global_init": [],
+        "global_init_state": [],
+        "global_init_collective": false,
+        "global_init_bootstrap": []
     },
     "loc": {
         "first": 0,

@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_mod_struct_allocate:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_mod_struct_allocate
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_mod_struct_allocate:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_mod_struct_allocate
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             mxdim:
                                 (Variable
                                     2
@@ -192,16 +248,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_mod_struct_allocate
+                    __lcompilers_global_init_state_mod_struct_allocate
+                    .false.
                 ),
             struct_allocate:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             1_rp1d_f:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     1_rp1d_f
                                     3 f
                                     mod_struct_allocate
@@ -211,7 +269,7 @@
                                 ),
                             1_sds_scales:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     1_sds_scales
                                     4 scales
                                     mod_struct_allocate
@@ -221,7 +279,7 @@
                                 ),
                             rp1d:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     rp1d
                                     2 rp1d
                                     mod_struct_allocate
@@ -231,7 +289,7 @@
                                 ),
                             s:
                                 (Variable
-                                    5
+                                    6
                                     s
                                     []
                                     Local
@@ -263,7 +321,7 @@
                                         .true.
                                         .false.
                                     )
-                                    5 sds
+                                    6 sds
                                     Source
                                     Public
                                     Required
@@ -279,7 +337,7 @@
                                 ),
                             sds:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     sds
                                     2 sds
                                     mod_struct_allocate
@@ -294,8 +352,8 @@
                         [((StructInstanceMember
                             (ArrayItem
                                 (StructInstanceMember
-                                    (Var 5 s)
-                                    5 1_sds_scales
+                                    (Var 6 s)
+                                    6 1_sds_scales
                                     (Array
                                         (StructType
                                             [(Pointer
@@ -338,7 +396,7 @@
                                 ColMajor
                                 ()
                             )
-                            5 1_rp1d_f
+                            6 1_rp1d_f
                             (Pointer
                                 (Array
                                     (Real 8)
@@ -364,8 +422,8 @@
                         [((StructInstanceMember
                             (ArrayItem
                                 (StructInstanceMember
-                                    (Var 5 s)
-                                    5 1_sds_scales
+                                    (Var 6 s)
+                                    6 1_sds_scales
                                     (Array
                                         (StructType
                                             [(Pointer
@@ -408,7 +466,7 @@
                                 ColMajor
                                 ()
                             )
-                            5 1_rp1d_f
+                            6 1_rp1d_f
                             (Pointer
                                 (Array
                                     (Real 8)
@@ -431,8 +489,12 @@
                         ()
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

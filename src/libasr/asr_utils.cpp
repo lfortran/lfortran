@@ -1490,7 +1490,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     ASR::asr_t *orig_asr_owner = symtab->asr_owner;
     ASR::TranslationUnit_t *tu
         = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, loc,
-            symtab, nullptr, 0, nullptr));
+            symtab, nullptr, 0, nullptr, nullptr, false, nullptr));
 
     // Load any dependent modules recursively
     bool rerun = true;
@@ -1638,7 +1638,7 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
     ASR::asr_t *orig_asr_owner = symtab->asr_owner;
     ASR::TranslationUnit_t *tu
         = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, loc,
-            symtab, nullptr, 0, nullptr));
+            symtab, nullptr, 0, nullptr, nullptr, false, nullptr));
 
     // Keeps track of loaded dependent modules whose submodules are not yet loaded
     std::vector<ASR::Module_t*> dependent_modules_with_not_yet_loaded_submodules;
@@ -1725,6 +1725,19 @@ void set_intrinsic(ASR::symbol_t* sym) {
         case ASR::symbolType::Module: {
             ASR::Module_t* module_sym = ASR::down_cast<ASR::Module_t>(sym);
             module_sym->m_intrinsic = true;
+            // An intrinsic module is part of the compiler: whatever it holds
+            // is emitted wherever it is used and it has no startup work, so
+            // the initializer semantics gave it when its `.mod` file was
+            // compiled has no object file to live in.
+            if (module_sym->m_global_init != nullptr) {
+                module_sym->m_symtab->erase_symbol(module_sym->m_global_init);
+                module_sym->m_global_init = nullptr;
+            }
+            if (module_sym->m_global_init_state != nullptr) {
+                module_sym->m_symtab->erase_symbol(module_sym->m_global_init_state);
+                module_sym->m_global_init_state = nullptr;
+            }
+            module_sym->m_global_init_collective = false;
             for( auto& itr: module_sym->m_symtab->get_scope() ) {
                 set_intrinsic(itr.second);
             }

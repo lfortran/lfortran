@@ -5,13 +5,13 @@
             derived_types_17:
                 (Program
                     (SymbolTable
-                        8
+                        10
                         {
                             sub_2:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     sub_2
-                                    6 sub_2
+                                    7 sub_2
                                     derived_types_17_module_2
                                     []
                                     sub_2
@@ -21,12 +21,13 @@
                     derived_types_17
                     [derived_types_17_module_2]
                     [(SubroutineCall
-                        8 sub_2
+                        10 sub_2
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             derived_types_17_module_1:
@@ -34,6 +35,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_derived_types_17_module_1:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_derived_types_17_module_1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_derived_types_17_module_1:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_derived_types_17_module_1
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             add:
                                 (Function
                                     (SymbolTable
@@ -295,16 +352,74 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_derived_types_17_module_1
+                    __lcompilers_global_init_state_derived_types_17_module_1
+                    .false.
                 ),
             derived_types_17_module_2:
                 (Module
                     (SymbolTable
-                        6
+                        7
                         {
+                            __lcompilers_global_init_derived_types_17_module_2:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_derived_types_17_module_2
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_derived_types_17_module_2:
+                                (Variable
+                                    7
+                                    __lcompilers_global_init_state_derived_types_17_module_2
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             add:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     add
                                     2 add
                                     derived_types_17_module_1
@@ -315,7 +430,7 @@
                             sub_2:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             
                                         })
@@ -341,7 +456,7 @@
                                         (StringFormat
                                             ()
                                             [(FunctionCall
-                                                6 subtract
+                                                7 subtract
                                                 ()
                                                 []
                                                 (StructType
@@ -364,7 +479,7 @@
                                         (StringFormat
                                             ()
                                             [(FunctionCall
-                                                6 add
+                                                7 add
                                                 ()
                                                 []
                                                 (StructType
@@ -391,7 +506,7 @@
                                 ),
                             subtract:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     subtract
                                     2 subtract
                                     derived_types_17_module_1
@@ -406,9 +521,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_derived_types_17_module_2
+                    __lcompilers_global_init_state_derived_types_17_module_2
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

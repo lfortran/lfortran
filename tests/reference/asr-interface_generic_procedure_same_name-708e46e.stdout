@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_interface_generic_procedure_same_name:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_interface_generic_procedure_same_name
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_interface_generic_procedure_same_name:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_interface_generic_procedure_same_name
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             frexp:
                                 (GenericProcedure
                                     2
@@ -126,9 +182,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_interface_generic_procedure_same_name
+                    __lcompilers_global_init_state_interface_generic_procedure_same_name
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

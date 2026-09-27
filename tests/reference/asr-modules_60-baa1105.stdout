@@ -5,11 +5,11 @@
             bobyqa_exmp:
                 (Program
                     (SymbolTable
-                        6
+                        8
                         {
                             is_finite:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     is_finite
                                     2 is_finite
                                     inf_mod_1
@@ -19,9 +19,9 @@
                                 ),
                             is_finite_1:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     is_finite_1
-                                    4 is_finite_1
+                                    5 is_finite_1
                                     infnan_mod_1
                                     []
                                     is_finite_1
@@ -29,7 +29,7 @@
                                 ),
                             is_finite_1@is_finite:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     is_finite_1@is_finite
                                     2 is_finite_1
                                     inf_mod_1
@@ -42,12 +42,13 @@
                     [infnan_mod_1
                     inf_mod_1]
                     [(SubroutineCall
-                        6 is_finite_1
+                        8 is_finite_1
                         ()
                         [((IntegerConstant 1 (Integer 4) Decimal))]
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             inf_mod_1:
@@ -55,6 +56,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_inf_mod_1:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_inf_mod_1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_inf_mod_1:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_inf_mod_1
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             is_finite:
                                 (GenericProcedure
                                     2
@@ -101,16 +158,74 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_inf_mod_1
+                    __lcompilers_global_init_state_inf_mod_1
+                    .false.
                 ),
             infnan_mod_1:
                 (Module
                     (SymbolTable
-                        4
+                        5
                         {
+                            __lcompilers_global_init_infnan_mod_1:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_infnan_mod_1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_infnan_mod_1:
+                                (Variable
+                                    5
+                                    __lcompilers_global_init_state_infnan_mod_1
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             is_finite:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     is_finite
                                     2 is_finite
                                     inf_mod_1
@@ -121,11 +236,11 @@
                             is_finite_1:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        6
                                         {
                                             x:
                                                 (Variable
-                                                    5
+                                                    6
                                                     x
                                                     []
                                                     In
@@ -165,11 +280,11 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 x)]
+                                    [(Var 6 x)]
                                     [(Print
                                         (StringFormat
                                             ()
-                                            [(Var 5 x)]
+                                            [(Var 6 x)]
                                             FormatFortran
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
@@ -180,7 +295,7 @@
                                     (If
                                         ()
                                         (IntegerCompare
-                                            (Var 5 x)
+                                            (Var 6 x)
                                             NotEq
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             (Logical 4)
@@ -199,7 +314,7 @@
                                 ),
                             is_finite_1@is_finite:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     is_finite_1@is_finite
                                     2 is_finite_1
                                     inf_mod_1
@@ -214,9 +329,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_infnan_mod_1
+                    __lcompilers_global_init_state_infnan_mod_1
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

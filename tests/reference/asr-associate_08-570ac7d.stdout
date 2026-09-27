@@ -5,11 +5,11 @@
             associate2:
                 (Program
                     (SymbolTable
-                        7
+                        8
                         {
                             1_t_1_i:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     1_t_1_i
                                     3 i
                                     associate_08_module_1
@@ -19,7 +19,7 @@
                                 ),
                             1_t_2_type_2:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     1_t_2_type_2
                                     4 type_2
                                     associate_08_module_1
@@ -29,7 +29,7 @@
                                 ),
                             sub_1:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     sub_1
                                     2 sub_1
                                     associate_08_module_1
@@ -39,7 +39,7 @@
                                 ),
                             sub_2:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     sub_2
                                     2 sub_2
                                     associate_08_module_1
@@ -49,7 +49,7 @@
                                 ),
                             t_1:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     t_1
                                     2 t_1
                                     associate_08_module_1
@@ -59,7 +59,7 @@
                                 ),
                             t_2:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     t_2
                                     2 t_2
                                     associate_08_module_1
@@ -69,7 +69,7 @@
                                 ),
                             t_2_array:
                                 (Variable
-                                    7
+                                    8
                                     t_2_array
                                     []
                                     Local
@@ -103,7 +103,7 @@
                                             Global
                                         )
                                     )
-                                    7 t_2
+                                    8 t_2
                                     Source
                                     Public
                                     Required
@@ -119,7 +119,7 @@
                                 ),
                             type_1:
                                 (Variable
-                                    7
+                                    8
                                     type_1
                                     []
                                     Local
@@ -145,7 +145,7 @@
                                         .true.
                                         .false.
                                     )
-                                    7 t_2
+                                    8 t_2
                                     Source
                                     Public
                                     Required
@@ -163,9 +163,9 @@
                     associate2
                     [associate_08_module_1]
                     [(SubroutineCall
-                        7 sub_1
+                        8 sub_1
                         ()
-                        [((Var 7 type_1))
+                        [((Var 8 type_1))
                         ((IntegerConstant 123 (Integer 4) Decimal))]
                         ()
                         .false.
@@ -176,8 +176,8 @@
                             (StructInstanceMember
                                 (ArrayItem
                                     (StructInstanceMember
-                                        (Var 7 type_1)
-                                        7 1_t_2_type_2
+                                        (Var 8 type_1)
+                                        8 1_t_2_type_2
                                         (Pointer
                                             (Array
                                                 (StructType
@@ -206,7 +206,7 @@
                                     ColMajor
                                     ()
                                 )
-                                7 1_t_1_i
+                                8 1_t_1_i
                                 (Integer 4)
                                 ()
                             )
@@ -226,8 +226,8 @@
                             [(StructInstanceMember
                                 (ArrayItem
                                     (StructInstanceMember
-                                        (Var 7 type_1)
-                                        7 1_t_2_type_2
+                                        (Var 8 type_1)
+                                        8 1_t_2_type_2
                                         (Pointer
                                             (Array
                                                 (StructType
@@ -256,7 +256,7 @@
                                     ColMajor
                                     ()
                                 )
-                                7 1_t_1_i
+                                8 1_t_1_i
                                 (Integer 4)
                                 ()
                             )]
@@ -269,8 +269,8 @@
                     )
                     (ExplicitDeallocate
                         [(StructInstanceMember
-                            (Var 7 type_1)
-                            7 1_t_2_type_2
+                            (Var 8 type_1)
+                            8 1_t_2_type_2
                             (Pointer
                                 (Array
                                     (StructType
@@ -289,12 +289,69 @@
                         )]
                     )]
                     ()
+                    ()
                 ),
             associate_08_module_1:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_associate_08_module_1:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_associate_08_module_1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_associate_08_module_1:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_associate_08_module_1
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             sub_1:
                                 (Function
                                     (SymbolTable
@@ -323,11 +380,11 @@
                                             associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
-                                                        8
+                                                        9
                                                         {
                                                             target:
                                                                 (Variable
-                                                                    8
+                                                                    9
                                                                     target
                                                                     []
                                                                     Local
@@ -354,7 +411,7 @@
                                                         })
                                                     associate_block
                                                     [(Associate
-                                                        (Var 8 target)
+                                                        (Var 9 target)
                                                         (StructInstanceMember
                                                             (ArrayItem
                                                                 (StructInstanceMember
@@ -394,7 +451,7 @@
                                                         )
                                                     )
                                                     (Assignment
-                                                        (Var 8 target)
+                                                        (Var 9 target)
                                                         (Var 5 i)
                                                         ()
                                                         .false.
@@ -563,11 +620,11 @@
                                             associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
-                                                        9
+                                                        10
                                                         {
                                                             1_t_1_i:
                                                                 (ExternalSymbol
-                                                                    9
+                                                                    10
                                                                     1_t_1_i
                                                                     3 i
                                                                     associate_08_module_1
@@ -577,7 +634,7 @@
                                                                 ),
                                                             1_t_2_type_2:
                                                                 (ExternalSymbol
-                                                                    9
+                                                                    10
                                                                     1_t_2_type_2
                                                                     4 type_2
                                                                     associate_08_module_1
@@ -587,7 +644,7 @@
                                                                 ),
                                                             target:
                                                                 (Variable
-                                                                    9
+                                                                    10
                                                                     target
                                                                     []
                                                                     Local
@@ -632,7 +689,7 @@
                                                         })
                                                     associate_block
                                                     [(Associate
-                                                        (Var 9 target)
+                                                        (Var 10 target)
                                                         (ArrayItem
                                                             (Var 6 progress)
                                                             [(()
@@ -665,8 +722,8 @@
                                                         (StructInstanceMember
                                                             (ArrayItem
                                                                 (StructInstanceMember
-                                                                    (Var 9 target)
-                                                                    9 1_t_2_type_2
+                                                                    (Var 10 target)
+                                                                    10 1_t_2_type_2
                                                                     (Pointer
                                                                         (Array
                                                                             (StructType
@@ -695,7 +752,7 @@
                                                                 ColMajor
                                                                 ()
                                                             )
-                                                            9 1_t_1_i
+                                                            10 1_t_1_i
                                                             (Integer 4)
                                                             ()
                                                         )
@@ -1010,9 +1067,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_associate_08_module_1
+                    __lcompilers_global_init_state_associate_08_module_1
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

@@ -5,16 +5,72 @@
             abc:
                 (Module
                     (SymbolTable
-                        8
+                        9
                         {
+                            __lcompilers_global_init_abc:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_abc
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_abc:
+                                (Variable
+                                    9
+                                    __lcompilers_global_init_state_abc
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             f:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        12
                                         {
                                             match:
                                                 (Variable
-                                                    10
+                                                    12
                                                     match
                                                     []
                                                     ReturnVar
@@ -38,7 +94,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    10
+                                                    12
                                                     self
                                                     []
                                                     In
@@ -51,7 +107,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    8 t1
+                                                    9 t1
                                                     Source
                                                     Public
                                                     Optional
@@ -88,9 +144,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 10 self)]
+                                    [(Var 12 self)]
                                     []
-                                    (Var 10 match)
+                                    (Var 12 match)
                                     Public
                                     .true.
                                     .true.
@@ -99,15 +155,15 @@
                             t1:
                                 (Struct
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             f:
                                                 (StructMethodDeclaration
-                                                    9
+                                                    10
                                                     f
                                                     ()
                                                     f
-                                                    8 f
+                                                    9 f
                                                     Source
                                                     .false.
                                                     .false.
@@ -140,7 +196,9 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_abc
+                    __lcompilers_global_init_state_abc
+                    .false.
                 ),
             x:
                 (Program
@@ -162,22 +220,79 @@
                     [y]
                     []
                     ()
+                    ()
                 ),
             y:
                 (Module
                     (SymbolTable
                         4
                         {
-                            sub:
+                            __lcompilers_global_init_state_y:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_y
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_y:
                                 (Function
                                     (SymbolTable
                                         6
                                         {
+                                            
+                                        })
+                                    __lcompilers_global_init_y
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            sub:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
                                             1_t1_f:
                                                 (ExternalSymbol
-                                                    6
+                                                    7
                                                     1_t1_f
-                                                    9 f
+                                                    10 f
                                                     abc
                                                     [t1]
                                                     f
@@ -185,7 +300,7 @@
                                                 ),
                                             1_t2_val:
                                                 (ExternalSymbol
-                                                    6
+                                                    7
                                                     1_t2_val
                                                     5 val
                                                     y
@@ -195,7 +310,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    6
+                                                    7
                                                     self
                                                     []
                                                     InOut
@@ -259,15 +374,15 @@
                                         Host
                                     )
                                     []
-                                    [(Var 6 self)]
+                                    [(Var 7 self)]
                                     [(If
                                         ()
                                         (FunctionCall
-                                            6 1_t1_f
+                                            7 1_t1_f
                                             ()
                                             [((StructInstanceMember
-                                                (Var 6 self)
-                                                6 1_t2_val
+                                                (Var 7 self)
+                                                7 1_t2_val
                                                 (Allocatable
                                                     (StructType
                                                         []
@@ -281,8 +396,8 @@
                                             (Logical 4)
                                             ()
                                             (StructInstanceMember
-                                                (Var 6 self)
-                                                6 1_t2_val
+                                                (Var 7 self)
+                                                7 1_t2_val
                                                 (Allocatable
                                                     (StructType
                                                         []
@@ -317,7 +432,7 @@
                                 (ExternalSymbol
                                     4
                                     t1
-                                    8 t1
+                                    9 t1
                                     abc
                                     []
                                     t1
@@ -394,9 +509,14 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_y
+                    __lcompilers_global_init_state_y
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

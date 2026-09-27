@@ -5,11 +5,11 @@
             __lcompilers_created__nested_context__nested_namelist_01_mod__outer_:
                 (Module
                     (SymbolTable
-                        6
+                        7
                         {
                             i:
                                 (Variable
-                                    6
+                                    7
                                     i
                                     []
                                     Local
@@ -33,14 +33,14 @@
                                 ),
                             nml:
                                 (Namelist
-                                    6
+                                    7
                                     nml
-                                    [6 i
-                                    6 x]
+                                    [7 i
+                                    7 x]
                                 ),
                             x:
                                 (Variable
-                                    6
+                                    7
                                     x
                                     []
                                     Local
@@ -70,15 +70,17 @@
                     .false.
                     .false.
                     ()
+                    ()
+                    .false.
                 ),
             nested_namelist_01:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             outer:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     outer
                                     2 outer
                                     nested_namelist_01_mod
@@ -90,12 +92,13 @@
                     nested_namelist_01
                     [nested_namelist_01_mod]
                     [(SubroutineCall
-                        5 outer
+                        6 outer
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             nested_namelist_01_mod:
@@ -103,6 +106,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_nested_namelist_01_mod:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_nested_namelist_01_mod
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_nested_namelist_01_mod:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_nested_namelist_01_mod
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             outer:
                                 (Function
                                     (SymbolTable
@@ -136,7 +195,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     i_nested_ctx
-                                                    6 i
+                                                    7 i
                                                     __lcompilers_created__nested_context__nested_namelist_01_mod__outer_
                                                     []
                                                     i
@@ -175,7 +234,7 @@
                                                                 (ExternalSymbol
                                                                     4
                                                                     nml
-                                                                    6 nml
+                                                                    7 nml
                                                                     __lcompilers_created__nested_context__nested_namelist_01_mod__outer_
                                                                     []
                                                                     nml
@@ -258,7 +317,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     x_nested_ctx
-                                                    6 x
+                                                    7 x
                                                     __lcompilers_created__nested_context__nested_namelist_01_mod__outer_
                                                     []
                                                     x
@@ -348,9 +407,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_nested_namelist_01_mod
+                    __lcompilers_global_init_state_nested_namelist_01_mod
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

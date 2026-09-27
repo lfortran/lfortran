@@ -5,11 +5,11 @@
             main:
                 (Program
                     (SymbolTable
-                        9
+                        10
                         {
                             default_behavior:
                                 (ExternalSymbol
-                                    9
+                                    10
                                     default_behavior
                                     2 default_behavior
                                     reverse_m
@@ -19,7 +19,7 @@
                                 ),
                             reverse_tmpl:
                                 (ExternalSymbol
-                                    9
+                                    10
                                     reverse_tmpl
                                     2 reverse_tmpl
                                     reverse_m
@@ -29,7 +29,7 @@
                                 ),
                             test_reverse:
                                 (ExternalSymbol
-                                    9
+                                    10
                                     test_reverse
                                     2 test_reverse
                                     reverse_m
@@ -41,12 +41,13 @@
                     main
                     [reverse_m]
                     [(SubroutineCall
-                        9 test_reverse
+                        10 test_reverse
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             reverse_m:
@@ -54,6 +55,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_reverse_m:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_reverse_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_reverse_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_reverse_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             default_behavior:
                                 (Requirement
                                     (SymbolTable
@@ -483,11 +540,11 @@
                                             __asr_swap:
                                                 (Function
                                                     (SymbolTable
-                                                        10
+                                                        11
                                                         {
                                                             tmp:
                                                                 (Variable
-                                                                    10
+                                                                    11
                                                                     tmp
                                                                     []
                                                                     Local
@@ -511,7 +568,7 @@
                                                                 ),
                                                             x:
                                                                 (Variable
-                                                                    10
+                                                                    11
                                                                     x
                                                                     []
                                                                     InOut
@@ -535,7 +592,7 @@
                                                                 ),
                                                             y:
                                                                 (Variable
-                                                                    10
+                                                                    11
                                                                     y
                                                                     []
                                                                     InOut
@@ -576,25 +633,25 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 10 x)
-                                                    (Var 10 y)]
+                                                    [(Var 11 x)
+                                                    (Var 11 y)]
                                                     [(Assignment
-                                                        (Var 10 tmp)
-                                                        (Var 10 x)
+                                                        (Var 11 tmp)
+                                                        (Var 11 x)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 10 x)
-                                                        (Var 10 y)
+                                                        (Var 11 x)
+                                                        (Var 11 y)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 10 y)
-                                                        (Var 10 tmp)
+                                                        (Var 11 y)
+                                                        (Var 11 tmp)
                                                         ()
                                                         .false.
                                                         .false.
@@ -940,9 +997,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_reverse_m
+                    __lcompilers_global_init_state_reverse_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

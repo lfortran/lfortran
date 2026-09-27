@@ -8,6 +8,7 @@ define i32 @main(i32 %0, i8** %1) {
   %p = alloca void*, align 8
   %x = alloca i32*, align 8
   store i32* null, i32** %x, align 8
+  call void @_lcompilers_init_dispatch(i32 1)
   %2 = load i32*, i32** %x, align 8
   %3 = bitcast i32* %2 to void*
   store void* %3, void** %p, align 8
@@ -22,5 +23,7 @@ FINALIZE_SYMTABLE_bindc1:                         ; preds = %return
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lcompilers_init_dispatch(i32)
 
 declare void @_lfortran_internal_alloc_finalize()

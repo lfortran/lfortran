@@ -73,6 +73,7 @@ void main2() {
     int32_t i;
     int32_t nsize;
     float scalar;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     scalar = (float)(10);
     nsize = a->data->extent(0);
     Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(1, nsize+1), KOKKOS_LAMBDA(const long i) {

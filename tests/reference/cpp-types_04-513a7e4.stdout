@@ -28,6 +28,7 @@ void main2() {
     int32_t i;
     float r;
     float x;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     r =   1.50000000000000000e+00;
     i = 2;
     x = (float)(i*i);

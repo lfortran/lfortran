@@ -5,11 +5,11 @@
             operator_overloading_01:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             bin_add:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     bin_add
                                     2 bin_add
                                     operator_overloading_01_overload_asterisk_m
@@ -19,7 +19,7 @@
                                 ),
                             f:
                                 (Variable
-                                    5
+                                    6
                                     f
                                     []
                                     Local
@@ -49,7 +49,7 @@
                                 ),
                             logical_and:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     logical_and
                                     2 logical_and
                                     operator_overloading_01_overload_asterisk_m
@@ -59,7 +59,7 @@
                                 ),
                             t:
                                 (Variable
-                                    5
+                                    6
                                     t
                                     []
                                     Local
@@ -89,7 +89,7 @@
                                 ),
                             ~add:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     ~add
                                     2 ~add
                                     operator_overloading_01_overload_asterisk_m
@@ -99,7 +99,7 @@
                                 ),
                             ~mul:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     ~mul
                                     2 ~mul
                                     operator_overloading_01_overload_asterisk_m
@@ -118,16 +118,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedBinOp
-                                (Var 5 t)
+                                (Var 6 t)
                                 Mul
-                                (Var 5 t)
+                                (Var 6 t)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 logical_and
-                                    5 ~mul
-                                    [((Var 5 t))
-                                    ((Var 5 t))]
+                                    6 logical_and
+                                    6 ~mul
+                                    [((Var 6 t))
+                                    ((Var 6 t))]
                                     (Logical 4)
                                     ()
                                     ()
@@ -148,16 +148,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedBinOp
-                                (Var 5 t)
+                                (Var 6 t)
                                 Mul
-                                (Var 5 f)
+                                (Var 6 f)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 logical_and
-                                    5 ~mul
-                                    [((Var 5 t))
-                                    ((Var 5 f))]
+                                    6 logical_and
+                                    6 ~mul
+                                    [((Var 6 t))
+                                    ((Var 6 f))]
                                     (Logical 4)
                                     ()
                                     ()
@@ -178,16 +178,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedBinOp
-                                (Var 5 f)
+                                (Var 6 f)
                                 Mul
-                                (Var 5 t)
+                                (Var 6 t)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 logical_and
-                                    5 ~mul
-                                    [((Var 5 f))
-                                    ((Var 5 t))]
+                                    6 logical_and
+                                    6 ~mul
+                                    [((Var 6 f))
+                                    ((Var 6 t))]
                                     (Logical 4)
                                     ()
                                     ()
@@ -208,16 +208,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedBinOp
-                                (Var 5 f)
+                                (Var 6 f)
                                 Mul
-                                (Var 5 f)
+                                (Var 6 f)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 logical_and
-                                    5 ~mul
-                                    [((Var 5 f))
-                                    ((Var 5 f))]
+                                    6 logical_and
+                                    6 ~mul
+                                    [((Var 6 f))
+                                    ((Var 6 f))]
                                     (Logical 4)
                                     ()
                                     ()
@@ -238,16 +238,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedBinOp
-                                (Var 5 t)
+                                (Var 6 t)
                                 Add
-                                (Var 5 t)
+                                (Var 6 t)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 bin_add
-                                    5 ~add
-                                    [((Var 5 t))
-                                    ((Var 5 t))]
+                                    6 bin_add
+                                    6 ~add
+                                    [((Var 6 t))
+                                    ((Var 6 t))]
                                     (Integer 4)
                                     ()
                                     ()
@@ -268,16 +268,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedBinOp
-                                (Var 5 t)
+                                (Var 6 t)
                                 Add
-                                (Var 5 f)
+                                (Var 6 f)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 bin_add
-                                    5 ~add
-                                    [((Var 5 t))
-                                    ((Var 5 f))]
+                                    6 bin_add
+                                    6 ~add
+                                    [((Var 6 t))
+                                    ((Var 6 f))]
                                     (Integer 4)
                                     ()
                                     ()
@@ -298,16 +298,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedBinOp
-                                (Var 5 f)
+                                (Var 6 f)
                                 Add
-                                (Var 5 t)
+                                (Var 6 t)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 bin_add
-                                    5 ~add
-                                    [((Var 5 f))
-                                    ((Var 5 t))]
+                                    6 bin_add
+                                    6 ~add
+                                    [((Var 6 f))
+                                    ((Var 6 t))]
                                     (Integer 4)
                                     ()
                                     ()
@@ -328,16 +328,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedBinOp
-                                (Var 5 f)
+                                (Var 6 f)
                                 Add
-                                (Var 5 f)
+                                (Var 6 f)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 bin_add
-                                    5 ~add
-                                    [((Var 5 f))
-                                    ((Var 5 f))]
+                                    6 bin_add
+                                    6 ~add
+                                    [((Var 6 f))
+                                    ((Var 6 f))]
                                     (Integer 4)
                                     ()
                                     ()
@@ -351,12 +351,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             operator_overloading_01_overload_asterisk_m:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_operator_overloading_01_overload_asterisk_m:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_operator_overloading_01_overload_asterisk_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_operator_overloading_01_overload_asterisk_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_operator_overloading_01_overload_asterisk_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             bin_add:
                                 (Function
                                     (SymbolTable
@@ -648,9 +705,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_operator_overloading_01_overload_asterisk_m
+                    __lcompilers_global_init_state_operator_overloading_01_overload_asterisk_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

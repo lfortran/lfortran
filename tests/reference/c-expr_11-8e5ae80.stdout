@@ -13,6 +13,7 @@ int main(int argc, char* argv[])
 {
     _lpython_set_argv(argc, argv);
     double x;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     x = (  2.00000000000000000e+00*x +   1.00000000000000000e+00)/(x*(x + (double)(1)));
     return 0;
 }

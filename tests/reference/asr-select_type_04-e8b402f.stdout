@@ -5,16 +5,72 @@
             class_default_select_type:
                 (Module
                     (SymbolTable
-                        12
+                        13
                         {
+                            __lcompilers_global_init_class_default_select_type:
+                                (Function
+                                    (SymbolTable
+                                        15
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_class_default_select_type
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_class_default_select_type:
+                                (Variable
+                                    13
+                                    __lcompilers_global_init_state_class_default_select_type
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             enum_stat:
                                 (Struct
                                     (SymbolTable
-                                        13
+                                        14
                                         {
                                             fatal:
                                                 (Variable
-                                                    13
+                                                    14
                                                     fatal
                                                     []
                                                     Local
@@ -42,7 +98,7 @@
                                                 ),
                                             success:
                                                 (Variable
-                                                    13
+                                                    14
                                                     success
                                                     []
                                                     Local
@@ -89,12 +145,12 @@
                                 ),
                             toml_stat:
                                 (Variable
-                                    12
+                                    13
                                     toml_stat
                                     []
                                     Local
                                     (StructConstant
-                                        12 enum_stat
+                                        13 enum_stat
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
@@ -106,7 +162,7 @@
                                         )
                                     )
                                     (StructConstant
-                                        12 enum_stat
+                                        13 enum_stat
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
@@ -125,7 +181,7 @@
                                         .true.
                                         .false.
                                     )
-                                    12 enum_stat
+                                    13 enum_stat
                                     Source
                                     Public
                                     Required
@@ -146,7 +202,9 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_class_default_select_type
+                    __lcompilers_global_init_state_class_default_select_type
+                    .false.
                 ),
             class_default_select_type_user:
                 (Module
@@ -157,20 +215,76 @@
                                 (ExternalSymbol
                                     4
                                     1_enum_stat
-                                    12 enum_stat
+                                    13 enum_stat
                                     class_default_select_type
                                     []
                                     enum_stat
                                     Public
                                 ),
-                            check_table:
+                            __lcompilers_global_init_class_default_select_type_user:
                                 (Function
                                     (SymbolTable
                                         7
                                         {
+                                            
+                                        })
+                                    __lcompilers_global_init_class_default_select_type_user
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_class_default_select_type_user:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_class_default_select_type_user
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            check_table:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
                                             tab:
                                                 (Variable
-                                                    7
+                                                    8
                                                     tab
                                                     []
                                                     Out
@@ -222,7 +336,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 7 tab)]
+                                    [(Var 8 tab)]
                                     [(Print
                                         (StringConstant
                                             "inside check_table"
@@ -238,11 +352,11 @@
                             get_table:
                                 (Function
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             ptr:
                                                 (Variable
-                                                    8
+                                                    9
                                                     ptr
                                                     []
                                                     Out
@@ -274,7 +388,7 @@
                                                 ),
                                             stat:
                                                 (Variable
-                                                    8
+                                                    9
                                                     stat
                                                     []
                                                     Out
@@ -298,7 +412,7 @@
                                                 ),
                                             table:
                                                 (Variable
-                                                    8
+                                                    9
                                                     table
                                                     []
                                                     InOut
@@ -328,7 +442,7 @@
                                                 ),
                                             tmp:
                                                 (Variable
-                                                    8
+                                                    9
                                                     tmp
                                                     []
                                                     Local
@@ -361,13 +475,13 @@
                                             ~select_type_block_:
                                                 (Block
                                                     (SymbolTable
-                                                        9
+                                                        10
                                                         {
                                                             1_enum_stat_success:
                                                                 (ExternalSymbol
-                                                                    9
+                                                                    10
                                                                     1_enum_stat_success
-                                                                    13 success
+                                                                    14 success
                                                                     class_default_select_type
                                                                     [enum_stat]
                                                                     success
@@ -376,9 +490,9 @@
                                                         })
                                                     ~select_type_block_
                                                     [(Associate
-                                                        (Var 8 ptr)
+                                                        (Var 9 ptr)
                                                         (Cast
-                                                            (Var 8 tmp)
+                                                            (Var 9 tmp)
                                                             ClassToStruct
                                                             (Pointer
                                                                 (StructType
@@ -397,16 +511,16 @@
                                                         ()
                                                         (IntrinsicElementalFunction
                                                             Present
-                                                            [(Var 8 stat)]
+                                                            [(Var 9 stat)]
                                                             0
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(Assignment
-                                                            (Var 8 stat)
+                                                            (Var 9 stat)
                                                             (StructInstanceMember
                                                                 (Var 4 toml_stat)
-                                                                9 1_enum_stat_success
+                                                                10 1_enum_stat_success
                                                                 (Integer 4)
                                                                 (IntegerConstant 0 (Integer 4) Decimal)
                                                             )
@@ -420,13 +534,13 @@
                                             ~select_type_block_1:
                                                 (Block
                                                     (SymbolTable
-                                                        10
+                                                        11
                                                         {
                                                             1_enum_stat_fatal:
                                                                 (ExternalSymbol
-                                                                    10
+                                                                    11
                                                                     1_enum_stat_fatal
-                                                                    13 fatal
+                                                                    14 fatal
                                                                     class_default_select_type
                                                                     [enum_stat]
                                                                     fatal
@@ -438,16 +552,16 @@
                                                         ()
                                                         (IntrinsicElementalFunction
                                                             Present
-                                                            [(Var 8 stat)]
+                                                            [(Var 9 stat)]
                                                             0
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(Assignment
-                                                            (Var 8 stat)
+                                                            (Var 9 stat)
                                                             (StructInstanceMember
                                                                 (Var 4 toml_stat)
-                                                                10 1_enum_stat_fatal
+                                                                11 1_enum_stat_fatal
                                                                 (Integer 4)
                                                                 (IntegerConstant -1 (Integer 4) Decimal)
                                                             )
@@ -492,39 +606,39 @@
                                         Host
                                     )
                                     [check_table]
-                                    [(Var 8 table)
-                                    (Var 8 ptr)
-                                    (Var 8 stat)]
+                                    [(Var 9 table)
+                                    (Var 9 ptr)
+                                    (Var 9 stat)]
                                     [(Nullify
-                                        [(Var 8 ptr)]
+                                        [(Var 9 ptr)]
                                     )
                                     (If
                                         ()
                                         (PointerAssociated
-                                            (Var 8 tmp)
+                                            (Var 9 tmp)
                                             ()
                                             (Logical 4)
                                             ()
                                         )
                                         [(SelectType
-                                            (Var 8 tmp)
+                                            (Var 9 tmp)
                                             ()
                                             [(TypeStmtName
                                                 4 toml_table
                                                 [(BlockCall
                                                     -1
-                                                    8 ~select_type_block_
+                                                    9 ~select_type_block_
                                                 )]
                                             )]
                                             [(BlockCall
                                                 -1
-                                                8 ~select_type_block_1
+                                                9 ~select_type_block_1
                                             )]
                                         )]
                                         [(SubroutineCall
                                             4 check_table
                                             ()
-                                            [((Var 8 table))]
+                                            [((Var 9 table))]
                                             ()
                                             .false.
                                         )]
@@ -539,7 +653,7 @@
                                 (ExternalSymbol
                                     4
                                     toml_stat
-                                    12 toml_stat
+                                    13 toml_stat
                                     class_default_select_type
                                     []
                                     toml_stat
@@ -716,7 +830,9 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_class_default_select_type_user
+                    __lcompilers_global_init_state_class_default_select_type_user
+                    .false.
                 ),
             class_default_select_type_user1:
                 (Module
@@ -727,11 +843,67 @@
                                 (ExternalSymbol
                                     2
                                     1_enum_stat
-                                    12 enum_stat
+                                    13 enum_stat
                                     class_default_select_type
                                     []
                                     enum_stat
                                     Public
+                                ),
+                            __lcompilers_global_init_class_default_select_type_user1:
+                                (Function
+                                    (SymbolTable
+                                        16
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_class_default_select_type_user1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_class_default_select_type_user1:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_class_default_select_type_user1
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             check_table:
                                 (ExternalSymbol
@@ -757,7 +929,7 @@
                                 (ExternalSymbol
                                     2
                                     toml_stat
-                                    12 toml_stat
+                                    13 toml_stat
                                     class_default_select_type
                                     []
                                     toml_stat
@@ -791,12 +963,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_class_default_select_type_user1
+                    __lcompilers_global_init_state_class_default_select_type_user1
+                    .false.
                 ),
             select_type4:
                 (Program
                     (SymbolTable
-                        14
+                        17
                         {
                             
                         })
@@ -809,8 +983,12 @@
                         )
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

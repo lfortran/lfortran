@@ -863,6 +863,16 @@ public:
         builder->create<mlir::omp::YieldOp>(loc);
     }
 
+    // What an initializer establishes before storing any value. This backend
+    // declares no module storage at all, so an initializer with targets asks
+    // for something it cannot lay out; one without has nothing to do.
+    void visit_GlobalInitStorage(const ASR::GlobalInitStorage_t &x) {
+        if (x.n_targets > 0) {
+            throw CodeGenError("run-time storage of module variables is not "
+                "supported by the MLIR backend", x.base.base.loc);
+        }
+    }
+
     void visit_ErrorStop(const ASR::ErrorStop_t &) {
         mlir::OpBuilder builder0(module->getBodyRegion());
         mlir::LLVM::LLVMFuncOp printf_fn =

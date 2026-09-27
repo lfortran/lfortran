@@ -11,6 +11,7 @@
 #include <libasr/codegen/wasm_assembler.h>
 
 #include <libasr/pass/pass_manager.h>
+#include <libasr/pass/global_init.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
 #define INCLUDE_RUNTIME_FUNC(fn)                 \
@@ -746,15 +747,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
-        // A translation unit initializer has to run before main, which only
-        // a target with a startup hook of its own can arrange. Nothing that
-        // reaches this backend sets one today — it comes from a saved coarray
-        // of an external procedure — so say so rather than quietly dropping
-        // the initialization on the floor.
-        if (x.m_global_init != nullptr) {
-            throw CodeGenError("a startup initializer of the translation unit "
-                "is not supported by this backend");
-        }
         // All loose statements must be converted to a function, so the items
         // must be empty:
         LCOMPILERS_ASSERT(x.n_items == 0);
@@ -3591,6 +3583,26 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         this->visit_expr(*x.m_value);
     }
 
+    // A module or translation unit variable is a global of the wasm module,
+    // or a pointer to static memory for a string, laid out before anything
+    // runs. Any other storage is not something this backend creates.
+    void visit_GlobalInitStorage(const ASR::GlobalInitStorage_t &x) {
+        for (size_t i = 0; i < x.n_targets; i++) {
+            ASR::Variable_t *v = ASRUtils::EXPR2VAR(x.m_targets[i]);
+            ASR::ttype_t *t = v->m_type;
+            bool is_static = !ASRUtils::is_array(t) && !ASRUtils::is_pointer(t)
+                && !ASRUtils::is_allocatable(t)
+                && (ASRUtils::is_integer(*t) || ASRUtils::is_real(*t)
+                    || ASRUtils::is_logical(*t) || ASRUtils::is_character(*t));
+            if (!is_static) {
+                throw CodeGenError("run-time storage of '"
+                    + std::string(v->m_name)
+                    + "' is not supported by the wasm backend",
+                    x.m_targets[i]->base.loc);
+            }
+        }
+    }
+
     void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& /*x*/) {
     }
 };
@@ -3602,11 +3614,48 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
     ASRToWASMVisitor v(al, diagnostics);
 
     co.po.always_run = true;
+    LCompilers::PassManager pass_manager;
+    double cummulative_time_take_by_passes = 0.0;
+    // The same lowering of declaration initializers every other target gets:
+    // what static data cannot hold becomes a statement of the owner's startup
+    // initializer, and the wiring gives each initializer its guard and starts
+    // the program with the dispatch.
+    std::vector<std::string> init_passes = {"global_init", "global_init_wire"};
+    pass_manager.apply_passes(al, &asr, init_passes, co.po, diagnostics,
+        cummulative_time_take_by_passes);
+    // The module this backend emits is the whole program and loads no other
+    // code, so its startup set is exactly the initializers defined here: the
+    // dispatch becomes calls of them and each guard plain code on its state.
+    // Nothing but a main program enters the startup of this output, so
+    // without one the initializers would never run; and the output is the
+    // whole program, so an initializer defined elsewhere -- a module compiled
+    // separately -- is one it could not contain.
+    bool has_program = false;
+    for (auto &item : asr.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Program_t>(*item.second)) {
+            has_program = true;
+        } else if (ASR::is_a<ASR::Module_t>(*item.second)) {
+            ASR::Function_t *init = ASRUtils::get_global_init(
+                (ASR::asr_t*)item.second);
+            if (init && !ASRUtils::global_init_defined_here(init)) {
+                diagnostics.add(diag::Diagnostic("the wasm backend compiles "
+                    "the whole program, but module '" + item.first + "' is "
+                    "compiled separately", diag::Level::Error,
+                    diag::Stage::CodeGen));
+                return Error();
+            }
+        }
+    }
+    if (!has_program && !ASRUtils::global_init_roots(asr).empty()) {
+        diagnostics.add(diag::Diagnostic("the wasm backend needs a main "
+            "program to run the startup initializers of the modules it "
+            "compiles", diag::Level::Error, diag::Stage::CodeGen));
+        return Error();
+    }
+    ASRUtils::expand_closed_world_dispatch(al, asr);
     std::vector<std::string> passes = {"pass_array_by_data", "array_op",
                 "implied_do_loops", "print_arr", "do_loops", "select_case",
                 "nested_vars", "unused_functions", "intrinsic_function"};
-    LCompilers::PassManager pass_manager;
-    double cummulative_time_take_by_passes = 0.0;
     pass_manager.apply_passes(al, &asr, passes, co.po, diagnostics, cummulative_time_take_by_passes);
 
 

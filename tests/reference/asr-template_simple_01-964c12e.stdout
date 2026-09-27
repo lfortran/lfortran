@@ -5,11 +5,11 @@
             template_simple_01:
                 (Program
                     (SymbolTable
-                        18
+                        19
                         {
                             cast_r:
                                 (ExternalSymbol
-                                    18
+                                    19
                                     cast_r
                                     2 cast_r
                                     template_simple_01_m
@@ -19,7 +19,7 @@
                                 ),
                             generic_sum:
                                 (ExternalSymbol
-                                    18
+                                    19
                                     generic_sum
                                     2 generic_sum
                                     template_simple_01_m
@@ -29,7 +29,7 @@
                                 ),
                             operator_r:
                                 (ExternalSymbol
-                                    18
+                                    19
                                     operator_r
                                     2 operator_r
                                     template_simple_01_m
@@ -39,7 +39,7 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    18
+                                    19
                                     test_template
                                     2 test_template
                                     template_simple_01_m
@@ -51,12 +51,13 @@
                     template_simple_01
                     [template_simple_01_m]
                     [(SubroutineCall
-                        18 test_template
+                        19 test_template
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             template_simple_01_m:
@@ -64,6 +65,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_simple_01_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_simple_01_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_simple_01_m:
+                                (Function
+                                    (SymbolTable
+                                        18
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_simple_01_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             cast_integer:
                                 (Function
                                     (SymbolTable
@@ -2078,9 +2135,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_template_simple_01_m
+                    __lcompilers_global_init_state_template_simple_01_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

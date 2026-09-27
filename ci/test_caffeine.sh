@@ -118,6 +118,19 @@ cd ..
 
 export PATH="$PWD/caffeine/inst/bin:$PATH"
 
+# The start of the coarray runtime, compiled with Caffeine's own prif module;
+# see src/runtime/prif/lcompilers_prif.f90. Every coarray program links it.
+prif_mod=$(find caffeine/build -name prif.mod | head -1)
+if [ -z "$prif_mod" ] || [ ! -s "$prif_mod" ]; then
+    echo "ERROR: Caffeine's prif.mod was not found under caffeine/build"
+    exit 1
+fi
+prif_mod_dir=$(dirname "$prif_mod")
+# --separate-compilation, so that its `use prif` reads Caffeine's module
+# rather than compiling Caffeine's procedures into this object again.
+lfortran -c --separate-compilation -I"$prif_mod_dir" src/runtime/prif/lcompilers_prif.f90 -o "$PWD/lcompilers_prif.o"
+prif_adapter="$PWD/lcompilers_prif.o"
+
 (set +x 
  echo "##[endgroup]"
  echo "##[group] Test setup"
@@ -134,17 +147,21 @@ echo "Using CAF_IMAGES=$CAF_IMAGES"
 tests=$(python3 -c '
 import re
 filenames = []
+explicitly_run = {"coarrays_61"}
 
 with open("integration_tests/CMakeLists.txt") as f:
     for line in f:
         line = line.strip()
         if line.startswith("RUN(") and "coarray=true" in line:
-            fields = ["NAME", "NUM_IMAGES", "LABELS", "EXTRAFILES", "EXTRA_ARGS"]
+            fields = ["NAME", "FILE", "NUM_IMAGES", "LABELS", "EXTRAFILES", "EXTRA_ARGS"]
             # Regex pattern matching key, separator (space or =), and value up to the next key or closing bracket
             fields_pattern = "|".join(fields)
-            pattern = rf"({fields_pattern})[ =]\s*(.*?)(?=\s+(?:{fields_pattern})[ =]|\))"
+            pattern = rf"\b({fields_pattern})[ =]\s*(.*?)(?=\s+(?:{fields_pattern})[ =]|\))"
             parsed_data = dict(re.findall(pattern, line))
             name       = parsed_data.get("NAME")
+            # Built and run by its own block below.
+            if name in explicitly_run:
+                continue
             num_images = parsed_data.get("NUM_IMAGES") or ""
             extra_args = parsed_data.get("EXTRA_ARGS") or ""
             extrafiles = parsed_data.get("EXTRAFILES") or ""
@@ -171,7 +188,9 @@ fi
 # coarrays_39: gfortran doesn't support coshape intrinsic with version 13.3.
 # coarrays_45, coarrays_46, coarrays_47: gfortran-13/OpenCoarrays lacks support for co_broadcast of PDT/extended/allocatable derived-type arrays (strided section)
 # coarrays_49: gfortran ICEs on the `ptr => co_var` declaration initializer (internal compiler error in record_reference, cgraphbuild.cc:65, with 13.3); per @bonachea 16.2 still does not run this correctly
-opencoarrays_unsupported="coarrays_06 coarrays_11 coarrays_13 coarrays_21 coarrays_27 coarrays_31 coarrays_32 coarrays_34 coarrays_39 coarrays_45 coarrays_46 coarrays_47 coarrays_49"
+# coarrays_53, coarrays_54: the same `p => co_var` declaration initializer as coarrays_49, across modules
+# coarrays_57 to coarrays_60: a C main program calling the LFortran runtime's host startup entry
+opencoarrays_unsupported="coarrays_06 coarrays_11 coarrays_13 coarrays_21 coarrays_27 coarrays_31 coarrays_32 coarrays_34 coarrays_39 coarrays_45 coarrays_46 coarrays_47 coarrays_49 coarrays_53 coarrays_54 coarrays_57 coarrays_58 coarrays_59 coarrays_60"
 
 # loop over $tests
 while IFS=';' read -r -u 3 testfile num_images extra_args extrafiles || [[ -n "$testfile" ]]; do
@@ -194,18 +213,58 @@ base=$(basename "$testfile" .f90)
 # Compile with LFortran + caffeine
 # ----------------------------------------
 
+if [[ " $extrafiles " == *".c "* ]]; then
+    # A C main program: the driver only builds an executable from Fortran
+    # sources that hold one, so every file is compiled on its own and the
+    # objects are linked by the driver, which adds the runtime.
+    objects=""
+    for f in $extrafiles $testfile; do
+        o="$(basename "$f").o"
+        if [[ "$f" == *.c ]]; then
+            ${CC:-cc} -c "$f" -o "$o"
+        else
+            lfortran -c $extra_args "$f" -o "$o"
+        fi
+        objects="$objects $o"
+    done
+    lfortran $objects \
+        -o "${base}_lf.out" \
+        "$prif_adapter" \
+        -L"$PWD/caffeine/inst/lib" \
+        -lcaffeine \
+        -lgasnet-smp-seq
+    rm -f $objects
+else
 lfortran $extrafiles $testfile \
     $extra_args \
     -o "${base}_lf.out" \
-    -L$PWD/caffeine/inst/lib \
+    "$prif_adapter" \
+    -L"$PWD/caffeine/inst/lib" \
     -lcaffeine \
     -lgasnet-smp-seq
+fi
 
 # ----------------------------------------
 # Run LFortran executable
 # ----------------------------------------
 
-gasnetrun_smp -n "$num_images" ./"${base}_lf.out"
+# An image that reaches ERROR STOP does not always make the launcher exit
+# with a failure status (with Caffeine on macOS it exits with 0), so the
+# output is checked as well. It is kept in the log when the test fails.
+set +e
+gasnetrun_smp -n "$num_images" ./"${base}_lf.out" > "${base}_lf.log" 2>&1
+run_status=$?
+set -e
+cat "${base}_lf.log"
+if [ "$run_status" -ne 0 ]; then
+    echo "FAIL: $testfile exited with status $run_status; output in ${base}_lf.log"
+    exit 1
+fi
+if grep -q "ERROR STOP" "${base}_lf.log"; then
+    echo "FAIL: $testfile reached ERROR STOP; output in ${base}_lf.log"
+    exit 1
+fi
+rm -f "${base}_lf.log"
 
 # ----------------------------------------
 # Cross-check with gfortran/OpenCoarrays, unless OpenCoarrays lacks support
@@ -237,6 +296,44 @@ echo "PASS: $testfile"
 
 done 3<<< "$tests" # end of while loop over tests
 
+# ----------------------------------------
+# A coarray plugin loaded, closed and loaded again by a host that keeps the
+# coarray runtime loaded; see integration_tests/coarrays_61c.c. The host
+# holds the whole of Caffeine, which the plugin's calls resolve against.
+# ----------------------------------------
+
+(set +x
+ echo "##[group] testing: integration_tests/coarrays_61c.c (2 images)"
+)
+lfortran -c --coarray=true --separate-compilation -fPIC \
+    integration_tests/coarrays_61_p.f90 -o coarrays_61_p.o
+${CC:-cc} -c integration_tests/coarrays_61c.c -o coarrays_61c.o
+if [ $LINUX ] ; then
+    lfortran --shared coarrays_61_p.o -o libcoarrays_61.so
+    lfortran coarrays_61c.o "$prif_adapter" -o coarrays_61_lf.out \
+        -L"$PWD/caffeine/inst/lib" -Wl,--whole-archive -lcaffeine \
+        -lgasnet-smp-seq -Wl,--no-whole-archive -rdynamic -ldl
+    plugin="$PWD/libcoarrays_61.so"
+else
+    lfortran --shared coarrays_61_p.o -o libcoarrays_61.dylib \
+        -Wl,-undefined,dynamic_lookup
+    lfortran coarrays_61c.o "$prif_adapter" -o coarrays_61_lf.out \
+        "-Wl,-force_load,$PWD/caffeine/inst/lib/libcaffeine.a" \
+        "-Wl,-force_load,$PWD/caffeine/inst/lib/libgasnet-smp-seq.a"
+    plugin="$PWD/libcoarrays_61.dylib"
+fi
+set +e
+gasnetrun_smp -n 2 ./coarrays_61_lf.out "$plugin" > coarrays_61_lf.log 2>&1
+run_status=$?
+set -e
+cat coarrays_61_lf.log
+if [ "$run_status" -ne 0 ] || grep -q "ERROR STOP" coarrays_61_lf.log; then
+    echo "FAIL: coarrays_61 (status $run_status); output in coarrays_61_lf.log"
+    exit 1
+fi
+rm -f coarrays_61_p.o coarrays_61c.o coarrays_61_lf.out coarrays_61_lf.log "$plugin"
+echo "PASS: coarrays_61"
+
 (set +x 
  echo "##[endgroup]"
 )
@@ -245,4 +342,5 @@ echo
 echo "All coarray runtime tests passed"
 
 rm -rf caffeine
+rm -f "$prif_adapter"
 rm -rf OpenCoarrays

@@ -249,6 +249,7 @@ define i32 @main(i32 %0, i8** %1) {
   %6 = call i8* @_lfortran_malloc_alloc(i8* %5, i64 32)
   store i8* %6, i8** %4, align 8
   %unit_num = alloca i32, align 4
+  call void @_lcompilers_init_dispatch(i32 1)
   store i32 1, i32* %call_arg_value, align 4
   call void @_lcompilers_get_command_argument_(i32* %call_arg_value, %string_descriptor* %empty_read)
   %7 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0_return_slot, i32 0, i32 0
@@ -361,6 +362,8 @@ Finalize_Variable_empty_read:                     ; preds = %Finalize_Variable__
 declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
+
+declare void @_lcompilers_init_dispatch(i32)
 
 declare i32 @str_compare(i8*, i64, i8*, i64)
 

@@ -5,11 +5,11 @@
             optional_02:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
                             __libasr_created_dummy_variable_:
                                 (Variable
-                                    4
+                                    5
                                     __libasr_created_dummy_variable_
                                     []
                                     Local
@@ -33,7 +33,7 @@
                                 ),
                             __libasr_created_variable_pointer_:
                                 (Variable
-                                    4
+                                    5
                                     __libasr_created_variable_pointer_
                                     []
                                     Local
@@ -59,7 +59,7 @@
                                 ),
                             f1:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     f1
                                     2 f1
                                     optional_02_m
@@ -69,7 +69,7 @@
                                 ),
                             i:
                                 (Variable
-                                    4
+                                    5
                                     i
                                     []
                                     Local
@@ -97,7 +97,7 @@
                     optional_02
                     [optional_02_m]
                     [(Assignment
-                        (Var 4 i)
+                        (Var 5 i)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
                         .false.
@@ -107,31 +107,31 @@
                         ()
                         (IntrinsicImpureFunction
                             Allocated
-                            [(Var 4 i)]
+                            [(Var 5 i)]
                             0
                             (Logical 4)
                             ()
                         )
                         [(Associate
-                            (Var 4 __libasr_created_variable_pointer_)
-                            (Var 4 i)
+                            (Var 5 __libasr_created_variable_pointer_)
+                            (Var 5 i)
                         )]
                         [(Associate
-                            (Var 4 __libasr_created_variable_pointer_)
-                            (Var 4 __libasr_created_dummy_variable_)
+                            (Var 5 __libasr_created_variable_pointer_)
+                            (Var 5 __libasr_created_dummy_variable_)
                         )]
                     )
                     (Print
                         (StringFormat
                             ()
                             [(FunctionCall
-                                4 f1
+                                5 f1
                                 ()
-                                [((Var 4 __libasr_created_variable_pointer_))
+                                [((Var 5 __libasr_created_variable_pointer_))
                                 ((LogicalBinOp
                                     (IntrinsicImpureFunction
                                         Allocated
-                                        [(Var 4 i)]
+                                        [(Var 5 i)]
                                         0
                                         (Logical 4)
                                         ()
@@ -158,12 +158,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             optional_02_m:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_optional_02_m:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_optional_02_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_optional_02_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_optional_02_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             f1:
                                 (Function
                                     (SymbolTable
@@ -286,9 +343,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_optional_02_m
+                    __lcompilers_global_init_state_optional_02_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

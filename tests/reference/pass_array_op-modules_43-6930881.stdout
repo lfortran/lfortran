@@ -5,11 +5,11 @@
             modules_43:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             add_sources_from_dir:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     add_sources_from_dir
                                     2 add_sources_from_dir
                                     modules_43_fpm_sources
@@ -19,7 +19,7 @@
                                 ),
                             sources:
                                 (Variable
-                                    5
+                                    6
                                     sources
                                     []
                                     Local
@@ -46,7 +46,7 @@
                                             Global
                                         )
                                     )
-                                    5 srcfile_t
+                                    6 srcfile_t
                                     Source
                                     Public
                                     Required
@@ -62,7 +62,7 @@
                                 ),
                             srcfile_t:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     srcfile_t
                                     2 srcfile_t
                                     modules_43_fpm_sources
@@ -74,7 +74,7 @@
                     modules_43
                     [modules_43_fpm_sources]
                     [(Allocate
-                        [((Var 5 sources)
+                        [((Var 6 sources)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 1 (Integer 4) Decimal))]
                         []
@@ -86,12 +86,13 @@
                         ()
                     )
                     (SubroutineCall
-                        5 add_sources_from_dir
+                        6 add_sources_from_dir
                         ()
-                        [((Var 5 sources))]
+                        [((Var 6 sources))]
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             modules_43_fpm_sources:
@@ -99,6 +100,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_modules_43_fpm_sources:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_43_fpm_sources
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_43_fpm_sources:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_modules_43_fpm_sources
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             add_sources_from_dir:
                                 (Function
                                     (SymbolTable
@@ -816,9 +873,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_modules_43_fpm_sources
+                    __lcompilers_global_init_state_modules_43_fpm_sources
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

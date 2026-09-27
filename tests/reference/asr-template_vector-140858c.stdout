@@ -5,11 +5,11 @@
             template_vector:
                 (Program
                     (SymbolTable
-                        11
+                        12
                         {
                             main:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     main
                                     2 main
                                     template_vector_m
@@ -19,7 +19,7 @@
                                 ),
                             vector_t:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     vector_t
                                     2 vector_t
                                     template_vector_m
@@ -31,12 +31,13 @@
                     template_vector
                     [template_vector_m]
                     [(SubroutineCall
-                        11 main
+                        12 main
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             template_vector_m:
@@ -44,6 +45,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_vector_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_vector_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_vector_m:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_vector_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             main:
                                 (Function
                                     (SymbolTable
@@ -1694,9 +1751,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_template_vector_m
+                    __lcompilers_global_init_state_template_vector_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

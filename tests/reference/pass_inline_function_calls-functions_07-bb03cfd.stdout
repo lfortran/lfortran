@@ -5,11 +5,11 @@
             functions_07:
                 (Program
                     (SymbolTable
-                        8
+                        11
                         {
                             f_a:
                                 (ExternalSymbol
-                                    8
+                                    11
                                     f_a
                                     2 f_a
                                     functions_07_a
@@ -19,9 +19,9 @@
                                 ),
                             f_b:
                                 (ExternalSymbol
-                                    8
+                                    11
                                     f_b
-                                    4 f_b
+                                    5 f_b
                                     functions_07_b
                                     []
                                     f_b
@@ -29,9 +29,9 @@
                                 ),
                             f_c:
                                 (ExternalSymbol
-                                    8
+                                    11
                                     f_c
-                                    6 f_c
+                                    8 f_c
                                     functions_07_c
                                     []
                                     f_c
@@ -39,7 +39,7 @@
                                 ),
                             p:
                                 (Variable
-                                    8
+                                    11
                                     p
                                     []
                                     Local
@@ -75,7 +75,7 @@
                                 ),
                             q:
                                 (Variable
-                                    8
+                                    11
                                     q
                                     []
                                     Local
@@ -103,11 +103,11 @@
                     functions_07_a
                     functions_07_b]
                     [(Assignment
-                        (Var 8 q)
+                        (Var 11 q)
                         (FunctionCall
-                            8 f_c
+                            11 f_c
                             ()
-                            [((Var 8 p))]
+                            [((Var 11 p))]
                             (Real 4)
                             ()
                             ()
@@ -119,7 +119,7 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 8 q)]
+                            [(Var 11 q)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -128,12 +128,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             functions_07_a:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_functions_07_a:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_functions_07_a
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_functions_07_a:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_functions_07_a
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             f_a:
                                 (Function
                                     (SymbolTable
@@ -235,16 +292,74 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_functions_07_a
+                    __lcompilers_global_init_state_functions_07_a
+                    .false.
                 ),
             functions_07_b:
                 (Module
                     (SymbolTable
-                        4
+                        5
                         {
+                            __lcompilers_global_init_functions_07_b:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_functions_07_b
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_functions_07_b:
+                                (Variable
+                                    5
+                                    __lcompilers_global_init_state_functions_07_b
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             f_a:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     f_a
                                     2 f_a
                                     functions_07_a
@@ -255,16 +370,16 @@
                             f_b:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        6
                                         {
                                             __inlined_f_a:
                                                 (Block
                                                     (SymbolTable
-                                                        9
+                                                        12
                                                         {
                                                             u:
                                                                 (Variable
-                                                                    9
+                                                                    12
                                                                     u
                                                                     []
                                                                     Local
@@ -288,7 +403,7 @@
                                                                 ),
                                                             v:
                                                                 (Variable
-                                                                    9
+                                                                    12
                                                                     v
                                                                     []
                                                                     Local
@@ -313,16 +428,16 @@
                                                         })
                                                     __inlined_f_a
                                                     [(Assignment
-                                                        (Var 9 u)
-                                                        (Var 5 x)
+                                                        (Var 12 u)
+                                                        (Var 6 x)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 9 v)
+                                                        (Var 12 v)
                                                         (RealBinOp
-                                                            (Var 9 u)
+                                                            (Var 12 u)
                                                             Add
                                                             (RealConstant
                                                                 1.000000
@@ -336,8 +451,8 @@
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 5 f_a_result)
-                                                        (Var 9 v)
+                                                        (Var 6 f_a_result)
+                                                        (Var 12 v)
                                                         ()
                                                         .false.
                                                         .false.
@@ -345,7 +460,7 @@
                                                 ),
                                             f_a_result:
                                                 (Variable
-                                                    5
+                                                    6
                                                     f_a_result
                                                     []
                                                     Local
@@ -369,7 +484,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    5
+                                                    6
                                                     x
                                                     []
                                                     In
@@ -393,7 +508,7 @@
                                                 ),
                                             y:
                                                 (Variable
-                                                    5
+                                                    6
                                                     y
                                                     []
                                                     ReturnVar
@@ -433,15 +548,15 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 x)]
+                                    [(Var 6 x)]
                                     [(BlockCall
                                         -1
-                                        5 __inlined_f_a
+                                        6 __inlined_f_a
                                     )
                                     (Assignment
-                                        (Var 5 y)
+                                        (Var 6 y)
                                         (RealBinOp
-                                            (Var 5 f_a_result)
+                                            (Var 6 f_a_result)
                                             Add
                                             (RealConstant
                                                 1.000000
@@ -454,7 +569,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 5 y)
+                                    (Var 6 y)
                                     Public
                                     .true.
                                     .true.
@@ -467,16 +582,74 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_functions_07_b
+                    __lcompilers_global_init_state_functions_07_b
+                    .false.
                 ),
             functions_07_c:
                 (Module
                     (SymbolTable
-                        6
+                        8
                         {
+                            __lcompilers_global_init_functions_07_c:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_functions_07_c
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_functions_07_c:
+                                (Variable
+                                    8
+                                    __lcompilers_global_init_state_functions_07_c
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             f_a:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     f_a
                                     2 f_a
                                     functions_07_a
@@ -486,9 +659,9 @@
                                 ),
                             f_b:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     f_b
-                                    4 f_b
+                                    5 f_b
                                     functions_07_b
                                     []
                                     f_b
@@ -497,11 +670,11 @@
                             f_c:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        9
                                         {
                                             w:
                                                 (Variable
-                                                    7
+                                                    9
                                                     w
                                                     []
                                                     In
@@ -525,7 +698,7 @@
                                                 ),
                                             z:
                                                 (Variable
-                                                    7
+                                                    9
                                                     z
                                                     []
                                                     ReturnVar
@@ -565,14 +738,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 7 w)]
+                                    [(Var 9 w)]
                                     [(Assignment
-                                        (Var 7 z)
+                                        (Var 9 z)
                                         (RealBinOp
                                             (FunctionCall
-                                                6 f_b
+                                                8 f_b
                                                 ()
-                                                [((Var 7 w))]
+                                                [((Var 9 w))]
                                                 (Real 4)
                                                 ()
                                                 ()
@@ -589,7 +762,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 7 z)
+                                    (Var 9 z)
                                     Public
                                     .true.
                                     .true.
@@ -603,9 +776,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_functions_07_c
+                    __lcompilers_global_init_state_functions_07_c
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

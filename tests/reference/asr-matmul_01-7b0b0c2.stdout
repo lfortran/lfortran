@@ -5,11 +5,11 @@
             matmul_01:
                 (Program
                     (SymbolTable
-                        6
+                        7
                         {
                             a:
                                 (Variable
-                                    6
+                                    7
                                     a
                                     []
                                     Local
@@ -43,7 +43,7 @@
                                 ),
                             b:
                                 (Variable
-                                    6
+                                    7
                                     b
                                     []
                                     Local
@@ -77,7 +77,7 @@
                                 ),
                             c:
                                 (Variable
-                                    6
+                                    7
                                     c
                                     []
                                     Local
@@ -111,7 +111,7 @@
                                 ),
                             c2:
                                 (Variable
-                                    6
+                                    7
                                     c2
                                     []
                                     Local
@@ -145,7 +145,7 @@
                                 ),
                             dp:
                                 (Variable
-                                    6
+                                    7
                                     dp
                                     []
                                     Local
@@ -178,7 +178,7 @@
                                 ),
                             err:
                                 (Variable
-                                    6
+                                    7
                                     err
                                     []
                                     Local
@@ -202,7 +202,7 @@
                                 ),
                             fma_clock:
                                 (Variable
-                                    6
+                                    7
                                     fma_clock
                                     []
                                     Local
@@ -226,7 +226,7 @@
                                 ),
                             freq:
                                 (Variable
-                                    6
+                                    7
                                     freq
                                     []
                                     Local
@@ -250,7 +250,7 @@
                                 ),
                             ghz:
                                 (Variable
-                                    6
+                                    7
                                     ghz
                                     []
                                     Local
@@ -274,7 +274,7 @@
                                 ),
                             i:
                                 (Variable
-                                    6
+                                    7
                                     i
                                     []
                                     Local
@@ -298,7 +298,7 @@
                                 ),
                             iter:
                                 (Variable
-                                    6
+                                    7
                                     iter
                                     []
                                     Local
@@ -322,7 +322,7 @@
                                 ),
                             matmul1:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     matmul1
                                     2 matmul1
                                     matmul_01_cpu
@@ -332,7 +332,7 @@
                                 ),
                             matmul2:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     matmul2
                                     2 matmul2
                                     matmul_01_cpu
@@ -342,7 +342,7 @@
                                 ),
                             measured:
                                 (Variable
-                                    6
+                                    7
                                     measured
                                     []
                                     Local
@@ -366,7 +366,7 @@
                                 ),
                             n:
                                 (Variable
-                                    6
+                                    7
                                     n
                                     []
                                     Local
@@ -390,7 +390,7 @@
                                 ),
                             percent_peak:
                                 (Variable
-                                    6
+                                    7
                                     percent_peak
                                     []
                                     Local
@@ -414,7 +414,7 @@
                                 ),
                             t:
                                 (Variable
-                                    6
+                                    7
                                     t
                                     []
                                     Local
@@ -438,7 +438,7 @@
                                 ),
                             t1:
                                 (Variable
-                                    6
+                                    7
                                     t1
                                     []
                                     Local
@@ -462,7 +462,7 @@
                                 ),
                             t2:
                                 (Variable
-                                    6
+                                    7
                                     t2
                                     []
                                     Local
@@ -488,14 +488,14 @@
                     matmul_01
                     [matmul_01_cpu]
                     [(Assignment
-                        (Var 6 n)
+                        (Var 7 n)
                         (IntegerConstant 96 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 6 iter)
+                        (Var 7 iter)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
@@ -508,7 +508,7 @@
                                 "Size (n x n): n ="
                                 (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 n)]
+                            (Var 7 n)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -523,7 +523,7 @@
                                 "Iter ="
                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 iter)]
+                            (Var 7 iter)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -547,7 +547,7 @@
                                         )
                                         Mul
                                         (Cast
-                                            (Var 6 n)
+                                            (Var 7 n)
                                             IntegerToReal
                                             (Real 8)
                                             ()
@@ -558,7 +558,7 @@
                                     )
                                     Mul
                                     (Cast
-                                        (Var 6 n)
+                                        (Var 7 n)
                                         IntegerToReal
                                         (Real 8)
                                         ()
@@ -595,38 +595,38 @@
                         )
                     )
                     (Allocate
-                        [((Var 6 a)
+                        [((Var 7 a)
                         [((IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 6 n))
+                        (Var 7 n))
                         ((IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 6 n))]
+                        (Var 7 n))]
                         []
                         ()
                         ()
                         ())
-                        ((Var 6 b)
+                        ((Var 7 b)
                         [((IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 6 n))
+                        (Var 7 n))
                         ((IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 6 n))]
+                        (Var 7 n))]
                         []
                         ()
                         ()
                         ())
-                        ((Var 6 c)
+                        ((Var 7 c)
                         [((IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 6 n))
+                        (Var 7 n))
                         ((IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 6 n))]
+                        (Var 7 n))]
                         []
                         ()
                         ()
                         ())
-                        ((Var 6 c2)
+                        ((Var 7 c2)
                         [((IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 6 n))
+                        (Var 7 n))
                         ((IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 6 n))]
+                        (Var 7 n))]
                         []
                         ()
                         ()
@@ -637,12 +637,12 @@
                     )
                     (IntrinsicImpureSubroutine
                         RandomNumber
-                        [(Var 6 a)]
+                        [(Var 7 a)]
                         0
                     )
                     (IntrinsicImpureSubroutine
                         RandomNumber
-                        [(Var 6 b)]
+                        [(Var 7 b)]
                         0
                     )
                     (Print
@@ -653,21 +653,21 @@
                     )
                     (IntrinsicImpureSubroutine
                         CpuTime
-                        [(Var 6 t1)]
+                        [(Var 7 t1)]
                         0
                     )
                     (DoLoop
                         ()
-                        ((Var 6 i)
+                        ((Var 7 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 6 iter)
+                        (Var 7 iter)
                         ())
                         [(Assignment
-                            (Var 6 c)
+                            (Var 7 c)
                             (IntrinsicArrayFunction
                                 MatMul
-                                [(Var 6 a)
-                                (Var 6 b)]
+                                [(Var 7 a)
+                                (Var 7 b)]
                                 3
                                 (Array
                                     (Real 4)
@@ -688,22 +688,22 @@
                     )
                     (IntrinsicImpureSubroutine
                         CpuTime
-                        [(Var 6 t2)]
+                        [(Var 7 t2)]
                         0
                     )
                     (Assignment
-                        (Var 6 t)
+                        (Var 7 t)
                         (RealBinOp
                             (RealBinOp
-                                (Var 6 t2)
+                                (Var 7 t2)
                                 Sub
-                                (Var 6 t1)
+                                (Var 7 t1)
                                 (Real 8)
                                 ()
                             )
                             Div
                             (Cast
-                                (Var 6 iter)
+                                (Var 7 iter)
                                 IntegerToReal
                                 (Real 8)
                                 ()
@@ -717,7 +717,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 ghz)
+                        (Var 7 ghz)
                         (RealConstant
                             1000000000.000000
                             (Real 8)
@@ -727,7 +727,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 fma_clock)
+                        (Var 7 fma_clock)
                         (RealConstant
                             0.062500
                             (Real 8)
@@ -737,14 +737,14 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 freq)
+                        (Var 7 freq)
                         (RealBinOp
                             (RealConstant
                                 3.200000
                                 (Real 8)
                             )
                             Mul
-                            (Var 6 ghz)
+                            (Var 7 ghz)
                             (Real 8)
                             ()
                         )
@@ -753,19 +753,19 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 measured)
+                        (Var 7 measured)
                         (RealBinOp
                             (RealBinOp
-                                (Var 6 t)
+                                (Var 7 t)
                                 Mul
-                                (Var 6 freq)
+                                (Var 7 freq)
                                 (Real 8)
                                 ()
                             )
                             Div
                             (Cast
                                 (IntegerBinOp
-                                    (Var 6 n)
+                                    (Var 7 n)
                                     Pow
                                     (IntegerConstant 3 (Integer 4) Decimal)
                                     (Integer 4)
@@ -784,12 +784,12 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 percent_peak)
+                        (Var 7 percent_peak)
                         (RealBinOp
                             (RealBinOp
-                                (Var 6 fma_clock)
+                                (Var 7 fma_clock)
                                 Div
-                                (Var 6 measured)
+                                (Var 7 measured)
                                 (Real 8)
                                 ()
                             )
@@ -818,7 +818,7 @@
                                 "Time: "
                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 t)]
+                            (Var 7 t)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -839,7 +839,7 @@
                                 "Theoretical performance peak:"
                                 (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 fma_clock)
+                            (Var 7 fma_clock)
                             (StringConstant
                                 "cycles"
                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -858,7 +858,7 @@
                                 "Measured:                    "
                                 (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 measured)
+                            (Var 7 measured)
                             (StringConstant
                                 "cycles"
                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -877,7 +877,7 @@
                                 "Percent peak:                "
                                 (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 percent_peak)
+                            (Var 7 percent_peak)
                             (StringConstant
                                 "%"
                                 (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -908,21 +908,21 @@
                     )
                     (IntrinsicImpureSubroutine
                         CpuTime
-                        [(Var 6 t1)]
+                        [(Var 7 t1)]
                         0
                     )
                     (DoLoop
                         ()
-                        ((Var 6 i)
+                        ((Var 7 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 6 iter)
+                        (Var 7 iter)
                         ())
                         [(SubroutineCall
-                            6 matmul2
+                            7 matmul2
                             ()
-                            [((Var 6 a))
-                            ((Var 6 b))
-                            ((Var 6 c2))]
+                            [((Var 7 a))
+                            ((Var 7 b))
+                            ((Var 7 c2))]
                             ()
                             .false.
                         )]
@@ -930,19 +930,19 @@
                     )
                     (IntrinsicImpureSubroutine
                         CpuTime
-                        [(Var 6 t2)]
+                        [(Var 7 t2)]
                         0
                     )
                     (Assignment
-                        (Var 6 err)
+                        (Var 7 err)
                         (IntrinsicArrayFunction
                             MaxVal
                             [(IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (Var 6 c)
+                                    (Var 7 c)
                                     Sub
-                                    (Var 6 c2)
+                                    (Var 7 c2)
                                     (Array
                                         (Real 4)
                                         [(()
@@ -981,7 +981,7 @@
                                 "Error:"
                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 err)]
+                            (Var 7 err)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -990,18 +990,18 @@
                         )
                     )
                     (Assignment
-                        (Var 6 t)
+                        (Var 7 t)
                         (RealBinOp
                             (RealBinOp
-                                (Var 6 t2)
+                                (Var 7 t2)
                                 Sub
-                                (Var 6 t1)
+                                (Var 7 t1)
                                 (Real 8)
                                 ()
                             )
                             Div
                             (Cast
-                                (Var 6 iter)
+                                (Var 7 iter)
                                 IntegerToReal
                                 (Real 8)
                                 ()
@@ -1015,7 +1015,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 ghz)
+                        (Var 7 ghz)
                         (RealConstant
                             1000000000.000000
                             (Real 8)
@@ -1025,7 +1025,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 fma_clock)
+                        (Var 7 fma_clock)
                         (RealConstant
                             0.062500
                             (Real 8)
@@ -1035,14 +1035,14 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 freq)
+                        (Var 7 freq)
                         (RealBinOp
                             (RealConstant
                                 3.200000
                                 (Real 8)
                             )
                             Mul
-                            (Var 6 ghz)
+                            (Var 7 ghz)
                             (Real 8)
                             ()
                         )
@@ -1051,19 +1051,19 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 measured)
+                        (Var 7 measured)
                         (RealBinOp
                             (RealBinOp
-                                (Var 6 t)
+                                (Var 7 t)
                                 Mul
-                                (Var 6 freq)
+                                (Var 7 freq)
                                 (Real 8)
                                 ()
                             )
                             Div
                             (Cast
                                 (IntegerBinOp
-                                    (Var 6 n)
+                                    (Var 7 n)
                                     Pow
                                     (IntegerConstant 3 (Integer 4) Decimal)
                                     (Integer 4)
@@ -1082,12 +1082,12 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 percent_peak)
+                        (Var 7 percent_peak)
                         (RealBinOp
                             (RealBinOp
-                                (Var 6 fma_clock)
+                                (Var 7 fma_clock)
                                 Div
-                                (Var 6 measured)
+                                (Var 7 measured)
                                 (Real 8)
                                 ()
                             )
@@ -1116,7 +1116,7 @@
                                 "Time: "
                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 t)]
+                            (Var 7 t)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -1137,7 +1137,7 @@
                                 "Theoretical performance peak:"
                                 (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 fma_clock)
+                            (Var 7 fma_clock)
                             (StringConstant
                                 "cycles"
                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -1156,7 +1156,7 @@
                                 "Measured:                    "
                                 (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 measured)
+                            (Var 7 measured)
                             (StringConstant
                                 "cycles"
                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -1175,7 +1175,7 @@
                                 "Percent peak:                "
                                 (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 percent_peak)
+                            (Var 7 percent_peak)
                             (StringConstant
                                 "%"
                                 (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -1190,7 +1190,7 @@
                     (If
                         ()
                         (RealCompare
-                            (Var 6 err)
+                            (Var 7 err)
                             Gt
                             (RealConstant
                                 0.001000
@@ -1223,21 +1223,21 @@
                     )
                     (IntrinsicImpureSubroutine
                         CpuTime
-                        [(Var 6 t1)]
+                        [(Var 7 t1)]
                         0
                     )
                     (DoLoop
                         ()
-                        ((Var 6 i)
+                        ((Var 7 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 6 iter)
+                        (Var 7 iter)
                         ())
                         [(SubroutineCall
-                            6 matmul1
+                            7 matmul1
                             ()
-                            [((Var 6 a))
-                            ((Var 6 b))
-                            ((Var 6 c2))]
+                            [((Var 7 a))
+                            ((Var 7 b))
+                            ((Var 7 c2))]
                             ()
                             .false.
                         )]
@@ -1245,19 +1245,19 @@
                     )
                     (IntrinsicImpureSubroutine
                         CpuTime
-                        [(Var 6 t2)]
+                        [(Var 7 t2)]
                         0
                     )
                     (Assignment
-                        (Var 6 err)
+                        (Var 7 err)
                         (IntrinsicArrayFunction
                             MaxVal
                             [(IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (Var 6 c)
+                                    (Var 7 c)
                                     Sub
-                                    (Var 6 c2)
+                                    (Var 7 c2)
                                     (Array
                                         (Real 4)
                                         [(()
@@ -1296,7 +1296,7 @@
                                 "Error:"
                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 err)]
+                            (Var 7 err)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -1305,18 +1305,18 @@
                         )
                     )
                     (Assignment
-                        (Var 6 t)
+                        (Var 7 t)
                         (RealBinOp
                             (RealBinOp
-                                (Var 6 t2)
+                                (Var 7 t2)
                                 Sub
-                                (Var 6 t1)
+                                (Var 7 t1)
                                 (Real 8)
                                 ()
                             )
                             Div
                             (Cast
-                                (Var 6 iter)
+                                (Var 7 iter)
                                 IntegerToReal
                                 (Real 8)
                                 ()
@@ -1330,7 +1330,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 ghz)
+                        (Var 7 ghz)
                         (RealConstant
                             1000000000.000000
                             (Real 8)
@@ -1340,7 +1340,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 fma_clock)
+                        (Var 7 fma_clock)
                         (RealConstant
                             0.062500
                             (Real 8)
@@ -1350,14 +1350,14 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 freq)
+                        (Var 7 freq)
                         (RealBinOp
                             (RealConstant
                                 3.200000
                                 (Real 8)
                             )
                             Mul
-                            (Var 6 ghz)
+                            (Var 7 ghz)
                             (Real 8)
                             ()
                         )
@@ -1366,19 +1366,19 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 measured)
+                        (Var 7 measured)
                         (RealBinOp
                             (RealBinOp
-                                (Var 6 t)
+                                (Var 7 t)
                                 Mul
-                                (Var 6 freq)
+                                (Var 7 freq)
                                 (Real 8)
                                 ()
                             )
                             Div
                             (Cast
                                 (IntegerBinOp
-                                    (Var 6 n)
+                                    (Var 7 n)
                                     Pow
                                     (IntegerConstant 3 (Integer 4) Decimal)
                                     (Integer 4)
@@ -1397,12 +1397,12 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 percent_peak)
+                        (Var 7 percent_peak)
                         (RealBinOp
                             (RealBinOp
-                                (Var 6 fma_clock)
+                                (Var 7 fma_clock)
                                 Div
-                                (Var 6 measured)
+                                (Var 7 measured)
                                 (Real 8)
                                 ()
                             )
@@ -1431,7 +1431,7 @@
                                 "Time: "
                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 t)]
+                            (Var 7 t)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -1452,7 +1452,7 @@
                                 "Theoretical performance peak:"
                                 (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 fma_clock)
+                            (Var 7 fma_clock)
                             (StringConstant
                                 "cycles"
                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -1471,7 +1471,7 @@
                                 "Measured:                    "
                                 (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 measured)
+                            (Var 7 measured)
                             (StringConstant
                                 "cycles"
                                 (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -1490,7 +1490,7 @@
                                 "Percent peak:                "
                                 (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 percent_peak)
+                            (Var 7 percent_peak)
                             (StringConstant
                                 "%"
                                 (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -1505,7 +1505,7 @@
                     (If
                         ()
                         (RealCompare
-                            (Var 6 err)
+                            (Var 7 err)
                             Gt
                             (RealConstant
                                 0.001000
@@ -1520,12 +1520,69 @@
                         []
                     )]
                     ()
+                    ()
                 ),
             matmul_01_cpu:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_matmul_01_cpu:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_matmul_01_cpu
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_matmul_01_cpu:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_matmul_01_cpu
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             kernel2:
                                 (Function
                                     (SymbolTable
@@ -5260,9 +5317,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_matmul_01_cpu
+                    __lcompilers_global_init_state_matmul_01_cpu
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

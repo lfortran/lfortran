@@ -4,71 +4,185 @@
 #include <libasr/asr.h>
 #include <libasr/utils.h>
 
+#include <string>
+#include <vector>
+
 namespace LCompilers {
 
-    // Startup ("global") initializers.
+    // Startup ("global") initialization.
     //
-    // A `Module`, a `Program` and the `TranslationUnit` itself can each name
-    // one initializer function through their `global_init` member. The named
-    // function takes no arguments, returns nothing, lives in the symbol table
-    // of the owner that names it and runs exactly once before any user code
-    // observes the state it sets up. Everything a backend has to know is that
-    // link: no backend may recognise an initializer by its name.
+    // A `Module`, a `Program` and the `TranslationUnit` can each own one
+    // initializer: the function their `global_init` names, which takes no
+    // arguments and lives in the owner's own symbol table, and the state word
+    // their `global_init_state` names, a saved `integer(4)` variable of the
+    // same symbol table. That link is the only way anything recognises an
+    // initializer or its state; nothing may go by their names.
     //
-    // The function body is always one guarded block
+    // Every user module owns an initializer from the moment semantics creates
+    // it, whatever its initialization later lowers to, so that its `.mod`
+    // file carries it and every translation unit that depends on the module
+    // calls that one definition. A program, the translation unit and a module
+    // a pass creates get theirs on demand.
     //
-    //     if (.not. already_run) then
-    //         already_run = .true.
-    //         <initialization statements>
+    // While the passes lower initialization, an initializer's body is a plain
+    // list of statements. `global_init_wire` then gives each initializer
+    // defined in this translation unit its final shape:
+    //
+    //     if (_lcompilers_init_begin(state) /= 0) then
+    //         call <initializer of each dependency, by stable id>
+    //         GlobalInitStorage(<storage set up at run time>)
+    //         <the statements>
+    //         call _lcompilers_init_end(state)
     //     end if
     //
-    // so an initializer stays correct however many times it is called. The
-    // program calls each of them once, in `determine_module_dependencies`
-    // order, so neither link order nor a target's constructor priority can
-    // change when they run; the guard is what keeps the translation unit's
-    // own initializer correct, which a target startup hook calls with no
-    // ordering at all.
+    // Statements that do collective work, the allocation of saved coarrays,
+    // are preceded by `call _lcompilers_init_require_collective()`, put there
+    // by the pass that adds them. An owner that is collective only because
+    // something it depends on is has no such call, so once its dependencies
+    // are ready it initializes like any other.
     //
-    // Nothing calls any of them twice, so under `--fast` the guard is dropped
-    // and the body is the initialization statements themselves. The guard at
-    // the top of a procedure or block body is a different thing — it is the
-    // save attribute of an initialized local, so it decides behaviour rather
-    // than repeating a call that cannot happen — and is kept in every mode.
+    // The state is ready only once the whole body has run. The runtime engine
+    // (runtime/lcompilers_init.h) serializes initialization, reports a cycle,
+    // and runs the initializer of every module and translation unit of every
+    // loaded image, discovered from the records the code generators emit, in
+    // stable id order before user code runs; `GlobalInitDispatch` is where
+    // generated code enters it. A program's own initializer is frame local
+    // and is called by the program itself, after the dispatch.
 
     namespace ASRUtils {
 
-        // Return the initializer `owner` names, creating it if `owner` has
-        // none yet. `owner` is a `Module_t*`, a `Program_t*` or the
-        // `TranslationUnit_t*`.
-        //
-        // `defined_elsewhere` names it without defining it, for a module this
-        // translation unit only uses: the object file the module was compiled
-        // into holds the one definition, and defining a second one here would
-        // clash with it at link time.
+        // One initializer of a module or the translation unit that this
+        // translation unit defines: a root the engine runs.
+        struct GlobalInitRoot {
+            std::string stable_id;
+            ASR::Function_t *ensure;
+            // A `Module_t*` or the `TranslationUnit_t*`.
+            ASR::asr_t *owner;
+            ASR::Variable_t *state;
+            // Only a collective startup boundary may run it.
+            bool collective;
+            // The translation unit's collective bootstrap, which has no
+            // state and no guard: run at the collective boundary before
+            // every collective root, outside every guard.
+            bool bootstrap = false;
+        };
+
+        // The procedure `unit.m_global_init_bootstrap` names, or nullptr.
+        ASR::Function_t* get_global_init_bootstrap(ASR::TranslationUnit_t &unit);
+        // Whether `fn` is the collective bootstrap of its translation unit.
+        bool is_global_init_bootstrap(const ASR::Function_t *fn);
+
+        // The initializer and the state `owner` names, or nullptr. `owner`
+        // is a `Module_t*`, a `Program_t*` or a `TranslationUnit_t*`.
+        ASR::Function_t* get_global_init(ASR::asr_t *owner);
+        ASR::Variable_t* get_global_init_state(ASR::asr_t *owner);
+
+        // The owner whose `global_init` names `fn`, or nullptr when `fn` is
+        // not an initializer.
+        ASR::asr_t* global_init_owner(const ASR::Function_t *fn);
+        // The symbol table of that owner, or nullptr.
+        SymbolTable* global_init_owner_scope(const ASR::Function_t *fn);
+        bool is_owner_global_init(const ASR::Function_t *fn);
+
+        // Whether this translation unit holds the definition of initializer
+        // `fn`, rather than a declaration of the one in another object file.
+        bool global_init_defined_here(const ASR::Function_t *fn);
+
+        // Whether `owner` needs a collective startup boundary: it allocates a
+        // saved coarray, or something it depends on does.
+        bool global_init_is_collective(ASR::asr_t *owner);
+
+        // The id that orders `owner` among the roots, the same on every
+        // image and in every compilation: `m:<module>`, `s:<ancestor>:<name>`
+        // for a submodule, `t:<initializer>` for the translation unit.
+        std::string global_init_stable_id(ASR::asr_t *owner);
+
+        // The roots of `unit`, by stable id.
+        std::vector<GlobalInitRoot> global_init_roots(
+            ASR::TranslationUnit_t &unit);
+
+        // A call to initializer `ensure` written in `scope`, through an
+        // import when it belongs to another scope.
+        ASR::stmt_t* make_global_init_call(Allocator &al, SymbolTable *scope,
+            ASR::Function_t *ensure, const Location &loc);
+
+        // Whether module `m` has no initializer of its own, so that the
+        // translation unit's sets up its storage, and its teardown frees it:
+        // a COMMON block above all, which every translation unit that uses
+        // it defines.
+        bool global_init_borrows_storage(const ASR::Module_t &m);
+
+        // The scopes whose variables `owner`'s initializer sets up and its
+        // teardown frees: its own, and for the translation unit also those
+        // of the modules whose storage it borrows.
+        std::vector<SymbolTable*> global_init_storage_scopes(ASR::asr_t *owner);
+
+        // Whether `v`, a variable of a module or of the translation unit,
+        // has storage a backend creates at run time, so that the owner's
+        // `GlobalInitStorage` names it.
+        bool needs_runtime_storage_setup(const ASR::Variable_t &v);
+
+        // Where an object file puts its initialization table; see
+        // runtime/lcompilers_init_abi.h.
+        enum class InitObjectFormat { ELF, MachO, COFF, Wasm };
+        InitObjectFormat init_object_format(Platform platform);
+
+        // The runtime interface of an initializer's guard.
+        enum class InitRuntimeFn { Begin, End, RequireCollective };
+        ASR::symbol_t* get_init_runtime_function(Allocator &al,
+            ASR::TranslationUnit_t &unit, InitRuntimeFn kind);
+        bool is_init_runtime_function(const ASR::symbol_t *sym);
+
+        // Give the new module `m` its initializer and its state. Called by
+        // semantics for every user module and submodule.
+        ASR::Function_t* create_module_global_init(Allocator &al,
+            ASR::Module_t *m);
+
+        // The initializer `owner` names, creating it (and its state) if
+        // `owner` has none yet, named `name` when that is given. The name
+        // of the translation unit's initializer is its stable id, so a pass
+        // that creates one derives the name from what it initializes.
+        ASR::Function_t* get_or_create_global_init(Allocator &al,
+            ASR::TranslationUnit_t &unit, ASR::asr_t *owner);
         ASR::Function_t* get_or_create_global_init(Allocator &al,
             ASR::TranslationUnit_t &unit, ASR::asr_t *owner,
-            bool defined_elsewhere = false);
+            const std::string &name);
 
-        // Append `stmt` inside the run-once guard of `fn`.
+        // Append `stmt` to the statements of initializer `fn`.
         void global_init_append_stmt(Allocator &al, ASR::Function_t *fn,
             ASR::stmt_t *stmt);
-
-        // Prepend `stmts` inside the run-once guard of `fn`, after the
-        // statement that marks the initializer as run.
+        // Prepend `stmts` to the statements of initializer `fn`.
         void global_init_prepend_stmts(Allocator &al, ASR::Function_t *fn,
             const std::vector<ASR::stmt_t*> &stmts);
 
+        // Compute `global_init_collective` of every module `unit` defines: a
+        // module that declares a saved coarray anywhere in its scope, and one
+        // whose parent or a module it uses is collective. Semantics calls it
+        // before `.mod` files are written, so a module read back from one
+        // carries its own. The translation unit's own flag is set by the pass
+        // that gives it collective work.
+        void update_global_init_collective(ASR::TranslationUnit_t &unit,
+            bool coarrays);
+
+        // For a target that sees the whole program: replace each
+        // `GlobalInitDispatch` by calls to every root, local ones first, and
+        // each guard by plain code on its state, so that nothing of the
+        // runtime engine is left.
+        void expand_closed_world_dispatch(Allocator &al,
+            ASR::TranslationUnit_t &unit);
+
     } // namespace ASRUtils
 
-    // Lower the declaration initializers no target can lay out as static
-    // data into the initializers of the units that own them.
+    // Lower what static data does not hold into statements of the initializer
+    // of the unit that owns it (for a procedure or a block, at the top of its
+    // own body), and prefix every user `bind(c)` procedure with the
+    // `GlobalInitDispatch` a foreign caller enters through.
     void pass_global_init(Allocator &al, ASR::TranslationUnit_t &unit,
                           const PassOptions &pass_options);
 
-    // Connect the initializers: a program's calls every module initializer it
-    // can observe, in dependency order, and then runs before the program's
-    // first statement. It is a pass of its own because it has to run after
-    // every pass that can create an initializer, `coarray` among them.
+    // Give every initializer its final guarded shape and start the program
+    // with the dispatch. It runs after every pass that can put statements
+    // into an initializer, `coarray` among them.
     void pass_global_init_wire(Allocator &al, ASR::TranslationUnit_t &unit,
                                const PassOptions &pass_options);
 

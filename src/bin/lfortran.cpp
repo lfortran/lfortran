@@ -871,7 +871,14 @@ int verify_asr_input(const std::string &infile,
     compiler_options.po.always_run = true;
     compiler_options.po.run_fun = "f";
 
+    // What was reported so far is printed already; a pass reports a hard
+    // error by adding it, and then there is no ASR to print.
+    diagnostics.diagnostics.clear();
     pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
+    if (diagnostics.has_error()) {
+        std::cerr << diagnostics.render(lm, compiler_options);
+        return 1;
+    }
     if (compiler_options.po.tree) {
         std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors, compiler_options.po.with_intrinsic_mods) << std::endl;
@@ -1117,7 +1124,7 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
 
             LCompilers::Location loc;
             LCompilers::ASR::asr_t *asr = LCompilers::ASR::make_TranslationUnit_t(al, loc,
-                symtab, nullptr, 0, nullptr);
+                symtab, nullptr, 0, nullptr, nullptr, false, nullptr);
             LCompilers::ASR::TranslationUnit_t *tu =
                 LCompilers::ASR::down_cast2<LCompilers::ASR::TranslationUnit_t>(asr);
             LCompilers::diag::Diagnostics diagnostics;
@@ -2004,6 +2011,11 @@ int link_executable(const std::vector<std::string> &infiles,
 
     There are probably simpler ways.
     */
+    // The startup engine in the runtime waits for loads in progress with
+    // dladdr, which needs libdl before glibc 2.34.
+    const std::string runtime_system_libs =
+        compiler_options.platform == LCompilers::Platform::Linux
+            ? " -lm -ldl" : " -lm";
 
     auto t1 = std::chrono::high_resolution_clock::now();
 #ifdef HAVE_LFORTRAN_LLVM
@@ -2135,7 +2147,7 @@ int link_executable(const std::vector<std::string> &infiles,
             if (!extra_linker_flags.empty()) {
                 compile_cmd += extra_linker_flags;
             }
-            compile_cmd += " -l" + runtime_lib + " -lm";
+            compile_cmd += " -l" + runtime_lib + runtime_system_libs;
             if (compiler_options.openmp && CC.find("clang" ) != std::string::npos) {
                 std::string openmp_shared_library = compiler_options.openmp_lib_dir;
                 std::string omp_cmd =  " -L" + openmp_shared_library + " -Wl,-rpath," + openmp_shared_library + " -lomp";
@@ -2264,7 +2276,7 @@ int link_executable(const std::vector<std::string> &infiles,
                     compile_cmd += cuda_kernel_obj + " " + cuda_runtime_obj;
                     compile_cmd += " -L" + base_path
                         + " -Xlinker -rpath -Xlinker " + base_path
-                        + " -l" + runtime_lib + " -lm";
+                        + " -l" + runtime_lib + runtime_system_libs;
                 }
             }
             run_cmd = "./" + outfile;
@@ -2332,7 +2344,7 @@ int link_executable(const std::vector<std::string> &infiles,
         if (!extra_linker_flags.empty()) {
             cmd += extra_linker_flags;
         }
-        cmd += " -l" + runtime_lib + " -lm";
+        cmd += " -l" + runtime_lib + runtime_system_libs;
         if (verbose) {
             std::cout << cmd << std::endl;
         }
@@ -2344,8 +2356,14 @@ int link_executable(const std::vector<std::string> &infiles,
     } else if (backend == Backend::cpp) {
         std::string CXX = "g++";
         std::string options, post_options;
+        // The generated code enters the startup engine and calls the rest of
+        // the runtime, so it links the runtime exactly as the C and LLVM
+        // backends do.
+        std::string base_path = "\"" + runtime_library_dir + "\"";
+        std::string runtime_lib = "lfortran_runtime";
         if (static_executable) {
             options += " -static ";
+            runtime_lib = "lfortran_runtime_static";
         }
         if (shared_executable) {
             options += " -shared ";
@@ -2365,7 +2383,8 @@ int link_executable(const std::vector<std::string> &infiles,
         if(!extra_library_flags.empty()) {
             cmd += extra_library_flags + " ";
         }
-        cmd += " " + post_options + " -lm";
+        cmd += " " + post_options + " -L" + base_path
+            + " -Wl,-rpath," + base_path + " -l" + runtime_lib + runtime_system_libs;
         if (verbose) {
             std::cout << cmd << std::endl;
         }
@@ -2395,7 +2414,7 @@ int link_executable(const std::vector<std::string> &infiles,
         }
         cmd += " -L" + base_path
             + " -Wl,-rpath," + base_path;
-        cmd += " -l" + runtime_lib + " -lm";
+        cmd += " -l" + runtime_lib + runtime_system_libs;
         if (verbose) {
             std::cout << cmd << std::endl;
         }

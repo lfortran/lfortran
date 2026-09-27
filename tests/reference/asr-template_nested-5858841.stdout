@@ -5,11 +5,11 @@
             template_nested:
                 (Program
                     (SymbolTable
-                        12
+                        13
                         {
                             add_t:
                                 (ExternalSymbol
-                                    12
+                                    13
                                     add_t
                                     2 add_t
                                     template_nested_m
@@ -19,7 +19,7 @@
                                 ),
                             r:
                                 (ExternalSymbol
-                                    12
+                                    13
                                     r
                                     2 r
                                     template_nested_m
@@ -29,7 +29,7 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    12
+                                    13
                                     test_template
                                     2 test_template
                                     template_nested_m
@@ -41,12 +41,13 @@
                     template_nested
                     [template_nested_m]
                     [(SubroutineCall
-                        12 test_template
+                        13 test_template
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             template_nested_m:
@@ -54,6 +55,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_nested_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_nested_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_nested_m:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_nested_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             add_t:
                                 (Template
                                     (SymbolTable
@@ -813,11 +870,11 @@
                                             __asr_add_generic:
                                                 (Function
                                                     (SymbolTable
-                                                        13
+                                                        14
                                                         {
                                                             x:
                                                                 (Variable
-                                                                    13
+                                                                    14
                                                                     x
                                                                     []
                                                                     In
@@ -841,7 +898,7 @@
                                                                 ),
                                                             y:
                                                                 (Variable
-                                                                    13
+                                                                    14
                                                                     y
                                                                     []
                                                                     In
@@ -865,7 +922,7 @@
                                                                 ),
                                                             z:
                                                                 (Variable
-                                                                    13
+                                                                    14
                                                                     z
                                                                     []
                                                                     ReturnVar
@@ -906,15 +963,15 @@
                                                         Host
                                                     )
                                                     [func_arg_real]
-                                                    [(Var 13 x)
-                                                    (Var 13 y)]
+                                                    [(Var 14 x)
+                                                    (Var 14 y)]
                                                     [(Assignment
-                                                        (Var 13 z)
+                                                        (Var 14 z)
                                                         (FunctionCall
                                                             2 func_arg_real
                                                             ()
-                                                            [((Var 13 x))
-                                                            ((Var 13 y))]
+                                                            [((Var 14 x))
+                                                            ((Var 14 y))]
                                                             (Real 4)
                                                             ()
                                                             ()
@@ -923,7 +980,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 13 z)
+                                                    (Var 14 z)
                                                     Public
                                                     .true.
                                                     .true.
@@ -1259,9 +1316,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_template_nested_m
+                    __lcompilers_global_init_state_template_nested_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

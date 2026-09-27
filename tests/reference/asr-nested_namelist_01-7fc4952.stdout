@@ -5,11 +5,11 @@
             nested_namelist_01:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             outer:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     outer
                                     2 outer
                                     nested_namelist_01_mod
@@ -21,12 +21,13 @@
                     nested_namelist_01
                     [nested_namelist_01_mod]
                     [(SubroutineCall
-                        5 outer
+                        6 outer
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             nested_namelist_01_mod:
@@ -34,6 +35,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_nested_namelist_01_mod:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_nested_namelist_01_mod
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_nested_namelist_01_mod:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_nested_namelist_01_mod
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             outer:
                                 (Function
                                     (SymbolTable
@@ -221,9 +278,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_nested_namelist_01_mod
+                    __lcompilers_global_init_state_nested_namelist_01_mod
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

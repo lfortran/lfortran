@@ -1134,21 +1134,43 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
     // one has to carry the instance id too.
     if (llvm::Function *fn = mod->getFunction(logical_stem + "_program"))
         fn->setName(unique_stem + "_program");
+    // And the entries that publish and unpublish the cell's startup records.
+    if (llvm::Function *fn = mod->getFunction(logical_stem + "_startup"))
+        fn->setName(unique_stem + "_startup");
+    if (llvm::Function *fn = mod->getFunction(logical_stem + "_shutdown"))
+        fn->setName(unique_stem + "_shutdown");
 
-    // Symbols qualified by their cell (__cell<N>_...) are named per session,
-    // so two executors in one process emit the same names. The wasm dynamic
-    // linker has one global namespace, so the second definition collides with
-    // the first -- and if their signatures differ, a module importing the name
-    // fails to link. Give each instance its own, the same way the run function
-    // above is made unique. Renaming here covers definitions and the
-    // declarations other modules of this instance import them through, so they
-    // still resolve to each other.
+    // The symbols of a session are named per session: those of later cells
+    // by their cell (__cell<N>_...), those of the first cell by nothing at
+    // all. Two executors in one process therefore emit the same names -- a
+    // module of the same name in both first cells defines the same variables,
+    // initializer and state -- and the wasm dynamic linker has one global
+    // namespace, so the second instance would bind to the first one's
+    // definitions, or fail to link where their signatures differ. Give every
+    // symbol an instance defines a name of its own, the same way the run
+    // function above is made unique. Renaming covers the definitions and the
+    // declarations later modules of this instance import them through, so
+    // they still resolve to each other; names the instance does not define,
+    // the runtime's above all, are left alone.
     {
         const std::string cell_prefix = "__cell";
+        const std::string run_prefix = "__lfortran_evaluate_";
         const std::string instance = "__e" + std::to_string(m_id) + "_";
+        auto defines = [&](llvm::GlobalValue &g) {
+            std::string n = g.getName().str();
+            if (!g.isDeclaration() && !g.hasLocalLinkage()
+                    && n.rfind("llvm.", 0) != 0 && n.rfind(run_prefix, 0) != 0) {
+                m_defined_symbols.insert(n);
+            }
+        };
+        for (llvm::Function &f : mod->functions()) defines(f);
+        for (llvm::GlobalVariable &g : mod->globals()) defines(g);
         auto qualify = [&](llvm::GlobalValue &g) {
             std::string n = g.getName().str();
-            if (n.rfind(cell_prefix, 0) == 0) g.setName(instance + n);
+            if (n.rfind(run_prefix, 0) == 0) return;
+            if (n.rfind(cell_prefix, 0) == 0 || m_defined_symbols.count(n) > 0) {
+                g.setName(instance + n);
+            }
         };
         for (llvm::Function &f : mod->functions()) qualify(f);
         for (llvm::GlobalVariable &g : mod->globals()) qualify(g);

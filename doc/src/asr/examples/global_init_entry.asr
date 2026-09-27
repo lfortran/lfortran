@@ -1,0 +1,1170 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "_lcompilers_init_begin" (Function
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "run" (Variable
+              :parent_symtab 1
+              :name "run"
+              :dependencies []
+              :intent :ReturnVar
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :BindC
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "state" (Variable
+              :parent_symtab 1
+              :name "state"
+              :dependencies []
+              :intent :InOut
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :BindC
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "_lcompilers_init_begin"
+        :function_signature (FunctionType
+          :arg_types [
+            (Integer
+              :kind 4
+            )
+          ]
+          :return_var_type (Integer
+            :kind 4
+          )
+          :abi :BindC
+          :deftype :Interface
+          :bindc_name "_lcompilers_init_begin"
+          :elemental false
+          :pure false
+          :module false
+          :inline false
+          :static false
+          :restrictions []
+          :is_restriction false
+          :exec_space :Host
+        )
+        :dependencies []
+        :args [
+          (Var
+            :v (SymbolRef 1 "state")
+          )
+        ]
+        :body []
+        :return_var (Var
+          :v (SymbolRef 1 "run")
+        )
+        :access :Public
+        :deterministic false
+        :side_effect_free false
+        :module_file nil
+      )
+      "_lcompilers_init_end" (Function
+        :symtab (SymbolTable
+          :id 2
+          :symbols {
+            "state" (Variable
+              :parent_symtab 2
+              :name "state"
+              :dependencies []
+              :intent :InOut
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :BindC
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "_lcompilers_init_end"
+        :function_signature (FunctionType
+          :arg_types [
+            (Integer
+              :kind 4
+            )
+          ]
+          :return_var_type nil
+          :abi :BindC
+          :deftype :Interface
+          :bindc_name "_lcompilers_init_end"
+          :elemental false
+          :pure false
+          :module false
+          :inline false
+          :static false
+          :restrictions []
+          :is_restriction false
+          :exec_space :Host
+        )
+        :dependencies []
+        :args [
+          (Var
+            :v (SymbolRef 2 "state")
+          )
+        ]
+        :body []
+        :return_var nil
+        :access :Public
+        :deterministic false
+        :side_effect_free false
+        :module_file nil
+      )
+      "m" (Module
+        :symtab (SymbolTable
+          :id 3
+          :symbols {
+            "__lcompilers_global_init_m" (Function
+              :symtab (SymbolTable
+                :id 4
+                :symbols {
+                  "1_cfg_n" (ExternalSymbol
+                    :parent_symtab 4
+                    :name "1_cfg_n"
+                    :external (SymbolRef 6 "n")
+                    :module_name "m"
+                    :scope_names [
+                      "cfg"
+                    ]
+                    :original_name "n"
+                    :access :Public
+                  )
+                  "__1_default_init_idx" (Variable
+                    :parent_symtab 4
+                    :name "__1_default_init_idx"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "__lcompilers_global_init_m"
+              :function_signature (FunctionType
+                :arg_types []
+                :return_var_type nil
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies [
+                "_lcompilers_init_begin"
+                "_lcompilers_init_end"
+              ]
+              :args []
+              :body [
+                (If
+                  :name nil
+                  :test (IntegerCompare
+                    :left (FunctionCall
+                      :name (SymbolRef 0 "_lcompilers_init_begin")
+                      :original_name (SymbolRef 0 "_lcompilers_init_begin")
+                      :args [
+                        (call_arg
+                          :value (Var
+                            :v (SymbolRef 3 "__lcompilers_global_init_state_m")
+                          )
+                        )
+                      ]
+                      :type (Integer
+                        :kind 4
+                      )
+                      :value nil
+                      :dt nil
+                    )
+                    :op :NotEq
+                    :right (IntegerConstant
+                      :n 0
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :type (Logical
+                      :kind 4
+                    )
+                    :value nil
+                  )
+                  :body [
+                    (GlobalInitStorage
+                      :targets []
+                    )
+                    (DoLoop
+                      :name nil
+                      :head (do_loop_head
+                        :v (Var
+                          :v (SymbolRef 4 "__1_default_init_idx")
+                        )
+                        :start (IntegerConstant
+                          :n 1
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                        :end (IntegerConstant
+                          :n 1
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                        :increment nil
+                      )
+                      :body [
+                        (Assignment
+                          :target (StructInstanceMember
+                            :v (ArrayItem
+                              :v (Var
+                                :v (SymbolRef 3 "cfgs")
+                              )
+                              :args [
+                                (array_index
+                                  :left nil
+                                  :right (Var
+                                    :v (SymbolRef 4 "__1_default_init_idx")
+                                  )
+                                  :step nil
+                                )
+                              ]
+                              :type (StructType
+                                :data_member_types [
+                                  (Integer
+                                    :kind 4
+                                  )
+                                ]
+                                :member_function_types []
+                                :is_cstruct true
+                                :is_unlimited_polymorphic false
+                              )
+                              :storage_format :RowMajor
+                              :value nil
+                            )
+                            :m (SymbolRef 4 "1_cfg_n")
+                            :type (Integer
+                              :kind 4
+                            )
+                            :value nil
+                          )
+                          :value (IntegerConstant
+                            :n 4
+                            :type (Integer
+                              :kind 4
+                            )
+                            :intboz_type :Decimal
+                          )
+                          :overloaded nil
+                          :realloc_lhs false
+                          :move_allocation false
+                        )
+                      ]
+                      :orelse []
+                    )
+                    (SubroutineCall
+                      :name (SymbolRef 0 "_lcompilers_init_end")
+                      :original_name (SymbolRef 0 "_lcompilers_init_end")
+                      :args [
+                        (call_arg
+                          :value (Var
+                            :v (SymbolRef 3 "__lcompilers_global_init_state_m")
+                          )
+                        )
+                      ]
+                      :dt nil
+                      :strict_bounds_checking false
+                    )
+                  ]
+                  :orelse []
+                )
+              ]
+              :return_var nil
+              :access :Private
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+            "__lcompilers_global_init_state_m" (Variable
+              :parent_symtab 3
+              :name "__lcompilers_global_init_state_m"
+              :dependencies []
+              :intent :Local
+              :symbolic_value (IntegerConstant
+                :n 0
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :value (IntegerConstant
+                :n 0
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :storage :Save
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Private
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "__lcompilers_impl_m_p" (Function
+              :symtab (SymbolTable
+                :id 5
+                :symbols {
+                  "1_cfg_n" (ExternalSymbol
+                    :parent_symtab 5
+                    :name "1_cfg_n"
+                    :external (SymbolRef 6 "n")
+                    :module_name "m"
+                    :scope_names [
+                      "cfg"
+                    ]
+                    :original_name "n"
+                    :access :Public
+                  )
+                  "1_pair_a" (ExternalSymbol
+                    :parent_symtab 5
+                    :name "1_pair_a"
+                    :external (SymbolRef 8 "a")
+                    :module_name "pair"
+                    :scope_names []
+                    :original_name "a"
+                    :access :Public
+                  )
+                  "p" (Variable
+                    :parent_symtab 5
+                    :name "p"
+                    :dependencies []
+                    :intent :ReturnVar
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :BindC
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "w" (Variable
+                    :parent_symtab 5
+                    :name "w"
+                    :dependencies [
+                      "cfgs"
+                    ]
+                    :intent :Local
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Array
+                      :type (Integer
+                        :kind 4
+                      )
+                      :dims [
+                        (dimension
+                          :start (IntegerConstant
+                            :n 1
+                            :type (Integer
+                              :kind 4
+                            )
+                            :intboz_type :Decimal
+                          )
+                          :length (StructInstanceMember
+                            :v (ArrayItem
+                              :v (Var
+                                :v (SymbolRef 3 "cfgs")
+                              )
+                              :args [
+                                (array_index
+                                  :left nil
+                                  :right (IntegerConstant
+                                    :n 1
+                                    :type (Integer
+                                      :kind 4
+                                    )
+                                    :intboz_type :Decimal
+                                  )
+                                  :step nil
+                                )
+                              ]
+                              :type (StructType
+                                :data_member_types [
+                                  (Integer
+                                    :kind 4
+                                  )
+                                ]
+                                :member_function_types []
+                                :is_cstruct true
+                                :is_unlimited_polymorphic false
+                              )
+                              :storage_format :ColMajor
+                              :value nil
+                            )
+                            :m (SymbolRef 5 "1_cfg_n")
+                            :type (Integer
+                              :kind 4
+                            )
+                            :value nil
+                          )
+                        )
+                      ]
+                      :physical_type :PointerArray
+                      :memory_space :Global
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "x" (Variable
+                    :parent_symtab 5
+                    :name "x"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Integer
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct true
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 3 "pair")
+                    :abi :BindC
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "__lcompilers_impl_m_p"
+              :function_signature (FunctionType
+                :arg_types [
+                  (StructType
+                    :data_member_types [
+                      (Integer
+                        :kind 4
+                      )
+                    ]
+                    :member_function_types []
+                    :is_cstruct true
+                    :is_unlimited_polymorphic false
+                  )
+                ]
+                :return_var_type (Integer
+                  :kind 4
+                )
+                :abi :BindC
+                :deftype :Implementation
+                :bindc_name "__lcompilers_impl_m_p"
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies []
+              :args [
+                (Var
+                  :v (SymbolRef 5 "x")
+                )
+              ]
+              :body [
+                (Assignment
+                  :target (Var
+                    :v (SymbolRef 5 "w")
+                  )
+                  :value (ArrayBroadcast
+                    :array (StructInstanceMember
+                      :v (Var
+                        :v (SymbolRef 5 "x")
+                      )
+                      :m (SymbolRef 5 "1_pair_a")
+                      :type (Integer
+                        :kind 4
+                      )
+                      :value nil
+                    )
+                    :shape (IntrinsicArrayFunction
+                      :arr_intrinsic_id 12
+                      :args [
+                        (Var
+                          :v (SymbolRef 5 "w")
+                        )
+                      ]
+                      :overload_id 0
+                      :type (Array
+                        :type (Integer
+                          :kind 4
+                        )
+                        :dims [
+                          (dimension
+                            :start (IntegerConstant
+                              :n 1
+                              :type (Integer
+                                :kind 4
+                              )
+                              :intboz_type :Decimal
+                            )
+                            :length (IntegerConstant
+                              :n 1
+                              :type (Integer
+                                :kind 4
+                              )
+                              :intboz_type :Decimal
+                            )
+                          )
+                        ]
+                        :physical_type :FixedSizeArray
+                        :memory_space :Global
+                      )
+                      :value nil
+                    )
+                    :type (Array
+                      :type (Integer
+                        :kind 4
+                      )
+                      :dims [
+                        (dimension
+                          :start (IntegerConstant
+                            :n 1
+                            :type (Integer
+                              :kind 4
+                            )
+                            :intboz_type :Decimal
+                          )
+                          :length (StructInstanceMember
+                            :v (ArrayItem
+                              :v (Var
+                                :v (SymbolRef 3 "cfgs")
+                              )
+                              :args [
+                                (array_index
+                                  :left nil
+                                  :right (IntegerConstant
+                                    :n 1
+                                    :type (Integer
+                                      :kind 4
+                                    )
+                                    :intboz_type :Decimal
+                                  )
+                                  :step nil
+                                )
+                              ]
+                              :type (StructType
+                                :data_member_types [
+                                  (Integer
+                                    :kind 4
+                                  )
+                                ]
+                                :member_function_types []
+                                :is_cstruct true
+                                :is_unlimited_polymorphic false
+                              )
+                              :storage_format :ColMajor
+                              :value nil
+                            )
+                            :m (SymbolRef 5 "1_cfg_n")
+                            :type (Integer
+                              :kind 4
+                            )
+                            :value nil
+                          )
+                        )
+                      ]
+                      :physical_type :PointerArray
+                      :memory_space :Global
+                    )
+                    :value nil
+                  )
+                  :overloaded nil
+                  :realloc_lhs false
+                  :move_allocation false
+                )
+                (Assignment
+                  :target (Var
+                    :v (SymbolRef 5 "p")
+                  )
+                  :value (IntrinsicArrayFunction
+                    :arr_intrinsic_id 14
+                    :args [
+                      (ArrayPhysicalCast
+                        :arg (Var
+                          :v (SymbolRef 5 "w")
+                        )
+                        :old :PointerArray
+                        :new :DescriptorArray
+                        :type (Array
+                          :type (Integer
+                            :kind 4
+                          )
+                          :dims [
+                            (dimension
+                              :start (IntegerConstant
+                                :n 1
+                                :type (Integer
+                                  :kind 4
+                                )
+                                :intboz_type :Decimal
+                              )
+                              :length (StructInstanceMember
+                                :v (ArrayItem
+                                  :v (Var
+                                    :v (SymbolRef 3 "cfgs")
+                                  )
+                                  :args [
+                                    (array_index
+                                      :left nil
+                                      :right (IntegerConstant
+                                        :n 1
+                                        :type (Integer
+                                          :kind 4
+                                        )
+                                        :intboz_type :Decimal
+                                      )
+                                      :step nil
+                                    )
+                                  ]
+                                  :type (StructType
+                                    :data_member_types [
+                                      (Integer
+                                        :kind 4
+                                      )
+                                    ]
+                                    :member_function_types []
+                                    :is_cstruct true
+                                    :is_unlimited_polymorphic false
+                                  )
+                                  :storage_format :ColMajor
+                                  :value nil
+                                )
+                                :m (SymbolRef 5 "1_cfg_n")
+                                :type (Integer
+                                  :kind 4
+                                )
+                                :value nil
+                              )
+                            )
+                          ]
+                          :physical_type :DescriptorArray
+                          :memory_space :Global
+                        )
+                        :value nil
+                      )
+                    ]
+                    :overload_id 0
+                    :type (Integer
+                      :kind 4
+                    )
+                    :value nil
+                  )
+                  :overloaded nil
+                  :realloc_lhs false
+                  :move_allocation false
+                )
+              ]
+              :return_var (Var
+                :v (SymbolRef 5 "p")
+              )
+              :access :Private
+              :deterministic true
+              :side_effect_free true
+              :module_file nil
+            )
+            "cfg" (Struct
+              :symtab (SymbolTable
+                :id 6
+                :symbols {
+                  "n" (Variable
+                    :parent_symtab 6
+                    :name "n"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value (IntegerConstant
+                      :n 4
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :value (IntegerConstant
+                      :n 4
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :storage :Save
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "cfg"
+              :struct_signature (StructType
+                :data_member_types [
+                  (Integer
+                    :kind 4
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct true
+                :is_unlimited_polymorphic false
+              )
+              :dependencies []
+              :members [
+                "n"
+              ]
+              :member_functions []
+              :abi :Source
+              :access :Public
+              :is_packed false
+              :is_abstract false
+              :is_sequence false
+              :initializers []
+              :alignment nil
+              :parent nil
+              :kind_params []
+            )
+            "cfgs" (Variable
+              :parent_symtab 3
+              :name "cfgs"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Array
+                :type (StructType
+                  :data_member_types [
+                    (Integer
+                      :kind 4
+                    )
+                  ]
+                  :member_function_types []
+                  :is_cstruct true
+                  :is_unlimited_polymorphic false
+                )
+                :dims [
+                  (dimension
+                    :start (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :length (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                  )
+                ]
+                :physical_type :FixedSizeArray
+                :memory_space :Global
+              )
+              :type_declaration (SymbolRef 3 "cfg")
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "p" (Function
+              :symtab (SymbolTable
+                :id 7
+                :symbols {
+                  "p" (Variable
+                    :parent_symtab 7
+                    :name "p"
+                    :dependencies []
+                    :intent :ReturnVar
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :BindC
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "x" (Variable
+                    :parent_symtab 7
+                    :name "x"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Integer
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct true
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 3 "pair")
+                    :abi :BindC
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "p"
+              :function_signature (FunctionType
+                :arg_types [
+                  (StructType
+                    :data_member_types [
+                      (Integer
+                        :kind 4
+                      )
+                    ]
+                    :member_function_types []
+                    :is_cstruct true
+                    :is_unlimited_polymorphic false
+                  )
+                ]
+                :return_var_type (Integer
+                  :kind 4
+                )
+                :abi :BindC
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies [
+                "__lcompilers_global_init_m"
+                "__lcompilers_impl_m_p"
+              ]
+              :args [
+                (Var
+                  :v (SymbolRef 7 "x")
+                )
+              ]
+              :body [
+                (GlobalInitDispatch
+                  :phase :InitDispatchLocal
+                  :ensures [
+                    (SubroutineCall
+                      :name (SymbolRef 3 "__lcompilers_global_init_m")
+                      :original_name (SymbolRef 3 "__lcompilers_global_init_m")
+                      :args []
+                      :dt nil
+                      :strict_bounds_checking false
+                    )
+                  ]
+                )
+                (Assignment
+                  :target (Var
+                    :v (SymbolRef 7 "p")
+                  )
+                  :value (FunctionCall
+                    :name (SymbolRef 3 "__lcompilers_impl_m_p")
+                    :original_name (SymbolRef 3 "__lcompilers_impl_m_p")
+                    :args [
+                      (call_arg
+                        :value (Var
+                          :v (SymbolRef 7 "x")
+                        )
+                      )
+                    ]
+                    :type (Integer
+                      :kind 4
+                    )
+                    :value nil
+                    :dt nil
+                  )
+                  :overloaded nil
+                  :realloc_lhs false
+                  :move_allocation false
+                )
+              ]
+              :return_var (Var
+                :v (SymbolRef 7 "p")
+              )
+              :access :Public
+              :deterministic true
+              :side_effect_free true
+              :module_file nil
+            )
+            "pair" (Struct
+              :symtab (SymbolTable
+                :id 8
+                :symbols {
+                  "a" (Variable
+                    :parent_symtab 8
+                    :name "a"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "pair"
+              :struct_signature (StructType
+                :data_member_types [
+                  (Integer
+                    :kind 4
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct true
+                :is_unlimited_polymorphic false
+              )
+              :dependencies []
+              :members [
+                "a"
+              ]
+              :member_functions []
+              :abi :BindC
+              :access :Public
+              :is_packed false
+              :is_abstract false
+              :is_sequence false
+              :initializers []
+              :alignment nil
+              :parent nil
+              :kind_params []
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+        :global_init "__lcompilers_global_init_m"
+        :global_init_state "__lcompilers_global_init_state_m"
+        :global_init_collective false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 9
+          :symbols {
+            "p" (ExternalSymbol
+              :parent_symtab 9
+              :name "p"
+              :external (SymbolRef 3 "p")
+              :module_name "m"
+              :scope_names []
+              :original_name "p"
+              :access :Public
+            )
+          }
+        )
+        :name "main"
+        :dependencies [
+          "m"
+        ]
+        :body [
+          (GlobalInitDispatch
+            :phase :InitDispatchCollective
+            :ensures []
+          )
+        ]
+        :global_init nil
+        :global_init_state nil
+      )
+    }
+  )
+  :items []
+  :global_init nil
+  :global_init_state nil
+  :global_init_collective false
+  :global_init_bootstrap nil
+)

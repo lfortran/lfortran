@@ -2,6 +2,8 @@
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/pass/global_init.h>
+#include <type_traits>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/pass_utils.h>
@@ -74,6 +76,35 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             sym_to_renamed[sym] = "_xx_"+std::string(name)+"_xx_";
         }
         return;
+    }
+
+    // The longest name Fortran allows (F2018 C601).
+    static constexpr size_t fortran_max_name_length = 63;
+
+    // `name` if it has at most `limit` characters, otherwise its first
+    // characters, an underscore and the stable hash of all of it in 16
+    // hexadecimal digits, `limit` characters in total, so that every file
+    // printed separately agrees on it.
+    static std::string bounded_fortran_name(const std::string &name, size_t limit) {
+        if (name.size() <= limit) return name;
+        std::string hex = stable_hash_hex(name);
+        return name.substr(0, limit - hex.size() - 1) + "_" + hex;
+    }
+
+    // A name for `base` that no symbol of `scope` has and that is a valid
+    // length for Fortran, including the suffix that tells it apart from a
+    // symbol it would clash with. It depends on nothing but the ASR, not on
+    // the identifier of a separate compilation, so that files printed
+    // separately agree on the names they share, such as those of the startup
+    // initializers one calls in another.
+    static std::string unique_fortran_name(SymbolTable *scope, const std::string &base) {
+        std::string name = bounded_fortran_name(base, fortran_max_name_length);
+        for (int counter = 1; scope->get_symbol(name) != nullptr; counter++) {
+            std::string suffix = std::to_string(counter);
+            name = bounded_fortran_name(base,
+                fortran_max_name_length - suffix.size()) + suffix;
+        }
+        return name;
     }
 
     std::string update_name(std::string curr_name) {
@@ -162,27 +193,50 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         SymbolTable *current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         ASR::FunctionType_t *f_type = ASRUtils::get_FunctionType(x);
-        if (bindc_mangling || f_type->m_abi != ASR::abiType::BindC) {
+        // A startup initializer's name is already unique in the program and
+        // has to be the same in every compilation, because other object
+        // files call it by that name; the runtime interface of its guard is
+        // named by its binding label.
+        // Fortran mangling is the exception: it only makes a name valid
+        // Fortran source, the same way in every file it prints.
+        bool keep_name = ((ASRUtils::is_owner_global_init(&x)
+                || ASRUtils::is_global_init_bootstrap(&x)) && !fortran_mangling)
+            || ASRUtils::is_init_runtime_function(
+                ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x));
+        // A `bind(c)` procedure is named by its binding label, so renaming it
+        // renames it for Fortran only, which the Fortran mangling may do when
+        // the label is explicit and stays as it is.
+        bool mangled = bindc_mangling || f_type->m_abi != ASR::abiType::BindC;
+        bool label_kept = fortran_mangling && f_type->m_abi == ASR::abiType::BindC
+            && f_type->m_bindc_name != nullptr;
+        if (!keep_name && (mangled || label_kept)) {
             ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
-            if (all_symbols_mangling || should_mangle) {
+            if (mangled && (all_symbols_mangling || should_mangle)) {
                 sym_to_renamed[sym] = update_name(x.m_name);
             }
             if ( fortran_mangling ) {
                 if ( sym_to_renamed.find(sym) != sym_to_renamed.end()
                         && startswith(sym_to_renamed[sym], "_") ) {
-                    sym_to_renamed[sym] = current_scope->parent->get_unique_name(
-                        "f" + sym_to_renamed[sym]);
+                    sym_to_renamed[sym] = unique_fortran_name(
+                        current_scope->parent, "f" + sym_to_renamed[sym]);
                 } else if ( startswith(x.m_name, "_") ) {
-                    sym_to_renamed[sym] = current_scope->parent->get_unique_name(
-                        "f" + std::string(x.m_name));
+                    sym_to_renamed[sym] = unique_fortran_name(
+                        current_scope->parent, "f" + std::string(x.m_name));
+                } else {
+                    std::string name = sym_to_renamed.find(sym) != sym_to_renamed.end()
+                        ? sym_to_renamed[sym] : std::string(x.m_name);
+                    if ( name.size() > fortran_max_name_length ) {
+                        sym_to_renamed[sym] = unique_fortran_name(
+                            current_scope->parent, name);
+                    }
                 }
             }
-            if ( c_mangling ) {
+            if ( mangled && c_mangling ) {
                 ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
                 mangle_c(sym , std::string(x.m_name));
             }
         }
-        if (intrinsic_symbols_mangling && (startswith(x.m_name, "_lcompilers_") || startswith(x.m_name, "__lcompilers"))) {
+        if (!keep_name && intrinsic_symbols_mangling && (startswith(x.m_name, "_lcompilers_") || startswith(x.m_name, "__lcompilers"))) {
             ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
             sym_to_renamed[sym] = update_name(x.m_name);
         }
@@ -223,11 +277,17 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         if ( fortran_mangling ) {
             if ( sym_to_renamed.find(sym) != sym_to_renamed.end()
                     && startswith(sym_to_renamed[sym], "_") ) {
-                sym_to_renamed[sym] = current_scope->get_unique_name("v" +
-                    sym_to_renamed[sym]);
+                sym_to_renamed[sym] = unique_fortran_name(current_scope,
+                    "v" + sym_to_renamed[sym]);
             } else if ( startswith(x.m_name, "_") ) {
-                sym_to_renamed[sym] = current_scope->get_unique_name("v" +
-                    std::string(x.m_name));
+                sym_to_renamed[sym] = unique_fortran_name(current_scope,
+                    "v" + std::string(x.m_name));
+            } else {
+                std::string name = sym_to_renamed.find(sym) != sym_to_renamed.end()
+                    ? sym_to_renamed[sym] : std::string(x.m_name);
+                if ( name.size() > fortran_max_name_length ) {
+                    sym_to_renamed[sym] = unique_fortran_name(current_scope, name);
+                }
             }
         }
         if ( c_mangling ) {
@@ -340,8 +400,19 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
     std::unordered_map<ASR::symbol_t*, std::string> &sn) : al(al_), sym_to_new_name(sn){}
 
 
+    // An owner names its startup initializer and its state, so a rename of
+    // either has to follow them there.
+    void relink_global_init(char *&link, ASR::symbol_t *sym) {
+        if (sym != nullptr && sym_to_new_name.find(sym) != sym_to_new_name.end()) {
+            link = s2c(al, sym_to_new_name[sym]);
+        }
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         ASR::TranslationUnit_t& xx = const_cast<ASR::TranslationUnit_t&>(x);
+        ASR::symbol_t *global_init = (ASR::symbol_t*)ASRUtils::get_global_init((ASR::asr_t*)&xx);
+        ASR::symbol_t *global_init_state = (ASR::symbol_t*)ASRUtils::get_global_init_state((ASR::asr_t*)&xx);
+        ASR::symbol_t *global_init_bootstrap = (ASR::symbol_t*)ASRUtils::get_global_init_bootstrap(xx);
         std::map<std::string, ASR::symbol_t*> current_scope_copy = current_scope;
         current_scope = x.m_symtab->get_scope();
         for (auto &a : xx.m_symtab->get_scope()) {
@@ -356,12 +427,20 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
                 }
             }
         }
+        relink_global_init(xx.m_global_init, global_init);
+        relink_global_init(xx.m_global_init_state, global_init_state);
+        relink_global_init(xx.m_global_init_bootstrap, global_init_bootstrap);
         current_scope = current_scope_copy;
     }
 
     template <typename T>
     void update_symbols_1(const T &x) {
         T& xx = const_cast<T&>(x);
+        ASR::symbol_t *global_init = nullptr, *global_init_state = nullptr;
+        if constexpr (!std::is_same_v<T, ASR::Function_t>) {
+            global_init = (ASR::symbol_t*)ASRUtils::get_global_init((ASR::asr_t*)&xx);
+            global_init_state = (ASR::symbol_t*)ASRUtils::get_global_init_state((ASR::asr_t*)&xx);
+        }
         std::map<std::string, ASR::symbol_t*> current_scope_copy = current_scope;
         ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
         if (sym_to_new_name.find(sym) != sym_to_new_name.end()) {
@@ -387,6 +466,10 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
                     xx.m_symtab->add_symbol(new_name, a.second);
                 }
             }
+        }
+        if constexpr (!std::is_same_v<T, ASR::Function_t>) {
+            relink_global_init(xx.m_global_init, global_init);
+            relink_global_init(xx.m_global_init_state, global_init_state);
         }
         current_scope = current_scope_copy;
     }

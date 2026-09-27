@@ -150,7 +150,8 @@ TEST_CASE("ASR text supports explicit location overrides") {
         "#asr/loc [[1 2] "
         "(TranslationUnit "
         ":symtab (SymbolTable :id 0 :symbols {}) "
-        ":items [] :global_init nil)]";
+        ":items [] :global_init nil :global_init_state nil "
+        ":global_init_collective false :global_init_bootstrap nil)]";
 
     Allocator allocator(1024 * 1024);
     LocationManager lm;
@@ -179,7 +180,7 @@ TEST_CASE("ASR text reports schema errors separately from verification") {
     CHECK(diagnostics.diagnostics.back().stage ==
         LCompilers::diag::Stage::ASRParser);
     CHECK(diagnostics.diagnostics.back().message.find(
-        "expects 3 positional fields or exactly 3 named fields") !=
+        "expects 6 positional fields or exactly 6 named fields") !=
         std::string::npos);
 }
 
@@ -188,7 +189,9 @@ TEST_CASE("ASR text rejects a negative ArrayConstant n_data") {
         "(TranslationUnit "
         ":symtab (SymbolTable :id 0 :symbols {}) "
         ":items [(ArrayConstant :n_data -1 :data #asr/bytes \"\" "
-        ":type (Integer :kind 4) :storage_format :ColMajor)] :global_init nil)";
+        ":type (Integer :kind 4) :storage_format :ColMajor)] :global_init nil "
+        ":global_init_state nil :global_init_collective false "
+        ":global_init_bootstrap nil)";
 
     Allocator allocator(1024 * 1024);
     LocationManager lm;

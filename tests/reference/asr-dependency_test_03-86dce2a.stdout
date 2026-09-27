@@ -7,19 +7,75 @@
                     (SymbolTable
                         4
                         {
-                            check_commandline:
+                            __lcompilers_global_init_m_cli2:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
+                                            
+                                        })
+                                    __lcompilers_global_init_m_cli2
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_m_cli2:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_m_cli2
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            check_commandline:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
                                             default_help:
                                                 (Function
                                                     (SymbolTable
-                                                        6
+                                                        7
                                                         {
                                                             ilength:
                                                                 (Variable
-                                                                    6
+                                                                    7
                                                                     ilength
                                                                     []
                                                                     Local
@@ -63,7 +119,7 @@
                                                     [(IntrinsicImpureSubroutine
                                                         GetCommandArgument
                                                         [(IntegerConstant 0 (Integer 4) Decimal)
-                                                        (Var 6 ilength)]
+                                                        (Var 7 ilength)]
                                                         2
                                                     )]
                                                     ()
@@ -92,7 +148,7 @@
                                     []
                                     []
                                     [(SubroutineCall
-                                        5 default_help
+                                        6 default_help
                                         ()
                                         []
                                         ()
@@ -111,13 +167,71 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_m_cli2
+                    __lcompilers_global_init_state_m_cli2
+                    .false.
                 ),
             m_cli2_user:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_m_cli2_user:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_m_cli2_user
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_m_cli2_user:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_m_cli2_user
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             check_commandline:
                                 (ExternalSymbol
                                     2
@@ -135,9 +249,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_m_cli2_user
+                    __lcompilers_global_init_state_m_cli2_user
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

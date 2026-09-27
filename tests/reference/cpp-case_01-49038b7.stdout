@@ -27,6 +27,7 @@ namespace {
 void main2() {
     int64_t i;
     int64_t out;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     i = 4;
     if (i == 1) {
         out = 10;

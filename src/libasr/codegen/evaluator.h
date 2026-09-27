@@ -4,6 +4,7 @@
 #include <complex>
 #include <iostream>
 #include <memory>
+#include <set>
 
 #include <libasr/alloc.h>
 #include <libasr/asr_scopes.h>
@@ -151,6 +152,9 @@ private:
     // This allows dlsym(RTLD_DEFAULT) to always find the right symbol without
     // needing to track per-module dlopen handles.
     int m_id;
+    // Every symbol a module added to this instance defines, by the name it
+    // was compiled with; see add_module().
+    std::set<std::string> m_defined_symbols;
 };
 
 #endif // __EMSCRIPTEN__

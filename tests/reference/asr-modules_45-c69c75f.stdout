@@ -5,11 +5,11 @@
             modules_45:
                 (Program
                     (SymbolTable
-                        7
+                        8
                         {
                             compiler_name:
                                 (Variable
-                                    7
+                                    8
                                     compiler_name
                                     []
                                     Local
@@ -35,7 +35,7 @@
                                 ),
                             file_scope_flag:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     file_scope_flag
                                     2 file_scope_flag
                                     modules_45_fpm_manifest_profile
@@ -45,7 +45,7 @@
                                 ),
                             get_flags:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     get_flags
                                     2 get_flags
                                     modules_45_fpm_manifest_profile
@@ -55,7 +55,7 @@
                                 ),
                             new_profile:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     new_profile
                                     2 new_profile
                                     modules_45_fpm_manifest_profile
@@ -65,7 +65,7 @@
                                 ),
                             os_type:
                                 (Variable
-                                    7
+                                    8
                                     os_type
                                     []
                                     Local
@@ -89,7 +89,7 @@
                                 ),
                             os_valid:
                                 (Variable
-                                    7
+                                    8
                                     os_valid
                                     []
                                     Local
@@ -113,7 +113,7 @@
                                 ),
                             profile_config_t:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     profile_config_t
                                     2 profile_config_t
                                     modules_45_fpm_manifest_profile
@@ -123,7 +123,7 @@
                                 ),
                             profile_name:
                                 (Variable
-                                    7
+                                    8
                                     profile_name
                                     []
                                     Local
@@ -149,7 +149,7 @@
                                 ),
                             profiles:
                                 (Variable
-                                    7
+                                    8
                                     profiles
                                     []
                                     Local
@@ -203,7 +203,7 @@
                                             Global
                                         )
                                     )
-                                    7 profile_config_t
+                                    8 profile_config_t
                                     Source
                                     Public
                                     Required
@@ -219,7 +219,7 @@
                                 ),
                             profindex:
                                 (Variable
-                                    7
+                                    8
                                     profindex
                                     []
                                     Local
@@ -245,7 +245,7 @@
                     modules_45
                     [modules_45_fpm_manifest_profile]
                     [(Allocate
-                        [((Var 7 profile_name)
+                        [((Var 8 profile_name)
                         []
                         []
                         (IntegerConstant 40 (Integer 4) Decimal)
@@ -256,7 +256,7 @@
                         ()
                     )
                     (Allocate
-                        [((Var 7 compiler_name)
+                        [((Var 8 compiler_name)
                         []
                         []
                         (IntegerConstant 40 (Integer 4) Decimal)
@@ -267,7 +267,7 @@
                         ()
                     )
                     (Allocate
-                        [((Var 7 profiles)
+                        [((Var 8 profiles)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 5 (Integer 4) Decimal))]
                         []
@@ -279,17 +279,18 @@
                         ()
                     )
                     (SubroutineCall
-                        7 get_flags
+                        8 get_flags
                         ()
-                        [((Var 7 profile_name))
-                        ((Var 7 compiler_name))
-                        ((Var 7 os_type))
-                        ((Var 7 profiles))
-                        ((Var 7 profindex))
-                        ((Var 7 os_valid))]
+                        [((Var 8 profile_name))
+                        ((Var 8 compiler_name))
+                        ((Var 8 os_type))
+                        ((Var 8 profiles))
+                        ((Var 8 profindex))
+                        ((Var 8 os_valid))]
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             modules_45_fpm_manifest_profile:
@@ -297,6 +298,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_modules_45_fpm_manifest_profile:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_45_fpm_manifest_profile
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_45_fpm_manifest_profile:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_modules_45_fpm_manifest_profile
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             file_scope_flag:
                                 (Struct
                                     (SymbolTable
@@ -1768,9 +1825,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_modules_45_fpm_manifest_profile
+                    __lcompilers_global_init_state_modules_45_fpm_manifest_profile
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

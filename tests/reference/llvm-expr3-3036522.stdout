@@ -4,6 +4,7 @@ target datalayout = "..."
 
 define i32 @__lfortran_evaluate_1() {
 .entry:
+  call void @_lcompilers_init_dispatch(i32 0)
   %__lfortran_evaluate_11 = alloca i32, align 4
   %__lfortran_evaluate_12 = alloca i32, align 4
   %__lfortran_evaluate_13 = alloca i32, align 4
@@ -29,3 +30,5 @@ FINALIZE_SYMTABLE___lfortran_evaluate_1:          ; preds = %return
   %0 = load i32, i32* %__lfortran_evaluate_18, align 4
   ret i32 %0
 }
+
+declare void @_lcompilers_init_dispatch(i32)

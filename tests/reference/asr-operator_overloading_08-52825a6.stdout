@@ -5,11 +5,11 @@
             operator_overloading_08:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             1_custom_int_value:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     1_custom_int_value
                                     3 value
                                     operator_overloading_08_mod1
@@ -19,7 +19,7 @@
                                 ),
                             a:
                                 (Variable
-                                    5
+                                    6
                                     a
                                     []
                                     Local
@@ -32,7 +32,7 @@
                                         .true.
                                         .false.
                                     )
-                                    5 custom_int
+                                    6 custom_int
                                     Source
                                     Public
                                     Required
@@ -48,7 +48,7 @@
                                 ),
                             custom_div:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     custom_div
                                     2 custom_div
                                     operator_overloading_08_mod1
@@ -58,7 +58,7 @@
                                 ),
                             custom_int:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     custom_int
                                     2 custom_int
                                     operator_overloading_08_mod1
@@ -68,7 +68,7 @@
                                 ),
                             ~div:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     ~div
                                     2 ~div
                                     operator_overloading_08_mod1
@@ -81,8 +81,8 @@
                     [operator_overloading_08_mod1]
                     [(Assignment
                         (StructInstanceMember
-                            (Var 5 a)
-                            5 1_custom_int_value
+                            (Var 6 a)
+                            6 1_custom_int_value
                             (Integer 4)
                             ()
                         )
@@ -95,15 +95,15 @@
                         (StringFormat
                             ()
                             [(OverloadedBinOp
-                                (Var 5 a)
+                                (Var 6 a)
                                 Div
                                 (IntegerConstant 0 (Integer 4) Decimal)
                                 (Integer 4)
                                 ()
                                 (FunctionCall
-                                    5 custom_div
-                                    5 ~div
-                                    [((Var 5 a))
+                                    6 custom_div
+                                    6 ~div
+                                    [((Var 6 a))
                                     ((IntegerConstant 0 (Integer 4) Decimal))]
                                     (StructType
                                         [(Integer 4)]
@@ -123,12 +123,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             operator_overloading_08_mod1:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_operator_overloading_08_mod1:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_operator_overloading_08_mod1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_operator_overloading_08_mod1:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_operator_overloading_08_mod1
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             custom_div:
                                 (Function
                                     (SymbolTable
@@ -356,9 +413,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_operator_overloading_08_mod1
+                    __lcompilers_global_init_state_operator_overloading_08_mod1
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

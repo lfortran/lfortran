@@ -166,6 +166,9 @@ void  *dbg_realloc(void *context, void *ptr, int64_t size){
 void dbg_report() {
     size_t leaks = 0;
     size_t total_bytes = 0;
+    // Free what every initialized module and translation unit owns, so the
+    // count below sees only what the program itself leaked.
+    _lcompilers_init_teardown_all();
     fprintf(stdout, "\n---------------- Memory Leak Report ----------------\n");
     for (size_t i = 0; i < mem_dbg_hashTable.num_buckets; i++) {
         if (mem_dbg_hashTable.buckets[i].state != OCCUPIED_BKT) continue;

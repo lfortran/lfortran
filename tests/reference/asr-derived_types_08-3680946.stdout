@@ -5,11 +5,11 @@
             derived_types_08:
                 (Program
                     (SymbolTable
-                        6
+                        7
                         {
                             1_rectangle_length:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_rectangle_length
                                     4 length
                                     shape_mod
@@ -19,7 +19,7 @@
                                 ),
                             1_rectangle_width:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_rectangle_width
                                     4 width
                                     shape_mod
@@ -29,7 +29,7 @@
                                 ),
                             1_shape_color:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_shape_color
                                     3 color
                                     shape_mod
@@ -39,7 +39,7 @@
                                 ),
                             1_shape_filled:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_shape_filled
                                     3 filled
                                     shape_mod
@@ -49,7 +49,7 @@
                                 ),
                             1_shape_initialize:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_shape_initialize
                                     3 initialize
                                     shape_mod
@@ -59,7 +59,7 @@
                                 ),
                             1_shape_x:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_shape_x
                                     3 x
                                     shape_mod
@@ -69,7 +69,7 @@
                                 ),
                             1_shape_y:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_shape_y
                                     3 y
                                     shape_mod
@@ -79,7 +79,7 @@
                                 ),
                             initialize_subrout:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     initialize_subrout
                                     2 initialize_subrout
                                     shape_mod
@@ -89,7 +89,7 @@
                                 ),
                             rect:
                                 (Variable
-                                    6
+                                    7
                                     rect
                                     []
                                     Local
@@ -103,7 +103,7 @@
                                         .true.
                                         .false.
                                     )
-                                    6 rectangle
+                                    7 rectangle
                                     Source
                                     Public
                                     Required
@@ -119,7 +119,7 @@
                                 ),
                             rectangle:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     rectangle
                                     2 rectangle
                                     shape_mod
@@ -129,7 +129,7 @@
                                 ),
                             shape:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     shape
                                     2 shape
                                     shape_mod
@@ -139,7 +139,7 @@
                                 ),
                             shp:
                                 (Variable
-                                    6
+                                    7
                                     shp
                                     []
                                     Local
@@ -155,7 +155,7 @@
                                         .true.
                                         .false.
                                     )
-                                    6 shape
+                                    7 shape
                                     Source
                                     Public
                                     Required
@@ -173,9 +173,9 @@
                     derived_types_08
                     [shape_mod]
                     [(SubroutineCall
-                        6 1_shape_initialize
+                        7 1_shape_initialize
                         ()
-                        [((Var 6 shp))
+                        [((Var 7 shp))
                         ((IntegerConstant 1 (Integer 4) Decimal))
                         ((LogicalConstant
                             .true.
@@ -183,13 +183,13 @@
                         ))
                         ((IntegerConstant 10 (Integer 4) Decimal))
                         ((IntegerConstant 20 (Integer 4) Decimal))]
-                        (Var 6 shp)
+                        (Var 7 shp)
                         .false.
                     )
                     (SubroutineCall
-                        6 1_shape_initialize
+                        7 1_shape_initialize
                         ()
-                        [((Var 6 rect))
+                        [((Var 7 rect))
                         ((IntegerConstant 2 (Integer 4) Decimal))
                         ((LogicalConstant
                             .false.
@@ -197,33 +197,33 @@
                         ))
                         ((IntegerConstant 100 (Integer 4) Decimal))
                         ((IntegerConstant 200 (Integer 4) Decimal))]
-                        (Var 6 rect)
+                        (Var 7 rect)
                         .false.
                     )
                     (Print
                         (StringFormat
                             ()
                             [(StructInstanceMember
-                                (Var 6 shp)
-                                6 1_shape_color
+                                (Var 7 shp)
+                                7 1_shape_color
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 6 shp)
-                                6 1_shape_filled
+                                (Var 7 shp)
+                                7 1_shape_filled
                                 (Logical 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 6 shp)
-                                6 1_shape_x
+                                (Var 7 shp)
+                                7 1_shape_x
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 6 shp)
-                                6 1_shape_y
+                                (Var 7 shp)
+                                7 1_shape_y
                                 (Integer 4)
                                 ()
                             )]
@@ -238,26 +238,26 @@
                         (StringFormat
                             ()
                             [(StructInstanceMember
-                                (Var 6 rect)
-                                6 1_shape_color
+                                (Var 7 rect)
+                                7 1_shape_color
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 6 rect)
-                                6 1_shape_filled
+                                (Var 7 rect)
+                                7 1_shape_filled
                                 (Logical 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 6 rect)
-                                6 1_shape_x
+                                (Var 7 rect)
+                                7 1_shape_x
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 6 rect)
-                                6 1_shape_y
+                                (Var 7 rect)
+                                7 1_shape_y
                                 (Integer 4)
                                 ()
                             )]
@@ -270,8 +270,8 @@
                     )
                     (Assignment
                         (StructInstanceMember
-                            (Var 6 rect)
-                            6 1_rectangle_length
+                            (Var 7 rect)
+                            7 1_rectangle_length
                             (Integer 4)
                             ()
                         )
@@ -282,8 +282,8 @@
                     )
                     (Assignment
                         (StructInstanceMember
-                            (Var 6 rect)
-                            6 1_rectangle_width
+                            (Var 7 rect)
+                            7 1_rectangle_width
                             (Integer 4)
                             ()
                         )
@@ -296,14 +296,14 @@
                         (StringFormat
                             ()
                             [(StructInstanceMember
-                                (Var 6 rect)
-                                6 1_rectangle_length
+                                (Var 7 rect)
+                                7 1_rectangle_length
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 6 rect)
-                                6 1_rectangle_width
+                                (Var 7 rect)
+                                7 1_rectangle_width
                                 (Integer 4)
                                 ()
                             )]
@@ -315,12 +315,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             shape_mod:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_shape_mod:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_shape_mod
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_shape_mod:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_shape_mod
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             initialize_subrout:
                                 (Function
                                     (SymbolTable
@@ -805,9 +862,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_shape_mod
+                    __lcompilers_global_init_state_shape_mod
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

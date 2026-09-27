@@ -7,7 +7,62 @@
                     (SymbolTable
                         2
                         {
-                            
+                            __lcompilers_global_init_function_08_a:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_function_08_a
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_function_08_a:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_function_08_a
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
                         })
                     function_08_a
                     ()
@@ -15,16 +70,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_function_08_a
+                    __lcompilers_global_init_state_function_08_a
+                    .false.
                 ),
             functions_08:
                 (Program
                     (SymbolTable
-                        3
+                        4
                         {
                             a:
                                 (Variable
-                                    3
+                                    4
                                     a
                                     []
                                     Local
@@ -48,7 +105,7 @@
                                 ),
                             b:
                                 (Variable
-                                    3
+                                    4
                                     b
                                     []
                                     Local
@@ -72,7 +129,7 @@
                                 ),
                             c:
                                 (Variable
-                                    3
+                                    4
                                     c
                                     []
                                     Local
@@ -95,147 +152,6 @@
                                     []
                                 ),
                             f:
-                                (Function
-                                    (SymbolTable
-                                        4
-                                        {
-                                            a:
-                                                (Variable
-                                                    4
-                                                    a
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            b:
-                                                (Variable
-                                                    4
-                                                    b
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            x:
-                                                (Variable
-                                                    4
-                                                    x
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    f
-                                    (FunctionType
-                                        [(Real 4)]
-                                        (Real 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    [f_real]
-                                    [(Var 4 a)]
-                                    [(Assignment
-                                        (Var 4 x)
-                                        (Cast
-                                            (IntegerConstant 2 (Integer 4) Decimal)
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                2.000000
-                                                (Real 4)
-                                            )
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )
-                                    (Assignment
-                                        (Var 4 b)
-                                        (RealBinOp
-                                            (Var 4 a)
-                                            Add
-                                            (FunctionCall
-                                                3 f_real
-                                                ()
-                                                [((RealConstant
-                                                    0.000000
-                                                    (Real 4)
-                                                ))]
-                                                (Real 4)
-                                                ()
-                                                ()
-                                            )
-                                            (Real 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )]
-                                    (Var 4 b)
-                                    Public
-                                    .true.
-                                    .true.
-                                    ()
-                                ),
-                            f_real:
                                 (Function
                                     (SymbolTable
                                         5
@@ -287,6 +203,147 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                ),
+                                            x:
+                                                (Variable
+                                                    5
+                                                    x
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    f
+                                    (FunctionType
+                                        [(Real 4)]
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    [f_real]
+                                    [(Var 5 a)]
+                                    [(Assignment
+                                        (Var 5 x)
+                                        (Cast
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                2.000000
+                                                (Real 4)
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 5 b)
+                                        (RealBinOp
+                                            (Var 5 a)
+                                            Add
+                                            (FunctionCall
+                                                4 f_real
+                                                ()
+                                                [((RealConstant
+                                                    0.000000
+                                                    (Real 4)
+                                                ))]
+                                                (Real 4)
+                                                ()
+                                                ()
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 5 b)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            f_real:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            a:
+                                                (Variable
+                                                    6
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            b:
+                                                (Variable
+                                                    6
+                                                    b
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f_real
@@ -306,11 +363,11 @@
                                         Host
                                     )
                                     [f]
-                                    [(Var 5 a)]
+                                    [(Var 6 a)]
                                     [(If
                                         ()
                                         (RealCompare
-                                            (Var 5 a)
+                                            (Var 6 a)
                                             Eq
                                             (RealConstant
                                                 0.000000
@@ -320,7 +377,7 @@
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 5 b)
+                                            (Var 6 b)
                                             (RealConstant
                                                 2.000000
                                                 (Real 4)
@@ -330,12 +387,12 @@
                                             .false.
                                         )]
                                         [(Assignment
-                                            (Var 5 b)
+                                            (Var 6 b)
                                             (RealBinOp
-                                                (Var 5 a)
+                                                (Var 6 a)
                                                 Add
                                                 (FunctionCall
-                                                    3 f
+                                                    4 f
                                                     ()
                                                     [((RealConstant
                                                         1.000000
@@ -353,7 +410,7 @@
                                             .false.
                                         )]
                                     )]
-                                    (Var 5 b)
+                                    (Var 6 b)
                                     Public
                                     .true.
                                     .true.
@@ -361,7 +418,7 @@
                                 ),
                             p:
                                 (Variable
-                                    3
+                                    4
                                     p
                                     []
                                     Local
@@ -397,7 +454,7 @@
                                 ),
                             q:
                                 (Variable
-                                    3
+                                    4
                                     q
                                     []
                                     Local
@@ -421,7 +478,7 @@
                                 ),
                             x:
                                 (Variable
-                                    3
+                                    4
                                     x
                                     []
                                     Local
@@ -457,7 +514,7 @@
                                 ),
                             y:
                                 (Variable
-                                    3
+                                    4
                                     y
                                     []
                                     Local
@@ -483,11 +540,11 @@
                     functions_08
                     []
                     [(Assignment
-                        (Var 3 y)
+                        (Var 4 y)
                         (FunctionCall
-                            3 f
+                            4 f
                             ()
-                            [((Var 3 x))]
+                            [((Var 4 x))]
                             (Real 4)
                             ()
                             ()
@@ -499,7 +556,7 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 3 y)]
+                            [(Var 4 y)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -508,11 +565,11 @@
                         )
                     )
                     (Assignment
-                        (Var 3 q)
+                        (Var 4 q)
                         (FunctionCall
-                            3 f_real
+                            4 f_real
                             ()
-                            [((Var 3 p))]
+                            [((Var 4 p))]
                             (Real 4)
                             ()
                             ()
@@ -524,7 +581,7 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 3 q)]
+                            [(Var 4 q)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -533,8 +590,12 @@
                         )
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

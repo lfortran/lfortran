@@ -5,11 +5,11 @@
             interface_05:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             a:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     a
                                     2 a
                                     interface_05_mod
@@ -19,7 +19,7 @@
                                 ),
                             a1@a:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     a1@a
                                     2 a1
                                     interface_05_mod
@@ -29,7 +29,7 @@
                                 ),
                             a2@a:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     a2@a
                                     2 a2
                                     interface_05_mod
@@ -39,7 +39,7 @@
                                 ),
                             a@a1:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     a@a1
                                     2 a1
                                     interface_05_mod
@@ -49,7 +49,7 @@
                                 ),
                             a@a2:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     a@a2
                                     2 a2
                                     interface_05_mod
@@ -59,7 +59,7 @@
                                 ),
                             i:
                                 (Variable
-                                    5
+                                    6
                                     i
                                     []
                                     Local
@@ -83,7 +83,7 @@
                                 ),
                             r:
                                 (Variable
-                                    5
+                                    6
                                     r
                                     []
                                     Local
@@ -109,18 +109,18 @@
                     interface_05
                     [interface_05_mod]
                     [(Assignment
-                        (Var 5 i)
+                        (Var 6 i)
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 5 i)
+                        (Var 6 i)
                         (FunctionCall
-                            5 a@a1
-                            5 a
-                            [((Var 5 i))]
+                            6 a@a1
+                            6 a
+                            [((Var 6 i))]
                             (Integer 4)
                             ()
                             ()
@@ -132,7 +132,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 5 i)
+                            (Var 6 i)
                             NotEq
                             (IntegerConstant 6 (Integer 4) Decimal)
                             (Logical 4)
@@ -144,7 +144,7 @@
                         []
                     )
                     (Assignment
-                        (Var 5 r)
+                        (Var 6 r)
                         (Cast
                             (IntegerConstant 6 (Integer 4) Decimal)
                             IntegerToReal
@@ -160,11 +160,11 @@
                         .false.
                     )
                     (Assignment
-                        (Var 5 r)
+                        (Var 6 r)
                         (FunctionCall
-                            5 a@a2
-                            5 a
-                            [((Var 5 r))]
+                            6 a@a2
+                            6 a
+                            [((Var 6 r))]
                             (Real 4)
                             ()
                             ()
@@ -176,7 +176,7 @@
                     (If
                         ()
                         (RealCompare
-                            (Var 5 r)
+                            (Var 6 r)
                             NotEq
                             (Cast
                                 (IntegerConstant 7 (Integer 4) Decimal)
@@ -197,18 +197,18 @@
                         []
                     )
                     (Assignment
-                        (Var 5 i)
+                        (Var 6 i)
                         (IntegerConstant 7 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 5 i)
+                        (Var 6 i)
                         (FunctionCall
-                            5 a@a1
-                            5 a
-                            [((Var 5 i))]
+                            6 a@a1
+                            6 a
+                            [((Var 6 i))]
                             (Integer 4)
                             ()
                             ()
@@ -220,7 +220,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 5 i)
+                            (Var 6 i)
                             NotEq
                             (IntegerConstant 8 (Integer 4) Decimal)
                             (Logical 4)
@@ -232,12 +232,69 @@
                         []
                     )]
                     ()
+                    ()
                 ),
             interface_05_mod:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_interface_05_mod:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_interface_05_mod
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_interface_05_mod:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_interface_05_mod
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             a:
                                 (GenericProcedure
                                     2
@@ -444,9 +501,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_interface_05_mod
+                    __lcompilers_global_init_state_interface_05_mod
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

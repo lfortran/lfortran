@@ -5,7 +5,7 @@
             modules_37:
                 (Program
                     (SymbolTable
-                        11
+                        12
                         {
                             
                         })
@@ -18,20 +18,77 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             modules_37_fpm_backend:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_modules_37_fpm_backend:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_37_fpm_backend
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_37_fpm_backend:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_modules_37_fpm_backend
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             build_package_build_target_ptr____0:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        14
                                         {
                                             1_build_target_ptr_ptr:
                                                 (ExternalSymbol
-                                                    13
+                                                    14
                                                     1_build_target_ptr_ptr
                                                     6 ptr
                                                     modules_37_fpm_backend
@@ -41,7 +98,7 @@
                                                 ),
                                             __1targets:
                                                 (Variable
-                                                    13
+                                                    14
                                                     __1targets
                                                     []
                                                     In
@@ -66,11 +123,11 @@
                                             associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
-                                                        14
+                                                        15
                                                         {
                                                             1_build_target_t_output_dir:
                                                                 (ExternalSymbol
-                                                                    14
+                                                                    15
                                                                     1_build_target_t_output_dir
                                                                     7 output_dir
                                                                     modules_37_fpm_backend
@@ -80,7 +137,7 @@
                                                                 ),
                                                             1_string_t_s:
                                                                 (ExternalSymbol
-                                                                    14
+                                                                    15
                                                                     1_string_t_s
                                                                     5 s
                                                                     modules_37_fpm_backend
@@ -90,7 +147,7 @@
                                                                 ),
                                                             target:
                                                                 (Variable
-                                                                    14
+                                                                    15
                                                                     target
                                                                     []
                                                                     Local
@@ -124,12 +181,12 @@
                                                         })
                                                     associate_block
                                                     [(Associate
-                                                        (Var 14 target)
+                                                        (Var 15 target)
                                                         (StructInstanceMember
                                                             (ArrayItem
-                                                                (Var 13 targets)
+                                                                (Var 14 targets)
                                                                 [(()
-                                                                (Var 13 i)
+                                                                (Var 14 i)
                                                                 ())]
                                                                 (StructType
                                                                     [(Pointer
@@ -163,16 +220,16 @@
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
-                                                            (Var 13 temp)
-                                                            12 1_string_t_s
+                                                            (Var 14 temp)
+                                                            13 1_string_t_s
                                                             (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             ()
                                                         )
                                                         (StructInstanceMember
-                                                            (Var 14 target)
-                                                            12 1_build_target_t_output_dir
+                                                            (Var 15 target)
+                                                            13 1_build_target_t_output_dir
                                                             (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
                                                             )
@@ -183,10 +240,10 @@
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 13 build_dirs)
+                                                        (Var 14 build_dirs)
                                                         (ArrayConstructor
-                                                            [(Var 13 build_dirs)
-                                                            (Var 13 temp)]
+                                                            [(Var 14 build_dirs)
+                                                            (Var 14 temp)]
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
@@ -212,7 +269,7 @@
                                                 ),
                                             build_dirs:
                                                 (Variable
-                                                    13
+                                                    14
                                                     build_dirs
                                                     []
                                                     Local
@@ -251,7 +308,7 @@
                                                 ),
                                             i:
                                                 (Variable
-                                                    13
+                                                    14
                                                     i
                                                     []
                                                     Local
@@ -275,7 +332,7 @@
                                                 ),
                                             j:
                                                 (Variable
-                                                    13
+                                                    14
                                                     j
                                                     []
                                                     Local
@@ -299,7 +356,7 @@
                                                 ),
                                             model:
                                                 (Variable
-                                                    13
+                                                    14
                                                     model
                                                     []
                                                     In
@@ -328,7 +385,7 @@
                                                 ),
                                             targets:
                                                 (Variable
-                                                    13
+                                                    14
                                                     targets
                                                     [__1targets]
                                                     InOut
@@ -350,7 +407,7 @@
                                                             .false.
                                                         )
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Var 13 __1targets))]
+                                                        (Var 14 __1targets))]
                                                         PointerArray
                                                         Global
                                                     )
@@ -370,7 +427,7 @@
                                                 ),
                                             temp:
                                                 (Variable
-                                                    13
+                                                    14
                                                     temp
                                                     []
                                                     Local
@@ -401,7 +458,7 @@
                                                 ),
                                             verbose:
                                                 (Variable
-                                                    13
+                                                    14
                                                     verbose
                                                     []
                                                     In
@@ -471,12 +528,12 @@
                                         Host
                                     )
                                     []
-                                    [(Var 13 targets)
-                                    (Var 13 __1targets)
-                                    (Var 13 model)
-                                    (Var 13 verbose)]
+                                    [(Var 14 targets)
+                                    (Var 14 __1targets)
+                                    (Var 14 model)
+                                    (Var 14 verbose)]
                                     [(Allocate
-                                        [((Var 13 build_dirs)
+                                        [((Var 14 build_dirs)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 0 (Integer 4) Decimal))]
                                         []
@@ -489,17 +546,17 @@
                                     )
                                     (DoLoop
                                         ()
-                                        ((Var 13 i)
+                                        ((Var 14 i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (ArraySize
-                                            (Var 13 targets)
+                                            (Var 14 targets)
                                             ()
                                             (Integer 4)
                                             ()
                                         )
                                         ())
                                         [(AssociateBlockCall
-                                            13 associate_block
+                                            14 associate_block
                                         )]
                                         []
                                     )]
@@ -1017,9 +1074,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_modules_37_fpm_backend
+                    __lcompilers_global_init_state_modules_37_fpm_backend
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

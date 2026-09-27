@@ -15,6 +15,7 @@
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/global_init.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/pickle.h>
 
@@ -119,6 +120,9 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         } else {
             return res.error;
         }
+        // Before any `.mod` file is written, so a module read back from one
+        // says whether it needs a collective startup boundary.
+        ASRUtils::update_global_init_collective(*tu, compiler_options.po.coarray);
         if (compiler_options.rtlib) load_rtlib();
         if (compiler_options.po.dump_all_passes) {
             std::ofstream outfile ("pass_00_initial_asr_02.clj");

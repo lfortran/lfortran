@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_derived_types_15_module_1:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_derived_types_15_module_1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_derived_types_15_module_1:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_derived_types_15_module_1
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             multiply:
                                 (Function
                                     (SymbolTable
@@ -393,16 +449,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_derived_types_15_module_1
+                    __lcompilers_global_init_state_derived_types_15_module_1
+                    .false.
                 ),
             name:
                 (Program
                     (SymbolTable
-                        6
+                        7
                         {
                             1_t_1_i:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_t_1_i
                                     3 i
                                     derived_types_15_module_1
@@ -412,7 +470,7 @@
                                 ),
                             1_t_1_multiply:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_t_1_multiply
                                     3 multiply
                                     derived_types_15_module_1
@@ -422,7 +480,7 @@
                                 ),
                             1_t_1_sqrt_subtract:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_t_1_sqrt_subtract
                                     3 sqrt_subtract
                                     derived_types_15_module_1
@@ -432,7 +490,7 @@
                                 ),
                             t_1:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     t_1
                                     2 t_1
                                     derived_types_15_module_1
@@ -442,7 +500,7 @@
                                 ),
                             type_1:
                                 (Variable
-                                    6
+                                    7
                                     type_1
                                     []
                                     Local
@@ -455,7 +513,7 @@
                                         .true.
                                         .false.
                                     )
-                                    6 t_1
+                                    7 t_1
                                     Source
                                     Public
                                     Required
@@ -474,8 +532,8 @@
                     [derived_types_15_module_1]
                     [(Assignment
                         (StructInstanceMember
-                            (Var 6 type_1)
-                            6 1_t_1_i
+                            (Var 7 type_1)
+                            7 1_t_1_i
                             (Real 4)
                             ()
                         )
@@ -491,16 +549,16 @@
                         ()
                         (RealCompare
                             (FunctionCall
-                                6 1_t_1_multiply
+                                7 1_t_1_multiply
                                 ()
-                                [((Var 6 type_1))
+                                [((Var 7 type_1))
                                 ((RealConstant
                                     5.000000
                                     (Real 4)
                                 ))]
                                 (Real 4)
                                 ()
-                                (Var 6 type_1)
+                                (Var 7 type_1)
                             )
                             NotEq
                             (Cast
@@ -525,13 +583,13 @@
                         ()
                         (RealCompare
                             (FunctionCall
-                                6 1_t_1_sqrt_subtract
+                                7 1_t_1_sqrt_subtract
                                 ()
-                                [((Var 6 type_1))
+                                [((Var 7 type_1))
                                 ((IntegerConstant 2500 (Integer 4) Decimal))]
                                 (Real 4)
                                 ()
-                                (Var 6 type_1)
+                                (Var 7 type_1)
                             )
                             NotEq
                             (Cast
@@ -553,8 +611,12 @@
                         []
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )
