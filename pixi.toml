@@ -33,6 +33,10 @@ platforms = ["win-64", "linux-64"]
 llvmdev = "==10.0.1"
 [feature.llvm11.dependencies]
 llvmdev = "==11.1.0"
+[feature.llvm11.target.osx-arm64.activation.env]
+# GFortran emits M1/LSE instructions that LLVM 11's bundled Clang assembler
+# rejects. Use the required Xcode tools without changing the LLVM version.
+FC = "gfortran -B/usr/bin/"
 [feature.llvm12.dependencies]
 llvmdev = "==12.0.1"
 [feature.llvm13.dependencies]
