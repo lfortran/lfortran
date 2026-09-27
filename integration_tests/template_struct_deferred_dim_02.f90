@@ -1,6 +1,6 @@
 ! Derived-type component bounds inside a template that are constant
 ! expressions of a deferred integer constant (n+1, n*2, -n:n, n/2+1, n**2,
-! max(n, 5)). They are folded to fixed sizes at instantiation.
+! max(n, 5), max(n*2, 5), min(n+1, 10), abs(-n)*2). They are folded to fixed sizes at instantiation.
 
 module template_struct_deferred_dim_02_m
     implicit none
@@ -19,6 +19,12 @@ module template_struct_deferred_dim_02_m
         type :: wmax
             integer :: b(max(n, 5))
         end type
+
+        type :: wintr
+            integer :: c1(max(n*2, 5))
+            integer :: c2(min(n+1, 10))
+            integer :: c3(abs(-n)*2)
+        end type
     end template
 end module
 
@@ -26,9 +32,11 @@ program template_struct_deferred_dim_02
     use template_struct_deferred_dim_02_m
     implicit none
     integer, parameter :: three = 3
-    instantiate tm {three}, only: w3 => w, wmax3 => wmax
+    instantiate tm {three}, only: w3 => w, wmax3 => wmax, &
+        wintr3 => wintr
     type(w3) :: s, s2
     type(wmax3) :: t, t2, t3
+    type(wintr3) :: u
     integer :: i
 
     s%b1 = 1
@@ -59,4 +67,9 @@ program template_struct_deferred_dim_02
         if (t2%b(i) /= i) error stop
         if (t3%b(i) /= i) error stop
     end do
+
+    print *, size(u%c1), size(u%c2), size(u%c3)
+    if (size(u%c1) /= 6) error stop
+    if (size(u%c2) /= 4) error stop
+    if (size(u%c3) /= 6) error stop
 end program

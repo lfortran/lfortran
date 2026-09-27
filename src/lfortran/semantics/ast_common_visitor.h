@@ -2886,6 +2886,17 @@ public:
                 return is_named_constant_expr(
                     ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
             }
+            case ASR::exprType::IntrinsicElementalFunction: {
+                ASR::IntrinsicElementalFunction_t* func =
+                    ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+                for (size_t i = 0; i < func->n_args; i++) {
+                    if (func->m_args[i] != nullptr &&
+                            !is_named_constant_expr(func->m_args[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
             default: {
                 return false;
             }
