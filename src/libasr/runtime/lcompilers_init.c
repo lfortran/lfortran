@@ -115,7 +115,6 @@ static void lcompilers_init_store_u64(uint64_t *p, uint64_t v) {
 #endif
 }
 
-#if !defined(COMPILE_TO_WASM) && !defined(__APPLE__)
 static void lcompilers_init_increment_u64(uint64_t *p) {
 #if defined(_MSC_VER)
     InterlockedIncrement64((volatile LONG64 *)p);
@@ -123,7 +122,6 @@ static void lcompilers_init_increment_u64(uint64_t *p) {
     __atomic_add_fetch(p, 1, __ATOMIC_ACQ_REL);
 #endif
 }
-#endif
 
 static void lcompilers_init_yield(void) {
 #if defined(COMPILE_TO_WASM)
@@ -314,9 +312,17 @@ typedef struct {
  * so its index names it for good. */
 static lcompilers_init_entry *lcompilers_init_entries;
 static size_t lcompilers_init_entry_count, lcompilers_init_entry_capacity;
-/* Bumped whenever an entry is retired or comes back to life, or a host
- * batch is added or removed. */
+/* Bumped whenever an entry is retired or comes back to life, is taken in
+ * by its image's constructor, or a host batch is added or removed. Written
+ * with the registry lock held, and read without it by the fast path of a
+ * dispatch; see `lcompilers_init_run`. */
 static uint64_t lcompilers_init_registry_generation;
+
+/* With the registry lock held. */
+static void lcompilers_init_registry_changed(void) {
+    lcompilers_init_store_u64(&lcompilers_init_registry_generation,
+        lcompilers_init_registry_generation + 1);
+}
 /* The tables of the batches the host added. */
 static const lcompilers_init_table **lcompilers_init_host_tables;
 static size_t lcompilers_init_host_count, lcompilers_init_host_capacity;
@@ -353,7 +359,7 @@ static void lcompilers_init_revive_locked(size_t i) {
     if (!e->retired) return;
     e->retired = 0;
     e->incarnation++;
-    lcompilers_init_registry_generation++;
+    lcompilers_init_registry_changed();
 }
 
 /* With the registry lock held. */
@@ -364,7 +370,7 @@ static void lcompilers_init_retire_locked(size_t i) {
         e->retired = 1;
         e->incarnation++;
     }
-    lcompilers_init_registry_generation++;
+    lcompilers_init_registry_changed();
 }
 
 /* Takes a lease on entry `entry` as it was in `incarnation`; 0 when it has
@@ -431,6 +437,9 @@ typedef struct {
  * lock. */
 static lcompilers_init_generation_t lcompilers_init_dispatched;
 static int lcompilers_init_dispatched_valid;
+/* One more than the registry generation at which the last dispatch that
+ * completed saw every local record ready, or 0; see `lcompilers_init_run`. */
+static uint64_t lcompilers_init_ready_generation;
 
 /* The engine's registry and the loader notifications it installs live as
  * long as the process: the image that holds the engine -- the shared runtime,
@@ -549,7 +558,7 @@ static void lcompilers_init_adopt_locked(const lcompilers_init_table *t,
              * without its destructor, which no loader the engine supports
              * does. Whatever was copied from it or leased is stale. */
             e->incarnation++;
-            lcompilers_init_registry_generation++;
+            lcompilers_init_registry_changed();
         }
         lcompilers_init_store_release((int32_t *)t->instance,
             lcompilers_init_instance_adopted);
@@ -790,7 +799,7 @@ static void lcompilers_init_listed(const lcompilers_init_table *t, void *context
     (void)context;
     lcompilers_init_adopt_locked(t, NULL);
     lcompilers_init_entries[lcompilers_init_entry_of(t)].listed = 1;
-    lcompilers_init_registry_generation++;
+    lcompilers_init_registry_changed();
 }
 
 static void lcompilers_init_unlisted(const lcompilers_init_table *t, void *context) {
@@ -1067,10 +1076,19 @@ static void lcompilers_init_discover_images(lcompilers_init_snapshot *out) {
 }
 #endif
 
+/* For the engine's own tests: how many times a dispatch asked the loader
+ * and the registry what changed. */
+static uint64_t lcompilers_init_generation_reads;
+
+LFORTRAN_API uint64_t _lcompilers_init_test_generation_reads(void) {
+    return lcompilers_init_load_u64(&lcompilers_init_generation_reads);
+}
+
 static void lcompilers_init_generation(lcompilers_init_generation_t *g) {
+    lcompilers_init_increment_u64(&lcompilers_init_generation_reads);
     lcompilers_init_image_generation(g);
     lcompilers_init_registry_lock();
-    g->registry = lcompilers_init_registry_generation;
+    g->registry = lcompilers_init_load_u64(&lcompilers_init_registry_generation);
     lcompilers_init_registry_unlock();
 }
 
@@ -1392,6 +1410,22 @@ static void lcompilers_init_walk(int kind) {
 static int32_t lcompilers_init_collective_running;
 
 static void lcompilers_init_run(int32_t phase) {
+    /* The fast path, which every call of a foreign entry point takes once
+     * startup is done: nothing that registers records has changed since a
+     * dispatch completed. Every image with records changes the registry --
+     * from its constructor, which takes its table in, and its destructor --
+     * so what this passes over is only a load in progress whose constructor
+     * has not run yet: what an entry point of it needs, the entry point's
+     * own explicit calls of the initializers run, and its constructor the
+     * rest. The acquire pairs with the release of the dispatch that stored
+     * it, after every initializer it ran was ready. */
+    if (phase == lcompilers_init_dispatch_local) {
+        uint64_t ready = lcompilers_init_load_u64(&lcompilers_init_ready_generation);
+        if (ready != 0 && ready
+                == lcompilers_init_load_u64(&lcompilers_init_registry_generation) + 1) {
+            return;
+        }
+    }
     if (phase != lcompilers_init_dispatch_local
             && phase != lcompilers_init_dispatch_collective) {
         lcompilers_init_fail("unknown dispatch phase");
@@ -1449,6 +1483,7 @@ static void lcompilers_init_run(int32_t phase) {
     lcompilers_init_dispatched = generation;
     lcompilers_init_dispatched_valid = 1;
     lcompilers_init_registry_unlock();
+    lcompilers_init_store_u64(&lcompilers_init_ready_generation, generation.registry + 1);
 }
 
 LFORTRAN_API void _lcompilers_init_ctor(const lcompilers_init_table *table) {
@@ -1465,7 +1500,7 @@ LFORTRAN_API void _lcompilers_init_ctor(const lcompilers_init_table *table) {
     if (!e->constructed) {
         /* Its table is discovered from now on, however it is listed. */
         e->constructed = 1;
-        lcompilers_init_registry_generation++;
+        lcompilers_init_registry_changed();
     }
     lcompilers_init_registry_unlock();
 #endif
@@ -1511,7 +1546,7 @@ LFORTRAN_API void _lcompilers_init_add_records(const lcompilers_init_table *tabl
         lcompilers_init_host_count, sizeof(*lcompilers_init_host_tables));
     lcompilers_init_host_tables[lcompilers_init_host_count++] = table;
     lcompilers_init_revive_locked(lcompilers_init_entry_of(table));
-    lcompilers_init_registry_generation++;
+    lcompilers_init_registry_changed();
     lcompilers_init_registry_unlock();
 }
 
@@ -1572,6 +1607,8 @@ LFORTRAN_API void _lcompilers_init_unload(const lcompilers_init_table *table) {
 }
 
 LFORTRAN_API void _lcompilers_init_teardown_all(void) {
+    /* A dispatch after the teardown walks again. */
+    lcompilers_init_store_u64(&lcompilers_init_ready_generation, 0);
     lcompilers_init_snapshot snapshot;
     lcompilers_init_discover(&snapshot);
     lcompilers_init_lock();

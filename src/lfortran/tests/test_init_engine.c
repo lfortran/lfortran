@@ -334,6 +334,86 @@ static int scenario_republish(void) {
 }
 
 /* ---------------------------------------------------------------------- */
+/* Once a dispatch has completed and nothing that registers records has   */
+/* changed, a dispatch -- which every call of a foreign entry point makes */
+/* -- neither asks the loader nor takes a lock; a batch added and a       */
+/* teardown make the next one look again.                                */
+/* ---------------------------------------------------------------------- */
+
+uint64_t _lcompilers_init_test_generation_reads(void);
+
+static int32_t st_settled, st_later;
+static int settled_bodies = 0, later_bodies = 0;
+
+static void ensure_settled(void) {
+    if (_lcompilers_init_begin(&st_settled)) {
+        settled_bodies++;
+        _lcompilers_init_end(&st_settled);
+    }
+}
+
+static void ensure_later(void) {
+    if (_lcompilers_init_begin(&st_later)) {
+        later_bodies++;
+        _lcompilers_init_end(&st_later);
+    }
+}
+
+static const lcompilers_init_record settled_records[] = {
+    {"m:settled", ensure_settled, NULL, &st_settled, 0, 0},
+};
+static const lcompilers_init_record later_records[] = {
+    {"m:later", ensure_later, NULL, &st_later, 0, 0},
+};
+static const lcompilers_init_table settled_table = {
+    lcompilers_init_abi_version, 1, settled_records};
+static const lcompilers_init_table later_table = {
+    lcompilers_init_abi_version, 1, later_records};
+
+#if !defined(_WIN32)
+static void *dispatch_often(void *unused) {
+    (void)unused;
+    for (int i = 0; i < 100000; i++) {
+        _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
+    }
+    return NULL;
+}
+#endif
+
+static int scenario_fast_path(void) {
+    _lcompilers_init_add_records(&settled_table);
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
+    expect(settled_bodies == 1, "the batch is initialized");
+    uint64_t reads = _lcompilers_init_test_generation_reads();
+    for (int i = 0; i < 1000; i++) {
+        _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
+    }
+#if !defined(_WIN32)
+    pthread_t threads[4];
+    for (int i = 0; i < 4; i++) pthread_create(&threads[i], NULL, dispatch_often, NULL);
+    for (int i = 0; i < 4; i++) pthread_join(threads[i], NULL);
+#endif
+    expect(_lcompilers_init_test_generation_reads() == reads,
+        "a dispatch with nothing changed looks at nothing");
+
+    _lcompilers_init_add_records(&later_table);
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
+    expect(later_bodies == 1, "a batch added later is initialized by the next dispatch");
+    expect(_lcompilers_init_test_generation_reads() > reads,
+        "a dispatch after a batch was added looks again");
+
+    _lcompilers_init_teardown_all();
+    reads = _lcompilers_init_test_generation_reads();
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_local);
+    expect(_lcompilers_init_test_generation_reads() > reads,
+        "a dispatch after a teardown looks again");
+    expect(settled_bodies == 1 && later_bodies == 1, "nothing is initialized twice");
+    _lcompilers_init_remove_records(&later_table);
+    _lcompilers_init_remove_records(&settled_table);
+    return finish();
+}
+
+/* ---------------------------------------------------------------------- */
 /* Collective records wait for an explicit collective boundary; a second  */
 /* batch of them needs one of its own, which leaves the first batch, and  */
 /* every local record, as it is.                                          */
@@ -1206,6 +1286,7 @@ int main(int argc, char **argv) {
     }
 #endif
     if (strcmp(s, "republish") == 0) return scenario_republish();
+    if (strcmp(s, "fast_path") == 0) return scenario_fast_path();
     if (strcmp(s, "collective") == 0) return scenario_collective();
     if (strcmp(s, "collective_outside") == 0) return scenario_collective_outside();
     if (strcmp(s, "publish_during_init") == 0) return scenario_publish_during_init();

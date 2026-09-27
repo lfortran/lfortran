@@ -24,7 +24,7 @@ endif()
 if (NOT XEUS_LFORTRAN_WASM_BUILD AND NOT EMSCRIPTEN)
     add_executable(test_init_engine test_init_engine.c)
     target_link_libraries(test_init_engine lfortran_runtime_static)
-    set(init_engine_scenarios order_forward order_reverse republish collective
+    set(init_engine_scenarios order_forward order_reverse republish fast_path collective
         publish_during_init publish_twice remove_during_init bootstrap_incarnation)
     if (NOT WIN32)
         find_package(Threads REQUIRED)
