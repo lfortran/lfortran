@@ -7385,8 +7385,14 @@ public:
                             throw SemanticAbort();
                         }
                     }
-                    ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
-                                    ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value)),target_type, diag);
+                    // A deferred type of a template has no implicit conversion
+                    // to or from any other type; the type check below reports
+                    // the mismatch.
+                    if (!ASRUtils::is_type_parameter(*value_type) &&
+                            !ASRUtils::is_type_parameter(*target_type)) {
+                        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                                        ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value)),target_type, diag);
+                    }
                     }
                 }
             }
