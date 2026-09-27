@@ -32,6 +32,7 @@ program nested_vars_16
     n = p%x + 10
   end select
   if (n /= 11) error stop 3
+  deallocate(p)
   print *, n, t%x
 contains
   subroutine s()
