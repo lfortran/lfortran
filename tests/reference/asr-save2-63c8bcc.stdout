@@ -1013,8 +1013,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_save_module_2
-                    __lcompilers_global_init_state_save_module_2
+                    4 __lcompilers_global_init_save_module_2
+                    4 __lcompilers_global_init_state_save_module_2
                     .false.
                 ),
             save_sub:

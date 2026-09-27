@@ -170,8 +170,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_02_a
-                    __lcompilers_global_init_state_modules_02_a
+                    2 __lcompilers_global_init_modules_02_a
+                    2 __lcompilers_global_init_state_modules_02_a
                     .false.
                 ),
             modules_02_c:
@@ -316,8 +316,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_02_c
-                    __lcompilers_global_init_state_modules_02_c
+                    5 __lcompilers_global_init_modules_02_c
+                    5 __lcompilers_global_init_state_modules_02_c
                     .false.
                 )
         })

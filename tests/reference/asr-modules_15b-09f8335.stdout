@@ -5258,8 +5258,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_15b
-                    __lcompilers_global_init_state_modules_15b
+                    2 __lcompilers_global_init_modules_15b
+                    2 __lcompilers_global_init_state_modules_15b
                     .false.
                 )
         })

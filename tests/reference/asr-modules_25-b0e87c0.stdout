@@ -287,8 +287,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_de_character
-                    __lcompilers_global_init_state_tomlf_de_character
+                    4 __lcompilers_global_init_tomlf_de_character
+                    4 __lcompilers_global_init_state_tomlf_de_character
                     .false.
                 ),
             tomlf_de_tokenizer_25:
@@ -780,8 +780,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_de_tokenizer_25
-                    __lcompilers_global_init_state_tomlf_de_tokenizer_25
+                    9 __lcompilers_global_init_tomlf_de_tokenizer_25
+                    9 __lcompilers_global_init_state_tomlf_de_tokenizer_25
                     .false.
                 )
         })

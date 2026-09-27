@@ -506,8 +506,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_write7_mod
-                    __lcompilers_global_init_state_write7_mod
+                    2 __lcompilers_global_init_write7_mod
+                    2 __lcompilers_global_init_state_write7_mod
                     .false.
                 )
         })

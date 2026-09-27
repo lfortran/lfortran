@@ -337,8 +337,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_dflt_intent
-                    __lcompilers_global_init_state_dflt_intent
+                    2 __lcompilers_global_init_dflt_intent
+                    2 __lcompilers_global_init_state_dflt_intent
                     .false.
                 ),
             main:

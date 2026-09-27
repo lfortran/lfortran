@@ -202,8 +202,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_class_default_select_type
-                    __lcompilers_global_init_state_class_default_select_type
+                    4 __lcompilers_global_init_class_default_select_type
+                    4 __lcompilers_global_init_state_class_default_select_type
                     .false.
                 ),
             class_default_select_type_user:
@@ -830,8 +830,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_class_default_select_type_user
-                    __lcompilers_global_init_state_class_default_select_type_user
+                    2 __lcompilers_global_init_class_default_select_type_user
+                    2 __lcompilers_global_init_state_class_default_select_type_user
                     .false.
                 )
         })

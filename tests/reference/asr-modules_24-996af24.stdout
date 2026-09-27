@@ -504,8 +504,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_de_tokenizer_24
-                    __lcompilers_global_init_state_tomlf_de_tokenizer_24
+                    2 __lcompilers_global_init_tomlf_de_tokenizer_24
+                    2 __lcompilers_global_init_state_tomlf_de_tokenizer_24
                     .false.
                 )
         })

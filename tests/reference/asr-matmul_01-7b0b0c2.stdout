@@ -5317,8 +5317,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_matmul_01_cpu
-                    __lcompilers_global_init_state_matmul_01_cpu
+                    2 __lcompilers_global_init_matmul_01_cpu
+                    2 __lcompilers_global_init_state_matmul_01_cpu
                     .false.
                 )
         })

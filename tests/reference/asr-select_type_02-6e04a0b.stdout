@@ -146,8 +146,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_derived_type_collection
-                    __lcompilers_global_init_state_derived_type_collection
+                    2 __lcompilers_global_init_derived_type_collection
+                    2 __lcompilers_global_init_state_derived_type_collection
                     .false.
                 ),
             select_type_02:

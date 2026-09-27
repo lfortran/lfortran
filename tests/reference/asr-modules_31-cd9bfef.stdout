@@ -604,8 +604,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_cmd_update_modules_31
-                    __lcompilers_global_init_state_fpm_cmd_update_modules_31
+                    4 __lcompilers_global_init_fpm_cmd_update_modules_31
+                    4 __lcompilers_global_init_state_fpm_cmd_update_modules_31
                     .false.
                 ),
             fpm_dependency_modules_31:
@@ -1401,8 +1401,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_dependency_modules_31
-                    __lcompilers_global_init_state_fpm_dependency_modules_31
+                    10 __lcompilers_global_init_fpm_dependency_modules_31
+                    10 __lcompilers_global_init_state_fpm_dependency_modules_31
                     .false.
                 ),
             modules_31:

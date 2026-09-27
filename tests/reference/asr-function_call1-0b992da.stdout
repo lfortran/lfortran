@@ -472,8 +472,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_module_function_call1
-                    __lcompilers_global_init_state_module_function_call1
+                    2 __lcompilers_global_init_module_function_call1
+                    2 __lcompilers_global_init_state_module_function_call1
                     .false.
                 )
         })

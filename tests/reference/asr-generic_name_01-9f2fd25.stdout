@@ -644,8 +644,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_complex_module
-                    __lcompilers_global_init_state_complex_module
+                    2 __lcompilers_global_init_complex_module
+                    2 __lcompilers_global_init_state_complex_module
                     .false.
                 ),
             generic_name_01:

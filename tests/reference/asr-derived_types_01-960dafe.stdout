@@ -912,8 +912,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_derived_types_01_m_01
-                    __lcompilers_global_init_state_derived_types_01_m_01
+                    2 __lcompilers_global_init_derived_types_01_m_01
+                    2 __lcompilers_global_init_state_derived_types_01_m_01
                     .false.
                 ),
             derived_types_01_m_02:
@@ -1094,8 +1094,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_derived_types_01_m_02
-                    __lcompilers_global_init_state_derived_types_01_m_02
+                    7 __lcompilers_global_init_derived_types_01_m_02
+                    7 __lcompilers_global_init_state_derived_types_01_m_02
                     .false.
                 )
         })

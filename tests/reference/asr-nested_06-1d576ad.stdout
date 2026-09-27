@@ -221,8 +221,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_nested_06_a
-                    __lcompilers_global_init_state_nested_06_a
+                    2 __lcompilers_global_init_nested_06_a
+                    2 __lcompilers_global_init_state_nested_06_a
                     .false.
                 )
         })

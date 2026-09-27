@@ -329,8 +329,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_string_03_mod
-                    __lcompilers_global_init_state_string_03_mod
+                    2 __lcompilers_global_init_string_03_mod
+                    2 __lcompilers_global_init_state_string_03_mod
                     .false.
                 )
         })

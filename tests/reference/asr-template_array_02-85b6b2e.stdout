@@ -1838,8 +1838,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_template_array_02_m
-                    __lcompilers_global_init_state_template_array_02_m
+                    8 __lcompilers_global_init_template_array_02_m
+                    8 __lcompilers_global_init_state_template_array_02_m
                     .false.
                 ),
             template_array_02_math:
@@ -2323,8 +2323,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_template_array_02_math
-                    __lcompilers_global_init_state_template_array_02_math
+                    2 __lcompilers_global_init_template_array_02_math
+                    2 __lcompilers_global_init_state_template_array_02_math
                     .false.
                 )
         })

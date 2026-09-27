@@ -557,8 +557,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_40_tomlf_de_tokenizer
-                    __lcompilers_global_init_state_modules_40_tomlf_de_tokenizer
+                    2 __lcompilers_global_init_modules_40_tomlf_de_tokenizer
+                    2 __lcompilers_global_init_state_modules_40_tomlf_de_tokenizer
                     .false.
                 )
         })

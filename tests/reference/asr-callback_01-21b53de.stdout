@@ -508,8 +508,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_callback_01
-                    __lcompilers_global_init_state_callback_01
+                    2 __lcompilers_global_init_callback_01
+                    2 __lcompilers_global_init_state_callback_01
                     .false.
                 ),
             main:

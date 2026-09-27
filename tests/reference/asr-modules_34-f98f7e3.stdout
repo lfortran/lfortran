@@ -80,8 +80,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_cmd_install_modules_34
-                    __lcompilers_global_init_state_fpm_cmd_install_modules_34
+                    2 __lcompilers_global_init_fpm_cmd_install_modules_34
+                    2 __lcompilers_global_init_state_fpm_cmd_install_modules_34
                     .false.
                 ),
             fpm_manifest_modules_34:
@@ -162,8 +162,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_manifest_modules_34
-                    __lcompilers_global_init_state_fpm_manifest_modules_34
+                    9 __lcompilers_global_init_fpm_manifest_modules_34
+                    9 __lcompilers_global_init_state_fpm_manifest_modules_34
                     .false.
                 ),
             fpm_manifest_package_modules_34:
@@ -350,8 +350,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_manifest_package_modules_34
-                    __lcompilers_global_init_state_fpm_manifest_package_modules_34
+                    12 __lcompilers_global_init_fpm_manifest_package_modules_34
+                    12 __lcompilers_global_init_state_fpm_manifest_package_modules_34
                     .false.
                 ),
             fpm_modules_34:
@@ -706,8 +706,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_modules_34
-                    __lcompilers_global_init_state_fpm_modules_34
+                    4 __lcompilers_global_init_fpm_modules_34
+                    4 __lcompilers_global_init_state_fpm_modules_34
                     .false.
                 ),
             fpm_versioning_modules_34:
@@ -1099,8 +1099,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_versioning_modules_34
-                    __lcompilers_global_init_state_fpm_versioning_modules_34
+                    16 __lcompilers_global_init_fpm_versioning_modules_34
+                    16 __lcompilers_global_init_state_fpm_versioning_modules_34
                     .false.
                 ),
             modules_34:

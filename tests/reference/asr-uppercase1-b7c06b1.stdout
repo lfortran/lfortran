@@ -213,8 +213,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_uppercase1
-                    __lcompilers_global_init_state_uppercase1
+                    2 __lcompilers_global_init_uppercase1
+                    2 __lcompilers_global_init_state_uppercase1
                     .false.
                 )
         })

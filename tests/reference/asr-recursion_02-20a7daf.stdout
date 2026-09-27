@@ -696,8 +696,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_recursion_02
-                    __lcompilers_global_init_state_recursion_02
+                    2 __lcompilers_global_init_recursion_02
+                    2 __lcompilers_global_init_state_recursion_02
                     .false.
                 )
         })

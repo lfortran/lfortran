@@ -350,8 +350,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_targets
-                    __lcompilers_global_init_state_fpm_targets
+                    2 __lcompilers_global_init_fpm_targets
+                    2 __lcompilers_global_init_state_fpm_targets
                     .false.
                 ),
             modules_32:

@@ -1954,8 +1954,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_datetime
-                    __lcompilers_global_init_state_tomlf_datetime
+                    8 __lcompilers_global_init_tomlf_datetime
+                    8 __lcompilers_global_init_state_tomlf_datetime
                     .false.
                 ),
             tomlf_utils:
@@ -2097,8 +2097,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_utils
-                    __lcompilers_global_init_state_tomlf_utils
+                    2 __lcompilers_global_init_tomlf_utils
+                    2 __lcompilers_global_init_state_tomlf_utils
                     .false.
                 ),
             tomlf_utils_convert:
@@ -2527,8 +2527,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_utils_convert
-                    __lcompilers_global_init_state_tomlf_utils_convert
+                    4 __lcompilers_global_init_tomlf_utils_convert
+                    4 __lcompilers_global_init_state_tomlf_utils_convert
                     .false.
                 )
         })

@@ -201,8 +201,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_fortuno_types
-                    __lcompilers_global_init_state_fortuno_types
+                    2 __lcompilers_global_init_fortuno_types
+                    2 __lcompilers_global_init_state_fortuno_types
                     .false.
                 )
         })

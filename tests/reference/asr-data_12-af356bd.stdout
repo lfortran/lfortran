@@ -350,8 +350,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_data_12_module
-                    __lcompilers_global_init_state_data_12_module
+                    2 __lcompilers_global_init_data_12_module
+                    2 __lcompilers_global_init_state_data_12_module
                     .false.
                 ),
             data_12_program:

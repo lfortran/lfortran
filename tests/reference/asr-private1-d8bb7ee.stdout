@@ -70,8 +70,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_foo1
-                    __lcompilers_global_init_state_foo1
+                    2 __lcompilers_global_init_foo1
+                    2 __lcompilers_global_init_state_foo1
                     .false.
                 ),
             foo2:
@@ -219,8 +219,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_foo2
-                    __lcompilers_global_init_state_foo2
+                    4 __lcompilers_global_init_foo2
+                    4 __lcompilers_global_init_state_foo2
                     .false.
                 ),
             test:

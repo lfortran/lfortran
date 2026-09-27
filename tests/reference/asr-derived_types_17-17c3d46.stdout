@@ -352,8 +352,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_derived_types_17_module_1
-                    __lcompilers_global_init_state_derived_types_17_module_1
+                    2 __lcompilers_global_init_derived_types_17_module_1
+                    2 __lcompilers_global_init_state_derived_types_17_module_1
                     .false.
                 ),
             derived_types_17_module_2:
@@ -521,8 +521,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_derived_types_17_module_2
-                    __lcompilers_global_init_state_derived_types_17_module_2
+                    7 __lcompilers_global_init_derived_types_17_module_2
+                    7 __lcompilers_global_init_state_derived_types_17_module_2
                     .false.
                 )
         })

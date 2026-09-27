@@ -911,8 +911,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_template_travel_01_m
-                    __lcompilers_global_init_state_template_travel_01_m
+                    20 __lcompilers_global_init_template_travel_01_m
+                    20 __lcompilers_global_init_state_template_travel_01_m
                     .false.
                 ),
             template_travel_01_math:
@@ -1217,8 +1217,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_template_travel_01_math
-                    __lcompilers_global_init_state_template_travel_01_math
+                    2 __lcompilers_global_init_template_travel_01_math
+                    2 __lcompilers_global_init_state_template_travel_01_math
                     .false.
                 ),
             template_travel_01_travel:
@@ -3034,8 +3034,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_template_travel_01_travel
-                    __lcompilers_global_init_state_template_travel_01_travel
+                    6 __lcompilers_global_init_template_travel_01_travel
+                    6 __lcompilers_global_init_state_template_travel_01_travel
                     .false.
                 )
         })

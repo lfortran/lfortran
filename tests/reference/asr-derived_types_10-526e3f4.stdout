@@ -836,8 +836,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_my_module
-                    __lcompilers_global_init_state_my_module
+                    2 __lcompilers_global_init_my_module
+                    2 __lcompilers_global_init_state_my_module
                     .false.
                 )
         })

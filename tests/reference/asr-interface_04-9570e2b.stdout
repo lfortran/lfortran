@@ -225,8 +225,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_interface_04_mod1
-                    __lcompilers_global_init_state_interface_04_mod1
+                    2 __lcompilers_global_init_interface_04_mod1
+                    2 __lcompilers_global_init_state_interface_04_mod1
                     .false.
                 ),
             interface_04_mod2:
@@ -317,8 +317,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_interface_04_mod2
-                    __lcompilers_global_init_state_interface_04_mod2
+                    5 __lcompilers_global_init_interface_04_mod2
+                    5 __lcompilers_global_init_state_interface_04_mod2
                     .false.
                 )
         })

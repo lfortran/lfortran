@@ -162,8 +162,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_abstract_type
-                    __lcompilers_global_init_state_abstract_type
+                    2 __lcompilers_global_init_abstract_type
+                    2 __lcompilers_global_init_state_abstract_type
                     .false.
                 ),
             derived_types_01:

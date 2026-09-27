@@ -196,8 +196,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_abc
-                    __lcompilers_global_init_state_abc
+                    9 __lcompilers_global_init_abc
+                    9 __lcompilers_global_init_state_abc
                     .false.
                 ),
             x:
@@ -509,8 +509,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_y
-                    __lcompilers_global_init_state_y
+                    4 __lcompilers_global_init_y
+                    4 __lcompilers_global_init_state_y
                     .false.
                 )
         })

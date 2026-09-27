@@ -194,8 +194,8 @@
                     .false.
                     .false.
                     .true.
-                    __lcompilers_global_init_module_operator_overloading_12
-                    __lcompilers_global_init_state_module_operator_overloading_12
+                    2 __lcompilers_global_init_module_operator_overloading_12
+                    2 __lcompilers_global_init_state_module_operator_overloading_12
                     .false.
                 ),
             operator_overloading_12:

@@ -410,8 +410,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_kwargs_02_stdlib_logger
-                    __lcompilers_global_init_state_kwargs_02_stdlib_logger
+                    2 __lcompilers_global_init_kwargs_02_stdlib_logger
+                    2 __lcompilers_global_init_state_kwargs_02_stdlib_logger
                     .false.
                 )
         })

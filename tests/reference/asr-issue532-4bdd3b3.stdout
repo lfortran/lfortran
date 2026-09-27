@@ -304,8 +304,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_issue532_mod
-                    __lcompilers_global_init_state_issue532_mod
+                    2 __lcompilers_global_init_issue532_mod
+                    2 __lcompilers_global_init_state_issue532_mod
                     .false.
                 )
         })

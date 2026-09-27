@@ -80,8 +80,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_structure
-                    __lcompilers_global_init_state_tomlf_structure
+                    15 __lcompilers_global_init_tomlf_structure
+                    15 __lcompilers_global_init_state_tomlf_structure
                     .false.
                 ),
             tomlf_structure_base:
@@ -291,8 +291,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_structure_base
-                    __lcompilers_global_init_state_tomlf_structure_base
+                    18 __lcompilers_global_init_tomlf_structure_base
+                    18 __lcompilers_global_init_state_tomlf_structure_base
                     .false.
                 ),
             tomlf_type:
@@ -413,8 +413,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_type
-                    __lcompilers_global_init_state_tomlf_type
+                    2 __lcompilers_global_init_tomlf_type
+                    2 __lcompilers_global_init_state_tomlf_type
                     .false.
                 ),
             tomlf_type_array:
@@ -883,8 +883,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_type_array
-                    __lcompilers_global_init_state_tomlf_type_array
+                    4 __lcompilers_global_init_tomlf_type_array
+                    4 __lcompilers_global_init_state_tomlf_type_array
                     .false.
                 ),
             tomlf_type_keyval:
@@ -1305,8 +1305,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_type_keyval
-                    __lcompilers_global_init_state_tomlf_type_keyval
+                    24 __lcompilers_global_init_tomlf_type_keyval
+                    24 __lcompilers_global_init_state_tomlf_type_keyval
                     .false.
                 ),
             tomlf_type_value:
@@ -1511,8 +1511,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_type_value
-                    __lcompilers_global_init_state_tomlf_type_value
+                    10 __lcompilers_global_init_tomlf_type_value
+                    10 __lcompilers_global_init_state_tomlf_type_value
                     .false.
                 )
         })

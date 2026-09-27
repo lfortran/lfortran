@@ -759,8 +759,8 @@
                             (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
-                    __lcompilers_global_init_global_init_01
-                    __lcompilers_global_init_state_global_init_01
+                    8 __lcompilers_global_init_global_init_01
+                    8 __lcompilers_global_init_state_global_init_01
                 ),
             global_init_01_a:
                 (Module
@@ -1025,8 +1025,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_global_init_01_a
-                    __lcompilers_global_init_state_global_init_01_a
+                    2 __lcompilers_global_init_global_init_01_a
+                    2 __lcompilers_global_init_state_global_init_01_a
                     .false.
                 ),
             global_init_01_b:
@@ -1397,8 +1397,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_global_init_01_b
-                    __lcompilers_global_init_state_global_init_01_b
+                    5 __lcompilers_global_init_global_init_01_b
+                    5 __lcompilers_global_init_state_global_init_01_b
                     .false.
                 )
         })

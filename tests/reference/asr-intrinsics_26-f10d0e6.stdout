@@ -312,8 +312,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_stdlib_bitsets_64
-                    __lcompilers_global_init_state_stdlib_bitsets_64
+                    2 __lcompilers_global_init_stdlib_bitsets_64
+                    2 __lcompilers_global_init_state_stdlib_bitsets_64
                     .false.
                 )
         })

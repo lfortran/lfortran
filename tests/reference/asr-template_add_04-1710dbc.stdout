@@ -1372,8 +1372,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_template_add_04_m
-                    __lcompilers_global_init_state_template_add_04_m
+                    2 __lcompilers_global_init_template_add_04_m
+                    2 __lcompilers_global_init_state_template_add_04_m
                     .false.
                 )
         })

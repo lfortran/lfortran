@@ -670,8 +670,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_optional_03_m
-                    __lcompilers_global_init_state_optional_03_m
+                    2 __lcompilers_global_init_optional_03_m
+                    2 __lcompilers_global_init_state_optional_03_m
                     .false.
                 )
         })

@@ -418,8 +418,8 @@
                     .false.
                     .false.
                     .true.
-                    __lcompilers_global_init_points
-                    __lcompilers_global_init_state_points
+                    11 __lcompilers_global_init_points
+                    11 __lcompilers_global_init_state_points
                     .false.
                 ),
             points_a:
@@ -955,8 +955,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_points_points_a
-                    __lcompilers_global_init_state_points_points_a
+                    16 __lcompilers_global_init_points_points_a
+                    16 __lcompilers_global_init_state_points_points_a
                     .false.
                 ),
             stdlib_kinds_submodule_02:
@@ -1047,8 +1047,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_stdlib_kinds_submodule_02
-                    __lcompilers_global_init_state_stdlib_kinds_submodule_02
+                    2 __lcompilers_global_init_stdlib_kinds_submodule_02
+                    2 __lcompilers_global_init_state_stdlib_kinds_submodule_02
                     .false.
                 ),
             submodules_02:

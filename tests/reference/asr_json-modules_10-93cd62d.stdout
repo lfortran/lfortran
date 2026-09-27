@@ -313,8 +313,8 @@
                         "loaded_from_mod": false,
                         "intrinsic": false,
                         "has_submodules": false,
-                        "global_init": "__lcompilers_global_init_modules_10",
-                        "global_init_state": "__lcompilers_global_init_state_modules_10",
+                        "global_init": "__lcompilers_global_init_modules_10 (SymbolTable5)",
+                        "global_init_state": "__lcompilers_global_init_state_modules_10 (SymbolTable5)",
                         "global_init_collective": false
                     },
                     "loc": {
@@ -770,8 +770,8 @@
                         "loaded_from_mod": false,
                         "intrinsic": false,
                         "has_submodules": false,
-                        "global_init": "__lcompilers_global_init_my_other_module",
-                        "global_init_state": "__lcompilers_global_init_state_my_other_module",
+                        "global_init": "__lcompilers_global_init_my_other_module (SymbolTable2)",
+                        "global_init_state": "__lcompilers_global_init_state_my_other_module (SymbolTable2)",
                         "global_init_collective": false
                     },
                     "loc": {

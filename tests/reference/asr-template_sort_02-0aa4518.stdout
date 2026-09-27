@@ -4308,8 +4308,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_template_sort_02_m
-                    __lcompilers_global_init_state_template_sort_02_m
+                    6 __lcompilers_global_init_template_sort_02_m
+                    6 __lcompilers_global_init_state_template_sort_02_m
                     .false.
                 ),
             template_sort_02_type:
@@ -4587,8 +4587,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_template_sort_02_type
-                    __lcompilers_global_init_state_template_sort_02_type
+                    2 __lcompilers_global_init_template_sort_02_type
+                    2 __lcompilers_global_init_state_template_sort_02_type
                     .false.
                 )
         })

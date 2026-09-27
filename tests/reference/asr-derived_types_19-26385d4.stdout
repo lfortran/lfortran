@@ -457,8 +457,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_derived_types_module_19
-                    __lcompilers_global_init_state_derived_types_module_19
+                    4 __lcompilers_global_init_derived_types_module_19
+                    4 __lcompilers_global_init_state_derived_types_module_19
                     .false.
                 ),
             derived_types_module_19_1:
@@ -577,8 +577,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_derived_types_module_19_1
-                    __lcompilers_global_init_state_derived_types_module_19_1
+                    2 __lcompilers_global_init_derived_types_module_19_1
+                    2 __lcompilers_global_init_state_derived_types_module_19_1
                     .false.
                 ),
             main:

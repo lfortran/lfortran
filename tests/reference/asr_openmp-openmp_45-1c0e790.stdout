@@ -3116,8 +3116,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_omp_lib
-                    __lcompilers_global_init_state_omp_lib
+                    9 __lcompilers_global_init_omp_lib
+                    9 __lcompilers_global_init_state_omp_lib
                     .false.
                 ),
             openmp_45:
@@ -3786,8 +3786,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_openmp_45_parallel_sections
-                    __lcompilers_global_init_state_openmp_45_parallel_sections
+                    2 __lcompilers_global_init_openmp_45_parallel_sections
+                    2 __lcompilers_global_init_state_openmp_45_parallel_sections
                     .false.
                 )
         })

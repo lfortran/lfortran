@@ -2167,8 +2167,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_template_simple_04_m
-                    __lcompilers_global_init_state_template_simple_04_m
+                    2 __lcompilers_global_init_template_simple_04_m
+                    2 __lcompilers_global_init_state_template_simple_04_m
                     .false.
                 )
         })

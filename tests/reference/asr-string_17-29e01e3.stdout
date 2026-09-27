@@ -444,8 +444,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_string_17_string_module
-                    __lcompilers_global_init_state_string_17_string_module
+                    2 __lcompilers_global_init_string_17_string_module
+                    2 __lcompilers_global_init_state_string_17_string_module
                     .false.
                 )
         })

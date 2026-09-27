@@ -1192,8 +1192,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_template_array_01_m
-                    __lcompilers_global_init_state_template_array_01_m
+                    2 __lcompilers_global_init_template_array_01_m
+                    2 __lcompilers_global_init_state_template_array_01_m
                     .false.
                 )
         })

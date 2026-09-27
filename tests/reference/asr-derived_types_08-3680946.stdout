@@ -862,8 +862,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_shape_mod
-                    __lcompilers_global_init_state_shape_mod
+                    2 __lcompilers_global_init_shape_mod
+                    2 __lcompilers_global_init_state_shape_mod
                     .false.
                 )
         })

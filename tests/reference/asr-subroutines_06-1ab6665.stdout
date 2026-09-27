@@ -491,8 +491,8 @@
                     .false.
                     .false.
                     .true.
-                    __lcompilers_global_init_subroutines_06_bitset
-                    __lcompilers_global_init_state_subroutines_06_bitset
+                    2 __lcompilers_global_init_subroutines_06_bitset
+                    2 __lcompilers_global_init_state_subroutines_06_bitset
                     .false.
                 )
         })

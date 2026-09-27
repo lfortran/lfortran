@@ -450,8 +450,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_subroutines_07_mod
-                    __lcompilers_global_init_state_subroutines_07_mod
+                    2 __lcompilers_global_init_subroutines_07_mod
+                    2 __lcompilers_global_init_state_subroutines_07_mod
                     .false.
                 )
         })

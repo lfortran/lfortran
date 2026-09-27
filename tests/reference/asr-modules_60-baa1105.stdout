@@ -158,8 +158,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_inf_mod_1
-                    __lcompilers_global_init_state_inf_mod_1
+                    2 __lcompilers_global_init_inf_mod_1
+                    2 __lcompilers_global_init_state_inf_mod_1
                     .false.
                 ),
             infnan_mod_1:
@@ -329,8 +329,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_infnan_mod_1
-                    __lcompilers_global_init_state_infnan_mod_1
+                    5 __lcompilers_global_init_infnan_mod_1
+                    5 __lcompilers_global_init_state_infnan_mod_1
                     .false.
                 )
         })

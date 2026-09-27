@@ -388,8 +388,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_module_nullify_03
-                    __lcompilers_global_init_state_module_nullify_03
+                    2 __lcompilers_global_init_module_nullify_03
+                    2 __lcompilers_global_init_state_module_nullify_03
                     .false.
                 ),
             nullify_03:

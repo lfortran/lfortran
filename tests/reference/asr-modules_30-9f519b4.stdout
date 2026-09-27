@@ -368,8 +368,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_manifest_executable_modules_30
-                    __lcompilers_global_init_state_fpm_manifest_executable_modules_30
+                    8 __lcompilers_global_init_fpm_manifest_executable_modules_30
+                    8 __lcompilers_global_init_state_fpm_manifest_executable_modules_30
                     .false.
                 ),
             fpm_manifest_modules_30:
@@ -719,8 +719,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_manifest_modules_30
-                    __lcompilers_global_init_state_fpm_manifest_modules_30
+                    2 __lcompilers_global_init_fpm_manifest_modules_30
+                    2 __lcompilers_global_init_state_fpm_manifest_modules_30
                     .false.
                 ),
             fpm_manifest_package_modules_30:
@@ -923,8 +923,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_manifest_package_modules_30
-                    __lcompilers_global_init_state_fpm_manifest_package_modules_30
+                    4 __lcompilers_global_init_fpm_manifest_package_modules_30
+                    4 __lcompilers_global_init_state_fpm_manifest_package_modules_30
                     .false.
                 ),
             modules_30:

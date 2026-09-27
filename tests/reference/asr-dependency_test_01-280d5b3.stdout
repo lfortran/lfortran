@@ -976,8 +976,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_dependency
-                    __lcompilers_global_init_state_fpm_dependency
+                    2 __lcompilers_global_init_fpm_dependency
+                    2 __lcompilers_global_init_state_fpm_dependency
                     .false.
                 )
         })

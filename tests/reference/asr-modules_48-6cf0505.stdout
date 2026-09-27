@@ -2065,8 +2065,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_48_fpm_strings
-                    __lcompilers_global_init_state_modules_48_fpm_strings
+                    2 __lcompilers_global_init_modules_48_fpm_strings
+                    2 __lcompilers_global_init_state_modules_48_fpm_strings
                     .false.
                 )
         })

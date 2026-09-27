@@ -1727,8 +1727,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_utils_sort
-                    __lcompilers_global_init_state_tomlf_utils_sort
+                    2 __lcompilers_global_init_tomlf_utils_sort
+                    2 __lcompilers_global_init_state_tomlf_utils_sort
                     .false.
                 )
         })

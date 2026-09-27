@@ -403,8 +403,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_operator_overloading_04_stdlib_string_type
-                    __lcompilers_global_init_state_operator_overloading_04_stdlib_string_type
+                    2 __lcompilers_global_init_operator_overloading_04_stdlib_string_type
+                    2 __lcompilers_global_init_state_operator_overloading_04_stdlib_string_type
                     .false.
                 ),
             operator_overloading_stdlib_string_use:
@@ -636,8 +636,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_operator_overloading_stdlib_string_use
-                    __lcompilers_global_init_state_operator_overloading_stdlib_string_use
+                    7 __lcompilers_global_init_operator_overloading_stdlib_string_use
+                    7 __lcompilers_global_init_state_operator_overloading_stdlib_string_use
                     .false.
                 ),
             stdlib_string:

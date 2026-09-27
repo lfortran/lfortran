@@ -415,8 +415,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_filesystem
-                    __lcompilers_global_init_state_fpm_filesystem
+                    2 __lcompilers_global_init_fpm_filesystem
+                    2 __lcompilers_global_init_state_fpm_filesystem
                     .false.
                 ),
             fpm_strings:
@@ -1011,8 +1011,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_strings
-                    __lcompilers_global_init_state_fpm_strings
+                    4 __lcompilers_global_init_fpm_strings
+                    4 __lcompilers_global_init_state_fpm_strings
                     .false.
                 ),
             iso_c_binding:

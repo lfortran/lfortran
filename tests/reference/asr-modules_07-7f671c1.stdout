@@ -142,8 +142,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_07_mod
-                    __lcompilers_global_init_state_modules_07_mod
+                    2 __lcompilers_global_init_modules_07_mod
+                    2 __lcompilers_global_init_state_modules_07_mod
                     .false.
                 )
         })

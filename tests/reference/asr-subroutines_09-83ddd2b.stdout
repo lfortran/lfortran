@@ -588,8 +588,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_subroutines_09_tomlf_build_array
-                    __lcompilers_global_init_state_subroutines_09_tomlf_build_array
+                    2 __lcompilers_global_init_subroutines_09_tomlf_build_array
+                    2 __lcompilers_global_init_state_subroutines_09_tomlf_build_array
                     .false.
                 )
         })

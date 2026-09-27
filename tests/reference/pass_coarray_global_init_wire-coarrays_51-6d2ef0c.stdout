@@ -1504,8 +1504,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_coarrays_51_a
-                    __lcompilers_global_init_state_coarrays_51_a
+                    4 __lcompilers_global_init_coarrays_51_a
+                    4 __lcompilers_global_init_state_coarrays_51_a
                     .false.
                 ),
             coarrays_51_b:
@@ -1761,8 +1761,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_coarrays_51_b
-                    __lcompilers_global_init_state_coarrays_51_b
+                    7 __lcompilers_global_init_coarrays_51_b
+                    7 __lcompilers_global_init_state_coarrays_51_b
                     .false.
                 ),
             lcompilers_prif_get_integer(4):
@@ -2155,5 +2155,5 @@
     ()
     ()
     .false.
-    __lcompilers_collective_bootstrap
+    1 __lcompilers_collective_bootstrap
 )

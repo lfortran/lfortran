@@ -70,8 +70,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_function_08_a
-                    __lcompilers_global_init_state_function_08_a
+                    2 __lcompilers_global_init_function_08_a
+                    2 __lcompilers_global_init_state_function_08_a
                     .false.
                 ),
             functions_08:

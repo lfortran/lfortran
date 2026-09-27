@@ -161,8 +161,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_continue_compilation_1_mod
-                    __lcompilers_global_init_state_continue_compilation_1_mod
+                    2 __lcompilers_global_init_continue_compilation_1_mod
+                    2 __lcompilers_global_init_state_continue_compilation_1_mod
                     .false.
                 ),
             continue_compilation_ff:

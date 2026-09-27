@@ -190,8 +190,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_declaration1
-                    __lcompilers_global_init_state_declaration1
+                    2 __lcompilers_global_init_declaration1
+                    2 __lcompilers_global_init_state_declaration1
                     .false.
                 )
         })

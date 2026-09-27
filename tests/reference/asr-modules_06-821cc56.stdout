@@ -154,8 +154,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_06_a
-                    __lcompilers_global_init_state_modules_06_a
+                    5 __lcompilers_global_init_modules_06_a
+                    5 __lcompilers_global_init_state_modules_06_a
                     .false.
                 ),
             modules_06_b:
@@ -287,8 +287,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_06_b
-                    __lcompilers_global_init_state_modules_06_b
+                    2 __lcompilers_global_init_modules_06_b
+                    2 __lcompilers_global_init_state_modules_06_b
                     .false.
                 )
         })

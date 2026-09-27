@@ -322,8 +322,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_derived_types_14_module
-                    __lcompilers_global_init_state_derived_types_14_module
+                    4 __lcompilers_global_init_derived_types_14_module
+                    4 __lcompilers_global_init_state_derived_types_14_module
                     .false.
                 ),
             derived_types_14_module1:
@@ -778,8 +778,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_derived_types_14_module1
-                    __lcompilers_global_init_state_derived_types_14_module1
+                    2 __lcompilers_global_init_derived_types_14_module1
+                    2 __lcompilers_global_init_state_derived_types_14_module1
                     .false.
                 ),
             main:

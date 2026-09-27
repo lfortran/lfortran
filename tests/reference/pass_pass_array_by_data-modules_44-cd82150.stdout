@@ -431,8 +431,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_44_fpm_cmd_new
-                    __lcompilers_global_init_state_modules_44_fpm_cmd_new
+                    2 __lcompilers_global_init_modules_44_fpm_cmd_new
+                    2 __lcompilers_global_init_state_modules_44_fpm_cmd_new
                     .false.
                 ),
             modules_44_module_fpm_filesystem:
@@ -626,8 +626,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_44_module_fpm_filesystem
-                    __lcompilers_global_init_state_modules_44_module_fpm_filesystem
+                    4 __lcompilers_global_init_modules_44_module_fpm_filesystem
+                    4 __lcompilers_global_init_state_modules_44_module_fpm_filesystem
                     .false.
                 )
         })

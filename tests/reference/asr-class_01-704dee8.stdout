@@ -569,8 +569,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_class_circle1
-                    __lcompilers_global_init_state_class_circle1
+                    2 __lcompilers_global_init_class_circle1
+                    2 __lcompilers_global_init_state_class_circle1
                     .false.
                 )
         })

@@ -1087,8 +1087,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_save_module_03
-                    __lcompilers_global_init_state_save_module_03
+                    10 __lcompilers_global_init_save_module_03
+                    10 __lcompilers_global_init_state_save_module_03
                     .false.
                 ),
             save_nested_func:

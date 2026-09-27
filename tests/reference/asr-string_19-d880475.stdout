@@ -493,8 +493,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_string_19_stdlib_string_type
-                    __lcompilers_global_init_state_string_19_stdlib_string_type
+                    2 __lcompilers_global_init_string_19_stdlib_string_type
+                    2 __lcompilers_global_init_state_string_19_stdlib_string_type
                     .false.
                 ),
             string_19_stdlib_strings:
@@ -1761,8 +1761,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_string_19_stdlib_strings
-                    __lcompilers_global_init_state_string_19_stdlib_strings
+                    7 __lcompilers_global_init_string_19_stdlib_strings
+                    7 __lcompilers_global_init_state_string_19_stdlib_strings
                     .false.
                 )
         })

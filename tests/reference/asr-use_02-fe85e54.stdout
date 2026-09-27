@@ -148,8 +148,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_use_02_module
-                    __lcompilers_global_init_state_use_02_module
+                    2 __lcompilers_global_init_use_02_module
+                    2 __lcompilers_global_init_state_use_02_module
                     .false.
                 )
         })

@@ -387,8 +387,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_overload_assignment_m
-                    __lcompilers_global_init_state_overload_assignment_m
+                    2 __lcompilers_global_init_overload_assignment_m
+                    2 __lcompilers_global_init_state_overload_assignment_m
                     .false.
                 )
         })

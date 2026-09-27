@@ -2015,8 +2015,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_template_02_m
-                    __lcompilers_global_init_state_template_02_m
+                    2 __lcompilers_global_init_template_02_m
+                    2 __lcompilers_global_init_state_template_02_m
                     .false.
                 )
         })

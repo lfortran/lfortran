@@ -448,8 +448,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_gftl2_integer32complex32map
-                    __lcompilers_global_init_state_gftl2_integer32complex32map
+                    2 __lcompilers_global_init_gftl2_integer32complex32map
+                    2 __lcompilers_global_init_state_gftl2_integer32complex32map
                     .false.
                 ),
             polymorphic_class_compare:

@@ -357,8 +357,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_m_cli2_21
-                    __lcompilers_global_init_state_m_cli2_21
+                    2 __lcompilers_global_init_m_cli2_21
+                    2 __lcompilers_global_init_state_m_cli2_21
                     .false.
                 ),
             modules_35:

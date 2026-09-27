@@ -182,8 +182,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_interface_generic_procedure_same_name
-                    __lcompilers_global_init_state_interface_generic_procedure_same_name
+                    2 __lcompilers_global_init_interface_generic_procedure_same_name
+                    2 __lcompilers_global_init_state_interface_generic_procedure_same_name
                     .false.
                 )
         })

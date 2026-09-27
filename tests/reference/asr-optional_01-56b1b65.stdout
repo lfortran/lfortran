@@ -153,8 +153,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_optmod
-                    __lcompilers_global_init_state_optmod
+                    2 __lcompilers_global_init_optmod
+                    2 __lcompilers_global_init_state_optmod
                     .false.
                 )
         })

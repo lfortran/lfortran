@@ -1825,8 +1825,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_45_fpm_manifest_profile
-                    __lcompilers_global_init_state_modules_45_fpm_manifest_profile
+                    2 __lcompilers_global_init_modules_45_fpm_manifest_profile
+                    2 __lcompilers_global_init_state_modules_45_fpm_manifest_profile
                     .false.
                 )
         })

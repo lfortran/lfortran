@@ -268,8 +268,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_test_module
-                    __lcompilers_global_init_state_test_module
+                    2 __lcompilers_global_init_test_module
+                    2 __lcompilers_global_init_state_test_module
                     .false.
                 )
         })

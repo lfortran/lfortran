@@ -997,8 +997,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_reverse_m
-                    __lcompilers_global_init_state_reverse_m
+                    2 __lcompilers_global_init_reverse_m
+                    2 __lcompilers_global_init_state_reverse_m
                     .false.
                 )
         })

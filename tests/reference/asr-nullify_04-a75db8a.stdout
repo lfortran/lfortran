@@ -136,8 +136,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_module_nullify_04
-                    __lcompilers_global_init_state_module_nullify_04
+                    2 __lcompilers_global_init_module_nullify_04
+                    2 __lcompilers_global_init_state_module_nullify_04
                     .false.
                 ),
             nullify_04:

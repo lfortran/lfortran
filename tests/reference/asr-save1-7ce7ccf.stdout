@@ -703,8 +703,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_save_module
-                    __lcompilers_global_init_state_save_module
+                    4 __lcompilers_global_init_save_module
+                    4 __lcompilers_global_init_state_save_module
                     .false.
                 ),
             save_sub:

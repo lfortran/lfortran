@@ -80,8 +80,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_cmd_install
-                    __lcompilers_global_init_state_fpm_cmd_install
+                    2 __lcompilers_global_init_fpm_cmd_install
+                    2 __lcompilers_global_init_state_fpm_cmd_install
                     .false.
                 ),
             fpm_dependency_modules_33:
@@ -1387,8 +1387,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_dependency_modules_33
-                    __lcompilers_global_init_state_fpm_dependency_modules_33
+                    8 __lcompilers_global_init_fpm_dependency_modules_33
+                    8 __lcompilers_global_init_state_fpm_dependency_modules_33
                     .false.
                 ),
             fpm_model_modules_33:
@@ -1799,8 +1799,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_model_modules_33
-                    __lcompilers_global_init_state_fpm_model_modules_33
+                    19 __lcompilers_global_init_fpm_model_modules_33
+                    19 __lcompilers_global_init_state_fpm_model_modules_33
                     .false.
                 ),
             fpm_modules_33:
@@ -2283,8 +2283,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_modules_33
-                    __lcompilers_global_init_state_fpm_modules_33
+                    4 __lcompilers_global_init_fpm_modules_33
+                    4 __lcompilers_global_init_state_fpm_modules_33
                     .false.
                 ),
             modules_33:

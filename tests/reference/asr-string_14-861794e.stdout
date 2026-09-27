@@ -599,8 +599,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_string_14_stdlib_string_type
-                    __lcompilers_global_init_state_string_14_stdlib_string_type
+                    2 __lcompilers_global_init_string_14_stdlib_string_type
+                    2 __lcompilers_global_init_state_string_14_stdlib_string_type
                     .false.
                 )
         })

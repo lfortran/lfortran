@@ -501,8 +501,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_interface_05_mod
-                    __lcompilers_global_init_state_interface_05_mod
+                    2 __lcompilers_global_init_interface_05_mod
+                    2 __lcompilers_global_init_state_interface_05_mod
                     .false.
                 )
         })

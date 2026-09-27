@@ -1269,8 +1269,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_template_commutative_m
-                    __lcompilers_global_init_state_template_commutative_m
+                    2 __lcompilers_global_init_template_commutative_m
+                    2 __lcompilers_global_init_state_template_commutative_m
                     .false.
                 ),
             test_template_commutative_p:

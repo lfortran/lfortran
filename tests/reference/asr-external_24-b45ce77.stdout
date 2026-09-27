@@ -1305,8 +1305,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_external_24_mod
-                    __lcompilers_global_init_state_external_24_mod
+                    2 __lcompilers_global_init_external_24_mod
+                    2 __lcompilers_global_init_state_external_24_mod
                     .false.
                 )
         })

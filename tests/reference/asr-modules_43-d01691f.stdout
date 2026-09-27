@@ -598,8 +598,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_43_fpm_sources
-                    __lcompilers_global_init_state_modules_43_fpm_sources
+                    2 __lcompilers_global_init_modules_43_fpm_sources
+                    2 __lcompilers_global_init_state_modules_43_fpm_sources
                     .false.
                 )
         })

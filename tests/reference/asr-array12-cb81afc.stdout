@@ -438,8 +438,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_array12
-                    __lcompilers_global_init_state_array12
+                    2 __lcompilers_global_init_array12
+                    2 __lcompilers_global_init_state_array12
                     .false.
                 ),
             iso_c_binding:

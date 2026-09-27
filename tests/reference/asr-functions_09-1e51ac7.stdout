@@ -357,8 +357,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_stdlib_quadrature_simps
-                    __lcompilers_global_init_state_stdlib_quadrature_simps
+                    2 __lcompilers_global_init_stdlib_quadrature_simps
+                    2 __lcompilers_global_init_state_stdlib_quadrature_simps
                     .false.
                 )
         })

@@ -246,8 +246,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_module_52_fpm_cmd_new
-                    __lcompilers_global_init_state_module_52_fpm_cmd_new
+                    2 __lcompilers_global_init_module_52_fpm_cmd_new
+                    2 __lcompilers_global_init_state_module_52_fpm_cmd_new
                     .false.
                 ),
             module_52_tomlf_de:
@@ -645,8 +645,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_module_52_tomlf_de
-                    __lcompilers_global_init_state_module_52_tomlf_de
+                    5 __lcompilers_global_init_module_52_tomlf_de
+                    5 __lcompilers_global_init_state_module_52_tomlf_de
                     .false.
                 ),
             module_52_tomlf_error:
@@ -797,8 +797,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_module_52_tomlf_error
-                    __lcompilers_global_init_state_module_52_tomlf_error
+                    10 __lcompilers_global_init_module_52_tomlf_error
+                    10 __lcompilers_global_init_state_module_52_tomlf_error
                     .false.
                 ),
             module_52_tomlf_type:
@@ -957,8 +957,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_module_52_tomlf_type
-                    __lcompilers_global_init_state_module_52_tomlf_type
+                    14 __lcompilers_global_init_module_52_tomlf_type
+                    14 __lcompilers_global_init_state_module_52_tomlf_type
                     .false.
                 )
         })

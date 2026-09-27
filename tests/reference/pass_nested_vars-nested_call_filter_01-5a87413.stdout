@@ -377,8 +377,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_nested_call_filter_mod
-                    __lcompilers_global_init_state_nested_call_filter_mod
+                    2 __lcompilers_global_init_nested_call_filter_mod
+                    2 __lcompilers_global_init_state_nested_call_filter_mod
                     .false.
                 )
         })

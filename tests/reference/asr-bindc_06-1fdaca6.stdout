@@ -417,8 +417,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_bindc_06_mod
-                    __lcompilers_global_init_state_bindc_06_mod
+                    2 __lcompilers_global_init_bindc_06_mod
+                    2 __lcompilers_global_init_state_bindc_06_mod
                     .false.
                 ),
             iso_c_binding:

@@ -1325,8 +1325,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_gftl2_integer32complex32orderedmap
-                    __lcompilers_global_init_state_gftl2_integer32complex32orderedmap
+                    2 __lcompilers_global_init_gftl2_integer32complex32orderedmap
+                    2 __lcompilers_global_init_state_gftl2_integer32complex32orderedmap
                     .false.
                 ),
             iso_fortran_env:

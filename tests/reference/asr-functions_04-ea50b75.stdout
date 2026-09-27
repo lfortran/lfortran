@@ -309,8 +309,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_stdlib_int
-                    __lcompilers_global_init_state_stdlib_int
+                    2 __lcompilers_global_init_stdlib_int
+                    2 __lcompilers_global_init_state_stdlib_int
                     .false.
                 )
         })

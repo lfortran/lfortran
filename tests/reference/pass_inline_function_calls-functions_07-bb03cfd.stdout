@@ -292,8 +292,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_functions_07_a
-                    __lcompilers_global_init_state_functions_07_a
+                    2 __lcompilers_global_init_functions_07_a
+                    2 __lcompilers_global_init_state_functions_07_a
                     .false.
                 ),
             functions_07_b:
@@ -582,8 +582,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_functions_07_b
-                    __lcompilers_global_init_state_functions_07_b
+                    5 __lcompilers_global_init_functions_07_b
+                    5 __lcompilers_global_init_state_functions_07_b
                     .false.
                 ),
             functions_07_c:
@@ -776,8 +776,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_functions_07_c
-                    __lcompilers_global_init_state_functions_07_c
+                    8 __lcompilers_global_init_functions_07_c
+                    8 __lcompilers_global_init_state_functions_07_c
                     .false.
                 )
         })

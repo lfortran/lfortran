@@ -594,8 +594,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_strings
-                    __lcompilers_global_init_state_fpm_strings
+                    2 __lcompilers_global_init_fpm_strings
+                    2 __lcompilers_global_init_state_fpm_strings
                     .false.
                 ),
             iso_c_binding:

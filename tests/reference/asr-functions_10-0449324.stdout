@@ -580,8 +580,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_kwarg_gp
-                    __lcompilers_global_init_state_kwarg_gp
+                    2 __lcompilers_global_init_kwarg_gp
+                    2 __lcompilers_global_init_state_kwarg_gp
                     .false.
                 ),
             kwarg_use:

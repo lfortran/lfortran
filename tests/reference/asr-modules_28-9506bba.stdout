@@ -326,8 +326,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_git
-                    __lcompilers_global_init_state_fpm_git
+                    12 __lcompilers_global_init_fpm_git
+                    12 __lcompilers_global_init_state_fpm_git
                     .false.
                 ),
             fpm_manifest_dependency:
@@ -1149,8 +1149,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_manifest_dependency
-                    __lcompilers_global_init_state_fpm_manifest_dependency
+                    4 __lcompilers_global_init_fpm_manifest_dependency
+                    4 __lcompilers_global_init_state_fpm_manifest_dependency
                     .false.
                 ),
             modules_28:

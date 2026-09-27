@@ -591,8 +591,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_callback_02
-                    __lcompilers_global_init_state_callback_02
+                    2 __lcompilers_global_init_callback_02
+                    2 __lcompilers_global_init_state_callback_02
                     .false.
                 ),
             main:

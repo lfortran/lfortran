@@ -326,8 +326,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_git1
-                    __lcompilers_global_init_state_fpm_git1
+                    17 __lcompilers_global_init_fpm_git1
+                    17 __lcompilers_global_init_state_fpm_git1
                     .false.
                 ),
             fpm_manifest_dependency1:
@@ -1149,8 +1149,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_manifest_dependency1
-                    __lcompilers_global_init_state_fpm_manifest_dependency1
+                    9 __lcompilers_global_init_fpm_manifest_dependency1
+                    9 __lcompilers_global_init_state_fpm_manifest_dependency1
                     .false.
                 ),
             fpm_manifest_executable:
@@ -1774,8 +1774,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_fpm_manifest_executable
-                    __lcompilers_global_init_state_fpm_manifest_executable
+                    4 __lcompilers_global_init_fpm_manifest_executable
+                    4 __lcompilers_global_init_state_fpm_manifest_executable
                     .false.
                 ),
             modules_29:

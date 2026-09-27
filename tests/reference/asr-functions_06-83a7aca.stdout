@@ -625,8 +625,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_functions_06_m
-                    __lcompilers_global_init_state_functions_06_m
+                    2 __lcompilers_global_init_functions_06_m
+                    2 __lcompilers_global_init_state_functions_06_m
                     .false.
                 )
         })

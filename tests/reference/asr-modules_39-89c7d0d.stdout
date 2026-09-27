@@ -226,8 +226,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_39_fpm_39
-                    __lcompilers_global_init_state_modules_39_fpm_39
+                    2 __lcompilers_global_init_modules_39_fpm_39
+                    2 __lcompilers_global_init_state_modules_39_fpm_39
                     .false.
                 ),
             modules_39_module_fpm_filesystem_39:
@@ -578,8 +578,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_39_module_fpm_filesystem_39
-                    __lcompilers_global_init_state_modules_39_module_fpm_filesystem_39
+                    4 __lcompilers_global_init_modules_39_module_fpm_filesystem_39
+                    4 __lcompilers_global_init_state_modules_39_module_fpm_filesystem_39
                     .false.
                 )
         })

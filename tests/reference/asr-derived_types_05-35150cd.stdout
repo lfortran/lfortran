@@ -519,8 +519,8 @@
                     .false.
                     .false.
                     .true.
-                    __lcompilers_global_init_derived_types_05_stdlib_string_type
-                    __lcompilers_global_init_state_derived_types_05_stdlib_string_type
+                    2 __lcompilers_global_init_derived_types_05_stdlib_string_type
+                    2 __lcompilers_global_init_state_derived_types_05_stdlib_string_type
                     .false.
                 ),
             stdlib_string_type_constructor:
@@ -1003,8 +1003,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_derived_types_05_stdlib_string_type_stdlib_string_type_constructor
-                    __lcompilers_global_init_state_derived_types_05_stdlib_string_type_stdlib_string_type_constructor
+                    9 __lcompilers_global_init_derived_types_05_stdlib_string_type_stdlib_string_type_constructor
+                    9 __lcompilers_global_init_state_derived_types_05_stdlib_string_type_stdlib_string_type_constructor
                     .false.
                 )
         })

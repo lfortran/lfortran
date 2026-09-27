@@ -167,8 +167,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_m_cli2
-                    __lcompilers_global_init_state_m_cli2
+                    4 __lcompilers_global_init_m_cli2
+                    4 __lcompilers_global_init_state_m_cli2
                     .false.
                 ),
             m_cli2_user:
@@ -249,8 +249,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_m_cli2_user
-                    __lcompilers_global_init_state_m_cli2_user
+                    2 __lcompilers_global_init_m_cli2_user
+                    2 __lcompilers_global_init_state_m_cli2_user
                     .false.
                 )
         })

@@ -276,8 +276,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_derived_type1
-                    __lcompilers_global_init_state_derived_type1
+                    2 __lcompilers_global_init_derived_type1
+                    2 __lcompilers_global_init_state_derived_type1
                     .false.
                 )
         })

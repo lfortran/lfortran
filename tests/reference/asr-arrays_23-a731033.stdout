@@ -536,8 +536,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_arrays_23
-                    __lcompilers_global_init_state_arrays_23
+                    2 __lcompilers_global_init_arrays_23
+                    2 __lcompilers_global_init_state_arrays_23
                     .false.
                 ),
             main:

@@ -198,8 +198,8 @@
                     .false.
                     .false.
                     .true.
-                    __lcompilers_global_init_mod_submodule_04
-                    __lcompilers_global_init_state_mod_submodule_04
+                    2 __lcompilers_global_init_mod_submodule_04
+                    2 __lcompilers_global_init_state_mod_submodule_04
                     .false.
                 ),
             submod_submodule_04:
@@ -421,8 +421,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_mod_submodule_04_submod_submodule_04
-                    __lcompilers_global_init_state_mod_submodule_04_submod_submodule_04
+                    6 __lcompilers_global_init_mod_submodule_04_submod_submodule_04
+                    6 __lcompilers_global_init_state_mod_submodule_04_submod_submodule_04
                     .false.
                 ),
             submodule_04:

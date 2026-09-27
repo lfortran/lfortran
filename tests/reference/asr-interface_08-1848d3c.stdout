@@ -151,8 +151,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_interface_08
-                    __lcompilers_global_init_state_interface_08
+                    2 __lcompilers_global_init_interface_08
+                    2 __lcompilers_global_init_state_interface_08
                     .false.
                 )
         })

@@ -1012,8 +1012,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_modules_37_fpm_backend
-                    __lcompilers_global_init_state_modules_37_fpm_backend
+                    2 __lcompilers_global_init_modules_37_fpm_backend
+                    2 __lcompilers_global_init_state_modules_37_fpm_backend
                     .false.
                 )
         })

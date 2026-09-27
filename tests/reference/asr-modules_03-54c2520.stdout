@@ -191,8 +191,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_access_vars
-                    __lcompilers_global_init_state_access_vars
+                    2 __lcompilers_global_init_access_vars
+                    2 __lcompilers_global_init_state_access_vars
                     .false.
                 )
         })

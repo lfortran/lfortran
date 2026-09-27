@@ -734,8 +734,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_functions_15_module_1
-                    __lcompilers_global_init_state_functions_15_module_1
+                    2 __lcompilers_global_init_functions_15_module_1
+                    2 __lcompilers_global_init_state_functions_15_module_1
                     .false.
                 )
         })

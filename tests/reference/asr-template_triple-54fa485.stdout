@@ -662,8 +662,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_math_integer_m
-                    __lcompilers_global_init_state_math_integer_m
+                    2 __lcompilers_global_init_math_integer_m
+                    2 __lcompilers_global_init_state_math_integer_m
                     .false.
                 ),
             math_real_m:
@@ -1449,8 +1449,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_math_real_m
-                    __lcompilers_global_init_state_math_real_m
+                    10 __lcompilers_global_init_math_real_m
+                    10 __lcompilers_global_init_state_math_real_m
                     .false.
                 ),
             template_triple:
@@ -2326,8 +2326,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_triple_m
-                    __lcompilers_global_init_state_triple_m
+                    19 __lcompilers_global_init_triple_m
+                    19 __lcompilers_global_init_state_triple_m
                     .false.
                 ),
             use_triple_m:
@@ -3547,8 +3547,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_use_triple_m
-                    __lcompilers_global_init_state_use_triple_m
+                    27 __lcompilers_global_init_use_triple_m
+                    27 __lcompilers_global_init_state_use_triple_m
                     .false.
                 )
         })

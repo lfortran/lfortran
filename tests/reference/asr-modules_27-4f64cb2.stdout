@@ -150,8 +150,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_build
-                    __lcompilers_global_init_state_tomlf_build
+                    2 __lcompilers_global_init_tomlf_build
+                    2 __lcompilers_global_init_state_tomlf_build
                     .false.
                 ),
             tomlf_build_array:
@@ -703,8 +703,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_build_array
-                    __lcompilers_global_init_state_tomlf_build_array
+                    4 __lcompilers_global_init_tomlf_build_array
+                    4 __lcompilers_global_init_state_tomlf_build_array
                     .false.
                 ),
             tomlf_build_keyval:
@@ -1021,8 +1021,8 @@
                     .true.
                     .false.
                     .false.
-                    __lcompilers_global_init_tomlf_build_keyval
-                    __lcompilers_global_init_state_tomlf_build_keyval
+                    10 __lcompilers_global_init_tomlf_build_keyval
+                    10 __lcompilers_global_init_state_tomlf_build_keyval
                     .false.
                 )
         })

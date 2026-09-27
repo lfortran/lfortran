@@ -484,8 +484,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_structure_constructor_parent_02_a
-                    __lcompilers_global_init_state_structure_constructor_parent_02_a
+                    2 __lcompilers_global_init_structure_constructor_parent_02_a
+                    2 __lcompilers_global_init_state_structure_constructor_parent_02_a
                     .false.
                 ),
             structure_constructor_parent_02_b:
@@ -616,8 +616,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_structure_constructor_parent_02_b
-                    __lcompilers_global_init_state_structure_constructor_parent_02_b
+                    5 __lcompilers_global_init_structure_constructor_parent_02_b
+                    5 __lcompilers_global_init_state_structure_constructor_parent_02_b
                     .false.
                 ),
             structure_constructor_parent_02_c:
@@ -748,8 +748,8 @@
                     .false.
                     .false.
                     .false.
-                    __lcompilers_global_init_structure_constructor_parent_02_c
-                    __lcompilers_global_init_state_structure_constructor_parent_02_c
+                    8 __lcompilers_global_init_structure_constructor_parent_02_c
+                    8 __lcompilers_global_init_state_structure_constructor_parent_02_c
                     .false.
                 )
         })
