@@ -2271,9 +2271,27 @@ public:
         return &substitute_type(nullptr, &x->base)->base;
     }
 
+    // A bound of an expression's type may refer to a named constant local
+    // to the instantiated procedure, e.g. `k` in `integer, parameter ::
+    // k = n; integer :: x(k)`, which has a value once the deferred constant
+    // `n` is substituted. Use that value, as the frontend does for the same
+    // declaration outside a template, so that the type does not depend on
+    // a symbol of the procedure's scope (passes copy expression types into
+    // new functions, e.g. the helpers of array intrinsics).
+    ASR::expr_t* fold_dimension(ASR::expr_t* dim) {
+        if (dim && ASRUtils::expr_value(dim)) {
+            return ASRUtils::expr_value(dim);
+        }
+        return dim;
+    }
+
     ASR::asr_t* duplicate_Array(ASR::Array_t* x) {
         ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(
             ASRUtils::TYPE(BaseExprStmtDuplicator::duplicate_Array(x)));
+        for (size_t i = 0; i < array->n_dims; i++) {
+            array->m_dims[i].m_start = fold_dimension(array->m_dims[i].m_start);
+            array->m_dims[i].m_length = fold_dimension(array->m_dims[i].m_length);
+        }
         // Substitution can change the layout: character arrays cannot be fixed-size.
         return &ASRUtils::make_Array_t_util(al, array->base.base.loc,
             array->m_type, array->m_dims, array->n_dims, ASR::abiType::Source,
