@@ -2,7 +2,7 @@
 ! bound, instantiated in a module and used from another file: the
 ! instantiation written to the module file must not refer to the template's
 ! getter for the bound.
-module template_host_var_05_m
+module template_host_var_07_m
     implicit none
     integer :: n = 3
     template tmpl {t}
@@ -16,8 +16,8 @@ module template_host_var_05_m
     end template
 end module
 
-module template_host_var_05_user
-    use template_host_var_05_m, only: tmpl, n
+module template_host_var_07_user
+    use template_host_var_07_m, only: tmpl, n
     implicit none
     instantiate tmpl {integer}, only: ifill => fill
     instantiate tmpl {real}, only: rfill => fill

@@ -1,5 +1,5 @@
-program template_host_var_05
-    use template_host_var_05_user, only: ifill, rfill, n
+program template_host_var_07
+    use template_host_var_07_user, only: ifill, rfill, n
     implicit none
     integer :: a(3)
     real :: r(4)
