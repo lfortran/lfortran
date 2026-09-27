@@ -2113,8 +2113,12 @@ public:
             ADD_ASR_DEPENDENCIES(new_scope, name, dependencies);
         }
 
+        // A call made by its own name must keep naming the instantiated
+        // procedure, not the template's.
+        ASR::symbol_t* original_name = x->m_original_name == x->m_name
+            ? name : x->m_original_name;
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name,
-            x->m_original_name, args.p, args.size(), type, value, dt);
+            original_name, args.p, args.size(), type, value, dt);
     }
 
     ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t* x) {
@@ -2178,8 +2182,10 @@ public:
             ADD_ASR_DEPENDENCIES(new_scope, name, dependencies);
         }
 
+        ASR::symbol_t* original_name = x->m_original_name == x->m_name
+            ? name : x->m_original_name;
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name,
-            x->m_original_name, args.p, args.size(), dt, nullptr, false);
+            original_name, args.p, args.size(), dt, nullptr, false);
     }
 
     ASR::asr_t* duplicate_DoLoop(ASR::DoLoop_t *x) {
