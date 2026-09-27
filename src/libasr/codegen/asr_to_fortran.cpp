@@ -390,11 +390,18 @@ public:
         }
 
         // Main program
+        bool has_program = false;
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
                 r += src;
+                has_program = true;
             }
+        }
+        // A program contains the external procedures of its file; a file
+        // without one has them on their own.
+        if (!has_program) {
+            r += tu_functions;
         }
         src = r;
     }
