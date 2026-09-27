@@ -3872,6 +3872,10 @@ RUN(NAME nested_vars_09 LABELS gfortran llvm)
 RUN(NAME nested_vars_10 LABELS gfortran llvm)
 RUN(NAME nested_vars_11 LABELS gfortran llvm)
 RUN(NAME nested_vars_12 LABELS gfortran llvm EXTRAFILES nested_vars_12a.f90 nested_vars_12b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME nested_vars_13 LABELS gfortran llvm)
+RUN(NAME nested_vars_14 LABELS gfortran llvm)
+RUN(NAME nested_vars_15 LABELS gfortran llvm)
+RUN(NAME nested_vars_16 LABELS gfortran llvm)
 
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
@@ -4870,6 +4874,7 @@ RUN(NAME structure_constructor_args_21 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_22 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_23 LABELS llvm) # gfortran 13 miscompiles unallocated scalar allocatable data sources
 RUN(NAME structure_constructor_args_24 LABELS llvm) # gfortran 13 miscompiles unallocated scalar allocatable data sources
+RUN(NAME structure_constructor_args_25 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_28 LABELS gfortran llvm)
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
