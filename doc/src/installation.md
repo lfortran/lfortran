@@ -10,6 +10,9 @@ Git. On macOS, install Xcode Command Line Tools (`xcode-select --install`).
 On Windows, initialize the MSVC developer environment as described
 [below](#build-from-git-on-windows-with-visual-studio), with Git Bash available.
 Pixi supplies the Linux C/C++ compilers.
+On macOS, the environment selects the Xcode C/C++ compilers; the C backend
+honors this selection for both compilation and linking (see
+[Selecting the C Compiler](usage.md#selecting-the-c-compiler)).
 
 ```bash
 git clone https://github.com/lfortran/lfortran.git
