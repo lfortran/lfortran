@@ -235,10 +235,12 @@ the same collective boundary through `lfortran_initialize(argc, argv)`,
 declared in LFortran's `ISO_Fortran_binding.h`: that is the contract of such
 a host. It calls it on every image before it calls any Fortran procedure, and
 may call it again, which initializes what images loaded since define and
-leaves what is initialized as it is; `lfortran_finalize()` does what the end
-of a main program does. A Fortran procedure called before it, from a C
-constructor for instance, may find its module variables uninitialized,
-except for what static data holds.
+leaves what is initialized as it is; `lfortran_finalize()` flushes and
+closes the units, as the end of a main program does, but does not perform a
+coarray image's normal termination, which the host does itself (see
+`doc/src/design.md`). A Fortran procedure called before it, from a C
+constructor for instance, is outside the contract and may find its module
+variables uninitialized, except for what static data holds.
 
 What the engine can see depends on the loader. On ELF (verified with glibc;
 musl and the BSD loaders are unverified) and on Mach-O, the first constructor

@@ -484,21 +484,46 @@ static inline int CFI_select_part(CFI_cdesc_t *result,
  * every Fortran object file, shared library and plugin loaded by then, and,
  * in a program that uses coarrays, starts the coarray runtime and allocates
  * the saved coarrays, as every image does at the start of a Fortran main
- * program. Nothing is initialized on the way into a Fortran procedure, so a
- * call of one before lfortran_initialize() -- from a C constructor, for
- * instance -- may find its module variables not yet initialized.
+ * program.
  *
- * Calling it again is harmless: the command line is taken from the first
- * call that passes one, and what is initialized already stays as it is. A call after
- * loading a library with dlopen or LoadLibrary initializes that library's
- * module variables too; they are initialized by the library's own
- * constructors anyway where the loader runs them safely (not for a DLL on
- * Windows), but a coarray of the library is allocated only at a call of
- * lfortran_initialize().
+ * Calling a Fortran procedure before lfortran_initialize() -- from a C
+ * constructor, for instance -- is outside this contract: nothing is
+ * initialized on the way into a Fortran procedure. On ELF and Mach-O
+ * platforms the constructors of Fortran object files happen to initialize
+ * the module variables that need no coarray runtime when the image is
+ * loaded, but the constructors of a DLL on Windows do not (they run under
+ * the loader lock), so a host always calls lfortran_initialize() first.
+ *
+ * The runtime is started once in a process, by the start of a Fortran main
+ * program or by the first lfortran_initialize(), whichever comes first; a
+ * library called from a Fortran main program may call it too. A later call
+ * changes nothing that is started: the command line is taken from the first
+ * start that passes one and is not replaced, and the random number stream
+ * of RANDOM_NUMBER is not restarted. RANDOM_NUMBER draws from the C
+ * library's rand(), whose state lfortran_initialize() leaves as the host
+ * has it (a Fortran main program seeds it once, at its start). Every call
+ * is a collective boundary, which initializes only what images loaded since
+ * the last one define: so a call after loading a library with dlopen or
+ * LoadLibrary initializes that library's module variables and allocates its
+ * coarrays.
+ *
+ * In a program that uses coarrays, the coarray runtime is started by calling
+ * PRIF's prif_init, whose status is not checked: the status is taken to be
+ * 0, when this call started the runtime, or PRIF_STAT_ALREADY_INIT, when
+ * the host or another object file started it before. That relies on
+ * Caffeine, whose prif_init returns only these two and does not return when
+ * the runtime cannot start; the PRIF specification does not guarantee it.
  *
  * lfortran_finalize() does what the end of a Fortran main program does to
- * the runtime: it flushes and closes every unit that is open. It is called
- * once, after the last call of a Fortran procedure.
+ * the LFortran runtime: it flushes and closes every unit that is open. It is
+ * called once, after the last call of a Fortran procedure. It does not
+ * perform the normal termination of a coarray image, which a Fortran main
+ * program performs at its END PROGRAM statement by calling PRIF's prif_stop
+ * (which synchronizes every image and then ends the process). A host that
+ * uses coarrays does that itself: before an image returns from main, it
+ * synchronizes with every other image -- by calling a Fortran procedure
+ * that executes SYNC ALL, for instance -- or it ends the image by calling
+ * prif_stop.
  */
 #define LFORTRAN_HAS_INITIALIZE 1
 void lfortran_initialize(int argc, char *argv[]);

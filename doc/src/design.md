@@ -135,20 +135,41 @@ Fortran procedure. It passes on the command line for `get_command_argument`
 (or `0` and `NULL`), initializes the module variables of every Fortran object
 file, shared library and plugin loaded by then, and, in a program that uses
 coarrays, runs the collective bootstrap that starts the coarray runtime and
-allocates the saved coarrays, as a Fortran main program does. Calling it again
-is harmless: the command line is taken from the first call that passes one,
-what is initialized stays as it is, and what images loaded since then define
-is initialized. `lfortran_finalize` does what the end of a Fortran main
-program does to the runtime, flushing and closing the open units, after the
-last call of a Fortran procedure.
+allocates the saved coarrays, as a Fortran main program does.
 
-Nothing is initialized on the way into a Fortran procedure: a procedure
-called before `lfortran_initialize`, from a C constructor for instance, finds
-only what static data holds. A library loaded later with `dlopen` initializes
-its module variables from its own constructors when it is loaded (not a DLL
-on Windows, whose constructors do not run the engine under the loader lock),
-and a coarray of it is allocated at the next `lfortran_initialize`. The C
-interface is meant to become a common one that every Fortran compiler
+The runtime is started once in a process, by the start of a Fortran main
+program or by the first `lfortran_initialize`, whichever comes first; a
+library that a Fortran main program calls may call `lfortran_initialize` too.
+A later start changes nothing that is started: the command line is taken from
+the first start that passes one and is never replaced, and the stream of
+`random_number` is not restarted. `random_number` draws from the C library's
+`rand()`, which a Fortran main program seeds once, at its start, and whose
+state `lfortran_initialize` leaves as the host has it. Every call of
+`lfortran_initialize` is a collective boundary that initializes only what
+images loaded since the previous one define, so a call after `dlopen` or
+`LoadLibrary` initializes that library's module variables and allocates its
+coarrays.
+
+Calling a Fortran procedure before `lfortran_initialize`, from a C
+constructor for instance, is outside the contract: nothing is initialized on
+the way into a Fortran procedure. On ELF and Mach-O platforms the
+constructors of Fortran object files happen to initialize, when the image is
+loaded, the module variables that need no coarray runtime, but the
+constructors of a DLL on Windows do not, since running initializers under
+the loader lock is unsafe. A host therefore always calls
+`lfortran_initialize` first.
+
+`lfortran_finalize` does what the end of a Fortran main program does to the
+LFortran runtime, flushing and closing the open units, after the last call of
+a Fortran procedure. It does not perform the normal termination of a coarray
+image: a Fortran main program ends with a call of PRIF's `prif_stop`, which
+synchronizes every image and then ends the process. A host that uses
+coarrays does that itself: before an image returns from `main`, it
+synchronizes with every other image, by calling a Fortran procedure that
+executes `sync all` for instance, or it ends the image by calling
+`prif_stop`.
+
+The C interface is meant to become a common one that every Fortran compiler
 provides in its `ISO_Fortran_binding.h`; until then it is LFortran's own.
 
 ### Startup in each backend
@@ -231,11 +252,14 @@ $ lfortran --coarray <objects> -L<caffeine>/lib -lcaffeine -lgasnet-smp-seq
 ```
 
 Every object file that calls PRIF has a collective bootstrap, which calls
-`prif_init` directly and accepts whatever status it returns: 0 when it started
-the runtime, `PRIF_STAT_ALREADY_INIT` when the runtime was running already. A
-runtime that cannot start does not return from `prif_init`. A host that
-starts the runtime itself, by calling `prif_init`, and then calls
-`lfortran_initialize()` therefore needs no other arrangement.
+`prif_init` directly and does not check the status it returns: it takes it to
+be 0 when this call started the runtime, or `PRIF_STAT_ALREADY_INIT` when the
+runtime was running already. That is a property of Caffeine, whose
+`prif_init` returns only these two and does not return when the runtime
+cannot start; the PRIF specification does not guarantee it, and a PRIF
+implementation that returns another status for a failed start is not
+supported. A host that starts the runtime itself, by calling `prif_init`,
+and then calls `lfortran_initialize()` needs no other arrangement.
 
 ## Notes:
 
