@@ -1517,13 +1517,19 @@ public:
             ASR::array_physical_typeType::FixedSizeArray, true);
     }
 
-    // A variable declared in the module that hosts the template is shared
-    // storage reached by host association: the instantiation must refer to
-    // the original variable, never own a copy of it. Returns nullptr for
-    // every variable that is copied, as before: variables owned by the
-    // template itself (locals and arguments of its procedures, struct
-    // members), named constants, which have no storage to share, and
-    // program variables.
+    // A variable declared in the scope that hosts the template (a module or
+    // a main program) is shared storage reached by host association: the
+    // instantiation must refer to the original variable, never own a copy
+    // of it. Returns nullptr for every variable that is copied, as before:
+    // variables owned by the template itself (locals and arguments of its
+    // procedures, struct members), named constants, which have no storage
+    // to share, and variables of a non-module host that the instantiated
+    // procedure is not placed directly in.
+    //
+    // The decision depends only on where the variable and the instantiated
+    // procedure live, so all host variables of one procedure are either
+    // shared or copied together, whether they are reached from its
+    // declarations or from its body.
     //
     // Reachability is decided by scope ancestry, not by name lookup: a
     // same-named local at the instantiation site must not capture the
@@ -1558,6 +1564,12 @@ public:
                 module->m_name, nullptr, 0, x->m_name, x->m_access));
             target_scope->add_symbol(x->m_name, e);
             return e;
+        }
+        if (target_scope->parent == host_scope) {
+            // Any other host, e.g. a main program: the instantiated
+            // procedure is placed directly in the scope that declares the
+            // variable, so it is host associated there.
+            return var_sym;
         }
         return nullptr;
     }
