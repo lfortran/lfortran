@@ -1030,18 +1030,26 @@ static bool is_template_procedure(ASR::symbol_t* s) {
             == ASR::deftypeType::Implementation;
 }
 
-// Collects the template procedures called in a declaration.
-class TemplateProcedureCallCollector
-    : public ASR::BaseWalkVisitor<TemplateProcedureCallCollector>
+// Collects the procedures called in a declaration.
+class DeclarationCallCollector
+    : public ASR::BaseWalkVisitor<DeclarationCallCollector>
 {
 public:
     std::vector<ASR::symbol_t*> procedures;
 
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        if (is_template_procedure(x.m_name)) {
-            procedures.push_back(x.m_name);
+    void collect(const ASR::Variable_t &x) {
+        visit_ttype(*x.m_type);
+        if (x.m_symbolic_value) {
+            visit_expr(*x.m_symbolic_value);
         }
-        ASR::BaseWalkVisitor<TemplateProcedureCallCollector>::visit_FunctionCall(x);
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        procedures.push_back(x.m_name);
+        ASR::BaseWalkVisitor<DeclarationCallCollector>::visit_FunctionCall(x);
     }
 };
 
@@ -1949,6 +1957,18 @@ public:
             t_b.instantiate();
         }
 
+        // Procedures called in the declarations, such as the getter of a
+        // host-module variable used as a bound, are dependencies too.
+        DeclarationCallCollector calls;
+        for (auto const &sym_pair: new_scope->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
+                calls.collect(*ASR::down_cast<ASR::Variable_t>(sym_pair.second));
+            }
+        }
+        for (ASR::symbol_t* proc: calls.procedures) {
+            ADD_ASR_DEPENDENCIES(new_scope, proc, dependencies);
+        }
+
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x->n_body);
         for (size_t i=0; i<x->n_body; i++) {
@@ -1978,12 +1998,12 @@ public:
     void instantiate_Variable(ASR::Variable_t* x) {
         // Symbol instantiation creates the template procedures called in the
         // declaration without their bodies; complete them here.
-        TemplateProcedureCallCollector calls;
-        calls.visit_ttype(*x->m_type);
-        if (x->m_symbolic_value) {
-            calls.visit_expr(*x->m_symbolic_value);
-        }
+        DeclarationCallCollector calls;
+        calls.collect(*x);
         for (ASR::symbol_t* proc: calls.procedures) {
+            if (!is_template_procedure(proc)) {
+                continue;
+            }
             auto it = symbol_subs.find(ASRUtils::symbol_name(proc));
             if (it != symbol_subs.end()) {
                 BodyInstantiator t(al, type_subs, symbol_subs, it->second, proc,
