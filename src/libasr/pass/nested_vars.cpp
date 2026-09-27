@@ -511,7 +511,12 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
             if ( ASR::is_a<ASR::Function_t>(*owner_sym) ) {
                 ASR::Function_t* owner_func = ASR::down_cast<ASR::Function_t>(owner_sym);
-                if (ASRUtils::get_FunctionType(owner_func)->m_abi == ASR::abiType::ExternalUndefined) {
+                ASR::FunctionType_t* owner_type = ASRUtils::get_FunctionType(owner_func);
+                // A procedure of a module compiled separately: one with a
+                // binding label keeps it, and becomes an interface instead.
+                if (owner_type->m_abi == ASR::abiType::ExternalUndefined
+                        || (owner_type->m_abi == ASR::abiType::BindC
+                            && owner_type->m_deftype == ASR::deftypeType::Interface)) {
                     return true; // Externally defined
                 }
             }
