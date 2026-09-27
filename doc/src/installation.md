@@ -47,7 +47,8 @@ pixi run integration_tests -j8 > integration.log 2>&1
 pixi run integration_tests -b gfortran -j8 > gfortran.log 2>&1
 ```
 
-The integration runner is currently intended for Unix-like shells; use WSL
+The integration task uses Make from the selected environment. The runner is
+currently intended for Unix-like shells; use WSL
 for that suite on Windows. CTest uses the selected native build. Append `-t
 <pattern>` to `tests` or `integration_tests` for a focused run. Reference tests
 require a compiler built with LLVM 11; they run in an isolated scratch directory

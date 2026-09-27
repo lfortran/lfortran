@@ -149,6 +149,7 @@ ninja = "==1.11.1"
 
 [feature.test.target.unix.dependencies]
 gfortran = "*"
+make = "*"
 
 [feature.build.target.unix.dependencies]
 bison = "==3.4"
