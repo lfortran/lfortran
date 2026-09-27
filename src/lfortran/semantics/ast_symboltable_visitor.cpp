@@ -6215,7 +6215,7 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
-        std::string template_name = x.m_name;
+        std::string template_name = to_lower(x.m_name);
 
         // check if the template exists
         ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(

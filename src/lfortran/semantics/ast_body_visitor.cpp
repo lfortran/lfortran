@@ -149,6 +149,31 @@ public:
     std::set<std::string> labels;
     size_t starting_n_body = 0;
     bool in_loop = false;
+    // True when the innermost enclosing loop is a DO CONCURRENT construct
+    bool in_do_concurrent = false;
+
+    // Marks the body of a loop as being inside a loop and restores the
+    // previous state when the loop visitor exits, including when it exits
+    // through a SemanticAbort (e.g. with --continue-compilation).
+    class LoopScope {
+        bool &in_loop;
+        bool &in_do_concurrent;
+        bool saved_in_loop;
+        bool saved_in_do_concurrent;
+    public:
+        LoopScope(bool &in_loop_, bool &in_do_concurrent_, bool is_do_concurrent)
+                : in_loop(in_loop_), in_do_concurrent(in_do_concurrent_),
+                  saved_in_loop(in_loop_), saved_in_do_concurrent(in_do_concurrent_) {
+            in_loop = true;
+            in_do_concurrent = is_do_concurrent;
+        }
+        ~LoopScope() {
+            in_loop = saved_in_loop;
+            in_do_concurrent = saved_in_do_concurrent;
+        }
+        LoopScope(const LoopScope &) = delete;
+        LoopScope &operator=(const LoopScope &) = delete;
+    };
     int all_loops_blocks_nesting = 0;
     int all_blocks_nesting = 0;
     int pragma_nesting_level = 0;
@@ -2989,7 +3014,7 @@ public:
             return;
         }
 
-        ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
+        ASR::symbol_t *sym = current_scope->resolve_symbol(to_lower(x.m_name));
         if (sym == nullptr) {
             return;
         }
@@ -3019,7 +3044,7 @@ public:
             for (size_t i = 0; i < x.n_symbols; i++){
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(to_lower(use_symbol->m_remote_sym));
-                std::string new_s_name = use_symbol->m_remote_sym;
+                std::string new_s_name = to_lower(use_symbol->m_remote_sym);
                 if (use_symbol->m_local_rename) {
                     new_s_name = to_lower(use_symbol->m_local_rename);
                 }
@@ -7317,7 +7342,11 @@ public:
                  ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic) ||
                 target->type == ASR::exprType::CoarrayRef
             );
+            // A deferred type of a template has no implicit conversion to or
+            // from any other type; the type check below reports the mismatch.
             if (lhs_supports_implicit_cast &&
+                !ASRUtils::is_type_parameter(*target_type) &&
+                !ASRUtils::is_type_parameter(*value_type) &&
                 !ASRUtils::check_equal_type(target_type, value_type, target, value)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
@@ -9448,8 +9477,7 @@ public:
 
     void visit_WhileLoop(const AST::WhileLoop_t &x) {
         all_loops_blocks_nesting += 1;
-        bool in_loop_copy = in_loop;
-        in_loop = true;
+        LoopScope loop_scope(in_loop, in_do_concurrent, false);
         // Statements the condition needs (e.g. associating the
         // procedure-pointer temporary of a call through an implicit
         // interface) must run before every evaluation of the condition.
@@ -9486,7 +9514,6 @@ public:
         tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), nullptr, 0);
         all_loops_blocks_nesting -= 1;
-        in_loop = in_loop_copy;
     }
 
     #define cast_as_loop_var(conv_candidate) \
@@ -9507,8 +9534,7 @@ public:
                 throw SemanticAbort();
             }
         }
-        bool in_loop_copy = in_loop;
-        in_loop = true;
+        LoopScope loop_scope(in_loop, in_do_concurrent, false);
         all_loops_blocks_nesting += 1;
         all_blocks_nesting++;
         ASR::expr_t *var, *start, *end;
@@ -9660,15 +9686,13 @@ public:
                 ASR::make_LogicalConstant_t(al, x.base.base.loc, true, cond_type));
             tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, cond, body.p, body.size(), nullptr, 0);
         }
-        in_loop = in_loop_copy;
         all_loops_blocks_nesting -= 1;
         all_blocks_nesting--;
     }
 
     void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
         all_loops_blocks_nesting += 1;
-        bool in_loop_copy = in_loop;
-        in_loop = true;
+        LoopScope loop_scope(in_loop, in_do_concurrent, true);
         Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
         heads.reserve(al,x.n_control);
         AST::decl_attribute_t *current_type = nullptr;
@@ -9812,7 +9836,6 @@ public:
         tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
                 body.size());
         all_loops_blocks_nesting -= 1;
-        in_loop = in_loop_copy;
     }
 
     void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
@@ -9952,7 +9975,24 @@ public:
     }
 
     void visit_Exit(const AST::Exit_t &x) {
-        if (all_loops_blocks_nesting == 0) {
+        if (x.m_stmt_name == nullptr) {
+            // Without a construct name, EXIT belongs to the innermost
+            // enclosing DO construct; BLOCK, IF, SELECT, ... do not count.
+            if (!in_loop) {
+                diag.add(Diagnostic("`exit` statements without a construct name cannot be outside of loops",
+                                    Level::Error,
+                                    Stage::Semantic,
+                                    { Label("", { x.base.base.loc }) }));
+                throw SemanticAbort();
+            }
+            if (in_do_concurrent) {
+                diag.add(Diagnostic("`exit` statements cannot leave a `do concurrent` loop",
+                                    Level::Error,
+                                    Stage::Semantic,
+                                    { Label("", { x.base.base.loc }) }));
+                throw SemanticAbort();
+            }
+        } else if (all_loops_blocks_nesting == 0) {
             diag.add(Diagnostic("`exit` statements cannot be outside of loops or blocks",
                                 Level::Error,
                                 Stage::Semantic,
