@@ -3341,10 +3341,27 @@ public:
                         ? ASR::down_cast<ASR::ArrayConstructor_t>(e) : nullptr;
                 }
 
+                // Whether `e`, possibly behind the change of its physical
+                // type for an argument, is an array constant of elements of
+                // type `type`, such as `[2]`.
+                static bool is_array_constant_of(ASR::expr_t *e,
+                        ASR::ttype_t *type) {
+                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                        e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+                    }
+                    ASR::expr_t *value = ASRUtils::expr_value(e);
+                    return value != nullptr
+                        && ASR::is_a<ASR::ArrayConstant_t>(*value)
+                        && ASRUtils::check_equal_type(type,
+                            ASRUtils::type_get_past_array(
+                                ASRUtils::expr_type(value)),
+                            nullptr, nullptr);
+                }
+
                 // Whether `f` is a reduction with an evaluation function,
                 // such as `sum([n, n])` or `dot_product([n], [2])`, whose
-                // arguments are all array constructors of scalars of its own
-                // type (no `dim` or `mask`).
+                // arguments are all array constructors of scalars or array
+                // constants of its own type (no `dim` or `mask`).
                 static bool reduces_array_constructors(
                         const ASR::IntrinsicArrayFunction_t &f) {
                     if (ASRUtils::IntrinsicArrayFunctionRegistry
@@ -3360,6 +3377,9 @@ public:
                     for (size_t i = 0; i < f.n_args; i++) {
                         ASR::ArrayConstructor_t *c = array_constructor(f.m_args[i]);
                         if (c == nullptr) {
+                            if (is_array_constant_of(f.m_args[i], f.m_type)) {
+                                continue;
+                            }
                             return false;
                         }
                         if (c->n_args == 0 || c->m_struct_var != nullptr
@@ -3469,6 +3489,10 @@ public:
                             for (size_t i = 0; i < f->n_args; i++) {
                                 ASR::ArrayConstructor_t *c =
                                     array_constructor(f->m_args[i]);
+                                if (c == nullptr) {
+                                    // An array constant, such as `[2]`.
+                                    continue;
+                                }
                                 for (size_t j = 0; j < c->n_args; j++) {
                                     visit_expr(*c->m_args[j]);
                                 }

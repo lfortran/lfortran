@@ -28,6 +28,11 @@ module template_deferred_const_13_m
             f_dot_product = x
         end function
 
+        integer function f_dot_product_constant()
+            integer, parameter :: x = dot_product([n, 2], [1, 3])
+            f_dot_product_constant = x
+        end function
+
         real function f_real_sum()
             real, parameter :: x = sum([0.5, real(n)])
             f_real_sum = x
@@ -46,7 +51,8 @@ program template_deferred_const_13
     implicit none
     instantiate t {3}, only: f_sum3 => f_sum, f_product3 => f_product, &
         f_maxval_minval3 => f_maxval_minval, f_dot_product3 => f_dot_product, &
-        f_real_sum3 => f_real_sum, f_size3 => f_size
+        f_real_sum3 => f_real_sum, f_size3 => f_size, &
+        f_dot_product_constant3 => f_dot_product_constant
 
     if (f_sum3() /= 6) error stop 1
     if (f_product3() /= 24) error stop 2
@@ -54,6 +60,7 @@ program template_deferred_const_13
     if (f_dot_product3() /= 15) error stop 4
     if (abs(f_real_sum3() - 3.5) > 1e-6) error stop 5
     if (f_size3() /= 9) error stop 6
+    if (f_dot_product_constant3() /= 9) error stop 7
     print *, f_sum3(), f_product3(), f_maxval_minval3(), f_dot_product3(), &
-        f_real_sum3(), f_size3()
+        f_real_sum3(), f_size3(), f_dot_product_constant3()
 end program
