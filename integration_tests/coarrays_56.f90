@@ -31,7 +31,6 @@ program coarrays_56
     integer :: me, v
 
     me = this_image()
-    sync all
     if (me == 1) then
         call remote_sum(2, v)
         if (v /= 70) error stop 1

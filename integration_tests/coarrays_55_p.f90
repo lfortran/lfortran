@@ -10,16 +10,12 @@ subroutine coarrays_55_a(other)
     implicit none
     integer, intent(in) :: other
     integer, save :: ca[*] = 10
-    sync all
     if (ca[other] /= 10) error stop 1
-    sync all
 end subroutine coarrays_55_a
 
 subroutine coarrays_55_b(other)
     implicit none
     integer, intent(in) :: other
     integer, save :: cb[*] = 20
-    sync all
     if (cb[other] /= 20) error stop 2
-    sync all
 end subroutine coarrays_55_b
