@@ -226,6 +226,7 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD AND NOT EMSCRIPTEN)
                 "-DLINKERS=${init_linkers}"
                 -DRUNTIME=$<TARGET_FILE_DIR:lfortran_runtime>
                 -DSRC=${CMAKE_SOURCE_DIR}/integration_tests
+                -DCTOR_MAIN=${CMAKE_CURRENT_SOURCE_DIR}/test_init_ctor.c
                 -DWORK=${CMAKE_CURRENT_BINARY_DIR}/test_init_show_llvm
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/run_show_llvm_test.cmake)
             set_tests_properties(test_init_show_llvm PROPERTIES TIMEOUT 300)

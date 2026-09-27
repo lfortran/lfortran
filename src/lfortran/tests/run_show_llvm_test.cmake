@@ -8,6 +8,8 @@
 #   records;
 # - the same compiled by LFORTRAN, with the records in the form of the
 #   object format, and linked the same way;
+# - global_init_16_a compiled by LFORTRAN and linked into test_init_ctor.c
+#   (in CTOR_MAIN), whose constructor has to have run before main;
 # - the same IR joined into one module by LLVM_LINK, if given, and passed to
 #   LFORTRAN, which lowers a module with several tables for the target;
 # - global_init_01 passed to LFORTRAN as IR.
@@ -65,6 +67,8 @@ foreach(linker default ${LINKERS})
     if (NOT linker STREQUAL "default")
         set(flags -fuse-ld=${linker})
     endif()
+    run(${CC} ${flags} ${CTOR_MAIN} global_init_16_a_lf.o -o ctor_${linker} ${libs})
+    expect(ctor_${linker} "constructor ran")
     foreach(kind objects lowered)
         set(list ${${kind}})
         run(${CC} ${flags} ${list} -o ${kind}_forward_${linker} ${libs})

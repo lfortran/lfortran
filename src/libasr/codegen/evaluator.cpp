@@ -526,6 +526,10 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
 {
     const llvm::Target *target = get_llvm_target(config.triple);
     llvm::TargetOptions options;
+    // Constructors and destructors go into .init_array and .fini_array, as
+    // with every current ELF compiler, not .ctors and .dtors, which lld
+    // never runs. Ignored for other object formats.
+    options.UseInitArray = true;
     llvm::Triple triple(config.triple);
     // WebAssembly objects are linked into static executables (wasm-ld for
     // WASI, emcc for Emscripten), which do not need position independent
