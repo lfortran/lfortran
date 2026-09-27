@@ -1,5 +1,0 @@
-semantic error: Missing actual argument 'x' in call to 'cmplx'
- --> tests/errors/cmplx_01.f90:3:9
-  |
-3 |     a = cmplx(y = 2)
-  |         ^^^^^^^^^^^^ 

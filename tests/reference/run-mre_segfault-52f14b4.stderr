@@ -1,5 +1,0 @@
-semantic error: Dimension mismatch in `allocate` statement.
- --> tests/errors/mre_segfault.f90:6:14
-  |
-6 |     allocate(arr4(3), source=reshape([1, 2, 3, 4, 5, 6], [2, 3]))
-  |              ^^^^^^^         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ mismatch in dimensions between allocated variable and `source`

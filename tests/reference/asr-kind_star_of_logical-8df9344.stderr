@@ -1,5 +1,0 @@
-semantic error: Expected initialization expression for kind
- --> tests/errors/kind_star_of_logical.f90:3:13
-  |
-3 |     logical(*) a
-  |             ^ 

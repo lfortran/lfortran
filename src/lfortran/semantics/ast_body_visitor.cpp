@@ -3348,6 +3348,10 @@ public:
     }
 
     void visit_AssociateBlock(const AST::AssociateBlock_t& x) {
+        if (x.m_stmt_name != nullptr) {
+            all_loops_blocks_nesting++;
+        }
+
         SymbolTable* new_scope = al.make_new<SymbolTable>(current_scope);
         std::string name = current_scope->get_unique_name("associate_block");
         ASR::asr_t* associate_block = ASR::make_AssociateBlock_t(al, x.base.base.loc,
@@ -3361,6 +3365,7 @@ public:
                     Level::Error, Stage::Semantic, {
                         Label("", {x.m_syms[i].m_initializer->base.loc})
                     }));
+                if (x.m_stmt_name != nullptr) all_loops_blocks_nesting--;
                 throw SemanticAbort();
             }
             this->visit_expr(*x.m_syms[i].m_initializer);
@@ -3371,14 +3376,6 @@ public:
             bool selector_is_constant = ASRUtils::is_value_constant(tmp_expr) ||
                 selector_has_constant_or_non_definable_base(tmp_expr);
 
-            // A parenthesized selector `(x)` is a primary (R1001), not a
-            // designator, so per F2018 11.1.3.3 the selector is an expression.
-            // It is evaluated when the ASSOCIATE statement executes and the
-            // associate name holds a copy of its value, so a later redefinition
-            // of `x` is not visible through the associate name. None of the
-            // designator cases below, which alias the associate name to the
-            // selector's storage, may therefore apply. The parentheses are
-            // dropped by visit_Parenthesis, so this is decided on the AST.
             if( !AST::is_a<AST::Parenthesis_t>(*x.m_syms[i].m_initializer) ) {
                 if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                     ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_expr);
@@ -3397,8 +3394,6 @@ public:
                     create_associate_stmt = !selector_is_constant;
                 } else if (ASR::is_a<ASR::ComplexRe_t>(*tmp_expr) ||
                            ASR::is_a<ASR::ComplexIm_t>(*tmp_expr)) {
-                    // Complex parts are designators. Associate them with the
-                    // original storage instead of copying their current value.
                     create_associate_stmt = !selector_is_constant;
                 } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
                     create_associate_stmt = !selector_is_constant;
@@ -3428,18 +3423,11 @@ public:
                     create_associate_stmt = !selector_is_constant;
                 } else if (ASR::is_a<ASR::FunctionCall_t>(*tmp_expr) &&
                            ASRUtils::is_pointer(tmp_type)) {
-                    // A reference to a function with a data pointer result is a
-                    // variable, so the associate name must be associated with the
-                    // target the pointer refers to instead of being assigned a
-                    // copy of its value.
                     create_associate_stmt = !selector_is_constant;
                 }
             }
 
             if ( !create_associate_stmt && ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
-                // The value of a pointer expression is copied into the
-                // associate name, which is an ordinary variable holding that
-                // copy and is not itself a pointer.
                 tmp_type = ASRUtils::type_get_past_pointer(tmp_type);
             }
 
@@ -3450,11 +3438,6 @@ public:
             } else if ( !create_associate_stmt && !ASR::is_a<ASR::Allocatable_t>(*tmp_type) &&
                         ((ASRUtils::is_array(tmp_type) && ASRUtils::is_dimension_empty(tmp_type)) ||
                          ASRUtils::is_deferredLength_string(tmp_type)) ) {
-                // For non-lvalue expressions that need runtime-determined
-                // storage (e.g., array constructors with runtime-determined
-                // sizes, or deferred-length string expressions like
-                // concatenation), wrap in Allocatable so that the subsequent
-                // assignment can allocate memory for the target.
                 tmp_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al,
                     tmp_type->base.loc, tmp_type));
             }
@@ -3481,9 +3464,6 @@ public:
                 body.push_back(al, associate_stmt);
             } else {
                 ASRUtils::make_ArrayBroadcast_t_util(al, tmp_expr->base.loc, target_var, tmp_expr);
-                // For non-lvalue associate expressions (e.g., array constructors),
-                // always use realloc_lhs to ensure memory is allocated for
-                // the target variable whose dimensions may be runtime-determined.
                 ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, tmp_expr->base.loc, target_var, tmp_expr, nullptr, true, false));
                 body.push_back(al, assign_stmt);
             }
@@ -3500,6 +3480,10 @@ public:
         associate_block_t->m_body = body.p;
         associate_block_t->n_body = body.size();
         current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(associate_block));
+        
+        if (x.m_stmt_name != nullptr) {
+            all_loops_blocks_nesting--;
+        }
         tmp = ASR::make_AssociateBlockCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(associate_block));
     }
 
@@ -4422,6 +4406,10 @@ public:
     }
 
     void visit_Select(const AST::Select_t& x) {
+        if (x.m_stmt_name != nullptr) {
+            all_loops_blocks_nesting++;
+        }
+
         this->visit_expr(*(x.m_test));
         ASR::expr_t* a_test = ASRUtils::EXPR(tmp);
         if (ASRUtils::is_array(ASRUtils::expr_type(a_test))) {
@@ -4430,6 +4418,7 @@ public:
                 Level::Error, Stage::Semantic, {
                     Label("", {a_test->base.loc})
                 }));
+            if (x.m_stmt_name != nullptr) all_loops_blocks_nesting--;
             throw SemanticAbort();
         }
         ASR::ttype_t *a_test_type = ASRUtils::expr_type(a_test);
@@ -4441,6 +4430,7 @@ public:
                 Level::Error, Stage::Semantic, {
                     Label("", {a_test->base.loc})
                 }));
+            if (x.m_stmt_name != nullptr) all_loops_blocks_nesting--;
             throw SemanticAbort();
         }
         Vec<ASR::case_stmt_t*> a_body_vec;
@@ -4456,6 +4446,7 @@ public:
                         Level::Error, Stage::Semantic, {
                             Label("",{x.base.base.loc})
                         }));
+                    if (x.m_stmt_name != nullptr) all_loops_blocks_nesting--;
                     throw SemanticAbort();
                 }
                 AST::CaseStmt_Default_t *d =
@@ -4466,18 +4457,25 @@ public:
             }
         }
 
+        if (x.m_stmt_name != nullptr) {
+            all_loops_blocks_nesting--;
+        }
         tmp = ASR::make_Select_t(al, x.base.base.loc, x.m_stmt_name, a_test, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size(), false);
     }
 
     void visit_SelectRank(const AST::SelectRank_t& x) {
-        all_loops_blocks_nesting++;
+        if (x.m_stmt_name != nullptr) {
+            all_loops_blocks_nesting++;
+        }
+        
         if ( !x.m_selector ) {
             diag.add(Diagnostic(
                 "Selector expression is missing in select rank statement.",
                 Level::Error, Stage::Semantic, {
                     Label("",{x.base.base.loc})
                 }));
+            if (x.m_stmt_name != nullptr) all_loops_blocks_nesting--;
             throw SemanticAbort();
         }
         visit_expr(*x.m_selector);
@@ -4513,6 +4511,8 @@ public:
                             Level::Error, Stage::Semantic, {
                                 Label("",{rank_expr->m_value->base.loc})
                             }));
+                        // --- ADD THIS: Decrement before abort ---
+                        if (x.m_stmt_name != nullptr) all_loops_blocks_nesting--;
                         throw SemanticAbort();
                     }
                     int rank = ASR::down_cast<ASR::IntegerConstant_t>(rank_expr_value)->m_n;
@@ -4583,7 +4583,9 @@ public:
             current_scope = parent_scope;
         }
 
-        all_loops_blocks_nesting--;
+        if (x.m_stmt_name != nullptr) {
+            all_loops_blocks_nesting--;
+        }
         tmp = ASR::make_SelectRank_t(al, x.base.base.loc, x.m_stmt_name,
                     m_selector, select_rank_body.p, 
                     select_rank_body.size(), select_rank_default.p, select_rank_default.size());
@@ -9292,8 +9294,11 @@ public:
     }
 
     void visit_If(const AST::If_t &x) {
-        all_blocks_nesting++;
-        all_loops_blocks_nesting++;
+        if (x.m_stmt_name != nullptr) {
+            all_blocks_nesting++;
+            all_loops_blocks_nesting++;
+        }
+
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
         ASR::ttype_t *test_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(test));
@@ -9302,8 +9307,10 @@ public:
                 ASRUtils::type_to_str_with_kind(test_type, test) + " instead",
                 diag::Level::Error, diag::Stage::Semantic, {
                 diag::Label(ASRUtils::type_to_str_with_kind(test_type, test) + " expression, expected logical", {test->base.loc})}));
-            all_blocks_nesting--;
-            all_loops_blocks_nesting--;
+            if (x.m_stmt_name != nullptr) {
+                all_blocks_nesting--;
+                all_loops_blocks_nesting--;
+            }
             throw SemanticAbort();
         }
         Vec<ASR::stmt_t*> body;
@@ -9324,8 +9331,11 @@ public:
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
         tmp = ASR::make_If_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), orelse.p, orelse.size());
-        all_blocks_nesting--;
-        all_loops_blocks_nesting--;
+        
+        if (x.m_stmt_name != nullptr) {
+            all_blocks_nesting--;
+            all_loops_blocks_nesting--;
+        }
     }
 
     void visit_IfArithmetic(const AST::IfArithmetic_t &x) {
@@ -9953,7 +9963,7 @@ public:
 
     void visit_Exit(const AST::Exit_t &x) {
         if (all_loops_blocks_nesting == 0) {
-            diag.add(Diagnostic("`exit` statements cannot be outside of loops or blocks",
+            diag.add(Diagnostic("`exit` statements cannot be outside of loops, blocks, or named constructs",
                                 Level::Error,
                                 Stage::Semantic,
                                 { Label("", { x.base.base.loc }) }));

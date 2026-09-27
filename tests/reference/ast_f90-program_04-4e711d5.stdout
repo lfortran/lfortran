@@ -1,4 +1,0 @@
-program __xx_main
-implicit none
-print *, "hello world"
-end program __xx_main

@@ -1,5 +1,0 @@
-semantic error: the argument to `where` must be an array
- --> tests/errors/incorrect_type_where_03.f90:5:10
-  |
-5 |    where(max(1.33, 2.67)) b = 12121
-  |          ^^^^^^^^^^^^^^^ 
