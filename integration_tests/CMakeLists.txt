@@ -3906,6 +3906,10 @@ RUN(NAME finalization_04 LABELS gfortran llvm)
 RUN(NAME finalization_05 LABELS gfortran llvm)
 RUN(NAME finalization_06 LABELS gfortran llvm)
 RUN(NAME finalization_07 LABELS gfortran llvm)
+RUN(NAME finalization_08 LABELS gfortran llvm)
+RUN(NAME finalization_09 LABELS gfortran llvm)
+RUN(NAME finalization_10 LABELS gfortran llvm EXTRAFILES finalization_10_module.f90)
+RUN(NAME finalization_11 LABELS gfortran llvm EXTRAFILES finalization_11_module.f90)
 
 RUN(NAME read_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN read_02_data.txt)
@@ -4820,6 +4824,7 @@ RUN(NAME openmp_92 LABELS gfortran llvm_omp EXTRAFILES openmp_92b.f90 GFORTRAN_A
 RUN(NAME openmp_93 LABELS gfortran llvm_omp EXTRAFILES openmp_93b.f90 GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_94 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_95 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_96 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
