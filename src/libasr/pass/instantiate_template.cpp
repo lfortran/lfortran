@@ -1020,14 +1020,25 @@ public:
 
 };
 
-// A procedure defined in the template itself, as opposed to a requirement's
-// procedure, which is substituted by the instantiation's argument.
+// A procedure defined in the template itself, as opposed to a template
+// parameter (a requirement's procedure), which is substituted by the
+// instantiation's argument.
 static bool is_template_procedure(ASR::symbol_t* s) {
     ASR::symbol_t* owner = ASRUtils::get_asr_owner(s);
-    return owner != nullptr && ASR::is_a<ASR::Template_t>(*owner)
-        && ASR::is_a<ASR::Function_t>(*s)
-        && ASRUtils::get_FunctionType(s)->m_deftype
-            == ASR::deftypeType::Implementation;
+    if (owner == nullptr || !ASR::is_a<ASR::Template_t>(*owner)
+            || !ASR::is_a<ASR::Function_t>(*s)
+            || ASRUtils::get_FunctionType(s)->m_deftype
+                != ASR::deftypeType::Implementation) {
+        return false;
+    }
+    ASR::Template_t* t = ASR::down_cast<ASR::Template_t>(owner);
+    std::string name = ASRUtils::symbol_name(s);
+    for (size_t i = 0; i < t->n_args; i++) {
+        if (name == t->m_args[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // Collects the procedures called in a declaration.
