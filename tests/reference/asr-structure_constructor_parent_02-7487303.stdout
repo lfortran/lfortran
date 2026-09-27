@@ -5,11 +5,11 @@
             structure_constructor_parent_02:
                 (Program
                     (SymbolTable
-                        8
+                        11
                         {
                             1_base_t_a1:
                                 (ExternalSymbol
-                                    8
+                                    11
                                     1_base_t_a1
                                     3 a1
                                     structure_constructor_parent_02_a
@@ -19,9 +19,9 @@
                                 ),
                             1_der2_t_c1:
                                 (ExternalSymbol
-                                    8
+                                    11
                                     1_der2_t_c1
-                                    9 c1
+                                    12 c1
                                     der2_t
                                     []
                                     c1
@@ -29,9 +29,9 @@
                                 ),
                             1_der3_t_c1:
                                 (ExternalSymbol
-                                    8
+                                    11
                                     1_der3_t_c1
-                                    7 c1
+                                    9 c1
                                     structure_constructor_parent_02_c
                                     [der3_t]
                                     c1
@@ -39,9 +39,9 @@
                                 ),
                             1_der_t_b1:
                                 (ExternalSymbol
-                                    8
+                                    11
                                     1_der_t_b1
-                                    5 b1
+                                    6 b1
                                     structure_constructor_parent_02_b
                                     [der_t]
                                     b1
@@ -49,7 +49,7 @@
                                 ),
                             base_t:
                                 (ExternalSymbol
-                                    8
+                                    11
                                     base_t
                                     2 base_t
                                     structure_constructor_parent_02_a
@@ -59,7 +59,7 @@
                                 ),
                             d:
                                 (Variable
-                                    8
+                                    11
                                     d
                                     []
                                     Local
@@ -72,7 +72,7 @@
                                         .true.
                                         .false.
                                     )
-                                    8 der_t
+                                    11 der_t
                                     Source
                                     Public
                                     Required
@@ -88,7 +88,7 @@
                                 ),
                             d2:
                                 (Variable
-                                    8
+                                    11
                                     d2
                                     []
                                     Local
@@ -101,7 +101,7 @@
                                         .true.
                                         .false.
                                     )
-                                    8 der2_t
+                                    11 der2_t
                                     Source
                                     Public
                                     Required
@@ -117,7 +117,7 @@
                                 ),
                             d3:
                                 (Variable
-                                    8
+                                    11
                                     d3
                                     []
                                     Local
@@ -130,7 +130,7 @@
                                         .true.
                                         .false.
                                     )
-                                    8 der3_t
+                                    11 der3_t
                                     Source
                                     Public
                                     Required
@@ -147,11 +147,11 @@
                             der2_t:
                                 (Struct
                                     (SymbolTable
-                                        9
+                                        12
                                         {
                                             c1:
                                                 (Variable
-                                                    9
+                                                    12
                                                     c1
                                                     []
                                                     Local
@@ -191,14 +191,14 @@
                                     .false.
                                     []
                                     ()
-                                    8 der_t
+                                    11 der_t
                                     []
                                 ),
                             der3_t:
                                 (ExternalSymbol
-                                    8
+                                    11
                                     der3_t
-                                    6 der3_t
+                                    8 der3_t
                                     structure_constructor_parent_02_c
                                     []
                                     der3_t
@@ -206,9 +206,9 @@
                                 ),
                             der_t:
                                 (ExternalSymbol
-                                    8
+                                    11
                                     der_t
-                                    4 der_t
+                                    5 der_t
                                     structure_constructor_parent_02_b
                                     []
                                     der_t
@@ -216,7 +216,7 @@
                                 ),
                             p_t:
                                 (ExternalSymbol
-                                    8
+                                    11
                                     p_t
                                     2 base_t
                                     structure_constructor_parent_02_a
@@ -230,9 +230,9 @@
                     structure_constructor_parent_02_b
                     structure_constructor_parent_02_c]
                     [(Assignment
-                        (Var 8 d)
+                        (Var 11 d)
                         (StructConstructor
-                            8 der_t
+                            11 der_t
                             [((IntegerConstant 8 (Integer 4) Decimal))
                             ((IntegerConstant 9 (Integer 4) Decimal))]
                             (StructType
@@ -251,14 +251,14 @@
                         (StringFormat
                             ()
                             [(StructInstanceMember
-                                (Var 8 d)
-                                8 1_base_t_a1
+                                (Var 11 d)
+                                11 1_base_t_a1
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 8 d)
-                                8 1_der_t_b1
+                                (Var 11 d)
+                                11 1_der_t_b1
                                 (Integer 4)
                                 ()
                             )]
@@ -270,9 +270,9 @@
                         )
                     )
                     (Assignment
-                        (Var 8 d2)
+                        (Var 11 d2)
                         (StructConstructor
-                            8 der2_t
+                            11 der2_t
                             [((IntegerConstant 8 (Integer 4) Decimal))
                             ((IntegerConstant 9 (Integer 4) Decimal))
                             ((IntegerConstant 10 (Integer 4) Decimal))]
@@ -292,20 +292,20 @@
                         (StringFormat
                             ()
                             [(StructInstanceMember
-                                (Var 8 d2)
-                                8 1_base_t_a1
+                                (Var 11 d2)
+                                11 1_base_t_a1
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 8 d2)
-                                8 1_der_t_b1
+                                (Var 11 d2)
+                                11 1_der_t_b1
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 8 d2)
-                                8 1_der2_t_c1
+                                (Var 11 d2)
+                                11 1_der2_t_c1
                                 (Integer 4)
                                 ()
                             )]
@@ -317,9 +317,9 @@
                         )
                     )
                     (Assignment
-                        (Var 8 d3)
+                        (Var 11 d3)
                         (StructConstructor
-                            8 der3_t
+                            11 der3_t
                             [((IntegerConstant 8 (Integer 4) Decimal))
                             ((IntegerConstant 9 (Integer 4) Decimal))
                             ((IntegerConstant 10 (Integer 4) Decimal))]
@@ -339,20 +339,20 @@
                         (StringFormat
                             ()
                             [(StructInstanceMember
-                                (Var 8 d3)
-                                8 1_base_t_a1
+                                (Var 11 d3)
+                                11 1_base_t_a1
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 8 d3)
-                                8 1_der_t_b1
+                                (Var 11 d3)
+                                11 1_der_t_b1
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 8 d3)
-                                8 1_der3_t_c1
+                                (Var 11 d3)
+                                11 1_der3_t_c1
                                 (Integer 4)
                                 ()
                             )]
@@ -364,12 +364,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             structure_constructor_parent_02_a:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_structure_constructor_parent_02_a:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_structure_constructor_parent_02_a
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_structure_constructor_parent_02_a:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_structure_constructor_parent_02_a
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             base_t:
                                 (Struct
                                     (SymbolTable
@@ -427,21 +484,79 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_structure_constructor_parent_02_a
+                    __lcompilers_global_init_state_structure_constructor_parent_02_a
+                    .false.
                 ),
             structure_constructor_parent_02_b:
                 (Module
                     (SymbolTable
-                        4
+                        5
                         {
+                            __lcompilers_global_init_state_structure_constructor_parent_02_b:
+                                (Variable
+                                    5
+                                    __lcompilers_global_init_state_structure_constructor_parent_02_b
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_structure_constructor_parent_02_b:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_structure_constructor_parent_02_b
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             der_t:
                                 (Struct
                                     (SymbolTable
-                                        5
+                                        6
                                         {
                                             b1:
                                                 (Variable
-                                                    5
+                                                    6
                                                     b1
                                                     []
                                                     Local
@@ -481,12 +596,12 @@
                                     .false.
                                     []
                                     ()
-                                    4 p_t
+                                    5 p_t
                                     []
                                 ),
                             p_t:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     p_t
                                     2 base_t
                                     structure_constructor_parent_02_a
@@ -501,21 +616,79 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_structure_constructor_parent_02_b
+                    __lcompilers_global_init_state_structure_constructor_parent_02_b
+                    .false.
                 ),
             structure_constructor_parent_02_c:
                 (Module
                     (SymbolTable
-                        6
+                        8
                         {
+                            __lcompilers_global_init_state_structure_constructor_parent_02_c:
+                                (Variable
+                                    8
+                                    __lcompilers_global_init_state_structure_constructor_parent_02_c
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_structure_constructor_parent_02_c:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_structure_constructor_parent_02_c
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             der3_t:
                                 (Struct
                                     (SymbolTable
-                                        7
+                                        9
                                         {
                                             c1:
                                                 (Variable
-                                                    7
+                                                    9
                                                     c1
                                                     []
                                                     Local
@@ -555,14 +728,14 @@
                                     .false.
                                     []
                                     ()
-                                    6 p_t
+                                    8 p_t
                                     []
                                 ),
                             p_t:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     p_t
-                                    4 der_t
+                                    5 der_t
                                     structure_constructor_parent_02_b
                                     []
                                     der_t
@@ -575,9 +748,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    __lcompilers_global_init_structure_constructor_parent_02_c
+                    __lcompilers_global_init_state_structure_constructor_parent_02_c
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )
