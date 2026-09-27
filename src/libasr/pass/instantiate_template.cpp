@@ -1033,6 +1033,10 @@ public:
     // Where the errors found while evaluating the constant expressions of the
     // instantiation, such as a division by zero, are reported.
     diag::Diagnostics* diagnostics;
+    // The template scope that target_scope instantiates, when known. It maps
+    // host-associated variables of an enclosing template procedure to their
+    // instantiated counterparts.
+    SymbolTable* source_scope = nullptr;
 
     SymbolInstantiator(Allocator &al,
             SymbolTable* target_scope,
@@ -1543,6 +1547,28 @@ public:
             // The global scope encloses every instantiation.
             return var_sym;
         }
+        if (host != nullptr && ASR::is_a<ASR::Function_t>(*host)
+                && source_scope != nullptr && source_scope != host_scope) {
+            // A variable of an enclosing procedure, used by host association
+            // in an internal procedure. The instantiated scopes are nested
+            // like the template's, so the host's instantiation is as many
+            // levels up from target_scope as host_scope is from source_scope.
+            SymbolTable* s = source_scope;
+            SymbolTable* new_host_scope = target_scope;
+            while (s != nullptr && new_host_scope != nullptr && s != host_scope) {
+                s = s->parent;
+                new_host_scope = new_host_scope->parent;
+            }
+            if (s == host_scope && new_host_scope != nullptr) {
+                ASR::symbol_t* new_var = new_host_scope->get_symbol(x->m_name);
+                if (new_var != nullptr) {
+                    return new_var;
+                }
+                SymbolInstantiator t(al, new_host_scope, type_subs, symbol_subs,
+                    x->m_name, var_sym, diagnostics);
+                return t.instantiate();
+            }
+        }
         if (host != nullptr && ASR::is_a<ASR::Module_t>(*host)) {
             // Module variables are static storage, reachable from any
             // nesting depth: directly if the module encloses the
@@ -1701,6 +1727,11 @@ public:
 
         SymbolInstantiator t(al, new_scope, type_subs, symbol_subs, sym_name, x->m_v,
             diagnostics);
+        if (ASR::is_a<ASR::Function_t>(*this->sym) && new_scope != target_scope) {
+            t.source_scope = ASR::down_cast<ASR::Function_t>(this->sym)->m_symtab;
+        } else if (ASR::is_a<ASR::Variable_t>(*this->sym)) {
+            t.source_scope = ASRUtils::symbol_parent_symtab(this->sym);
+        }
         ASR::symbol_t* sym = t.instantiate();
 
         return ASR::make_Var_t(al, x->base.base.loc, sym);
@@ -1806,6 +1837,8 @@ class BodyInstantiator : public ASR::BaseExprStmtDuplicator<BodyInstantiator>
 {
 public:
     SymbolTable* new_scope;
+    // The template scope that new_scope instantiates, when it is a procedure's.
+    SymbolTable* source_scope = nullptr;
     std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
     std::map<std::string,ASR::symbol_t*>& symbol_subs;
     std::set<ASR::symbol_t*>& instantiated_bodies;
@@ -1877,6 +1910,7 @@ public:
     void instantiate_Function(ASR::Function_t* x) {
         ASR::Function_t* new_f = ASR::down_cast<ASR::Function_t>(new_sym);
         new_scope = new_f->m_symtab;
+        source_scope = x->m_symtab;
 
         for (auto const &sym_pair: x->m_symtab->get_scope()) {
             ASR::symbol_t* sym_i = sym_pair.second;
@@ -1980,6 +2014,7 @@ public:
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
 
         SymbolInstantiator t_i(al, new_scope, type_subs, symbol_subs, sym_name, x->m_v);
+        t_i.source_scope = source_scope;
         ASR::symbol_t* sym = t_i.instantiate();
 
         BodyInstantiator t_b(al, type_subs, symbol_subs, sym, x->m_v,
