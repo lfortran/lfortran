@@ -5,7 +5,7 @@ target datalayout = "..."
 %prif_coarray_handle.8 = type { void* }
 %array.1 = type { i32*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %dimension_descriptor = type { i64, i64, i64 }
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 %array.1.0 = type { i64*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %__module_prif_prif_team_type.22 = type { %__module_prif_prif_dummy_team_descriptor.23* }
 %__module_prif_prif_dummy_team_descriptor.23 = type {}
@@ -111,7 +111,7 @@ target datalayout = "..."
 @64 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
 @65 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data = private constant [2 x i8] c"ok"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data, i32 0, i32 0), i64 2 }>
+@string_const = private global %string_descriptor { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data, i32 0, i32 0), i64 2 }
 @66 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @llvm.global_ctors = appending global [1 x { i32, void ()*, i8* }] [{ i32, void ()*, i8* } { i32 65535, void ()* @__lfortran_coarray_init_coarrays_52_sub, i8* null }]
 
@@ -128,14 +128,14 @@ define internal void @__lfortran_coarray_init_coarrays_52_sub() {
   %__libasr_created_variable_2 = alloca %string_descriptor, align 8
   %__libasr_created_variable_1 = alloca %string_descriptor, align 8
   %__libasr_created_variable_ = alloca i32, align 4
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_1, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_1, align 8
   %1 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_1, i32 0, i32 1
   store i64 0, i64* %1, align 8
   %2 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_1, i32 0, i32 0
   %3 = call i8* @_lfortran_get_default_allocator()
   %4 = call i8* @_lfortran_malloc_alloc(i8* %3, i64 1)
   store i8* %4, i8** %2, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_2, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_2, align 8
   %stat = alloca i32, align 4
   call void @__module_prif_prif_init(i32* %stat)
   %5 = getelementptr %array.1.0, %array.1.0* %array_descriptor, i32 0, i32 0
@@ -267,14 +267,14 @@ define i32 @"lcompilers_prif_get_integer(4)_integer____1"(%prif_coarray_handle.8
   call void @llvm.memcpy.p0i8.p0i8.i64(i8* %6, i8* %7, i64 %5, i1 false)
   %__libasr_created_variable_ = alloca i32, align 4
   %__libasr_created_variable_1 = alloca i32, align 4
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_2, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_2, align 8
   %8 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_2, i32 0, i32 1
   store i64 0, i64* %8, align 8
   %9 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_2, i32 0, i32 0
   %10 = call i8* @_lfortran_get_default_allocator()
   %11 = call i8* @_lfortran_malloc_alloc(i8* %10, i64 1)
   store i8* %11, i8** %9, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_3, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_3, align 8
   %image_num = alloca i32, align 4
   %result = alloca i32, align 4
   store i32 0, i32* %call_arg_value, align 4
@@ -345,23 +345,23 @@ define void @__module_coarrays_52_m___lfortran_global_init_coarrays_52_m() {
   %__libasr_created_variable_2 = alloca %string_descriptor, align 8
   %__libasr_created_variable_1 = alloca %string_descriptor, align 8
   %__libasr_created_variable_ = alloca i32, align 4
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_1, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_1, align 8
   %1 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_1, i32 0, i32 1
   store i64 0, i64* %1, align 8
   %2 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_1, i32 0, i32 0
   %3 = call i8* @_lfortran_get_default_allocator()
   %4 = call i8* @_lfortran_malloc_alloc(i8* %3, i64 1)
   store i8* %4, i8** %2, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_2, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_2, align 8
   %__libasr_created_variable_3 = alloca i32, align 4
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_4, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_4, align 8
   %5 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_4, i32 0, i32 1
   store i64 0, i64* %5, align 8
   %6 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_4, i32 0, i32 0
   %7 = call i8* @_lfortran_get_default_allocator()
   %8 = call i8* @_lfortran_malloc_alloc(i8* %7, i64 1)
   store i8* %8, i8** %6, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_5, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_5, align 8
   %stat = alloca i32, align 4
   %9 = load i32, i32* @__lfortran_global_init_coarrays_52_m.__lfortran_global_init_done, align 4
   %10 = xor i32 %9, 1
@@ -1312,25 +1312,25 @@ define i32 @main(i32 %0, i8** %1) {
   store i32* null, i32** %10, align 8
   store %array.1* %arr_desc, %array.1** @__module_coarrays_52_m_coarrays_52_mod_sub_m__coarray_ptr, align 8
   %__libasr_created_variable_ = alloca i32, align 4
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_1, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_1, align 8
   %11 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_1, i32 0, i32 1
   store i64 0, i64* %11, align 8
   %12 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_1, i32 0, i32 0
   %13 = call i8* @_lfortran_get_default_allocator()
   %14 = call i8* @_lfortran_malloc_alloc(i8* %13, i64 1)
   store i8* %14, i8** %12, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_2, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_2, align 8
   %__libasr_created_variable_3 = alloca i32, align 4
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_4, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_4, align 8
   %15 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_4, i32 0, i32 1
   store i64 0, i64* %15, align 8
   %16 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_4, i32 0, i32 0
   %17 = call i8* @_lfortran_get_default_allocator()
   %18 = call i8* @_lfortran_malloc_alloc(i8* %17, i64 1)
   store i8* %18, i8** %16, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_5, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_5, align 8
   %__libasr_created_variable_6 = alloca i32, align 4
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_7, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_7, align 8
   %19 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_7, i32 0, i32 1
   store i64 0, i64* %19, align 8
   %20 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_7, i32 0, i32 0
@@ -1608,23 +1608,23 @@ define void @__lfortran_global_init_coarrays_52() {
   %__libasr_created_variable_2 = alloca %string_descriptor, align 8
   %__libasr_created_variable_1 = alloca %string_descriptor, align 8
   %__libasr_created_variable_ = alloca i32, align 4
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_1, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_1, align 8
   %1 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_1, i32 0, i32 1
   store i64 0, i64* %1, align 8
   %2 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_1, i32 0, i32 0
   %3 = call i8* @_lfortran_get_default_allocator()
   %4 = call i8* @_lfortran_malloc_alloc(i8* %3, i64 1)
   store i8* %4, i8** %2, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_2, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_2, align 8
   %__libasr_created_variable_3 = alloca i32, align 4
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_4, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_4, align 8
   %5 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_4, i32 0, i32 1
   store i64 0, i64* %5, align 8
   %6 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_4, i32 0, i32 0
   %7 = call i8* @_lfortran_get_default_allocator()
   %8 = call i8* @_lfortran_malloc_alloc(i8* %7, i64 1)
   store i8* %8, i8** %6, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_5, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_5, align 8
   %stat = alloca i32, align 4
   %9 = load i32, i32* @__lfortran_global_init_coarrays_52.__lfortran_global_init_done, align 4
   %10 = xor i32 %9, 1

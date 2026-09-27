@@ -23462,7 +23462,8 @@ public:
             // count field widths in characters rather than bytes.
             res += "-K" + std::to_string(str_type->m_kind);
             walked_size = (str_type->m_physical_type == ASR::DescriptorString) ?
-                pointer_size + (int64_t) sizeof(int64_t) : pointer_size;
+                (int64_t) module->getDataLayout().getTypeAllocSize(
+                    llvm_utils->string_descriptor) : pointer_size;
             int len;
             if(ASRUtils::extract_value(str_type->m_len, len)){res += "-" + std::to_string(len);}
         } else if (ASR::is_a<ASR::Complex_t>(*type)){
