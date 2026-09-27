@@ -26474,6 +26474,7 @@ public:
         ASR::asr_t *call_value_asr = create_func(al,
             loc, call_args, diag);
         if (call_value_asr == nullptr) {
+            current_scope = saved_scope;
             throw SemanticAbort();
         }
         ASR::expr_t *call_value = ASRUtils::EXPR(call_value_asr);
@@ -26499,6 +26500,7 @@ public:
                 "Unapplicable types for intrinsic function " + arg,
                 Level::Error, Stage::Semantic, {
                     Label("", {loc})}));
+            current_scope = saved_scope;
             throw SemanticAbort();
         }
 

@@ -3004,3 +3004,15 @@ semantic error: type mismatch in structure constructor: the parent component 'ip
      |
 2002 |     e = ipck_der2_t(ipck_der_t=1.0, ipck_base_t=ipck_base_t(1), e1=3)  ! {Error} type mismatch in structure constructor: the parent component 'ipck_der_t' requires a scalar value of type type(ipck_der_t), not real(4)
      |                                ^^^ 
+
+semantic error: Arguments to max0 must be of real, integer or character type
+    --> tests/errors/continue_compilation_1.f90:2038:21
+     |
+2038 |     print *, iita_g{max, logical}(.true., .false.)  ! {Error} Arguments to max0 must be of real, integer or character type
+     |                     ^^^ 
+
+semantic error: Unapplicable types for intrinsic function max
+    --> tests/errors/continue_compilation_1.f90:2039:21
+     |
+2039 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
+     |                     ^^^ 
