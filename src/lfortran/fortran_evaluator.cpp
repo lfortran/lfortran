@@ -241,6 +241,11 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     // silently produces no output at all.
     std::string program_fn = run_fn + "_program";
     bool has_program = (m->get_return_type(program_fn) == "void");
+    // The globals the cell declares that need executable code to set up are
+    // set up in `run_fn + "_setup"` (see emit_interactive_global_setup),
+    // which has to run before anything of the cell can use them.
+    std::string setup_fn = run_fn + "_setup";
+    bool has_setup = (m->get_return_type(setup_fn) == "void");
 
     // With full-width logical types, logicals are now i32/i64 in LLVM
     // (same as integers). Check the ASR to distinguish logical from integer.
@@ -272,6 +277,9 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     LLVMEvaluator &e = get_llvm_evaluator();
     e.add_module(std::move(m));
 #endif
+    if (has_setup) {
+        e.execfn<void>(setup_fn);
+    }
     if (has_program) {
         e.execfn<void>(program_fn);
     }
