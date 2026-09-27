@@ -4487,36 +4487,42 @@ public:
             symbols.push_back(al, x);
         }
         LCOMPILERS_ASSERT(strlen(generic_name) > 0);
-        // Check if the operator is already imported into the scope. If yes, include it's procedures
-        // into the current `CustomOperator` symbol that we overwrite with.
-        if (current_scope->get_symbol(generic_name) != nullptr) {
-            ASR::symbol_t* existing = current_scope->get_symbol(generic_name);
-            ASR::CustomOperator_t* cop = nullptr;
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*existing)) {
-                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(existing);
-                if (ASR::is_a<ASR::CustomOperator_t>(*sym)) {
-                    cop = ASR::down_cast<ASR::CustomOperator_t>(sym);
-                }
-            } else if (ASR::is_a<ASR::CustomOperator_t>(*existing)) {
-                cop = ASR::down_cast<ASR::CustomOperator_t>(existing);
-            }
-            if (cop != nullptr) {
-                for (size_t i = 0; i < cop->n_procs; i++) {
-                    std::string proc_name = std::string(ASRUtils::symbol_name(cop->m_procs[i])) + "@" + generic_name;
-                    ASR::symbol_t* proc_sym = current_scope->resolve_symbol(proc_name);
-                    if (proc_sym == nullptr) {
-                        proc_sym = current_scope->resolve_symbol(
-                            ASRUtils::symbol_name(cop->m_procs[i]));
-                    }
-                    if (proc_sym != nullptr) {
-                        symbols.push_back(al, proc_sym);
-                    }
-                }
-            }
-        }
+        append_accessible_custom_operator_procs(
+            current_scope->get_symbol(generic_name), generic_name, symbols);
         ASR::asr_t *v = ASR::make_CustomOperator_t(al, op_loc, current_scope,
                             generic_name, symbols.p, symbols.size(), access);
         current_scope->add_or_overwrite_symbol(new_operator_name, ASR::down_cast<ASR::symbol_t>(v));
+    }
+
+    // If the operator `existing` is already accessible in the scope, include its procedures
+    // into the `CustomOperator` symbol that we overwrite it with.
+    void append_accessible_custom_operator_procs(ASR::symbol_t *existing,
+            const std::string &generic_name, Vec<ASR::symbol_t*> &symbols) {
+        if (existing == nullptr) {
+            return;
+        }
+        ASR::CustomOperator_t* cop = nullptr;
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*existing)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(existing);
+            if (ASR::is_a<ASR::CustomOperator_t>(*sym)) {
+                cop = ASR::down_cast<ASR::CustomOperator_t>(sym);
+            }
+        } else if (ASR::is_a<ASR::CustomOperator_t>(*existing)) {
+            cop = ASR::down_cast<ASR::CustomOperator_t>(existing);
+        }
+        if (cop != nullptr) {
+            for (size_t i = 0; i < cop->n_procs; i++) {
+                std::string proc_name = std::string(ASRUtils::symbol_name(cop->m_procs[i])) + "@" + generic_name;
+                ASR::symbol_t* proc_sym = current_scope->resolve_symbol(proc_name);
+                if (proc_sym == nullptr) {
+                    proc_sym = current_scope->resolve_symbol(
+                        ASRUtils::symbol_name(cop->m_procs[i]));
+                }
+                if (proc_sym != nullptr) {
+                    symbols.push_back(al, proc_sym);
+                }
+            }
+        }
     }
 
     void add_overloaded_procedures() {
@@ -6134,98 +6140,34 @@ public:
         }
     }
 
-    static std::string instantiation_intrinsic_op_str(AST::intrinsicopType op) {
-        switch (op) {
-            case AST::intrinsicopType::AND: return ".and.";
-            case AST::intrinsicopType::OR: return ".or.";
-            case AST::intrinsicopType::XOR: return ".xor.";
-            case AST::intrinsicopType::EQV: return ".eqv.";
-            case AST::intrinsicopType::NEQV: return ".neqv.";
-            case AST::intrinsicopType::PLUS: return "+";
-            case AST::intrinsicopType::MINUS: return "-";
-            case AST::intrinsicopType::STAR: return "*";
-            case AST::intrinsicopType::DIV: return "/";
-            case AST::intrinsicopType::POW: return "**";
-            case AST::intrinsicopType::NOT: return ".not.";
-            case AST::intrinsicopType::EQ: return "==";
-            case AST::intrinsicopType::GT: return ">";
-            case AST::intrinsicopType::GTE: return ">=";
-            case AST::intrinsicopType::LT: return "<";
-            case AST::intrinsicopType::LTE: return "<=";
-            case AST::intrinsicopType::NOTEQ: return "/=";
-            case AST::intrinsicopType::CONCAT: return "//";
-        }
-        return "";
-    }
-
     // The only-list of an INSTANTIATE statement may name a generic spec
-    // (operator, assignment or defined input/output) as well as a name. A
-    // generic spec that the template does not define is an error; importing
-    // one the template does define is not supported yet.
+    // (operator, assignment or defined input/output) as well as a name. The
+    // template must define a generic spec that is named, as an interface
+    // block of its own procedures.
     void check_instantiation_generic_specs(const AST::Instantiate_t &x,
             ASR::Template_t *temp) {
         std::string template_name = to_lower(x.m_name);
         for (size_t i = 0; i < x.n_symbols; i++) {
             AST::use_symbol_t *item = x.m_symbols[i];
-            std::string remote_sym;
-            std::string spec;
-            switch (item->type) {
-                case AST::use_symbolType::UseSymbol: {
-                    continue;
-                }
-                case AST::use_symbolType::UseAssignment: {
-                    remote_sym = "~assign";
-                    spec = "assignment(=)";
-                    break;
-                }
-                case AST::use_symbolType::IntrinsicOperator: {
-                    AST::intrinsicopType op =
-                        AST::down_cast<AST::IntrinsicOperator_t>(item)->m_op;
-                    remote_sym = intrinsic2str[op];
-                    spec = "operator(" + instantiation_intrinsic_op_str(op) + ")";
-                    break;
-                }
-                case AST::use_symbolType::DefinedOperator: {
-                    std::string op_name = to_lower(
-                        AST::down_cast<AST::DefinedOperator_t>(item)->m_opName);
-                    remote_sym = update_custom_op_name(op_name);
-                    spec = "operator(." + op_name + ".)";
-                    break;
-                }
-                case AST::use_symbolType::RenameOperator: {
-                    std::string op_name = to_lower(
-                        AST::down_cast<AST::RenameOperator_t>(item)->m_use_defop);
-                    remote_sym = update_custom_op_name(op_name);
-                    spec = "operator(." + op_name + ".)";
-                    break;
-                }
-                case AST::use_symbolType::UseWrite:
-                case AST::use_symbolType::UseRead: {
-                    bool is_write = AST::is_a<AST::UseWrite_t>(*item);
-                    std::string id = to_lower(is_write
-                        ? AST::down_cast<AST::UseWrite_t>(item)->m_id
-                        : AST::down_cast<AST::UseRead_t>(item)->m_id);
-                    std::string kind = is_write ? "write" : "read";
-                    if (id != "formatted" && id != "unformatted") {
-                        diag.add(diag::Diagnostic(
-                            "Can only be `formatted` or `unformatted`",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {item->base.loc})}));
-                        throw SemanticAbort();
-                    }
-                    remote_sym = "~" + kind + "_" + id;
-                    spec = kind + "(" + id + ")";
-                    break;
-                }
-                default: {
+            std::string remote_sym, local_sym, spec;
+            if (!instantiation_generic_spec(item, remote_sym, local_sym, spec)) {
+                continue;
+            }
+            if (AST::is_a<AST::UseWrite_t>(*item)
+                    || AST::is_a<AST::UseRead_t>(*item)) {
+                if (remote_sym != "~write_formatted"
+                        && remote_sym != "~write_unformatted"
+                        && remote_sym != "~read_formatted"
+                        && remote_sym != "~read_unformatted") {
                     diag.add(diag::Diagnostic(
-                        "unsupported item in the only-list of an instantiation",
+                        "Can only be `formatted` or `unformatted`",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {item->base.loc})}));
                     throw SemanticAbort();
                 }
             }
-            if (temp->m_symtab->get_symbol(remote_sym) == nullptr) {
+            ASR::symbol_t *generic = temp->m_symtab->get_symbol(remote_sym);
+            if (generic == nullptr) {
                 diag.add(diag::Diagnostic(
                     spec + " is not defined in template '" + template_name + "'",
                     diag::Level::Error, diag::Stage::Semantic, {
@@ -6233,13 +6175,66 @@ public:
                             + spec + " to instantiate", {item->base.loc})}));
                 throw SemanticAbort();
             }
-            diag.add(diag::Diagnostic(
-                "importing " + spec + " from an instantiation of template '"
-                + template_name + "' is not supported yet",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {item->base.loc})}));
-            throw SemanticAbort();
+            bool supported = ASR::is_a<ASR::CustomOperator_t>(*generic);
+            if (supported) {
+                ASR::CustomOperator_t *op =
+                    ASR::down_cast<ASR::CustomOperator_t>(generic);
+                for (size_t j = 0; j < op->n_procs && supported; j++) {
+                    supported = ASR::is_a<ASR::Function_t>(*op->m_procs[j])
+                        && ASRUtils::symbol_parent_symtab(op->m_procs[j])
+                            == temp->m_symtab;
+                }
+            }
+            if (!supported) {
+                diag.add(diag::Diagnostic(
+                    "importing " + spec + " from an instantiation of template '"
+                    + template_name + "' is not supported yet",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {item->base.loc})}));
+                throw SemanticAbort();
+            }
         }
+    }
+
+    // Instantiate a generic spec named in the only-list of an INSTANTIATE
+    // statement. Its specific procedures are instantiated, reusing the
+    // instances of those the only-list also names, and the generic is added
+    // to the instantiating scope, extending a generic of the same name
+    // already accessible there, including by host association.
+    void instantiate_generic_spec(ASR::Template_t *temp,
+            const std::string &remote_sym, const std::string &local_sym,
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs,
+            std::map<std::string, ASR::symbol_t*> &symbol_subs,
+            const Location &loc) {
+        ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(
+            temp->m_symtab->get_symbol(remote_sym));
+        Vec<ASR::symbol_t*> procs;
+        procs.reserve(al, op->n_procs);
+        for (size_t i = 0; i < op->n_procs; i++) {
+            ASR::symbol_t *proc = op->m_procs[i];
+            std::string proc_name = ASRUtils::symbol_name(proc);
+            ASR::symbol_t *new_proc;
+            if (symbol_subs.find(proc_name) != symbol_subs.end()) {
+                new_proc = symbol_subs[proc_name];
+            } else {
+                // Not hiding a host entity, which the generic may extend.
+                std::string base_name = "__asr_" + proc_name;
+                std::string new_name = base_name;
+                for (int k = 1; current_scope->resolve_symbol(new_name); k++) {
+                    new_name = base_name + std::to_string(k);
+                }
+                new_proc = instantiate_symbol(al, current_scope, type_subs,
+                    symbol_subs, new_name, proc, diag);
+                symbol_subs[proc_name] = new_proc;
+            }
+            procs.push_back(al, new_proc);
+        }
+        append_accessible_custom_operator_procs(
+            current_scope->resolve_symbol(local_sym), local_sym, procs);
+        ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
+            s2c(al, local_sym), procs.p, procs.size(), op->m_access);
+        current_scope->add_or_overwrite_symbol(local_sym,
+            ASR::down_cast<ASR::symbol_t>(v));
     }
 
     // An instantiated procedure is a new entity, so its local name must differ
@@ -6275,6 +6270,9 @@ public:
             }
         } else {
             for (size_t i = 0; i < x.n_symbols; i++) {
+                if (!AST::is_a<AST::UseSymbol_t>(*x.m_symbols[i])) {
+                    continue;
+                }
                 AST::UseSymbol_t *use_symbol =
                     AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string name = to_lower(use_symbol->m_local_rename
@@ -6774,6 +6772,9 @@ public:
             }
         } else {
             for (size_t i = 0; i < x.n_symbols; i++){
+                if (!AST::is_a<AST::UseSymbol_t>(*x.m_symbols[i])) {
+                    continue;
+                }
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string generic_name = to_lower(use_symbol->m_remote_sym);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(generic_name);
@@ -6791,6 +6792,16 @@ public:
                 ASR::symbol_t* new_sym = instantiate_symbol(al, current_scope, type_subs, symbol_subs, new_sym_name, s,
                     diag);
                 symbol_subs[generic_name] = new_sym;
+            }
+            // Generic specs last, so that they reuse the instances of their
+            // specific procedures that the only-list names.
+            for (size_t i = 0; i < x.n_symbols; i++) {
+                std::string remote_sym, local_sym, spec;
+                if (instantiation_generic_spec(x.m_symbols[i], remote_sym,
+                        local_sym, spec)) {
+                    instantiate_generic_spec(temp, remote_sym, local_sym,
+                        type_subs, symbol_subs, x.m_symbols[i]->base.loc);
+                }
             }
         }
 
