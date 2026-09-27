@@ -596,6 +596,19 @@ public:
         src = r;
     }
 
+    // The module whose scope `scope` is, or is nested in, or nullptr.
+    static ASR::Module_t* enclosing_module(SymbolTable *scope) {
+        for (; scope != nullptr; scope = scope->parent) {
+            if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
+                    && ASR::is_a<ASR::Module_t>(
+                        *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
+                return ASR::down_cast<ASR::Module_t>(
+                    ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
+            }
+        }
+        return nullptr;
+    }
+
     void visit_Function(const ASR::Function_t &x) {
         if (ASRUtils::is_device_kernel(&x.base)) {
             visit_device_kernel(x);
@@ -713,6 +726,18 @@ public:
         r += "\n";
 
         inc_indent();
+        // What the procedure imports itself. A module's own procedure never
+        // imports from that module, which it reaches by host association.
+        if (!is_interface) {
+            ASR::Module_t *own = enclosing_module(x.m_symtab->parent);
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (!is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
+                ASR::ExternalSymbol_t *e = down_cast<ASR::ExternalSymbol_t>(item.second);
+                if (own && strcmp(e->m_module_name, own->m_name) == 0) continue;
+                visit_symbol(*item.second);
+                r += src;
+            }
+        }
         {
             std::string variable_declaration;
             std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
