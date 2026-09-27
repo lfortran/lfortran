@@ -36,14 +36,19 @@ Pipeline: **repro-issue → create-mre → fix-mre**
 
 Before starting, confirm you have:
 
-- A built `lfortran` — `build/src/bin/lfortran` for a standard in-tree build
-  (see `AGENTS.md`). Put it first on `PATH`, or set `$LFORTRAN` to its path.
+- A built `lfortran` from the assigned worktree. **Default to Pixi**:
+  `pixi run -e llvm11 build` installs dependencies and builds
+  `build/llvm11/src/bin/lfortran` (see `AGENTS.md`). Save the build log.
+  Honor an explicitly supplied build/environment, including supported manual
+  builds. Run every command through the selected environment, for example
+  `pixi run -e llvm11 bash run_re.sh`, and verify the compiler path/version.
+  Do not duplicate package lists or CMake setup flags here.
 - A **reference Fortran compiler** on `PATH`. `gfortran` is the project
   default — it is what `integration_tests` uses via the `gfortran` label, so
   prefer it. `flang` works too if that is what you have.
 - `gh` CLI available on `PATH` and authenticated (`gh auth status`)
-- Working directory is the lfortran repository root (same dir as
-  `CMakeLists.txt`) — output files go here
+- Working directory is the **assigned worktree's root** (same dir as
+  `CMakeLists.txt`) — output files go here, never in another worker's checkout.
 
 ## Inputs to Gather
 

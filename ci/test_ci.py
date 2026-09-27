@@ -145,7 +145,10 @@ class RunnerTests(unittest.TestCase):
         runner = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(runner)
         for smoke in (False, True):
-            with self.subTest(smoke=smoke), patch.object(runner, "run_cmd") as command:
+            with self.subTest(smoke=smoke), \
+                    tempfile.TemporaryDirectory() as build_dir, \
+                    patch.object(runner, "BUILD_DIR", Path(build_dir)), \
+                    patch.object(runner, "run_cmd") as command:
                 runner.run_test("llvm", "lf", smoke=smoke)
                 commands = [call.args[0] for call in command.call_args_list]
                 configure = next(cmd for cmd in commands if " cmake " in cmd)

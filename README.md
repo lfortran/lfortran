@@ -20,6 +20,45 @@ To build and run that JupyterLite site locally, use `pixi run lab` and open
 [doc/src/jupyterlite.md](doc/src/jupyterlite.md) for details and for how to
 write tests for bugs found in the lab.
 
+# Install and build with Pixi
+
+[Pixi](https://pixi.sh/) is the recommended way to set up LFortran from Git.
+It installs the dependencies declared by the repository and runs the build:
+
+```bash
+git clone https://github.com/lfortran/lfortran.git
+cd lfortran
+pixi run build
+pixi run start --version
+pixi run start examples/expr2.f90
+```
+
+The last command compiles and runs the program. To keep an executable, pass
+`-o <filename>` to `start`.
+
+On macOS, install Xcode Command Line Tools first; on Windows, use an initialized
+MSVC developer shell with Git Bash. Linux C/C++ compilers are provided by Pixi.
+See the [installation guide](doc/src/installation.md) for platform details and
+the supported Conda, source-tarball, and manual build alternatives.
+
+Native tasks default to LLVM 11, matching the reference tests. Environments
+build separately under `build/<environment>`, so different LLVM versions and
+configurations can coexist:
+
+```bash
+pixi run -e llvm22 build
+pixi run -e llvm22 start --version
+pixi run ctest -j8 > unit.log 2>&1
+pixi run tests -j8 > reference.log 2>&1
+pixi run integration_tests -j8 > integration.log 2>&1
+```
+
+Inspect the saved test logs. Use `-e <environment>` on each command to select
+another build; reference tests require LLVM 11. `pixi run -e llvm22 clean`
+cleans only that configuration's build targets. Dependency and build details
+live in `pixi.toml` and its scripts, so these setup commands remain stable as
+the project evolves.
+
 # Documentation
 
 All documentation, installation instructions, motivation, design, ... is

@@ -3,6 +3,11 @@
 set -e
 set -x
 
+build_dir="${1:-.}"
+if [ "$#" -gt 0 ]; then
+    shift
+fi
+
 cmake \
     -DCMAKE_BUILD_TYPE=Debug \
     -DWITH_LLVM=yes \
@@ -18,5 +23,6 @@ cmake \
     -DCMAKE_C_FLAGS="${CFLAGS} -fdiagnostics-color=always" \
     -DCMAKE_CXX_FLAGS="${CXXFLAGS} -fdiagnostics-color=always" \
     -G Ninja \
-    .
-cmake --build .
+    -S . -B "$build_dir" \
+    "$@"
+cmake --build "$build_dir"
