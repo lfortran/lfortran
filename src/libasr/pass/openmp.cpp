@@ -111,6 +111,11 @@ class ArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor> {
             replacer.array_variables = array_variables;
             replacer.replace_expr(*current_expr);
         }
+
+        // A BLOCK's statements live in the Block symbol, not in the body.
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            visit_symbol(*x.m_m);
+        }
 };
 
 class CheckIfAlreadyAllocatedVisitor: public ASR::BaseWalkVisitor<CheckIfAlreadyAllocatedVisitor> {
