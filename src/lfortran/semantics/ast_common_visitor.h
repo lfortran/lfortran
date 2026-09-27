@@ -2265,7 +2265,16 @@ public:
     std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure;
     LCompilers::LocationManager &lm;
 
-    std::map<std::string, std::vector<std::pair<std::string, Location>>> generic_procedures;
+    // A specific procedure named in a generic interface block, with the scope
+    // of that block: the generic interface is created in that scope and the
+    // specific is looked up from it, so a generic declared in a procedure can
+    // name the procedure's dummy procedures.
+    struct GenericSpecific {
+        std::string name;
+        Location loc;
+        SymbolTable *scope;
+    };
+    std::map<std::string, std::vector<GenericSpecific>> generic_procedures;
     /*
      * A struct to store the information of a postponed call to genericProcedure
      * The information should be consumed by function `evaluate_delayed_generic_procedure_calls`

@@ -4070,11 +4070,9 @@ public:
             interface_name = generic_name;
             std::vector<std::pair<std::string, Location>> proc_names;
             fill_interface_proc_names_with_loc(x, proc_names);
-            if( generic_procedures.find(generic_name) != generic_procedures.end() ) {
-                generic_procedures[generic_name].insert(generic_procedures[generic_name].end(),
-                    proc_names.begin(), proc_names.end());
-            } else {
-                generic_procedures[generic_name] = proc_names;
+            std::vector<GenericSpecific> &specifics = generic_procedures[generic_name];
+            for (auto &proc_name : proc_names) {
+                specifics.push_back({proc_name.first, proc_name.second, current_scope});
             }
             interface_name.clear();
         } else if (AST::is_a<AST::InterfaceHeader_t>(*x.m_header) ||
@@ -4629,7 +4627,26 @@ public:
     }
 
     void add_generic_procedures() {
+        // Interface blocks of the same name in different scopes declare
+        // different generic interfaces: build one in each of those scopes.
+        std::vector<std::pair<std::string, std::vector<GenericSpecific>>> generics;
         for (auto &proc : generic_procedures) {
+            for (auto &specific : proc.second) {
+                auto it = std::find_if(generics.begin(), generics.end(),
+                    [&](const std::pair<std::string, std::vector<GenericSpecific>> &g) {
+                        return g.first == proc.first
+                            && g.second[0].scope == specific.scope;
+                    });
+                if (it == generics.end()) {
+                    generics.push_back({proc.first, {specific}});
+                } else {
+                    it->second.push_back(specific);
+                }
+            }
+        }
+        SymbolTable *current_scope_copy = current_scope;
+        for (auto &proc : generics) {
+            current_scope = proc.second[0].scope;
             Location loc;
             loc.first = 1;
             loc.last = 1;
@@ -4637,7 +4654,7 @@ public:
             symbols.reserve(al, proc.second.size());
             bool any_error = false;
             for (auto &pname : proc.second) {
-                std::string name = to_lower(pname.first);
+                std::string name = to_lower(pname.name);
                 // A specific procedure declared in this scope under the name
                 // of a generic interface is stored with the genericprocedure
                 // suffix, see the comment where the suffix is added. That
@@ -4658,9 +4675,9 @@ public:
                 }
                 if (!x) {
                     diag.add(Diagnostic(
-                        "Symbol '" + std::string(pname.first) + "' not declared",
+                        "Symbol '" + pname.name + "' not declared",
                         Level::Error, Stage::Semantic, {
-                            Label("", {pname.second})
+                            Label("", {pname.loc})
                         }));
                     if (!compiler_options.continue_compilation) throw SemanticAbort();
                     any_error = true;
@@ -4719,6 +4736,7 @@ public:
                 symbols.p, symbols.size(), ASR::Public);
             current_scope->add_or_overwrite_symbol(sym_name_str, ASR::down_cast<ASR::symbol_t>(v));
         }
+        current_scope = current_scope_copy;
         generic_procedures.clear();
     }
 

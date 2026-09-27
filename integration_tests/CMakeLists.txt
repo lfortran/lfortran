@@ -2355,6 +2355,7 @@ RUN(NAME generic_name_09 LABELS gfortran llvm)
 RUN(NAME generic_name_10 LABELS gfortran llvm)
 RUN(NAME generic_name_11 LABELS gfortran llvm)
 RUN(NAME generic_name_12 LABELS gfortran llvm)
+RUN(NAME generic_interface_dummy_procedure_01 LABELS gfortran llvm)
 
 RUN(NAME operator_overloading_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3708,6 +3709,7 @@ RUN(NAME template_struct_member_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_merge_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_access_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_inline_case_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_generic_deferred_proc_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
