@@ -302,8 +302,11 @@ typedef struct {
     int retired;
     /* Mach-O: whether dyld lists the image, as its notifications told. */
     int listed;
-    /* Windows: whether the image's own constructor has run since it was
-     * last retired, so that its load completed. */
+    /* Whether the image's own constructor has run since it was last
+     * retired, so that its load completed. Such a table is live until its
+     * destructor retires it, whether or not the loader lists it: an object
+     * file built from the object-format-independent records (see
+     * lcompilers_init_abi.h) is found this way alone. */
     int constructed;
 } lcompilers_init_entry;
 
@@ -1058,7 +1061,9 @@ static void lcompilers_init_discover(lcompilers_init_snapshot *out) {
     lcompilers_init_discover_images(out);
     lcompilers_init_registry_lock();
     for (size_t i = 0; i < lcompilers_init_entry_count; i++) {
-        if (lcompilers_init_entries[i].listed) lcompilers_init_snapshot_add(out, i);
+        if (lcompilers_init_entries[i].listed || lcompilers_init_entries[i].constructed) {
+            lcompilers_init_snapshot_add(out, i);
+        }
     }
     for (size_t i = 0; i < lcompilers_init_host_count; i++) {
         lcompilers_init_snapshot_add(out,
@@ -1421,36 +1426,21 @@ static void lcompilers_init_run(int32_t phase) {
     lcompilers_init_registry_unlock();
 }
 
-#if !defined(COMPILE_TO_WASM)
-/* The table an object file's constructor names: its note on ELF, which
- * holds the table's address after the owner's name, and the table itself
- * everywhere else. */
-static const lcompilers_init_table *lcompilers_init_anchor_table(const void *anchor) {
-#if !defined(_WIN32) && !defined(__APPLE__)
-    const lcompilers_init_table *table;
-    memcpy(&table, (const unsigned char *)anchor
-        + offsetof(lcompilers_init_elf_note, name)
-        + sizeof(lcompilers_init_elf_note_owner), sizeof(table));
-    return table;
+LFORTRAN_API void _lcompilers_init_ctor(const lcompilers_init_table *table) {
+#if defined(COMPILE_TO_WASM)
+    /* Published already, from a constructor that ran before this one,
+     * unless the object file has only the object-format-independent
+     * records. */
+    _lcompilers_init_add_records(table);
 #else
-    return (const lcompilers_init_table *)anchor;
-#endif
-}
-#endif
-
-LFORTRAN_API void _lcompilers_init_ctor(const void *anchor) {
-#if !defined(COMPILE_TO_WASM)
     /* The image is loaded: take its table in, if no discovery has yet. */
-    const lcompilers_init_table *own = lcompilers_init_anchor_table(anchor);
     lcompilers_init_registry_lock();
-    lcompilers_init_adopt_locked(own, NULL);
-    lcompilers_init_entry *e = &lcompilers_init_entries[lcompilers_init_entry_of(own)];
+    lcompilers_init_adopt_locked(table, NULL);
+    lcompilers_init_entry *e = &lcompilers_init_entries[lcompilers_init_entry_of(table)];
     if (!e->constructed) {
+        /* Its table is discovered from now on, however it is listed. */
         e->constructed = 1;
-#if defined(_WIN32)
-        /* A DLL's table is discovered from now on. */
         lcompilers_init_registry_generation++;
-#endif
     }
     lcompilers_init_registry_unlock();
 #endif
@@ -1462,11 +1452,9 @@ LFORTRAN_API void _lcompilers_init_ctor(const void *anchor) {
     HMODULE module = NULL;
     if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
             | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-            (LPCSTR)anchor, &module) || module != GetModuleHandleA(NULL)) {
+            (LPCSTR)(const void *)table, &module) || module != GetModuleHandleA(NULL)) {
         return;
     }
-#elif defined(COMPILE_TO_WASM)
-    (void)anchor;
 #endif
     lcompilers_init_run(lcompilers_init_dispatch_local);
 }

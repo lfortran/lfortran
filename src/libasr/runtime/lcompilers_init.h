@@ -54,11 +54,12 @@ LFORTRAN_API void _lcompilers_init_end(int32_t *state);
  * An initializer that performs collective work calls it first. */
 LFORTRAN_API void _lcompilers_init_require_collective(void);
 
-/* The constructor of an object file, passed its ELF note or, elsewhere, its
- * table: the image was loaded, so a table at that address that was unloaded
- * before is live again. It may decline to dispatch where the loader cannot
- * safely run initializers (a DLL's constructor on Windows); a later entry
- * then does the work.
+/* The constructor of an object file, passed its table: the image was
+ * loaded, so a table at that address that was unloaded before is live again,
+ * and it is discovered from now on until the object file's destructor
+ * passes it to `_lcompilers_init_unload`, whether or not the loader lists it.
+ * It may decline to dispatch where the loader cannot safely run initializers
+ * (a DLL's constructor on Windows); a later entry then does the work.
  *
  * On Windows a DLL's records are discovered only once its own constructor
  * has run (a DLL still being loaded, or whose load fails, is not taken in),
@@ -67,7 +68,7 @@ LFORTRAN_API void _lcompilers_init_require_collective(void);
  * entry point of such a DLL needs, it runs itself, through its explicit
  * calls of the initializers; the host's lcompilers_initialize() runs
  * everything attached by then. */
-LFORTRAN_API void _lcompilers_init_ctor(const void *anchor);
+LFORTRAN_API void _lcompilers_init_ctor(const lcompilers_init_table *table);
 /* `lcompilers_init_dispatch_local` or `lcompilers_init_dispatch_collective`. */
 LFORTRAN_API void _lcompilers_init_dispatch(int32_t phase);
 /* The collective boundary a host calls, on every image, before user code

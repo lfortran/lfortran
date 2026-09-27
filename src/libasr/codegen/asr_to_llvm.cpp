@@ -7167,11 +7167,12 @@ public:
             return;
         }
 
-        // The records are independent of the object format here: the table,
-        // kept by `llvm.used`, and a constructor that passes it to the
-        // engine. `lower_global_init_records` gives them the form the
-        // target's loader or linker finds them in, once the module is
-        // lowered for that target.
+        // The records are independent of the object format here, and
+        // complete: the table, kept by `llvm.used`, a constructor that
+        // passes it to the engine and a destructor that withdraws it.
+        // `lower_global_init_records` adds the form the target's loader or
+        // linker finds them in before any constructor runs, once the module
+        // is lowered for that target; see runtime/lcompilers_init_abi.h.
         llvm::appendToUsed(*module, {table});
         llvm::Function* ctor_entry = get_init_runtime_function(
             global_init_ctor_name,
@@ -28742,6 +28743,23 @@ bool publishes_table(llvm::Function &add, llvm::GlobalVariable &table) {
     return false;
 }
 
+// Whether an ELF note of `module` names `table` already.
+bool has_elf_note(llvm::Module &module, llvm::GlobalVariable &table) {
+    for (llvm::GlobalVariable &g : module.globals()) {
+        if (!g.hasSection() || g.getSection() != lcompilers_init_elf_note_section
+                || !g.hasInitializer()) {
+            continue;
+        }
+        llvm::ConstantStruct* note = llvm::dyn_cast<llvm::ConstantStruct>(
+            g.getInitializer());
+        if (note == nullptr) continue;
+        for (llvm::Value* field : note->operands()) {
+            if (field->stripPointerCasts() == &table) return true;
+        }
+    }
+    return false;
+}
+
 } // namespace
 
 void lower_global_init_records(llvm::Module &module) {
@@ -28749,6 +28767,9 @@ void lower_global_init_records(llvm::Module &module) {
     if (ctor_entry == nullptr) return;
     // Every table of the module, found through the constructor that passes
     // it to the engine; a module linked from several has more than one.
+    // What is added here only makes a table known earlier: the constructor
+    // and the destructor stay as they are, and an object file without it is
+    // still complete.
     std::vector<llvm::CallInst*> triggers;
     for (llvm::User* user : ctor_entry->users()) {
         if (llvm::CallInst* call = llvm::dyn_cast<llvm::CallInst>(user)) {
@@ -28767,8 +28788,9 @@ void lower_global_init_records(llvm::Module &module) {
         llvm::GlobalVariable* table = llvm::dyn_cast<llvm::GlobalVariable>(
             call->getArgOperand(0)->stripPointerCasts());
         LCOMPILERS_ASSERT(table != nullptr);
-        // A table in a section is already in the form of its object format.
-        if (table->hasSection()) continue;
+        // A table in a section, or named by a note, is already in the form
+        // of its object format.
+        if (table->hasSection() || has_elf_note(module, *table)) continue;
         if (triple.isOSBinFormatMachO()) {
             table->setSection(std::string(lcompilers_init_macho_segment) + ","
                 + lcompilers_init_macho_section + ",regular,no_dead_strip");
@@ -28797,8 +28819,7 @@ void lower_global_init_records(llvm::Module &module) {
             // An allocated note naming the table: `dl_iterate_phdr` finds it
             // in every loaded image through its PT_NOTE, stripped or not.
             // The table pointer is relocated before any constructor runs.
-            // The constructor passes the note, which keeps it live through
-            // every link.
+            // Linkers keep an allocated note that nothing refers to.
             LCOMPILERS_ASSERT(triple.isOSBinFormatELF());
             llvm::StructType* note_type = llvm::StructType::get(context, {
                 i32, i32, i32, llvm::ArrayType::get(llvm::Type::getInt8Ty(context),
@@ -28819,8 +28840,6 @@ void lower_global_init_records(llvm::Module &module) {
             note->setSection(lcompilers_init_elf_note_section);
             note->setAlignment(llvm::MaybeAlign(4));
             llvm::appendToUsed(module, {note});
-            call->setArgOperand(0, llvm::ConstantExpr::getBitCast(note,
-                call->getArgOperand(0)->getType()));
         }
     }
 }

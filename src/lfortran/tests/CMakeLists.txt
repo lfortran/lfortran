@@ -178,6 +178,23 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD AND NOT EMSCRIPTEN)
                 $<TARGET_FILE:test_init_native_bad>)
             set_tests_properties(test_init_native_barrier PROPERTIES TIMEOUT 60)
         endif()
+        # What --show-llvm prints, built into programs by other tools and by
+        # LFortran from IR; see run_show_llvm_test.cmake.
+        set(init_llc ${LLVM_TOOLS_BINARY_DIR}/llc${CMAKE_EXECUTABLE_SUFFIX})
+        set(init_llvm_link ${LLVM_TOOLS_BINARY_DIR}/llvm-link${CMAKE_EXECUTABLE_SUFFIX})
+        if (WITH_LLVM AND EXISTS ${init_llc})
+            if (NOT EXISTS ${init_llvm_link})
+                set(init_llvm_link "")
+            endif()
+            add_test(NAME test_init_show_llvm COMMAND ${CMAKE_COMMAND}
+                -DLFORTRAN=$<TARGET_FILE:lfortran> -DLLC=${init_llc}
+                -DLLVM_LINK=${init_llvm_link} -DCC=${CMAKE_C_COMPILER}
+                -DRUNTIME=$<TARGET_FILE_DIR:lfortran_runtime>
+                -DSRC=${CMAKE_SOURCE_DIR}/integration_tests
+                -DWORK=${CMAKE_CURRENT_BINARY_DIR}/test_init_show_llvm
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/run_show_llvm_test.cmake)
+            set_tests_properties(test_init_show_llvm PROPERTIES TIMEOUT 300)
+        endif()
         foreach(s failed_load teardown_race reload_during_walk first_registration)
             add_test(NAME test_init_native_race_${s} COMMAND test_init_native_race
                 ${s} $<TARGET_FILE:test_init_native_d>

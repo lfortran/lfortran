@@ -31,14 +31,18 @@
  *   a partial set.
  *
  * Each object file also has one constructor, which passes the address of its
- * note (ELF) or of its table (elsewhere) to `_lcompilers_init_ctor`, and one
- * destructor, which passes its table to `_lcompilers_init_unload`. The engine
- * finds the tables of every loaded image itself -- through the program
- * headers with `dl_iterate_phdr`, through the notifications dyld gives for
- * every image it maps and unmaps, or through the module list -- so an image
- * does not register anything and the first constructor already sees all of
- * them -- except on Windows, where a DLL's table is taken in only once its
- * own constructor has run; see lcompilers_init.h.
+ * table to `_lcompilers_init_ctor`, and one destructor, which passes it to
+ * `_lcompilers_init_unload`. These two alone are a complete, if later,
+ * registration: a table is discovered from its constructor on, on every
+ * object format, which is all an object file has that was built from records
+ * without the form above (LLVM IR that `--show-llvm` prints, compiled by
+ * another tool). The form above is what makes the tables of every loaded
+ * image known before any of their constructors runs: the engine finds them
+ * itself -- through the program headers with `dl_iterate_phdr`, through the
+ * notifications dyld gives for every image it maps and unmaps, or through the
+ * module list -- so the first constructor already sees all of them -- except
+ * on Windows, where a DLL's table is taken in only once its own constructor
+ * has run; see lcompilers_init.h.
  */
 
 #include <stddef.h>

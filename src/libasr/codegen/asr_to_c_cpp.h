@@ -3063,7 +3063,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string table = "{lcompilers_init_abi_version, "
             + std::to_string(roots.size())
             + ", __lcompilers_init_records, &__lcompilers_init_instance}";
-        std::string anchor;
         bool coff = false;
         switch (ASRUtils::init_object_format(platform)) {
             case ASRUtils::InitObjectFormat::MachO: {
@@ -3072,7 +3071,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     + std::string(lcompilers_init_macho_segment) + ","
                     + std::string(lcompilers_init_macho_section)
                     + ",regular,no_dead_strip\"), aligned(8))) = " + table + ";\n";
-                anchor = "&__lcompilers_init_table";
                 break;
             }
             case ASRUtils::InitObjectFormat::COFF: {
@@ -3126,7 +3124,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     "    __attribute__((used, section(\""
                     + std::string(lcompilers_init_coff_section)
                     + "\"), aligned(8))) = " + table + ";\n";
-                anchor = "&__lcompilers_init_table";
                 coff = true;
                 break;
             }
@@ -3151,7 +3148,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     + std::to_string(owner.size() + 1) + ", sizeof(void *), "
                     "lcompilers_init_elf_note_type, \"" + owner + "\", "
                     "&__lcompilers_init_table};\n";
-                anchor = "&__lcompilers_init_note";
                 break;
             }
             case ASRUtils::InitObjectFormat::Wasm: {
@@ -3164,12 +3160,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     + std::to_string(lcompilers_init_wasm_publish_priority)
                     + "))) static void __lcompilers_init_publish(void)\n"
                     "{\n    _lcompilers_init_add_records(&__lcompilers_init_table);\n}\n";
-                anchor = "&__lcompilers_init_table";
                 break;
             }
         }
         r += "__attribute__((constructor)) static void __lcompilers_init_trigger(void)\n"
-            "{\n    _lcompilers_init_ctor(" + anchor + ");\n}\n";
+            "{\n    _lcompilers_init_ctor(&__lcompilers_init_table);\n}\n";
         // Takes this object's records out of the engine before its image
         // goes away, tearing down those that are ready.
         r += "__attribute__((destructor)) static void __lcompilers_init_unload(void)\n"

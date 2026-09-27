@@ -64,7 +64,7 @@ static elf_note note = {4, sizeof(void *), lcompilers_init_elf_note_type, "LCP",
 
 __attribute__((constructor)) static void startup(void) {
     test_init_native_note("constructor", "m:n1");
-    _lcompilers_init_ctor(&note);
+    _lcompilers_init_ctor(&table);
 }
 
 __attribute__((destructor)) static void shutdown(void) {

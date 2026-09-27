@@ -137,11 +137,15 @@ set of initializers to run is found.
   writable word of its object, through which the engine tells one mapping of
   an image from a later one loaded at the same address. WebAssembly has no
   loader to ask, so there each object instead publishes its table from a
-  constructor that runs before any other. The LLVM backend emits the table and
-  its constructor independent of the object format, which is what
-  `--show-llvm` prints, and gives them the encoding of the target's object
-  format only when the module is lowered to an object file or assembly
-  (`lower_global_init_records`). The C and C++ backends emit the same
+  constructor that runs before any other. The constructor and destructor pass
+  the table itself on every format, which alone registers it from the
+  constructor on; the encoding of the object format only makes it known
+  before any constructor runs. The LLVM backend emits the table, its
+  constructor and destructor independent of the object format, which is what
+  `--show-llvm` prints and which runs as it is when another tool compiles it,
+  and adds the encoding of the target's object format only when the module
+  is lowered to an object file or assembly (`lower_global_init_records`).
+  The C and C++ backends emit the same
   records with compiler attributes, or with MSVC's section pragmas when MSVC
   compiles them. They lower `GlobalInitStorage` to nothing only for a variable
   whose declaration already is all of its storage; storage these backends

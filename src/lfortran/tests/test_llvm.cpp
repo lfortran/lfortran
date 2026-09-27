@@ -19,13 +19,18 @@
 #include <libasr/modfile.h>
 #include <libasr/utils.h>
 #include <lfortran/utils.h>
+#include <libasr/runtime/lcompilers_init_abi.h>
 
 #include <llvm/Config/llvm-config.h>
 #include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/GlobalVariable.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <llvm/Transforms/Utils/ModuleUtils.h>
 #if LLVM_VERSION_MAJOR >= 17
 #include <llvm/TargetParser/Triple.h>
 #else
@@ -157,6 +162,116 @@ TEST_CASE("LLVM target configuration") {
     CHECK_THROWS_AS(
         LCompilers::resolve_llvm_target_config(invalid_cpu_options),
         LCompilers::LCompilersException);
+}
+
+namespace {
+
+// A module with `n` tables of startup records in the form `asr_to_llvm`
+// emits them, independent of the object format: each table passed to the
+// engine by a constructor of its own, as when several are linked into one.
+std::unique_ptr<llvm::Module> global_init_module(llvm::LLVMContext &context,
+        const std::string &triple, int n) {
+    std::unique_ptr<llvm::Module> module = std::make_unique<llvm::Module>(
+        "global_init", context);
+    module->setTargetTriple(triple);
+    llvm::Type *i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
+    llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+    llvm::FunctionType *void_fn = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(context), {}, false);
+    llvm::Function *ctor = llvm::Function::Create(llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context), {i8_ptr}, false),
+        llvm::Function::ExternalLinkage, "_lcompilers_init_ctor", module.get());
+    llvm::StructType *table_type = llvm::StructType::get(context,
+        {i32, i32, i8_ptr, i32->getPointerTo()});
+    for (int i = 0; i < n; i++) {
+        llvm::GlobalVariable *table = new llvm::GlobalVariable(*module,
+            table_type, true, llvm::GlobalVariable::InternalLinkage,
+            llvm::Constant::getNullValue(table_type), "__lcompilers_init_table");
+        llvm::Function *trigger = llvm::Function::Create(void_fn,
+            llvm::Function::InternalLinkage, "__lcompilers_init_trigger",
+            module.get());
+        llvm::IRBuilder<> b(llvm::BasicBlock::Create(context, ".entry", trigger));
+        b.CreateCall(ctor, {llvm::ConstantExpr::getBitCast(table, i8_ptr)});
+        b.CreateRetVoid();
+        llvm::appendToGlobalCtors(*module, trigger, 65535);
+    }
+    return module;
+}
+
+// Whether constant `c` refers to `g`, however deep in its operands.
+bool refers_to(const llvm::Constant *c, const llvm::GlobalValue *g) {
+    if (c == g) return true;
+    for (const llvm::Value *op : c->operands()) {
+        const llvm::Constant *oc = llvm::dyn_cast<llvm::Constant>(op);
+        if (oc != nullptr && refers_to(oc, g)) return true;
+    }
+    return false;
+}
+
+// The tables the constructors of `module` pass to the engine.
+std::vector<llvm::GlobalVariable*> global_init_ctor_tables(llvm::Module &module) {
+    std::vector<llvm::GlobalVariable*> tables;
+    for (llvm::User *user : module.getFunction("_lcompilers_init_ctor")->users()) {
+        llvm::CallInst *call = llvm::dyn_cast<llvm::CallInst>(user);
+        REQUIRE(call != nullptr);
+        tables.push_back(llvm::dyn_cast<llvm::GlobalVariable>(
+            call->getArgOperand(0)->stripPointerCasts()));
+    }
+    return tables;
+}
+
+} // namespace
+
+// The records `asr_to_llvm` emits are complete on their own, which is what
+// `--show-llvm` prints; lowering them for an object format only adds what
+// makes them known before their constructors run, once, whatever it is
+// applied to.
+TEST_CASE("global initialization records lowered per object format") {
+    for (const char *triple : {"x86_64-unknown-linux-gnu", "x86_64-apple-macosx10.15.0",
+            "x86_64-pc-windows-msvc", "wasm32-unknown-wasi"}) {
+        CAPTURE(triple);
+        llvm::Triple t(triple);
+        llvm::LLVMContext context;
+        std::unique_ptr<llvm::Module> module = global_init_module(context, triple, 2);
+        LCompilers::lower_global_init_records(*module);
+        LCompilers::lower_global_init_records(*module);
+        std::vector<llvm::GlobalVariable*> tables = global_init_ctor_tables(*module);
+        // The constructors still pass their own tables, and nothing else.
+        REQUIRE(tables.size() == 2);
+        CHECK(tables[0] != nullptr);
+        CHECK(tables[1] != nullptr);
+        CHECK(tables[0] != tables[1]);
+        for (llvm::GlobalVariable *table : tables) {
+            if (t.isOSBinFormatMachO()) {
+                CHECK(table->getSection() == std::string(lcompilers_init_macho_segment)
+                    + "," + lcompilers_init_macho_section + ",regular,no_dead_strip");
+            } else if (t.isOSBinFormatCOFF()) {
+                CHECK(table->getSection() == lcompilers_init_coff_section);
+            } else {
+                CHECK(!table->hasSection());
+            }
+            int notes = 0;
+            for (llvm::GlobalVariable &g : module->globals()) {
+                if (g.hasSection() && g.getSection() == lcompilers_init_elf_note_section
+                        && refers_to(g.getInitializer(), table)) {
+                    notes++;
+                }
+            }
+            CHECK(notes == (t.isOSBinFormatELF() ? 1 : 0));
+            int publishes = 0;
+            llvm::Function *add = module->getFunction("_lcompilers_init_add_records");
+            if (add != nullptr) {
+                for (llvm::User *user : add->users()) {
+                    llvm::CallInst *call = llvm::dyn_cast<llvm::CallInst>(user);
+                    if (call != nullptr
+                            && call->getArgOperand(0)->stripPointerCasts() == table) {
+                        publishes++;
+                    }
+                }
+            }
+            CHECK(publishes == (t.isOSBinFormatWasm() ? 1 : 0));
+        }
+    }
 }
 
 TEST_CASE("llvm 1") {

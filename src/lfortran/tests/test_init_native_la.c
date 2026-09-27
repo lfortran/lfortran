@@ -51,7 +51,6 @@ static const lcompilers_init_record records[] = {
 __attribute__((used, section("__DATA,__lcomp_init")))
 static lcompilers_init_table table = {lcompilers_init_abi_version, 1, records,
     &instance};
-static const void *anchor(void) { return &table; }
 #elif !defined(_WIN32)
 static const lcompilers_init_table table = {
     lcompilers_init_abi_version, 1, records, &instance};
@@ -65,12 +64,11 @@ typedef struct {
 __attribute__((used, section(".note.lcompilers.init"), aligned(4)))
 static elf_note note = {4, sizeof(void *), lcompilers_init_elf_note_type, "LCP",
     &table};
-static const void *anchor(void) { return &note; }
 #endif
 
 __attribute__((constructor)) static void startup(void) {
     test_init_order_enter("m:la");
-    _lcompilers_init_ctor(anchor());
+    _lcompilers_init_ctor(&table);
     test_init_order_leave();
 }
 
