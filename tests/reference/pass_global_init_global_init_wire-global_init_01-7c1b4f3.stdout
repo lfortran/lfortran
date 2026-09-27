@@ -398,10 +398,7 @@
                     global_init_01
                     [global_init_01_b
                     global_init_01_a]
-                    [(GlobalInitDispatch
-                        InitDispatchCollective
-                        []
-                    )
+                    [(GlobalInitDispatch)
                     (SubroutineCall
                         8 __lcompilers_global_init_global_init_01
                         8 __lcompilers_global_init_global_init_01

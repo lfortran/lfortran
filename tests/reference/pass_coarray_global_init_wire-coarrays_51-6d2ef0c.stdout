@@ -1119,10 +1119,7 @@
                     coarrays_51
                     [coarrays_51_a
                     coarrays_51_b]
-                    [(GlobalInitDispatch
-                        InitDispatchCollective
-                        []
-                    )
+                    [(GlobalInitDispatch)
                     (Assignment
                         (Var 2 me)
                         (FunctionCall
