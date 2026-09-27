@@ -110,13 +110,16 @@ re2c = "==3.1"
 [feature.build.target.linux.dependencies]
 c-compiler = "*"
 cxx-compiler = "*"
+# clangdev also supplies the Clang executable for LLVM 7, which predates the
+# separate Linux clang package. Native LLVM OpenMP uses LLVM's runtime.
+clangdev = "*"
+llvm-openmp = "*"
 
 [feature.build.activation.env]
 LFORTRAN_BUILD_DIR = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME"
 
 [feature.build.target.linux.activation.env]
 PATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/src/bin:$PATH"
-LFORTRAN_LINKER = "gcc"
 
 [feature.build.target.osx.activation.env]
 PATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/src/bin:$PATH"
