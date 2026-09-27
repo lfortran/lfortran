@@ -450,6 +450,7 @@ RUN(NAME use_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm fortran)
 RUN(NAME use_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm fortran)
 RUN(NAME use_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm)
 RUN(NAME use_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm)
+RUN(NAME use_05 LABELS gfortran llvm fortran)
 RUN(NAME symbol_table_jloop_01 LABELS gfortran llvm)
 
 RUN(NAME value_attribute_01 LABELS gfortran llvm)

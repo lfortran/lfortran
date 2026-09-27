@@ -149,6 +149,19 @@ public:
         }
     }
 
+    // The name a call spells for procedure `sym`: an import's local name,
+    // which is what the scope of the call declares (`use m, only: g => f`
+    // calls `g`), and the procedure's own name otherwise.
+    std::string call_name(ASR::symbol_t *sym) {
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+            std::string local = ASR::down_cast<ASR::ExternalSymbol_t>(sym)->m_name;
+            // An internal helper is not imported under its own name; see
+            // `visit_ExternalSymbol`.
+            if (local.find('@') == std::string::npos) return local;
+        }
+        return ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sym));
+    }
+
     template <typename T>
     void visit_body(const T &x, std::string &r, bool apply_indent=true) {
         if (apply_indent) {
@@ -1871,8 +1884,10 @@ public:
         if (x.m_dt) {
             visit_expr(*x.m_dt);
             r += src + "%";
+            r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
+        } else {
+            r += call_name(x.m_name);
         }
-        r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         r += "(";
         bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
         size_t start_idx = is_method ? 1 : 0;
@@ -2279,8 +2294,10 @@ public:
             if (x.m_dt) {
                 visit_expr(*x.m_dt);
                 r += src + "%";
+                r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
+            } else {
+                r += call_name(x.m_name);
             }
-            r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         }
         r += "(";
         bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
