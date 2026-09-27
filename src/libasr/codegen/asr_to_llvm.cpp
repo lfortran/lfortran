@@ -5961,18 +5961,40 @@ public:
         return elem;
     }
 
-    // The largest module array, in bytes, whose default initialization is
-    // laid out as static data. LLVM builds and emits such an initializer
-    // element by element, needing around a hundred bytes of compiler memory
-    // per byte of data, so a larger array starts out zeroed and its elements
-    // get their default values at run time instead, with the run time set
-    // up of the members of module arrays (`struct_array_global_members_details`).
-    static constexpr uint64_t max_static_struct_array_default_size = 16384;
+    // The total size, in bytes, of the default initializations of module
+    // arrays that one translation unit lays out as static data. LLVM builds
+    // and emits such an initializer element by element, needing over a
+    // hundred bytes of compiler memory per byte of data, so this keeps the
+    // cost of all of them together to about ten megabytes and a few tens of
+    // milliseconds, however many arrays there are. The arrays that do not
+    // fit, in declaration order, start out zeroed, and their elements get
+    // their default values at run time instead, with the run time set up of
+    // the members of module arrays (`struct_array_global_members_details`),
+    // which costs the compiler the same for any size.
+    static constexpr uint64_t static_struct_array_default_budget = 65536;
+    // The part of the budget used so far, and the choice made for each
+    // array, by the hash of its variable, so that a variable visited twice
+    // gets the same one.
+    uint64_t static_struct_array_default_bytes = 0;
+    std::map<uint32_t, bool> static_struct_array_defaults;
 
-    bool is_static_struct_array_default(llvm::Type* type) {
+    // Whether the default initialization of the module array `h` of type
+    // `type` is laid out as static data, taking its size from the budget if
+    // so.
+    bool take_static_struct_array_default(uint32_t h, llvm::Type* type) {
+        auto it = static_struct_array_defaults.find(h);
+        if (it != static_struct_array_defaults.end()) {
+            return it->second;
+        }
         llvm::DataLayout data_layout(module->getDataLayout());
-        return data_layout.getTypeAllocSize(type)
-            <= max_static_struct_array_default_size;
+        uint64_t size = data_layout.getTypeAllocSize(type);
+        bool fits = size <= static_struct_array_default_budget
+            - static_struct_array_default_bytes;
+        if (fits) {
+            static_struct_array_default_bytes += size;
+        }
+        static_struct_array_defaults[h] = fits;
+        return fits;
     }
 
     llvm::Constant* get_static_struct_array_initializer(ASR::Variable_t* v,
@@ -6473,10 +6495,17 @@ public:
                     ASR::make_Var_t(al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))),
                     x.m_type, module.get());
                 ptr = module->getOrInsertGlobal(llvm_var_name, type);
+                // An array defined in another translation unit, under
+                // separate compilation, may have been left out of that
+                // unit's budget (`take_static_struct_array_default`), which
+                // this one cannot know, so it always gets the run time set
+                // up here. For one laid out as static data, that stores the
+                // same values again.
                 if (x.m_symbolic_value == nullptr && x.m_value == nullptr) {
                     default_elem = get_struct_array_default_element(x, type);
                     fill_default_at_run_time = default_elem != nullptr
-                        && !is_static_struct_array_default(type);
+                        && (external
+                            || !take_static_struct_array_default(h, type));
                 }
                 if (!external) {
                     ASR::expr_t* value = nullptr;
@@ -6525,10 +6554,10 @@ public:
             // and only the one that has the program can emit the setup. A
             // variable that has an initializer is left alone: its members are
             // either already described by the static initializer, or set up by
-            // the broadcast constructor above. An array too large to hold
-            // the default values of its elements as static data (see
-            // `is_static_struct_array_default`) is zeroed above, and gets them
-            // from the same set up.
+            // the broadcast constructor above. An array whose default values
+            // are not laid out as static data (see
+            // `take_static_struct_array_default`) is zeroed above, and gets
+            // them from the same set up.
             if (x.m_symbolic_value == nullptr && x.m_value == nullptr) {
                 ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
                     x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base)));

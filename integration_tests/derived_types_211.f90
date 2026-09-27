@@ -76,6 +76,10 @@ type(der) :: ders(3)
 type(base) :: bases(0:2)
 type(t) :: large(100000)
 type(outer) :: large2(50, 40)
+! 64000 and 16000 bytes: each fits in the budget of static default data of the
+! translation unit on its own, but not both, so one gets its defaults at run
+! time.
+type(t) :: mid(2000, 4), mid5(2000)
 end module
 
 program derived_types_211
@@ -141,5 +145,11 @@ do j = 1, 40, 39
     end do
 end do
 if (large2(25, 20)%c /= (1.0, -2.0) .or. large2(25, 20)%in%d /= 2.5d0) error stop 34
+do i = 1, 2000, 1999
+    do j = 1, 4
+        if (mid(i, j)%z /= 7 .or. mid(i, j)%r /= 1.5) error stop 35
+    end do
+    if (mid5(i)%z /= 7 .or. mid5(i)%r /= 1.5) error stop 36
+end do
 print *, "ok"
 end program
