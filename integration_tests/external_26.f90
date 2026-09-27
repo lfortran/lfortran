@@ -11,15 +11,23 @@ module external_26_mod
         integer function external_26_twice(x)
             integer, intent(in) :: x
         end function external_26_twice
+
+        subroutine external_26_shift(x, y)
+            integer, intent(in) :: x
+            integer, intent(out) :: y
+        end subroutine external_26_shift
     end interface
 end module external_26_mod
 
 program external_26
-    use external_26_mod, only: external_26_add, external_26_twice
+    use external_26_mod, only: external_26_add, external_26_twice, &
+        external_26_shift
     implicit none
-    integer :: z
+    integer :: z, w
     call external_26_add(3, 4, z)
     if (z /= 7) error stop
     if (external_26_twice(z) /= 14) error stop
-    print *, z, external_26_twice(z)
+    call external_26_shift(z, w)
+    if (w /= 102) error stop
+    print *, z, external_26_twice(z), w
 end program external_26
