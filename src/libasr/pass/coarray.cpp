@@ -2414,7 +2414,7 @@ class PRIFInterface {
         // to the PRIF runtime at all: an ordinary procedure of its scope that
         // starts the runtime, which the engine runs at the collective
         // boundary -- a Fortran main program's, or the host's
-        // lcompilers_initialize() -- before any collective initializer,
+        // lfortran_initialize() -- before any collective initializer,
         // outside every guard and without its lock, since starting the
         // runtime can itself load images. It calls prif_init and treats
         // every status it returns as a running runtime: 0 when this call
@@ -2497,7 +2497,7 @@ class PRIFInterface {
                 // read them: every image runs the same collective
                 // initializers in the same order, so each one waits here for
                 // all, whichever boundary -- a Fortran main program, or a
-                // host's lcompilers_initialize() -- started them.
+                // host's lfortran_initialize() -- started them.
                 ASRUtils::global_init_append_stmt(al, fn, make_prif_sync_all_call(loc));
             }
         }
