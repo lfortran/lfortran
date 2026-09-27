@@ -75,6 +75,13 @@ LFORTRAN_API void _lcompilers_init_require_collective(void);
 LFORTRAN_API void _lcompilers_init_ctor(const lcompilers_init_table *table);
 /* `lcompilers_init_dispatch_local` or `lcompilers_init_dispatch_collective`. */
 LFORTRAN_API void _lcompilers_init_dispatch(int32_t phase);
+/* The start of a Fortran main program, before its collective boundary (see
+ * `_lpython_call_initial_functions`). The runtime is started once in a
+ * process, by this or by `lfortran_initialize`, whichever comes first -- a
+ * library the program calls may call that too: the command line is taken
+ * from the first start that has one, and random_number's stream is started
+ * only by a program start that comes first. */
+LFORTRAN_API void _lcompilers_init_program_start(int32_t argc, char *argv[]);
 /* `lfortran_initialize` and `lfortran_finalize`, the startup and the end a
  * host without a Fortran main program calls, are declared in LFortran's
  * ISO_Fortran_binding.h. */

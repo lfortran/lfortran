@@ -14189,8 +14189,7 @@ LFORTRAN_API void _lfortran_enable_fpe_traps(int32_t trap_mask) {
 
 // Initial setup
 LFORTRAN_API void _lpython_call_initial_functions(int32_t argc_1, char *argv_1[]) {
-    _lpython_set_argv(argc_1, argv_1);
-    _lfortran_init_random_clock();
+    _lcompilers_init_program_start(argc_1, argv_1);
 }
 
 LFORTRAN_API int32_t _lfortran_command_argument_count() {

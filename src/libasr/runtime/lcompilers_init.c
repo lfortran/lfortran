@@ -1518,21 +1518,38 @@ LFORTRAN_API void _lcompilers_init_dispatch(int32_t phase) {
     lcompilers_init_run(phase);
 }
 
-/* The host startup of LFortran's ISO_Fortran_binding.h. The runtime's own
- * state is set up once, as a Fortran main program sets it up, the command
- * line by the first call that passes one; every call is a collective
- * boundary, which also initializes what images loaded since the last one
- * define. */
-static int32_t lcompilers_init_host_started, lcompilers_init_host_command_line;
+/* The runtime's own state is set up once in a process, by whichever comes
+ * first: the start of a Fortran main program or a host's lfortran_initialize()
+ * -- which a library a Fortran main program calls may call too. The command
+ * line is taken from the first of them that has one, and nothing after
+ * replaces it. */
+static int32_t lcompilers_init_runtime_started, lcompilers_init_command_line_taken;
 
-LFORTRAN_API void lfortran_initialize(int argc, char *argv[]) {
+static void lcompilers_init_take_command_line(int argc, char *argv[]) {
     if (argc > 0 && argv != NULL
-            && lcompilers_init_claim(&lcompilers_init_host_command_line)) {
+            && lcompilers_init_claim(&lcompilers_init_command_line_taken)) {
         _lpython_set_argv(argc, argv);
     }
-    if (lcompilers_init_claim(&lcompilers_init_host_started)) {
+}
+
+LFORTRAN_API void _lcompilers_init_program_start(int32_t argc, char *argv[]) {
+    lcompilers_init_take_command_line(argc, argv);
+    /* A Fortran main program owns the C library's random number state,
+     * from which random_number draws: it starts it from a fixed seed, once,
+     * so that a later start does not restart the stream. */
+    if (lcompilers_init_claim(&lcompilers_init_runtime_started)) {
         _lfortran_init_random_clock();
     }
+}
+
+/* The host startup of LFortran's ISO_Fortran_binding.h. Every call is a
+ * collective boundary, which initializes what images loaded since the last
+ * one define. The C library's random number state stays the host's: it is
+ * not reseeded, so a host's own rand() stream goes on undisturbed and
+ * random_number draws from it. */
+LFORTRAN_API void lfortran_initialize(int argc, char *argv[]) {
+    lcompilers_init_take_command_line(argc, argv);
+    lcompilers_init_claim(&lcompilers_init_runtime_started);
     lcompilers_init_run(lcompilers_init_dispatch_collective);
 }
 

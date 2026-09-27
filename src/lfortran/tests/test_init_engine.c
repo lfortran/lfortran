@@ -376,7 +376,12 @@ static int scenario_host_startup(void) {
     char *argv1[] = {prog, first, NULL};
     char *argv2[] = {prog, other, other, NULL};
     _lcompilers_init_add_records(&settled_table);
+    /* The C library's random number state is the host's. */
+    srand(12345);
+    int host_first = rand();
+    srand(12345);
     lfortran_initialize(0, NULL);
+    expect(rand() == host_first, "the startup leaves the host's rand() alone");
     expect(settled_bodies == 1, "the startup runs the records there are");
     lfortran_initialize(2, argv1);
     expect(settled_bodies == 1, "a second startup initializes nothing again");
@@ -396,6 +401,49 @@ static int scenario_host_startup(void) {
     lfortran_initialize(0, NULL);
     expect(later_bodies == 1, "a startup after a batch was added runs it");
     expect(settled_bodies == 1 && later_bodies == 1, "nothing is initialized twice");
+    lfortran_finalize();
+    _lcompilers_init_remove_records(&later_table);
+    _lcompilers_init_remove_records(&settled_table);
+    return finish();
+}
+
+/* ---------------------------------------------------------------------- */
+/* A Fortran main program that calls a library which starts the runtime   */
+/* with lfortran_initialize() too: the runtime is started once, so the    */
+/* call neither restarts random_number's stream nor replaces the          */
+/* program's command line, and runs only what was loaded since.           */
+/* ---------------------------------------------------------------------- */
+
+static int scenario_program_start(void) {
+    char prog[] = "program", lib[] = "library", extra[] = "extra";
+    char *program_argv[] = {prog, NULL};
+    char *lib_argv[] = {lib, extra, NULL};
+    _lcompilers_init_add_records(&settled_table);
+    /* The prologue and the startup dispatch of the main program. */
+    _lpython_call_initial_functions(1, program_argv);
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
+    expect(settled_bodies == 1, "the program's startup runs the records there are");
+    double first;
+    _lfortran_random_number(1, &first);
+    /* The library, called by the program. */
+    _lcompilers_init_add_records(&later_table);
+    lfortran_initialize(2, lib_argv);
+    expect(settled_bodies == 1 && later_bodies == 1,
+        "a library's startup runs only what was added since");
+    double second;
+    _lfortran_random_number(1, &second);
+    expect(second != first, "a library's startup does not restart random_number");
+    expect(_lfortran_command_argument_count() == 0
+        && strcmp(_lpython_get_argv(0), "program") == 0,
+        "a library's startup keeps the program's command line");
+    /* A second start of a program, as each program run in one interactive
+     * session is, does not restart it either. */
+    _lpython_call_initial_functions(1, lib_argv);
+    double third;
+    _lfortran_random_number(1, &third);
+    expect(third != first, "a second program start does not restart random_number");
+    expect(strcmp(_lpython_get_argv(0), "program") == 0,
+        "a second program start keeps the command line");
     lfortran_finalize();
     _lcompilers_init_remove_records(&later_table);
     _lcompilers_init_remove_records(&settled_table);
@@ -1343,6 +1391,7 @@ int main(int argc, char **argv) {
 #endif
     if (strcmp(s, "republish") == 0) return scenario_republish();
     if (strcmp(s, "host_startup") == 0) return scenario_host_startup();
+    if (strcmp(s, "program_start") == 0) return scenario_program_start();
     if (strcmp(s, "collective") == 0) return scenario_collective();
     if (strcmp(s, "collective_outside") == 0) return scenario_collective_outside();
     if (strcmp(s, "publish_during_init") == 0) return scenario_publish_during_init();

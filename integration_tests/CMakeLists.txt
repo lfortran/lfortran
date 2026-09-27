@@ -1075,6 +1075,7 @@ RUN(NAME global_init_32 LABELS gfortran llvm)
 # The Fortran the `fortran` backend prints for it; see global_init_32.f90.
 RUN(NAME global_init_32_fortran FILE global_init_32 LABELS fortran EXTRA_ARGS --pass=global_init,global_init_wire)
 RUN(NAME global_init_33 LABELS gfortran llvm EXTRAFILES global_init_33_m.f90 global_init_33_e.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_34 LABELS gfortran llvm EXTRAFILES global_init_34c.c)
 # Calls the LFortran runtime's own entry point, which GFortran does not have.
 RUN(NAME module_teardown_01 LABELS llvm EXTRAFILES module_teardown_01c.c EXTRA_ARGS --detect-leaks)
 RUN(NAME module_teardown_02 LABELS gfortran llvm EXTRA_ARGS --detect-leaks)

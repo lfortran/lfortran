@@ -27,7 +27,7 @@ struct r32
 // Implementations
 int main(int argc, char* argv[])
 {
-    _lpython_set_argv(argc, argv);
+    _lpython_call_initial_functions(argc, argv);
     int32_t __libasr_index_0_;
     int32_t __libasr_index_0_1;
     struct r32 a_value;

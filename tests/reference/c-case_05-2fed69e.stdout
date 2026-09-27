@@ -11,7 +11,7 @@
 // Implementations
 int main(int argc, char* argv[])
 {
-    _lpython_set_argv(argc, argv);
+    _lpython_call_initial_functions(argc, argv);
     static char * grade = "B";
     _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     if (grade == "A") {
