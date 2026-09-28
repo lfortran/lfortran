@@ -1285,6 +1285,10 @@ namespace LCompilers {
             bool is_struct_type = asr_data_type != nullptr &&
                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(asr_data_type));
             bool has_order = (order != nullptr && order_expr != nullptr);
+            // Whether the elements were copied in array element order (so the
+            // result is contiguous from its first element) rather than as the
+            // raw source storage.
+            bool is_source_gathered = false;
             // Class (polymorphic) arrays use a one-wrapper layout rather than
             // one wrapper per element, so they need their own copy below.
             // Unlimited polymorphic arrays have their own layout again and are
@@ -1364,55 +1368,30 @@ namespace LCompilers {
                     llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
                     total_bytes, llvm::MaybeAlign());
 
+                // The source may be a strided section (e.g. `a(n:1:-1)`), so
+                // walk it through its descriptor, in array element order,
+                // into the contiguous result.
                 llvm::Value* dest_data = llvm_utils->CreateLoad2(
                     llvm_data_type->getPointerTo(), first_ptr);
-                llvm::Value* src_data = llvm_utils->CreateLoad2(
-                    llvm_data_type->getPointerTo(), ptr2firstptr);
-
-                llvm::BasicBlock *loopHead = llvm::BasicBlock::Create(
-                    context, "reshape_deepcopy.head");
-                llvm::BasicBlock *loopBody = llvm::BasicBlock::Create(
-                    context, "reshape_deepcopy.body");
-                llvm::BasicBlock *loopEnd = llvm::BasicBlock::Create(
-                    context, "reshape_deepcopy.end");
-
-                llvm::Value* idx = llvm_utils->CreateAlloca(
-                    *builder, index_type);
-                builder->CreateStore(
-                    llvm::ConstantInt::get(context,
-                        llvm::APInt(index_bit_width, 0)), idx);
-
-                llvm_utils->start_new_block(loopHead);
-                llvm::Value* idx_val = llvm_utils->CreateLoad2(index_type, idx);
-                llvm::Value* cond = builder->CreateICmpSLT(idx_val,
-                    builder->CreateSExtOrTrunc(num_elements, index_type));
-                builder->CreateCondBr(cond, loopBody, loopEnd);
-
-                llvm_utils->start_new_block(loopBody);
-                idx_val = llvm_utils->CreateLoad2(index_type, idx);
-                llvm::Value* src_elem = builder->CreateInBoundsGEP(
-                    llvm_data_type, src_data, idx_val);
-                llvm::Value* dest_elem = builder->CreateInBoundsGEP(
-                    llvm_data_type, dest_data, idx_val);
-
                 ASR::ttype_t* elem_type = ASRUtils::extract_type(asr_data_type);
-                // Give the element the member storage a struct owns (e.g.
-                // fixed-size character array buffers), which deepcopy
-                // copies into.
-                llvm_utils->struct_api->allocate_struct_members(
-                    ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
-                        ASRUtils::get_struct_sym_from_struct_expr(array_expr))),
-                    dest_elem, elem_type);
-                llvm_utils->deepcopy(array_expr, src_elem, dest_elem,
-                    elem_type, elem_type, module);
-
-                llvm::Value* idx_next = builder->CreateAdd(idx_val,
-                    llvm::ConstantInt::get(context,
-                        llvm::APInt(index_bit_width, 1)));
-                builder->CreateStore(idx_next, idx);
-                builder->CreateBr(loopHead);
-
-                llvm_utils->start_new_block(loopEnd);
+                ASR::Struct_t* elem_struct_sym = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(array_expr)));
+                for_each_element_of_descriptor(arr_type, array, llvm_data_type,
+                    ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array_expr)),
+                    "reshape_deepcopy",
+                    [&](llvm::Value* iter, llvm::Value* src_elem) {
+                        llvm::Value* dest_elem = builder->CreateInBoundsGEP(
+                            llvm_data_type, dest_data, iter);
+                        // Give the element the member storage a struct owns
+                        // (e.g. fixed-size character array buffers), which
+                        // deepcopy copies into.
+                        llvm_utils->struct_api->allocate_struct_members(
+                            elem_struct_sym, dest_elem, elem_type);
+                        llvm_utils->deepcopy(array_expr, src_elem, dest_elem,
+                            elem_type, elem_type, module);
+                    });
+                is_source_gathered = true;
             } else if (!has_order) {
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
@@ -1429,9 +1408,11 @@ namespace LCompilers {
 
             if( ASRUtils::is_array(asr_shape_type) ) {
                 llvm::Type *i32 = llvm::Type::getInt32Ty(context);
-                llvm::Value* src_offset = this->get_offset(arr_type, array);
-                builder->CreateStore(src_offset,
-                            this->get_offset(result_type, reshaped, false));
+                if (!is_source_gathered) {
+                    llvm::Value* src_offset = this->get_offset(arr_type, array);
+                    builder->CreateStore(src_offset,
+                                this->get_offset(result_type, reshaped, false));
+                }
 
                 // Determine n_dims and a pointer to the shape data.
                 // When the shape argument is a FixedSizeArray ([N x i32]) we
