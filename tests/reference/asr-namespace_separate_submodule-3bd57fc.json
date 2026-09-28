@@ -1,0 +1,13 @@
+{
+    "basename": "asr-namespace_separate_submodule-3bd57fc",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/namespace_separate_submodule.f90",
+    "infile_hash": "3acae2f79a3a2e89a4f57b687a6773534f60cea13bfa6530805d04de",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-namespace_separate_submodule-3bd57fc.stderr",
+    "stderr_hash": "f47b5ec265ee1876f205e041a8734b7d8f3ebb11ccace2666c9c6bce",
+    "returncode": 2
+}

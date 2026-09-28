@@ -6232,6 +6232,16 @@ filename = "errors/namespace_modules_25.f90"
 asr = true
 
 [[test]]
+filename = "errors/namespace_separate_component.f90"
+asr = true
+extrafiles = "errors/namespace_separate_types.f90, errors/namespace_separate_holder.f90"
+
+[[test]]
+filename = "errors/namespace_separate_submodule.f90"
+asr = true
+extrafiles = "errors/namespace_separate_types.f90, errors/namespace_separate_holder.f90"
+
+[[test]]
 filename = "warnings/namespace_modules_std_01.f90"
 asr = true
 options = "--std=f23"

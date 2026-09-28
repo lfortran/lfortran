@@ -755,14 +755,19 @@ document. For each, the source is given.
   and the LLVM backend see only ordinary use-associated entities.
 * **Names in diagnostics**: semantic diagnostics never show a generated
   name. The ones reported while a designator is resolved show it as
-  written there (`a%f`). Before the diagnostics of a file are reported, every other
-  generated name in them (for example the type of `a%t(1)` in a type
-  mismatch reported for the enclosing statement) is replaced with the name
-  as written at the reference that declared the symbol, recorded in
-  `ModuleEntityState::written_names`. A symbol is declared once per scope
-  and is host associated into the scopes it contains, so a contained scope
-  that imports the same module under another local name sees the name as
-  written in its host.
+  written there (`a%f`). Everywhere else a derived type or an enumeration
+  type is shown by its own name, as for a variable declared with that type:
+  the type of `a%t(1)` in a type mismatch reported for the enclosing
+  statement is `t`. This is the name of the type in its module, not the
+  local name of the symbol that refers to it (`libasr`'s
+  `type_to_str_fortran_symbol`), so it does not depend on the scope, on
+  the local name of the module entity, or on whether the symbol was
+  declared in this file, in a `.mod` file or in the parent of a submodule
+  (`errors/namespace_separate_component.f90`,
+  `errors/namespace_separate_submodule.f90`). The same holds for a type
+  renamed by an ordinary USE (`use m, only: tt => t`, `cc_55`). Only the
+  messages of internal compiler errors (failed assertions) can still
+  contain a generated name.
 * **Portability**: with `--std=f23` (or `--std=legacy`), every
   `use, namespace` statement gets a warning that it is an LFortran extension
   (`tests/warnings/namespace_modules_std_01`).
@@ -785,9 +790,8 @@ Known limitations of the prototype:
   import is not ordered after the file that defines the module.
 * The ASR verification error that LFortran reports instead of a semantic
   error for `call f()` where `f` is a function (lfortran/lfortran#13804)
-  shows `L%f` when the verification at the end of semantics reports it
-  (in builds with assertions). A later verification, after an ASR pass,
-  names the generated symbol (`f~of_m`).
+  names the generated symbol (`f~of_m`), which the semantic diagnostics
+  never show.
 * Two errors are not diagnosed yet, because LFortran does not enforce the
   underlying rules for ordinary USE statements either. Error tests for them
   will be added when those issues are fixed.
@@ -888,8 +892,10 @@ round trips of
 | `namespace_modules_33` | Separate compilation (`.mod` files): `use b` of a module with public module entities, `a%x`, `b%a%x`, `b%env%real64`; parent component `v%t` of a type that extends `a%t` in that module, which also has a variable `t` |
 
 In the table of error tests, `cc_NN` is a case of
-`errors/namespace_continue_compilation.f90` and `namespace_modules_NN` is
-the separate file `errors/namespace_modules_NN.f90`.
+`errors/namespace_continue_compilation.f90`, and the other tests are
+separate files in `errors/` (`namespace_modules_NN.f90`, and
+`namespace_separate_*.f90`, whose modules are in
+`namespace_separate_types.f90` and `namespace_separate_holder.f90`).
 
 | Error test | Error |
 |---|---|
@@ -936,9 +942,15 @@ the separate file `errors/namespace_modules_NN.f90`.
 | `cc_43` | Generic function `g%gen(2)` in an array bound of a module variable (not a constant expression) |
 | `cc_44` | Module entity as a parent type (`extends(m)`) |
 | `cc_45` | Function as a parent type (`extends(g%gen_int)`) |
-| `cc_46` | Structure constructor `l%u(1)` passed for a dummy argument of another type (the type is shown as `l%u`) |
+| `cc_46` | Structure constructor `l%u(1)` passed for a dummy argument of another type (the type is shown as `u`) |
 | `cc_47` | Array constructor `[l%u :: ...]` passed for a scalar dummy argument of another type |
 | `cc_48` | Structure constructor `l%u(1)` assigned to a variable of another type |
 | `cc_49` | Module entity as the type-spec of ALLOCATE (`allocate(m :: y)`) |
 | `cc_50` | Variable as the type-spec of ALLOCATE (`allocate(m%x :: y)`) |
 | `cc_51` | Function as the type-spec of ALLOCATE (`allocate(g%gen_int :: y)`) |
+| `cc_52` | Type mismatch in a procedure that imports the module under another local name than its sibling (the type is shown as `u`) |
+| `cc_53` | Type mismatch where `l%u` in a sibling procedure designates the expected type (the type is shown as `u`) |
+| `cc_54` | Component declared as `type(l%u)` in another module passed for a dummy argument of another type |
+| `cc_55` | Structure constructor of a type renamed by an ordinary USE (`uu => u`) passed for a dummy argument of another type (the type is shown as `u`, as for a module entity) |
+| `namespace_separate_component` | As `cc_54`, with the modules compiled separately (`.mod` files) |
+| `namespace_separate_submodule` | Structure constructor `l%u(1)` passed for a dummy argument of another type in a submodule whose separately compiled parent declared the symbol for `l%u` |

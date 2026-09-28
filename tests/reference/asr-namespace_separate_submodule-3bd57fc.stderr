@@ -1,0 +1,5 @@
+semantic error: Type mismatch in argument `v`: expected `t` but got `u`
+ --> tests/errors/namespace_separate_submodule.f90:8:21
+  |
+8 |         call l%take(l%u(1))
+  |                     ^^^^^^ 

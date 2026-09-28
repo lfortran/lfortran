@@ -1722,39 +1722,6 @@ inline void validate_format_string(const std::string& fmt_str, const Location& l
 }
 
 
-// Replaces the whole-word occurrences of the generated symbol name
-// `symbol_name` (see generated_symbol_name) in `s` with `written`. A generated
-// name cannot appear in anything the user wrote.
-inline void replace_generated_name(std::string &s,
-        const std::string &symbol_name, const std::string &written) {
-    auto is_name_char = [](char c) {
-        return std::isalnum(static_cast<unsigned char>(c)) || c == '_'
-            || c == '~' || c == '@';
-    };
-    size_t pos = 0;
-    while ((pos = s.find(symbol_name, pos)) != std::string::npos) {
-        size_t end = pos + symbol_name.size();
-        if ((pos > 0 && is_name_char(s[pos - 1]))
-                || (end < s.size() && is_name_char(s[end]))) {
-            pos = end;
-            continue;
-        }
-        s.replace(pos, symbol_name.size(), written);
-        pos += written.size();
-    }
-}
-
-inline void replace_generated_name(diag::Diagnostic &d,
-        const std::string &symbol_name, const std::string &written) {
-    replace_generated_name(d.message, symbol_name, written);
-    for (auto &label : d.labels) {
-        replace_generated_name(label.message, symbol_name, written);
-    }
-    for (auto &child : d.children) {
-        replace_generated_name(child, symbol_name, written);
-    }
-}
-
 // The state of the module entities (`use, namespace`, see
 // doc/src/namespace_modules.md) that the symbol table visitor hands on to the
 // body visitor.
@@ -1766,22 +1733,6 @@ struct ModuleEntityState {
     // The symbols declared for module-qualified references `L%x` (see
     // CommonVisitor::module_member_symbol). They are private to their scope.
     std::set<const ASR::symbol_t*> member_symbols;
-    // The module-qualified name (`l%x`) as written at the reference that
-    // declared the symbol with the generated name `x~of_m`, by that name.
-    std::map<std::string, std::string> written_names;
-
-    // Shows the module-qualified names as written instead of the generated
-    // names in the diagnostics from `first` on: the type of `l%t(1)` in a
-    // type mismatch is `l%t`, not `t~of_m`.
-    void show_written_names(diag::Diagnostics &diagnostics,
-            size_t first) const {
-        for (size_t i = first; i < diagnostics.diagnostics.size(); i++) {
-            for (auto &item : written_names) {
-                replace_generated_name(diagnostics.diagnostics[i],
-                    item.first, item.second);
-            }
-        }
-    }
 };
 
 template <class Derived>
@@ -26585,15 +26536,12 @@ public:
     // created by the same code as for `use mod, only: member`, so that
     // generics, type-bound procedures, constructors, named constants and
     // intrinsic modules behave as for use association. Every symbol declared
-    // for it is recorded in `module_entities.member_symbols`, and `written`,
-    // the reference as written (`l%member`), in `module_entities.written_names`.
+    // for it is recorded in `module_entities.member_symbols`.
     ASR::symbol_t* module_member_symbol(ASR::Module_t *mod,
-            const std::string &member, const std::string &written,
-            const Location &loc) {
+            const std::string &member, const Location &loc) {
         std::string local_sym = module_member_symbol_name(mod, member);
         ASR::symbol_t *sym = current_scope->resolve_symbol(local_sym);
         if (sym) return sym;
-        module_entities.written_names.emplace(local_sym, written);
         SymbolTable *saved_scope = current_scope;
         current_scope = member_reference_scope();
         std::set<std::string> before;
@@ -26654,8 +26602,7 @@ public:
             ASR::symbol_t *t = module_member(mod, parts[i], loc);
             if (!is_module_reference(t)) {
                 used = i + 1;
-                return module_member_symbol(mod, parts[i],
-                    join_qualified_name(parts, i + 1), loc);
+                return module_member_symbol(mod, parts[i], loc);
             }
             mod = referenced_module(t, loc);
         }
@@ -26824,6 +26771,32 @@ public:
         size_t first;
         const QualifiedDesignator &d;
 
+        // Replaces the whole-word occurrences of the symbol name. It is a
+        // generated name, which cannot appear in anything the user wrote.
+        void replace(std::string &s) const {
+            auto is_name_char = [](char c) {
+                return std::isalnum(static_cast<unsigned char>(c)) || c == '_'
+                    || c == '~' || c == '@';
+            };
+            size_t pos = 0;
+            while ((pos = s.find(d.symbol_name, pos)) != std::string::npos) {
+                size_t end = pos + d.symbol_name.size();
+                if ((pos > 0 && is_name_char(s[pos - 1]))
+                        || (end < s.size() && is_name_char(s[end]))) {
+                    pos = end;
+                    continue;
+                }
+                s.replace(pos, d.symbol_name.size(), d.written);
+                pos += d.written.size();
+            }
+        }
+
+        void replace(diag::Diagnostic &x) const {
+            replace(x.message);
+            for (auto &label : x.labels) replace(label.message);
+            for (auto &child : x.children) replace(child);
+        }
+
     public:
         QualifiedNameInDiagnostics(diag::Diagnostics &diagnostics,
                 const QualifiedDesignator &d)
@@ -26832,8 +26805,7 @@ public:
 
         ~QualifiedNameInDiagnostics() {
             for (size_t i = first; i < diagnostics.diagnostics.size(); i++) {
-                replace_generated_name(diagnostics.diagnostics[i],
-                    d.symbol_name, d.written);
+                replace(diagnostics.diagnostics[i]);
             }
         }
     };

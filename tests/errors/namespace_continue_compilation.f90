@@ -444,7 +444,7 @@ contains
 end module
 
 ! A structure constructor accessed through a module entity passed for a dummy
-! argument of another type: the type is shown as written, `l%u`.
+! argument of another type: the type is shown by its name, `u`.
 subroutine cc_46()
     use nscc_types, only: take
     use, namespace :: l => nscc_types
@@ -493,6 +493,84 @@ subroutine cc_51()
     implicit none
     class(m%t), allocatable :: y
     allocate(g%gen_int :: y)
+end subroutine
+
+! Two sibling procedures import the same module under different local names:
+! the type is shown by its name, not as written in the other procedure.
+subroutine cc_52()
+    implicit none
+contains
+    subroutine s1()
+        use, namespace :: l => nscc_types
+        implicit none
+        type(l%u) :: w
+        w = l%u(1)
+    end subroutine
+    subroutine s2()
+        use nscc_types, only: take
+        use, namespace :: k => nscc_types
+        implicit none
+        call take(k%u(1))
+    end subroutine
+end subroutine
+
+! Another derived type named `u` and a procedure with a dummy argument of it
+! (cc_53)
+module nscc_types2
+    implicit none
+    type :: u
+        integer :: k = 3
+    end type
+contains
+    subroutine take_u(v)
+        type(u), intent(in) :: v
+    end subroutine
+end module
+
+! `l` designates another module than in the sibling procedure `s1`: the type
+! is shown by its name, not as `l%u`, which would designate the expected type.
+subroutine cc_53()
+    implicit none
+contains
+    subroutine s1()
+        use, namespace :: l => nscc_types
+        implicit none
+        type(l%u) :: w
+        w = l%u(1)
+    end subroutine
+    subroutine s2()
+        use, namespace :: l => nscc_types2
+        use, namespace :: k => nscc_types
+        implicit none
+        call l%take_u(k%u(1))
+    end subroutine
+end subroutine
+
+! A derived type with a component declared through a module entity (cc_54)
+module nscc_holder
+    use, namespace :: l => nscc_types
+    implicit none
+    type :: holder
+        type(l%u) :: c
+    end type
+end module
+
+! The component, declared as `type(l%u)` in another module, passed for a
+! dummy argument of another type in a scope without `l`.
+subroutine cc_54()
+    use nscc_types, only: take
+    use nscc_holder, only: holder
+    implicit none
+    type(holder) :: h
+    call take(h%c)
+end subroutine
+
+! A structure constructor of a derived type renamed by an ordinary USE: the
+! type is also shown by its name, `u`, not by the local name `uu`.
+subroutine cc_55()
+    use nscc_types, only: take, uu => u
+    implicit none
+    call take(uu(1))
 end subroutine
 
 program namespace_continue_compilation

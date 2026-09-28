@@ -1339,11 +1339,15 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
             if (struct_sym == nullptr) {
                 return "derived_type";
             }
-            return ASRUtils::symbol_name(struct_sym);
+            // The name of the type itself: an ExternalSymbol's local name
+            // can be a name the frontend declared for its own use.
+            return ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(struct_sym));
         }
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(t);
-            return ASRUtils::symbol_name(enum_type->m_enum_type);
+            return ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(enum_type->m_enum_type));
         }
         case ASR::ttypeType::UnionType: {
             return "union";
