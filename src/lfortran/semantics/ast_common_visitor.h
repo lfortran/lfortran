@@ -22379,10 +22379,102 @@ public:
             erase_failed_instantiation(target_scope, scope_before);
             throw SemanticAbort();
         }
-        std::set<ASR::symbol_t*> instantiated_bodies;
-        instantiate_body(al, type_subs, symbol_subs, new_s, s, instantiated_bodies);
+        queue_body_instantiation(type_subs, symbol_subs, {{new_s, s}});
 
         return new_func_name;
+    }
+
+    // The bodies of an instantiation are copies of the template's bodies, so
+    // they are built only once all bodies of the translation unit exist: an
+    // instantiation can precede the procedure it instantiates (#13451).
+    struct PendingBodyInstantiation {
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
+        std::map<std::string, ASR::symbol_t*> symbol_subs;
+        // (instantiated symbol, template symbol) pairs sharing one selection
+        std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> symbols;
+    };
+    std::vector<PendingBodyInstantiation> pending_body_instantiations;
+
+    void queue_body_instantiation(
+            const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs,
+            const std::map<std::string, ASR::symbol_t*> &symbol_subs,
+            const std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> &symbols) {
+        if (symbols.empty()) return;
+        PendingBodyInstantiation p{type_subs, symbol_subs, symbols};
+        if (is_body_visitor) {
+            pending_body_instantiations.push_back(p);
+        } else {
+            instantiate_pending_body(p);
+        }
+    }
+
+    void instantiate_pending_body(PendingBodyInstantiation &p) {
+        std::set<ASR::symbol_t*> instantiated_bodies;
+        for (auto &sym_pair : p.symbols) {
+            instantiate_body(al, p.type_subs, p.symbol_subs, sym_pair.first,
+                sym_pair.second, instantiated_bodies);
+        }
+    }
+
+    static SymbolTable *template_symbol_symtab(ASR::symbol_t *s) {
+        switch (s->type) {
+            case ASR::symbolType::Function:
+                return ASR::down_cast<ASR::Function_t>(s)->m_symtab;
+            case ASR::symbolType::Template:
+                return ASR::down_cast<ASR::Template_t>(s)->m_symtab;
+            case ASR::symbolType::Struct:
+                return ASR::down_cast<ASR::Struct_t>(s)->m_symtab;
+            default:
+                return nullptr;
+        }
+    }
+
+    // True if `target` is `source` or is declared inside `source` (or inside
+    // the Template wrapping a templated procedure `source`, which holds the
+    // procedure's own instantiations), so an instantiation of `source`
+    // copies its body.
+    static bool is_within(ASR::symbol_t *target, ASR::symbol_t *source) {
+        if (target == source) return true;
+        SymbolTable *source_symtab = template_symbol_symtab(source);
+        SymbolTable *parent = ASRUtils::symbol_parent_symtab(source);
+        if (parent != nullptr && parent->asr_owner != nullptr
+                && ASR::is_a<ASR::symbol_t>(*parent->asr_owner)
+                && ASR::is_a<ASR::Template_t>(
+                    *ASR::down_cast<ASR::symbol_t>(parent->asr_owner))) {
+            source_symtab = parent;
+        }
+        if (source_symtab == nullptr) return false;
+        for (SymbolTable *t = ASRUtils::symbol_parent_symtab(target);
+                t != nullptr; t = t->parent) {
+            if (t == source_symtab) return true;
+        }
+        return false;
+    }
+
+    // An instantiation that copies a template containing another pending
+    // instantiation is built after it, so it copies a complete body.
+    void instantiate_pending_bodies_from(size_t i, std::vector<bool> &started) {
+        if (started[i]) return;
+        started[i] = true;
+        for (size_t j = 0; j < pending_body_instantiations.size(); j++) {
+            if (started[j]) continue;
+            bool needed = false;
+            for (auto &src : pending_body_instantiations[i].symbols) {
+                for (auto &dst : pending_body_instantiations[j].symbols) {
+                    if (is_within(dst.first, src.second)) needed = true;
+                }
+            }
+            if (needed) instantiate_pending_bodies_from(j, started);
+        }
+        instantiate_pending_body(pending_body_instantiations[i]);
+    }
+
+    void instantiate_pending_bodies() {
+        std::vector<bool> started(pending_body_instantiations.size(), false);
+        for (size_t i = 0; i < pending_body_instantiations.size(); i++) {
+            instantiate_pending_bodies_from(i, started);
+        }
+        pending_body_instantiations.clear();
     }
 
     void visit_BinOp(const AST::BinOp_t &x) {
