@@ -261,8 +261,9 @@ int main(void) { return 0; }" HAVE_GLIBC)
             set_tests_properties(test_init_show_llvm PROPERTIES TIMEOUT 300)
         endif()
         # The notes the C backend emits, compiled by GCC and by Clang where
-        # they are there; see run_c_note_test.cmake.
-        if (NOT APPLE)
+        # they are there; see run_c_note_test.cmake. `lfortran -c` needs the
+        # LLVM backend.
+        if (NOT APPLE AND WITH_LLVM)
             set(init_c_compilers ${CMAKE_C_COMPILER})
             foreach(c gcc clang)
                 find_program(init_${c} ${c})
