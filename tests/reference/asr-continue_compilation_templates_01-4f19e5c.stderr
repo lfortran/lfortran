@@ -1362,15 +1362,15 @@ semantic error: instantiated procedure 'own_tmpl' has the same name as the templ
      |                                               ~~~~~~~~~~~~~~~~ help: give the instance a different local name, e.g. `only: own_tmpl_instance => five`
 
 semantic error: Explicit shaped array with nonconstant bounds
-    --> tests/errors/continue_compilation_templates_01.f90:2301:26
+    --> tests/errors/continue_compilation_templates_01.f90:2349:26
      |
-2301 |             integer :: b(n*nonconst_bound_m)  ! {Error} Explicit shaped array with nonconstant bounds
+2349 |             integer :: b(n*nonconst_bound_m)  ! {Error} Explicit shaped array with nonconstant bounds
      |                          ^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Explicit shaped array with nonconstant bounds
-    --> tests/errors/continue_compilation_templates_01.f90:2308:26
+    --> tests/errors/continue_compilation_templates_01.f90:2356:26
      |
-2308 |             integer :: b(max(n*nonconst_bound_m, 5))  ! {Error} Explicit shaped array with nonconstant bounds
+2356 |             integer :: b(max(n*nonconst_bound_m, 5))  ! {Error} Explicit shaped array with nonconstant bounds
      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
@@ -1403,3 +1403,39 @@ semantic error: the instantiation argument for 't' is an expression, but 't' is 
      |
 2192 |         call inline_const_arg{2}(y)  ! {Error} the instantiation argument for 't' is an expression, but 't' is not a deferred constant
      |                               ^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_templates_01.f90:2303:9
+     |
+2303 |         last = x  ! {Error} type mismatch (integer and t)
+     |         ^^^^   ^ type mismatch (integer and t)
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_templates_01.f90:2310:9
+     |
+2310 |         y = x  ! {Error} type mismatch (integer and t)
+     |         ^   ^ type mismatch (integer and t)
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_templates_01.f90:2318:9
+     |
+2318 |         x = y  ! {Error} type mismatch (t and integer)
+     |         ^   ^ type mismatch (t and integer)
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_templates_01.f90:2324:9
+     |
+2324 |         x = 3  ! {Error} type mismatch (t and integer)
+     |         ^   ^ type mismatch (t and integer)
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_templates_01.f90:2331:9
+     |
+2331 |         y = x  ! {Error} type mismatch (integer[:] and t[:])
+     |         ^   ^ type mismatch (integer[:] and t[:])
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_templates_01.f90:2337:9
+     |
+2337 |         x = [1, 2, 3]  ! {Error} type mismatch (t[:] and integer[:])
+     |         ^   ^^^^^^^^^ type mismatch (t[:] and integer[:])

@@ -2290,6 +2290,54 @@ contains
     end subroutine
 end module
 
+! A deferred type has no implicit conversion to or from an intrinsic type, so
+! assigning between them inside a template is a type mismatch (#13641). This
+! used to fail an assertion in the implicit-cast rules.
+module continue_compilation_templates_01_assign_deferred
+    implicit none
+    integer :: last = 0
+contains
+    template subroutine assign_to_module_var{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        last = x  ! {Error} type mismatch (integer and t)
+    end subroutine
+
+    template subroutine assign_to_local{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer :: y
+        y = x  ! {Error} type mismatch (integer and t)
+    end subroutine
+
+    template subroutine assign_from_integer{t}(x)
+        deferred type :: t
+        type(t), intent(inout) :: x
+        integer :: y
+        y = 1
+        x = y  ! {Error} type mismatch (t and integer)
+    end subroutine
+
+    template subroutine assign_literal{t}(x)
+        deferred type :: t
+        type(t), intent(out) :: x
+        x = 3  ! {Error} type mismatch (t and integer)
+    end subroutine
+
+    template subroutine assign_array_to_integer{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x(:)
+        integer :: y(3)
+        y = x  ! {Error} type mismatch (integer[:] and t[:])
+    end subroutine
+
+    template subroutine assign_array_literal{t}(x)
+        deferred type :: t
+        type(t), intent(inout) :: x(3)
+        x = [1, 2, 3]  ! {Error} type mismatch (t[:] and integer[:])
+    end subroutine
+end module
+
 ! Component bounds in a template's derived type must be constant: a
 ! deferred constant combined with a non-constant variable is rejected.
 module continue_compilation_templates_01_nonconst_bound
