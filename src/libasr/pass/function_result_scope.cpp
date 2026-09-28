@@ -513,6 +513,80 @@ public:
     void visit_ttype(const ASR::ttype_t & /*x*/) {}
 };
 
+// The BLOCK of `scope` made of `block_body`, with the symbol table
+// `block_scope`, and the statement that executes it.
+ASR::stmt_t* make_block(Allocator &al, SymbolTable* scope, const Location &loc,
+        SymbolTable* block_scope, Vec<ASR::stmt_t*> &block_body) {
+    std::string block_name = scope->get_unique_name(
+        "__libasr_function_result_block");
+    ASR::asr_t* block = ASR::make_Block_t(al, loc, block_scope,
+        s2c(al, block_name), block_body.p, block_body.size());
+    block_scope->asr_owner = block;
+    ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(block);
+    scope->add_symbol(block_name, block_sym);
+    return ASRUtils::STMT(ASR::make_BlockCall_t(al, loc, -1, block_sym));
+}
+
+// A variable of `scope` that holds the value of `value`.
+ASR::expr_t* create_header_variable(Allocator &al, SymbolTable* scope,
+        ASR::expr_t* value) {
+    std::string name = scope->get_unique_name(
+        "__libasr_function_result_header");
+    ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
+        ASRUtils::make_Variable_t_util(al, value->base.loc,
+            scope, s2c(al, name), nullptr, 0,
+            ASR::intentType::Local, nullptr, nullptr,
+            ASR::storage_typeType::Default,
+            ASRUtils::duplicate_type(al, ASRUtils::expr_type(value)),
+            nullptr, ASR::abiType::Source, ASR::accessType::Public,
+            ASR::presenceType::Required, false));
+    scope->add_symbol(name, sym);
+    return ASRUtils::EXPR(ASR::make_Var_t(al, value->base.loc, sym));
+}
+
+// The BLOCK of `scope` that evaluates the header values `header` of a
+// statement into variables of `scope`, which the statement then uses, and
+// then executes `rest`, which is the statement itself if it is a construct:
+// the results are finalized when the BLOCK completes, after the construct.
+// nullptr if none of the values references such a function.
+ASR::stmt_t* make_header_block(Allocator &al, SymbolTable* scope,
+        const Location &loc, const std::vector<ASR::expr_t**> &header,
+        const std::vector<ASR::stmt_t*> &rest) {
+    // No SymbolTable is made for a header without such a reference:
+    // each one takes a number from the global counter, which names
+    // things in the generated code.
+    bool references = false;
+    for (ASR::expr_t** value : header) {
+        references = references || references_results(*value);
+    }
+    if (!references) {
+        return nullptr;
+    }
+    SymbolTable* block_scope = al.make_new<SymbolTable>(scope);
+    Vec<ASR::stmt_t*> block_body;
+    block_body.reserve(al, header.size() + rest.size() + 1);
+    AssociateResults replacer(al, block_scope, block_body);
+    for (ASR::expr_t** value : header) {
+        if (!references_results(*value)) {
+            continue;
+        }
+        ASR::expr_t* variable = create_header_variable(al, scope, *value);
+        replacer.current_expr = value;
+        replacer.replace_expr(*value);
+        block_body.push_back(al, ASRUtils::STMT(
+            ASRUtils::make_Assignment_t_util(al, (*value)->base.loc,
+                variable, *value, nullptr, false, false)));
+        *value = variable;
+    }
+    if (block_body.size() == 0) {
+        return nullptr;
+    }
+    for (ASR::stmt_t* stmt : rest) {
+        block_body.push_back(al, stmt);
+    }
+    return make_block(al, scope, loc, block_scope, block_body);
+}
+
 class FunctionResultScopeVisitor:
     public ASR::CallReplacerOnExpressionsVisitor<FunctionResultScopeVisitor> {
 public:
@@ -543,14 +617,15 @@ public:
 
     ASR::stmt_t* make_block(const Location &loc, SymbolTable* block_scope,
             Vec<ASR::stmt_t*> &block_body) {
-        std::string block_name = current_scope->get_unique_name(
-            "__libasr_function_result_block");
-        ASR::asr_t* block = ASR::make_Block_t(al, loc, block_scope,
-            s2c(al, block_name), block_body.p, block_body.size());
-        block_scope->asr_owner = block;
-        ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(block);
-        current_scope->add_symbol(block_name, block_sym);
-        return ASRUtils::STMT(ASR::make_BlockCall_t(al, loc, -1, block_sym));
+        return LCompilers::make_block(al, current_scope, loc, block_scope,
+            block_body);
+    }
+
+    ASR::stmt_t* make_header_block(const Location &loc,
+            const std::vector<ASR::expr_t**> &header,
+            const std::vector<ASR::stmt_t*> &rest) {
+        return LCompilers::make_header_block(al, current_scope, loc, header,
+            rest);
     }
 
     // The BLOCK made of `x`, a statement that references such functions.
@@ -615,65 +690,6 @@ public:
         }
         block_body.push_back(al, statement);
         return make_block(x->base.loc, block_scope, block_body);
-    }
-
-    // A variable of the current scope that holds the value of `value`.
-    ASR::expr_t* create_header_variable(ASR::expr_t* value) {
-        std::string name = current_scope->get_unique_name(
-            "__libasr_function_result_header");
-        ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Variable_t_util(al, value->base.loc,
-                current_scope, s2c(al, name), nullptr, 0,
-                ASR::intentType::Local, nullptr, nullptr,
-                ASR::storage_typeType::Default,
-                ASRUtils::duplicate_type(al, ASRUtils::expr_type(value)),
-                nullptr, ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Required, false));
-        current_scope->add_symbol(name, sym);
-        return ASRUtils::EXPR(ASR::make_Var_t(al, value->base.loc, sym));
-    }
-
-    // The BLOCK that evaluates the header values `header` of a statement
-    // into variables, which the statement then uses, and then executes
-    // `rest`, which is the statement itself if it is a construct: the
-    // results are finalized when the BLOCK completes, after the construct.
-    // nullptr if none of the values references such a function.
-    ASR::stmt_t* make_header_block(const Location &loc,
-            const std::vector<ASR::expr_t**> &header,
-            const std::vector<ASR::stmt_t*> &rest) {
-        // No SymbolTable is made for a header without such a reference:
-        // each one takes a number from the global counter, which names
-        // things in the generated code.
-        bool references = false;
-        for (ASR::expr_t** value : header) {
-            references = references || references_results(*value);
-        }
-        if (!references) {
-            return nullptr;
-        }
-        SymbolTable* block_scope = al.make_new<SymbolTable>(current_scope);
-        Vec<ASR::stmt_t*> block_body;
-        block_body.reserve(al, header.size() + rest.size() + 1);
-        AssociateResults replacer(al, block_scope, block_body);
-        for (ASR::expr_t** value : header) {
-            if (!references_results(*value)) {
-                continue;
-            }
-            ASR::expr_t* variable = create_header_variable(*value);
-            replacer.current_expr = value;
-            replacer.replace_expr(*value);
-            block_body.push_back(al, ASRUtils::STMT(
-                ASRUtils::make_Assignment_t_util(al, (*value)->base.loc,
-                    variable, *value, nullptr, false, false)));
-            *value = variable;
-        }
-        if (block_body.size() == 0) {
-            return nullptr;
-        }
-        for (ASR::stmt_t* stmt : rest) {
-            block_body.push_back(al, stmt);
-        }
-        return make_block(loc, block_scope, block_body);
     }
 
     // The header values of the construct `x` that are evaluated once, before
@@ -878,6 +894,17 @@ public:
 };
 
 } // namespace
+
+bool references_function_results(ASR::expr_t* expr) {
+    return references_results(expr);
+}
+
+ASR::stmt_t* make_function_result_header_block(Allocator &al,
+        SymbolTable* scope, const Location &loc,
+        const std::vector<ASR::expr_t**> &header,
+        const std::vector<ASR::stmt_t*> &rest) {
+    return make_header_block(al, scope, loc, header, rest);
+}
 
 void pass_function_result_scope(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &pass_options) {
