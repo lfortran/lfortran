@@ -2,21 +2,22 @@
 # has the startup initialization records in their form independent of the
 # object format, and runs them:
 #
-# - global_init_16 (two modules with records, each in an object file of its
-#   own) compiled by LLC and linked by the C compiler CC in both link orders:
-#   nothing but the IR's own constructors and destructors registers the
-#   records;
+# - test_init_show_llvm (two modules with records, each in an object file
+#   of its own) compiled by LLC and linked by the C compiler CC in both link
+#   orders: nothing but the IR's own constructors and destructors registers
+#   the records;
 # - the same compiled by LFORTRAN, with the records in the form of the
 #   object format, and linked the same way;
-# - global_init_16_a compiled by LFORTRAN and linked into test_init_ctor.c
-#   (in CTOR_MAIN), whose constructor has to have run before main;
+# - test_init_show_llvm_a compiled by LFORTRAN and linked into
+#   test_init_ctor.c (in CTOR_MAIN), whose constructor has to have run
+#   before main;
 # - the same IR joined into one module by LLVM_LINK, if given, and passed to
 #   LFORTRAN, which lowers a module with several tables for the target;
-# - global_init_01 passed to LFORTRAN as IR.
+# - test_init_show_llvm_ir passed to LFORTRAN as IR.
 #
 # Every link is made with the default linker and, for each of the ELF
 # linkers in LINKERS (e.g. lld), with `-fuse-ld=`. SRC is the directory of
-# the integration tests, RUNTIME that of the Fortran runtime library and WORK
+# these Fortran sources, RUNTIME that of the Fortran runtime library and WORK
 # a scratch directory.
 
 file(REMOVE_RECURSE ${WORK})
@@ -48,7 +49,8 @@ function(expect program text)
     endif()
 endfunction()
 
-set(units global_init_16_a global_init_16_b global_init_16_s global_init_16)
+set(units test_init_show_llvm_a test_init_show_llvm_b test_init_show_llvm_s
+    test_init_show_llvm)
 # The module files the IR of the modules' users is compiled against.
 set(lowered "")
 foreach(u ${units})
@@ -67,7 +69,7 @@ foreach(linker default ${LINKERS})
     if (NOT linker STREQUAL "default")
         set(flags -fuse-ld=${linker})
     endif()
-    run(${CC} ${flags} ${CTOR_MAIN} global_init_16_a_lf.o -o ctor_${linker} ${libs})
+    run(${CC} ${flags} ${CTOR_MAIN} test_init_show_llvm_a_lf.o -o ctor_${linker} ${libs})
     expect(ctor_${linker} "constructor ran")
     foreach(kind objects lowered)
         set(list ${${kind}})
@@ -80,12 +82,12 @@ foreach(linker default ${LINKERS})
 endforeach()
 
 if (LLVM_LINK)
-    run(${LLVM_LINK} -S global_init_16_a.ll global_init_16_b.ll
-        global_init_16_s.ll global_init_16.ll -o joined.ll)
+    run(${LLVM_LINK} -S test_init_show_llvm_a.ll test_init_show_llvm_b.ll
+        test_init_show_llvm_s.ll test_init_show_llvm.ll -o joined.ll)
     run(${LFORTRAN} joined.ll -o joined)
     expect(joined "ok")
 endif()
 
-show_llvm(global_init_01)
-run(${LFORTRAN} global_init_01.ll -o from_ir)
+show_llvm(test_init_show_llvm_ir)
+run(${LFORTRAN} test_init_show_llvm_ir.ll -o from_ir)
 expect(from_ir "ok")

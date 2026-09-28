@@ -234,7 +234,7 @@ int main(void) { return 0; }" HAVE_GLIBC)
                 -DLLVM_LINK=${init_llvm_link} -DCC=${CMAKE_C_COMPILER}
                 "-DLINKERS=${init_linkers}"
                 -DRUNTIME=$<TARGET_FILE_DIR:lfortran_runtime>
-                -DSRC=${CMAKE_SOURCE_DIR}/integration_tests
+                -DSRC=${CMAKE_CURRENT_SOURCE_DIR}
                 -DCTOR_MAIN=${CMAKE_CURRENT_SOURCE_DIR}/test_init_ctor.c
                 -DWORK=${CMAKE_CURRENT_BINARY_DIR}/test_init_show_llvm
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/run_show_llvm_test.cmake)
