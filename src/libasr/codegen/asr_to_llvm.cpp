@@ -4716,6 +4716,104 @@ public:
         }
     }
 
+    /*
+        Whether `x` assigns the result of `reshape` of an array of structs
+        that `visit_ArrayReshape` built as deep copies of the source
+        elements. The assignment copies these elements bitwise, which moves
+        the storage they own (string buffers, allocatable components) into
+        the target elements.
+    */
+    bool is_struct_array_moved_from_reshape(const ASR::Assignment_t& x) {
+        if (!ASR::is_a<ASR::Var_t>(*x.m_target) ||
+                !ASR::is_a<ASR::ArrayReshape_t>(*x.m_value)) {
+            return false;
+        }
+        ASR::ArrayReshape_t* reshape = ASR::down_cast<ASR::ArrayReshape_t>(x.m_value);
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(reshape->m_type);
+        if (reshape->m_value != nullptr || reshape->m_order != nullptr ||
+                !ASR::is_a<ASR::StructType_t>(*elem_type) ||
+                ASRUtils::is_class_type(elem_type)) {
+            return false;
+        }
+        switch (ASRUtils::extract_physical_type(ASRUtils::expr_type(reshape->m_array))) {
+            case ASR::array_physical_typeType::FixedSizeArray:
+            case ASR::array_physical_typeType::DescriptorArray:
+                return true;
+            case ASR::array_physical_typeType::PointerArray:
+                return ASRUtils::extract_physical_type(reshape->m_type) ==
+                    ASR::array_physical_typeType::DescriptorArray;
+            default:
+                return false;
+        }
+    }
+
+    /*
+        Frees the storage owned by the elements of the array variable
+        `target_expr` (whose LLVM value is `target`), keeping the elements
+        themselves, before an assignment overwrites them.
+    */
+    void finalize_array_elements_of_target(ASR::expr_t* target_expr, llvm::Value* target) {
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target_expr);
+        ASR::ttype_t* array_type = ASRUtils::type_get_past_allocatable_pointer(target_type);
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(target_type);
+        ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(target_expr)));
+        llvm::Type* elem_llvm_type = llvm_utils->get_el_type(
+            target_expr, elem_type, module.get());
+        llvm::Type* array_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+            target_expr, array_type, module.get());
+        switch (ASRUtils::extract_physical_type(target_type)) {
+            case ASR::array_physical_typeType::FixedSizeArray: {
+                llvm_symtab_finalizer.finalize_array_elements(
+                    llvm_utils->create_gep2(array_llvm_type, target, 0),
+                    llvm_utils->get_array_size(target, array_llvm_type,
+                        array_type, this),
+                    elem_type, struct_sym);
+                break;
+            }
+            case ASR::array_physical_typeType::PointerArray: {
+                llvm_symtab_finalizer.finalize_array_elements(target,
+                    llvm_utils->get_array_size(target, array_llvm_type,
+                        array_type, this),
+                    elem_type, struct_sym);
+                break;
+            }
+            case ASR::array_physical_typeType::DescriptorArray: {
+                llvm::Value* desc = target;
+                if (LLVM::is_llvm_pointer(*target_type)) {
+                    desc = llvm_utils->CreateLoad2(
+                        array_llvm_type->getPointerTo(), target);
+                }
+                if (ASRUtils::is_pointer(target_type)) {
+                    // A pointer may be associated with a strided section.
+                    arr_descr->for_each_element_of_descriptor(array_llvm_type,
+                        desc, elem_llvm_type, ASRUtils::extract_n_dims_from_ttype(array_type),
+                        "finalize_strided_elements",
+                        [&](llvm::Value* /*iter*/, llvm::Value* elem) {
+                            llvm_symtab_finalizer.finalize_array_elements(elem,
+                                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 1),
+                                elem_type, struct_sym);
+                        });
+                    break;
+                }
+                llvm::Value* data = llvm_utils->CreateLoad2(elem_llvm_type->getPointerTo(),
+                    arr_descr->get_pointer_to_data(array_llvm_type, desc));
+                llvm::Value* is_allocated = builder->CreateICmpNE(data,
+                    llvm::ConstantPointerNull::get(elem_llvm_type->getPointerTo()));
+                llvm_utils->create_if_else(is_allocated, [&]() {
+                    llvm_symtab_finalizer.finalize_array_elements(data,
+                        llvm_utils->get_array_size(desc, array_llvm_type,
+                            array_type, this),
+                        elem_type, struct_sym);
+                }, []() {});
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
     void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
         if (x.m_value) {
             this->visit_expr(*x.m_value);
@@ -13665,6 +13763,9 @@ public:
             if( is_allocatable_descriptor_target && !x.m_realloc_lhs && !x.m_move_allocation ) {
                 llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
                 generate_unallocated_array_runtime_error(is_not_allocated, x.m_target);
+            }
+            if( is_struct_array_moved_from_reshape(x) ) {
+                finalize_array_elements_of_target(x.m_target, target);
             }
             if( is_value_fixed_sized_array && is_target_fixed_sized_array ) {
                 ASR::dimension_t* asr_dims = nullptr;
