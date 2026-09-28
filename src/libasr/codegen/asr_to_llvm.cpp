@@ -24556,46 +24556,47 @@ public:
                 tmp = inline_char_member_as_string_descriptor(
                     x.m_args[i].m_value, tmp, "inline_call_arg");
                 llvm::Value *value = tmp;
-                if (orig_arg_intent == ASR::intentType::In ||
-                    orig_arg_intent == ASR::intentType::InOut ||
-                    orig_arg_intent == ASR::intentType::Out) {
-                    /*
-                        For the cases where argument intent is In or InOut or Out, we
-                        cannot pass the evaluated value of expression directly to it. Currently
-                        the value of `value` is the evaluated value of expression and this is because
-                        for every expression we visit, we have a check to prefer the evaluated value.
-
-                        To avoid this problem, we manually set the expr value to nullptr.
-                        For example, refer integration_tests/intent_03.f90
-                    */
-                    // TODO: this is possible in other cases as well, support those.
-                    if ( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ) {
-                        ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_args[i].m_value);
-                        arr_item->m_value = nullptr;
-                        this->visit_expr_wrapper((ASR::expr_t*)arr_item);
-                        value = tmp;
-                    } else if ( ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value) ||
-                                ASR::is_a<ASR::ComplexIm_t>(*x.m_args[i].m_value) ) {
-                        bool is_re = ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value);
-                        ASR::expr_t* complex_elem_expr = is_re
-                            ? ASR::down_cast<ASR::ComplexRe_t>(x.m_args[i].m_value)->m_arg
-                            : ASR::down_cast<ASR::ComplexIm_t>(x.m_args[i].m_value)->m_arg;
-                        int ptr_loads_copy = ptr_loads;
-                        ptr_loads = 0;
-                        this->visit_expr(*complex_elem_expr);
-                        ptr_loads = ptr_loads_copy;
-                        llvm::Value* complex_ptr = tmp;
-                        if (!complex_ptr->getType()->isPointerTy()) {
-                            llvm::AllocaInst* alloc = llvm_utils->CreateAlloca(*builder, complex_ptr->getType());
-                            builder->CreateStore(complex_ptr, alloc);
-                            complex_ptr = alloc;
-                        }
-                        int cplx_kind = ASRUtils::extract_kind_from_ttype_t(
-                            ASRUtils::extract_type(ASRUtils::expr_type(complex_elem_expr)));
-                        llvm::Type* cplx_llvm_type = (cplx_kind == 4) ? complex_type_4 : complex_type_8;
-                        value = llvm_utils->create_gep2(cplx_llvm_type, complex_ptr, is_re ? 0 : 1);
-                    }
+                /*
+                
+                Handle cases where a compile-time value (register value) shouldn't
+                be used, but rather a reference-memory value.
+                As all Fortran functions are lowered to ones accepting reference-value arguments.
+                For example, refer integration_tests/intent_03.f90
+                TODO: Introduce a solid fix to handle all cases.
+                */
+            if(ASRUtils::expr_value(x.m_args[i].m_value) != nullptr){
+                LCOMPILERS_ASSERT(orig_arg_intent != ASR::intentType::Out &&
+                                  orig_arg_intent != ASR::intentType::InOut);
+                if ( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
+                    ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_args[i].m_value);
+                    arr_item->m_value = nullptr;
+                    this->visit_expr_wrapper((ASR::expr_t*)arr_item);
+                    value = tmp;
                 }
+            }
+            // Force revisit to handle the register/reference issue, plus,
+            // [TODO] We don't properly visit those even if no compile-time value exist -- Example complex_38.90
+            if ( ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value) ||
+                  ASR::is_a<ASR::ComplexIm_t>(*x.m_args[i].m_value) ) {
+                bool is_re = ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value);
+                ASR::expr_t* complex_elem_expr = is_re
+                    ? ASR::down_cast<ASR::ComplexRe_t>(x.m_args[i].m_value)->m_arg
+                    : ASR::down_cast<ASR::ComplexIm_t>(x.m_args[i].m_value)->m_arg;
+                int ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*complex_elem_expr);
+                ptr_loads = ptr_loads_copy;
+                llvm::Value* complex_ptr = tmp;
+                if (!complex_ptr->getType()->isPointerTy()) {
+                    llvm::AllocaInst* alloc = llvm_utils->CreateAlloca(*builder, complex_ptr->getType());
+                    builder->CreateStore(complex_ptr, alloc);
+                    complex_ptr = alloc;
+                }
+                int cplx_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::extract_type(ASRUtils::expr_type(complex_elem_expr)));
+                llvm::Type* cplx_llvm_type = (cplx_kind == 4) ? complex_type_4 : complex_type_8;
+                value = llvm_utils->create_gep2(cplx_llvm_type, complex_ptr, is_re ? 0 : 1);
+            }
                 // TODO: we are getting a warning of uninitialized variable,
                 // there might be a bug below.
                 llvm::Type *target_type = nullptr;
