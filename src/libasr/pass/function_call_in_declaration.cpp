@@ -895,21 +895,72 @@ public:
         operand_shape.pop_back();
     }
 
-    void visit_Associate(const ASR::Associate_t &x) {
-        // An associate name takes the shape of its selector.
+    // The captured array whose shape the expression `x` has (nullptr if none).
+    ASR::symbol_t* visit_operand(ASR::expr_t* x) {
         operand_shape.push_back(nullptr);
-        visit_expr(*x.m_value);
+        visit_expr(*x);
         ASR::symbol_t* shape = operand_shape.back();
         operand_shape.pop_back();
-        visit_expr(*x.m_target);
-        if (shape && ASR::is_a<ASR::Var_t>(*x.m_target)) {
-            ASR::symbol_t* target = ASR::down_cast<ASR::Var_t>(x.m_target)->m_v;
-            if (ASR::is_a<ASR::Variable_t>(*target)) {
-                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(target);
-                ASR::ttype_t* new_type = rewrite_type(v->m_type, captured[shape]);
-                if (new_type) v->m_type = new_type;
-            }
+        return shape;
+    }
+
+    /*
+        An associate name takes the shape of its selector. Its type was
+        copied from the type of the selector, so it gets the captured bounds
+        as well, and it is itself treated as a captured array from then on:
+        a selector of a nested ASSOCIATE, or an expression in the body, may
+        have its shape.
+    */
+    void capture_associate_name(ASR::expr_t* target, ASR::symbol_t* shape) {
+        if (shape == nullptr || !ASR::is_a<ASR::Var_t>(*target)) return;
+        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(target)->m_v;
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) return;
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+        ASR::ttype_t* new_type = rewrite_type(v->m_type, captured[shape]);
+        if (new_type) v->m_type = new_type;
+        if (captured.find(sym) == captured.end()) {
+            captured[sym] = captured[shape];
+            added_associate_names = true;
         }
+    }
+
+    // Whether `target` is the associate name of an ASSOCIATE whose selector
+    // is an expression: semantics declares a nonpointer variable in the
+    // AssociateBlock and assigns the value of the selector to it.
+    static bool is_expression_associate_name(ASR::expr_t* target) {
+        if (!ASR::is_a<ASR::Var_t>(*target)) return false;
+        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(target)->m_v;
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+        return v->m_parent_symtab->asr_owner &&
+            ASR::is_a<ASR::symbol_t>(*v->m_parent_symtab->asr_owner) &&
+            ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(
+                v->m_parent_symtab->asr_owner)) &&
+            !ASRUtils::is_pointer(v->m_type) &&
+            !ASRUtils::is_allocatable(v->m_type);
+    }
+
+public:
+    // Whether an associate name became a captured array during the last
+    // walk (see capture_associate_name); another walk then updates the
+    // expressions that have its shape.
+    bool added_associate_names = false;
+
+    void visit_Associate(const ASR::Associate_t &x) {
+        ASR::symbol_t* shape = visit_operand(x.m_value);
+        visit_expr(*x.m_target);
+        capture_associate_name(x.m_target, shape);
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (!is_expression_associate_name(x.m_target)) {
+            ASR::BaseWalkVisitor<CapturedArrayTypeRewriter>::visit_Assignment(x);
+            return;
+        }
+        ASR::symbol_t* shape = visit_operand(x.m_value);
+        visit_expr(*x.m_target);
+        capture_associate_name(x.m_target, shape);
+        if (x.m_overloaded) visit_stmt(*x.m_overloaded);
     }
 };
 
@@ -1234,7 +1285,10 @@ public:
         if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Implementation &&
                 capture_automatic_array_bounds(x.m_symtab)) {
             CapturedArrayTypeRewriter rewriter(al, captured);
-            rewriter.visit_Function(x);
+            do {
+                rewriter.added_associate_names = false;
+                rewriter.visit_Function(x);
+            } while (rewriter.added_associate_names);
         }
         this->visit_ttype(*x.m_function_signature); // Visit signature first to handle returnVar
         for( auto sym: x.m_symtab->get_scope() ) {
@@ -1256,7 +1310,10 @@ public:
     void visit_Block(const ASR::Block_t &x) {
         if (capture_automatic_array_bounds(x.m_symtab)) {
             CapturedArrayTypeRewriter rewriter(al, captured);
-            rewriter.visit_Block(x);
+            do {
+                rewriter.added_associate_names = false;
+                rewriter.visit_Block(x);
+            } while (rewriter.added_associate_names);
         }
         visit_construct(x);
     }
