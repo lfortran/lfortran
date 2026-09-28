@@ -1389,6 +1389,32 @@ class GlobalInitWireVisitor {
             return targets;
         }
 
+        // Whether a module without an initializer of its own, such as the
+        // one `nested_vars` creates for the host variables of contained
+        // procedures, defines an allocatable or a polymorphic pointer:
+        // storage that can own memory, which only the teardown of the
+        // translation unit's initializer frees.
+        bool borrowed_storage_can_own_memory() {
+            for (SymbolTable *scope : ASRUtils::global_init_storage_scopes(
+                    (ASR::asr_t*)&unit)) {
+                if (scope == unit.m_symtab) continue;
+                for (auto &item : scope->get_scope()) {
+                    if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                    if (v->m_abi != ASR::abiType::Source
+                            || v->m_storage == ASR::storage_typeType::Parameter) {
+                        continue;
+                    }
+                    if (ASRUtils::is_allocatable(v->m_type)
+                            || (ASRUtils::is_pointer(v->m_type)
+                                && ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type)))) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         void finalize(ASR::asr_t *owner) {
             ASR::Function_t *fn = ASRUtils::get_global_init(owner);
             if (fn == nullptr || !ASRUtils::global_init_defined_here(fn)) return;
@@ -1486,9 +1512,11 @@ class GlobalInitWireVisitor {
             }
             // The translation unit's own variables whose storage is created
             // at run time -- those of an interactive cell -- need its
-            // initializer even when nothing else put anything there.
+            // initializer even when nothing else put anything there, and so
+            // does storage it borrows that its teardown may have to free.
             if (unit.m_global_init == nullptr
-                    && !storage_targets((ASR::asr_t*)&unit).empty()) {
+                    && (!storage_targets((ASR::asr_t*)&unit).empty()
+                        || borrowed_storage_can_own_memory())) {
                 ASRUtils::get_or_create_global_init(al, unit, (ASR::asr_t*)&unit);
             }
             finalize((ASR::asr_t*)&unit);

@@ -174,7 +174,9 @@ initializer without defining it. A **Program** and the
 [TranslationUnit](../unit_nodes/TranslationUnit.md) get one when a pass has
 something to put into it. Each initializer is guarded by the state its owner's
 `global_init_state` refers to, and the `global_init_wire` pass, which runs after
-every pass that can add initialization (`coarray` among them), gives each
+every pass that can add initialization (`coarray` among them), and again after
+`nested_vars`, whose module for the host variables of contained procedures
+leaves its storage to the translation unit's initializer, gives each
 initializer defined in the translation unit its final shape:
 
 ```text
