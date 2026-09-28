@@ -392,10 +392,15 @@ public:
         size_t heap_arrays_before;
         size_t char_writebacks_before;
         llvm::Value* saved_stack;
-        size_t end_index; // index of the BLOCK's end in `loop_or_block_end`
+        // The number of entries of `loop_or_block_end` on entry: a branch to
+        // one of the first `end_index` entries leaves the construct.
+        size_t end_index;
+        // An ASSOCIATE construct has no character data to write back.
+        bool writes_back_chars;
     };
-    std::vector<BlockCleanup> block_cleanups; /* Enclosing BLOCK constructs,
-        innermost last, whose cleanup is emitted by an EXIT that leaves them */
+    std::vector<BlockCleanup> block_cleanups; /* Enclosing BLOCK and ASSOCIATE
+        constructs, innermost last, whose cleanup is emitted by an EXIT, CYCLE
+        or RETURN that leaves them */
 
     struct FlatCopyback {
         llvm::Value* flat_buf;
@@ -14897,28 +14902,21 @@ public:
             }
         }
 
+        block_cleanups.push_back({associate_block->m_symtab, heap_arrays_before,
+            pending_char_writebacks.size(), saved_stack, loop_or_block_end.size(),
+            false});
         for (size_t i = 0; i < associate_block->n_body; i++) {
             this->visit_stmt(*(associate_block->m_body[i]));
         }
 
         llvm::BasicBlock* end_BB = llvm::BasicBlock::Create(context, std::string(associate_block->m_name) + "_end");
         start_new_block(end_BB);
-        llvm_symtab_finalizer.finalize_symtab(associate_block->m_symtab);
-
-        // Free associate-block-local heap arrays
-        for (size_t i = heap_arrays_before; i < heap_fixed_size_arrays.n; i++) {
-            llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
-        }
+        // Finalize, free associate-block-local heap arrays and restore the
+        // stack pointer to reclaim block-scoped alloca space.
+        emit_block_cleanup(block_cleanups.back(), heap_fixed_size_arrays.n,
+            pending_char_writebacks.size());
         heap_fixed_size_arrays.n = heap_arrays_before;
-
-        // Restore stack pointer to reclaim block-scoped alloca space
-#if LLVM_VERSION_MAJOR >= 18
-        builder->CreateStackRestore(saved_stack);
-#else
-        llvm::Function *stackrestore_fn = llvm::Intrinsic::getDeclaration(
-            module.get(), llvm::Intrinsic::stackrestore);
-        builder->CreateCall(stackrestore_fn, {saved_stack});
-#endif
+        block_cleanups.pop_back();
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x) {
@@ -14965,7 +14963,7 @@ public:
         declare_vars(*block);
         in_block_context = false;
         block_cleanups.push_back({block->m_symtab, heap_arrays_before,
-            wb_before, saved_stack, loop_or_block_end.size()});
+            wb_before, saved_stack, loop_or_block_end.size(), true});
         loop_or_block_end.push_back(blockend);
         loop_or_block_end_names.push_back(blockend_name);
         for (size_t i = 0; i < block->n_body; i++) {
@@ -14992,7 +14990,8 @@ public:
     // stack pointer saved on entry.
     void emit_block_cleanup(const BlockCleanup &b, size_t heap_end,
             size_t wb_end) {
-        for (size_t i = b.char_writebacks_before; i < wb_end; i++) {
+        for (size_t i = b.char_writebacks_before;
+                b.writes_back_chars && i < wb_end; i++) {
             auto& wb = pending_char_writebacks[i];
             llvm_utils->writeback_char_to_polymorphic_descriptors(
                 wb.original_descs_i8, wb.consolidated_desc, wb.n_elems_i64);
@@ -15874,17 +15873,26 @@ public:
         return true;
     }
 
-    // Branch to `loop_or_block_end[target]`, first ending every BLOCK
-    // construct that the branch leaves, innermost first.
-    void exit_to(size_t target) {
+    // End every BLOCK or ASSOCIATE construct that a branch to
+    // `loop_or_block_end[target]` leaves (all of them if `all`), innermost
+    // first.
+    void leave_blocks(size_t target, bool all=false) {
         size_t heap_end = heap_fixed_size_arrays.n;
         size_t wb_end = pending_char_writebacks.size();
         for (auto b = block_cleanups.rbegin();
-                b != block_cleanups.rend() && b->end_index > target; ++b) {
+                b != block_cleanups.rend() && (all || b->end_index > target); ++b) {
             emit_block_cleanup(*b, heap_end, wb_end);
             heap_end = b->heap_arrays_before;
-            wb_end = b->char_writebacks_before;
+            if (b->writes_back_chars) {
+                wb_end = b->char_writebacks_before;
+            }
         }
+    }
+
+    // Branch to `loop_or_block_end[target]`, first ending every construct
+    // that the branch leaves.
+    void exit_to(size_t target) {
+        leave_blocks(target);
         builder->CreateBr(loop_or_block_end[target]);
     }
 
@@ -15930,12 +15938,14 @@ public:
                 }
             }
             if (i >= 0) {
+                leave_blocks(loop_end_index[i]);
                 builder->CreateBr(loop_head[i]);
             } else {
                 throw CodeGenError("Could not find loop named " + std::string(x.m_stmt_name) + " in parent scope to cycle to.",
                 x.base.base.loc);
             }
         } else {
+            leave_blocks(loop_end_index.back());
             builder->CreateBr(loop_head.back());
         }
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_cycle");
@@ -15943,6 +15953,7 @@ public:
     }
 
     void visit_Return(const ASR::Return_t & /* x */) {
+        leave_blocks(0, true);
         builder->CreateBr(proc_return);
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_return");
         start_new_block(bb);
