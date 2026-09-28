@@ -163,9 +163,9 @@ of the type in the module that defines it), because the qualified name
 An interface body does not access its host by host association, so a
 module entity of the host is not accessible there. `import :: L` (and
 `import, all`) makes it accessible, just like any other host entity. A
-`use, namespace` statement inside the interface body also works. Tests:
-`namespace_modules_15` (valid) and `errors/namespace_modules_26` (missing
-import).
+`use, namespace` statement inside the interface body also works. Test:
+`namespace_modules_15`. A missing `import` is not diagnosed yet (see the
+known limitations below).
 
 ### D7: repeated namespace imports
 
@@ -355,7 +355,8 @@ extensions described below.
 
 The module name `M` is still a global identifier used in the scope, even
 when the module entity is renamed. By the existing F2023 19.3.1 rule, the
-scope cannot declare a local entity named `M` (`errors/namespace_modules_23`).
+scope cannot declare a local entity named `M`. This is not diagnosed yet
+(see the known limitations below).
 
 ### Compatibility
 
@@ -787,12 +788,49 @@ Known limitations of the prototype:
   shows `L%f` when the verification at the end of semantics reports it
   (in builds with assertions). A later verification, after an ASR pass,
   names the generated symbol (`f~of_m`).
-* `errors/namespace_modules_23` (a local entity named like a module used
-  in the scope) and `errors/namespace_modules_26` (an interface body
-  without `IMPORT`) are not diagnosed yet. LFortran does not enforce these
-  rules for ordinary USE statements either: lfortran/lfortran#12850 and
-  lfortran/lfortran#13799. The two tests are not registered until those are
-  fixed.
+* Two errors are not diagnosed yet, because LFortran does not enforce the
+  underlying rules for ordinary USE statements either. Error tests for them
+  will be added when those issues are fixed.
+  - A local entity named like a module used in the scope, even when the
+    module entity is renamed (lfortran/lfortran#12850). This program is
+    accepted:
+
+    ```fortran
+    module mod_a
+        implicit none
+        integer :: x = 1
+    end module
+
+    program local_named_like_module
+        use, namespace :: m => mod_a
+        implicit none
+        integer :: mod_a
+        mod_a = 2
+        print *, m%x, mod_a
+    end program
+    ```
+
+  - A module entity of the host referenced in an interface body without
+    `IMPORT` (lfortran/lfortran#13799). This program is accepted:
+
+    ```fortran
+    module mod_t
+        implicit none
+        type :: t
+            integer :: x = 1
+        end type
+    end module
+
+    program interface_without_import
+        use, namespace :: m => mod_t
+        implicit none
+        interface
+            subroutine ext(a)
+                type(m%t), intent(in) :: a
+            end subroutine
+        end interface
+    end program
+    ```
 
 ## Tests
 
@@ -877,10 +915,8 @@ the separate file `errors/namespace_modules_NN.f90`.
 | `namespace_modules_20` | Qualified name as a literal kind parameter |
 | `cc_21` | Module entity hidden by a local variable in an internal procedure |
 | `cc_22` | Module imports itself |
-| `namespace_modules_23` | Local entity named like the renamed module |
 | `cc_24` | Type used as a data object |
 | `namespace_modules_25` | Declaring a qualified name |
-| `namespace_modules_26` | Interface body without `IMPORT` |
 | `cc_27` | Assignment to a named constant |
 | `cc_28` | Private module entity of a module, accessed as `b%a%x` |
 | `cc_29` | Two module entities named `a` for different modules, referenced |
