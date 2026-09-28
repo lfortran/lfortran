@@ -2415,6 +2415,6 @@ contains
     end subroutine
 
     subroutine defop_for_type()
-        instantiate defop_t {operator(.minus.), integer}, only: defop_g => defop_f  ! {Error} the instantiation argument 'operator(.minus.)' for 'defop_t' requires a deferred procedure
+        instantiate defop_t {operator(.minus.), integer}, only: defop_g => defop_f  ! {Error} the instantiation argument 'operator(.minus.)' for 't' requires a deferred procedure
     end subroutine
 end module

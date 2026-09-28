@@ -1364,7 +1364,7 @@ semantic error: instantiated procedure 'own_tmpl' has the same name as the templ
 semantic error: the instantiation argument 'operator(.minus.)' for 't' requires a deferred procedure
     --> tests/errors/continue_compilation_templates_01.f90:2418:30
      |
-2418 |         instantiate defop_t {operator(.minus.), integer}, only: defop_g => defop_f  ! {Error} the instantiation argument 'operator(.minus.)' for 'defop_t' requires a deferred procedure
+2418 |         instantiate defop_t {operator(.minus.), integer}, only: defop_g => defop_f  ! {Error} the instantiation argument 'operator(.minus.)' for 't' requires a deferred procedure
      |                              ^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
