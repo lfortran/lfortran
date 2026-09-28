@@ -3,8 +3,8 @@
 ! unit initializers, because the coarray pass walks out of the procedure to
 ! the module or program that encloses it:
 !
-!   * `mod_bump`'s `mc` is allocated by the module's initializer,
-!   * `int_bump`'s `ic` by the program's,
+!   * `mod_bump`'s `i` is allocated by the module's initializer,
+!   * `int_bump`'s `i` by the program's,
 !
 ! while a saved coarray of an *external* procedure, which `coarrays_16` and
 ! `coarrays_26` cover, belongs to no program unit and stays on the translation
@@ -18,15 +18,19 @@
 !
 ! Reported as a coverage gap, and this test strengthened, by @bonachea in
 ! review of #13221.
+!
+! Every one of these coarrays is named `i`, so the names the coarray pass
+! derives for them collide: the reference test registered for this file
+! pins that each procedure is left referring to its own coarray (#13413).
 module coarrays_50_m
     implicit none
 contains
     ! Saved coarray of a MODULE procedure.
     subroutine mod_bump(v)
         integer, intent(out) :: v
-        integer, save :: mc[*] = 100
-        mc = mc + 1
-        v = mc
+        integer, save :: i[*] = 100
+        i = i + 1
+        v = i
     end subroutine
 
     ! Read another image's copy, which only works if every image allocated it.
@@ -34,10 +38,10 @@ contains
     ! the initializer ran, not merely that the storage exists.
     subroutine mod_remote(v)
         integer, intent(out) :: v
-        integer, save :: mr[*] = 500
-        mr = mr + this_image()
+        integer, save :: i[*] = 500
+        i = i + this_image()
         sync all
-        v = mr[1]
+        v = i[1]
     end subroutine
 end module
 
@@ -74,17 +78,17 @@ contains
     ! Saved coarray of an INTERNAL procedure.
     subroutine int_bump(v)
         integer, intent(out) :: v
-        integer, save :: ic[*] = 200
-        ic = ic + 1
-        v = ic
+        integer, save :: i[*] = 200
+        i = i + 1
+        v = i
     end subroutine
 
     subroutine int_remote(v)
         integer, intent(out) :: v
-        integer, save :: ir[*] = 600
-        ir = ir + this_image()
+        integer, save :: i[*] = 600
+        i = i + this_image()
         sync all
-        v = ir[1]
+        v = i[1]
     end subroutine
 
 end program

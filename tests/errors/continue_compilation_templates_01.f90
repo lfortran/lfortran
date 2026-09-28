@@ -1501,10 +1501,10 @@ module deferred_type_coarray_1
         end subroutine
     end template
 
-    ! Specification part of a requirement.
+    ! Specification part of a requirement (R1634 rejects it before C1617).
     requirement r {t}
         deferred type :: t
-        type(t), codimension[:], allocatable :: req_x  ! {Error} A variable of deferred type must not be a coarray
+        type(t), codimension[:], allocatable :: req_x  ! {Error} 'req_x' is not a deferred argument of 'r'
     end requirement
 
 contains
@@ -1949,3 +1949,391 @@ c = 1
 end block
 
 end program continue_compilation_templates_01
+
+! A requirement specification holds only deferred argument declarations and
+! interface blocks (R1634), so a plain type declaration of one of its
+! arguments is rejected where it is written instead of being taken for a
+! deferred type (#13328).
+module requirement_non_deferred_decl_1
+    implicit none
+
+    requirement r_derived {t, c}
+        deferred type :: t
+        type(t) :: c  ! {Error} 'c' is a deferred argument of requirement 'r_derived', so it must be declared as a deferred type, a deferred constant or a deferred procedure
+    end requirement
+
+    requirement r_intrinsic {c}
+        integer :: c  ! {Error} 'c' is a deferred argument of requirement 'r_intrinsic', so it must be declared as a deferred type, a deferred constant or a deferred procedure
+    end requirement
+
+    requirement r_not_arg {t}
+        deferred type :: t
+        real :: x  ! {Error} 'x' is not a deferred argument of 'r_not_arg'
+    end requirement
+
+end module
+
+! requirement_undeclared_arg_1
+! A requirement argument that is never declared in the requirement is an
+! error; using the requirement must not crash (#13327).
+module requirement_undeclared_arg_1
+    implicit none
+
+    requirement r_undeclared {t, u}  ! {Error} requirement argument 'u' has not been declared in requirement 'r_undeclared'
+        deferred type :: t
+    end requirement
+
+    template tmpl_undeclared {a, b}
+        deferred type :: a
+        deferred type :: b
+        require :: r_undeclared {a, b}
+    end template
+
+end module
+
+! A named constant of a template initialized with an intrinsic function of a
+! deferred constant is folded at instantiation for the numeric intrinsics
+! such as `abs` or `max`; the others are rejected instead of leaving the
+! constant without a value (#13357).
+module template_deferred_const_intrinsic_1
+    implicit none
+
+    template tmpl {n}
+        deferred integer, parameter :: n
+    contains
+        function f() result(r)
+            real :: r
+            real, parameter :: x = sin(real(n))  ! {Error} initialization of named constant `x` with this expression of a deferred constant is not supported yet
+            r = x
+        end function
+    end template
+
+end module
+
+! The rejection of such an initializer is final, so that instantiating the
+! template reports it instead of failing on a constant without a value; the
+! instantiation reports a division by zero in the initializer it evaluates
+! (#13357).
+module template_deferred_const_instantiated_1
+    implicit none
+    integer, parameter :: three = 3
+
+    template tmpl_ishft {n}
+        deferred integer, parameter :: n
+    contains
+        function f() result(r)
+            integer :: r
+            integer, parameter :: k = ishft(n, 1) + 1  ! {Error} initialization of named constant `k` with this expression of a deferred constant is not supported yet
+            r = k
+        end function
+    end template
+
+    template tmpl_div {n}
+        deferred integer, parameter :: n
+    contains
+        function f() result(r)
+            integer :: r
+            integer, parameter :: k = 6/(n - 3)  ! {Error} Division by zero
+            r = k
+        end function
+    end template
+
+    template tmpl_mod {n}
+        deferred integer, parameter :: n
+    contains
+        function f() result(r)
+            integer :: r
+            integer, parameter :: k = mod(n, n - 3)  ! {Error} Second argument of mod cannot be 0
+            r = k
+        end function
+    end template
+
+    template tmpl_modulo {n}
+        deferred integer, parameter :: n
+    contains
+        function f() result(r)
+            integer :: r
+            integer, parameter :: k = modulo(n, n - 3)  ! {Error} Second argument of modulo cannot be 0
+            r = k
+        end function
+    end template
+
+contains
+
+    subroutine use_ishft()
+        instantiate tmpl_ishft {three}
+    end subroutine
+
+    subroutine use_div()
+        instantiate tmpl_div {three}
+    end subroutine
+
+    subroutine use_mod()
+        instantiate tmpl_mod {three}
+    end subroutine
+
+    subroutine use_modulo()
+        instantiate tmpl_modulo {three}
+    end subroutine
+
+end module
+
+! Every deferred argument must be declared in the templated subprogram's
+! specification, for subroutines and functions alike (#13360).
+module templated_subprogram_undeclared_1
+    implicit none
+contains
+    template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+    end subroutine
+
+    template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+        r = 0
+    end function
+end module
+
+! An ordinary local variable does not declare a deferred constant. The
+! error names the deferred spelling, and is the only one reported, also when
+! the body uses the name.
+module templated_subprogram_local_1
+    implicit none
+contains
+    template subroutine s{n}(x)
+        integer :: n  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+        integer, intent(inout) :: x
+        x = x + n
+    end subroutine
+
+    template integer function f{n}(x) result(res)
+        integer :: n  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+        integer, intent(in) :: x
+        res = x + n
+    end function
+end module
+
+! PARAMETER alone still declares a local constant, not a deferred argument.
+module templated_subprogram_parameter_1
+    implicit none
+contains
+    template subroutine s{n}()
+        integer, parameter :: n = 7  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+    end subroutine
+
+    template integer function f{n}() result(r)
+        integer, parameter :: n = 7  ! {Error} 'n' is a deferred argument of the template, so a type declaration of it declares a deferred constant, which is spelled `deferred <type>, parameter :: n`
+        r = n
+    end function
+end module
+
+! A host-associated constant does not declare the deferred argument either.
+module templated_subprogram_host_1
+    implicit none
+    integer, parameter :: n = 7
+contains
+    template subroutine s{n}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+    end subroutine
+
+    template integer function f{n}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+        r = n
+    end function
+end module
+
+! Check every argument, matching declarations case-insensitively.
+module templated_subprogram_partial_1
+    implicit none
+contains
+    template subroutine s{T, N}()  ! {Error} template argument 'n' has not been declared in templated subroutine specification
+        deferred type :: t
+    end subroutine
+
+    template integer function f{T, N}() result(r)  ! {Error} template argument 'n' has not been declared in templated function specification
+        deferred type :: t
+        r = 0
+    end function
+end module
+
+module continue_compilation_templates_01_const_arg
+    implicit none
+
+    template tmpl_const_arg {T, n}
+        deferred type :: T
+        deferred integer, parameter :: n
+    contains
+        function f() result(r)
+            integer :: r
+            r = n
+        end function
+    end template
+
+contains
+
+    subroutine use_not_constant()
+        integer :: k
+        k = 3
+        instantiate tmpl_const_arg {integer, k + 1}  ! {Error} the instantiation argument for the deferred constant 'n' must be a constant expression
+    end subroutine
+
+    subroutine use_expr_for_type()
+        instantiate tmpl_const_arg {2, 3}  ! {Error} the instantiation argument for 't' is an expression, but 't' is not a deferred constant
+    end subroutine
+
+    subroutine use_wrong_kind()
+        instantiate tmpl_const_arg {integer, 3_8}  ! {Error} the type of the instantiation argument, integer(8), does not match the type of the deferred constant 'n', integer(4)
+    end subroutine
+
+    template subroutine inline_const_arg{T}(x)
+        deferred type :: T
+        type(T), intent(inout) :: x
+        x = x
+    end subroutine
+
+    subroutine use_inline_expr_for_type()
+        integer :: y
+        y = 1
+        call inline_const_arg{2}(y)  ! {Error} the instantiation argument for 't' is an expression, but 't' is not a deferred constant
+    end subroutine
+
+end module
+
+module continue_compilation_templates_01_require_const_arg
+    implicit none
+
+    requirement req_const_arg{n}
+        deferred integer, parameter :: n
+    end requirement
+
+    template tmpl_require_deferred_expr {n}
+        deferred integer, parameter :: n
+        require :: req_const_arg{n + 1}  ! {Error} the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
+    end template
+
+    template tmpl_require_wrong_type {n}
+        deferred integer, parameter :: n
+        require :: req_const_arg{1.5}  ! {Error} the type of the instantiation argument, real(4), does not match the type of the deferred constant 'n', integer(4)
+    end template
+
+    template tmpl_inner_const {n}
+        deferred integer, parameter :: n
+    contains
+        function get_n() result(r)
+            integer :: r
+            r = n
+        end function
+    end template
+
+    template tmpl_instantiate_deferred_expr {m}
+        deferred integer, parameter :: m
+    contains
+        function get_m1() result(r)
+            instantiate tmpl_inner_const {m + 1}, only: g1 => get_n  ! {Error} the argument for the deferred constant 'n' refers to a deferred constant of an enclosing template or requirement; expressions of deferred constants are not supported yet
+            integer :: r
+            r = g1()
+        end function
+    end template
+
+end module
+
+module continue_compilation_templates_01_own_name_tmpl
+    implicit none
+contains
+    template function g{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        type(t) :: g
+        g = x
+    end function
+
+    template subroutine s{t}(x, y)
+        deferred type :: t
+        type(t), intent(in) :: x
+        type(t), intent(out) :: y
+        y = x
+    end subroutine
+end module
+
+module continue_compilation_templates_01_own_name_construct
+    implicit none
+    template own_tmpl {t}
+        deferred type :: t
+    contains
+        function five(x) result(y)
+            type(t), intent(in) :: x
+            type(t) :: y
+            y = x
+        end function
+    end template
+end module
+
+! An instance must not take the name of the templated procedure it instantiates.
+module continue_compilation_templates_01_own_name
+    use continue_compilation_templates_01_own_name_tmpl
+    implicit none
+contains
+    subroutine own_name_rename()
+        instantiate g {integer}, only: g => g  ! {Error} instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+    end subroutine
+
+    subroutine own_name_only()
+        instantiate g {integer}, only: g  ! {Error} instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+    end subroutine
+
+    subroutine own_name_no_only()
+        instantiate g {integer}  ! {Error} instantiated procedure 'g' has the same name as the templated procedure 'g' it instantiates
+    end subroutine
+
+    subroutine own_name_subroutine()
+        instantiate s {integer}, only: s  ! {Error} instantiated procedure 's' has the same name as the templated procedure 's' it instantiates
+    end subroutine
+
+    subroutine own_name_construct()
+        use continue_compilation_templates_01_own_name_construct
+        instantiate own_tmpl {integer}, only: own_tmpl => five  ! {Error} instantiated procedure 'own_tmpl' has the same name as the template 'own_tmpl' it instantiates
+    end subroutine
+end module
+
+! A deferred type has no implicit conversion to or from an intrinsic type, so
+! assigning between them inside a template is a type mismatch (#13641). This
+! used to fail an assertion in the implicit-cast rules.
+module continue_compilation_templates_01_assign_deferred
+    implicit none
+    integer :: last = 0
+contains
+    template subroutine assign_to_module_var{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        last = x  ! {Error} type mismatch (integer and t)
+    end subroutine
+
+    template subroutine assign_to_local{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer :: y
+        y = x  ! {Error} type mismatch (integer and t)
+    end subroutine
+
+    template subroutine assign_from_integer{t}(x)
+        deferred type :: t
+        type(t), intent(inout) :: x
+        integer :: y
+        y = 1
+        x = y  ! {Error} type mismatch (t and integer)
+    end subroutine
+
+    template subroutine assign_literal{t}(x)
+        deferred type :: t
+        type(t), intent(out) :: x
+        x = 3  ! {Error} type mismatch (t and integer)
+    end subroutine
+
+    template subroutine assign_array_to_integer{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x(:)
+        integer :: y(3)
+        y = x  ! {Error} type mismatch (integer[:] and t[:])
+    end subroutine
+
+    template subroutine assign_array_literal{t}(x)
+        deferred type :: t
+        type(t), intent(inout) :: x(3)
+        x = [1, 2, 3]  ! {Error} type mismatch (t[:] and integer[:])
+    end subroutine
+end module

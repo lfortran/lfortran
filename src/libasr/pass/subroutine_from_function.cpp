@@ -82,6 +82,8 @@ public:
             for (auto &str_sym_pair : x.m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Function_t>(*str_sym_pair.second)) {
                     this->visit_Function(*down_cast<ASR::Function_t>(str_sym_pair.second));
+                } else if (ASR::is_a<ASR::Template_t>(*str_sym_pair.second)) {
+                    this->visit_Template(*down_cast<ASR::Template_t>(str_sym_pair.second));
                 }
             }
             for (auto &str_sym_pair : x.m_symtab->get_scope()) {
@@ -96,10 +98,31 @@ public:
             for (auto &a : x.m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Function_t>(*a.second)) {
                     this->visit_Function(*down_cast<ASR::Function_t>(a.second));
+                } else if (ASR::is_a<ASR::Template_t>(*a.second)) {
+                    this->visit_Template(*down_cast<ASR::Template_t>(a.second));
                 }
             }
             for (auto &a : x.m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Variable_t>(*a.second) && 
+                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(a.second)))) {
+                    this->visit_Variable(*down_cast<ASR::Variable_t>(a.second));
+                }
+            }
+        }
+
+        // The procedures of a template are transformed like any others:
+        // ReplaceFunctionCallWithSubroutineCallVisitor rewrites the calls in
+        // their bodies too, so the callees must take the new signature.
+        void visit_Template(const ASR::Template_t &x) {
+            for (auto &a : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*a.second)) {
+                    this->visit_Function(*down_cast<ASR::Function_t>(a.second));
+                } else if (ASR::is_a<ASR::Template_t>(*a.second)) {
+                    this->visit_Template(*down_cast<ASR::Template_t>(a.second));
+                }
+            }
+            for (auto &a : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*a.second) &&
                     ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(a.second)))) {
                     this->visit_Variable(*down_cast<ASR::Variable_t>(a.second));
                 }

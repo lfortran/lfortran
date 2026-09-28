@@ -5,11 +5,11 @@
             template_travel_01b:
                 (Program
                     (SymbolTable
-                        21
+                        25
                         {
                             operation:
                                 (ExternalSymbol
-                                    21
+                                    25
                                     operation
                                     2 operation
                                     template_travel_01b_m
@@ -19,7 +19,7 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    21
+                                    25
                                     test_template
                                     2 test_template
                                     template_travel_01b_m
@@ -29,7 +29,7 @@
                                 ),
                             travel_tmpl:
                                 (ExternalSymbol
-                                    21
+                                    25
                                     travel_tmpl
                                     2 travel_tmpl
                                     template_travel_01b_m
@@ -41,7 +41,7 @@
                     template_travel_01b
                     [template_travel_01b_m]
                     [(SubroutineCall
-                        21 test_template
+                        25 test_template
                         ()
                         []
                         ()
@@ -288,11 +288,11 @@
                                             avg_integer_s_from_s:
                                                 (Function
                                                     (SymbolTable
-                                                        20
+                                                        24
                                                         {
                                                             avg:
                                                                 (Variable
-                                                                    20
+                                                                    24
                                                                     avg
                                                                     []
                                                                     ReturnVar
@@ -316,7 +316,7 @@
                                                                 ),
                                                             d1:
                                                                 (Variable
-                                                                    20
+                                                                    24
                                                                     d1
                                                                     []
                                                                     In
@@ -340,7 +340,7 @@
                                                                 ),
                                                             d2:
                                                                 (Variable
-                                                                    20
+                                                                    24
                                                                     d2
                                                                     []
                                                                     In
@@ -364,7 +364,7 @@
                                                                 ),
                                                             s1:
                                                                 (Variable
-                                                                    20
+                                                                    24
                                                                     s1
                                                                     []
                                                                     In
@@ -388,7 +388,7 @@
                                                                 ),
                                                             s2:
                                                                 (Variable
-                                                                    20
+                                                                    24
                                                                     s2
                                                                     []
                                                                     In
@@ -430,33 +430,33 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [~div_intrinsic1
+                                                    [~div_intrinsic3
                                                     avg_integer_s_from_t]
-                                                    [(Var 20 d1)
-                                                    (Var 20 s1)
-                                                    (Var 20 d2)
-                                                    (Var 20 s2)]
+                                                    [(Var 24 d1)
+                                                    (Var 24 s1)
+                                                    (Var 24 d2)
+                                                    (Var 24 s2)]
                                                     [(Assignment
-                                                        (Var 20 avg)
+                                                        (Var 24 avg)
                                                         (FunctionCall
                                                             12 avg_integer_s_from_t
                                                             ()
-                                                            [((Var 20 d1))
+                                                            [((Var 24 d1))
                                                             ((FunctionCall
-                                                                12 ~div_intrinsic1
+                                                                12 ~div_intrinsic3
                                                                 ()
-                                                                [((Var 20 d1))
-                                                                ((Var 20 s1))]
+                                                                [((Var 24 d1))
+                                                                ((Var 24 s1))]
                                                                 (Integer 4)
                                                                 ()
                                                                 ()
                                                             ))
-                                                            ((Var 20 d2))
+                                                            ((Var 24 d2))
                                                             ((FunctionCall
-                                                                12 ~div_intrinsic1
+                                                                12 ~div_intrinsic3
                                                                 ()
-                                                                [((Var 20 d2))
-                                                                ((Var 20 s2))]
+                                                                [((Var 24 d2))
+                                                                ((Var 24 s2))]
                                                                 (Integer 4)
                                                                 ()
                                                                 ()
@@ -469,7 +469,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 20 avg)
+                                                    (Var 24 avg)
                                                     Public
                                                     .true.
                                                     .true.
@@ -478,11 +478,11 @@
                                             avg_integer_s_from_t:
                                                 (Function
                                                     (SymbolTable
-                                                        19
+                                                        23
                                                         {
                                                             avg:
                                                                 (Variable
-                                                                    19
+                                                                    23
                                                                     avg
                                                                     []
                                                                     ReturnVar
@@ -506,7 +506,7 @@
                                                                 ),
                                                             d1:
                                                                 (Variable
-                                                                    19
+                                                                    23
                                                                     d1
                                                                     []
                                                                     In
@@ -530,7 +530,7 @@
                                                                 ),
                                                             d2:
                                                                 (Variable
-                                                                    19
+                                                                    23
                                                                     d2
                                                                     []
                                                                     In
@@ -554,7 +554,7 @@
                                                                 ),
                                                             t1:
                                                                 (Variable
-                                                                    19
+                                                                    23
                                                                     t1
                                                                     []
                                                                     In
@@ -578,7 +578,7 @@
                                                                 ),
                                                             t2:
                                                                 (Variable
-                                                                    19
+                                                                    23
                                                                     t2
                                                                     []
                                                                     In
@@ -620,31 +620,32 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [~add_intrinsic1
-                                                    ~div_intrinsic1]
-                                                    [(Var 19 d1)
-                                                    (Var 19 t1)
-                                                    (Var 19 d2)
-                                                    (Var 19 t2)]
+                                                    [~add_intrinsic2
+                                                    ~add_intrinsic3
+                                                    ~div_intrinsic2]
+                                                    [(Var 23 d1)
+                                                    (Var 23 t1)
+                                                    (Var 23 d2)
+                                                    (Var 23 t2)]
                                                     [(Assignment
-                                                        (Var 19 avg)
+                                                        (Var 23 avg)
                                                         (FunctionCall
-                                                            12 ~div_intrinsic1
+                                                            12 ~div_intrinsic2
                                                             ()
                                                             [((FunctionCall
-                                                                12 ~add_intrinsic1
+                                                                12 ~add_intrinsic2
                                                                 ()
-                                                                [((Var 19 d1))
-                                                                ((Var 19 d2))]
+                                                                [((Var 23 d1))
+                                                                ((Var 23 d2))]
                                                                 (Integer 4)
                                                                 ()
                                                                 ()
                                                             ))
                                                             ((FunctionCall
-                                                                12 ~add_intrinsic1
+                                                                12 ~add_intrinsic3
                                                                 ()
-                                                                [((Var 19 t1))
-                                                                ((Var 19 t2))]
+                                                                [((Var 23 t1))
+                                                                ((Var 23 t2))]
                                                                 (Integer 4)
                                                                 ()
                                                                 ()
@@ -657,7 +658,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 19 avg)
+                                                    (Var 23 avg)
                                                     Public
                                                     .true.
                                                     .true.
@@ -666,11 +667,11 @@
                                             avg_real_s_from_s:
                                                 (Function
                                                     (SymbolTable
-                                                        16
+                                                        18
                                                         {
                                                             avg:
                                                                 (Variable
-                                                                    16
+                                                                    18
                                                                     avg
                                                                     []
                                                                     ReturnVar
@@ -694,7 +695,7 @@
                                                                 ),
                                                             d1:
                                                                 (Variable
-                                                                    16
+                                                                    18
                                                                     d1
                                                                     []
                                                                     In
@@ -718,7 +719,7 @@
                                                                 ),
                                                             d2:
                                                                 (Variable
-                                                                    16
+                                                                    18
                                                                     d2
                                                                     []
                                                                     In
@@ -742,7 +743,7 @@
                                                                 ),
                                                             s1:
                                                                 (Variable
-                                                                    16
+                                                                    18
                                                                     s1
                                                                     []
                                                                     In
@@ -766,7 +767,7 @@
                                                                 ),
                                                             s2:
                                                                 (Variable
-                                                                    16
+                                                                    18
                                                                     s2
                                                                     []
                                                                     In
@@ -808,33 +809,33 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [~div_intrinsic
+                                                    [~div_intrinsic1
                                                     avg_real_s_from_t]
-                                                    [(Var 16 d1)
-                                                    (Var 16 s1)
-                                                    (Var 16 d2)
-                                                    (Var 16 s2)]
+                                                    [(Var 18 d1)
+                                                    (Var 18 s1)
+                                                    (Var 18 d2)
+                                                    (Var 18 s2)]
                                                     [(Assignment
-                                                        (Var 16 avg)
+                                                        (Var 18 avg)
                                                         (FunctionCall
                                                             12 avg_real_s_from_t
                                                             ()
-                                                            [((Var 16 d1))
+                                                            [((Var 18 d1))
                                                             ((FunctionCall
-                                                                12 ~div_intrinsic
+                                                                12 ~div_intrinsic1
                                                                 ()
-                                                                [((Var 16 d1))
-                                                                ((Var 16 s1))]
+                                                                [((Var 18 d1))
+                                                                ((Var 18 s1))]
                                                                 (Real 4)
                                                                 ()
                                                                 ()
                                                             ))
-                                                            ((Var 16 d2))
+                                                            ((Var 18 d2))
                                                             ((FunctionCall
-                                                                12 ~div_intrinsic
+                                                                12 ~div_intrinsic1
                                                                 ()
-                                                                [((Var 16 d2))
-                                                                ((Var 16 s2))]
+                                                                [((Var 18 d2))
+                                                                ((Var 18 s2))]
                                                                 (Real 4)
                                                                 ()
                                                                 ()
@@ -847,7 +848,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 16 avg)
+                                                    (Var 18 avg)
                                                     Public
                                                     .true.
                                                     .true.
@@ -856,11 +857,11 @@
                                             avg_real_s_from_t:
                                                 (Function
                                                     (SymbolTable
-                                                        15
+                                                        17
                                                         {
                                                             avg:
                                                                 (Variable
-                                                                    15
+                                                                    17
                                                                     avg
                                                                     []
                                                                     ReturnVar
@@ -884,7 +885,7 @@
                                                                 ),
                                                             d1:
                                                                 (Variable
-                                                                    15
+                                                                    17
                                                                     d1
                                                                     []
                                                                     In
@@ -908,7 +909,7 @@
                                                                 ),
                                                             d2:
                                                                 (Variable
-                                                                    15
+                                                                    17
                                                                     d2
                                                                     []
                                                                     In
@@ -932,7 +933,7 @@
                                                                 ),
                                                             t1:
                                                                 (Variable
-                                                                    15
+                                                                    17
                                                                     t1
                                                                     []
                                                                     In
@@ -956,7 +957,7 @@
                                                                 ),
                                                             t2:
                                                                 (Variable
-                                                                    15
+                                                                    17
                                                                     t2
                                                                     []
                                                                     In
@@ -999,30 +1000,31 @@
                                                         Host
                                                     )
                                                     [~add_intrinsic
+                                                    ~add_intrinsic1
                                                     ~div_intrinsic]
-                                                    [(Var 15 d1)
-                                                    (Var 15 t1)
-                                                    (Var 15 d2)
-                                                    (Var 15 t2)]
+                                                    [(Var 17 d1)
+                                                    (Var 17 t1)
+                                                    (Var 17 d2)
+                                                    (Var 17 t2)]
                                                     [(Assignment
-                                                        (Var 15 avg)
+                                                        (Var 17 avg)
                                                         (FunctionCall
                                                             12 ~div_intrinsic
                                                             ()
                                                             [((FunctionCall
                                                                 12 ~add_intrinsic
                                                                 ()
-                                                                [((Var 15 d1))
-                                                                ((Var 15 d2))]
+                                                                [((Var 17 d1))
+                                                                ((Var 17 d2))]
                                                                 (Real 4)
                                                                 ()
                                                                 ()
                                                             ))
                                                             ((FunctionCall
-                                                                12 ~add_intrinsic
+                                                                12 ~add_intrinsic1
                                                                 ()
-                                                                [((Var 15 t1))
-                                                                ((Var 15 t2))]
+                                                                [((Var 17 t1))
+                                                                ((Var 17 t2))]
                                                                 (Real 4)
                                                                 ()
                                                                 ()
@@ -1035,7 +1037,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 15 avg)
+                                                    (Var 17 avg)
                                                     Public
                                                     .true.
                                                     .true.
@@ -1136,14 +1138,6 @@
                                                     NotMethod
                                                     ()
                                                     []
-                                                ),
-                                            ~add:
-                                                (CustomOperator
-                                                    12
-                                                    ~add
-                                                    [12 ~add_intrinsic
-                                                    12 ~add_intrinsic1]
-                                                    Public
                                                 ),
                                             ~add_intrinsic:
                                                 (Function
@@ -1265,131 +1259,6 @@
                                             ~add_intrinsic1:
                                                 (Function
                                                     (SymbolTable
-                                                        17
-                                                        {
-                                                            arg0:
-                                                                (Variable
-                                                                    17
-                                                                    arg0
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            arg1:
-                                                                (Variable
-                                                                    17
-                                                                    arg1
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            ret:
-                                                                (Variable
-                                                                    17
-                                                                    ret
-                                                                    []
-                                                                    ReturnVar
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                )
-                                                        })
-                                                    ~add_intrinsic1
-                                                    (FunctionType
-                                                        [(Integer 4)
-                                                        (Integer 4)]
-                                                        (Integer 4)
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .true.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .true.
-                                                        Host
-                                                    )
-                                                    []
-                                                    [(Var 17 arg0)
-                                                    (Var 17 arg1)]
-                                                    [(Assignment
-                                                        (Var 17 ret)
-                                                        (IntegerBinOp
-                                                            (Var 17 arg0)
-                                                            Add
-                                                            (Var 17 arg1)
-                                                            (Integer 4)
-                                                            ()
-                                                        )
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                    )]
-                                                    (Var 17 ret)
-                                                    Public
-                                                    .true.
-                                                    .true.
-                                                    ()
-                                                ),
-                                            ~div:
-                                                (CustomOperator
-                                                    12
-                                                    ~div
-                                                    [12 ~div_intrinsic
-                                                    12 ~div_intrinsic1]
-                                                    Public
-                                                ),
-                                            ~div_intrinsic:
-                                                (Function
-                                                    (SymbolTable
                                                         14
                                                         {
                                                             arg0:
@@ -1465,7 +1334,7 @@
                                                                     []
                                                                 )
                                                         })
-                                                    ~div_intrinsic
+                                                    ~add_intrinsic1
                                                     (FunctionType
                                                         [(Real 4)
                                                         (Real 4)]
@@ -1489,7 +1358,7 @@
                                                         (Var 14 ret)
                                                         (RealBinOp
                                                             (Var 14 arg0)
-                                                            Div
+                                                            Add
                                                             (Var 14 arg1)
                                                             (Real 4)
                                                             ()
@@ -1504,14 +1373,14 @@
                                                     .true.
                                                     ()
                                                 ),
-                                            ~div_intrinsic1:
+                                            ~add_intrinsic2:
                                                 (Function
                                                     (SymbolTable
-                                                        18
+                                                        19
                                                         {
                                                             arg0:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     arg0
                                                                     []
                                                                     In
@@ -1535,7 +1404,7 @@
                                                                 ),
                                                             arg1:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     arg1
                                                                     []
                                                                     In
@@ -1559,7 +1428,7 @@
                                                                 ),
                                                             ret:
                                                                 (Variable
-                                                                    18
+                                                                    19
                                                                     ret
                                                                     []
                                                                     ReturnVar
@@ -1582,7 +1451,7 @@
                                                                     []
                                                                 )
                                                         })
-                                                    ~div_intrinsic1
+                                                    ~add_intrinsic2
                                                     (FunctionType
                                                         [(Integer 4)
                                                         (Integer 4)]
@@ -1600,14 +1469,14 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 18 arg0)
-                                                    (Var 18 arg1)]
+                                                    [(Var 19 arg0)
+                                                    (Var 19 arg1)]
                                                     [(Assignment
-                                                        (Var 18 ret)
+                                                        (Var 19 ret)
                                                         (IntegerBinOp
-                                                            (Var 18 arg0)
-                                                            Div
-                                                            (Var 18 arg1)
+                                                            (Var 19 arg0)
+                                                            Add
+                                                            (Var 19 arg1)
                                                             (Integer 4)
                                                             ()
                                                         )
@@ -1615,7 +1484,592 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 18 ret)
+                                                    (Var 19 ret)
+                                                    Public
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            ~add_intrinsic3:
+                                                (Function
+                                                    (SymbolTable
+                                                        20
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    20
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    20
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            ret:
+                                                                (Variable
+                                                                    20
+                                                                    ret
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    ~add_intrinsic3
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 20 arg0)
+                                                    (Var 20 arg1)]
+                                                    [(Assignment
+                                                        (Var 20 ret)
+                                                        (IntegerBinOp
+                                                            (Var 20 arg0)
+                                                            Add
+                                                            (Var 20 arg1)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 20 ret)
+                                                    Public
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            ~div_intrinsic:
+                                                (Function
+                                                    (SymbolTable
+                                                        15
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    15
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    15
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            ret:
+                                                                (Variable
+                                                                    15
+                                                                    ret
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    ~div_intrinsic
+                                                    (FunctionType
+                                                        [(Real 4)
+                                                        (Real 4)]
+                                                        (Real 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 15 arg0)
+                                                    (Var 15 arg1)]
+                                                    [(Assignment
+                                                        (Var 15 ret)
+                                                        (RealBinOp
+                                                            (Var 15 arg0)
+                                                            Div
+                                                            (Var 15 arg1)
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 15 ret)
+                                                    Public
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            ~div_intrinsic1:
+                                                (Function
+                                                    (SymbolTable
+                                                        16
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    16
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    16
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            ret:
+                                                                (Variable
+                                                                    16
+                                                                    ret
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    ~div_intrinsic1
+                                                    (FunctionType
+                                                        [(Real 4)
+                                                        (Real 4)]
+                                                        (Real 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 16 arg0)
+                                                    (Var 16 arg1)]
+                                                    [(Assignment
+                                                        (Var 16 ret)
+                                                        (RealBinOp
+                                                            (Var 16 arg0)
+                                                            Div
+                                                            (Var 16 arg1)
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 16 ret)
+                                                    Public
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            ~div_intrinsic2:
+                                                (Function
+                                                    (SymbolTable
+                                                        21
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    21
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    21
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            ret:
+                                                                (Variable
+                                                                    21
+                                                                    ret
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    ~div_intrinsic2
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 21 arg0)
+                                                    (Var 21 arg1)]
+                                                    [(Assignment
+                                                        (Var 21 ret)
+                                                        (IntegerBinOp
+                                                            (Var 21 arg0)
+                                                            Div
+                                                            (Var 21 arg1)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 21 ret)
+                                                    Public
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            ~div_intrinsic3:
+                                                (Function
+                                                    (SymbolTable
+                                                        22
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    22
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    22
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            ret:
+                                                                (Variable
+                                                                    22
+                                                                    ret
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    ~div_intrinsic3
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 22 arg0)
+                                                    (Var 22 arg1)]
+                                                    [(Assignment
+                                                        (Var 22 ret)
+                                                        (IntegerBinOp
+                                                            (Var 22 arg0)
+                                                            Div
+                                                            (Var 22 arg1)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 22 ret)
                                                     Public
                                                     .true.
                                                     .true.

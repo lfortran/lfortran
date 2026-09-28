@@ -216,7 +216,15 @@ class GlobalInitVisitor {
             if (v.m_symbolic_value == nullptr) return false;
             if (v.m_storage == ASR::storage_typeType::Parameter) return false;
             ASR::expr_t *init = v.m_symbolic_value;
-            if (is_pointer_initializer(v)) return true;
+            // A pointer association whose target has a link-time address is
+            // laid out by the backend as the variable's own initializer, so
+            // it needs no statement here. Everything else about an
+            // association -- an array pointer's descriptor above all -- is
+            // built from the target rather than being its address, and stays
+            // a statement.
+            if (is_pointer_initializer(v)) {
+                return !ASRUtils::is_static_pointer_association(v);
+            }
             if (ASR::is_a<ASR::Cast_t>(*init)) {
                 init = ASR::down_cast<ASR::Cast_t>(init)->m_arg;
             }

@@ -394,6 +394,21 @@ public:
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }
+            if (ASRUtils::is_static_pointer_association(v) && !do_not_initialize) {
+                // `p => tgt` in a declaration associates the pointer with the
+                // target rather than giving it the target's value, so what
+                // initializes it is the address of the target. That address
+                // is a link time constant, which is why the initializer is
+                // still on the declaration rather than being a statement.
+                if (!ASR::is_a<ASR::Var_t>(*v.m_symbolic_value)) {
+                    diag.codegen_error_label("A pointer initialized with an "
+                        "array element or a component is not supported yet",
+                        {v.base.base.loc}, "");
+                    throw Abort();
+                }
+                this->visit_expr(*v.m_symbolic_value);
+                sub += " = &" + src;
+            }
         } else {
             std::string dims;
             use_ref = use_ref && !is_array;
@@ -764,11 +779,14 @@ R"(
         }
 
         std::string unit_src = "";
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+        // Declaration order, so that a variable whose initializer names
+        // another of the same module -- the address of the target of a
+        // pointer association, say -- is declared after it, as C requires.
+        for (auto &name : ASRUtils::determine_variable_declaration_order(x.m_symtab)) {
+            ASR::symbol_t *sym = x.m_symtab->get_symbol(name);
+            if (sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)) {
                 std::string unit_src_tmp;
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                    item.second);
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
                 unit_src_tmp = convert_variable_decl(*v);
                 unit_src += unit_src_tmp;
                 if(unit_src_tmp.size() > 0) {

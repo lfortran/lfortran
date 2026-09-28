@@ -139,15 +139,20 @@ with open("integration_tests/CMakeLists.txt") as f:
     for line in f:
         line = line.strip()
         if line.startswith("RUN(") and "coarray=true" in line:
-            m = re.search(r"NAME\s+(\w+)", line)
-            if m:
-                num_images = ""
-                m_img = re.search(r"NUM_IMAGES[\s=]+(\d+)", line)
-                if m_img:
-                    num_images = m_img.group(1)
-                filenames.append(f"integration_tests/{m.group(1)}.f90:{num_images}")
+            fields = ["NAME", "NUM_IMAGES", "LABELS", "EXTRAFILES", "EXTRA_ARGS"]
+            # Regex pattern matching key, separator (space or =), and value up to the next key or closing bracket
+            fields_pattern = "|".join(fields)
+            pattern = rf"({fields_pattern})[ =]\s*(.*?)(?=\s+(?:{fields_pattern})[ =]|\))"
+            parsed_data = dict(re.findall(pattern, line))
+            name       = parsed_data.get("NAME")
+            num_images = parsed_data.get("NUM_IMAGES") or ""
+            extra_args = parsed_data.get("EXTRA_ARGS") or ""
+            extrafiles = parsed_data.get("EXTRAFILES") or ""
+            extrafiles = " ".join(f"integration_tests/{item}" for item in extrafiles.split())
+            if name:
+                filenames.append(f"integration_tests/{name}.f90;{num_images};{extra_args};{extrafiles}")
 
-print(" ".join(filenames))
+print("\n".join(filenames))
 ')
 
 if [ -z "$tests" ]; then
@@ -168,9 +173,8 @@ fi
 # coarrays_49: gfortran ICEs on the `ptr => co_var` declaration initializer (internal compiler error in record_reference, cgraphbuild.cc:65, with 13.3); per @bonachea 16.2 still does not run this correctly
 opencoarrays_unsupported="coarrays_06 coarrays_11 coarrays_13 coarrays_21 coarrays_27 coarrays_31 coarrays_32 coarrays_34 coarrays_39 coarrays_45 coarrays_46 coarrays_47 coarrays_49"
 
-for test_info in $tests; do
-testfile="${test_info%%:*}"
-num_images="${test_info##*:}"
+# loop over $tests
+while IFS=';' read -r -u 3 testfile num_images extra_args extrafiles || [[ -n "$testfile" ]]; do
 
 if [ -z "$num_images" ]; then
     num_images=$CAF_IMAGES
@@ -190,8 +194,8 @@ base=$(basename "$testfile" .f90)
 # Compile with LFortran + caffeine
 # ----------------------------------------
 
-lfortran "$testfile" \
-    --coarray=true \
+lfortran $extrafiles $testfile \
+    $extra_args \
     -o "${base}_lf.out" \
     -L$PWD/caffeine/inst/lib \
     -lcaffeine \
@@ -208,12 +212,11 @@ gasnetrun_smp -n "$num_images" ./"${base}_lf.out"
 # ----------------------------------------
 
 if [ $LINUX ] ; then
-  skip_opencoarrays=false
-  for skip in $opencoarrays_unsupported; do
-      if [ "$base" = "$skip" ]; then
-          skip_opencoarrays=true
-      fi
-  done
+  if [[ " $opencoarrays_unsupported " =~ " $base " ]] ; then
+    skip_opencoarrays=true
+  else
+    skip_opencoarrays=false
+  fi
 else # macOS
   skip_opencoarrays=true
 fi
@@ -221,7 +224,7 @@ fi
 if [ "$skip_opencoarrays" = true ]; then
     echo "Skipping OpenCoarrays cross-check for $testfile"
 else
-    caf "$testfile" -o "${base}_gf.out"
+    caf $extrafiles $testfile -o "${base}_gf.out"
     cafrun -np "$num_images" ./"${base}_gf.out" 2>&1 \
       | sed '/Error: OSC UCX component priority/{N;/\n[[:space:]]*$/d}' # filter persistent non-fatal errors
     test ${PIPESTATUS[0]} = 0
@@ -232,7 +235,7 @@ rm -f "${base}_lf.out"
 
 echo "PASS: $testfile"
 
-done
+done 3<<< "$tests" # end of while loop over tests
 
 (set +x 
  echo "##[endgroup]"

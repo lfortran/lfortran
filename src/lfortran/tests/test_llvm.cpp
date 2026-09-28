@@ -78,7 +78,7 @@ TEST_CASE("LLVM target configuration") {
     llvm::FunctionType *function_type = llvm::FunctionType::get(
         llvm::Type::getVoidTy(context), false);
     llvm::Function *function = llvm::Function::Create(function_type,
-        llvm::Function::ExternalLinkage, "f", module);
+        llvm::Function::ExternalLinkage, "f", &module);
     llvm::BasicBlock *entry = llvm::BasicBlock::Create(
         context, "entry", function);
     llvm::ReturnInst::Create(context, entry);

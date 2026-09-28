@@ -1895,15 +1895,18 @@ class PRIFInterface {
             ASR::Variable_t *var;
             std::string key;   // the name it is filed under where declared
             std::string name;  // the name it takes in the global scope
-            bool use_unique_id;
             ASR::abiType abi;
+            ASR::accessType access;
         };
 
         // Move a saved coarray's Fortran pointer out of the procedure that
         // declares it and into the translation unit's scope, under a derived
         // name. Everything that reads the coarray holds the symbol itself, in
         // an ASR::Var_t, and the global scope encloses every procedure, so
-        // nothing has to be rewritten to follow it.
+        // renaming the symbol renames every reference to it: nothing has to
+        // be rewritten to follow it, and `declare_coarray_companions` has
+        // already made sure the new name is not one a user variable visible
+        // to those references could shadow.
         //
         // What this buys: the pointer now lives where the unit's startup
         // initializer can reach it, so that initializer binds it once, right
@@ -1914,13 +1917,12 @@ class PRIFInterface {
         // within `do concurrent` with offloading.
         void hoist_saved_pointer(const HoistedPointer &h) {
             SymbolTable *from = ASRUtils::symbol_parent_symtab(&h.var->base);
-            std::string name = unit.m_symtab->get_unique_name(
-                h.name, h.use_unique_id);
+            std::string name = unit.m_symtab->get_unique_name(h.name, false);
             from->erase_symbol(h.key);
             h.var->m_name = s2c(al, name);
             h.var->m_parent_symtab = unit.m_symtab;
             h.var->m_abi = h.abi;
-            h.var->m_access = ASR::accessType::Public;
+            h.var->m_access = h.access;
             unit.m_symtab->add_symbol(name, &h.var->base);
         }
 
@@ -1948,11 +1950,11 @@ class PRIFInterface {
                 std::string hname = vname + "__coarray_handle";
                 std::string dname = vname + "__coarray_data";
                 ASR::abiType companion_abi = ASR::abiType::Source;
+                ASR::accessType companion_access = ASR::accessType::Public;
                 ASR::asr_t *sc_owner = nullptr;
                 // The name this coarray's own pointer takes in the global
                 // scope, empty when it stays where it was declared.
                 std::string pname;
-                bool pname_use_unique_id = false;
 
                 if (is_save && scope != unit.m_symtab) {
                     companion_scope = unit.m_symtab;
@@ -1970,8 +1972,11 @@ class PRIFInterface {
                             *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))
                         && !ASRUtils::is_allocatable(var->m_type);
                     if (module_owned) {
-                        // Deterministic, so the name matches the one the
-                        // module's own object file gave these.
+                        // Deterministic, so a unit that only uses the module
+                        // derives the name the module's own object file gave
+                        // these, and exported, so it can refer to them. No
+                        // user variable can shadow these: a Fortran name
+                        // cannot begin with an underscore.
                         std::string base = module_companion_basename(var);
                         hname = companion_scope->get_unique_name(
                             base + "__coarray_handle", false);
@@ -1984,11 +1989,26 @@ class PRIFInterface {
                             companion_abi = ASR::abiType::ExternalUndefined;
                         }
                     } else {
-                        hname = companion_scope->get_unique_name(vname + "__coarray_handle");
-                        dname = companion_scope->get_unique_name(vname + "__coarray_data");
+                        // A coarray of an external procedure or of a program,
+                        // or of a procedure either contains, is reachable
+                        // from this translation unit only, so its companions
+                        // are private to it: another translation unit
+                        // declaring a coarray of the same name gets
+                        // companions of the same name, and exported the two
+                        // would clash at link time.
+                        companion_access = ASR::accessType::Private;
+                        // A Fortran name cannot begin with an underscore.
+                        // Reserve a prefix distinct from module companions
+                        // and initializers, so no user variable in this or
+                        // any nested scope can shadow a hoisted companion.
+                        std::string base = "__cac_" + vname;
+                        hname = companion_scope->get_unique_name(
+                            base + "__coarray_handle", false);
+                        dname = companion_scope->get_unique_name(
+                            base + "__coarray_data", false);
                         if (procedure_local) {
-                            pname = vname + "__coarray_ptr";
-                            pname_use_unique_id = true;
+                            pname = companion_scope->get_unique_name(
+                                base + "__coarray_ptr", false);
                         }
                     }
                 }
@@ -1996,12 +2016,12 @@ class PRIFInterface {
                 ASR::ttype_t *ht = ASRUtils::make_StructType_t_util(al, loc, handle_struct, true);
                 ASR::symbol_t *handle_sym = declare_variable(
                     companion_scope, loc, hname, ht, ASR::intentType::Local, handle_struct,
-                    companion_abi, ASR::accessType::Public,
+                    companion_abi, companion_access,
                     ASR::presenceType::Required, false);
 
                 ASR::symbol_t *data_sym = declare_variable(
                     companion_scope, loc, dname, cptr, ASR::intentType::Local, nullptr,
-                    companion_abi, ASR::accessType::Public,
+                    companion_abi, companion_access,
                     ASR::presenceType::Required, false);
 
                 coarray_companions[sym] = {handle_sym, data_sym};
@@ -2039,8 +2059,8 @@ class PRIFInterface {
                     h.var = var;
                     h.key = item.first;
                     h.name = pname;
-                    h.use_unique_id = pname_use_unique_id;
                     h.abi = companion_abi;
+                    h.access = companion_access;
                     hoists.push_back(h);
                 }
             }
@@ -2274,7 +2294,10 @@ class PRIFInterface {
             }
         }
 
-        // names of saved coarrays to avoid linker collisions.
+        // The name of this translation unit's initializer, built from the
+        // procedures that declare its saved coarrays. It is private to the
+        // translation unit, so another one's of the same name cannot clash
+        // with it at link time.
         std::string get_tu_init_function_name(const std::vector<size_t> &indices) {
             std::string fn_name = "__lfortran_coarray_init";
             std::set<std::string> parent_names;
@@ -2456,7 +2479,7 @@ class PRIFInterface {
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                 al, loc, fn_symtab, s2c(al, fn_name), deps.p, deps.n,
                 nullptr, 0, body.p, body.n, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::abiType::Source, ASR::accessType::Private,
                 ASR::deftypeType::Implementation, nullptr,
                 false, false, false, false, false, nullptr, 0,
                 false, false, false, nullptr);

@@ -463,10 +463,12 @@ m2%elements(2,2) = 1
 m3 = integer_plus_matrix(m1, m2)
 print *, m3%elements(1,1), m3%elements(1,2)
 print *, m3%elements(2,1), m3%elements(2,2), achar(10)
+if (any(m3%elements /= reshape([2, 2, 2, 2], [2, 2]))) error stop
 
 m4 = integer_times_matrix(m3, m2)
 print *, m4%elements(1,1), m4%elements(1,2)
 print *, m4%elements(2,1), m4%elements(2,2), achar(10)
+if (any(m4%elements /= reshape([6, 6, 6, 6], [2, 2]))) error stop
 
 instantiate matrix_tmpl {real, operator(+), zero_real, operator(*), one_real, n}, &
     only: real_matrix => matrix, &
@@ -493,8 +495,10 @@ r2%elements(2,2) = 1
 r3 = real_plus_matrix(r1, r2)
 print *, r3%elements(1,1), r3%elements(1,2)
 print *, r3%elements(2,1), r3%elements(2,2), achar(10)
+if (any(abs(r3%elements - reshape([2.2, 2.0, 2.5, 2.0], [2, 2])) > 1.0e-5)) error stop
 
 r4 = real_times_matrix(r3, r2)
 print *, r4%elements(1,1), r4%elements(1,2)
 print *, r4%elements(2,1), r4%elements(2,2), achar(10)
+if (any(abs(r4%elements - reshape([7.2, 6.0, 8.0, 7.0], [2, 2])) > 1.0e-5)) error stop
 end program

@@ -967,13 +967,6 @@
                                                     ()
                                                     []
                                                 ),
-                                            ~add:
-                                                (CustomOperator
-                                                    10
-                                                    ~add
-                                                    [10 ~add_intrinsic]
-                                                    Public
-                                                ),
                                             ~add_intrinsic:
                                                 (Function
                                                     (SymbolTable

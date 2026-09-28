@@ -149,6 +149,31 @@ public:
     std::set<std::string> labels;
     size_t starting_n_body = 0;
     bool in_loop = false;
+    // True when the innermost enclosing loop is a DO CONCURRENT construct
+    bool in_do_concurrent = false;
+
+    // Marks the body of a loop as being inside a loop and restores the
+    // previous state when the loop visitor exits, including when it exits
+    // through a SemanticAbort (e.g. with --continue-compilation).
+    class LoopScope {
+        bool &in_loop;
+        bool &in_do_concurrent;
+        bool saved_in_loop;
+        bool saved_in_do_concurrent;
+    public:
+        LoopScope(bool &in_loop_, bool &in_do_concurrent_, bool is_do_concurrent)
+                : in_loop(in_loop_), in_do_concurrent(in_do_concurrent_),
+                  saved_in_loop(in_loop_), saved_in_do_concurrent(in_do_concurrent_) {
+            in_loop = true;
+            in_do_concurrent = is_do_concurrent;
+        }
+        ~LoopScope() {
+            in_loop = saved_in_loop;
+            in_do_concurrent = saved_in_do_concurrent;
+        }
+        LoopScope(const LoopScope &) = delete;
+        LoopScope &operator=(const LoopScope &) = delete;
+    };
     int all_loops_blocks_nesting = 0;
     int all_blocks_nesting = 0;
     int pragma_nesting_level = 0;
@@ -461,6 +486,7 @@ public:
         }
         unit->m_items = items.p;
         unit->n_items = items.size();
+        instantiate_pending_bodies();
     }
 
     template <typename T>
@@ -2979,13 +3005,17 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
-        // The symbol table visitor has already checked this statement and, for
-        // a bad one, reported the error. Without --continue-compilation that
-        // ended the compilation; with it we are called anyway, and the symbols
-        // this visitor instantiates the bodies of were never created. The
-        // diagnostic is already recorded, so skip whatever is missing instead
-        // of instantiating from a null symbol.
-        ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
+        // Substitutions are recorded only after the whole instantiation succeeds.
+        // With --continue-compilation, a failed declaration can leave some symbols
+        // behind, but its bodies must not be built with missing substitutions.
+        auto type_subs_it = instantiate_types.find(x.base.base.loc.first);
+        auto symbol_subs_it = instantiate_symbols.find(x.base.base.loc.first);
+        if (type_subs_it == instantiate_types.end()
+                || symbol_subs_it == instantiate_symbols.end()) {
+            return;
+        }
+
+        ASR::symbol_t *sym = current_scope->resolve_symbol(to_lower(x.m_name));
         if (sym == nullptr) {
             return;
         }
@@ -2995,8 +3025,9 @@ public:
         }
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(template_sym);
 
-        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = instantiate_types[x.base.base.loc.first];
-        std::map<std::string, ASR::symbol_t*> symbol_subs = instantiate_symbols[x.base.base.loc.first];
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = type_subs_it->second;
+        std::map<std::string, ASR::symbol_t*> symbol_subs = symbol_subs_it->second;
+        std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> symbols;
 
         if (x.n_symbols == 0) {
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
@@ -3007,14 +3038,14 @@ public:
                     if (new_s == nullptr) {
                         continue;
                     }
-                    instantiate_body(al, type_subs, symbol_subs, new_s, s);
+                    symbols.push_back({new_s, s});
                 }
             }
         } else {
             for (size_t i = 0; i < x.n_symbols; i++){
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(to_lower(use_symbol->m_remote_sym));
-                std::string new_s_name = use_symbol->m_remote_sym;
+                std::string new_s_name = to_lower(use_symbol->m_remote_sym);
                 if (use_symbol->m_local_rename) {
                     new_s_name = to_lower(use_symbol->m_local_rename);
                 }
@@ -3022,10 +3053,10 @@ public:
                 if (s == nullptr || new_s == nullptr) {
                     continue;
                 }
-                instantiate_body(al, type_subs, symbol_subs, new_s, s);
+                symbols.push_back({new_s, s});
             }
         }
-
+        queue_body_instantiation(type_subs, symbol_subs, symbols);
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
@@ -5292,9 +5323,11 @@ public:
         current_scope = v->m_symtab;
         current_module = v;
 
+        // Instantiations need bodies too; transform_stmts skips declarations.
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if(x.m_items[i]->type == AST::decl_stmtType::Template){
+            if (x.m_items[i]->type == AST::decl_stmtType::Template ||
+                x.m_items[i]->type == AST::decl_stmtType::Instantiate) {
                 visit_decl_stmt(*x.m_items[i]);
             }
         }
@@ -7310,7 +7343,11 @@ public:
                  ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic) ||
                 target->type == ASR::exprType::CoarrayRef
             );
+            // A deferred type of a template has no implicit conversion to or
+            // from any other type; the type check below reports the mismatch.
             if (lhs_supports_implicit_cast &&
+                !ASRUtils::is_type_parameter(*target_type) &&
+                !ASRUtils::is_type_parameter(*value_type) &&
                 !ASRUtils::check_equal_type(target_type, value_type, target, value)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
@@ -7587,6 +7624,28 @@ public:
                         al, loc, nullptr, if_test, if_body.p, if_body.n, nullptr, 0));
                     current_body->push_back(al, if_stmt);
                 }
+            }
+        }
+
+        // Assigning a structure constructor to a scalar variable of derived
+        // type is an intrinsic assignment, and an intrinsic assignment does
+        // more than write the components: it finalizes the variable, and it
+        // routes a component of derived type through that type's defined
+        // assignment. Both act on the variable once the value exists, so the
+        // constructor is evaluated into a temporary and the variable is
+        // assigned from it. Written straight into the variable, as the
+        // structure constructor is otherwise lowered, neither would happen.
+        // An array or allocatable variable is already assigned from a
+        // temporary, so only the scalar case is handled here.
+        if( overloaded_stmt == nullptr &&
+            ASR::is_a<ASR::StructConstructor_t>(*value) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(target)) &&
+            !ASRUtils::is_allocatable(ASRUtils::expr_type(target)) &&
+            ASRUtils::struct_assignment_is_more_than_a_copy(
+                ASRUtils::get_struct_sym_from_struct_expr(target)) ) {
+            ASR::expr_t* evaluated_value = evaluate_into_temporary(value);
+            if( evaluated_value != nullptr ) {
+                value = evaluated_value;
             }
         }
 
@@ -9419,8 +9478,7 @@ public:
 
     void visit_WhileLoop(const AST::WhileLoop_t &x) {
         all_loops_blocks_nesting += 1;
-        bool in_loop_copy = in_loop;
-        in_loop = true;
+        LoopScope loop_scope(in_loop, in_do_concurrent, false);
         // Statements the condition needs (e.g. associating the
         // procedure-pointer temporary of a call through an implicit
         // interface) must run before every evaluation of the condition.
@@ -9457,7 +9515,6 @@ public:
         tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), nullptr, 0);
         all_loops_blocks_nesting -= 1;
-        in_loop = in_loop_copy;
     }
 
     #define cast_as_loop_var(conv_candidate) \
@@ -9478,8 +9535,7 @@ public:
                 throw SemanticAbort();
             }
         }
-        bool in_loop_copy = in_loop;
-        in_loop = true;
+        LoopScope loop_scope(in_loop, in_do_concurrent, false);
         all_loops_blocks_nesting += 1;
         all_blocks_nesting++;
         ASR::expr_t *var, *start, *end;
@@ -9631,15 +9687,13 @@ public:
                 ASR::make_LogicalConstant_t(al, x.base.base.loc, true, cond_type));
             tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, cond, body.p, body.size(), nullptr, 0);
         }
-        in_loop = in_loop_copy;
         all_loops_blocks_nesting -= 1;
         all_blocks_nesting--;
     }
 
     void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
         all_loops_blocks_nesting += 1;
-        bool in_loop_copy = in_loop;
-        in_loop = true;
+        LoopScope loop_scope(in_loop, in_do_concurrent, true);
         Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
         heads.reserve(al,x.n_control);
         AST::decl_attribute_t *current_type = nullptr;
@@ -9783,7 +9837,6 @@ public:
         tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
                 body.size());
         all_loops_blocks_nesting -= 1;
-        in_loop = in_loop_copy;
     }
 
     void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
@@ -9923,7 +9976,24 @@ public:
     }
 
     void visit_Exit(const AST::Exit_t &x) {
-        if (all_loops_blocks_nesting == 0) {
+        if (x.m_stmt_name == nullptr) {
+            // Without a construct name, EXIT belongs to the innermost
+            // enclosing DO construct; BLOCK, IF, SELECT, ... do not count.
+            if (!in_loop) {
+                diag.add(Diagnostic("`exit` statements without a construct name cannot be outside of loops",
+                                    Level::Error,
+                                    Stage::Semantic,
+                                    { Label("", { x.base.base.loc }) }));
+                throw SemanticAbort();
+            }
+            if (in_do_concurrent) {
+                diag.add(Diagnostic("`exit` statements cannot leave a `do concurrent` loop",
+                                    Level::Error,
+                                    Stage::Semantic,
+                                    { Label("", { x.base.base.loc }) }));
+                throw SemanticAbort();
+            }
+        } else if (all_loops_blocks_nesting == 0) {
             diag.add(Diagnostic("`exit` statements cannot be outside of loops or blocks",
                                 Level::Error,
                                 Stage::Semantic,

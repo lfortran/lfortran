@@ -8,7 +8,7 @@ integer(4) :: stat
 integer(4), pointer :: x
 call __module_prif_prif_init(stat)
 call __module_prif_prif_sync_all()
-if (Any(lcompilers_prif_coshape_corank1_k8(x__coarray_handle) /= [2_8])) then
+if (Any(lcompilers_prif_coshape_corank1_k8(__cac_x__coarray_handle) /= [2_8])) then
     error stop
 end if
 call __module_prif_prif_stop(.false.)
@@ -21,9 +21,9 @@ subroutine __lfortran_global_init_coshape_01()
     if (.not. __lfortran_global_init_done) then
         __lfortran_global_init_done = .true.
         call __module_prif_prif_init(stat)
-        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle,&
-         x__coarray_data)
-        call c_f_pointer(x__coarray_data, x)
+        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), __cac_x__coarray_handle,&
+         __cac_x__coarray_data)
+        call c_f_pointer(__cac_x__coarray_data, x)
     end if
 end subroutine __lfortran_global_init_coshape_01
 

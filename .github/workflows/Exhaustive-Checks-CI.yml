@@ -240,17 +240,17 @@ jobs:
         # on every merge), so a version-specific break is caught within one
         # merge. On a pull request we test only the versions where breakage
         # actually originates:
-        #   8  - oldest supported; integration tests (newer LLVM APIs)
+        #   7  - oldest supported; integration tests (newer LLVM APIs)
         #   11 - default version; third-party codes (full LAPACK)
         #   19 - third-party codes (smoke, Release). WASM is a separate job.
         #   23 - newest; integration tests (removed/deprecated LLVM APIs)
         # llvm --fast now runs on Quick LLVM 11 for every PR, so LLVM 17 is
-        # main-only (with 10/15/18/21/22).
+        # main-only (with 8/10/15/18/21/22).
         # Third-party codes exercise LFortran, not LLVM, so they run on two
         # Ubuntu versions only. Every other Ubuntu version runs the LLVM
         # integration-test option combinations instead. macOS LLVM 22 stays
         # on third-party because Fiats/Formal Metal tests are Darwin-only.
-        llvm-version: "${{ github.event_name == 'push' && fromJSON('[\"8\",\"10\",\"11\",\"15\",\"17\",\"18\",\"19\",\"21\",\"22\",\"23\"]') || fromJSON('[\"8\",\"11\",\"19\",\"23\"]') }}"
+        llvm-version: "${{ github.event_name == 'push' && fromJSON('[\"7\",\"8\",\"10\",\"11\",\"15\",\"17\",\"18\",\"19\",\"21\",\"22\",\"23\"]') || fromJSON('[\"7\",\"11\",\"19\",\"23\"]') }}"
         python-version: ["3.10"]
         include:
           - os: macos-latest
@@ -260,6 +260,24 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      # Pin 7.0.1: the conda-forge llvmdev 7.1.0 build is compiled with a
+      # newer toolchain, and its static libraries crash at run time (in
+      # createX86MCSubtargetInfo) when linked with the runner's binutils 2.42.
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: matrix.llvm-version == '7'
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=7.0.1
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.6=hb85ec53_102
+            zstd-static=1.5.7
 
       - uses: mamba-org/setup-micromamba@v2.0.2
         if: contains(matrix.llvm-version, '10')
@@ -388,7 +406,7 @@ jobs:
             openmpi=5.0.3
 
       - uses: mamba-org/setup-micromamba@v2.0.2
-        if: ${{! ( contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21') || contains(matrix.llvm-version, '22') || contains(matrix.llvm-version, '23') )}}
+        if: ${{! ( matrix.llvm-version == '7' || contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21') || contains(matrix.llvm-version, '22') || contains(matrix.llvm-version, '23') )}}
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -451,6 +469,12 @@ jobs:
             fi
             echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
             RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
+
+      # The unit tests exercise the JIT, whose code path differs between
+      # LLVM versions, so run them for every version.
+      - name: Test unit tests
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
 
       - name: Test LLVM integration tests
         shell: bash -e -l {0}
@@ -564,6 +588,10 @@ jobs:
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
             cmake --build . -j16 --target install
+
+      - name: Test unit tests
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
 
       - name: Test Linux ( WASM )
         shell: bash -e -l {0}
@@ -679,6 +707,10 @@ jobs:
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
             cmake --build . -j16 --target install
+
+      - name: Test unit tests
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
 
       - name: Test Linux
         shell: bash -e -l {0}
