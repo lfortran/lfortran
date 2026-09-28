@@ -810,7 +810,7 @@ round trips of
 | `namespace_modules_04` | Derived types: declarations, constructors, components, type-bound procedures, array constructor type-spec, `allocate` type-spec, `select type` |
 | `namespace_modules_05` | `extends(L%t)`, abstract types with deferred bindings, parent component name (D5) |
 | `namespace_modules_06` | Constant expressions: kinds, bounds, lengths, `parameter`, `case`, enumerators |
-| `namespace_modules_07` | Intrinsic modules; modifier order; two names for one module |
+| `namespace_modules_07` | Intrinsic modules, including `c%c_f_pointer` and `c%c_f_procpointer`; modifier order; two names for one module |
 | `namespace_modules_08` | Generic interfaces; generic with a type's name; specifics |
 | `namespace_modules_09` | Procedures as actual arguments, procedure pointers, `procedure(L%iface)` |
 | `namespace_modules_10` | Mixing with ordinary USE; several module entities for one module; repeated import (D7) |
