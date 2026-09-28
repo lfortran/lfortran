@@ -61,7 +61,7 @@ end module
 program finalization_13
     use finalization_13_m
     implicit none
-    integer :: i, n
+    integer :: i, n, a(2)
 
     strict = index(compiler_version(), "GCC") == 0
 
@@ -110,6 +110,14 @@ program finalization_13
         error stop "select case"
     end select
     if (strict) call check(finished == 1, "select case: after")
+
+    finished = 0
+    a = -1
+    do concurrent (i = 1:value(make(42)) / 42 + 1)
+        a(i) = finished
+    end do
+    call check(all(a(1:2) == 0), "do concurrent: inside")
+    if (strict) call check(finished == 1, "do concurrent: after")
 
     finished = 0
     n = 0

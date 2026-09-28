@@ -118,6 +118,26 @@ class ArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor> {
         }
 };
 
+// Whether an expression references a function whose result is finalized
+// (F2018 7.5.6.3 p5).
+class ReferencesFinalizableResult:
+        public ASR::BaseWalkVisitor<ReferencesFinalizableResult> {
+    public:
+        bool found = false;
+
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            if (ASRUtils::is_finalizable_function_reference(
+                    const_cast<ASR::expr_t*>(&x.base))) {
+                found = true;
+                return;
+            }
+            ASR::BaseWalkVisitor<ReferencesFinalizableResult>
+                ::visit_FunctionCall(x);
+        }
+
+        void visit_ttype(const ASR::ttype_t & /*x*/) {}
+};
+
 class CheckIfAlreadyAllocatedVisitor: public ASR::BaseWalkVisitor<CheckIfAlreadyAllocatedVisitor> {
     private:
         bool &already_allocated;
@@ -2693,6 +2713,7 @@ class ParallelRegionVisitor :
                     current_stmt = do_loop->m_body[0]; // Move to the next nested loop
                 }
             }
+            evaluate_result_bounds_once(heads, loc);
             if (!private_copies.empty()) {
                 AssociateVarResolverVisitor private_copy_replacer(al, private_copies);
                 for (size_t i = 0; i < innermost_loop->n_body; i++) {
@@ -2899,6 +2920,35 @@ class ParallelRegionVisitor :
                     while_body.p, while_body.n, nullptr, 0));
                 
                 nested_lowered_body.push_back(while_stmt);
+        }
+
+        // The partitioning of the iterations uses each bound of the loop
+        // several times. A bound that references a function whose result is
+        // finalized is evaluated once, into a variable of the thread, and
+        // the result is finalized after that statement.
+        void evaluate_result_bounds_once(std::vector<ASR::do_loop_head_t> &heads,
+                const Location &loc) {
+            ASRUtils::ASRBuilder b(al, loc);
+            for (auto &head : heads) {
+                for (ASR::expr_t** bound : {&head.m_start, &head.m_end,
+                        &head.m_increment}) {
+                    if (*bound == nullptr) {
+                        continue;
+                    }
+                    ReferencesFinalizableResult v;
+                    v.visit_expr(**bound);
+                    if (!v.found) {
+                        continue;
+                    }
+                    ASR::expr_t* bound_var = b.Variable(current_scope,
+                        current_scope->get_unique_name("loop_bound"),
+                        ASRUtils::expr_type(*bound), ASR::intentType::Local,
+                        nullptr, ASR::abiType::BindC);
+                    nested_lowered_body.push_back(b.Assignment(bound_var,
+                        *bound));
+                    *bound = bound_var;
+                }
+            }
         }
 
         void handle_default_loop_partitioning(const std::vector<ASR::do_loop_head_t> &heads, ASR::DoLoop_t* innermost_loop, const Location &loc) {
