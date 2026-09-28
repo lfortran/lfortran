@@ -1,9 +1,7 @@
-! DECISION D4 (export of namespaces through USE association).
-! Valid under options A and B; an error under options A2 and C.
-!
-! A "facade" module collects other modules as namespaces. Users reach the
-! members through a chain of namespaces: std%linalg%solve2.
-module namespace_modules_export_01_linalg
+! A module entity is an ordinary public entity of the module that declares
+! it, so a "facade" module can collect other modules: users reach their
+! members through a chain of module entities, std%linalg%solve2.
+module namespace_modules_24_linalg
     implicit none
 contains
     ! Solve the diagonal system diag(d) x = b
@@ -14,7 +12,7 @@ contains
     end function
 end module
 
-module namespace_modules_export_01_stats
+module namespace_modules_24_stats
     implicit none
 contains
     real function mean(x)
@@ -23,15 +21,15 @@ contains
     end function
 end module
 
-module namespace_modules_export_01_std
-    use, namespace :: linalg => namespace_modules_export_01_linalg
-    use, namespace :: stats => namespace_modules_export_01_stats
+module namespace_modules_24_std
+    use, namespace :: linalg => namespace_modules_24_linalg
+    use, namespace :: stats => namespace_modules_24_stats
     implicit none
     character(len=*), parameter :: version = "1.0"
 end module
 
-program namespace_modules_export_01
-    use, namespace :: std => namespace_modules_export_01_std
+program namespace_modules_24
+    use, namespace :: std => namespace_modules_24_std
     implicit none
     real :: x(2)
 

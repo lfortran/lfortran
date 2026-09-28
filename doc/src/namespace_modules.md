@@ -8,7 +8,7 @@ It is not (yet) part of any Fortran standard.
 ## Summary
 
 ```fortran
-use, namespace :: utils                 ! import the module as a namespace
+use, namespace :: utils                 ! import the module as a module entity
 use, namespace :: np => numpy           ! ... under a different local name
 use, intrinsic, namespace :: env => iso_fortran_env
 
@@ -16,13 +16,20 @@ call utils%savetxt("a.txt", x)          ! members are reached with "%"
 y = np%sin(np%pi)
 real(env%real64) :: z
 type(np%ndarray_t) :: a
+x = std%linalg%solve(A, b)              ! module entities can be members too
 ```
 
-`use, namespace :: M` puts exactly one name into the scope: the namespace
-`M`, or the local name given with `L => M`. Every public entity of the module
-is then reachable as `M%name`. No member name is made accessible without the
-qualifier, so the scope's namespace is not polluted. This fills the one gap
-in Fortran's module import facilities compared to Python:
+`use, namespace :: M` puts exactly one name into the scope: a **module
+entity** named `M`, or named `L` with `L => M`. The module entity designates
+the module `M`. Every public entity of the module is then reachable as
+`M%name`. No member name is made accessible without the qualifier, so the
+scope is not polluted.
+
+A module entity is an ordinary class (1) local entity. It is host
+associated, it is public or private like any other entity of a module, and
+it is use associated by users of that module. So `std%linalg%solve` works,
+where `std` imported `linalg` as a module entity. This is exactly Python's
+model:
 
 | Python                 | Fortran today            | With this feature           |
 |------------------------|--------------------------|-----------------------------|
@@ -31,55 +38,67 @@ in Fortran's module import facilities compared to Python:
 | `from A import *`      | `use A`                  | (unchanged)                 |
 | `import A`             | N/A                      | `use, namespace :: A`       |
 | `import A as B`        | N/A                      | `use, namespace :: B => A`  |
+| `B.A.x` (`B` did `import A`) | N/A                | `B%A%x` (`B` did `use, namespace :: A`) |
 
 ## History and sources
 
-The design is based on everything in the issue discussion and on the
-committee papers:
+The design is based on the whole issue discussion (115 comments,
+2019–2025), and on the committee papers and minutes:
 
 * J3/19-246 and J3/20-108 (Čertík): the original proposal,
   `use, namespace :: A` / `use, namespace :: B => A`, accessed with `%`.
-* J3 plenary, 2020-02-26 (summary in comment 26 of the issue). Feedback
-  included: "no big difference between `module%foo` and `module_foo`",
-  "prefers rename on use", "a solution in search of a problem", "use
-  Haskell a lot which has this feature and it is useful", "this should work
-  for derived types and other entities", "the main attraction is for the
-  compiler to track where an entity comes from", "this promotes
-  collaboration", a dislike of `%` with `:` suggested (colon then rejected
-  as unworkable), and a question about direct qualification if nesting
-  were allowed.
-* The issue discussion (2019–2025): syntax alternatives (`use, namespace`,
-  `use A, only:`, `use A, as: B`, `use namespace A`, `import`, `with`,
-  `decorate`/`prefix(ed)`, `namespace(B)`), accessors (`%`, `::`, others),
-  transitivity (`b%a%x`), submodules, operators, generics.
-* J3/23-196r1 (Cohen): "remote access" with `%%`, where module names would
-  flow through use and host association "for the purpose of `%%` only". It
-  asks whether remote access should bypass `ONLY` ("current thinking is
-  that it should not be allowed") and suggests
-  `USE modulename, NAMESPACE:` for a namespace-only import.
-* J3/25-119r1 (Cohen, data subgroup): recommends not doing US13 for
-  Fortran 2028. The main objection is that "module names are not passed
-  through subsequent use or host association, which means it would only
-  work in a scope that directly uses the module. That would make the feature
-  useless." Changing that for the module names themselves would be
-  incompatible. The paper also notes that `module1%%var` is no shorter than
-  a rename to `module1_var`. A `namespace ... end namespace` construct was
-  floated in the 2025 discussion (comment 105).
+  These papers did not say whether the namespace passes through use
+  association.
+* J3 meeting 221, 2020-02-26: tutorial and discussion of 20-108, with no
+  vote. The minutes record: "Malcolm says not compelling, can be done with
+  rename. Van says it can be done with use, only. Tom likes the clarity of
+  expressing where a variable came from. Vipul noted that the tutorial
+  demonstrated a need for namespace management, and collaboration is
+  necessary for evolution of the language." Comment 26 of the issue has a
+  longer summary.
+* J3/23-196r1 (Cohen), passed at meeting 230 (June 2023). The feature was
+  recast as "remote access to module entities", qualified by **the module
+  name itself** after an ordinary USE statement, with a new `%%` operator.
+  Module names would flow through use and host association "for the purpose
+  of `%%` only". This became WG5 work item **US13** "Add namespace-like
+  access to module entities" (N2222, N2234).
+* J3/25-119r1 (Cohen, data subgroup), passed at meeting 235 (February 2025):
+  stop developing US13 for Fortran 2028 and investigate "more advanced forms
+  of namespace control" instead. In the issue (comment 105), a J3 member
+  described the direction as a `namespace ... end namespace` construct that
+  would make "a namespace ... a first class entity".
+* The issue, April 2025 (comments 106–111): the design adopted here (a
+  module entity is use associated, `b%a%x`) was proposed after 25-119r1.
+  The reply was that it "seems potentially workable, if possibly tricky to
+  define in the standard".
+* J3/26-121 (Cohen), passed at meeting 239 (February 2026): "those
+  investigations have not yet borne fruit", so not in Fortran 2028. The
+  minutes note "us13 - recommend to withdraw (25-119r1 explains why hard)".
+* WG5 meeting, June 2026 (N2259, N2261): US13 was removed from the work
+  list for the next standard, together with six other items. No reason
+  specific to US13 is recorded.
 
-The prototype exists to answer the question raised in comments 54 and 92:
-"I think we need to implement this in a compiler and actually use it."
+In short, the committee analysed and rejected one design: remote access by
+module name, with implicit flow of module names. It never evaluated the
+design in this document. The section "Objections and answers" below goes
+through every objection raised.
+
+The prototype exists to answer the request in comments 54 and 92: "I think
+we need to implement this in a compiler and actually use it."
 
 ## Decisions
 
 | #  | Question | Decision |
 |----|----------|----------|
-| D1 | Syntax of a namespace-only import | `use, namespace :: [L =>] M` |
+| D1 | Syntax of a namespace import | `use, namespace :: [L =>] M` |
 | D2 | Does a plain `use M` also make `M%x` available? | No |
 | D3 | Accessor | `%` |
-| D4 | Do namespaces pass through USE association? | **Open**, see the D4 section below |
-| D5 | Name of a parent component when extending `ns%t` | The type's name in its module (`t`) |
-| D6 | May `IMPORT` in an interface body name a namespace? | Yes |
+| D4 | What is `L`, and does it pass through association? | A **module entity**: an ordinary class (1) entity, host and use associated (Python's model) |
+| D5 | Name of a parent component when extending `L%t` | The type's name in its module (`t`) |
+| D6 | May `IMPORT` in an interface body name a module entity? | Yes |
 | D7 | Two namespace imports of the same module under the same local name | Allowed (redundant) |
+| D8 | Identity | A module entity designates the module itself; module entities for the same module are never in conflict |
+| D9 | Accessibility in the statement | `use, namespace, private :: L => M` and `use, namespace, public :: ...` (module specification part only) |
 
 ### D1: syntax — `use, namespace :: [L =>] M`
 
@@ -106,42 +125,43 @@ The alternatives, from the discussion:
   `import` already has a different meaning in Fortran, and `with` does not
   suggest the meaning to a new reader.
 
-### D2: a plain `use M` does not create a namespace
+### D2: a plain `use M` does not create a module entity
 
 Klausler's model (comments 89–93): every USE statement would also make the
 module name a qualifier, so `use A, only: x` would give `x` plus `A%...`.
-That would be backward compatible for the scope that has the USE, because
-F2023 19.3.1 already forbids a local identifier that equals a global
-identifier used in the same scope (`use m; integer :: m` is invalid today).
 The prototype keeps the conservative choice, so a plain USE behaves exactly
-as today. The only way to create a namespace is the new syntax, which makes
-the feature purely additive and the easiest to argue for. The model can be
-added later without breaking anything.
+as today. The only way to create a module entity is the new syntax, which
+makes the feature purely additive. No existing program, and no existing
+module, contains a module entity.
 
 ### D3: accessor `%`
 
 * `%` (chosen). It reads like a component reference and IDEs already
-  understand it. A namespace is a local identifier of the same class as a
-  variable, so a namespace and a variable with the same name can never both
-  be accessible in one scope: `ns%x` is never ambiguous (see
+  understand it. A module entity is a class (1) local identifier, like a
+  variable, so a module entity and a variable with the same name can never
+  both be accessible unqualified in one scope: `L%x` is never ambiguous (see
   Name resolution below).
-* `%%` (J3/23-196r1). Keeps module access visually distinct and allows a
-  variable and a module with the same name to coexist. That matters only if
-  module names flow implicitly into scopes that did not ask for them, which
-  D2 and D4 avoid.
+* `%%` (J3/23-196r1). Keeps module access visually distinct and would let a
+  variable and a module with the same name coexist. That is needed only if
+  module *names* flow implicitly into scopes that did not ask for them,
+  which this design never does.
 * `::` (comments 80, 86, 87). Ambiguous with array sections `a(1::2)` and
-  with specification statements (J3/23-196r1). Rejected by the committee.
+  with specification statements (J3/23-196r1).
+
+### D4: module entities
+
+See the section "Module entities" below.
 
 ### D5: parent component name
 
-`type, extends(ns%t) :: u` gives `u` a parent component named `t` (the name
+`type, extends(L%t) :: u` gives `u` a parent component named `t` (the name
 of the type in the module that defines it), because the qualified name
-`ns%t` is not a name. Test: `namespace_modules_05`.
+`L%t` is not a name. Test: `namespace_modules_05`.
 
-### D6: `IMPORT` of a namespace
+### D6: `IMPORT` of a module entity
 
 An interface body does not access its host by host association, so a
-namespace of the host is not accessible there. `import :: ns` (and
+module entity of the host is not accessible there. `import :: L` (and
 `import, all`) makes it accessible, just like any other host entity. A
 `use, namespace` statement inside the interface body also works. Tests:
 `namespace_modules_15` (valid) and `errors/namespace_modules_26` (missing
@@ -153,6 +173,33 @@ import).
 same USE statement may be repeated. Giving the same local name to two
 *different* modules is an error (`errors/namespace_modules_10`).
 
+### D8: identity
+
+A module entity designates the module itself, just as in Python
+`b.a is a`. So `a%x`, `b%a%x` and `c%a%x` all designate the same variable
+`x`. Two module entities that arrive in a scope under the same local name
+are not in conflict if they designate the same module. This covers a direct
+`use, namespace :: a` together with a `use b` that exports `a`, and two
+modules that both export `a` (`namespace_modules_27`, `_28`). If they
+designate different modules, the name must not be referenced, the usual
+rule for use-associated entities (`errors/namespace_modules_29`).
+
+### D9: accessibility in the namespace import
+
+In the specification part of a module, the accessibility of a module entity
+can be given in the statement itself:
+
+```fortran
+use, namespace, private :: helper => internal_helpers   ! used only inside
+use, namespace, public :: linalg                          ! part of the API
+```
+
+This is equivalent to the namespace import followed by
+`private :: helper` or `public :: linalg`. Separate `public`/`private`
+statements naming the module entity work too. Outside a module, or with
+more than one *access-spec*, the statement is an error
+(`namespace_modules_28`, `errors/namespace_modules_31`, `_32`, `_33`).
+
 ## Syntax
 
 The USE statement (F2023 R1409) gets a third form:
@@ -160,90 +207,216 @@ The USE statement (F2023 R1409) gets a third form:
 ```
 use-stmt  is  USE [[, module-nature] ::] module-name [, rename-list]
           or  USE [[, module-nature] ::] module-name , ONLY : [only-list]
-          or  USE , namespace-modifier-list :: [local-namespace-name =>] module-name
+          or  USE , namespace-modifier-list :: [module-entity-name =>] module-name
 
 namespace-modifier  is  NAMESPACE
                     or  module-nature          ! INTRINSIC or NON_INTRINSIC
+                    or  access-spec            ! PUBLIC or PRIVATE
 ```
 
 Constraints:
 
-* C1: `NAMESPACE` appears exactly once in a *namespace-modifier-list*, and
-  at most one *module-nature* appears. They may be in either order
-  (`use, intrinsic, namespace ::` and `use, namespace, intrinsic ::`).
-  (`errors/namespace_modules_15`)
-* C2: The `::` is required (as it is whenever a *module-nature* is given).
+* C1: `NAMESPACE` appears exactly once in a *namespace-modifier-list*, at
+  most one *module-nature* appears, and at most one *access-spec* appears.
+  They may be in any order (`use, intrinsic, namespace ::` and
+  `use, namespace, intrinsic ::`). (`errors/namespace_modules_15`, `_32`)
+* C2: An *access-spec* is allowed only in the specification part of a
+  module (like an *access-stmt*). (`errors/namespace_modules_31`)
+* C3: The `::` is required (as it is whenever a *module-nature* is given).
   (`errors/namespace_modules_16`)
-* C3: A namespace import has neither a *rename-list* nor `ONLY`. A USE
+* C4: A namespace import has neither a *rename-list* nor `ONLY`. A USE
   statement that is not a namespace import cannot rename the module
-  (`use :: b => a` is invalid). Entities cannot be renamed "inside" a
-  namespace (comments 19–25: like the components of a derived type, the
-  members of a namespace keep their names). (`errors/namespace_modules_02`,
+  (`use :: b => a` is invalid). Members cannot be renamed "inside" a module
+  entity (comments 19–25: like the components of a derived type, the
+  members of a module keep their names). (`errors/namespace_modules_02`,
   `_03`, `_17`)
-* C4: A module shall not import itself as a namespace (existing rule for
-  USE). (`errors/namespace_modules_22`)
+* C5: A module shall not import itself (existing rule for USE).
+  (`errors/namespace_modules_22`)
 
-The namespace-qualified name (the accessor) is:
+A module entity also appears in ordinary USE statements of *other* modules,
+like any other entity: `use b, only: a` and `use b, only: aa => a`, where
+`a` is a module entity of `b`.
+
+The qualified name (the accessor) is:
 
 ```
-namespace-qualified-name  is  namespace-name % name
+module-qualified-name  is  module-entity-name % name
 ```
 
-If D4 allows namespaces to be members of namespaces, `name` may itself be
-a namespace, giving chains such as `std%linalg%solve`.
+If `name` is itself a module entity of that module, the qualification
+continues: `std%linalg%solve`. A module-qualified name may be followed by
+the usual part references, section subscripts, substring ranges, component
+references and actual argument lists, exactly as the member's unqualified
+name could be. Blanks are allowed around `%` and names are case
+insensitive, as for component references (`namespace_modules_22`). In fixed
+form, blanks are insignificant as usual (`namespace_modules_21`).
 
-A namespace-qualified name may be followed by the usual part references,
-section subscripts, substring ranges, component references and actual
-argument lists, exactly as the member's unqualified name could be. Blanks
-are allowed around `%` and names are case insensitive, as for component
-references (`namespace_modules_22`). In fixed form, blanks are
-insignificant as usual (`namespace_modules_21`).
-
-## Semantics
-
-### The namespace entity
+## Module entities
 
 `use, namespace :: L => M` declares `L` (or `M` if there is no rename) as a
-**namespace**, a new kind of class (1) local entity in the scoping unit
-(F2023 19.3.1). It identifies the module `M`. A namespace is not a data
-object, procedure, type or generic. It can only appear:
+**module entity**: a new kind of named entity that designates the module
+`M`. It is a class (1) local identifier (F2023 19.3.1), in the same
+category as a generic name, a namelist group name or a derived type name.
 
-* as the leftmost part of a namespace-qualified name `L%member`;
-* in an `IMPORT` statement;
-* in accessibility statements and in USE statements of *other* scopes, if
-  D4 allows it.
+**A module entity is not a data type and not a data object.** It has no
+value, no storage and no run-time representation. Everything about it is
+resolved at compile time. Fortran gains no new type. A module entity names
+a module, the way a procedure name names a procedure.
 
-In particular it cannot be referenced on its own (`print *, L`), used as an
-actual argument, assigned to, or subscripted
-(`errors/namespace_modules_06`, `_07`, `_08`).
+### Examples
 
-Like any class (1) local identifier, it must not be the same as another
-local identifier of the scope (`errors/namespace_modules_09`). If a
-namespace and a use-associated entity have the same local name, the name
-must not be referenced (`errors/namespace_modules_11`), the same rule as
-for two use-associated entities with the same name (F2023 14.2.2).
+```fortran
+module a
+    integer :: x = 1
+end module
+
+module b
+    use, namespace :: a        ! "a" is a module entity of b (public by default)
+    integer :: y = 2
+end module
+
+program p1
+    use, namespace :: b        ! Python: import b
+    print *, b%y, b%a%x        ! Python: b.y, b.a.x
+end program
+
+program p2
+    use b                      ! Python: from b import *    (brings y and a)
+    print *, y, a%x
+end program
+
+program p3
+    use b, only: aa => a       ! Python: from b import a as aa
+    print *, aa%x
+end program
+```
+
+A library can build a facade (`namespace_modules_24`):
+
+```fortran
+module std
+    use, namespace :: linalg => std_linalg
+    use, namespace :: stats => std_stats
+end module
+
+program main
+    use, namespace :: std
+    x = std%linalg%solve(A, b)
+    m = std%stats%mean(x)
+end program
+```
+
+A module that uses a module entity only internally keeps it private, as for
+any other entity it does not want to export (`namespace_modules_28`,
+`errors/namespace_modules_28`, `_33`):
+
+```fortran
+module b
+    use, namespace, private :: helper => b_internal_helpers
+    ...
+end module
+```
+
+### Rules
+
+A module entity follows the rules of every other class (1) local entity:
+
+* **Host association**: it is accessible in internal procedures, module
+  procedures, BLOCK constructs and submodules of the scope that declares it
+  (`namespace_modules_11`, `_13`). In interface bodies it is accessible only
+  through `IMPORT` (D6). A local entity of an inner scope with the same name
+  hides it (`namespace_modules_11`, `errors/namespace_modules_21`).
+* **Use association**: a public module entity of a module `b` is accessible
+  to `use b`, can be listed in `use b, only: a`, and can be renamed with
+  `use b, only: aa => a` (`namespace_modules_25`, `_26`, `_27`, `_28`).
+* **Accessibility**: default accessibility, `public`/`private` statements,
+  and D9 apply. A private module entity is not accessible outside its
+  module, neither by USE nor as `b%a` (`errors/namespace_modules_28`, `_33`).
+* **Members**: a public module entity of `b` is a member of `b`, so
+  `b%a%x` works (`namespace_modules_24`, `_26`, `_28`, `_29`).
+* **Conflicts**: it must not have the same name as another local entity of
+  the scope (`errors/namespace_modules_09`). If it has the same local name
+  as a use-associated entity, the name must not be referenced
+  (`errors/namespace_modules_11`), unless both designate the same module
+  (D8).
+
+It can only appear:
+
+* as the leftmost part of a module-qualified name `L%member` (or inside a
+  chain `b%L%member`);
+* in `IMPORT`, `PUBLIC` and `PRIVATE` statements;
+* in the only-list or rename-list of a USE statement of a module that
+  exports it.
+
+It cannot be referenced on its own (`print *, L`), used as an actual
+argument, assigned to, or subscripted (`errors/namespace_modules_06`, `_07`,
+`_08`). These positions are deliberately left free for the future
+extensions described below.
 
 The module name `M` is still a global identifier used in the scope, even
-when the namespace is renamed. By the existing F2023 19.3.1 rule, the scope
-cannot declare a local entity named `M` (`errors/namespace_modules_23`).
+when the module entity is renamed. By the existing F2023 19.3.1 rule, the
+scope cannot declare a local entity named `M` (`errors/namespace_modules_23`).
+
+### Compatibility
+
+The feature is purely additive. Module entities are created only by the
+new `use, namespace` syntax (D2), so no existing program or module contains
+one. Every existing USE statement means exactly what it meant before,
+including USE statements of existing modules. The use association of module
+entities (`use b` brings in `a`) can only happen for a module `b` that
+itself uses the new syntax. The author of `b` then chose to make `a` part
+of `b`'s interface, and can write `private` to keep it internal, exactly as
+for any other entity.
+
+### Doors left open
+
+Because a module entity designates a module, later revisions can add
+operations on modules without changing anything in this design. Python's
+`ModuleType` shows what is useful. In Fortran these would be compile-time
+inquiry intrinsics that take a module entity as their argument. For
+example:
+
+| Python | Possible Fortran analogue |
+|---|---|
+| `m.__name__` | `module_name(m)`, a constant `"numpy"` |
+| `dir(m)`, `m.__dict__` | an inquiry returning the names of the public members of `m` |
+| `m.__doc__` | a documentation string, once Fortran has docstrings |
+| `m.__file__`, `m.__path__` | processor-dependent information about where the module came from |
+| `hasattr(m, "x")` | an inquiry whether `m` has a public member `x` |
+
+Other extensions this design leaves room for:
+
+* A module path in a USE statement, `use std%linalg, only: solve` or
+  `use, namespace :: la => std%linalg`, once `std%linalg` designates a
+  module.
+* Nested modules (proposal #86) and a `namespace ... end namespace`
+  construct (comment 105). Both would create entities of this same kind.
+* Accessibility on ordinary USE statements (`use, private :: m`),
+  generalizing D9.
+
+None of these is part of the prototype. They are listed so that nothing in
+the prototype closes them off.
+
+## Semantics of member access
 
 ### What `L%name` designates
 
 `L%name` designates the entity that `use M, only: name` would make
 accessible: any public entity of `M`, including entities that `M` itself
-accesses by use association and makes public. It designates *the same
-entity* as any other route to it (ordinary USE, another namespace for the
-same module, host association). Every attribute of the entity applies
-unchanged. For example, `PROTECTED` still forbids modifying it outside its
-module (`errors/namespace_modules_12`), a named constant is still a
-constant (`errors/namespace_modules_27`), and a private entity is not
-accessible (`errors/namespace_modules_05`). A name that is not an entity of
-the module is an error (`errors/namespace_modules_04`).
+accesses by use association and makes public, and including public module
+entities of `M`. It designates *the same entity* as any other route to it
+(ordinary USE, another module entity for the same module, host
+association). Every attribute of the entity applies unchanged. For
+example, `PROTECTED` still forbids modifying it outside its module
+(`errors/namespace_modules_12`), a named constant is still a constant
+(`errors/namespace_modules_27`), and a private entity is not accessible
+(`errors/namespace_modules_05`). A name that is not an entity of the module
+is an error (`errors/namespace_modules_04`).
 
-A namespace import makes none of the member names accessible without
-qualification (`errors/namespace_modules_01`). Local entities may therefore
-have the same names as members, and the two stay distinct
-(`namespace_modules_01`, `_16`).
+`L%name` does not rename anything and makes no name accessible. A namespace
+import makes none of the member names accessible without qualification
+(`errors/namespace_modules_01`). Local entities may therefore have the same
+names as members, and the two stay distinct (`namespace_modules_01`, `_16`).
 
 ### Where `L%name` may appear
 
@@ -252,16 +425,16 @@ Anywhere the member's name could be *referenced*:
 | Kind of member | Allowed uses (with tests) |
 |---|---|
 | Variable | Expressions; assignment targets; part references `L%a(i)`, `L%a(2:4)`, `L%s(1:3)`, `L%obj%comp`; actual arguments; `allocate`/`deallocate`; both sides of pointer assignment; `nullify`; `associated`, `allocated`, `size`, ...; input/output items, unit and format specifiers, implied-DO lists; ASSOCIATE and SELECT TYPE selectors (`_01`, `_03`, `_17`, `_18`, `_20`) |
-| Named constant, enumerator | All constant expressions: kind selectors `real(L%dp)`, array bounds, character lengths, `parameter` initialization, `case` selectors, kind arguments of intrinsics (`_06`, `_07`) |
+| Named constant, enumerator | All constant expressions: kind selectors `real(L%dp)`, array bounds, character lengths, `parameter` initialization, `case` selectors, kind arguments of intrinsics (`_06`, `_07`, `_29`) |
 | Procedure | `call L%s(...)`, function references, keyword and optional arguments, actual arguments, procedure pointer targets, `associated(p, L%f)` (`_01`, `_09`, `_19`) |
-| Generic interface | Generic resolution over the module's specifics, including a generic with the same name as a type (`_08`) |
+| Generic interface | Generic resolution over the module's specifics, including a generic with the same name as a type (`_08`, `_29`) |
 | Abstract interface | `procedure(L%iface)` declarations of dummy procedures and procedure pointers (`_09`) |
-| Derived type | `type(L%t)`, `class(L%t)`, structure constructors `L%t(...)`, array constructor type-spec `[L%t :: ...]`, `allocate(L%t :: x)`, `type is (L%t)`, `class is (L%t)`, `extends(L%t)` (`_04`, `_05`, `_14`, `_20`) |
-| Namespace (only if D4 allows it) | `L%inner%x` (`export_01`, `export_03`) |
+| Derived type | `type(L%t)`, `class(L%t)`, structure constructors `L%t(...)`, array constructor type-spec `[L%t :: ...]`, `allocate(L%t :: x)`, `type is (L%t)`, `class is (L%t)`, `extends(L%t)` (`_04`, `_05`, `_14`, `_20`, `_29`) |
+| Module entity | Further qualification `L%inner%x`, in all the positions above (`_24`, `_26`, `_28`, `_29`) |
 
 Type-bound procedures, type-bound generics, type-bound operators and
 type-bound assignment belong to the type. They work on objects whose type
-was accessed through a namespace, with no extra import
+was accessed through a module entity, with no extra import
 (`namespace_modules_04`, `_14`).
 
 Not allowed:
@@ -284,7 +457,7 @@ input/output (`write(formatted)`) have no name that could be qualified
 (comment 7 asked whether `x .cross_product. y` would become
 `x foo::operator(.cross_product.) y`). A namespace import does **not** make
 them accessible (`errors/namespace_modules_18`). They are imported
-explicitly next to the namespace:
+explicitly next to the namespace import:
 
 ```fortran
 use, namespace :: v => vectors
@@ -304,42 +477,31 @@ about this interaction.
 ### Name resolution
 
 The first name of `a%b` is resolved like any local identifier (local
-entity, then host-associated entity, and so on). If it resolves to a
-namespace, `a%b` is a namespace-qualified name. Otherwise it is a
-component reference or type-bound procedure reference, as today. A
-namespace and a variable with the same name cannot both be accessible in a
-scope (see above), so this is unambiguous.
+entity, then host-associated entity, and so on). If it resolves to a module
+entity, `a%b` is a module-qualified name, and `b` is looked up among the
+public entities of that module. If `b` is itself a module entity, a further
+`%c` is resolved in the same way. Otherwise `a%b` is a component reference
+or type-bound procedure reference, as today. A module entity and a variable
+with the same name cannot both be accessible in a scope (see Rules above),
+so this is unambiguous.
 
-### Scoping: host association, BLOCK, submodules, interface bodies
+### Scoping details
 
-A namespace is a local entity, so it is accessible by host association like
-any other:
-
-* in internal procedures and module procedures, and in BLOCK constructs,
-  of the scope that imported it (`namespace_modules_11`);
-* in submodules of a module that imported it (`namespace_modules_13`;
-  comments 60, 62, 72, 73). A submodule can also import its own
-  namespaces. Submodules are never visible through a namespace;
-  `M%submod%...` does not exist (comment 73);
-* in interface bodies, only through `IMPORT` (D6, `namespace_modules_15`,
-  `errors/namespace_modules_26`).
-
-A local entity of an inner scope with the same name hides the host's
-namespace, as for any host-associated entity (`namespace_modules_11`,
-`errors/namespace_modules_21`). A `use, namespace` statement is allowed
-wherever a USE statement is allowed: in a program, module, submodule,
-subroutine, function, BLOCK construct or interface body
-(`namespace_modules_12`, `_15`).
-
-This addresses the host-association half of the J3/25-119r1 objection:
-namespace names are class (1) local identifiers, so they are host
-associated.
+* A `use, namespace` statement is allowed wherever a USE statement is
+  allowed: in a program, module, submodule, subroutine, function, BLOCK
+  construct or interface body (`namespace_modules_12`, `_15`). A module
+  entity declared in a procedure or BLOCK is local to it; only module
+  entities in the specification part of a module can be use associated.
+* Submodules see the module entities of their ancestors by host
+  association, and can declare their own (`namespace_modules_13`; comments
+  60, 62, 72, 73). Submodules themselves are never visible through a
+  module entity: `M%submod%...` does not exist (comment 73).
 
 ### Combining with ordinary USE statements
 
 A scope may freely mix a namespace import of `M` with ordinary USE
 statements of `M`. The same module may also be imported under several
-namespace names. All routes designate the same entities
+module entity names. All routes designate the same entities
 (`namespace_modules_10`; comments 22–23):
 
 ```fortran
@@ -348,250 +510,249 @@ use, namespace :: sm2 => some_module
 use some_module, only: t1 => thing1   ! t1, sm1%thing1 and sm2%thing1 are the same
 ```
 
-Renames in an ordinary USE do not affect the namespace: above, `sm1%t1`
-does not exist (comments 18–21).
+Renames in an ordinary USE do not affect member access: above, `sm1%t1`
+does not exist and `sm1%thing1` does (comments 18–21). Conversely, `L%name`
+is not a rename, so it does not hide the unqualified `name` that another
+USE statement of the same module makes accessible (`namespace_modules_28`).
 
 ### Intrinsic modules
 
-Intrinsic modules can be imported as namespaces
+Intrinsic modules can be imported as module entities
 (`use, intrinsic, namespace :: env => iso_fortran_env`, with
 `env%real64`, `c%c_loc`, `c%c_ptr`, ...). See `namespace_modules_07`.
 
-## D4: namespaces and USE association (open)
+## Objections and answers
 
-This is the one decision that is still open. Consider:
+These are all the objections and concerns raised in the issue, at the J3
+meetings and in the J3 papers, with their answers for the design in this
+document. For each, the source is given.
 
-```fortran
-module a
-    integer :: x = 1
-end module
+### "It is not worth it"
 
-module b
-    use, namespace :: a        ! the namespace "a" is a local entity of b
-    integer :: y = 2
-end module
-```
+1. **"Not compelling, can be done with rename"** (Cohen, 2020 minutes;
+   J3/25-119r1 §2 and §3: "`module1%%var` is still not any shorter than
+   `module1_var`", "available since Fortran 90"). **"No big difference
+   between `module%foo` and `module_foo`"**, **"prefers rename on use"**
+   (2020 plenary).
+   Renaming works per entity. Every entity used needs its own entry in the
+   USE statement, the entry has to be kept in sync with the code, and the
+   renamed name is disconnected from its module. A namespace import is one
+   line for the whole module. It never pollutes the scope, and every
+   reference names its module (the lapack example of J3/20-108,
+   `namespace_modules_01`, `_02`). Renaming also cannot express a facade
+   module (`std%linalg%solve`, `namespace_modules_24`). The committee's own
+   comparison was with the remote-access design, where the qualifier had to
+   be written in full each time. Here the module entity can be renamed once
+   (`use, namespace :: la => std_linalg`).
+2. **"Can be done with use, only"** (Snyder, 2020 minutes). `use, only`
+   imports names unqualified, so it is the opposite of what is asked for.
+   It is what one uses today, with the costs described in item 1.
+3. **"Use the GENERIC facility: make conflicting functions generic and
+   rename on use"** (2020 plenary). Generic resolution cannot choose
+   between two procedures with the same interface (`np%sin` and
+   `math%sin`, `namespace_modules_02`), and it does not apply to variables,
+   named constants or types.
+4. **"A solution in search of a problem"**, **"hard to come up with a
+   compelling use case; more relevant in the Python world where packages
+   come from disparate places"** (2020 plenary). Fortran now has a package
+   ecosystem (fpm, stdlib) where modules from different authors meet in one
+   program. Name clashes between them, and long `use, only` lists, are
+   everyday problems (comment 9, J3/20-108). Other languages provide
+   exactly this: Python, Julia, Haskell (said at the 2020 plenary to be
+   "useful"), Chapel, Modula (2020 plenary).
+5. **"This change is a convenience, not a fix or an enabling feature. We
+   need to prioritize"** (Klausler, quoted in comment 12); "low priority"
+   (comment 12); "I don't see the feature as necessary" (comment 9). A
+   convenience that affects every USE statement in every program is worth
+   prioritizing. The facade case (item 1) is also enabling: it cannot be
+   done today. An implementation in LFortran provides the usage experience
+   needed to judge it.
+6. **"Benefit/cost ratio would not only be small, but likely be negative
+   (viz cure worse than the disease)"** (J3/25-119r1 §6). That judgement
+   was made about the remote-access design, and its costs were items 7–11
+   below. None of them apply here. The remaining cost is new text in the
+   standard (item 16).
 
-What can users of `b` do with `a`? Host association is not in question:
-inside `b`, its procedures and its submodules, `a%x` always works. The
-options:
+### Scoping and compatibility
 
-### Option A: a namespace is an ordinary entity (public by default)
+7. **"Module names are not passed through subsequent use or host
+   association, which means it would only work in a scope that directly
+   uses the module. That would make the feature useless. Passing module
+   names through use or host association … cannot be changed without
+   introducing an incompatibility"** (J3/25-119r1 §2; also J3/23-196r1:
+   "`%` only gives one-level-back of access, which is not good enough").
+   The qualifier here is not the module name. It is a module entity, a new
+   class (1) local entity created by new syntax. It passes through host
+   association and use association by the existing rules for class (1)
+   entities, so the feature works in any scope. No incompatibility is
+   possible, because no existing code contains a module entity (D2). The
+   paper says the same about renaming: "renaming produces a normal class
+   one name that is already passed through use and host association". A
+   module entity is such a name.
+8. **The incompatibility example** (comment 107): `module b; use a; end`,
+   then `use b; integer a` is valid today and must stay valid. It does:
+   a plain `use a` in `b` creates no module entity, so `use b` brings no
+   `a`.
+9. **"Quite inconsistent with how the scoping rules work"** (J3/25-119r1
+   §3, about module names flowing through association "for the purpose of
+   `%%` only"). No special scoping rule exists here. Module entities
+   follow the ordinary rules for class (1) entities.
+10. **"Allow `module-name%%whatever` to use the module implicitly … would
+    complicate module dependency analysis"** (J3/25-119r1 §3; also
+    `%a%something`, comment 112). Here a module entity always comes from a
+    `use, namespace` statement, so every module dependency is explicit in a
+    USE statement, as today.
+11. **Should access bypass ONLY? "Additional complexity, potential
+    confusion, and rendering some deliberate namespace controls
+    ineffective"** (J3/23-196r1, J3/25-119r1 §4). Nothing is bypassed. A
+    plain `use m, only: x` creates no module entity (D2). A namespace import
+    is an explicit request for the public entities of the module, and the
+    module's own `private` statements stay in control.
+12. **"In relation to nesting of module entities, will direct qualification
+    be possible? If you allow nesting there may be more than one unique way
+    to get to the object you want"** (2020 plenary). Yes, `b%a%x` and a
+    direct `a%x` both reach `x`. They designate the same entity (D8), just
+    as one entity can already reach a scope through several USE paths
+    without conflict (F2023 14.2.2).
+13. **A variable and a module with the same name** (the `mfarthest` example
+    in J3/23-196r1). A module entity and a variable are both class (1)
+    names. If both reach a scope through use association, the existing
+    rule applies: the name must not be referenced. One of them can be
+    renamed on USE (`use mnear, only: v => mfarthest`).
+14. **"`use b` now brings in `a`, which pollutes the user's scope"**. `use b`
+    already brings in every public entity of `b`, including everything `b`
+    itself uses from other modules. A module entity is one more public
+    entity, and it exists only because the author of `b` wrote
+    `use, namespace`. The author hides it with `private` (D9), the same
+    control as for anything else. A user who wants no pollution writes
+    `use, namespace :: b`, the whole point of the feature.
 
-A namespace is a class (1) local entity of the module like any other, so it
-follows the usual rules:
+### It adds a new kind of thing
 
-* It has the module's default accessibility and can be named in
-  `public`/`private` statements.
-* `use b` makes `a` accessible, so `a%x` works. `use b, only: a` and
-  `use b, only: aa => a` work too.
-* With `use, namespace :: b`, `b%a%x` works (a namespace is a member like
-  any other).
+15. **"It adds a new type to Fortran."** It does not. A module entity is a
+    named entity, not a data type or a data object. It has no values, no
+    storage and no run-time representation, and nothing about types
+    changes. The language already has many kinds of named entities that are
+    not data objects (generic names, namelist groups, construct names,
+    abstract interfaces). Fortran 2023 added enumeration types, and Fortran
+    202Y is adding templates and requirements. In the committee's own
+    discussion, a namespace "as a first class entity" was suggested
+    (comment 105).
+16. **"Possibly tricky to define in the standard"** (comment 109). This is
+    the real cost. It needs a new form of the USE statement (clause 14), a
+    new kind of class (1) entity with its access rules (clause 19), and
+    module-qualified names in the syntax rules for designators and
+    type-specs. Most of the rules are the existing ones for class (1)
+    entities, by design. This prototype and its tests are meant to show
+    exactly how much is needed.
+17. **"Handle it as part of a formal namespace concept, not piecemeal"**
+    (comments 79, 95). A module entity is that concept for modules. A later
+    `namespace ... end namespace` construct or nested modules (#86) would
+    create entities of the same kind (see "Doors left open").
 
-```fortran
-program p1
-    use b                   ! brings y and the namespace a
-    print *, a%x, y
-end program
+### Syntax and the accessor
 
-program p2
-    use, namespace :: nb => b
-    print *, nb%a%x, nb%y   ! chains of namespaces
-end program
+18. **Dislike of `%`; "some compilers use colon in error messages"** (2020
+    plenary); **`%` should be distinct from component access, as `()` for
+    both arrays and functions is confusing** (comment 80). `%` already
+    means "member of", and a module entity is used exactly like a
+    structure whose components are the module's public entities, which is
+    how users think of it (comments 9, 25, 28). Resolution is unambiguous
+    (Name resolution above). The alternatives are worse: `::` is ambiguous
+    (J3/23-196r1), `.` conflicts with operators, and backquote or `#` use up
+    a special character (J3/23-196r1).
+19. **`use namespace A` is ambiguous in fixed form** (comment 55). The chosen
+    syntax has commas and `::` (`namespace_modules_21`).
+20. **`use A, only:` is not clear to a reader** (comments 67, 68). Not used.
+21. **The keyword `namespace` is long, and means something else in C++**
+    (comment 77); **reserve it for a future namespace concept** (comments
+    79, 95). The keyword describes what the statement does (it imports a
+    module as a namespace). If a namespace construct is added later, it
+    would produce entities of the same kind (item 17).
+22. **`use, namespace :: np => numpy` invites a list,
+    `np => numpy, lpk => lapack`** (comment 80). One module per statement,
+    as for every USE statement.
+23. **People will try `use, namespace :: sm => m, only: t1 => thing1`**
+    (comments 17–25). It is an error with a clear message
+    (`errors/namespace_modules_02`, `_03`). Members keep their names, as
+    components do. Combine with an ordinary `use m, only: t1 => thing1`.
 
-program p3
-    use b, only: aa => a    ! namespaces can be listed and renamed
-    print *, aa%x
-end program
-```
+### Semantic questions
 
-Pros:
-
-* No new rules: a namespace behaves like every other local entity, and
-  existing rules cover accessibility, ONLY, renaming and conflicts.
-* It answers the J3/25-119r1 objection directly. The *namespace name* (not
-  the module name) passes through use association, so the feature is not
-  limited to the scope that has the USE statement. There is no
-  incompatibility, because only the new syntax creates namespaces (D2). The
-  incompatibility that Everythingfunctional raised in comment 107
-  (`module b; use a; end` then `use b; integer a`) cannot happen: a plain
-  `use a` in `b` creates nothing.
-* Facade modules become possible: a library can export
-  `std%linalg%solve`, `std%stats%mean` (`namespace_modules_export_01`).
-  Comments 45–47 (Klausler: "would it be transitive?"; Čertík: yes;
-  septcolor showed that Julia behaves this way) and comment 71 (Haskell
-  can export module aliases, which "lets one compose a new module using
-  names imported from others") ask for exactly this. Comment 110 gives
-  `b%a%x` as the example.
-
-Cons:
-
-* `use b` now also brings in `a`, which can clash with the user's own
-  names. The feature exists to reduce that kind of pollution. Library
-  authors must write `private :: a` to avoid exporting namespaces they only
-  use internally, and most modules that import namespaces probably want
-  that.
-* The .mod file must record namespaces.
-
-Tests: `export_01`, `export_02`, `export_03` and `export_04` are valid;
-`errors/namespace_modules_28` and `_29` are errors.
-
-### Option A2: an ordinary entity, but private unless declared PUBLIC
-
-As option A, except that a namespace is exported only if it is explicitly
-named in a `public` statement, whatever the module's default accessibility.
-
-```fortran
-module b
-    use, namespace :: a
-    public :: a              ! required to export the namespace
-end module
-```
-
-Pros: everything in option A, without the accidental pollution. A module
-that uses a namespace internally exports nothing new. Exporting is
-explicit, like building a facade.
-
-Cons: a new special case in the accessibility rules (default accessibility
-does not apply to namespaces). Plain `public` at module level does not
-export namespaces, which may surprise.
-
-Tests: `export_03` and `export_04` are valid; `export_01` and `export_02`
-are errors (no `public :: linalg`, `public :: a`).
-`errors/namespace_modules_28` and `_29` are errors.
-
-### Option B: namespaces are members, but not use associated
-
-`use, namespace :: b` gives `b%a%x`, but `use b` does not make `a`
-accessible, and `a` cannot appear in an ONLY list.
-
-```fortran
-use, namespace :: b
-print *, b%a%x      ! OK
-use b
-print *, a%x        ! error: a is not accessible
-```
-
-Pros: `use b` never pulls namespaces into the user's scope, yet facades
-still work through qualification (`std%linalg%solve`). This matches the
-narrow reading of comments 45–47 and 110.
-
-Cons: namespaces become a second kind of module member with their own
-rules (a member of `b` that USE cannot import). Accessibility statements
-still need to apply to them (`private :: a` should hide `b%a`). A module
-cannot re-export a namespace for unqualified use. The standard would need
-more new text than for option A.
-
-Tests: `export_01` is valid; `export_02`, `export_03` and `export_04` are
-errors; `errors/namespace_modules_28` is an error.
-
-### Option C: namespaces are never exported
-
-A namespace exists only in the scope with the `use, namespace` statement,
-plus host association. `b%a%x` and `use b` followed by `a%x` are errors.
-
-Pros: simplest to specify and implement, with no .mod file changes. It is
-the smallest possible proposal, and a later revision could relax it to A,
-A2 or B without breaking code.
-
-Cons: this is exactly the limitation that J3/25-119r1 calls "would make
-the feature useless" (for module names). Facades are not possible, and
-every scope that wants `a%x` must import `a` itself (host association
-still helps within one program unit).
-
-Tests: all four `export_*` tests are errors; `errors/namespace_modules_28`
-is an error.
-
-### Option D (for completeness): module names flow implicitly (J3/23-196r1)
-
-In the `%%` paper, module names pass through use and host association "for
-the purpose of `%%` only", even without any new USE syntax. This requires
-the D2 "yes" model and a separate accessor. J3/25-119r1 called it "quite
-inconsistent with how the scoping rules work". Rejected by D2 and D3.
-
-### Test matrix for D4
-
-| Test | A | A2 | B | C |
-|---|---|---|---|---|
-| `namespace_modules_export_01` (facade, `std%linalg%solve2`, no accessibility statements) | valid | error | valid | error |
-| `namespace_modules_export_02` (`use b` then `a%x`, default public) | valid | error | error | error |
-| `namespace_modules_export_03` (`private` default + `public :: a`; ONLY and rename of a namespace; `b%a%x`) | valid | valid | error | error |
-| `namespace_modules_export_04` (same namespace through two modules) | valid | valid | error | error |
-| `errors/namespace_modules_28` (`private :: a`, then `b%a%x`) | error | error | error | error |
-| `errors/namespace_modules_29` (two different namespaces named `a`) | error | error | n/a | n/a |
-
-When D4 is decided, the `export_*` tests that are errors under the chosen
-option move to `tests/errors/`.
+24. **Operators, named operators, generic interfaces and their extension,
+    submodules, interface bodies, BLOCK** (Ian Harvey via comment 7).
+    Answered in the sections above: operators and assignment (not imported;
+    type-bound ones work), generics (resolved normally, not extended by
+    local generics), submodules and BLOCK (host association), interface
+    bodies (`IMPORT`).
+25. **Submodules** (comments 60, 72). Submodules see their ancestors' module
+    entities, and are themselves never reachable through a module entity
+    (comment 73).
+26. **Do two module entities for one module share saved variables?**
+    (comment 24). Yes: they designate the same module and the same
+    entities (D8, `namespace_modules_10`).
+27. **"Should work for derived types and other entities"** (2020 plenary).
+    It does: types, constants, variables, generics, abstract interfaces,
+    enumerators and module entities (`namespace_modules_04`–`_09`, `_20`,
+    `_29`). The `type is (object_m%object)` case of comment 103 is covered
+    by `namespace_modules_20`.
+28. **Workaround with a derived type whose type-bound procedures wrap the
+    module's procedures** (comment 28). It cannot cover variables,
+    constants or types, it needs a wrapper for every procedure, and the
+    module and the object need different names (comments 28–31).
 
 ## Out of scope
 
-* Renaming or selecting members inside a namespace
+* Renaming or selecting members inside a module entity
   (`use, namespace :: sm => m, only: t1 => thing1`, comments 17–25).
   Combine a namespace import with an ordinary `use m, only: ...` instead.
-* Implicit namespace access without a USE statement (`%a%something`,
-  comment 112; the "use the module implicitly" idea in J3/25-119r1). It
-  would complicate dependency analysis.
-* Nested modules (proposal #86) and packages. Modules with the same name
-  in different libraries (comments 113–115) are a separate problem.
-* A `namespace ... end namespace` construct (comment 105).
+* Implicit module access without a USE statement (`%a%something`,
+  comment 112; the "use the module implicitly" idea in J3/25-119r1).
+* Modules with the same name in different libraries (comments 113–115).
 * `use A, only: *` together with a `-Wimplicit-use` warning (comment 92).
   It is orthogonal and could be added separately.
-
-## Answers to the committee's objections
-
-* *"`module1%var` is no shorter than `module1_var`"* (J3/25-119r1, 2020
-  plenary). A rename needs one entry in the USE statement per entity, so
-  every new entity used requires editing the USE statement, and the name
-  used in the code is disconnected from its definition. A namespace import
-  is one line for the whole module, `lapack%dgesv` stays greppable, and
-  local names never clash with module members (see the lapack example in
-  J3/20-108 and `namespace_modules_01`, `_02`).
-* *"Module names are not passed through use or host association"*
-  (J3/25-119r1). The namespace is a new class (1) local identifier, not the
-  module name. It is host associated (`namespace_modules_11`, `_13`), and
-  depending on D4 it is also use associated. Old code cannot be affected,
-  because only the new syntax creates namespaces.
-* *"Use rename or GENERIC instead"* (2020 plenary). Renaming works per
-  entity and pollutes the local scope. Generics cannot resolve two
-  procedures with the same interface (`np%sin` vs `math%sin`,
-  `namespace_modules_02`), and they do not apply to variables, constants or
-  types.
-* *"Should work for derived types and other entities"* (2020 plenary). It
-  does: types, constants, variables, generics, abstract interfaces and
-  enumerators (`namespace_modules_04`–`_09`, `_20`). The
-  `select type ... type is (object_m%object)` case from comment 103 is
-  covered by `namespace_modules_20`.
-* *"The compiler can track where an entity comes from"* (2020 plenary). It
-  can, and so can readers: every qualified reference names its module.
+* The future extensions listed under "Doors left open".
 
 ## Prototype implementation in LFortran (plan)
 
-* **Parser/AST**: add `namespace` to `use_modifier`. Allow
-  `[local =>] module` after the modifiers when `namespace` is present. The
-  AST `Use` node gets the modifier and an optional local name. Allow
-  `id % id` where the grammar currently accepts only a type or interface
-  name: `type(...)`, `class(...)`, `extends(...)`, `type is (...)`,
-  `class is (...)`, `procedure(...)`, and the array-constructor and
-  `allocate` type-specs. Expressions, calls and assignments already parse
-  (`a%b` is a member access). `lfortran fmt` must print the new form back.
+The implementation is staged. Each stage is a strict extension of the
+previous one, and the design above is the target of the last stage.
+
+1. Namespace imports, module entities in the scope that declares them, host
+   association, member access in all positions, and chains `b%a%x`
+   (including use association into the member position).
+2. Module entities in ONLY and rename lists: `use b, only: a`,
+   `use b, only: aa => a`.
+3. A plain `use b` brings in `b`'s public module entities; D9.
+
+* **Parser/AST**: add `namespace` (and an access-spec) to `use_modifier`.
+  Allow `[local =>] module` after the modifiers when `namespace` is present.
+  The AST `Use` node gets the modifier and an optional local name. Allow
+  `id % id [% id ...]` where the grammar currently accepts only a type or
+  interface name: `type(...)`, `class(...)`, `extends(...)`,
+  `type is (...)`, `class is (...)`, `procedure(...)`, and the
+  array-constructor and `allocate` type-specs. Expressions, calls and
+  assignments already parse (`a%b` is a member access). `lfortran fmt` must
+  print the new form back.
 * **Semantics (AST → ASR)**: `use, namespace` loads the module like a USE
-  statement but adds only a namespace symbol to the current symbol table.
-  When the first part of `a%b...` resolves to a namespace, resolve `b` in
-  the module's symbol table (checking public access). Then create, or reuse,
-  an `ExternalSymbol` in the current scope with a compiler-generated name
-  that cannot clash with user identifiers, and continue with the rest of
-  the reference as for an ordinary use-associated entity. The same applies
-  to type-spec positions. All checks (PROTECTED, PARAMETER, generic
-  resolution) then come for free.
-* **ASR**: after semantics, qualified references are ordinary
-  `ExternalSymbol`s, so the passes and backends need no changes. The
-  namespace symbol itself needs an ASR representation to be host
-  associated and, depending on D4, stored in .mod files. One possibility is
-  an `ExternalSymbol` whose target is the `Module` symbol itself.
+  statement but adds only a module entity symbol to the current symbol
+  table. When the first part of `a%b...` resolves to a module entity,
+  resolve `b` in the module's symbol table (checking public access). Then
+  create, or reuse, an `ExternalSymbol` in the current scope with a
+  compiler-generated name that cannot clash with user identifiers, and
+  continue with the rest of the reference as for an ordinary use-associated
+  entity. The same applies to type-spec positions. All checks (PROTECTED,
+  PARAMETER, generic resolution) then come for free.
+* **ASR and .mod files**: after semantics, qualified references are ordinary
+  `ExternalSymbol`s, so the passes and backends need no changes. The module
+  entity itself is a symbol in the symbol table (for example an
+  `ExternalSymbol` whose target is the `Module` symbol, with an access
+  attribute). It is saved in .mod files, so that use association and chains
+  work across separate compilation.
 * **Diagnostics**: the error tests in `tests/errors/namespace_modules_*`
   define the expected errors. The messages must be lowercase and must not
-  mention ASR node names, for example "`m` is a namespace; it can only be
-  used as `m%name`", "module `m` has no public entity `nosuch`", or "`only`
+  mention ASR node names, for example "`m` is a module; it can only be used
+  as `m%name`", "module `m` has no public entity `nosuch`", or "`only`
   cannot be used with a namespace import".
 
 ## Tests
@@ -599,38 +760,44 @@ option move to `tests/errors/`.
 The integration tests (`integration_tests/namespace_modules_*.f90`) were
 checked with GFortran through a mechanical translation to standard Fortran
 (`use, namespace :: L => M` becomes `use M, only: L__x => x, ...` and
-`L%x` becomes `L__x`). They will be registered in
-`integration_tests/CMakeLists.txt` with the `llvm` label once the prototype
-compiles them. They cannot carry the `gfortran` label, since GFortran does
-not support the syntax. The error tests (`tests/errors/namespace_modules_*.f90`)
-will be registered in `tests/tests.toml` at the same time.
+`L%x` becomes `L__x`, with chains translated by hand). They will be
+registered in `integration_tests/CMakeLists.txt` with the `llvm` label once
+the prototype compiles them. They cannot carry the `gfortran` label, since
+GFortran does not support the syntax. The error tests
+(`tests/errors/namespace_modules_*.f90`) will be registered in
+`tests/tests.toml` at the same time.
 
 | Test | Covers |
 |---|---|
 | `namespace_modules_01` | Variables, subroutines, functions; keyword and optional arguments; local names equal to member names |
-| `namespace_modules_02` | Renamed namespaces; several modules exporting the same names (J3/20-108 example); intrinsic `sin` unaffected |
+| `namespace_modules_02` | Renamed module entities; several modules exporting the same names (J3/20-108 example); intrinsic `sin` unaffected |
 | `namespace_modules_03` | Arrays, sections, allocatable arrays (including reallocation on assignment), pointers, `nullify`, `associated` |
 | `namespace_modules_04` | Derived types: declarations, constructors, components, type-bound procedures, array constructor type-spec, `allocate` type-spec, `select type` |
-| `namespace_modules_05` | `extends(ns%t)`, abstract types with deferred bindings, parent component name (D5) |
+| `namespace_modules_05` | `extends(L%t)`, abstract types with deferred bindings, parent component name (D5) |
 | `namespace_modules_06` | Constant expressions: kinds, bounds, lengths, `parameter`, `case`, enumerators |
 | `namespace_modules_07` | Intrinsic modules; modifier order; two names for one module |
 | `namespace_modules_08` | Generic interfaces; generic with a type's name; specifics |
-| `namespace_modules_09` | Procedures as actual arguments, procedure pointers, `procedure(ns%iface)` |
-| `namespace_modules_10` | Mixing with ordinary USE; several namespaces of one module; repeated import (D7) |
+| `namespace_modules_09` | Procedures as actual arguments, procedure pointers, `procedure(L%iface)` |
+| `namespace_modules_10` | Mixing with ordinary USE; several module entities for one module; repeated import (D7) |
 | `namespace_modules_11` | Host association (internal and module procedures, BLOCK); shadowing |
 | `namespace_modules_12` | Namespace imports local to procedures, BLOCK, external procedures |
 | `namespace_modules_13` | Submodules |
 | `namespace_modules_14` | Type-bound operators and assignment; explicit import of a defined operator |
-| `namespace_modules_15` | Interface bodies: `IMPORT` of a namespace (D6) and local namespace import |
-| `namespace_modules_16` | Members named like intrinsics, like the namespace, like another namespace |
+| `namespace_modules_15` | Interface bodies: `IMPORT` of a module entity (D6) and local namespace import |
+| `namespace_modules_16` | Members named like intrinsics, like the module entity, like another module entity |
 | `namespace_modules_17` | Character variables, substrings, deferred length |
 | `namespace_modules_18` | Input/output statements |
 | `namespace_modules_19` | Elemental and pure procedures |
-| `namespace_modules_20` | ASSOCIATE and SELECT TYPE selectors; `type is (ns%t)` |
+| `namespace_modules_20` | ASSOCIATE and SELECT TYPE selectors; `type is (L%t)` |
 | `namespace_modules_21` | Fixed-form source |
 | `namespace_modules_22` | Case insensitivity and blanks around `%` |
-| `namespace_modules_23` | Local generic with the same name does not extend `ns%gen` |
-| `namespace_modules_export_01`–`_04` | D4, see the matrix above |
+| `namespace_modules_23` | Local generic with the same name does not extend `L%gen` |
+| `namespace_modules_24` | Facade module: chains `std%linalg%solve2` |
+| `namespace_modules_25` | `use b` brings in `b`'s public module entity `a` |
+| `namespace_modules_26` | `private` module + `public :: a`; `use b, only: a`; `only: other => a`; `b%a%x` |
+| `namespace_modules_27` | The same module entity through two modules (D8) |
+| `namespace_modules_28` | `use, namespace, private/public` (D9); identity of `a` and `b%a` (D8); `L%name` is not a rename |
+| `namespace_modules_29` | Chains in type-specs, constant expressions, generic calls, constructors, `type is` |
 
 | Error test | Error |
 |---|---|
@@ -639,12 +806,12 @@ will be registered in `tests/tests.toml` at the same time.
 | `namespace_modules_03` | Rename list with a namespace import |
 | `namespace_modules_04` | No such member |
 | `namespace_modules_05` | Private member |
-| `namespace_modules_06` | Namespace used as a value |
-| `namespace_modules_07` | Namespace as an actual argument |
-| `namespace_modules_08` | Assignment to a namespace |
-| `namespace_modules_09` | Namespace name clashes with a local entity |
+| `namespace_modules_06` | Module entity used as a value |
+| `namespace_modules_07` | Module entity as an actual argument |
+| `namespace_modules_08` | Assignment to a module entity |
+| `namespace_modules_09` | Module entity name clashes with a local entity |
 | `namespace_modules_10` | One local name for two different modules |
-| `namespace_modules_11` | Ambiguous reference: namespace vs use-associated entity |
+| `namespace_modules_11` | Ambiguous reference: module entity vs use-associated variable |
 | `namespace_modules_12` | Modifying a PROTECTED variable |
 | `namespace_modules_13` | Qualifier with a module that was only used with plain USE (D2) |
 | `namespace_modules_14` | Qualifier with a module that was not used |
@@ -654,13 +821,16 @@ will be registered in `tests/tests.toml` at the same time.
 | `namespace_modules_18` | Defined operator not imported by a namespace import |
 | `namespace_modules_19` | Qualified name as a DO variable |
 | `namespace_modules_20` | Qualified name as a literal kind parameter |
-| `namespace_modules_21` | Namespace hidden by a local variable in an internal procedure |
+| `namespace_modules_21` | Module entity hidden by a local variable in an internal procedure |
 | `namespace_modules_22` | Module imports itself |
 | `namespace_modules_23` | Local entity named like the renamed module |
 | `namespace_modules_24` | Type used as a data object |
 | `namespace_modules_25` | Declaring a qualified name |
 | `namespace_modules_26` | Interface body without `IMPORT` |
 | `namespace_modules_27` | Assignment to a named constant |
-| `namespace_modules_28` | Private namespace of a module (D4, all options) |
-| `namespace_modules_29` | Ambiguous exported namespaces (D4 options A, A2) |
-| `namespace_modules_30` | Local generic does not extend `ns%gen` |
+| `namespace_modules_28` | Private module entity of a module, accessed as `b%a%x` |
+| `namespace_modules_29` | Two module entities named `a` for different modules, referenced |
+| `namespace_modules_30` | Local generic does not extend `L%gen` |
+| `namespace_modules_31` | Access-spec in a namespace import outside a module |
+| `namespace_modules_32` | Two access-specs in a namespace import |
+| `namespace_modules_33` | `use, namespace, private` entity imported with ONLY |

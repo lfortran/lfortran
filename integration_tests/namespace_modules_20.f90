@@ -1,4 +1,4 @@
-! ASSOCIATE and SELECT TYPE with namespace-qualified selectors.
+! ASSOCIATE and SELECT TYPE with module-qualified selectors.
 module namespace_modules_20_state
     implicit none
     type :: item_t

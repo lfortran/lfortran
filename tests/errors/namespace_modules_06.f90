@@ -1,4 +1,4 @@
-! Error: a namespace is not a data object; it cannot appear in an
+! Error: a module entity is not a data object; it cannot appear in an
 ! expression by itself.
 module namespace_modules_06_m
     implicit none

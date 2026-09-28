@@ -1,4 +1,4 @@
-! Arrays, allocatables and pointers accessed through a namespace.
+! Arrays, allocatables and pointers accessed through a module entity.
 module namespace_modules_03_data
     implicit none
     integer :: fixed(5) = [1, 2, 3, 4, 5]

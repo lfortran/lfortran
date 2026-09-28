@@ -1,4 +1,4 @@
-! Error: an entity cannot be declared inside a namespace; a qualified name
+! Error: an entity cannot be declared inside a module entity; a qualified name
 ! is not an object name.
 module namespace_modules_25_m
     implicit none

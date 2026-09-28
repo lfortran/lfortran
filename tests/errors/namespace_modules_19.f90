@@ -1,4 +1,4 @@
-! Error: a DO variable must be a variable name, not a namespace-qualified
+! Error: a DO variable must be a variable name, not a module-qualified
 ! name.
 module namespace_modules_19_m
     implicit none

@@ -1,4 +1,4 @@
-! Error: a named constant accessed through a namespace cannot be assigned
+! Error: a named constant accessed through a module entity cannot be assigned
 ! to.
 module namespace_modules_27_m
     implicit none

@@ -1,4 +1,4 @@
-! Type extension of a type accessed through a namespace. The parent
+! Type extension of a type accessed through a module entity. The parent
 ! component is named after the parent type's name in the module (base_t).
 module namespace_modules_05_shapes
     implicit none

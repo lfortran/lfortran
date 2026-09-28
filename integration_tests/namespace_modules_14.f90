@@ -1,8 +1,8 @@
 ! Operators and assignment. Type-bound operators, type-bound assignment
 ! and type-bound generics travel with the type, so they work when the type
-! is accessed through a namespace. Non-type-bound defined operators have no
+! is accessed through a module entity. Non-type-bound defined operators have no
 ! name that could be qualified; they are imported with an ordinary
-! USE ..., ONLY: operator(...) statement alongside the namespace.
+! USE ..., ONLY: operator(...) statement alongside the namespace import.
 module namespace_modules_14_vec
     implicit none
     type :: vec_t

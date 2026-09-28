@@ -1,5 +1,5 @@
 ! Error: a PROTECTED variable cannot be modified outside its module, also
-! when accessed through a namespace.
+! when accessed through a module entity.
 module namespace_modules_12_m
     implicit none
     integer, protected :: x = 1

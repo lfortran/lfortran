@@ -1,5 +1,5 @@
 ! Error: the kind parameter of a literal constant must be a digit string
-! or a named constant name; a namespace-qualified name is not allowed.
+! or a named constant name; a module-qualified name is not allowed.
 ! Use real(1.5, m%dp) instead.
 module namespace_modules_20_m
     implicit none

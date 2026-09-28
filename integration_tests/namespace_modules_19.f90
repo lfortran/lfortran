@@ -1,5 +1,5 @@
-! Elemental and pure procedures accessed through a namespace, and
-! namespace-qualified named constants referenced from pure procedures.
+! Elemental and pure procedures accessed through a module entity, and
+! module-qualified named constants referenced from pure procedures.
 module namespace_modules_19_ops
     implicit none
     real, parameter :: factor = 2.0

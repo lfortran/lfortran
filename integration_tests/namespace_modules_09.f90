@@ -1,4 +1,4 @@
-! Procedures accessed through a namespace used as actual arguments,
+! Procedures accessed through a module entity used as actual arguments,
 ! procedure pointer targets, and interfaces in procedure declarations.
 module namespace_modules_09_funcs
     implicit none

@@ -1,5 +1,5 @@
 ! Error: in an internal procedure, a local variable hides the host's
-! namespace of the same name, so "m%x" refers to a component of an integer.
+! module entity of the same name, so "m%x" refers to a component of an integer.
 module namespace_modules_21_m
     implicit none
     integer :: x = 1

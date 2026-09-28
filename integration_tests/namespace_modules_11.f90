@@ -1,4 +1,4 @@
-! A namespace is accessible by host association: in internal procedures,
+! A module entity is accessible by host association: in internal procedures,
 ! in module procedures of the module that imported it, and in BLOCK
 ! constructs. A local entity with the same name in an inner scope hides it.
 module namespace_modules_11_lib

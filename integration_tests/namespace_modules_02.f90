@@ -1,4 +1,4 @@
-! Renaming the namespace, and using several modules that export the same
+! Renaming the module entity, and using several modules that export the same
 ! names (the motivating example from J3 paper 20-108).
 module namespace_modules_02_math
     implicit none

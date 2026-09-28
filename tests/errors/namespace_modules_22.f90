@@ -1,4 +1,4 @@
-! Error: a module cannot import itself as a namespace.
+! Error: a module cannot import itself as a module entity.
 module namespace_modules_22_m
     use, namespace :: self => namespace_modules_22_m
     implicit none

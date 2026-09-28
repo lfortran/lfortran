@@ -1,4 +1,4 @@
-! Error: a derived type accessed through a namespace is not a data object.
+! Error: a derived type accessed through a module entity is not a data object.
 module namespace_modules_24_m
     implicit none
     type :: t

@@ -1,4 +1,4 @@
-! Namespace-qualified entities in input/output statements: output lists,
+! Module-qualified entities in input/output statements: output lists,
 ! input items, unit numbers, format strings and implied-DO loops.
 module namespace_modules_18_io
     implicit none

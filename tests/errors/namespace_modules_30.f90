@@ -1,5 +1,5 @@
 ! Error: a local generic interface does not extend a generic accessed
-! through a namespace, so g%swap has no specific for character arguments.
+! through a module entity, so g%swap has no specific for character arguments.
 module namespace_modules_30_gen
     implicit none
     interface swap

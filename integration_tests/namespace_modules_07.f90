@@ -1,4 +1,4 @@
-! Intrinsic modules can be imported as namespaces. The NAMESPACE and
+! Intrinsic modules can be imported as module entities. The NAMESPACE and
 ! INTRINSIC modifiers can appear in either order.
 program namespace_modules_07
     use, intrinsic, namespace :: env => iso_fortran_env

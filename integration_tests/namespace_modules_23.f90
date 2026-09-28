@@ -1,4 +1,4 @@
-! A generic interface accessed through a namespace is not extended by a
+! A generic interface accessed through a module entity is not extended by a
 ! local generic interface of the same name: "swap" and "g%swap" are two
 ! independent generics. (With an ordinary USE, the local interface would
 ! extend the use-associated generic instead.)

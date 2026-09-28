@@ -1,6 +1,6 @@
-! Error: a namespace that a module declares PRIVATE is not accessible to
-! users of that module, neither by an ordinary USE nor through a
-! namespace of the module (under every option of decision D4).
+! Error: a module entity that a module declares PRIVATE is not accessible
+! to users of that module, neither by an ordinary USE nor through a module
+! entity of the module.
 module namespace_modules_28_a
     implicit none
     integer :: x = 1

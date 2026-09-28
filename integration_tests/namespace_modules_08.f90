@@ -1,4 +1,4 @@
-! Generic interfaces accessed through a namespace, including a generic
+! Generic interfaces accessed through a module entity, including a generic
 ! with the same name as a derived type (user-defined constructor).
 module namespace_modules_08_gen
     implicit none

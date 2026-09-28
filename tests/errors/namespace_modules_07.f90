@@ -1,4 +1,4 @@
-! Error: a namespace cannot be passed as an actual argument.
+! Error: a module entity cannot be passed as an actual argument.
 module namespace_modules_07_m
     implicit none
     integer :: x = 1

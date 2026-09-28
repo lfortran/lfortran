@@ -1,5 +1,5 @@
 ! Member names may coincide with intrinsic procedure names, with the
-! namespace's own local name, and with names of other namespaces; the
+! module entity's own local name, and with names of other module entities; the
 ! qualified reference is never ambiguous.
 module namespace_modules_16_m
     implicit none

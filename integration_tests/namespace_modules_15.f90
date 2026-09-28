@@ -1,5 +1,5 @@
 ! Interface bodies do not access their host by host association. A
-! namespace is made accessible in an interface body either by importing
+! module entity is made accessible in an interface body either by importing
 ! it from the host with IMPORT, or by a namespace import inside the
 ! interface body.
 module namespace_modules_15_types

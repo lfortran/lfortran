@@ -1,5 +1,5 @@
 ! Combining a namespace import with ordinary USE statements of the same
-! module, and importing one module under several namespace names. All
+! module, and importing one module under several module entity names. All
 ! routes designate the same entities.
 module namespace_modules_10_state
     implicit none

@@ -1,4 +1,4 @@
-! Named constants accessed through a namespace are constant expressions:
+! Named constants accessed through a module entity are constant expressions:
 ! kind selectors, array bounds, character lengths, parameter
 ! initialization, case selectors and enumerators.
 module namespace_modules_06_consts

@@ -1,6 +1,6 @@
 ! Namespaces and submodules: a namespace imported in a module is
 ! accessible in its submodules by host association, and a submodule can
-! import its own namespaces.
+! import its own module entities.
 module namespace_modules_13_helper
     implicit none
     integer, parameter :: offset = 100

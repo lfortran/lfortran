@@ -1,4 +1,4 @@
-! Character variables accessed through a namespace: substrings, LEN,
+! Character variables accessed through a module entity: substrings, LEN,
 ! deferred-length allocatable strings, concatenation.
 module namespace_modules_17_text
     implicit none

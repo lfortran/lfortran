@@ -1,6 +1,6 @@
-! Error: two modules export namespaces with the same local name for
-! different modules; referencing that name is ambiguous. (Applies under
-! options A and A2 of decision D4.)
+! Error: two modules export module entities with the same local name for
+! different modules; referencing that name is ambiguous (the usual rule for
+! two use-associated entities with the same local name).
 module namespace_modules_29_a1
     implicit none
     integer :: x = 1

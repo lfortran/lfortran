@@ -1,4 +1,4 @@
-! Error: private module entities are not accessible through a namespace.
+! Error: private module entities are not accessible through a module entity.
 module namespace_modules_05_m
     implicit none
     private

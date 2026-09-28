@@ -1,5 +1,5 @@
 ! Error: interface bodies do not access their host by host association, so
-! the namespace "m" is not accessible without an IMPORT statement.
+! the module entity "m" is not accessible without an IMPORT statement.
 module namespace_modules_26_m
     implicit none
     type :: t

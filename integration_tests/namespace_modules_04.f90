@@ -1,4 +1,4 @@
-! Derived types accessed through a namespace: declarations, structure
+! Derived types accessed through a module entity: declarations, structure
 ! constructors, components, type-bound procedures, polymorphism.
 module namespace_modules_04_geo
     implicit none

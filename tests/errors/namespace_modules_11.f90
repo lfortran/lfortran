@@ -1,4 +1,4 @@
-! Error: a namespace name and a use-associated entity have the same local
+! Error: a module entity and a use-associated entity have the same local
 ! name; referencing the name is ambiguous.
 module namespace_modules_11_m1
     implicit none

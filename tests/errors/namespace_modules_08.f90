@@ -1,4 +1,4 @@
-! Error: a namespace cannot be assigned to.
+! Error: a module entity cannot be assigned to.
 module namespace_modules_08_m
     implicit none
     integer :: x = 1

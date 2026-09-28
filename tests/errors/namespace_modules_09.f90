@@ -1,4 +1,4 @@
-! Error: the namespace name clashes with a local entity of the same scope.
+! Error: the module entity's name clashes with a local entity of the same scope.
 module namespace_modules_09_m
     implicit none
     integer :: x = 1
