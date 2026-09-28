@@ -1,4 +1,4 @@
-module assymed_rank_23_m
+module assumed_rank_23_m
     implicit none
     interface
         subroutine s(a)
