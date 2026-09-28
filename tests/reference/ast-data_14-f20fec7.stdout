@@ -8,6 +8,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -28,6 +29,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(AttrDimension
@@ -64,6 +66,7 @@
                         []
                         ()
                         ()
+                        []
                         None
                     )
                     i

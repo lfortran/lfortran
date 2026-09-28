@@ -353,7 +353,7 @@ public:
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
-        std::map<SymbolTable*, std::set<std::string>> &ambiguous_module_references,
+        ModuleEntityState &module_entities,
         LCompilers::LocationManager &lm)
       : CommonVisitor(
             al, symbol_table, diagnostics, compiler_options, implicit_mapping,
@@ -362,7 +362,7 @@ public:
             explicit_intrinsic_procedures_mapping,
             instantiate_types, instantiate_symbols, entry_functions,
             entry_function_arguments_mapping, data_structure,
-            ambiguous_module_references, lm
+            module_entities, lm
         ) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
@@ -716,9 +716,9 @@ public:
         // use statements are processed before private/public, so ExternalSymbols
         // may have been created with the wrong default access.
         for (auto &item : current_scope->get_scope()) {
-            // Names with `%` are private symbols created for references
-            // through module references; they keep their access.
-            if (item.first.find('%') != std::string::npos) continue;
+            // The symbols declared for module-qualified references are
+            // private to this module
+            if (module_entities.member_symbols.count(item.second)) continue;
             if (ASR::is_a<ASR::ModuleReference_t>(*item.second)) {
                 ASR::down_cast<ASR::ModuleReference_t>(item.second)->m_access =
                     assgnd_access.count(item.first) ? assgnd_access[item.first]
@@ -994,7 +994,7 @@ public:
                                     al, decl->m_vartype->base.loc, 
                                     AST::decl_typeType::TypeType,
                                     nullptr, 0, decl->m_vartype, 
-                                    nullptr, AST::symbolType::None)));
+                                    nullptr, nullptr, 0, AST::symbolType::None)));
                         
                     } 
 
@@ -1968,14 +1968,15 @@ public:
                                     al, decl.m_vartype->base.loc, 
                                     AST::decl_typeType::TypeType,
                                     nullptr, 0, decl.m_vartype, 
-                                    nullptr, AST::symbolType::None)));
+                                    nullptr, nullptr, 0, AST::symbolType::None)));
                         
                     } 
 
                     LCOMPILERS_ASSERT(type);
 
                     if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
-                           type->m_name && type->m_name == sym_name) {
+                           type->m_name && type->n_qualifier == 0 &&
+                           type->m_name == sym_name) {
                         procedure_decl_indices.push_back(al, i);
                         continue;
                     }
@@ -2385,7 +2386,7 @@ public:
                     throw SemanticAbort();
                 }
             }
-            AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, nullptr, AST::symbolType::None);
+            AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, nullptr, nullptr, 0, AST::symbolType::None);
             AST::decl_attribute_t* r_attr = AST::down_cast<AST::decl_attribute_t>(r_ast);
             r = AST::down_cast<AST::AttrType_t>(r_attr);
         }
@@ -2574,13 +2575,14 @@ public:
                                     al, decl.m_vartype->base.loc, 
                                     AST::decl_typeType::TypeType,
                                     nullptr, 0, decl.m_vartype, 
-                                    nullptr, AST::symbolType::None)));
+                                    nullptr, nullptr, 0, AST::symbolType::None)));
                         
                     } 
 
                     LCOMPILERS_ASSERT(type);
                     if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
-                           type->m_name && type->m_name == sym_name) {
+                           type->m_name && type->n_qualifier == 0 &&
+                           type->m_name == sym_name) {
                         procedure_decl_indices.push_back(al, i);
                         continue;
                     }
@@ -2657,9 +2659,6 @@ public:
         ASR::symbol_t* return_var_sym = current_scope->get_symbol(return_var_name);
         AST::AttrType_t *return_type = find_return_type(x.m_attributes,
             x.n_attributes, x.base.base.loc, return_var_name, return_var_sym);
-        if (return_type) {
-            rewrite_module_references(return_type->base);
-        }
         if (current_scope->get_symbol(return_var_name) == nullptr) {
             // The variable is not defined among local variables, extract the
             // type from "integer function f()" and add the variable.
@@ -2822,7 +2821,7 @@ public:
                     }
 
                     LCOMPILERS_ASSERT(return_type->m_name);
-                    std::string derived_type_name = to_lower(return_type->m_name);
+                    std::string derived_type_name = type_spec_name(*return_type);
                     ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
                     if (!v) {
                         diag.add(diag::Diagnostic(
@@ -3444,14 +3443,19 @@ public:
         ASR::symbol_t* parent_sym = nullptr;
         if( attr_extend != nullptr ) {
             std::string parent_sym_name = to_lower(attr_extend->m_name);
-            if( current_scope->get_symbol(parent_sym_name) == nullptr ) {
+            if (attr_extend->n_qualifier > 0) {
+                parent_sym = resolve_qualified_type_name(
+                    attr_extend->m_qualifier, attr_extend->n_qualifier,
+                    attr_extend->m_name, attr_extend->base.base.loc);
+            } else if( current_scope->get_symbol(parent_sym_name) == nullptr ) {
                 diag.add(diag::Diagnostic(
                     parent_sym_name + " is not defined.",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
+            } else {
+                parent_sym = current_scope->get_symbol(parent_sym_name);
             }
-            parent_sym = current_scope->get_symbol(parent_sym_name);
             // C1616: "The name of a deferred type shall not appear as a
             // parent-type-name in a type-attr-spec." (16.4.1.2), restated by
             // NOTE 1 there: "A deferred type cannot be extended, even if it has
@@ -3904,7 +3908,8 @@ public:
             ClassProcInfo remote_sym_str;
             remote_sym_str.loc = x.base.base.loc;
             if( x.m_name ) {
-                remote_sym_str.name = to_lower(x.m_name);
+                remote_sym_str.name = type_spec_name(x.m_qualifier,
+                    x.n_qualifier, x.m_name, x.base.base.loc);
             } else {
                 remote_sym_str.name = to_lower(use_sym->m_remote_sym);
             }
@@ -6969,7 +6974,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
-        std::map<SymbolTable*, std::set<std::string>> &ambiguous_module_references,
+        ModuleEntityState &module_entities,
         LCompilers::LocationManager &lm)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options,
@@ -6978,7 +6983,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
                          explicit_intrinsic_procedures_mapping,
                          instantiate_types, instantiate_symbols, entry_functions,
                          entry_function_arguments_mapping, data_structure,
-                         ambiguous_module_references, lm);
+                         module_entities, lm);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticAbort &) {

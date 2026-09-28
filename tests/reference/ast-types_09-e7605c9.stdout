@@ -23,6 +23,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -58,6 +59,7 @@
                 Value)]
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -124,6 +126,7 @@
                     Colon)]
                     ()
                     ()
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -149,6 +152,7 @@
                     Colon)]
                     ()
                     ()
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -177,6 +181,7 @@
                     Star)]
                     ()
                     ()
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -225,6 +230,7 @@
                     Value)]
                     ()
                     ()
+                    []
                     None
                 )
                 []

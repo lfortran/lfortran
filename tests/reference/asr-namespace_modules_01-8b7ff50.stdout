@@ -31,6 +31,26 @@
                                     ()
                                     []
                                 ),
+                            counter~of_namespace_modules_01_utils:
+                                (ExternalSymbol
+                                    6
+                                    counter~of_namespace_modules_01_utils
+                                    2 counter
+                                    namespace_modules_01_utils
+                                    []
+                                    counter
+                                    Private
+                                ),
+                            increment~of_namespace_modules_01_utils:
+                                (ExternalSymbol
+                                    6
+                                    increment~of_namespace_modules_01_utils
+                                    2 increment
+                                    namespace_modules_01_utils
+                                    []
+                                    increment
+                                    Private
+                                ),
                             lfortran_tmp:
                                 (Variable
                                     6
@@ -62,54 +82,14 @@
                                     namespace_modules_01_utils
                                     Public
                                 ),
-                            namespace_modules_01_utils%counter:
+                            scale~of_namespace_modules_01_utils:
                                 (ExternalSymbol
                                     6
-                                    namespace_modules_01_utils%counter
-                                    2 counter
-                                    namespace_modules_01_utils
-                                    []
-                                    counter
-                                    Private
-                                ),
-                            namespace_modules_01_utils%increment:
-                                (ExternalSymbol
-                                    6
-                                    namespace_modules_01_utils%increment
-                                    2 increment
-                                    namespace_modules_01_utils
-                                    []
-                                    increment
-                                    Private
-                                ),
-                            namespace_modules_01_utils%scale:
-                                (ExternalSymbol
-                                    6
-                                    namespace_modules_01_utils%scale
+                                    scale~of_namespace_modules_01_utils
                                     2 scale
                                     namespace_modules_01_utils
                                     []
                                     scale
-                                    Private
-                                ),
-                            namespace_modules_01_utils%twice:
-                                (ExternalSymbol
-                                    6
-                                    namespace_modules_01_utils%twice
-                                    2 twice
-                                    namespace_modules_01_utils
-                                    []
-                                    twice
-                                    Private
-                                ),
-                            namespace_modules_01_utils%x:
-                                (ExternalSymbol
-                                    6
-                                    namespace_modules_01_utils%x
-                                    2 x
-                                    namespace_modules_01_utils
-                                    []
-                                    x
                                     Private
                                 ),
                             twice:
@@ -136,6 +116,16 @@
                                     ()
                                     []
                                 ),
+                            twice~of_namespace_modules_01_utils:
+                                (ExternalSymbol
+                                    6
+                                    twice~of_namespace_modules_01_utils
+                                    2 twice
+                                    namespace_modules_01_utils
+                                    []
+                                    twice
+                                    Private
+                                ),
                             x:
                                 (Variable
                                     6
@@ -159,6 +149,16 @@
                                     NotMethod
                                     ()
                                     []
+                                ),
+                            x~of_namespace_modules_01_utils:
+                                (ExternalSymbol
+                                    6
+                                    x~of_namespace_modules_01_utils
+                                    2 x
+                                    namespace_modules_01_utils
+                                    []
+                                    x
+                                    Private
                                 )
                         })
                     namespace_modules_01
@@ -197,7 +197,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 6 namespace_modules_01_utils%counter)
+                            (Var 6 counter~of_namespace_modules_01_utils)
                             NotEq
                             (IntegerConstant 0 (Integer 4) Decimal)
                             (Logical 4)
@@ -214,7 +214,7 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (Var 6 namespace_modules_01_utils%x)
+                                    (Var 6 x~of_namespace_modules_01_utils)
                                     Sub
                                     (RealConstant
                                         1.500000
@@ -241,14 +241,14 @@
                         []
                     )
                     (SubroutineCall
-                        6 namespace_modules_01_utils%increment
+                        6 increment~of_namespace_modules_01_utils
                         ()
                         [((IntegerConstant 5 (Integer 4) Decimal))]
                         ()
                         .false.
                     )
                     (SubroutineCall
-                        6 namespace_modules_01_utils%increment
+                        6 increment~of_namespace_modules_01_utils
                         ()
                         [((IntegerConstant 2 (Integer 4) Decimal))]
                         ()
@@ -257,7 +257,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 6 namespace_modules_01_utils%counter)
+                            (Var 6 counter~of_namespace_modules_01_utils)
                             NotEq
                             (IntegerConstant 7 (Integer 4) Decimal)
                             (Logical 4)
@@ -269,9 +269,9 @@
                         []
                     )
                     (Assignment
-                        (Var 6 namespace_modules_01_utils%counter)
+                        (Var 6 counter~of_namespace_modules_01_utils)
                         (IntegerBinOp
-                            (Var 6 namespace_modules_01_utils%counter)
+                            (Var 6 counter~of_namespace_modules_01_utils)
                             Add
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
@@ -284,7 +284,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 6 namespace_modules_01_utils%counter)
+                            (Var 6 counter~of_namespace_modules_01_utils)
                             NotEq
                             (IntegerConstant 8 (Integer 4) Decimal)
                             (Logical 4)
@@ -299,7 +299,7 @@
                         ()
                         (IntegerCompare
                             (FunctionCall
-                                6 namespace_modules_01_utils%twice
+                                6 twice~of_namespace_modules_01_utils
                                 ()
                                 [((IntegerConstant 21 (Integer 4) Decimal))]
                                 (Integer 4)
@@ -319,7 +319,7 @@
                     (Assignment
                         (Var 6 lfortran_tmp)
                         (FunctionCall
-                            6 namespace_modules_01_utils%twice
+                            6 twice~of_namespace_modules_01_utils
                             ()
                             [((IntegerConstant 3 (Integer 4) Decimal))]
                             (Integer 4)
@@ -334,7 +334,7 @@
                         ()
                         (IntegerCompare
                             (FunctionCall
-                                6 namespace_modules_01_utils%twice
+                                6 twice~of_namespace_modules_01_utils
                                 ()
                                 [((Var 6 lfortran_tmp))]
                                 (Integer 4)
@@ -352,9 +352,9 @@
                         []
                     )
                     (SubroutineCall
-                        6 namespace_modules_01_utils%scale
+                        6 scale~of_namespace_modules_01_utils
                         ()
-                        [((Var 6 namespace_modules_01_utils%x))
+                        [((Var 6 x~of_namespace_modules_01_utils))
                         (())]
                         ()
                         .false.
@@ -365,7 +365,7 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (Var 6 namespace_modules_01_utils%x)
+                                    (Var 6 x~of_namespace_modules_01_utils)
                                     Sub
                                     (RealConstant
                                         15.000000
@@ -392,9 +392,9 @@
                         []
                     )
                     (SubroutineCall
-                        6 namespace_modules_01_utils%scale
+                        6 scale~of_namespace_modules_01_utils
                         ()
-                        [((Var 6 namespace_modules_01_utils%x))
+                        [((Var 6 x~of_namespace_modules_01_utils))
                         ((RealConstant
                             2.000000
                             (Real 4)
@@ -408,7 +408,7 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (Var 6 namespace_modules_01_utils%x)
+                                    (Var 6 x~of_namespace_modules_01_utils)
                                     Sub
                                     (RealConstant
                                         30.000000
@@ -497,8 +497,8 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 6 namespace_modules_01_utils%counter)
-                            (Var 6 namespace_modules_01_utils%x)]
+                            [(Var 6 counter~of_namespace_modules_01_utils)
+                            (Var 6 x~of_namespace_modules_01_utils)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)

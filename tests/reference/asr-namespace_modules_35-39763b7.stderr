@@ -1,0 +1,5 @@
+semantic error: 'namespace_modules_35_a1' is ambiguous: different entities are accessible under this name
+  --> tests/errors/namespace_modules_35.f90:39:9
+   |
+39 |         type(namespace_modules_35_a1%t) :: q
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

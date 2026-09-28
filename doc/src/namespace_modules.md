@@ -720,29 +720,55 @@ document. For each, the source is given.
   `L => M`. In the positions that otherwise take only a type or interface
   name (`type(...)`, `class(...)`, `extends(...)`, `type is (...)`,
   `class is (...)`, `procedure(...)`, the type-spec of an array constructor
-  and a type-bound `procedure(...)`), `a%b%c` is parsed as the single name
-  `"a%b%c"`. Expressions, calls and assignments already parse, since `a%b`
-  is a member access. `lfortran fmt` prints the new forms back.
+  and a type-bound `procedure(...)`), `a%b%c` is parsed into the name `c`
+  and a separate list `qualifier`, `[a, b]` (a field of `AttrType`,
+  `AttrExtends`, `TypeStmtName`, `ClassStmt`, `ArrayInitializer` and
+  `DerivedTypeProc`). Expressions, calls, assignments and the type-spec of
+  ALLOCATE already parse, since `a%b` is a member access. `lfortran fmt`
+  prints the new forms back.
 * **ASR**: a new symbol, [ModuleReference](asr/asr_nodes/symbol_nodes/ModuleReference.md)
   `(parent_symtab, name, module_name, access)`, is the module entity. It is
   host associated like any symbol, use associated through an
   `ExternalSymbol` that points to it, and saved in .mod files, so chains
   `b%a%x` also work across separate compilation.
 * **Semantics (AST to ASR)**: `use, namespace` loads the module like any USE
-  statement but declares only a `ModuleReference`. Before each statement or
-  declaration is analysed, when the symbol table is complete (so a local
-  entity that hides a host module entity is already known), the references
-  in it are rewritten: `L%x...` becomes a reference to a private
-  `ExternalSymbol` named `"<module>%x"`. That name cannot clash with any
-  identifier. It is created with the same code as `use M, only: x`, so
-  generics, type-bound procedures, constructors, `PROTECTED`, named
-  constants and intrinsic modules behave exactly as for use association.
-  The rest of semantics, the ASR passes and all backends see only ordinary
-  use-associated entities.
+  statement but declares only a `ModuleReference`. The AST is not modified.
+  A module-qualified name is resolved where names are resolved: in the
+  visitors of names, function references and array elements, subroutine
+  calls and coindexed objects, and wherever a type-spec, a namelist group
+  name or another name is looked up on its own. If the first part of a
+  designator is a module entity (a `ModuleReference`, or an `ExternalSymbol`
+  for one), one helper (`resolve_module_qualified`) follows the module
+  entities of the chain, checks that each member is a public entity of its
+  module and diagnoses ambiguous and invalid references. The member is made
+  accessible in the scope of the reference as a private `ExternalSymbol`,
+  created by the same code as `use M, only: x`, so generics, type-bound
+  procedures, constructors, `PROTECTED`, named constants and intrinsic
+  modules behave exactly as for use association. It is stored under the
+  generated name `x~of_M` (see `generated_symbol_name`), which no
+  identifier can spell, so it cannot clash with a user entity and is not
+  listed as a document symbol. These symbols are recorded as such when they
+  are created (`ModuleEntityState`, shared by the symbol table and body
+  visitors), so that a module does not export them. The designator is then
+  analysed as if it named that symbol; diagnostics about it show the name
+  as written (`a%f`). The rest of semantics, the ASR passes and the LLVM
+  backend see only ordinary use-associated entities.
 * **Diagnostics**: the error tests in `tests/errors/namespace_modules_*`
   have their messages in `tests/reference/`.
 
 Known limitations of the prototype:
+
+* A derived type of a module whose default accessibility is `PRIVATE`,
+  made public by `public :: t` or by `type, public :: t`, is reported as a
+  private entity when it is accessed as `L%t`, and `type, private :: t` is
+  not enforced. LFortran does not record these in the derived type yet (its
+  `access` is the default accessibility where the type is defined), and
+  recording them changes which type-bound procedure names ordinary USE
+  statements import. Variables, named constants, procedures and generics
+  are not affected.
+* The ASR verification error that LFortran reports instead of a semantic
+  error for `call f()` where `f` is a function (lfortran/lfortran#13804)
+  names the generated symbol (`f~of_m`) when `f` is written `L%f`.
 
 * `errors/namespace_modules_23` (a local entity named like a module used
   in the scope) and `errors/namespace_modules_26` (an interface body
@@ -796,6 +822,7 @@ registered in `tests/tests.toml`, as are `ast_f90` round trips of
 | `namespace_modules_28` | `use, namespace, private/public` (D9); identity of `a` and `b%a` (D8); `L%name` is not a rename |
 | `namespace_modules_29` | Chains in type-specs, constant expressions, generic calls, constructors, `type is` |
 | `namespace_modules_30` | Deferred type-bound procedure with `procedure(L%iface)`; `type(L%t)` in a BLOCK; `real(L%dp) function f()` |
+| `namespace_modules_31` | A module entity named like a module that the host accesses through another module entity |
 
 | Error test | Error |
 |---|---|
@@ -832,3 +859,5 @@ registered in `tests/tests.toml`, as are `ast_f90` round trips of
 | `namespace_modules_31` | Access-spec in a namespace import outside a module |
 | `namespace_modules_32` | Two access-specs in a namespace import |
 | `namespace_modules_33` | `use, namespace, private` entity imported with ONLY |
+| `namespace_modules_34` | Module name as a qualifier in a type-spec, after a module entity for the same module was used |
+| `namespace_modules_35` | Ambiguous module entity in a type-spec, named like a module whose type the host used |

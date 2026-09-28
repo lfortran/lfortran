@@ -68,24 +68,58 @@ static inline char* name2char(const ast_t *n)
     return down_cast2<Name_t>(n)->m_id;
 }
 
-// Joins two names with `%` into one name, for `a%b` in a type-spec position.
-static inline ast_t* qualified_name(Allocator &al, const ast_t *a,
-        const ast_t *b, const Location &l) {
-    std::string n = std::string(name2char(a)) + "%" + name2char(b);
-    return make_Name_t(al, l, LCompilers::s2c(al, n), nullptr, 0);
+// A module-qualified name `a%b%t` in a type-spec position is parsed as the
+// list of its names [a, b, t]: the qualifier [a, b] and the name t (see
+// `qualifier` in AST.asdl). Semantics resolves the module entities.
+static inline char* qualified_last_name(const Vec<ast_t*> &names) {
+    return name2char(names[names.size() - 1]);
 }
 
-// Joins `a%b%` (struct members without arguments) and `c` into the single
-// name `a%b%c`, for a qualified type name in an array constructor.
-static inline ast_t* qualified_name(Allocator &al,
-        const Vec<struct_member_t> &members, const ast_t *b,
-        const Location &l) {
-    std::string n;
-    for (size_t i = 0; i < members.size(); i++) {
-        n += std::string(members[i].m_name) + "%";
+static inline Vec<char*> qualifier_names(Allocator &al,
+        const Vec<ast_t*> &names) {
+    Vec<char*> r;
+    r.reserve(al, names.size() - 1);
+    for (size_t i = 0; i + 1 < names.size(); i++) {
+        r.push_back(al, name2char(names[i]));
     }
-    n += name2char(b);
-    return make_Name_t(al, l, LCompilers::s2c(al, n), nullptr, 0);
+    return r;
+}
+
+static inline ast_t* attr_type_qualified(Allocator &al, decl_typeType type,
+        const Vec<ast_t*> &names, const Location &l) {
+    Vec<char*> q = qualifier_names(al, names);
+    return make_AttrType_t(al, l, type, nullptr, 0, nullptr,
+        qualified_last_name(names), q.p, q.size(), symbolType::None);
+}
+
+static inline ast_t* extends_qualified(Allocator &al,
+        const Vec<ast_t*> &names, const Location &l) {
+    Vec<char*> q = qualifier_names(al, names);
+    return make_AttrExtends_t(al, l, qualified_last_name(names), q.p,
+        q.size());
+}
+
+// The qualified type name `a%b%t` of an array constructor, `[a%b%t :: ...]`,
+// is parsed as struct members `a%b%` followed by the name `t`. A member with
+// a subscript, as in `[a(1)%t :: ...]`, is a syntax error.
+static inline ast_t* array_initializer_qualified(Allocator &al,
+        const Vec<struct_member_t> &members, const ast_t *name,
+        expr_t **args, size_t n_args, const Location &l,
+        LCompilers::diag::Diagnostics &diag) {
+    Vec<char*> q;
+    q.reserve(al, members.size());
+    for (size_t i = 0; i < members.size(); i++) {
+        if (members[i].n_args > 0) {
+            diag.add(LCompilers::diag::Diagnostic(
+                "a subscript is not allowed in the type name of an array "
+                "constructor", LCompilers::diag::Level::Error,
+                LCompilers::diag::Stage::Parser,
+                {LCompilers::diag::Label("", {l})}));
+        }
+        q.push_back(al, members[i].m_name);
+    }
+    return make_ArrayInitializer_t(al, l, nullptr, name2char(name), q.p,
+        q.size(), args, n_args);
 }
 
 static inline void set_stmt_name(decl_stmt_t &stmt, char *name) {
@@ -152,6 +186,37 @@ static inline T** vec_cast(const Vec<ast_t*> &x) {
 #define CONCURRENT_CONTROLS(x) VEC_CAST(x, concurrent_control)
 #define CONCURRENT_LOCALITIES(x) VEC_CAST(x, concurrent_locality)
 #define INTERFACE_ITEMS(x) VEC_CAST(x, interface_item)
+
+// `procedure(a%b%iface)` in a derived type (see qualified_last_name).
+static inline ast_t* derived_type_proc_qualified(Allocator &al,
+        const Vec<ast_t*> &names, const Vec<ast_t*> &attr,
+        const Vec<ast_t*> &syms, trivia_t *trivia, const Location &l) {
+    Vec<char*> q = qualifier_names(al, names);
+    return make_DerivedTypeProc_t(al, l, qualified_last_name(names), q.p,
+        q.size(), vec_cast<decl_attribute_t, astType::decl_attribute>(attr),
+        attr.size(), vec_cast<use_symbol_t, astType::use_symbol>(syms),
+        syms.size(), trivia);
+}
+
+// `type is (a%b%t)` (see qualified_last_name).
+static inline ast_t* type_stmt_name_qualified(Allocator &al,
+        const Vec<ast_t*> &names, trivia_t *trivia,
+        const Vec<ast_t*> &body, const Location &l) {
+    Vec<char*> q = qualifier_names(al, names);
+    return make_TypeStmtName_t(al, l, qualified_last_name(names), q.p,
+        q.size(), trivia, vec_cast<decl_stmt_t, astType::decl_stmt>(body),
+        body.size());
+}
+
+// `class is (a%b%t)` (see qualified_last_name).
+static inline ast_t* class_stmt_qualified(Allocator &al,
+        const Vec<ast_t*> &names, trivia_t *trivia,
+        const Vec<ast_t*> &body, const Location &l) {
+    Vec<char*> q = qualifier_names(al, names);
+    return make_ClassStmt_t(al, l, qualified_last_name(names), q.p,
+        q.size(), trivia, vec_cast<decl_stmt_t, astType::decl_stmt>(body),
+        body.size());
+}
 
 Vec<ast_t*> A2LIST(Allocator &al, ast_t *x) {
     Vec<ast_t*> v;
@@ -359,7 +424,7 @@ static inline Vec<kind_item_t> a2kind_list(Allocator &al,
 #define BIND(x, l) make_AttrBind_t( \
             p.m_a, l, bind_opt(x))
 #define EXTENDS(x, l) make_AttrExtends_t( \
-            p.m_a, l, name2char(x))
+            p.m_a, l, name2char(x), nullptr, 0)
 #define DIMENSION(x, l) make_AttrDimension_t( \
             p.m_a, l, \
             x.p, x.size())
@@ -458,50 +523,50 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             p.m_a, l, \
             decl_typeType::Type##x, \
             nullptr, 0, nullptr, \
-            nullptr, None)
+            nullptr, nullptr, 0, None)
 
 #define ATTR_TYPE_INT(x, n, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             a2kind_list(p.m_a, l, INTEGER(n, l)).p, 1, \
-            nullptr, nullptr, None)
+            nullptr, nullptr, nullptr, 0, None)
 
 #define ATTR_TYPE_EXPR(x, e, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             a2kind_list(p.m_a, l, e).p, 1, \
-            nullptr, nullptr, None)
+            nullptr, nullptr, nullptr, 0, None)
 
 #define ATTR_TYPE_KIND(x, kind, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             kind.p, kind.size(), \
-            nullptr, nullptr, None)
+            nullptr, nullptr, nullptr, 0, None)
 
 #define ATTR_TYPE_NAME(x, name, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             nullptr, 0, nullptr, \
-            name2char(name), None)
+            name2char(name), nullptr, 0, None)
 
 #define ATTR_TYPE_NAME_KIND(x, name, kind, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             kind.p, kind.size(), nullptr, \
-            name2char(name), None)
+            name2char(name), nullptr, 0, None)
 
 #define ATTR_TYPE_STAR(x, sym, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             nullptr, 0, nullptr, \
-            nullptr, sym)
+            nullptr, nullptr, 0, sym)
 
 #define ATTR_TYPE_ATTR(x, attr, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             nullptr, 0, \
             down_cast<decl_attribute_t>(attr), \
-            nullptr, None)
+            nullptr, nullptr, 0, None)
 
 #define ATTR_NAME(x, l) make_AttrName_t \
             (p.m_a, l, name2char(x))
@@ -896,7 +961,7 @@ static inline ast_t* slash_init_to_expr(Allocator &al, Location &l, const Vec<as
             exprs[i] = down_cast<expr_t>(values[i]);
         }
         return make_ArrayInitializer_t(al, l,
-            nullptr, nullptr, exprs, values.size());
+            nullptr, nullptr, nullptr, 0, exprs, values.size());
     }
 }
 #define SLASH_INIT_EXPR(values, l) slash_init_to_expr(p.m_a, l, values)
@@ -1233,11 +1298,11 @@ ast_t* parenthesis(Allocator &al, Location &loc, expr_t *op) {
         def_op_to_str(p.m_a, op), EXPR(y))
 
 #define ARRAY_IN1(a, l) make_ArrayInitializer_t(p.m_a, l, \
-        nullptr, nullptr, EXPRS(a), a.size())
+        nullptr, nullptr, nullptr, 0, EXPRS(a), a.size())
 #define ARRAY_IN2(vartype, a, l) make_ArrayInitializer_t(p.m_a, l, \
-        down_cast<decl_attribute_t>(vartype), nullptr, EXPRS(a), a.size())
+        down_cast<decl_attribute_t>(vartype), nullptr, nullptr, 0, EXPRS(a), a.size())
 #define ARRAY_IN3(classtype, a, l) make_ArrayInitializer_t(p.m_a, l, \
-        nullptr, name2char(classtype), EXPRS(a), a.size())
+        nullptr, name2char(classtype), nullptr, 0, EXPRS(a), a.size())
 
 ast_t* implied_do_loop(Allocator &al, Location &loc,
         Vec<ast_t*> &ex_list,
@@ -2690,11 +2755,11 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         TYPE_STMTS(body), body.size(), trivia_cast(trivia), nullptr)
 
 #define TYPE_STMTNAME(x, trivia, body, l) make_TypeStmtName_t(p.m_a, l, \
-        x.c_str(p.m_a), trivia_cast(trivia), STMTS(body), body.size())
+        x.c_str(p.m_a), nullptr, 0, trivia_cast(trivia), STMTS(body), body.size())
 #define TYPE_STMTVAR(vartype, trivia, body, l) make_TypeStmtType_t(p.m_a, l, \
         down_cast<decl_attribute_t>(vartype), trivia_cast(trivia), STMTS(body), body.size())
 #define CLASS_STMT(id, trivia, body, l) make_ClassStmt_t(p.m_a, l, \
-        name2char(id), trivia_cast(trivia), STMTS(body), body.size())
+        name2char(id), nullptr, 0, trivia_cast(trivia), STMTS(body), body.size())
 #define CLASS_DEFAULT(trivia, body, l) make_ClassDefault_t(p.m_a, l, \
         trivia_cast(trivia), STMTS(body), body.size())
 
@@ -3047,11 +3112,11 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         VEC_CAST(args, decl_attribute), args.size())
 
 #define DERIVED_TYPE_PROC(attr, syms, trivia, l) make_DerivedTypeProc_t(p.m_a, l, \
-        nullptr, VEC_CAST(attr, decl_attribute), attr.size(), \
+        nullptr, nullptr, 0, VEC_CAST(attr, decl_attribute), attr.size(), \
         USE_SYMBOLS(syms), syms.size(), \
         trivia_cast(trivia))
 #define DERIVED_TYPE_PROC1(name, attr, syms, trivia, l) make_DerivedTypeProc_t(p.m_a, l, \
-        name2char(name), VEC_CAST(attr, decl_attribute), attr.size(), \
+        name2char(name), nullptr, 0, VEC_CAST(attr, decl_attribute), attr.size(), \
         USE_SYMBOLS(syms), syms.size(), \
         trivia_cast(trivia))
 #define GENERIC_OPERATOR(attr, optype, namelist, trivia, l) make_GenericOperator_t(p.m_a, l, \

@@ -16,6 +16,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -78,6 +79,7 @@
             )
             [(AttrExtends
                 B
+                []
             )
             (SimpleAttribute
                 AttrPublic
@@ -98,6 +100,7 @@
                     Value)]
                     ()
                     ()
+                    []
                     None
                 )
                 []
@@ -120,6 +123,7 @@
                     []
                     ()
                     C
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -149,6 +153,7 @@
                     Value)]
                     ()
                     ()
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -193,6 +198,7 @@
             )
             (DerivedTypeProc
                 ()
+                []
                 [(SimpleAttribute
                     AttrPrivate
                 )]
@@ -204,6 +210,7 @@
             )
             (DerivedTypeProc
                 something
+                []
                 [(SimpleAttribute
                     AttrPrivate
                 )]
@@ -215,6 +222,7 @@
             )
             (DerivedTypeProc
                 ()
+                []
                 [(AttrPass
                     self
                 )]
@@ -226,6 +234,7 @@
             )
             (DerivedTypeProc
                 ()
+                []
                 []
                 [(UseSymbol
                     proc_1
@@ -335,6 +344,7 @@
                     []
                     ()
                     ()
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -357,6 +367,7 @@
                     Value)]
                     ()
                     ()
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -379,6 +390,7 @@
                     Value)]
                     ()
                     ()
+                    []
                     None
                 )
                 []
@@ -414,6 +426,7 @@
                     []
                     ()
                     X
+                    []
                     None
                 )
                 [(AttrIntent
@@ -448,6 +461,7 @@
                     []
                     ()
                     X
+                    []
                     None
                 )
                 [(AttrIntent

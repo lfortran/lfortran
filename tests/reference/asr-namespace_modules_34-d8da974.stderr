@@ -1,0 +1,5 @@
+semantic error: 'namespace_modules_34_m' is not a module imported with 'use, namespace'
+  --> tests/errors/namespace_modules_34.f90:14:5
+   |
+14 |     type(namespace_modules_34_m%t) :: b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

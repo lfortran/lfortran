@@ -2040,6 +2040,7 @@ RUN(NAME namespace_modules_27 LABELS llvm)
 RUN(NAME namespace_modules_28 LABELS llvm)
 RUN(NAME namespace_modules_29 LABELS llvm)
 RUN(NAME namespace_modules_30 LABELS llvm)
+RUN(NAME namespace_modules_31 LABELS llvm)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
 

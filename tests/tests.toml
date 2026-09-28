@@ -6330,3 +6330,11 @@ asr = true
 [[test]]
 filename = "errors/namespace_modules_33.f90"
 asr = true
+
+[[test]]
+filename = "errors/namespace_modules_34.f90"
+asr = true
+
+[[test]]
+filename = "errors/namespace_modules_35.f90"
+asr = true

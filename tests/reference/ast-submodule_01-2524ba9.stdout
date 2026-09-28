@@ -21,6 +21,7 @@
                     []
                     ()
                     ()
+                    []
                     None
                 )
                 []
@@ -59,6 +60,7 @@
                             []
                             ()
                             ()
+                            []
                             None
                         )
                         [(AttrIntent
@@ -79,6 +81,7 @@
                             []
                             ()
                             Base
+                            []
                             None
                         )
                         [(AttrIntent
@@ -133,6 +136,7 @@
                         []
                         ()
                         ()
+                        []
                         None
                     )
                     (SimpleAttribute
@@ -173,6 +177,7 @@
                             []
                             ()
                             Base
+                            []
                             None
                         )
                         []
@@ -191,6 +196,7 @@
                             []
                             ()
                             Base
+                            []
                             None
                         )
                         []
@@ -236,6 +242,7 @@
             ()
             [(AttrExtends
                 Base
+                []
             )]
             [(Declaration
                 (AttrType
@@ -243,6 +250,7 @@
                     []
                     ()
                     ()
+                    []
                     None
                 )
                 []
@@ -302,6 +310,7 @@
                     []
                     ()
                     ()
+                    []
                     None
                 )
                 [(AttrIntent
@@ -322,6 +331,7 @@
                     []
                     ()
                     Base
+                    []
                     None
                 )
                 [(AttrIntent
@@ -367,6 +377,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             (SimpleAttribute
@@ -421,6 +432,7 @@
                     []
                     ()
                     Base
+                    []
                     None
                 )
                 []
@@ -439,6 +451,7 @@
                     []
                     ()
                     Base
+                    []
                     None
                 )
                 []
@@ -501,6 +514,7 @@
                             []
                             ()
                             ()
+                            []
                             None
                         )
                         [(AttrIntent
@@ -521,6 +535,7 @@
                             []
                             ()
                             Base
+                            []
                             None
                         )
                         [(AttrIntent
@@ -548,6 +563,7 @@
                         []
                         ()
                         ()
+                        []
                         None
                     )]
                     ()
@@ -584,6 +600,7 @@
                             []
                             ()
                             Base
+                            []
                             None
                         )
                         []
@@ -602,6 +619,7 @@
                             []
                             ()
                             Base
+                            []
                             None
                         )
                         []
@@ -630,6 +648,7 @@
                     []
                     ()
                     interfaceSub1
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -653,6 +672,7 @@
                     []
                     ()
                     interfaceFunc1
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -676,6 +696,7 @@
                     []
                     ()
                     interfaceFunc2
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -730,6 +751,7 @@
                 []
                 ()
                 Container
+                []
                 None
             )
             []

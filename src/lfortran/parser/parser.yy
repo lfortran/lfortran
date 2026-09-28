@@ -400,7 +400,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> expr_list
 %type <vec_ast> expr_list_opt
 %type <ast> id
-%type <ast> qualified_id
+%type <vec_ast> qualified_id
 %type <vec_ast> id_list
 %type <vec_ast> id_list_opt
 %type <ast> script_unit
@@ -922,7 +922,8 @@ procedure_decl
     | KW_PROCEDURE "(" id ")" proc_modifiers use_symbol_list sep {
             $$ = DERIVED_TYPE_PROC1($3, $5, $6, TRIVIA_AFTER($7, @$), @$); }
     | KW_PROCEDURE "(" qualified_id ")" proc_modifiers use_symbol_list sep {
-            $$ = DERIVED_TYPE_PROC1($3, $5, $6, TRIVIA_AFTER($7, @$), @$); }
+            $$ = derived_type_proc_qualified(p.m_a, $3, $5, $6,
+                trivia_cast(TRIVIA_AFTER($7, @$)), @$); }
     | KW_GENERIC access_spec_list KW_OPERATOR "(" operator_type ")" "=>" id_list sep {
             $$ = GENERIC_OPERATOR($2, $5, $8, TRIVIA_AFTER($9, @$), @$); }
     | KW_GENERIC access_spec_list KW_OPERATOR "(" "/)" "=>" id_list sep {
@@ -1625,7 +1626,7 @@ var_modifier
     | KW_VALUE { $$ = SIMPLE_ATTR(Value, @$); }
     | KW_VOLATILE { $$ = SIMPLE_ATTR(Volatile, @$); }
     | KW_EXTENDS "(" id ")" { $$ = EXTENDS($3, @$); }
-    | KW_EXTENDS "(" qualified_id ")" { $$ = EXTENDS($3, @$); }
+    | KW_EXTENDS "(" qualified_id ")" { $$ = extends_qualified(p.m_a, $3, @$); }
     | bind { $$ = BIND($1, @$); }
     | KW_KIND { $$ = SIMPLE_ATTR(Kind, @$); }
     | KW_LEN { $$ = SIMPLE_ATTR(Len, @$); }
@@ -1677,11 +1678,13 @@ declaration_type_spec
     | KW_TYPE "(" intrinsic_type_spec ")" %dprec 2 { $$ = ATTR_TYPE_ATTR(
         Type, $3, @$); }
     | KW_TYPE "(" id ")" %dprec 1 { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
-    | KW_TYPE "(" qualified_id ")" %dprec 1 { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
+    | KW_TYPE "(" qualified_id ")" %dprec 1 { $$ = attr_type_qualified(p.m_a,
+        decl_typeType::TypeType, $3, @$); }
     | KW_TYPE "(" id "(" kind_arg_list ")" ")" %dprec 1 { $$ = ATTR_TYPE_NAME_KIND(Type, $3, $5, @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
-    | KW_CLASS "(" qualified_id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
+    | KW_CLASS "(" qualified_id ")" { $$ = attr_type_qualified(p.m_a,
+        decl_typeType::TypeClass, $3, @$); }
     | KW_CLASS "(" id "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_NAME_KIND(Class, $3, $5, @$); }
     | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
     ;
@@ -1689,7 +1692,8 @@ declaration_type_spec
 var_type
     : declaration_type_spec { $$ = $1; }
     | KW_PROCEDURE "(" id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
-    | KW_PROCEDURE "(" qualified_id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
+    | KW_PROCEDURE "(" qualified_id ")" { $$ = attr_type_qualified(p.m_a,
+        decl_typeType::TypeProcedure, $3, @$); }
     | KW_PROCEDURE "(" ")" { $$ = ATTR_TYPE(Procedure, @$); }
     | KW_PROCEDURE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
         Procedure, ATTR_TYPE_KIND(Integer, $5, @$), @$); }
@@ -2220,10 +2224,12 @@ select_type_body_statement
                 TRIVIA_AFTER($9, @$), $10, @$); }
     | KW_TYPE KW_IS "(" var_type ")" sep statements { $$ = TYPE_STMTVAR($4, TRIVIA_AFTER($6, @$), $7, @$); }
     | KW_CLASS KW_IS "(" id ")" sep statements { $$ = CLASS_STMT($4, TRIVIA_AFTER($6, @$), $7, @$); }
-    | KW_CLASS KW_IS "(" qualified_id ")" sep statements { $$ = CLASS_STMT($4, TRIVIA_AFTER($6, @$), $7, @$); }
+    | KW_CLASS KW_IS "(" qualified_id ")" sep statements {
+            $$ = class_stmt_qualified(p.m_a, $4,
+                trivia_cast(TRIVIA_AFTER($6, @$)), $7, @$); }
     | KW_TYPE KW_IS "(" qualified_id ")" sep statements {
-            $$ = make_TypeStmtName_t(p.m_a, @$, name2char($4),
-                trivia_cast(TRIVIA_AFTER($6, @$)), STMTS($7), $7.size()); }
+            $$ = type_stmt_name_qualified(p.m_a, $4,
+                trivia_cast(TRIVIA_AFTER($6, @$)), $7, @$); }
     | KW_CLASS KW_DEFAULT sep statements { $$ = CLASS_DEFAULT(TRIVIA_AFTER($3, @$), $4, @$); }
     ;
 
@@ -2574,7 +2580,8 @@ def_unary_operand
     | "[" var_type "::" expr_list_opt rbracket { $$ = ARRAY_IN2($2, $4, @$); }
     | "[" id "::" expr_list_opt rbracket { $$ = ARRAY_IN3($2, $4, @$); }
     | "[" struct_member_star id "::" expr_list_opt rbracket {
-            $$ = ARRAY_IN3(qualified_name(p.m_a, $2, $3, @$), $5, @$); }
+            $$ = array_initializer_qualified(p.m_a, $2, $3, EXPRS($5),
+                $5.size(), @$, p.diag); }
     ;
 
 expr
@@ -2584,7 +2591,8 @@ expr
     | "[" var_type "::" expr_list_opt rbracket %dprec 2 { $$ = ARRAY_IN2($2, $4, @$); }
     | "[" id "::" expr_list_opt rbracket %dprec 1 { $$ = ARRAY_IN3($2, $4, @$); }
     | "[" struct_member_star id "::" expr_list_opt rbracket %dprec 1 {
-            $$ = ARRAY_IN3(qualified_name(p.m_a, $2, $3, @$), $5, @$); }
+            $$ = array_initializer_qualified(p.m_a, $2, $3, EXPRS($5),
+                $5.size(), @$, p.diag); }
     | TK_INTEGER { $$ = INTEGER($1, @$); }
     | TK_REAL { $$ = REAL($1, @$); }
     | TK_STRING { $$ = STRING($1, @$); }
@@ -2715,11 +2723,11 @@ id_opt
 
 
 // A name qualified by module entities, `a%b` or `a%b%c`, in the positions
-// that otherwise take only a type or interface name. It is kept as a single
-// name with the `%` separators; semantics resolves the module entities.
+// that otherwise take only a type or interface name: the list of its names
+// (see qualified_last_name). Semantics resolves the module entities.
 qualified_id
-    : id "%" id { $$ = qualified_name(p.m_a, $1, $3, @$); }
-    | qualified_id "%" id { $$ = qualified_name(p.m_a, $1, $3, @$); }
+    : id "%" id { LIST_NEW($$); LIST_ADD($$, $1); LIST_ADD($$, $3); }
+    | qualified_id "%" id { $$ = $1; LIST_ADD($$, $3); }
     ;
 
 id

@@ -1722,6 +1722,19 @@ inline void validate_format_string(const std::string& fmt_str, const Location& l
 }
 
 
+// The state of the module entities (`use, namespace`, see
+// doc/src/namespace_modules.md) that the symbol table visitor hands on to the
+// body visitor.
+struct ModuleEntityState {
+    // Local names of use-associated module entities that designate different
+    // modules (or a module entity and another entity), per scope. Referencing
+    // such a name is an error.
+    std::map<SymbolTable*, std::set<std::string>> ambiguous;
+    // The symbols declared for module-qualified references `L%x` (see
+    // CommonVisitor::module_member_symbol). They are private to their scope.
+    std::set<const ASR::symbol_t*> member_symbols;
+};
+
 template <class Derived>
 class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
@@ -2263,9 +2276,8 @@ public:
     std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
     std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure;
-    // Local names of use-associated module references that designate
-    // different modules, per scope. Referencing such a name is an error.
-    std::map<SymbolTable*, std::set<std::string>> &ambiguous_module_references;
+    // Module entities (`use, namespace`), shared with the other visitor
+    ModuleEntityState &module_entities;
     LCompilers::LocationManager &lm;
 
     std::map<std::string, std::vector<std::pair<std::string, Location>>> generic_procedures;
@@ -2332,7 +2344,7 @@ public:
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
-        std::map<SymbolTable*, std::set<std::string>> &ambiguous_module_references,
+        ModuleEntityState &module_entities,
             LCompilers::LocationManager &lm
     ): diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
@@ -2343,7 +2355,7 @@ public:
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
           instantiate_symbols{instantiate_symbols}, data_structure{data_structure},
-          ambiguous_module_references{ambiguous_module_references}, lm{lm}
+          module_entities{module_entities}, lm{lm}
     {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
@@ -8496,7 +8508,7 @@ public:
                                     al, x.m_vartype->base.loc, 
                                     AST::decl_typeType::TypeType,
                                     nullptr, 0, x.m_vartype, 
-                                    nullptr, AST::symbolType::None)));
+                                    nullptr, nullptr, 0, AST::symbolType::None)));
 
                 LCOMPILERS_ASSERT(sym_type);
 
@@ -8942,7 +8954,8 @@ public:
                         AST::AttrType_t *deferred_check_type =
                             AST::down_cast<AST::AttrType_t>(x.m_vartype);
                         if (deferred_check_type->m_type == AST::decl_typeType::TypeType
-                                && deferred_check_type->m_name) {
+                                && deferred_check_type->m_name
+                                && deferred_check_type->n_qualifier == 0) {
                             std::string type_name = to_lower(deferred_check_type->m_name);
                             ASR::symbol_t *type_sym = current_scope->resolve_symbol(type_name);
                             if (type_sym && ASR::is_a<ASR::Variable_t>(*type_sym)
@@ -9210,7 +9223,7 @@ public:
                                         AST::is_a<AST::Name_t>(*dim.m_start)) {
                             
                                         AST::Name_t* start_var = AST::down_cast<AST::Name_t>(dim.m_start);
-                                        std::string dim_var_name = to_lower(std::string(start_var->m_id));
+                                        std::string dim_var_name = designator_lookup_name(*start_var);
                             
                                         ASR::symbol_t* found_sym = current_scope->resolve_symbol(dim_var_name);
                                         if (found_sym && ASR::is_a<ASR::Variable_t>(*found_sym)) {
@@ -9231,7 +9244,7 @@ public:
                                         AST::is_a<AST::Name_t>(*dim.m_end)) {
                             
                                         AST::Name_t* end_var = AST::down_cast<AST::Name_t>(dim.m_end);
-                                        std::string dim_var_name = to_lower(std::string(end_var->m_id));
+                                        std::string dim_var_name = designator_lookup_name(*end_var);
                             
                                         ASR::symbol_t* found_sym = current_scope->resolve_symbol(dim_var_name);
                                         if (found_sym && ASR::is_a<ASR::Variable_t>(*found_sym)) {
@@ -9311,7 +9324,9 @@ public:
                         // Fortran is case insensitive and symbols are stored
                         // lowercased, so the name must be lowered before lookup
                         ASR::symbol_t *sym_found = current_scope->resolve_symbol(
-                            to_lower(func_call->m_func));
+                            designator_lookup_name(func_call->m_func,
+                                func_call->m_member, func_call->n_member,
+                                func_call->base.base.loc));
                         if (sym_found == nullptr) {
                             visit_FuncCallOrArray(*func_call);
                             init_expr = ASRUtils::EXPR(tmp);
@@ -9336,8 +9351,8 @@ public:
                             }
                         }
                     } else if (AST::is_a<AST::Name_t>(*s.m_initializer)) {
-                        std::string sym_name = AST::down_cast<AST::Name_t>(s.m_initializer)->m_id;
-                        sym_name = to_lower(sym_name);
+                        std::string sym_name = designator_lookup_name(
+                            *AST::down_cast<AST::Name_t>(s.m_initializer));
                         ASR::symbol_t *sym_found = current_scope->resolve_symbol(sym_name);
                         if (ASRUtils::is_iso_c_null_symbol(current_scope, sym_found)) {
                             if (sym_found == nullptr) {
@@ -9668,8 +9683,8 @@ public:
                             && ASR::is_a<ASR::FunctionType_t>(
                                 *ASR::down_cast<ASR::Pointer_t>(
                                     ASRUtils::type_get_past_allocatable(type))->m_type)) {
-                        std::string init_name = to_lower(
-                            AST::down_cast<AST::Name_t>(s.m_initializer)->m_id);
+                        std::string init_name = designator_lookup_name(
+                            *AST::down_cast<AST::Name_t>(s.m_initializer));
                         ASR::symbol_t *init_sym = current_scope->resolve_symbol(init_name);
                         if (is_derived_type
                                 && init_sym == (ASR::symbol_t*)variable_added_to_symtab
@@ -11486,7 +11501,7 @@ public:
                     }));
                 throw SemanticAbort();
             }
-            std::string derived_type_name = to_lower(sym_type->m_name);
+            std::string derived_type_name = type_spec_name(*sym_type);
             if (derived_type_name == "integer") {
                 sym_type->m_type = AST::decl_typeType::TypeInteger;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
@@ -11729,7 +11744,7 @@ public:
             if( !sym_type->m_name ) {
                 derived_type_name = "~unlimited_polymorphic_type";
             } else {
-                derived_type_name = to_lower(sym_type->m_name);
+                derived_type_name = type_spec_name(*sym_type);
             }
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
             // A deferred type argument of a template or a requirement is stored
@@ -11929,7 +11944,7 @@ public:
             // `procedure(real(8))`, `procedure(double precision)`, ... carry
             // their type-spec as a nested attribute; `procedure(real)`, ...
             // only name the type.
-            std::string func_name = sym_type->m_name ? to_lower(sym_type->m_name)
+            std::string func_name = sym_type->m_name ? type_spec_name(*sym_type)
                 : "typed";
             // procedure(type-spec) declares a procedure with implicit interface
             // and the given return type (e.g., procedure(integer) returns integer).
@@ -12355,15 +12370,20 @@ public:
         }
     }
 
-    // The name of the parent component of a type that extends `parent`: the
-    // name of the parent type in the scope that defines the extension. A
-    // parent type accessed through a module reference, `extends(m%t)`, is
-    // known there under a generated name `<module>%t`; its parent component
-    // is named `t` (the type's name in its module).
+    // The name of the parent component of a type that extends `parent` (the
+    // symbol Struct::m_parent refers to): the name of the parent type in the
+    // scope that defines the extension. A parent type named by a
+    // module-qualified name, `extends(L%t)`, has no name there: its symbol
+    // is a generated one (see module_member_symbol), and this is the only
+    // record of it in a module loaded from a .mod file. Its parent component
+    // is named after the type in its module, `t` (D5 in
+    // doc/src/namespace_modules.md).
     static std::string parent_component_name(ASR::symbol_t *parent) {
-        std::string name = to_lower(ASRUtils::symbol_name(parent));
-        size_t pos = name.rfind('%');
-        return pos == std::string::npos ? name : name.substr(pos + 1);
+        if (is_generated_symbol_name(ASRUtils::symbol_name(parent))) {
+            return to_lower(ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(parent)));
+        }
+        return to_lower(ASRUtils::symbol_name(parent));
     }
 
     // The parent type of the derived type that owns `scope`, or of one of its
@@ -14327,7 +14347,8 @@ public:
             }
         } else if (x.m_classtype) {
             std::string sym = x.m_classtype;
-            type_declaration = current_scope->resolve_symbol(to_lower(sym));
+            type_declaration = current_scope->resolve_symbol(type_spec_name(
+                x.m_qualifier, x.n_qualifier, x.m_classtype, x.base.base.loc));
             if (type_declaration == nullptr) {
                 diag.add(Diagnostic(
                     "Class type `" + sym + "` is not defined",
@@ -14376,8 +14397,10 @@ public:
                 if (func_call->m_func != nullptr) {
                     // Fortran is case insensitive and symbols are stored
                     // lowercased, so the name must be lowered before lookup
-                    ASR::symbol_t* sym_found =
-                        current_scope->resolve_symbol(to_lower(func_call->m_func));
+                    ASR::symbol_t* sym_found = current_scope->resolve_symbol(
+                        designator_lookup_name(func_call->m_func,
+                            func_call->m_member, func_call->n_member,
+                            func_call->base.base.loc));
                     if (sym_found != nullptr && ASR::is_a<ASR::Struct_t>(
                             *ASRUtils::symbol_get_past_external(sym_found))) {
                         expr = ASRUtils::EXPR(create_DerivedTypeConstructor(
@@ -20826,6 +20849,17 @@ public:
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
+        QualifiedDesignator d;
+        if (resolve_qualified_designator(x.m_func, x.m_member, x.n_member,
+                x.base.base.loc, d)) {
+            AST::FuncCallOrArray_t *y = al.make_new<AST::FuncCallOrArray_t>(x);
+            y->m_func = d.name;
+            y->m_member = d.member;
+            y->n_member = d.n_member;
+            QualifiedNameInDiagnostics guard(diag, d);
+            visit_FuncCallOrArray(*y);
+            return;
+        }
         // An actual argument of the form `( cond ? a : b )` is a conditional
         // argument (R1526). It is expanded before the reference is resolved,
         // so that every copy of it is an ordinary procedure reference.
@@ -21393,6 +21427,17 @@ public:
     // Handle CoarrayRef: In single-image mode, x[i] resolves to just x,
     // and x(i,j)[k] resolves to x(i,j). Cosubscripts are ignored.
     void visit_CoarrayRef(const AST::CoarrayRef_t &x) {
+        QualifiedDesignator d;
+        if (resolve_qualified_designator(x.m_name, x.m_member, x.n_member,
+                x.base.base.loc, d)) {
+            AST::CoarrayRef_t *y = al.make_new<AST::CoarrayRef_t>(x);
+            y->m_name = d.name;
+            y->m_member = d.member;
+            y->n_member = d.n_member;
+            QualifiedNameInDiagnostics guard(diag, d);
+            visit_CoarrayRef(*y);
+            return;
+        }
         std::string var_name = to_lower(x.m_name);
         const Location &loc = x.base.base.loc;
         Vec<ASR::coarray_index_t> coindices;
@@ -25293,6 +25338,14 @@ public:
     }
 
     void visit_Name(const AST::Name_t &x) {
+        QualifiedDesignator d;
+        if (resolve_qualified_designator(x.m_id, x.m_member, x.n_member,
+                x.base.base.loc, d)) {
+            QualifiedNameInDiagnostics guard(diag, d);
+            visit_NameUtil(d.member, d.n_member, d.name, x.base.base.loc,
+                d.n_member);
+            return;
+        }
         visit_NameUtil(x.m_member, x.n_member, x.m_id, x.base.base.loc, x.n_member);
     }
 
@@ -25304,7 +25357,8 @@ public:
         if (!AST::is_a<AST::Name_t>(*kind_value)) {
             return false;
         }
-        std::string name = to_lower(AST::down_cast<AST::Name_t>(kind_value)->m_id);
+        std::string name = designator_lookup_name(
+            *AST::down_cast<AST::Name_t>(kind_value));
         ASR::symbol_t* kind_sym = current_scope->resolve_symbol(name);
         if (!kind_sym) {
             return false;
@@ -25667,7 +25721,7 @@ public:
                 if (is_module_reference(existing) != is_module_reference(item.second)
                         || (is_module_reference(existing)
                             && !same_referenced_module(existing, item.second))) {
-                    ambiguous_module_references[current_scope].insert(item.first);
+                    module_entities.ambiguous[current_scope].insert(item.first);
                 }
                 if (!is_gp_merge && !is_co_merge) {
                     continue;
@@ -26032,7 +26086,7 @@ public:
             if (existing && (ASR::is_a<ASR::ExternalSymbol_t>(*existing)
                         || ASR::is_a<ASR::ModuleReference_t>(*existing))
                     && is_module_reference(existing) != is_module_reference(t)) {
-                ambiguous_module_references[current_scope].insert(local_sym);
+                module_entities.ambiguous[current_scope].insert(local_sym);
                 return;
             }
         }
@@ -26339,17 +26393,26 @@ public:
                 ASRUtils::symbol_get_past_external(b))->m_module_name;
     }
 
+    // An error if `name` is a use-associated name that designates different
+    // entities (see ModuleEntityState::ambiguous).
+    void check_not_ambiguous(const std::string &name, const Location &loc) {
+        ASR::symbol_t *sym = current_scope->resolve_symbol(name);
+        if (!sym) return;
+        SymbolTable *owner = ASRUtils::symbol_parent_symtab(sym);
+        auto it = module_entities.ambiguous.find(owner);
+        if (it != module_entities.ambiguous.end() && it->second.count(name)) {
+            module_reference_error("'" + name + "' is ambiguous: different "
+                "entities are accessible under this name", loc);
+        }
+    }
+
     // The module designated by the module reference `name` accessible in the
     // current scope, or nullptr if `name` is not a module reference.
     ASR::Module_t* resolve_module_reference(const std::string &name,
             const Location &loc) {
         ASR::symbol_t *sym = current_scope->resolve_symbol(name);
         if (!is_module_reference(sym)) return nullptr;
-        SymbolTable *owner = ASRUtils::symbol_parent_symtab(sym);
-        if (ambiguous_module_references[owner].count(name)) {
-            module_reference_error("'" + name + "' is ambiguous: different "
-                "entities are accessible under this name", loc);
-        }
+        check_not_ambiguous(name, loc);
         return referenced_module(sym, loc);
     }
 
@@ -26395,6 +26458,11 @@ public:
     // nearest enclosing scope that is not a derived type or similar.
     SymbolTable* member_reference_scope() {
         SymbolTable *scope = current_scope;
+        if (is_derived_type && !scope->asr_owner && scope->parent) {
+            // A derived type that is being defined: its Struct does not exist
+            // yet
+            scope = scope->parent;
+        }
         while (scope->asr_owner && scope->parent &&
                 ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
             ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
@@ -26408,19 +26476,32 @@ public:
         return scope;
     }
 
-    // Makes the public entity `member` of `mod` accessible in the current
-    // scope under a private name that cannot clash with any identifier,
-    // "<module>%<member>", and returns that name.
-    std::string module_member_local_name(ASR::Module_t *mod,
+    // The name of the symbol declared for the public entity `member` of `mod`
+    // when it is referenced as `L%member`: a generated name (see
+    // generated_symbol_name), so the symbol neither hides nor is hidden by a
+    // user entity, and it is not shown to the user as a symbol.
+    static std::string module_member_symbol_name(const ASR::Module_t *mod,
+            const std::string &member) {
+        return generated_symbol_name(member, "of_" + std::string(mod->m_name));
+    }
+
+    // The symbol for the public entity `member` of `mod` in the current scope,
+    // declared on the first reference `L%member`: a private ExternalSymbol,
+    // created by the same code as for `use mod, only: member`, so that
+    // generics, type-bound procedures, constructors, named constants and
+    // intrinsic modules behave as for use association. Every symbol declared
+    // for it is recorded in `module_entities.member_symbols`.
+    ASR::symbol_t* module_member_symbol(ASR::Module_t *mod,
             const std::string &member, const Location &loc) {
-        std::string mod_name = mod->m_name;
-        std::string local_sym = mod_name + "%" + member;
-        if (current_scope->resolve_symbol(local_sym)) return local_sym;
+        std::string local_sym = module_member_symbol_name(mod, member);
+        ASR::symbol_t *sym = current_scope->resolve_symbol(local_sym);
+        if (sym) return sym;
         SymbolTable *saved_scope = current_scope;
         current_scope = member_reference_scope();
         std::set<std::string> before;
         for (auto &item : current_scope->get_scope()) before.insert(item.first);
         std::queue<std::pair<std::string, std::string>> to_be_imported_later;
+        std::string mod_name = mod->m_name;
         std::string remote_sym = member;
         import_symbols_util(mod, mod_name, remote_sym, local_sym,
             to_be_imported_later, loc);
@@ -26433,238 +26514,244 @@ public:
                     to_be_imported_later, loc);
             }
         }
-        // Everything created here is an implementation detail of this scope:
+        // Everything declared here is an implementation detail of this scope:
         // keep it out of the module's public entities.
         for (auto &item : current_scope->get_scope()) {
             if (before.count(item.first)) continue;
-            ASR::symbol_t *sym = item.second;
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
-                ASR::down_cast<ASR::ExternalSymbol_t>(sym)->m_access = ASR::accessType::Private;
-            } else if (ASR::is_a<ASR::GenericProcedure_t>(*sym)) {
-                ASR::down_cast<ASR::GenericProcedure_t>(sym)->m_access = ASR::accessType::Private;
-            } else if (ASR::is_a<ASR::CustomOperator_t>(*sym)) {
-                ASR::down_cast<ASR::CustomOperator_t>(sym)->m_access = ASR::accessType::Private;
+            ASR::symbol_t *s = item.second;
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
+                ASR::down_cast<ASR::ExternalSymbol_t>(s)->m_access = ASR::accessType::Private;
+            } else if (ASR::is_a<ASR::GenericProcedure_t>(*s)) {
+                ASR::down_cast<ASR::GenericProcedure_t>(s)->m_access = ASR::accessType::Private;
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*s)) {
+                ASR::down_cast<ASR::CustomOperator_t>(s)->m_access = ASR::accessType::Private;
             }
+            module_entities.member_symbols.insert(s);
         }
+        sym = current_scope->get_symbol(local_sym);
         current_scope = saved_scope;
         current_module_dependencies.push_back(al, s2c(al, module_key(mod)));
-        return local_sym;
+        LCOMPILERS_ASSERT(sym);
+        return sym;
     }
 
-    // Resolves `parts[0]%parts[1]%...` where parts[0] is a module reference:
-    // walks through module references that are members, and returns the
-    // local name of the first member that is not a module reference. `used`
-    // is set to the number of parts consumed (including that member). If all
-    // parts are module references, the reference designates a module, which
-    // is an error.
-    std::string resolve_module_member_chain(const std::vector<std::string> &parts,
-            ASR::Module_t *mod, size_t &used, const Location &loc) {
-        size_t i = 1;
-        while (i < parts.size()) {
+    static std::string join_qualified_name(const std::vector<std::string> &parts,
+            size_t n) {
+        std::string r = parts[0];
+        for (size_t i = 1; i < n; i++) r += "%" + parts[i];
+        return r;
+    }
+
+    // Resolves the module-qualified name `parts[0]%parts[1]%...`, where
+    // `parts[0]` is a module entity accessible in the current scope: follows
+    // the module entities among the parts (`b%a%x`) and returns the symbol for
+    // the first part that is not one (see module_member_symbol). `used` is set
+    // to the number of parts consumed, including that part. A name that
+    // designates a module (all parts are module entities) is an error.
+    ASR::symbol_t* resolve_module_qualified(const std::vector<std::string> &parts,
+            size_t &used, const Location &loc) {
+        ASR::Module_t *mod = resolve_module_reference(parts[0], loc);
+        LCOMPILERS_ASSERT(mod);
+        for (size_t i = 1; i < parts.size(); i++) {
             ASR::symbol_t *t = module_member(mod, parts[i], loc);
             if (!is_module_reference(t)) {
                 used = i + 1;
-                return module_member_local_name(mod, parts[i], loc);
+                return module_member_symbol(mod, parts[i], loc);
             }
             mod = referenced_module(t, loc);
-            i++;
         }
-        module_reference_error("'" + parts.back() + "' is a module; it can "
-            "only be used to access its entities, as in '" + parts.back()
-            + "%name'", loc);
+        std::string written = join_qualified_name(parts, parts.size());
+        module_reference_error("'" + written + "' is a module; it can only "
+            "be used to access its entities, as in '" + written + "%name'", loc);
     }
 
-    // Rewrites a qualified name `a%b%t` written in a type-spec position into
-    // the local name of the entity it designates.
-    void rewrite_qualified_name(char *&name, const Location &loc) {
-        if (!name) return;
-        std::string n = to_lower(name);
-        if (n.find('%') == std::string::npos) return;
-        // Already rewritten (the AST is visited more than once)
-        if (current_scope->resolve_symbol(n)) return;
+    // The symbol that the module-qualified name `a%b%t` in a type-spec
+    // position designates (`qualifier` is [a, b], `name` is t, see AST.asdl).
+    ASR::symbol_t* resolve_qualified_type_name(char **qualifier,
+            size_t n_qualifier, const char *name, const Location &loc) {
+        LCOMPILERS_ASSERT(n_qualifier > 0);
         std::vector<std::string> parts;
-        size_t start = 0, pos;
-        while ((pos = n.find('%', start)) != std::string::npos) {
-            parts.push_back(n.substr(start, pos - start));
-            start = pos + 1;
+        for (size_t i = 0; i < n_qualifier; i++) {
+            parts.push_back(to_lower(qualifier[i]));
         }
-        parts.push_back(n.substr(start));
-        ASR::Module_t *mod = resolve_module_reference(parts[0], loc);
-        if (!mod) {
+        parts.push_back(to_lower(name));
+        if (!is_module_reference(current_scope->resolve_symbol(parts[0]))) {
             module_reference_error("'" + parts[0] + "' is not a module "
                 "imported with 'use, namespace'", loc);
         }
         size_t used = 0;
-        std::string local = resolve_module_member_chain(parts, mod, used, loc);
+        ASR::symbol_t *sym = resolve_module_qualified(parts, used, loc);
         if (used != parts.size()) {
-            module_reference_error("'" + n + "' does not name a type or an "
-                "interface", loc);
+            module_reference_error("'" + join_qualified_name(parts, parts.size())
+                + "' does not name a type or an interface", loc);
         }
-        name = s2c(al, local);
+        return sym;
     }
 
-    // Rewrites the designator `m[0]%m[1]%...%name` if m[0] is a module
-    // reference: the leading module references are removed and the first
-    // entity is replaced by its local name.
-    void check_not_ambiguous(const std::string &name, const Location &loc) {
-        ASR::symbol_t *sym = current_scope->resolve_symbol(name);
-        if (!sym) return;
-        SymbolTable *owner = ASRUtils::symbol_parent_symtab(sym);
-        auto it = ambiguous_module_references.find(owner);
-        if (it != ambiguous_module_references.end() && it->second.count(name)) {
-            module_reference_error("'" + name + "' is ambiguous: different "
-                "entities are accessible under this name", loc);
-        }
+    // The name under which the type or interface named in a type-spec
+    // (`type(t)`, `type(a%b%t)`, `procedure(iface)`, ...) is known in the
+    // current scope.
+    std::string type_spec_name(char **qualifier, size_t n_qualifier,
+            const char *name, const Location &loc) {
+        if (n_qualifier == 0) return to_lower(name);
+        return ASRUtils::symbol_name(resolve_qualified_type_name(qualifier,
+            n_qualifier, name, loc));
     }
 
-    void rewrite_member_reference(char *&name, AST::struct_member_t *&member,
-            size_t &n_member, const Location &loc) {
-        check_not_ambiguous(to_lower(n_member == 0 ? name : member[0].m_name), loc);
-        if (n_member == 0) {
-            if (is_module_reference(current_scope->resolve_symbol(to_lower(name)))) {
-                module_reference_error("'" + to_lower(name) + "' is a module; "
-                    "it can only be used to access its entities, as in '"
-                    + to_lower(name) + "%name'", loc);
-            }
-            return;
-        }
-        std::string first = to_lower(member[0].m_name);
+    std::string type_spec_name(const AST::AttrType_t &x) {
+        return type_spec_name(x.m_qualifier, x.n_qualifier, x.m_name,
+            x.base.base.loc);
+    }
+
+    // A designator `member[0]%...%member[n_member-1]%name` that starts with
+    // a module-qualified name, with that name replaced by the name of the
+    // symbol it designates: `b%a%x(1)%c` becomes `<x>(1)%c`.
+    struct QualifiedDesignator {
+        char *name = nullptr;
+        AST::struct_member_t *member = nullptr;
+        size_t n_member = 0;
+        // The name of the symbol, and the module-qualified name as written
+        std::string symbol_name, written;
+    };
+
+    // Resolves the designator `member[0]%...%member[n_member-1]%name` if it
+    // starts with a module entity. Returns false, leaving the designator to
+    // the caller, if it does not.
+    bool resolve_qualified_designator(char *name,
+            AST::struct_member_t *member, size_t n_member, const Location &loc,
+            QualifiedDesignator &d) {
+        std::string first = to_lower(n_member == 0 ? name : member[0].m_name);
+        check_not_ambiguous(first, loc);
         ASR::symbol_t *first_sym = current_scope->resolve_symbol(first);
+        if (n_member == 0) {
+            if (is_module_reference(first_sym)) {
+                module_reference_error("'" + first + "' is a module; it can "
+                    "only be used to access its entities, as in '" + first
+                    + "%name'", loc);
+            }
+            return false;
+        }
         if (!first_sym) {
             ASR::symbol_t *m = current_scope->get_tu_scope()->get_symbol(first);
-            if (m && ASR::is_a<ASR::Module_t>(*m)) {
-                module_reference_error("'" + first + "' is a module that is "
-                    "not imported as a namespace in this scope; use "
-                    "'use, namespace :: " + first + "' to access its "
-                    "entities as '" + first + "%name'", loc);
-            }
-            return;
+            if (m && ASR::is_a<ASR::Module_t>(*m)) first_sym = m;
         }
-        if (ASR::is_a<ASR::Module_t>(*first_sym)) {
-            module_reference_error("'" + first + "' is a module that is "
-                "not imported as a namespace in this scope; use "
-                "'use, namespace :: " + first + "' to access its entities "
-                "as '" + first + "%name'", loc);
+        if (first_sym && ASR::is_a<ASR::Module_t>(*first_sym)) {
+            module_reference_error("'" + first + "' is a module that is not "
+                "imported as a namespace in this scope; use 'use, namespace :: "
+                + first + "' to access its entities as '" + first + "%name'",
+                loc);
         }
-        if (!is_module_reference(first_sym)) return;
+        if (!is_module_reference(first_sym)) return false;
         if (member[0].n_args > 0) {
             module_reference_error("'" + first + "' is a module; it cannot "
                 "be subscripted or called", loc);
         }
-        ASR::Module_t *mod = resolve_module_reference(first, loc);
+        // The module entities and the entity: the parts up to the first
+        // subscript, which follows the entity at the latest
         std::vector<std::string> parts;
         for (size_t i = 0; i < n_member; i++) {
             parts.push_back(to_lower(member[i].m_name));
-            if (i > 0 && member[i].n_args > 0) break;
+            if (member[i].n_args > 0) break;
         }
         bool reaches_name = (parts.size() == n_member);
         if (reaches_name) parts.push_back(to_lower(name));
         size_t used = 0;
-        std::string local = resolve_module_member_chain(parts, mod, used, loc);
+        ASR::symbol_t *entity = resolve_module_qualified(parts, used, loc);
+        for (size_t i = 1; i + 1 < used; i++) {
+            if (member[i].n_args > 0) {
+                std::string module = join_qualified_name(parts, i + 1);
+                module_reference_error("'" + module + "' is a module; it "
+                    "cannot be subscripted or called", loc);
+            }
+        }
+        d.symbol_name = ASRUtils::symbol_name(entity);
+        d.written = join_qualified_name(parts, used);
         if (reaches_name && used == parts.size()) {
             // The whole designator is the entity: `m%x`
-            name = s2c(al, local);
-            member = nullptr;
-            n_member = 0;
-        } else {
-            // The entity is member[used-1], followed by components
-            size_t k = used - 1;
-            ASR::symbol_t *entity = current_scope->resolve_symbol(local);
-            if (entity && ASR::is_a<ASR::Struct_t>(
-                    *ASRUtils::symbol_get_past_external(entity))) {
-                module_reference_error("'" + parts[used - 1] + "' is a derived "
-                    "type, not a data object; it has no components", loc);
-            }
-            member[k].m_name = s2c(al, local);
-            member = member + k;
-            n_member = n_member - k;
+            d.name = s2c(al, d.symbol_name);
+            d.member = nullptr;
+            d.n_member = 0;
+            return true;
         }
+        // The entity is member[used - 1], followed by component references
+        if (ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(entity))) {
+            module_reference_error("'" + parts[used - 1] + "' is a derived "
+                "type, not a data object; it has no components", loc);
+        }
+        size_t k = used - 1;
+        d.n_member = n_member - k;
+        d.member = al.allocate<AST::struct_member_t>(d.n_member);
+        for (size_t i = 0; i < d.n_member; i++) d.member[i] = member[k + i];
+        d.member[0].m_name = s2c(al, d.symbol_name);
+        d.name = name;
+        return true;
     }
 
-    // Rewrites the references through module references in one statement or
-    // declaration. Nested statements and scopes are rewritten when they are
-    // visited, so that the right scope is current.
-    class ModuleReferenceRewriter :
-            public AST::BaseWalkVisitor<ModuleReferenceRewriter> {
+    // The name to look up in the current scope for a name that is resolved
+    // on its own (a namelist group, a type-spec of ALLOCATE, a kind, ...):
+    // for a module-qualified name `L%x` the name of the symbol it
+    // designates, otherwise `name`.
+    std::string designator_lookup_name(char *name,
+            AST::struct_member_t *member, size_t n_member, const Location &loc) {
+        QualifiedDesignator d;
+        if (n_member > 0 && resolve_qualified_designator(name, member,
+                n_member, loc, d) && d.n_member == 0) {
+            return d.symbol_name;
+        }
+        return to_lower(name);
+    }
+
+    std::string designator_lookup_name(const AST::Name_t &x) {
+        return designator_lookup_name(x.m_id, x.m_member, x.n_member,
+            x.base.base.loc);
+    }
+
+    // Shows a module-qualified name as it is written (`a%f`) instead of the
+    // name of the symbol it designates in the diagnostics reported while it
+    // is alive, for the reference that is being resolved.
+    class QualifiedNameInDiagnostics {
+        diag::Diagnostics &diagnostics;
+        size_t first;
+        const QualifiedDesignator &d;
+
+        // Replaces the whole-word occurrences of the symbol name. It is a
+        // generated name, which cannot appear in anything the user wrote.
+        void replace(std::string &s) const {
+            auto is_name_char = [](char c) {
+                return std::isalnum(static_cast<unsigned char>(c)) || c == '_'
+                    || c == '~' || c == '@';
+            };
+            size_t pos = 0;
+            while ((pos = s.find(d.symbol_name, pos)) != std::string::npos) {
+                size_t end = pos + d.symbol_name.size();
+                if ((pos > 0 && is_name_char(s[pos - 1]))
+                        || (end < s.size() && is_name_char(s[end]))) {
+                    pos = end;
+                    continue;
+                }
+                s.replace(pos, d.symbol_name.size(), d.written);
+                pos += d.written.size();
+            }
+        }
+
+        void replace(diag::Diagnostic &x) const {
+            replace(x.message);
+            for (auto &label : x.labels) replace(label.message);
+            for (auto &child : x.children) replace(child);
+        }
+
     public:
-        CommonVisitor &v;
-        ModuleReferenceRewriter(CommonVisitor &v) : v(v) {}
-        void visit_decl_stmt(const AST::decl_stmt_t &/*x*/) {}
-        void visit_program_unit(const AST::program_unit_t &/*x*/) {}
-        void visit_DerivedTypeProc(const AST::DerivedTypeProc_t &x) {
-            v.rewrite_qualified_name(const_cast<AST::DerivedTypeProc_t&>(x).m_name,
-                x.base.base.loc);
-        }
-        void rewrite(const AST::decl_stmt_t &x) {
-            AST::BaseWalkVisitor<ModuleReferenceRewriter>::visit_decl_stmt(x);
-        }
-        void visit_Name(const AST::Name_t &x) {
-            AST::Name_t &y = const_cast<AST::Name_t&>(x);
-            v.rewrite_member_reference(y.m_id, y.m_member, y.n_member,
-                x.base.base.loc);
-            AST::BaseWalkVisitor<ModuleReferenceRewriter>::visit_Name(x);
-        }
-        void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
-            AST::FuncCallOrArray_t &y = const_cast<AST::FuncCallOrArray_t&>(x);
-            if (y.n_member > 0) {
-                v.rewrite_member_reference(y.m_func, y.m_member, y.n_member,
-                    x.base.base.loc);
+        QualifiedNameInDiagnostics(diag::Diagnostics &diagnostics,
+                const QualifiedDesignator &d)
+            : diagnostics{diagnostics},
+              first{diagnostics.diagnostics.size()}, d{d} {}
+
+        ~QualifiedNameInDiagnostics() {
+            for (size_t i = first; i < diagnostics.diagnostics.size(); i++) {
+                replace(diagnostics.diagnostics[i]);
             }
-            AST::BaseWalkVisitor<ModuleReferenceRewriter>::visit_FuncCallOrArray(x);
-        }
-        void visit_CoarrayRef(const AST::CoarrayRef_t &x) {
-            AST::CoarrayRef_t &y = const_cast<AST::CoarrayRef_t&>(x);
-            if (y.n_member > 0) {
-                v.rewrite_member_reference(y.m_name, y.m_member, y.n_member,
-                    x.base.base.loc);
-            }
-            AST::BaseWalkVisitor<ModuleReferenceRewriter>::visit_CoarrayRef(x);
-        }
-        void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
-            AST::SubroutineCall_t &y = const_cast<AST::SubroutineCall_t&>(x);
-            if (y.n_member > 0) {
-                v.rewrite_member_reference(y.m_name, y.m_member, y.n_member,
-                    x.base.base.loc);
-            }
-            AST::BaseWalkVisitor<ModuleReferenceRewriter>::visit_SubroutineCall(x);
-        }
-        void visit_AttrType(const AST::AttrType_t &x) {
-            v.rewrite_qualified_name(const_cast<AST::AttrType_t&>(x).m_name,
-                x.base.base.loc);
-            AST::BaseWalkVisitor<ModuleReferenceRewriter>::visit_AttrType(x);
-        }
-        void visit_AttrExtends(const AST::AttrExtends_t &x) {
-            v.rewrite_qualified_name(const_cast<AST::AttrExtends_t&>(x).m_name,
-                x.base.base.loc);
-        }
-        void visit_ArrayInitializer(const AST::ArrayInitializer_t &x) {
-            v.rewrite_qualified_name(
-                const_cast<AST::ArrayInitializer_t&>(x).m_classtype,
-                x.base.base.loc);
-            AST::BaseWalkVisitor<ModuleReferenceRewriter>::visit_ArrayInitializer(x);
-        }
-        void visit_TypeStmtName(const AST::TypeStmtName_t &x) {
-            v.rewrite_qualified_name(const_cast<AST::TypeStmtName_t&>(x).m_name,
-                x.base.base.loc);
-        }
-        void visit_ClassStmt(const AST::ClassStmt_t &x) {
-            v.rewrite_qualified_name(const_cast<AST::ClassStmt_t&>(x).m_id,
-                x.base.base.loc);
         }
     };
-
-    void visit_decl_stmt(const AST::decl_stmt_t &x) {
-        ModuleReferenceRewriter rewriter(*this);
-        rewriter.rewrite(x);
-        AST::BaseVisitor<Derived>::visit_decl_stmt(x);
-    }
-
-    // For a type outside of a statement: the prefix of a function statement,
-    // `real(m%dp) function f()`.
-    void rewrite_module_references(const AST::decl_attribute_t &x) {
-        ModuleReferenceRewriter rewriter(*this);
-        rewriter.visit_decl_attribute(x);
-    }
 
     // `use, namespace :: [local =>] module`: declares the module reference
     // `local` for the module `m` in the current scope.
@@ -26715,7 +26802,7 @@ public:
             if (ASR::is_a<ASR::ExternalSymbol_t>(*existing)) {
                 // A use-associated entity with the same local name: the name
                 // must not be referenced.
-                ambiguous_module_references[current_scope].insert(local);
+                module_entities.ambiguous[current_scope].insert(local);
                 return;
             }
             diag.add(diag::Diagnostic(
@@ -26735,11 +26822,11 @@ public:
     }
 
     void import_use_symbols(ASR::Module_t *m, const AST::Use_t &x) {
+        std::string msym = to_lower(x.m_module);
+        if (msym == "ieee_arithmetic") {
+            msym = "lfortran_intrinsic_" + msym;
+        }
         if (count_use_attributes(x, AST::simple_attributeType::AttrNamespace) > 0) {
-            std::string msym = to_lower(x.m_module);
-            if (msym == "ieee_arithmetic") {
-                msym = "lfortran_intrinsic_" + msym;
-            }
             declare_module_reference(msym, x);
             return;
         }
@@ -26753,10 +26840,6 @@ public:
                 count_use_attributes(x, AST::simple_attributeType::AttrPrivate) > 0) {
             module_reference_error("'public' and 'private' are only allowed "
                 "in a namespace import", x.base.base.loc);
-        }
-        std::string msym = to_lower(x.m_module);
-        if (msym == "ieee_arithmetic") {
-            msym = "lfortran_intrinsic_" + msym;
         }
         if (x.n_symbols == 0) {
             modules_imported_all.insert({current_scope, msym});

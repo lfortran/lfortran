@@ -24,6 +24,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -51,6 +52,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -79,6 +81,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -116,6 +119,7 @@
                 []
                 ()
                 event_type
+                []
                 None
             )
             [(SimpleAttribute
@@ -140,6 +144,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             []

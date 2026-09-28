@@ -206,7 +206,7 @@ public:
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
-        std::map<SymbolTable*, std::set<std::string>> &ambiguous_module_references,
+        ModuleEntityState &module_entities,
         LCompilers::LocationManager &lm
     ) : CommonVisitor(
             al, nullptr, diagnostics, compiler_options, implicit_mapping,
@@ -214,7 +214,7 @@ public:
             external_procedures_mapping,
             explicit_intrinsic_procedures_mapping, instantiate_types,
             instantiate_symbols, entry_functions, entry_function_arguments_mapping,
-            data_structure, ambiguous_module_references, lm
+            data_structure, module_entities, lm
         ), asr{unit}, from_block{false} {}
 
     ASR::symbol_t* extract_assignment_base_symbol(ASR::expr_t* expr) {
@@ -1808,7 +1808,7 @@ public:
         if (n_args == 2 && m_args[1].m_value &&
                 AST::is_a<AST::Name_t>(*m_args[1].m_value)) {
             AST::Name_t* name_expr = AST::down_cast<AST::Name_t>(m_args[1].m_value);
-            std::string nml_name = to_lower(std::string(name_expr->m_id));
+            std::string nml_name = designator_lookup_name(*name_expr);
             ASR::symbol_t* nml_sym = current_scope->resolve_symbol(nml_name);
             if (nml_sym) {
                 ASR::symbol_t* nml_sym_past = ASRUtils::symbol_get_past_external(nml_sym);
@@ -2305,7 +2305,7 @@ public:
                     throw SemanticAbort();
                 }
                 AST::Name_t* name_expr = AST::down_cast<AST::Name_t>(kwarg.m_value);
-                std::string nml_name = to_lower(std::string(name_expr->m_id));
+                std::string nml_name = designator_lookup_name(*name_expr);
                 a_nml = current_scope->resolve_symbol(nml_name);
                 if (!a_nml) {
                     diag.add(Diagnostic(
@@ -2468,7 +2468,7 @@ public:
         for( std::uint32_t i = 0; i < n_values; i++ ) {
             if (AST::is_a<AST::Name_t>(*m_values[i])) {
                 AST::Name_t* name_expr = AST::down_cast<AST::Name_t>(m_values[i]);
-                std::string nml_name = to_lower(std::string(name_expr->m_id));
+                std::string nml_name = designator_lookup_name(*name_expr);
                 ASR::symbol_t* nml_sym = current_scope->resolve_symbol(nml_name);
                 if (nml_sym) {
                     ASR::symbol_t* nml_sym_past = ASRUtils::symbol_get_past_external(nml_sym);
@@ -3721,7 +3721,7 @@ public:
                     }
                 } else if( AST::is_a<AST::Name_t>(*x.m_args[i].m_start) ) {
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
-                    std::string name_lower = to_lower(name_t->m_id);
+                    std::string name_lower = designator_lookup_name(*name_t);
                     if( name_lower == "integer" ) {
                         new_arg.m_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
                             x.base.base.loc, compiler_options.po.default_integer_kind));
@@ -4818,7 +4818,10 @@ public:
             switch( x.m_body[i]->type ) {
                 case AST::type_stmtType::ClassStmt: {
                     AST::ClassStmt_t* class_stmt = AST::down_cast<AST::ClassStmt_t>(x.m_body[i]);
-                    ASR::symbol_t* sym = current_scope->resolve_symbol(to_lower(std::string(class_stmt->m_id)));
+                    ASR::symbol_t* sym = current_scope->resolve_symbol(
+                        type_spec_name(class_stmt->m_qualifier,
+                            class_stmt->n_qualifier, class_stmt->m_id,
+                            class_stmt->base.base.loc));
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* selector_m_type_declaration = nullptr;
@@ -4901,7 +4904,10 @@ public:
                 }
                 case AST::type_stmtType::TypeStmtName: {
                     AST::TypeStmtName_t* type_stmt_name = AST::down_cast<AST::TypeStmtName_t>(x.m_body[i]);
-                    ASR::symbol_t* sym = current_scope->resolve_symbol(to_lower(std::string(type_stmt_name->m_name)));
+                    ASR::symbol_t* sym = current_scope->resolve_symbol(
+                        type_spec_name(type_stmt_name->m_qualifier,
+                            type_stmt_name->n_qualifier, type_stmt_name->m_name,
+                            type_stmt_name->base.base.loc));
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* selector_m_type_declaration = nullptr;
@@ -8324,6 +8330,17 @@ public:
     }
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
+        QualifiedDesignator d;
+        if (resolve_qualified_designator(x.m_name, x.m_member, x.n_member,
+                x.base.base.loc, d)) {
+            AST::SubroutineCall_t *y = al.make_new<AST::SubroutineCall_t>(x);
+            y->m_name = d.name;
+            y->m_member = d.member;
+            y->n_member = d.n_member;
+            QualifiedNameInDiagnostics guard(diag, d);
+            visit_SubroutineCall(*y);
+            return;
+        }
         if (handle_conditional_arg_subroutine(x)) {
             return;
         }
@@ -9187,7 +9204,8 @@ public:
         if (x.m_fmt != nullptr) {
             if (AST::is_a<AST::Name_t>(*x.m_fmt) && x.n_values == 0) {
                 AST::Name_t *name = AST::down_cast<AST::Name_t>(x.m_fmt);
-                ASR::symbol_t *sym = current_scope->resolve_symbol(name->m_id);
+                ASR::symbol_t *sym = current_scope->resolve_symbol(
+                    designator_lookup_name(*name));
                 if (sym && ASR::is_a<ASR::Namelist_t>(*ASRUtils::symbol_get_past_external(sym))) {
                     tmp = ASR::make_FileWrite_t(al, x.base.base.loc, x.m_label,
                         nullptr, nullptr, nullptr, nullptr, nullptr, 0,
@@ -10968,7 +10986,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
-        std::map<SymbolTable*, std::set<std::string>> &ambiguous_module_references,
+        ModuleEntityState &module_entities,
         LCompilers::LocationManager &lm)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping,
@@ -10977,7 +10995,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         explicit_intrinsic_procedures_mapping,
         instantiate_types, instantiate_symbols, entry_functions,
         entry_function_arguments_mapping, data_structure,
-        ambiguous_module_references, lm
+        module_entities, lm
     );
     try {
         b.is_body_visitor = true;

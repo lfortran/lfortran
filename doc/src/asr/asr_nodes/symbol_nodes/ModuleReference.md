@@ -31,11 +31,14 @@ A module reference is declared by a namespace import,
 [Namespaces for Modules](../../../namespace_modules.md)). It makes only the
 name `L` accessible, and the entities of the module are reached as `L%x`.
 
-The frontend resolves every `L%x` to an [ExternalSymbol](ExternalSymbol.md)
-for `x` in the scope of the reference, under a name that cannot clash with an
-identifier, `M%x`, with `Private` access. Expressions, statements, passes and
-backends therefore never see a module reference; they see ordinary external
-symbols.
+The frontend resolves every `L%x` to a `Private`
+[ExternalSymbol](ExternalSymbol.md) for `x` in the scope of the reference.
+It is stored under a generated name, `x~of_M`, which no identifier can
+spell, so it neither hides nor is hidden by a user entity. Expressions and
+statements refer to that external symbol, never to the module reference, so
+the ASR passes and the LLVM backend see only ordinary external symbols. The
+module references themselves stay in the symbol tables of modules, programs
+and procedures. The Fortran backend does not print namespace imports yet.
 
 A module reference is a symbol so that it follows the rules of every other
 name: it is host associated into nested scopes, and a public module reference
