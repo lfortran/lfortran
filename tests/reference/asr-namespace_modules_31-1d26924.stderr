@@ -1,5 +1,0 @@
-semantic error: 'public' and 'private' in a namespace import are only allowed in the specification part of a module
- --> tests/errors/namespace_modules_31.f90:9:5
-  |
-9 |     use, namespace, private :: m => namespace_modules_31_m
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

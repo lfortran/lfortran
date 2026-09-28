@@ -1,5 +1,0 @@
-semantic error: module 'namespace_modules_04_m' has no entity 'nosuch'
-  --> tests/errors/namespace_modules_04.f90:10:14
-   |
-10 |     print *, m%nosuch
-   |              ^^^^^^^^ 

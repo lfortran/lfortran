@@ -1,5 +1,0 @@
-semantic error: a module can only be renamed in a namespace import: 'use, namespace :: m => namespace_modules_17_m'
- --> tests/errors/namespace_modules_17.f90:9:5
-  |
-9 |     use :: m => namespace_modules_17_m
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

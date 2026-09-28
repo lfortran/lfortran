@@ -1,5 +1,0 @@
-semantic error: 'm' is a module; it can only be used to access its entities, as in 'm%name'
-  --> tests/errors/namespace_modules_06.f90:11:14
-   |
-11 |     print *, m
-   |              ^ 

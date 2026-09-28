@@ -1,5 +1,0 @@
-semantic error: 'u' is ambiguous: different entities are accessible under this name
-  --> tests/errors/namespace_modules_11.f90:20:14
-   |
-20 |     print *, u%x
-   |              ^^^ 

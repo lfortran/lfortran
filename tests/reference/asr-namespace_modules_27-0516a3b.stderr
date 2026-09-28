@@ -1,8 +1,0 @@
-semantic error: Cannot assign to a constant variable
-  --> tests/errors/namespace_modules_27.f90:11:5
-   |
-11 |     m%n = 4
-   |     ^^^^^^^ assignment here
-   |
- 5 |     integer, parameter :: n = 3
-   |                           ~~~~~ declared as constant

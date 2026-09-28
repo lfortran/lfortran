@@ -171,7 +171,7 @@ import).
 
 `use, namespace :: s => m` may appear twice for the same module, just as the
 same USE statement may be repeated. Giving the same local name to two
-*different* modules is an error (`errors/namespace_modules_10`).
+*different* modules is an error (`cc_10`).
 
 ### D8: identity
 
@@ -182,7 +182,7 @@ are not in conflict if they designate the same module. This covers a direct
 `use, namespace :: a` together with a `use b` that exports `a`, and two
 modules that both export `a` (`namespace_modules_27`, `_28`). If they
 designate different modules, the name must not be referenced, the usual
-rule for use-associated entities (`errors/namespace_modules_29`).
+rule for use-associated entities (`cc_29`).
 
 ### D9: accessibility in the namespace import
 
@@ -198,7 +198,7 @@ This is equivalent to the namespace import followed by
 `private :: helper` or `public :: linalg`. Separate `public`/`private`
 statements naming the module entity work too. Outside a module, or with
 more than one *access-spec*, the statement is an error
-(`namespace_modules_28`, `errors/namespace_modules_31`, `_32`, `_33`).
+(`namespace_modules_28`, `cc_31`, `cc_32`, `cc_33`).
 
 ## Syntax
 
@@ -219,19 +219,19 @@ Constraints:
 * C1: `NAMESPACE` appears exactly once in a *namespace-modifier-list*, at
   most one *module-nature* appears, and at most one *access-spec* appears.
   They may be in any order (`use, intrinsic, namespace ::` and
-  `use, namespace, intrinsic ::`). (`errors/namespace_modules_15`, `_32`)
+  `use, namespace, intrinsic ::`). (`cc_15`, `cc_32`)
 * C2: An *access-spec* is allowed only in the specification part of a
-  module (like an *access-stmt*). (`errors/namespace_modules_31`)
+  module (like an *access-stmt*). (`cc_31`)
 * C3: The `::` is required (as it is whenever a *module-nature* is given).
   (`errors/namespace_modules_16`)
 * C4: A namespace import has neither a *rename-list* nor `ONLY`. A USE
   statement that is not a namespace import cannot rename the module
   (`use :: b => a` is invalid). Members cannot be renamed "inside" a module
   entity (comments 19–25: like the components of a derived type, the
-  members of a module keep their names). (`errors/namespace_modules_02`,
-  `_03`, `_17`)
+  members of a module keep their names). (`cc_02`,
+  `errors/namespace_modules_03`, `cc_17`)
 * C5: A module shall not import itself (existing rule for USE).
-  (`errors/namespace_modules_22`)
+  (`cc_22`)
 
 A module entity also appears in ordinary USE statements of *other* modules,
 like any other entity: `use b, only: a` and `use b, only: aa => a`, where
@@ -308,7 +308,7 @@ end program
 
 A module that uses a module entity only internally keeps it private, as for
 any other entity it does not want to export (`namespace_modules_28`,
-`errors/namespace_modules_28`, `_33`):
+`cc_28`, `cc_33`):
 
 ```fortran
 module b
@@ -325,19 +325,19 @@ A module entity follows the rules of every other class (1) local entity:
   procedures, BLOCK constructs and submodules of the scope that declares it
   (`namespace_modules_11`, `_13`). In interface bodies it is accessible only
   through `IMPORT` (D6). A local entity of an inner scope with the same name
-  hides it (`namespace_modules_11`, `errors/namespace_modules_21`).
+  hides it (`namespace_modules_11`, `cc_21`).
 * **Use association**: a public module entity of a module `b` is accessible
   to `use b`, can be listed in `use b, only: a`, and can be renamed with
   `use b, only: aa => a` (`namespace_modules_25`, `_26`, `_27`, `_28`).
 * **Accessibility**: default accessibility, `public`/`private` statements,
   and D9 apply. A private module entity is not accessible outside its
-  module, neither by USE nor as `b%a` (`errors/namespace_modules_28`, `_33`).
+  module, neither by USE nor as `b%a` (`cc_28`, `cc_33`).
 * **Members**: a public module entity of `b` is a member of `b`, so
   `b%a%x` works (`namespace_modules_24`, `_26`, `_28`, `_29`).
 * **Conflicts**: it must not have the same name as another local entity of
-  the scope (`errors/namespace_modules_09`). If it has the same local name
+  the scope (`cc_09`). If it has the same local name
   as a use-associated entity, the name must not be referenced
-  (`errors/namespace_modules_11`), unless both designate the same module
+  (`cc_11`), unless both designate the same module
   (D8).
 
 It can only appear:
@@ -349,8 +349,8 @@ It can only appear:
   exports it.
 
 It cannot be referenced on its own (`print *, L`), used as an actual
-argument, assigned to, or subscripted (`errors/namespace_modules_06`, `_07`,
-`_08`). These positions are deliberately left free for the future
+argument, assigned to, or subscripted (`cc_06`, `cc_07`,
+`cc_08`). These positions are deliberately left free for the future
 extensions described below.
 
 The module name `M` is still a global identifier used in the scope, even
@@ -408,14 +408,14 @@ entities of `M`. It designates *the same entity* as any other route to it
 (ordinary USE, another module entity for the same module, host
 association). Every attribute of the entity applies unchanged. For
 example, `PROTECTED` still forbids modifying it outside its module
-(`errors/namespace_modules_12`), a named constant is still a constant
-(`errors/namespace_modules_27`), and a private entity is not accessible
-(`errors/namespace_modules_05`). A name that is not an entity of the module
-is an error (`errors/namespace_modules_04`).
+(`cc_12`), a named constant is still a constant
+(`cc_27`), and a private entity is not accessible
+(`cc_05`). A name that is not an entity of the module
+is an error (`cc_04`).
 
 `L%name` does not rename anything and makes no name accessible. A namespace
 import makes none of the member names accessible without qualification
-(`errors/namespace_modules_01`). Local entities may therefore have the same
+(`cc_01`). Local entities may therefore have the same
 names as members, and the two stay distinct (`namespace_modules_01`, `_16`).
 
 ### Where `L%name` may appear
@@ -447,7 +447,7 @@ Not allowed:
   `1.5_L%dp`. The syntax requires a digit string or a named-constant name.
   Write `real(1.5, L%dp)` instead (`errors/namespace_modules_20`).
 * A derived type used as if it were a data object, e.g. `L%t%x`
-  (`errors/namespace_modules_24`).
+  (`cc_24`).
 
 ### Operators, assignment and defined input/output
 
@@ -456,7 +456,7 @@ defined assignment (`assignment(=)`) and non-type-bound defined
 input/output (`write(formatted)`) have no name that could be qualified
 (comment 7 asked whether `x .cross_product. y` would become
 `x foo::operator(.cross_product.) y`). A namespace import does **not** make
-them accessible (`errors/namespace_modules_18`). They are imported
+them accessible (`cc_18`). They are imported
 explicitly next to the namespace import:
 
 ```fortran
@@ -471,7 +471,7 @@ use vectors, only: operator(.dot.), assignment(=)
 With an ordinary USE, a local `interface gen` extends the use-associated
 generic `gen`. `L%gen` is not a local name, so a local generic with the
 same name is a separate generic and does not extend `L%gen`
-(`namespace_modules_23`, `errors/namespace_modules_30`). Comment 7 asked
+(`namespace_modules_23`, `cc_30`). Comment 7 asked
 about this interaction.
 
 ### Name resolution
@@ -674,7 +674,7 @@ document. For each, the source is given.
     as for every USE statement.
 23. **People will try `use, namespace :: sm => m, only: t1 => thing1`**
     (comments 17–25). It is an error with a clear message
-    (`errors/namespace_modules_02`, `_03`). Members keep their names, as
+    (`cc_02`, `errors/namespace_modules_03`). Members keep their names, as
     components do. Combine with an ordinary `use m, only: t1 => thing1`.
 
 ### Semantic questions
@@ -756,8 +756,11 @@ document. For each, the source is given.
 * **Portability**: with `--std=f23` (or `--std=legacy`), every
   `use, namespace` statement gets a warning that it is an LFortran extension
   (`tests/warnings/namespace_modules_std_01`).
-* **Diagnostics**: the error tests in `tests/errors/namespace_modules_*`
-  have their messages in `tests/reference/`.
+* **Diagnostics**: the semantic errors are all reported with
+  `--continue-compilation` by one file,
+  `tests/errors/namespace_continue_compilation.f90` (cases `cc_NN`); the
+  syntax errors are in `tests/errors/namespace_modules_*`. Their messages
+  are in `tests/reference/`.
 
 Known limitations of the prototype:
 
@@ -772,7 +775,6 @@ Known limitations of the prototype:
 * The ASR verification error that LFortran reports instead of a semantic
   error for `call f()` where `f` is a function (lfortran/lfortran#13804)
   names the generated symbol (`f~of_m`) when `f` is written `L%f`.
-
 * `errors/namespace_modules_23` (a local entity named like a module used
   in the scope) and `errors/namespace_modules_26` (an interface body
   without `IMPORT`) are not diagnosed yet. LFortran does not enforce these
@@ -788,8 +790,14 @@ checked with GFortran through a mechanical translation to standard Fortran
 `L%x` becomes `L__x`, with chains translated by hand). They are
 registered in `integration_tests/CMakeLists.txt` with the `llvm` label. They
 cannot carry the `gfortran` label, since GFortran does not support the
-syntax. The error tests (`tests/errors/namespace_modules_*.f90`) are
-registered in `tests/tests.toml`, as are `ast_f90` round trips of
+syntax. The error tests are registered in `tests/tests.toml`: the
+semantic errors are the cases `cc_NN` (subroutines or modules, each with a
+comment) of `tests/errors/namespace_continue_compilation.f90`, which is
+checked with `--continue-compilation` so that every case is reported, and
+the syntax errors are separate files `tests/errors/namespace_modules_NN.f90`,
+since parsing stops at the first one. Also registered are the `--std`
+warning test (`tests/warnings/namespace_modules_std_01.f90`), `ast_f90`
+round trips of
 `namespace_modules_05`, `_07`, `_20` and `_28` and the ASR of
 `namespace_modules_01`.
 
@@ -827,40 +835,44 @@ registered in `tests/tests.toml`, as are `ast_f90` round trips of
 | `namespace_modules_30` | Deferred type-bound procedure with `procedure(L%iface)`; `type(L%t)` in a BLOCK; `real(L%dp) function f()` |
 | `namespace_modules_31` | A module entity named like a module that the host accesses through another module entity |
 
+In the table of error tests, `cc_NN` is a case of
+`errors/namespace_continue_compilation.f90` and `namespace_modules_NN` is
+the separate file `errors/namespace_modules_NN.f90`.
+
 | Error test | Error |
 |---|---|
-| `namespace_modules_01` | Member used without qualification |
-| `namespace_modules_02` | `only` with a namespace import |
+| `cc_01` | Member used without qualification |
+| `cc_02` | `only` with a namespace import |
 | `namespace_modules_03` | Rename list with a namespace import |
-| `namespace_modules_04` | No such member |
-| `namespace_modules_05` | Private member |
-| `namespace_modules_06` | Module entity used as a value |
-| `namespace_modules_07` | Module entity as an actual argument |
-| `namespace_modules_08` | Assignment to a module entity |
-| `namespace_modules_09` | Module entity name clashes with a local entity |
-| `namespace_modules_10` | One local name for two different modules |
-| `namespace_modules_11` | Ambiguous reference: module entity vs use-associated variable |
-| `namespace_modules_12` | Modifying a PROTECTED variable |
-| `namespace_modules_13` | Qualifier with a module that was only used with plain USE (D2) |
-| `namespace_modules_14` | Qualifier with a module that was not used |
-| `namespace_modules_15` | `namespace` modifier repeated |
+| `cc_04` | No such member |
+| `cc_05` | Private member |
+| `cc_06` | Module entity used as a value |
+| `cc_07` | Module entity as an actual argument |
+| `cc_08` | Assignment to a module entity |
+| `cc_09` | Module entity name clashes with a local entity |
+| `cc_10` | One local name for two different modules |
+| `cc_11` | Ambiguous reference: module entity vs use-associated variable |
+| `cc_12` | Modifying a PROTECTED variable |
+| `cc_13` | Qualifier with a module that was only used with plain USE (D2) |
+| `cc_14` | Qualifier with a module that was not used |
+| `cc_15` | `namespace` modifier repeated |
 | `namespace_modules_16` | Missing `::` |
-| `namespace_modules_17` | Module renamed in an ordinary USE |
-| `namespace_modules_18` | Defined operator not imported by a namespace import |
+| `cc_17` | Module renamed in an ordinary USE |
+| `cc_18` | Defined operator not imported by a namespace import |
 | `namespace_modules_19` | Qualified name as a DO variable |
 | `namespace_modules_20` | Qualified name as a literal kind parameter |
-| `namespace_modules_21` | Module entity hidden by a local variable in an internal procedure |
-| `namespace_modules_22` | Module imports itself |
+| `cc_21` | Module entity hidden by a local variable in an internal procedure |
+| `cc_22` | Module imports itself |
 | `namespace_modules_23` | Local entity named like the renamed module |
-| `namespace_modules_24` | Type used as a data object |
+| `cc_24` | Type used as a data object |
 | `namespace_modules_25` | Declaring a qualified name |
 | `namespace_modules_26` | Interface body without `IMPORT` |
-| `namespace_modules_27` | Assignment to a named constant |
-| `namespace_modules_28` | Private module entity of a module, accessed as `b%a%x` |
-| `namespace_modules_29` | Two module entities named `a` for different modules, referenced |
-| `namespace_modules_30` | Local generic does not extend `L%gen` |
-| `namespace_modules_31` | Access-spec in a namespace import outside a module |
-| `namespace_modules_32` | Two access-specs in a namespace import |
-| `namespace_modules_33` | `use, namespace, private` entity imported with ONLY |
-| `namespace_modules_34` | Module name as a qualifier in a type-spec, after a module entity for the same module was used |
-| `namespace_modules_35` | Ambiguous module entity in a type-spec, named like a module whose type the host used |
+| `cc_27` | Assignment to a named constant |
+| `cc_28` | Private module entity of a module, accessed as `b%a%x` |
+| `cc_29` | Two module entities named `a` for different modules, referenced |
+| `cc_30` | Local generic does not extend `L%gen` |
+| `cc_31` | Access-spec in a namespace import outside a module |
+| `cc_32` | Two access-specs in a namespace import |
+| `cc_33` | `use, namespace, private` entity imported with ONLY |
+| `cc_34` | Module name as a qualifier in a type-spec, after a module entity for the same module was used |
+| `cc_35` | Ambiguous module entity in a type-spec, named like a module whose type the host used |

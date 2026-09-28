@@ -1,5 +1,0 @@
-semantic error: 'only' cannot be used with a namespace import; use a separate 'use namespace_modules_02_m, only: ...' statement
- --> tests/errors/namespace_modules_02.f90:8:5
-  |
-8 |     use, namespace :: namespace_modules_02_m, only: x
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

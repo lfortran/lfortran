@@ -1,5 +1,0 @@
-semantic error: Variable x is PROTECTED and cannot appear in LHS of assignment
-  --> tests/errors/namespace_modules_12.f90:12:5
-   |
-12 |     m%x = 2
-   |     ^^^ 

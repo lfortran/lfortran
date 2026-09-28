@@ -1,5 +1,0 @@
-semantic error: Variable 'm' is not a derived or union type
-  --> tests/errors/namespace_modules_21.f90:16:18
-   |
-16 |         print *, m%x
-   |                  ^^^ 

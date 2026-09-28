@@ -1,5 +1,0 @@
-semantic error: at most one of 'public' and 'private' may appear in a namespace import
- --> tests/errors/namespace_modules_32.f90:8:5
-  |
-8 |     use, namespace, public, private :: a => namespace_modules_32_a
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

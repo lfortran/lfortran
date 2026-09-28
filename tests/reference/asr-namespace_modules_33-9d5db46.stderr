@@ -1,5 +1,0 @@
-semantic error: 'a' is a private entity of module 'namespace_modules_33_b'
-  --> tests/errors/namespace_modules_33.f90:15:39
-   |
-15 |     use namespace_modules_33_b, only: a
-   |                                       ^ 

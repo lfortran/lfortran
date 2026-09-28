@@ -1,5 +1,0 @@
-semantic error: 'a' is a private entity of module 'namespace_modules_28_b'
-  --> tests/errors/namespace_modules_28.f90:18:14
-   |
-18 |     print *, b%a%x
-   |              ^^^^^ 

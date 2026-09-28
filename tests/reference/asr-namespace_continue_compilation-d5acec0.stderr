@@ -1,0 +1,176 @@
+semantic error: at most one of 'public' and 'private' may appear in a namespace import
+   --> tests/errors/namespace_continue_compilation.f90:124:5
+    |
+124 |     use, namespace, public, private :: a => nscc_m
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Module 'cc_22' modfile was not found
+   --> tests/errors/namespace_continue_compilation.f90:130:5
+    |
+130 |     use, namespace :: self => cc_22
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'only' cannot be used with a namespace import; use a separate 'use nscc_m, only: ...' statement
+   --> tests/errors/namespace_continue_compilation.f90:145:5
+    |
+145 |     use, namespace :: nscc_m, only: x
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Symbol is already declared in the same scope
+   --> tests/errors/namespace_continue_compilation.f90:194:16
+    |
+194 |     integer :: m
+    |                ^ redeclaration
+    |
+192 |     use, namespace :: m => nscc_m
+    |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ original declaration
+
+semantic error: 'u' is already declared in this scope
+   --> tests/errors/namespace_continue_compilation.f90:200:5
+    |
+200 |     use, namespace :: u => nscc_m2
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+199 |     use, namespace :: u => nscc_m
+    |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ previous declaration
+
+semantic error: the 'namespace' modifier appears more than once
+   --> tests/errors/namespace_continue_compilation.f90:239:5
+    |
+239 |     use, namespace, namespace :: m => nscc_m
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a module can only be renamed in a namespace import: 'use, namespace :: m => nscc_m'
+   --> tests/errors/namespace_continue_compilation.f90:246:5
+    |
+246 |     use :: m => nscc_m
+    |     ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'public' and 'private' in a namespace import are only allowed in the specification part of a module
+   --> tests/errors/namespace_continue_compilation.f90:307:5
+    |
+307 |     use, namespace, private :: m => nscc_m
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'a' is a private entity of module 'nscc_private_decl'
+   --> tests/errors/namespace_continue_compilation.f90:314:34
+    |
+314 |     use nscc_private_decl, only: a
+    |                                  ^ 
+
+semantic error: 'nscc_m' is not a module imported with 'use, namespace'
+   --> tests/errors/namespace_continue_compilation.f90:324:5
+    |
+324 |     type(nscc_m%t) :: b
+    |     ^^^^^^^^^^^^^^ 
+
+semantic error: 'nscc_m' is ambiguous: different entities are accessible under this name
+   --> tests/errors/namespace_continue_compilation.f90:340:9
+    |
+340 |         type(nscc_m%t) :: b
+    |         ^^^^^^^^^^^^^^ 
+
+semantic error: Arguments do not match for any generic procedure, swap
+   --> tests/errors/namespace_continue_compilation.f90:118:9
+    |
+118 |         call g%swap(c, d)
+    |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'x' is not declared
+   --> tests/errors/namespace_continue_compilation.f90:140:14
+    |
+140 |     print *, x
+    |              ^ 'x' is undeclared
+
+semantic error: module 'nscc_m' has no entity 'nosuch'
+   --> tests/errors/namespace_continue_compilation.f90:153:14
+    |
+153 |     print *, m%nosuch
+    |              ^^^^^^^^ 
+
+semantic error: 'hidden' is a private entity of module 'nscc_m'
+   --> tests/errors/namespace_continue_compilation.f90:160:25
+    |
+160 |     print *, m%visible, m%hidden
+    |                         ^^^^^^^^ 
+
+semantic error: 'm' is a module; it can only be used to access its entities, as in 'm%name'
+   --> tests/errors/namespace_continue_compilation.f90:168:14
+    |
+168 |     print *, m
+    |              ^ 
+
+semantic error: 'm' is a module; it can only be used to access its entities, as in 'm%name'
+   --> tests/errors/namespace_continue_compilation.f90:175:15
+    |
+175 |     call show(m)
+    |               ^ 
+
+semantic error: 'm' is a module; it can only be used to access its entities, as in 'm%name'
+   --> tests/errors/namespace_continue_compilation.f90:187:5
+    |
+187 |     m = 1
+    |     ^ 
+
+semantic error: 'u' is ambiguous: different entities are accessible under this name
+   --> tests/errors/namespace_continue_compilation.f90:210:14
+    |
+210 |     print *, u%x
+    |              ^^^ 
+
+semantic error: Variable p is PROTECTED and cannot appear in LHS of assignment
+   --> tests/errors/namespace_continue_compilation.f90:219:5
+    |
+219 |     m%p = 2
+    |     ^^^ 
+
+semantic error: 'nscc_m' is a module that is not imported as a namespace in this scope; use 'use, namespace :: nscc_m' to access its entities as 'nscc_m%name'
+   --> tests/errors/namespace_continue_compilation.f90:228:14
+    |
+228 |     print *, nscc_m%x
+    |              ^^^^^^^^ 
+
+semantic error: 'nscc_m2' is a module that is not imported as a namespace in this scope; use 'use, namespace :: nscc_m2' to access its entities as 'nscc_m2%name'
+   --> tests/errors/namespace_continue_compilation.f90:234:14
+    |
+234 |     print *, nscc_m2%x
+    |              ^^^^^^^^^ 
+
+semantic error: `dot` is not defined or imported
+   --> tests/errors/namespace_continue_compilation.f90:256:14
+    |
+256 |     print *, a .dot. b
+    |              ^^^^^^^^^ 
+
+semantic error: Variable 'm' is not a derived or union type
+   --> tests/errors/namespace_continue_compilation.f90:269:18
+    |
+269 |         print *, m%x
+    |                  ^^^ 
+
+semantic error: 't' is a derived type, not a data object; it has no components
+   --> tests/errors/namespace_continue_compilation.f90:277:14
+    |
+277 |     print *, m%t%x
+    |              ^^^^^ 
+
+semantic error: Cannot assign to a constant variable
+   --> tests/errors/namespace_continue_compilation.f90:284:5
+    |
+284 |     m%n = 4
+    |     ^^^^^^^ assignment here
+    |
+ 12 |     integer, parameter :: n = 3
+    |                           ~~~~~ declared as constant
+
+semantic error: 'a' is a private entity of module 'nscc_private_a'
+   --> tests/errors/namespace_continue_compilation.f90:292:14
+    |
+292 |     print *, b%a%x
+    |              ^^^^^ 
+
+semantic error: 'a' is ambiguous: different entities are accessible under this name
+   --> tests/errors/namespace_continue_compilation.f90:301:14
+    |
+301 |     print *, a%x
+    |              ^^^ 
