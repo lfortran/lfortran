@@ -788,6 +788,13 @@ Known limitations of the prototype:
 * The Fortran dependency scanner of CMake does not recognize
   `use, namespace`, so a file whose only USE of a module is a namespace
   import is not ordered after the file that defines the module.
+* A parameterized derived type accessed through a module entity cannot be
+  given type parameters in a type-spec: `type(L%pdt(8))`,
+  `type(L%pdt(k=8))` and `class(L%pdt(8))` are syntax errors, because the
+  parser accepts a qualified name in `type(...)` and `class(...)` only
+  without a type-parameter list. `type(L%pdt)`, with the default values
+  of the parameters, works. Until this is supported, access the type with
+  `use M, only: pdt` and write `type(pdt(8))`.
 * LFortran reports an ASR verification error instead of a semantic error
   for `call f()` where `f` is a function (lfortran/lfortran#13804), also
   for `call L%f()` and for a generic `call L%gen()` whose specific is a
