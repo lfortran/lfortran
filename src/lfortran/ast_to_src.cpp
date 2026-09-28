@@ -1257,9 +1257,13 @@ public:
             r += ", ";
             this->visit_decl_attribute(*x.m_nature[i]);
             r.append(s);
-            r += " ::";
         }
+        if (x.n_nature > 0) r += " ::";
         r += " ";
+        if (x.m_local_name) {
+            r.append(x.m_local_name);
+            r += " => ";
+        }
         r.append(x.m_module);
         if (x.m_only_present || x.n_symbols > 0) {
             r.append(", ");
@@ -1672,6 +1676,7 @@ public:
             ATTRTYPE(Kind)
             ATTRTYPE(Len)
             ATTRTYPE(Module)
+            ATTRTYPE(Namespace)
             ATTRTYPE(NoPass)
             ATTRTYPE(NonDeferred)
             ATTRTYPE(Non_Intrinsic)

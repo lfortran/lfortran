@@ -352,14 +352,17 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::map<SymbolTable*, std::set<std::string>> &ambiguous_module_references,
+        LCompilers::LocationManager &lm)
       : CommonVisitor(
             al, symbol_table, diagnostics, compiler_options, implicit_mapping,
             common_variables_hash, common_variables_byte_offset,
             external_procedures_mapping,
             explicit_intrinsic_procedures_mapping,
             instantiate_types, instantiate_symbols, entry_functions,
-            entry_function_arguments_mapping, data_structure, lm
+            entry_function_arguments_mapping, data_structure,
+            ambiguous_module_references, lm
         ) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
@@ -713,7 +716,14 @@ public:
         // use statements are processed before private/public, so ExternalSymbols
         // may have been created with the wrong default access.
         for (auto &item : current_scope->get_scope()) {
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+            // Names with `%` are private symbols created for references
+            // through module references; they keep their access.
+            if (item.first.find('%') != std::string::npos) continue;
+            if (ASR::is_a<ASR::ModuleReference_t>(*item.second)) {
+                ASR::down_cast<ASR::ModuleReference_t>(item.second)->m_access =
+                    assgnd_access.count(item.first) ? assgnd_access[item.first]
+                                                    : dflt_access;
+            } else if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
                 ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
                 if (assgnd_access.count(item.first)) {
                     es->m_access = assgnd_access[item.first];
@@ -2647,6 +2657,9 @@ public:
         ASR::symbol_t* return_var_sym = current_scope->get_symbol(return_var_name);
         AST::AttrType_t *return_type = find_return_type(x.m_attributes,
             x.n_attributes, x.base.base.loc, return_var_name, return_var_sym);
+        if (return_type) {
+            rewrite_module_references(return_type->base);
+        }
         if (current_scope->get_symbol(return_var_name) == nullptr) {
             // The variable is not defined among local variables, extract the
             // type from "integer function f()" and add the variable.
@@ -5367,6 +5380,10 @@ public:
 
         ASR::symbol_t *t = current_scope->resolve_symbol(msym);
         SymbolTable *tu_symtab = current_scope->get_tu_scope();
+        if (is_module_reference(t)) {
+            // A module reference named like the module (`use, namespace :: m`)
+            t = tu_symtab->get_symbol(msym);
+        }
         bool load_submodules = (!compiler_options.separate_compilation && in_program);
         if (!t) {
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
@@ -6951,14 +6968,17 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::map<SymbolTable*, std::set<std::string>> &ambiguous_module_references,
+        LCompilers::LocationManager &lm)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options,
                          implicit_mapping, common_variables_hash,
                          common_variables_byte_offset, external_procedures_mapping,
                          explicit_intrinsic_procedures_mapping,
                          instantiate_types, instantiate_symbols, entry_functions,
-                         entry_function_arguments_mapping, data_structure, lm);
+                         entry_function_arguments_mapping, data_structure,
+                         ambiguous_module_references, lm);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticAbort &) {

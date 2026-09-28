@@ -1,0 +1,5 @@
+semantic error: 'a' is ambiguous: different entities are accessible under this name
+  --> tests/errors/namespace_modules_29.f90:30:14
+   |
+30 |     print *, a%x
+   |              ^^^ 

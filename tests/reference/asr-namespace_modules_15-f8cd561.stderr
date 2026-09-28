@@ -1,0 +1,5 @@
+semantic error: the 'namespace' modifier appears more than once
+ --> tests/errors/namespace_modules_15.f90:8:5
+  |
+8 |     use, namespace, namespace :: m => namespace_modules_15_m
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

@@ -1,0 +1,5 @@
+semantic error: 'm' is a module; it can only be used to access its entities, as in 'm%name'
+  --> tests/errors/namespace_modules_08.f90:10:5
+   |
+10 |     m = 1
+   |     ^ 

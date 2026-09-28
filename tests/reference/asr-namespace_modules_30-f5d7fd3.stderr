@@ -1,0 +1,5 @@
+semantic error: Arguments do not match for any generic procedure, swap
+  --> tests/errors/namespace_modules_30.f90:31:9
+   |
+31 |         call g%swap(c, d)
+   |         ^^^^^^^^^^^^^^^^^ 

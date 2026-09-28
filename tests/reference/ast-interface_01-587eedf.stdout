@@ -123,6 +123,7 @@
         [(Use
             []
             interface_01_mod
+            ()
             [(UseSymbol
                 a
                 ()

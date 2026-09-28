@@ -1,0 +1,13 @@
+{
+    "basename": "asr-namespace_modules_24-1d220a1",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/namespace_modules_24.f90",
+    "infile_hash": "85296c5b04f5c8c41c2cef457b11178ef4e996bba2d15a5afb024b14",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-namespace_modules_24-1d220a1.stderr",
+    "stderr_hash": "9954647d123558de4f5c91deff9db326a2366de6a288fc1fbb148e41",
+    "returncode": 2
+}

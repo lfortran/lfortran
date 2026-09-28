@@ -1,0 +1,5 @@
+syntax error: Token '%' is unexpected here
+  --> tests/errors/namespace_modules_20.f90:13:14
+   |
+13 |     x = 1.5_m%dp
+   |              ^ 

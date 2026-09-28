@@ -32,6 +32,7 @@
         [(Use
             []
             iso_fortran_env
+            ()
             [(UseSymbol
                 event_type
                 ()

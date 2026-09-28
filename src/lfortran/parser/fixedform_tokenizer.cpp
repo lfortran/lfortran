@@ -205,6 +205,7 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
     {"mold", KW_MOLD},
     {"name", KW_NAME},
     {"namelist", KW_NAMELIST},
+    {"namespace", KW_NAMESPACE},
     {"new_index", KW_NEW_INDEX},
     {"nopass", KW_NOPASS},
     {"non_intrinsic", KW_NON_INTRINSIC},

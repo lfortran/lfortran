@@ -520,6 +520,7 @@
         [(Use
             []
             template_nested_m
+            ()
             []
             .false.
             ()

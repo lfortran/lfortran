@@ -18,6 +18,7 @@
         [(Use
             []
             program_02_mod
+            ()
             []
             .false.
             ()

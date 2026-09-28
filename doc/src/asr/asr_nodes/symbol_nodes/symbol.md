@@ -24,6 +24,7 @@ symbol
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Template(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Namelist(symbol_table parent_symtab, identifier group_name, symbol* var_list)
+    | ModuleReference(symbol_table parent_symtab, identifier name, identifier module_name, access access)
 ```
 
 ### Arguments
@@ -51,7 +52,8 @@ The symbols divide into:
 - data: [Variable](Variable.md) and [Namelist](Namelist.md);
 - names for other symbols:
   [GenericProcedure](GenericProcedure.md), [CustomOperator](CustomOperator.md)
-  and [ExternalSymbol](ExternalSymbol.md);
+  and [ExternalSymbol](ExternalSymbol.md), and
+  [ModuleReference](ModuleReference.md) for a module;
 - scopes that are not program units: [Block](Block.md) and
   [AssociateBlock](AssociateBlock.md);
 - generics: [Requirement](Requirement.md) and [Template](Template.md).

@@ -85,8 +85,8 @@ decl_stmt
 -- Everything that can appear in the body of a program unit, in source
 -- order: use, import and implicit statements, declarations and executable
 -- statements. This mirrors the `decl_statement` rule of the parser.
-    = Use(decl_attribute* nature, identifier module, use_symbol* symbols,
-        bool only_present, trivia? trivia)
+    = Use(decl_attribute* nature, identifier module, identifier? local_name,
+        use_symbol* symbols, bool only_present, trivia? trivia)
     | Declaration(decl_attribute? vartype, decl_attribute* attributes,
         var_sym* syms, trivia? trivia)
     | DeclarationPragma(pragma_type type, string text, trivia? trivia)
@@ -314,6 +314,7 @@ simple_attribute
     | AttrKind
     | AttrLen
     | AttrModule
+    | AttrNamespace
     | AttrNoPass
     | AttrNonDeferred
     | AttrNon_Intrinsic

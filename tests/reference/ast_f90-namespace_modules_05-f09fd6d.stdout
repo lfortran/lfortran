@@ -1,0 +1,85 @@
+module namespace_modules_05_shapes
+implicit none
+type, abstract :: shape_t
+    character(len=8) :: label = "shape"
+
+contains
+
+procedure(area_iface), deferred :: area
+procedure :: describe
+end type shape_t
+
+abstract interface
+    real function area_iface(self)
+    import :: shape_t
+    class(shape_t), intent(in) :: self
+    end function area_iface
+end interface
+
+type :: base_t
+    integer :: id = 0
+end type base_t
+
+contains
+
+integer function describe(self)
+class(shape_t), intent(in) :: self
+describe = nint(self%area())
+end function describe
+
+end module namespace_modules_05_shapes
+
+
+module namespace_modules_05_user
+use, namespace :: shp => namespace_modules_05_shapes
+implicit none
+type, extends(shp%shape_t) :: square_t
+    real :: side = 1
+
+contains
+
+procedure :: area => square_area
+end type square_t
+
+type, extends(shp%base_t) :: derived_t
+    integer :: extra = 0
+end type derived_t
+
+contains
+
+real function square_area(self)
+class(square_t), intent(in) :: self
+square_area = self%side**2
+end function square_area
+
+end module namespace_modules_05_user
+
+
+program namespace_modules_05
+use namespace_modules_05_user
+implicit none
+type(square_t) :: s
+type(derived_t) :: d
+
+s%side = 3
+if (abs(s%area() - 9.0) > 1e-6) then
+    error stop
+end if
+if (s%describe() /= 9) then
+    error stop
+end if
+if (s%label /= "shape") then
+    error stop
+end if
+
+d%id = 4
+d%extra = 5
+! Parent component keeps the parent type's name
+if (d%base_t%id /= 4) then
+    error stop
+end if
+if (d%id + d%extra /= 9) then
+    error stop
+end if
+print *, s%area(), d%id, d%extra
+end program namespace_modules_05

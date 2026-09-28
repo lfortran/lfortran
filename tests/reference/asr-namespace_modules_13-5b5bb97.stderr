@@ -1,0 +1,5 @@
+semantic error: 'namespace_modules_13_m' is a module that is not imported as a namespace in this scope; use 'use, namespace :: namespace_modules_13_m' to access its entities as 'namespace_modules_13_m%name'
+  --> tests/errors/namespace_modules_13.f90:12:14
+   |
+12 |     print *, namespace_modules_13_m%x
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^ 

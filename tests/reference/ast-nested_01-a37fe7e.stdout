@@ -111,6 +111,7 @@
         [(Use
             []
             nested_01_a
+            ()
             [(UseSymbol
                 b
                 ()

@@ -1,0 +1,5 @@
+syntax error: Token '%' is unexpected here
+  --> tests/errors/namespace_modules_19.f90:11:9
+   |
+11 |     do m%i = 1, 3
+   |         ^ 

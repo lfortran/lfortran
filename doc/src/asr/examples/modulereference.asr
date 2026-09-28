@@ -1,0 +1,109 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "x" (Variable
+              :parent_symtab 1
+              :name "x"
+              :dependencies []
+              :intent :Local
+              :symbolic_value (IntegerConstant
+                :n 1
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :value (IntegerConstant
+                :n 1
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :storage :Save
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+        :global_init nil
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 2
+          :symbols {
+            "m%x" (ExternalSymbol
+              :parent_symtab 2
+              :name "m%x"
+              :external (SymbolRef 1 "x")
+              :module_name "m"
+              :scope_names []
+              :original_name "x"
+              :access :Private
+            )
+            "n" (ModuleReference
+              :parent_symtab 2
+              :name "n"
+              :module_name "m"
+              :access :Public
+            )
+          }
+        )
+        :name "main"
+        :dependencies [
+          "m"
+        ]
+        :body [
+          (Print
+            :text (StringFormat
+              :fmt nil
+              :args [
+                (Var
+                  :v (SymbolRef 2 "m%x")
+                )
+              ]
+              :kind :FormatFortran
+              :type (Allocatable
+                :type (String
+                  :kind 1
+                  :len nil
+                  :len_kind :DeferredLength
+                  :physical_type :DescriptorString
+                )
+              )
+              :value nil
+            )
+          )
+        ]
+        :global_init nil
+      )
+    }
+  )
+  :items []
+  :global_init nil
+)

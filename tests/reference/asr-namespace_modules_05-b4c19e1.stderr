@@ -1,0 +1,5 @@
+semantic error: 'hidden' is a private entity of module 'namespace_modules_05_m'
+  --> tests/errors/namespace_modules_05.f90:13:25
+   |
+13 |     print *, m%visible, m%hidden
+   |                         ^^^^^^^^ 

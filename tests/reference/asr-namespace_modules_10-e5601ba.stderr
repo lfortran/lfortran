@@ -1,0 +1,8 @@
+semantic error: 'u' is already declared in this scope
+  --> tests/errors/namespace_modules_10.f90:15:5
+   |
+15 |     use, namespace :: u => namespace_modules_10_m2
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+   |
+14 |     use, namespace :: u => namespace_modules_10_m1
+   |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ previous declaration

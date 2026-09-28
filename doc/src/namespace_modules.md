@@ -713,59 +713,56 @@ document. For each, the source is given.
   It is orthogonal and could be added separately.
 * The future extensions listed under "Doors left open".
 
-## Prototype implementation in LFortran (plan)
+## Prototype implementation in LFortran
 
-The implementation is staged. Each stage is a strict extension of the
-previous one, and the design above is the target of the last stage.
-
-1. Namespace imports, module entities in the scope that declares them, host
-   association, member access in all positions, and chains `b%a%x`
-   (including use association into the member position).
-2. Module entities in ONLY and rename lists: `use b, only: a`,
-   `use b, only: aa => a`.
-3. A plain `use b` brings in `b`'s public module entities; D9.
-
-* **Parser/AST**: add `namespace` (and an access-spec) to `use_modifier`.
-  Allow `[local =>] module` after the modifiers when `namespace` is present.
-  The AST `Use` node gets the modifier and an optional local name. Allow
-  `id % id [% id ...]` where the grammar currently accepts only a type or
-  interface name: `type(...)`, `class(...)`, `extends(...)`,
-  `type is (...)`, `class is (...)`, `procedure(...)`, and the
-  array-constructor and `allocate` type-specs. Expressions, calls and
-  assignments already parse (`a%b` is a member access). `lfortran fmt` must
-  print the new form back.
-* **Semantics (AST → ASR)**: `use, namespace` loads the module like a USE
-  statement but adds only a module entity symbol to the current symbol
-  table. When the first part of `a%b...` resolves to a module entity,
-  resolve `b` in the module's symbol table (checking public access). Then
-  create, or reuse, an `ExternalSymbol` in the current scope with a
-  compiler-generated name that cannot clash with user identifiers, and
-  continue with the rest of the reference as for an ordinary use-associated
-  entity. The same applies to type-spec positions. All checks (PROTECTED,
-  PARAMETER, generic resolution) then come for free.
-* **ASR and .mod files**: after semantics, qualified references are ordinary
-  `ExternalSymbol`s, so the passes and backends need no changes. The module
-  entity itself is a symbol in the symbol table (for example an
-  `ExternalSymbol` whose target is the `Module` symbol, with an access
-  attribute). It is saved in .mod files, so that use association and chains
-  work across separate compilation.
+* **Parser and AST**: `namespace`, `public` and `private` are USE modifiers
+  (`SimpleAttribute`), and the `Use` node has an optional `local_name` for
+  `L => M`. In the positions that otherwise take only a type or interface
+  name (`type(...)`, `class(...)`, `extends(...)`, `type is (...)`,
+  `class is (...)`, `procedure(...)`, the type-spec of an array constructor
+  and a type-bound `procedure(...)`), `a%b%c` is parsed as the single name
+  `"a%b%c"`. Expressions, calls and assignments already parse, since `a%b`
+  is a member access. `lfortran fmt` prints the new forms back.
+* **ASR**: a new symbol, [ModuleReference](asr/asr_nodes/symbol_nodes/ModuleReference.md)
+  `(parent_symtab, name, module_name, access)`, is the module entity. It is
+  host associated like any symbol, use associated through an
+  `ExternalSymbol` that points to it, and saved in .mod files, so chains
+  `b%a%x` also work across separate compilation.
+* **Semantics (AST to ASR)**: `use, namespace` loads the module like any USE
+  statement but declares only a `ModuleReference`. Before each statement or
+  declaration is analysed, when the symbol table is complete (so a local
+  entity that hides a host module entity is already known), the references
+  in it are rewritten: `L%x...` becomes a reference to a private
+  `ExternalSymbol` named `"<module>%x"`. That name cannot clash with any
+  identifier. It is created with the same code as `use M, only: x`, so
+  generics, type-bound procedures, constructors, `PROTECTED`, named
+  constants and intrinsic modules behave exactly as for use association.
+  The rest of semantics, the ASR passes and all backends see only ordinary
+  use-associated entities.
 * **Diagnostics**: the error tests in `tests/errors/namespace_modules_*`
-  define the expected errors. The messages must be lowercase and must not
-  mention ASR node names, for example "`m` is a module; it can only be used
-  as `m%name`", "module `m` has no public entity `nosuch`", or "`only`
-  cannot be used with a namespace import".
+  have their messages in `tests/reference/`.
+
+Known limitations of the prototype:
+
+* `errors/namespace_modules_23` (a local entity named like a module used
+  in the scope) and `errors/namespace_modules_26` (an interface body
+  without `IMPORT`) are not diagnosed yet. LFortran does not enforce these
+  rules for ordinary USE statements either: lfortran/lfortran#12850 and
+  lfortran/lfortran#13799. The two tests are not registered until those are
+  fixed.
 
 ## Tests
 
 The integration tests (`integration_tests/namespace_modules_*.f90`) were
 checked with GFortran through a mechanical translation to standard Fortran
 (`use, namespace :: L => M` becomes `use M, only: L__x => x, ...` and
-`L%x` becomes `L__x`, with chains translated by hand). They will be
-registered in `integration_tests/CMakeLists.txt` with the `llvm` label once
-the prototype compiles them. They cannot carry the `gfortran` label, since
-GFortran does not support the syntax. The error tests
-(`tests/errors/namespace_modules_*.f90`) will be registered in
-`tests/tests.toml` at the same time.
+`L%x` becomes `L__x`, with chains translated by hand). They are
+registered in `integration_tests/CMakeLists.txt` with the `llvm` label. They
+cannot carry the `gfortran` label, since GFortran does not support the
+syntax. The error tests (`tests/errors/namespace_modules_*.f90`) are
+registered in `tests/tests.toml`, as are `ast_f90` round trips of
+`namespace_modules_05`, `_07`, `_20` and `_28` and the ASR of
+`namespace_modules_01`.
 
 | Test | Covers |
 |---|---|
@@ -798,6 +795,7 @@ GFortran does not support the syntax. The error tests
 | `namespace_modules_27` | The same module entity through two modules (D8) |
 | `namespace_modules_28` | `use, namespace, private/public` (D9); identity of `a` and `b%a` (D8); `L%name` is not a rename |
 | `namespace_modules_29` | Chains in type-specs, constant expressions, generic calls, constructors, `type is` |
+| `namespace_modules_30` | Deferred type-bound procedure with `procedure(L%iface)`; `type(L%t)` in a BLOCK; `real(L%dp) function f()` |
 
 | Error test | Error |
 |---|---|

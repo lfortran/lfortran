@@ -1,0 +1,5 @@
+syntax error: Token '%' is unexpected here
+  --> tests/errors/namespace_modules_25.f90:11:17
+   |
+11 |     integer :: m%y
+   |                 ^ 

@@ -1,0 +1,5 @@
+semantic error: 't' is a derived type, not a data object; it has no components
+  --> tests/errors/namespace_modules_24.f90:12:14
+   |
+12 |     print *, m%t%x
+   |              ^^^^^ 

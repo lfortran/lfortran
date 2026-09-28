@@ -68,6 +68,26 @@ static inline char* name2char(const ast_t *n)
     return down_cast2<Name_t>(n)->m_id;
 }
 
+// Joins two names with `%` into one name, for `a%b` in a type-spec position.
+static inline ast_t* qualified_name(Allocator &al, const ast_t *a,
+        const ast_t *b, const Location &l) {
+    std::string n = std::string(name2char(a)) + "%" + name2char(b);
+    return make_Name_t(al, l, LCompilers::s2c(al, n), nullptr, 0);
+}
+
+// Joins `a%b%` (struct members without arguments) and `c` into the single
+// name `a%b%c`, for a qualified type name in an array constructor.
+static inline ast_t* qualified_name(Allocator &al,
+        const Vec<struct_member_t> &members, const ast_t *b,
+        const Location &l) {
+    std::string n;
+    for (size_t i = 0; i < members.size(); i++) {
+        n += std::string(members[i].m_name) + "%";
+    }
+    n += name2char(b);
+    return make_Name_t(al, l, LCompilers::s2c(al, n), nullptr, 0);
+}
+
 static inline void set_stmt_name(decl_stmt_t &stmt, char *name) {
     switch (stmt.type) {
         case decl_stmtType::If:                ((If_t&)stmt).m_stmt_name = name; break;
@@ -2680,17 +2700,17 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
 
 #define USE1(nature, mod, trivia, l) make_Use_t(p.m_a, l, \
         VEC_CAST(nature, decl_attribute), nature.size(), name2char(mod), \
-        nullptr, 0, false, trivia_cast(trivia))
+        nullptr, nullptr, 0, false, trivia_cast(trivia))
 #define USE2(nature, mod, syms, trivia, l) make_Use_t(p.m_a, l, \
         VEC_CAST(nature, decl_attribute), nature.size(), name2char(mod), \
-        USE_SYMBOLS(syms), syms.size(), true, \
+        nullptr, USE_SYMBOLS(syms), syms.size(), true, \
         trivia_cast(trivia))
 #define USE3(nature, mod, trivia, l) make_Use_t(p.m_a, l, \
         VEC_CAST(nature, decl_attribute), nature.size(), name2char(mod), \
-        nullptr, 0, true, trivia_cast(trivia))
+        nullptr, nullptr, 0, true, trivia_cast(trivia))
 #define USE4(nature, mod, syms, trivia, l) make_Use_t(p.m_a, l, \
         VEC_CAST(nature, decl_attribute), nature.size(), name2char(mod), \
-        USE_SYMBOLS(syms), syms.size(), false, \
+        nullptr, USE_SYMBOLS(syms), syms.size(), false, \
         trivia_cast(trivia))
 
 #define USE_SYMBOL1(x, l) make_UseSymbol_t(p.m_a, l, \

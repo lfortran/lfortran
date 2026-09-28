@@ -110,6 +110,7 @@
         [(Use
             []
             m1
+            ()
             []
             .false.
             (TriviaNode
@@ -219,6 +220,7 @@
         [(Use
             []
             m1
+            ()
             []
             .false.
             (TriviaNode
@@ -269,6 +271,7 @@
         [(Use
             []
             m4
+            ()
             []
             .false.
             (TriviaNode
@@ -487,6 +490,7 @@
                     [(Use
                         []
                         m1
+                        ()
                         []
                         .false.
                         ()
@@ -569,6 +573,7 @@
                     [(Use
                         []
                         m1
+                        ()
                         []
                         .false.
                         ()
@@ -698,6 +703,7 @@
         [(Use
             []
             m1
+            ()
             []
             .false.
             ()
@@ -705,6 +711,7 @@
         (Use
             []
             m2
+            ()
             []
             .false.
             ()
@@ -712,6 +719,7 @@
         (Use
             []
             m3
+            ()
             []
             .false.
             ()

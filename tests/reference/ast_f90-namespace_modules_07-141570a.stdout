@@ -1,0 +1,50 @@
+program namespace_modules_07
+use, intrinsic, namespace :: env => iso_fortran_env
+use, namespace, intrinsic :: c => iso_c_binding
+use, intrinsic, namespace :: iso_fortran_env
+implicit none
+real(env%real64) :: x
+real(env%real32) :: y
+integer(env%int8) :: i8
+integer(c%c_int) :: ci
+real(c%c_double) :: cd
+type(c%c_ptr) :: p
+integer(c%c_int), target :: t
+
+if (kind(x) /= 8) then
+    error stop
+end if
+if (kind(y) /= 4) then
+    error stop
+end if
+if (kind(i8) /= 1) then
+    error stop
+end if
+if (kind(ci) /= kind(1)) then
+    error stop
+end if
+if (kind(cd) /= kind(1.0d0)) then
+    error stop
+end if
+! Both names refer to the same module
+if (env%int64 /= iso_fortran_env%int64) then
+    error stop
+end if
+
+x = huge(x)
+y = real(2.5, env%real32)
+i8 = 127
+
+p = c%c_null_ptr
+if (c%c_associated(p)) then
+    error stop
+end if
+t = 42
+p = c%c_loc(t)
+if (.not. c%c_associated(p)) then
+    error stop
+end if
+
+write(env%output_unit, *) "real64 =", env%real64, y
+write(iso_fortran_env%output_unit, *) i8
+end program namespace_modules_07

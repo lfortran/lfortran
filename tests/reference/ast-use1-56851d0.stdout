@@ -8,6 +8,7 @@
         [(Use
             []
             iso_c_binding
+            ()
             [(UseSymbol
                 c_loc
                 ()
@@ -44,6 +45,7 @@
         [(Use
             []
             iso_c_binding
+            ()
             [(UseSymbol
                 c_loc
                 ()

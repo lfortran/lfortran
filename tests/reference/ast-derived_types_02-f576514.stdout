@@ -288,6 +288,7 @@
         [(Use
             []
             derived_types_02_m
+            ()
             [(UseSymbol
                 X
                 ()

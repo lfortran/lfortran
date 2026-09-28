@@ -9,6 +9,7 @@
         [(Use
             []
             types
+            ()
             [(UseSymbol
                 dp
                 ()
@@ -19,6 +20,7 @@
         (Use
             []
             utils
+            ()
             [(UseSymbol
                 stop_error
                 ()

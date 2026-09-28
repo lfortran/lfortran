@@ -135,6 +135,7 @@
         [(Use
             []
             interface_02_mod
+            ()
             [(UseSymbol
                 a1
                 ()

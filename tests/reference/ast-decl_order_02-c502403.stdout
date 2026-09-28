@@ -5,6 +5,7 @@
         [(Use
             []
             iso_fortran_env
+            ()
             [(UseSymbol
                 int32
                 ()

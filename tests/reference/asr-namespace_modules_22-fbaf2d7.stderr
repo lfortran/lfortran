@@ -1,0 +1,5 @@
+semantic error: Module 'namespace_modules_22_m' modfile was not found
+ --> tests/errors/namespace_modules_22.f90:3:5
+  |
+3 |     use, namespace :: self => namespace_modules_22_m
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

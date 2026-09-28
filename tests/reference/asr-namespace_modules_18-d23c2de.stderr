@@ -1,0 +1,5 @@
+semantic error: `dot` is not defined or imported
+  --> tests/errors/namespace_modules_18.f90:22:14
+   |
+22 |     print *, a .dot. b
+   |              ^^^^^^^^^ 

@@ -1,0 +1,8 @@
+semantic error: Symbol is already declared in the same scope
+  --> tests/errors/namespace_modules_09.f90:10:16
+   |
+10 |     integer :: m
+   |                ^ redeclaration
+   |
+ 8 |     use, namespace :: m => namespace_modules_09_m
+   |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ original declaration

@@ -124,6 +124,7 @@
         [(Use
             []
             submodule
+            ()
             [(UseSymbol
                 complex
                 character

@@ -63,6 +63,7 @@
         [(Use
             []
             nested_02_a
+            ()
             [(UseSymbol
                 b
                 ()

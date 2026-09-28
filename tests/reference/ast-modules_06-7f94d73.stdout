@@ -69,6 +69,7 @@
         [(Use
             []
             modules_06_b
+            ()
             [(UseSymbol
                 b
                 ()

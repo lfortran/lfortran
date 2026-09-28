@@ -19,6 +19,7 @@
                 AttrIntrinsic
             )]
             IEEE_EXCEPTIONS
+            ()
             []
             .false.
             ()

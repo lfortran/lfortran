@@ -1,0 +1,5 @@
+syntax error: Token 'm' (of type 'identifier') is unexpected here
+ --> tests/errors/namespace_modules_16.f90:9:20
+  |
+9 |     use, namespace m => namespace_modules_16_m
+  |                    ^ 

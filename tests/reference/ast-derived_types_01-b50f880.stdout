@@ -166,6 +166,7 @@
         [(Use
             []
             derived_types_01_m_01
+            ()
             [(UseSymbol
                 Y
                 ()
@@ -236,6 +237,7 @@
         [(Use
             []
             derived_types_01_m_02
+            ()
             [(UseSymbol
                 Z
                 ()
@@ -246,6 +248,7 @@
         (Use
             []
             derived_types_01_m_01
+            ()
             [(UseSymbol
                 X
                 ()
