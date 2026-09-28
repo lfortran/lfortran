@@ -5278,7 +5278,7 @@ LFORTRAN_API void _lfortran_strcpy_alloc(
 
 
 
-int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len){
+LFORTRAN_API int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len){
     /* If the operands are of different lengths, the shorter one is treated
        as if it were blank padded on the right to the length of the longer
        one before the comparison takes place. Characters are ordered by their
