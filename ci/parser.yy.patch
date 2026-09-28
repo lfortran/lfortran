@@ -1,8 +1,8 @@
 diff --git a/src/lfortran/parser/parser.yy b/src/lfortran/parser/parser.yy
-index 4aba8c225d..20cce70b73 100644
+index 2cef6fdb..ffa5f1f4 100644
 --- a/src/lfortran/parser/parser.yy
 +++ b/src/lfortran/parser/parser.yy
-@@ -2680,179 +2680,4 @@ id_opt
+@@ -2724,180 +2724,4 @@ qualified_id
  
  id
      : TK_NAME { $$ = SYMBOL($1, @$); }
@@ -114,6 +114,7 @@ index 4aba8c225d..20cce70b73 100644
 -    | KW_MOLD { $$ = SYMBOL($1, @$); }
 -    | KW_NAME { $$ = SYMBOL($1, @$); }
 -    | KW_NAMELIST { $$ = SYMBOL($1, @$); }
+-    | KW_NAMESPACE { $$ = SYMBOL($1, @$); }
 -    | KW_NEW_INDEX { $$ = SYMBOL($1, @$); }
 -    | KW_NOPASS { $$ = SYMBOL($1, @$); }
 -    | KW_NON_INTRINSIC { $$ = SYMBOL($1, @$); }
