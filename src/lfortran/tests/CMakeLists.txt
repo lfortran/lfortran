@@ -229,9 +229,29 @@ int main(void) { return 0; }" HAVE_GLIBC)
             if (NOT EXISTS ${init_llvm_link})
                 set(init_llvm_link "")
             endif()
+            # The script runs the C compiler itself, outside of the rules
+            # through which CMake passes it the macOS SDK, which a compiler
+            # of an Xcode toolchain does not find on its own.
+            set(init_cc_flags "")
+            if (APPLE)
+                set(init_sysroot "${CMAKE_OSX_SYSROOT}")
+                if (NOT IS_ABSOLUTE "${init_sysroot}")
+                    set(init_sdk "")
+                    if (init_sysroot)
+                        set(init_sdk --sdk ${init_sysroot})
+                    endif()
+                    execute_process(COMMAND xcrun ${init_sdk} --show-sdk-path
+                        OUTPUT_VARIABLE init_sysroot
+                        OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+                endif()
+                if (init_sysroot)
+                    list(APPEND init_cc_flags -isysroot ${init_sysroot})
+                endif()
+            endif()
             add_test(NAME test_init_show_llvm COMMAND ${CMAKE_COMMAND}
                 -DLFORTRAN=$<TARGET_FILE:lfortran> -DLLC=${init_llc}
                 -DLLVM_LINK=${init_llvm_link} -DCC=${CMAKE_C_COMPILER}
+                "-DCC_FLAGS=${init_cc_flags}"
                 "-DLINKERS=${init_linkers}"
                 -DRUNTIME=$<TARGET_FILE_DIR:lfortran_runtime>
                 -DSRC=${CMAKE_CURRENT_SOURCE_DIR}

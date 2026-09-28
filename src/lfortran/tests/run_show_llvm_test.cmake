@@ -3,9 +3,9 @@
 # object format, and runs them:
 #
 # - test_init_show_llvm (two modules with records, each in an object file
-#   of its own) compiled by LLC and linked by the C compiler CC in both link
-#   orders: nothing but the IR's own constructors and destructors registers
-#   the records;
+#   of its own) compiled by LLC and linked by the C compiler CC, given the
+#   flags CC_FLAGS (the macOS SDK, say), in both link orders: nothing but
+#   the IR's own constructors and destructors registers the records;
 # - the same compiled by LFORTRAN, with the records in the form of the
 #   object format, and linked the same way;
 # - test_init_show_llvm_a compiled by LFORTRAN and linked into
@@ -69,14 +69,14 @@ foreach(linker default ${LINKERS})
     if (NOT linker STREQUAL "default")
         set(flags -fuse-ld=${linker})
     endif()
-    run(${CC} ${flags} ${CTOR_MAIN} test_init_show_llvm_a_lf.o -o ctor_${linker} ${libs})
+    run(${CC} ${CC_FLAGS} ${flags} ${CTOR_MAIN} test_init_show_llvm_a_lf.o -o ctor_${linker} ${libs})
     expect(ctor_${linker} "constructor ran")
     foreach(kind objects lowered)
         set(list ${${kind}})
-        run(${CC} ${flags} ${list} -o ${kind}_forward_${linker} ${libs})
+        run(${CC} ${CC_FLAGS} ${flags} ${list} -o ${kind}_forward_${linker} ${libs})
         expect(${kind}_forward_${linker} "ok")
         list(REVERSE list)
-        run(${CC} ${flags} ${list} -o ${kind}_backward_${linker} ${libs})
+        run(${CC} ${CC_FLAGS} ${flags} ${list} -o ${kind}_backward_${linker} ${libs})
         expect(${kind}_backward_${linker} "ok")
     endforeach()
 endforeach()
