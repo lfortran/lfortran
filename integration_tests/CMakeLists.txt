@@ -4395,6 +4395,7 @@ RUN(NAME c_ptr_18 LABELS gfortran llvm EXTRAFILES c_ptr_18_mod.f90 EXTRA_ARGS --
 RUN(NAME c_ptr_19 LABELS gfortran llvm EXTRAFILES c_ptr_19_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME target_01 LABELS gfortran llvm)
 RUN(NAME c_f_pointer_01 LABELS gfortran llvm)
+RUN(NAME c_f_pointer_02 LABELS gfortran llvm)
 
 RUN(NAME c_f_proc_ptr_01 LABELS gfortran llvm EXTRAFILES c_f_proc_ptr_01.c) # c_f_procpointer
 
