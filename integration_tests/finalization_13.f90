@@ -61,7 +61,7 @@ end module
 program finalization_13
     use finalization_13_m
     implicit none
-    integer :: i, n, a(2)
+    integer :: i, n, a(2), while_counts(2), exit_counts(2)
 
     strict = index(compiler_version(), "GCC") == 0
 
@@ -119,16 +119,27 @@ program finalization_13
     call check(all(a(1:2) == 0), "do concurrent: inside")
     if (strict) call check(finished == 1, "do concurrent: after")
 
+    ! DO WHILE has the effect of a DO construct whose block starts with
+    ! IF (.NOT. condition) EXIT (F2018 11.1.7.4.1 p2): the result of each
+    ! evaluation of the condition is finalized after that test, before the
+    ! body executes.
     finished = 0
     n = 0
     do while (value(make(42)) > n)
-        ! The result of each evaluation of the condition is finalized
-        ! after the iteration.
-        if (strict) call check(finished == n / 21, "do while: inside")
+        while_counts(n / 21 + 1) = finished
         n = n + 21
     end do
     call check(n == 42, "do while: iterations")
     if (strict) call check(finished == 3, "do while: after")
+    finished = 0
+    n = 0
+    do
+        if (.not. (value(make(42)) > n)) exit
+        exit_counts(n / 21 + 1) = finished
+        n = n + 21
+    end do
+    call check(all(while_counts == exit_counts), "do while: as if exit")
+    if (strict) call check(all(while_counts == [1, 2]), "do while: inside")
 
     finished = 0
     call if_return()

@@ -54,8 +54,9 @@
  * The header of an IF, DO, DO CONCURRENT, FORALL or SELECT CASE construct
  * is evaluated into variables at the start of a BLOCK that then executes
  * the construct, so that its results are finalized after the construct.
- * The condition of a DO WHILE is evaluated at the start of a BLOCK that
- * makes up each iteration, whose results are finalized after the iteration.
+ * The condition of a DO WHILE is evaluated, and tested, by a BLOCK at the
+ * start of each iteration, whose results are finalized before the body
+ * executes (F2018 11.1.7.4.1 p2).
  * The results referenced by the selector of an ASSOCIATE construct are
  * associated with pointers of the construct, so they are finalized when it
  * completes. A construct left by EXIT, CYCLE, RETURN or GO TO completes as
@@ -729,11 +730,12 @@ public:
 
     // do while (c) ... end do
     //   becomes
-    // do while (.true.); block; h = c; if (.not. h) exit; ...; end block
+    // do while (.true.); block; h = c; if (.not. h) exit; end block; ...
     //
-    // The condition is evaluated once per iteration, so its results are
-    // finalized at the end of each iteration (or when EXIT or CYCLE leaves
-    // the BLOCK), after the body has executed.
+    // The effect of DO WHILE is that of a DO construct whose block starts
+    // with `if (.not. (c)) exit` (F2018 11.1.7.4.1 p2), so the results
+    // of the condition are those of that statement: they are finalized
+    // after it (or when EXIT leaves the BLOCK), before the body executes.
     void evaluate_condition_in_block(ASR::WhileLoop_t &x) {
         ASRUtils::ASRBuilder b(al, x.base.base.loc);
         std::vector<ASR::expr_t**> header = {&x.m_test};
@@ -741,24 +743,24 @@ public:
             header, {});
         LCOMPILERS_ASSERT(condition_block != nullptr);
         // The BLOCK holds the evaluation of the condition, into the
-        // variable that is now the test; the rest of the iteration follows.
+        // variable that is now the test, and the test.
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(
             ASR::down_cast<ASR::BlockCall_t>(condition_block)->m_m);
         Vec<ASR::stmt_t*> block_body;
-        block_body.reserve(al, block->n_body + x.n_body + 1);
+        block_body.reserve(al, block->n_body + 1);
         for (size_t i = 0; i < block->n_body; i++) {
             block_body.push_back(al, block->m_body[i]);
         }
         block_body.push_back(al, b.If(b.Eq(x.m_test, b.logical_false()),
             {b.Exit()}, {}));
-        for (size_t i = 0; i < x.n_body; i++) {
-            block_body.push_back(al, x.m_body[i]);
-        }
         block->m_body = block_body.p;
         block->n_body = block_body.size();
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, 1);
+        body.reserve(al, x.n_body + 1);
         body.push_back(al, condition_block);
+        for (size_t i = 0; i < x.n_body; i++) {
+            body.push_back(al, x.m_body[i]);
+        }
         x.m_body = body.p;
         x.n_body = body.size();
         x.m_test = b.logical_true();
