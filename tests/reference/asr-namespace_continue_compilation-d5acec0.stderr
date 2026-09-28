@@ -252,3 +252,21 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 470 |     y = l%u(1)
     |     ^   ^^^^^^ type mismatch (t and l%u)
+
+semantic error: 'm' is a module; it does not name a type or an interface
+   --> tests/errors/namespace_continue_compilation.f90:478:14
+    |
+478 |     allocate(m :: y)
+    |              ^ 
+
+semantic error: 'm%x' does not name a type or an interface
+   --> tests/errors/namespace_continue_compilation.f90:486:14
+    |
+486 |     allocate(m%x :: y)
+    |              ^^^ 
+
+semantic error: 'g%gen_int' is not a derived type
+   --> tests/errors/namespace_continue_compilation.f90:495:14
+    |
+495 |     allocate(g%gen_int :: y)
+    |              ^^^^^^^^^ 

@@ -903,3 +903,6 @@ the separate file `errors/namespace_modules_NN.f90`.
 | `cc_46` | Structure constructor `l%u(1)` passed for a dummy argument of another type (the type is shown as `l%u`) |
 | `cc_47` | Array constructor `[l%u :: ...]` passed for a scalar dummy argument of another type |
 | `cc_48` | Structure constructor `l%u(1)` assigned to a variable of another type |
+| `cc_49` | Module entity as the type-spec of ALLOCATE (`allocate(m :: y)`) |
+| `cc_50` | Variable as the type-spec of ALLOCATE (`allocate(m%x :: y)`) |
+| `cc_51` | Function as the type-spec of ALLOCATE (`allocate(g%gen_int :: y)`) |

@@ -3548,6 +3548,36 @@ public:
             }
         }
 
+    // The name under which the type named in the type-spec of an ALLOCATE
+    // statement (`allocate(t :: y)`, `allocate(a%b%t :: y)`) is known in the
+    // current scope. A module-qualified name must designate a derived type.
+    std::string allocate_type_spec_name(const AST::Name_t &x) {
+        const Location &loc = x.base.base.loc;
+        if (x.n_member == 0) {
+            return type_spec_name(nullptr, 0, x.m_id, loc);
+        }
+        bool is_type_name = is_module_reference(current_scope->resolve_symbol(
+            to_lower(x.m_member[0].m_name)));
+        for (size_t i = 0; i < x.n_member; i++) {
+            if (x.m_member[i].n_args > 0) is_type_name = false;
+        }
+        if (!is_type_name) return designator_lookup_name(x);
+        Vec<char*> qualifier;
+        qualifier.reserve(al, x.n_member);
+        std::string written;
+        for (size_t i = 0; i < x.n_member; i++) {
+            qualifier.push_back(al, x.m_member[i].m_name);
+            written += to_lower(x.m_member[i].m_name) + "%";
+        }
+        ASR::symbol_t *t = resolve_qualified_type_name(qualifier.p,
+            qualifier.size(), x.m_id, loc);
+        if (!ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(t))) {
+            module_reference_error("'" + written + to_lower(x.m_id)
+                + "' is not a derived type", loc);
+        }
+        return ASRUtils::symbol_name(t);
+    }
+
     void visit_Allocate(const AST::Allocate_t& x) {
         Vec<ASR::alloc_arg_t> alloc_args_vec;
         alloc_args_vec.reserve(al, x.n_args);
@@ -3721,7 +3751,7 @@ public:
                     }
                 } else if( AST::is_a<AST::Name_t>(*x.m_args[i].m_start) ) {
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
-                    std::string name_lower = designator_lookup_name(*name_t);
+                    std::string name_lower = allocate_type_spec_name(*name_t);
                     if( name_lower == "integer" ) {
                         new_arg.m_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
                             x.base.base.loc, compiler_options.po.default_integer_kind));

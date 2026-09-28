@@ -470,6 +470,31 @@ subroutine cc_48()
     y = l%u(1)
 end subroutine
 
+! A module entity is not a type to allocate.
+subroutine cc_49()
+    use, namespace :: m => nscc_m
+    implicit none
+    class(m%t), allocatable :: y
+    allocate(m :: y)
+end subroutine
+
+! A variable accessed through a module entity is not a type to allocate.
+subroutine cc_50()
+    use, namespace :: m => nscc_m
+    implicit none
+    class(m%t), allocatable :: y
+    allocate(m%x :: y)
+end subroutine
+
+! A function accessed through a module entity is not a type to allocate.
+subroutine cc_51()
+    use, namespace :: m => nscc_m
+    use, namespace :: g => nscc_fgen
+    implicit none
+    class(m%t), allocatable :: y
+    allocate(g%gen_int :: y)
+end subroutine
+
 program namespace_continue_compilation
     implicit none
 end program
