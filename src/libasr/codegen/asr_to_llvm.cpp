@@ -11553,9 +11553,9 @@ public:
         if (pointer == nullptr) return;
         llvm::Type* desc_ptr_type = llvm_utils->get_type_from_ttype_t_util(
             x.m_target, target_type, module.get());
-        llvm::PointerType* desc_ptr = llvm::dyn_cast<llvm::PointerType>(desc_ptr_type);
-        if (desc_ptr == nullptr) return;
-        llvm::Type* desc_type = desc_ptr->getElementType();
+        if (!desc_ptr_type->isPointerTy()) return;
+        llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
+            ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
         llvm::GlobalVariable* storage = new llvm::GlobalVariable(*module, desc_type,
             false, llvm::GlobalVariable::InternalLinkage,
             llvm::Constant::getNullValue(desc_type),
