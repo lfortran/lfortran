@@ -8333,6 +8333,19 @@ public:
         QualifiedDesignator d;
         if (resolve_qualified_designator(x.m_name, x.m_member, x.n_member,
                 x.base.base.loc, d)) {
+            if (d.n_member == 0) {
+                ASR::symbol_t *entity = ASRUtils::symbol_get_past_external(
+                    current_scope->resolve_symbol(d.symbol_name));
+                bool is_procedure = ASR::is_a<ASR::Function_t>(*entity) ||
+                    ASR::is_a<ASR::GenericProcedure_t>(*entity) ||
+                    (ASR::is_a<ASR::Variable_t>(*entity) &&
+                        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
+                            ASR::down_cast<ASR::Variable_t>(entity)->m_type)));
+                if (!is_procedure) {
+                    module_reference_error("'" + d.written + "' is not a "
+                        "subroutine", x.base.base.loc);
+                }
+            }
             AST::SubroutineCall_t *y = al.make_new<AST::SubroutineCall_t>(x);
             y->m_name = d.name;
             y->m_member = d.member;

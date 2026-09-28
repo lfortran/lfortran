@@ -70,6 +70,60 @@ semantic error: 'nscc_m' is ambiguous: different entities are accessible under t
 340 |         type(nscc_m%t) :: b
     |         ^^^^^^^^^^^^^^ 
 
+semantic error: 'm' is a module; it does not name a type or an interface
+   --> tests/errors/namespace_continue_compilation.f90:348:5
+    |
+348 |     type(m) :: a
+    |     ^^^^^^^ 
+
+semantic error: 'm%x' does not name a type or an interface
+   --> tests/errors/namespace_continue_compilation.f90:355:5
+    |
+355 |     type(m%x) :: a
+    |     ^^^^^^^^^ 
+
+semantic error: 'm' is a module; it does not name a type or an interface
+   --> tests/errors/namespace_continue_compilation.f90:362:5
+    |
+362 |     class(m), allocatable :: a
+    |     ^^^^^^^^ 
+
+semantic error: 'm' is a module; it does not name a type or an interface
+   --> tests/errors/namespace_continue_compilation.f90:369:5
+    |
+369 |     procedure(m), pointer :: p
+    |     ^^^^^^^^^^^^ 
+
+semantic error: 'm' is a module; only the public or private attribute can be specified for it
+   --> tests/errors/namespace_continue_compilation.f90:383:13
+    |
+383 |     save :: m
+    |             ^ 
+
+semantic error: 'm' is a module; only the public or private attribute can be specified for it
+   --> tests/errors/namespace_continue_compilation.f90:390:16
+    |
+390 |     parameter (m = 3)
+    |                ^^^^^ 
+
+semantic error: Explicit shaped array with nonconstant bounds
+   --> tests/errors/namespace_continue_compilation.f90:411:18
+    |
+411 |     integer :: w(g%gen(2))
+    |                  ^^^^^^^^ 
+
+semantic error: 'm' is a module; it does not name a type
+   --> tests/errors/namespace_continue_compilation.f90:418:11
+    |
+418 |     type, extends(m) :: u
+    |           ^^^^^^^^^^ 
+
+semantic error: 'g%gen_int' is not a derived type
+   --> tests/errors/namespace_continue_compilation.f90:426:11
+    |
+426 |     type, extends(g%gen_int) :: u
+    |           ^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Arguments do not match for any generic procedure, swap
    --> tests/errors/namespace_continue_compilation.f90:118:9
     |
@@ -174,3 +228,9 @@ semantic error: 'a' is ambiguous: different entities are accessible under this n
     |
 301 |     print *, a%x
     |              ^^^ 
+
+semantic error: 'm%x' is not a subroutine
+   --> tests/errors/namespace_continue_compilation.f90:376:5
+    |
+376 |     call m%x()
+    |     ^^^^^^^^^^ 

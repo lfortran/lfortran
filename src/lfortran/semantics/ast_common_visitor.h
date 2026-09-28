@@ -3072,11 +3072,26 @@ public:
 	}
     }
 
+    // Whether `expr` is a reference `L%f(...)` to a procedure `f` of a
+    // module accessed through the module entity `L` (not a type-bound
+    // procedure of an object `L%obj`): it is resolved as a use-associated
+    // procedure, never postponed.
+    bool is_module_procedure_reference(AST::FuncCallOrArray_t *call) {
+        if (call->n_member == 0 || !is_module_reference(
+                current_scope->resolve_symbol(to_lower(call->m_member[0].m_name)))) {
+            return false;
+        }
+        QualifiedDesignator d;
+        return resolve_qualified_designator(call->m_func, call->m_member,
+            call->n_member, call->base.base.loc, d) && d.n_member == 0;
+    }
+
     bool is_funcCall_to_unresolved_genereicProcedure(AST::expr_t* expr){
         return AST::is_a<AST::FuncCallOrArray_t>(*expr) &&
             (generic_procedures.find(
                 AST::down_cast<AST::FuncCallOrArray_t>(expr)->m_func)
-            != generic_procedures.end());
+            != generic_procedures.end()) && !is_module_procedure_reference(
+                AST::down_cast<AST::FuncCallOrArray_t>(expr));
     }
 
     bool is_type_bound_func_call(AST::expr_t* expr) {
@@ -3084,7 +3099,7 @@ public:
             return false;
         }
         AST::FuncCallOrArray_t* call = AST::down_cast<AST::FuncCallOrArray_t>(expr);
-        return call->n_member > 0;
+        return call->n_member > 0 && !is_module_procedure_reference(call);
     }
 
     // The objects that a scoping unit's COMMON statements place in a common
@@ -6708,6 +6723,13 @@ public:
                                 }
                             } else {
                                 std::string sym = to_lower(s.m_name);
+                                if (sa->m_attr != AST::simple_attributeType::AttrPrivate &&
+                                        sa->m_attr != AST::simple_attributeType::AttrPublic &&
+                                        is_module_reference(current_scope->get_symbol(sym))) {
+                                    module_reference_error("'" + sym + "' is a module; "
+                                        "only the public or private attribute can be "
+                                        "specified for it", x.m_syms[i].loc);
+                                }
                                 if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPrivate) {
                                     ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
@@ -26585,7 +26607,11 @@ public:
         }
         size_t used = 0;
         ASR::symbol_t *sym = resolve_module_qualified(parts, used, loc);
-        if (used != parts.size()) {
+        ASR::symbol_t *entity = ASRUtils::symbol_get_past_external(sym);
+        if (used != parts.size() || !(ASR::is_a<ASR::Struct_t>(*entity) ||
+                ASR::is_a<ASR::Union_t>(*entity) ||
+                ASR::is_a<ASR::Enum_t>(*entity) ||
+                ASR::is_a<ASR::Function_t>(*entity))) {
             module_reference_error("'" + join_qualified_name(parts, parts.size())
                 + "' does not name a type or an interface", loc);
         }
@@ -26597,7 +26623,14 @@ public:
     // current scope.
     std::string type_spec_name(char **qualifier, size_t n_qualifier,
             const char *name, const Location &loc) {
-        if (n_qualifier == 0) return to_lower(name);
+        if (n_qualifier == 0) {
+            std::string n = to_lower(name);
+            if (is_module_reference(current_scope->resolve_symbol(n))) {
+                module_reference_error("'" + n + "' is a module; it does not "
+                    "name a type or an interface", loc);
+            }
+            return n;
+        }
         return ASRUtils::symbol_name(resolve_qualified_type_name(qualifier,
             n_qualifier, name, loc));
     }

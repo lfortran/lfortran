@@ -3447,6 +3447,19 @@ public:
                 parent_sym = resolve_qualified_type_name(
                     attr_extend->m_qualifier, attr_extend->n_qualifier,
                     attr_extend->m_name, attr_extend->base.base.loc);
+                if (!ASR::is_a<ASR::Struct_t>(
+                        *ASRUtils::symbol_get_past_external(parent_sym))) {
+                    std::string written;
+                    for (size_t i = 0; i < attr_extend->n_qualifier; i++) {
+                        written += to_lower(attr_extend->m_qualifier[i]) + "%";
+                    }
+                    module_reference_error("'" + written + parent_sym_name
+                        + "' is not a derived type", attr_extend->base.base.loc);
+                }
+            } else if (is_module_reference(current_scope->resolve_symbol(
+                    parent_sym_name))) {
+                module_reference_error("'" + parent_sym_name + "' is a module; "
+                    "it does not name a type", attr_extend->base.base.loc);
             } else if( current_scope->get_symbol(parent_sym_name) == nullptr ) {
                 diag.add(diag::Diagnostic(
                     parent_sym_name + " is not defined.",

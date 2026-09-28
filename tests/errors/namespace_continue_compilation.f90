@@ -341,6 +341,92 @@ contains
     end subroutine
 end subroutine
 
+! A module entity is not a type or an interface.
+subroutine cc_36()
+    use, namespace :: m => nscc_m
+    implicit none
+    type(m) :: a
+end subroutine
+
+! A variable accessed through a module entity is not a type.
+subroutine cc_37()
+    use, namespace :: m => nscc_m
+    implicit none
+    type(m%x) :: a
+end subroutine
+
+! A module entity is not a type (CLASS).
+subroutine cc_38()
+    use, namespace :: m => nscc_m
+    implicit none
+    class(m), allocatable :: a
+end subroutine
+
+! A module entity is not an interface.
+subroutine cc_39()
+    use, namespace :: m => nscc_m
+    implicit none
+    procedure(m), pointer :: p
+end subroutine
+
+! A variable accessed through a module entity is not a subroutine.
+subroutine cc_40()
+    use, namespace :: m => nscc_m
+    implicit none
+    call m%x()
+end subroutine
+
+! A module entity is not a variable, so it cannot have the SAVE attribute.
+module cc_41
+    use, namespace :: m => nscc_m
+    implicit none
+    save :: m
+end module
+
+! A module entity cannot be a named constant.
+module cc_42
+    use, namespace :: m => nscc_m
+    implicit none
+    parameter (m = 3)
+end module
+
+! Generic function (cc_43, cc_45)
+module nscc_fgen
+    implicit none
+    interface gen
+        module procedure gen_int
+    end interface
+contains
+    pure integer function gen_int(i)
+        integer, intent(in) :: i
+        gen_int = i
+    end function
+end module
+
+! A generic function accessed through a module entity in an array bound of a
+! module variable: the bound is not a constant expression.
+module cc_43
+    use, namespace :: g => nscc_fgen
+    implicit none
+    integer :: w(g%gen(2))
+end module
+
+! A module entity is not a type to extend.
+module cc_44
+    use, namespace :: m => nscc_m
+    implicit none
+    type, extends(m) :: u
+    end type
+end module
+
+! A function accessed through a module entity is not a type to extend.
+module cc_45
+    use, namespace :: g => nscc_fgen
+    implicit none
+    type, extends(g%gen_int) :: u
+    end type
+end module
+
 program namespace_continue_compilation
     implicit none
 end program

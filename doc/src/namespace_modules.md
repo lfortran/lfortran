@@ -879,3 +879,13 @@ the separate file `errors/namespace_modules_NN.f90`.
 | `cc_33` | `use, namespace, private` entity imported with ONLY |
 | `cc_34` | Module name as a qualifier in a type-spec, after a module entity for the same module was used |
 | `cc_35` | Ambiguous module entity in a type-spec, named like a module whose type the host used |
+| `cc_36` | Module entity as a type (`type(m)`) |
+| `cc_37` | Variable as a type (`type(m%x)`) |
+| `cc_38` | Module entity as a type (`class(m)`) |
+| `cc_39` | Module entity as an interface (`procedure(m)`) |
+| `cc_40` | Variable called as a subroutine (`call m%x()`) |
+| `cc_41` | SAVE statement for a module entity |
+| `cc_42` | PARAMETER statement for a module entity |
+| `cc_43` | Generic function `g%gen(2)` in an array bound of a module variable (not a constant expression) |
+| `cc_44` | Module entity as a parent type (`extends(m)`) |
+| `cc_45` | Function as a parent type (`extends(g%gen_int)`) |
