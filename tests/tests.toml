@@ -8137,3 +8137,7 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_overlap_trigger_01.f90"
 gpu_cuda_kernel = true
 options = "--gpu-overlap"
+
+[[test]]
+filename = "struct_member_order_fortran_13789.f90"
+fortran = true
