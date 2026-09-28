@@ -6023,6 +6023,10 @@ filename = "asr/verify/call_statement_names_a_function.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/call_statement_names_a_renamed_function.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/function_call_result_type_mismatch.asr"
 asr = true
 

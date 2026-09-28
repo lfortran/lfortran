@@ -788,10 +788,11 @@ Known limitations of the prototype:
 * The Fortran dependency scanner of CMake does not recognize
   `use, namespace`, so a file whose only USE of a module is a namespace
   import is not ordered after the file that defines the module.
-* The ASR verification error that LFortran reports instead of a semantic
-  error for `call f()` where `f` is a function (lfortran/lfortran#13804)
-  names the generated symbol (`f~of_m`), which the semantic diagnostics
-  never show.
+* LFortran reports an ASR verification error instead of a semantic error
+  for `call f()` where `f` is a function (lfortran/lfortran#13804), also
+  for `call L%f()` and for a generic `call L%gen()` whose specific is a
+  function. The error names the procedure itself (`f`, or the specific
+  `gen_int`), not the symbol that refers to it.
 * Two errors are not diagnosed yet, because LFortran does not enforce the
   underlying rules for ordinary USE statements either. Error tests for them
   will be added when those issues are fixed.
