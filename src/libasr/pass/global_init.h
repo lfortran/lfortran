@@ -73,6 +73,9 @@ namespace LCompilers {
         ASR::Function_t* get_global_init_bootstrap(ASR::TranslationUnit_t &unit);
         // Whether `fn` is the collective bootstrap of its translation unit.
         bool is_global_init_bootstrap(const ASR::Function_t *fn);
+        // Whether `sym` is the initializer, the state or the bootstrap its
+        // owner links to: startup machinery, not something the user declared.
+        bool is_global_init_symbol(ASR::symbol_t *sym);
 
         // The initializer and the state of `owner`, or nullptr. `owner`
         // is a `Module_t*`, a `Program_t*` or a `TranslationUnit_t*`.

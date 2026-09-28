@@ -7,13 +7,23 @@
 
 #include <libasr/exception.h>
 #include <libasr/lsp_interface.h>
+#include <libasr/asr_utils.h>
 #include <libasr/utils.h>
+#include <libasr/pass/global_init.h>
 #include <lfortran/utils.h>
 
 namespace LCompilers::LLanguageServer {
 
     inline bool is_id_chr(unsigned char c) {
         return std::isalnum(c) || (c == '_');
+    }
+
+    // Whether `s` is a symbol the compiler declared, which is not shown to
+    // the user.
+    inline bool is_hidden_symbol(LCompilers::ASR::symbol_t *s) {
+        return LCompilers::LFortran::is_generated_symbol_name(
+                LCompilers::ASRUtils::symbol_name(s))
+            || LCompilers::ASRUtils::is_global_init_symbol(s);
     }
 
     class LFortranAccessor {
@@ -56,7 +66,7 @@ namespace LCompilers::LLanguageServer {
             int parent_index
         ) -> void {
             for (auto &a : x->m_symtab->get_scope()) {
-                if (LCompilers::LFortran::is_generated_symbol_name(a.first)) {
+                if (is_hidden_symbol(a.second)) {
                     continue;
                 }
                 std::size_t index = symbol_lists.size();

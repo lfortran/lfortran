@@ -263,6 +263,20 @@ bool is_global_init_bootstrap(const ASR::Function_t *fn) {
     return get_global_init_bootstrap(*unit) == fn;
 }
 
+bool is_global_init_symbol(ASR::symbol_t *sym) {
+    SymbolTable *scope = ASRUtils::symbol_parent_symtab(sym);
+    if (scope == nullptr || scope->asr_owner == nullptr) return false;
+    ASR::asr_t *owner = scope->asr_owner;
+    std::pair<ASR::symbol_t**, ASR::symbol_t**> links = owner_links(owner);
+    if (links.first != nullptr
+            && (*links.first == sym || *links.second == sym)) {
+        return true;
+    }
+    return is_translation_unit(owner)
+        && ASR::down_cast2<ASR::TranslationUnit_t>(owner)
+            ->m_global_init_bootstrap == sym;
+}
+
 std::vector<GlobalInitRoot> global_init_roots(ASR::TranslationUnit_t &unit) {
     std::vector<GlobalInitRoot> roots;
     auto add = [&](ASR::asr_t *owner) {
