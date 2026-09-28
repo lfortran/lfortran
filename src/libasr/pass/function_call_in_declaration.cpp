@@ -114,6 +114,7 @@ private :
 public:
     Allocator& al;
     SymbolTable* new_function_scope = nullptr;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> helper_arguments;
     SymbolTable* &current_scope; // Dependency -- Passed by visitor -- Avoids maintaining 2 separate variables
     ASR::expr_t* assignment_value = nullptr;
     ASR::expr_t* call_for_return_var = nullptr;
@@ -137,7 +138,49 @@ public:
         if ( new_function_scope == nullptr ) {
             return ;
         }
-        *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, new_function_scope->get_symbol(ASRUtils::symbol_name(x->m_v))));
+        auto helper_argument = helper_arguments.find(x->m_v);
+        ASR::symbol_t* new_sym = helper_argument != helper_arguments.end()
+            ? helper_argument->second
+            : new_function_scope->get_symbol(ASRUtils::symbol_name(x->m_v));
+        *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, new_sym));
+    }
+
+    /*
+        Adds the argument of a helper function through which the helper reads
+        the variable `sym` of the helped scope. Different variables, e.g. two
+        host- or use-associated ones whose names clash in the helper, always
+        get different arguments; `helper_arguments` maps each variable to its
+        argument for replace_Var.
+    */
+    ASR::symbol_t* add_helper_argument(ASR::symbol_t* sym, SymbolTable* new_scope,
+            ASRUtils::SymbolDuplicator &sd) {
+        ASR::symbol_t* original = ASRUtils::symbol_get_past_external(sym);
+        ASR::symbol_t* new_sym = nullptr;
+        if (ASR::is_a<ASR::Variable_t>(*original)) {
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(original);
+            new_sym = sd.duplicate_Variable(v, new_scope);
+            LCOMPILERS_ASSERT(new_sym)
+            ASR::Variable_t* temp_var = ASR::down_cast<ASR::Variable_t>(new_sym);
+            std::string name = new_scope->get_symbol(v->m_name)
+                ? new_scope->get_unique_name(std::string(v->m_name), false)
+                : std::string(v->m_name);
+            if (temp_var->m_intent == ASR::intentType::Local) {
+                new_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, new_sym->base.loc, temp_var->m_parent_symtab,
+                    s2c(al, name), temp_var->m_dependencies, temp_var->n_dependencies, ASR::intentType::In,
+                    nullptr, nullptr, ASR::storage_typeType::Default, temp_var->m_type,
+                    temp_var->m_type_declaration, temp_var->m_abi, temp_var->m_access,
+                    ASR::presenceType::Required, temp_var->m_value_attr, temp_var->m_target_attr));
+            } else {
+                temp_var->m_name = s2c(al, name);
+            }
+            new_scope->add_symbol(name, new_sym);
+        } else {
+            sd.duplicate_symbol(original, new_scope);
+            new_sym = new_scope->get_symbol(ASRUtils::symbol_name(original));
+        }
+        helper_arguments[sym] = new_sym;
+        return new_sym;
     }
 
     // TODO : This replacer should be in a dedicated replacer class, rather than implementing it in the same current replacer. 
@@ -184,7 +227,8 @@ public:
 
         bool exists_in_arginfo(int arg_number, std::vector<ArgInfo>& indices) {
             for (auto info: indices) {
-                if (info.arg_number == arg_number) return true;
+                if (ASR::is_a<ASR::FunctionParam_t>(*info.arg_param) &&
+                        info.arg_number == arg_number) return true;
             }
             return false;
         }
@@ -203,22 +247,19 @@ public:
                 indices.push_back(info);
             }
         }
+        // A variable is identified by its symbol, not by a position in the
+        // current scope: host- and use-associated variables are not in it.
         void visit_Var(const ASR::Var_t& x) {
             LCOMPILERS_ASSERT(current_scope)
             ASR::Var_t* xx = &const_cast<ASR::Var_t&>(x);
-            int arg_num = -1;
-            int i = 0;
-            for (auto &sym: current_scope->get_scope()) {
-                if (sym.second == xx->m_v) { 
-                    arg_num = i;
-                    break;
+            for (auto &info: indices) {
+                if (ASR::is_a<ASR::Var_t>(*info.arg_param) &&
+                        ASR::down_cast<ASR::Var_t>(info.arg_param)->m_v == xx->m_v) {
+                    return;
                 }
-                i++;
             }
-            ArgInfo info = {arg_num, ASRUtils::expr_type(&xx->base), &xx->base , &xx->base};
-            if (!exists_in_arginfo(arg_num, indices)) {
-                indices.push_back(info);
-            }
+            ArgInfo info = {-1, ASRUtils::expr_type(&xx->base), &xx->base , &xx->base};
+            indices.push_back(info);
         }
         // 
         static std::vector<ArgInfo> get(const ASR::expr_t* arg, SymbolTable* current_scope){
@@ -261,25 +302,12 @@ public:
         ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4));
         ASR::expr_t* return_var = b.Variable(new_scope, new_scope->get_unique_name("__lcompilers_return_var_", false), integer_type, ASR::intentType::ReturnVar);
 
+        helper_arguments.clear();
         for (auto arg: indices) {
             ASR::expr_t* arg_expr = arg.arg_expr;
             if (is_a<ASR::Var_t>(*arg_expr)) {
                 ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg_expr);
-                sd.duplicate_symbol(ASRUtils::symbol_get_past_external(var->m_v), new_scope);
-                ASR::symbol_t* new_sym = new_scope->get_symbol(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(var->m_v)));
-                if (ASRUtils::symbol_intent(new_sym) == ASR::intentType::Local) {
-                    if (ASR::is_a<ASR::Variable_t>(*new_sym)) {
-                        ASR::Variable_t* temp_var = ASR::down_cast<ASR::Variable_t>(new_sym);
-                        ASR::symbol_t* updated_sym = ASR::down_cast<ASR::symbol_t>(
-                            ASRUtils::make_Variable_t_util(al, new_sym->base.loc, temp_var->m_parent_symtab, 
-                            temp_var->m_name, temp_var->m_dependencies, temp_var->n_dependencies, ASR::intentType::In, 
-                            nullptr, nullptr, ASR::storage_typeType::Default, temp_var->m_type, 
-                            temp_var->m_type_declaration, temp_var->m_abi, temp_var->m_access, 
-                            ASR::presenceType::Required, temp_var->m_value_attr, temp_var->m_target_attr));
-                        new_scope->add_or_overwrite_symbol(ASRUtils::symbol_name(new_sym), updated_sym);
-                        new_sym = updated_sym;
-                    }
-                }
+                ASR::symbol_t* new_sym = add_helper_argument(var->m_v, new_scope, sd);
                 ASR::expr_t* new_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, new_sym));
                 new_args.push_back(al, new_var_expr);
             }
@@ -376,25 +404,12 @@ public:
         ASR::ttype_t* integer_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(assignment_value));
         ASR::expr_t* return_var = b.Variable(new_scope, new_scope->get_unique_name("__lcompilers_return_var_", false), integer_type, ASR::intentType::ReturnVar);
 
+        helper_arguments.clear();
         for (auto arg: indices) {
             ASR::expr_t* arg_expr = arg.arg_expr;
             if (is_a<ASR::Var_t>(*arg_expr)) {
                 ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg_expr);
-                sd.duplicate_symbol(ASRUtils::symbol_get_past_external(var->m_v), new_scope);
-                ASR::symbol_t* new_sym = new_scope->get_symbol(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(var->m_v)));
-                if (ASRUtils::symbol_intent(new_sym) == ASR::intentType::Local) {
-                    if (ASR::is_a<ASR::Variable_t>(*new_sym)) {
-                        ASR::Variable_t* temp_var = ASR::down_cast<ASR::Variable_t>(new_sym);
-                        ASR::symbol_t* updated_sym = ASR::down_cast<ASR::symbol_t>(
-                            ASRUtils::make_Variable_t_util(al, new_sym->base.loc, temp_var->m_parent_symtab, 
-                            temp_var->m_name, temp_var->m_dependencies, temp_var->n_dependencies, ASR::intentType::In, 
-                            nullptr, nullptr, ASR::storage_typeType::Default, temp_var->m_type, 
-                            temp_var->m_type_declaration, temp_var->m_abi, temp_var->m_access, 
-                            ASR::presenceType::Required, temp_var->m_value_attr, temp_var->m_target_attr));
-                        new_scope->add_or_overwrite_symbol(ASRUtils::symbol_name(new_sym), updated_sym);
-                        new_sym = updated_sym;
-                    }
-                }
+                ASR::symbol_t* new_sym = add_helper_argument(var->m_v, new_scope, sd);
                 ASR::expr_t* new_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, new_sym));
                 new_args.push_back(al, new_var_expr);
             }
