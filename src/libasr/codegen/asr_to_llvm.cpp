@@ -2363,7 +2363,8 @@ public:
                         bool is_arg_unlimited_poly = ASRUtils::is_unlimited_polymorphic_type(&src_struct_sym->base);
                         // If no type specified then use curr_arg_m_a_type as default
                         if (m_source && !m_source_is_class) {
-                            dest_asr_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source));
+                            // The value of a pointer SOURCE is that of its target.
+                            dest_asr_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(m_source));
                             dest_class_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(m_source));
                             malloc_size = SizeOfTypeUtil(m_source, dest_asr_type, llvm_utils->getIntType(4),
                                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
