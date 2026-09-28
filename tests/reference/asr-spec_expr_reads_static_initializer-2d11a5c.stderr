@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.variable.spec_expr_reads_static_initializer]: A bound of 'b' reads 'n', whose initializer is static data but runs at start up instead of being laid out with it, so the bound is evaluated before 'n' has its value
+  --> tests/asr/verify/spec_expr_reads_static_initializer.asr:91:24
+   |
+91 |                   "b" (Variable
+   |                        ^^^^^^^^ failed here

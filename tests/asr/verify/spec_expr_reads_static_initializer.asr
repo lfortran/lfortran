@@ -1,0 +1,177 @@
+; The bound of `b` reads `n`, and `n` is given its value by the module's
+; startup initializer instead of carrying it on its own declaration. A bound
+; is evaluated while the variable it belongs to is laid out, before any
+; statement of the body runs, so `b` would be laid out from storage the
+; initializer has not written yet. An initializer a target can lay out as
+; static data -- this one is an integer constant -- has to stay on the
+; declaration for that reason.
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "n" (Variable
+              :parent_symtab 1
+              :name "n"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Save
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "__lfortran_global_init_m" (Function
+              :symtab (SymbolTable
+                :id 2
+                :symbols {}
+              )
+              :name "__lfortran_global_init_m"
+              :function_signature (FunctionType
+                :arg_types []
+                :return_var_type nil
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies []
+              :args []
+              :body [
+                (Assignment
+                  :target (Var
+                    :v (SymbolRef 1 "n")
+                  )
+                  :value (IntegerConstant
+                    :n 3
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
+                  :overloaded nil
+                  :realloc_lhs false
+                  :move_allocation false
+                )
+              ]
+              :return_var nil
+              :access :Public
+              :deterministic true
+              :side_effect_free true
+              :module_file nil
+            )
+            "s" (Function
+              :symtab (SymbolTable
+                :id 3
+                :symbols {
+                  "b" (Variable
+                    :parent_symtab 3
+                    :name "b"
+                    :dependencies [
+                      "n"
+                    ]
+                    :intent :Local
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Array
+                      :type (Integer
+                        :kind 4
+                      )
+                      :dims [
+                        (dimension
+                          :start (IntegerConstant
+                            :n 1
+                            :type (Integer
+                              :kind 4
+                            )
+                            :intboz_type :Decimal
+                          )
+                          :length (Var
+                            :v (SymbolRef 1 "n")
+                          )
+                        )
+                      ]
+                      :physical_type :PointerArray
+                      :memory_space :Global
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "s"
+              :function_signature (FunctionType
+                :arg_types []
+                :return_var_type nil
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies []
+              :args []
+              :body []
+              :return_var nil
+              :access :Public
+              :deterministic true
+              :side_effect_free true
+              :module_file nil
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+        :global_init "__lfortran_global_init_m"
+      )
+    }
+  )
+  :items []
+  :global_init nil
+)

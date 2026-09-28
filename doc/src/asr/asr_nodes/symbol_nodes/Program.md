@@ -76,6 +76,17 @@ consumes. The rule above is that pass's postcondition, not something
 `asr_verify` can check on its own, since it cannot know
 which passes have already run.
 
+What `asr_verify` can check is the consequence that matters, because it holds
+whether or not the pass has run: a variable that a bound of another variable's
+declaration reads must not be one a startup initializer gives a value a target
+could have laid out as static data
+(`asr.verify.variable.spec_expr_reads_static_initializer`). A bound is
+evaluated while the variable it belongs to is laid out, so an initializer that
+runs at start up comes too late for it and the variable would be laid out from
+storage that is still zero. Nothing runnable can see that: the program then
+writes past the too-small variable and still exits 0, which is why the check
+is a verifier assertion rather than a test.
+
 The body of an initializer is one guarded block, so calling it again does
 nothing:
 
