@@ -766,9 +766,13 @@ public:
 
     // Whether `x` gives its value to an associate name of the ASSOCIATE
     // construct whose body is being transformed. Semantics makes these the
-    // first statements of the body: an association with the selector, or
-    // an assignment of the value of an expression selector.
-    bool is_selector_statement(ASR::stmt_t* x) {
+    // first statements of the body, one for each associate name in order:
+    // an association with the selector, or an assignment of the value of an
+    // expression selector. `associated` holds the associate names given
+    // their value by the statements before `x`; a statement that gives a
+    // value to one of them again is a statement of the construct.
+    bool is_selector_statement(ASR::stmt_t* x,
+            std::unordered_set<ASR::symbol_t*> &associated) {
         if (current_scope->asr_owner == nullptr ||
                 !ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) ||
                 !ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(
@@ -781,10 +785,12 @@ public:
         } else if (ASR::is_a<ASR::Assignment_t>(*x)) {
             target = ASR::down_cast<ASR::Assignment_t>(x)->m_target;
         }
-        return target != nullptr && ASR::is_a<ASR::Var_t>(*target) &&
-            current_scope->get_symbol(ASRUtils::symbol_name(
-                ASR::down_cast<ASR::Var_t>(target)->m_v)) ==
-                ASR::down_cast<ASR::Var_t>(target)->m_v;
+        if (target == nullptr || !ASR::is_a<ASR::Var_t>(*target)) {
+            return false;
+        }
+        ASR::symbol_t* name = ASR::down_cast<ASR::Var_t>(target)->m_v;
+        return current_scope->get_symbol(ASRUtils::symbol_name(name)) == name &&
+            associated.insert(name).second;
     }
 
     // The references in the selector statement `x` (see
@@ -813,10 +819,11 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_body);
         bool selectors = true;
+        std::unordered_set<ASR::symbol_t*> associated;
         for (size_t i = 0; i < n_body; i++) {
             ASR::stmt_t* x = m_body[i];
             visit_stmt(*x);
-            selectors = selectors && is_selector_statement(x);
+            selectors = selectors && is_selector_statement(x, associated);
             if (selectors) {
                 if (references_results(*x)) {
                     associate_selector_results(x, body);

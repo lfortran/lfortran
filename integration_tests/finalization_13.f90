@@ -147,5 +147,16 @@ program finalization_13
         call check(x%v == 42, "nested associate: value")
     end associate
     call check(finished == 2, "nested associate: after")
+
+    ! An assignment to an associate name is a statement of the construct,
+    ! not the association with the selector.
+    n = 1
+    finished = 0
+    associate (x => n)
+        x = value(make(42))
+        call check(finished == 1, "associate assignment: after statement")
+    end associate
+    call check(n == 42, "associate assignment: value")
+    call check(finished == 1, "associate assignment: after")
     print *, "ok"
 end program
