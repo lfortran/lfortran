@@ -836,7 +836,7 @@ round trips of
 | `namespace_modules_30` | Deferred type-bound procedure with `procedure(L%iface)`; `type(L%t)` in a BLOCK; `real(L%dp) function f()` |
 | `namespace_modules_31` | A module entity named like a module that the host accesses through another module entity |
 | `namespace_modules_32` | Types of a module with default `PRIVATE`: `public :: t`, `type, public :: u`, a generic constructor named like its type |
-| `namespace_modules_33` | Separate compilation (`.mod` files): `use b` of a module with public module entities, `a%x`, `b%a%x`, `b%env%real64`; parent component `v%t` of a type that extends `a%t` in that module |
+| `namespace_modules_33` | Separate compilation (`.mod` files): `use b` of a module with public module entities, `a%x`, `b%a%x`, `b%env%real64`; parent component `v%t` of a type that extends `a%t` in that module, which also has a variable `t` |
 
 In the table of error tests, `cc_NN` is a case of
 `errors/namespace_continue_compilation.f90` and `namespace_modules_NN` is

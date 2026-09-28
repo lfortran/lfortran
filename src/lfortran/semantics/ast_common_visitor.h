@@ -16224,9 +16224,11 @@ public:
             AST::fnarg_t* dt_struct_m_args=nullptr, size_t dt_struct_n_args=0,
             AST::fnarg_t* member_struct_m_args=nullptr, size_t member_struct_n_args=0) {
 
-        ASR::symbol_t *v = scope->resolve_symbol(dt_name);
+        // A parent component first: under `extends(L%t)` its name `t` is not
+        // a name of the defining scope, where it may designate another entity
+        ASR::symbol_t *v = parent_type_by_component_name(scope, dt_name);
         if (!v) {
-            v = parent_type_by_component_name(scope, dt_name);
+            v = scope->resolve_symbol(dt_name);
         }
         if (!v) {
             diag.add(Diagnostic("Variable '" + dt_name + "' not declared",

@@ -30,6 +30,8 @@ module namespace_modules_33_mod_b
     use, namespace :: a => namespace_modules_33_mod_a
     use, namespace :: env => iso_fortran_env
     implicit none
+    ! Not the parent component `t` of type u, which is not a name here
+    integer :: t = 3
     type, extends(a%t) :: u
         integer :: y = 0
     end type

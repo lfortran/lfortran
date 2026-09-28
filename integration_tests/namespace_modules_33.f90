@@ -31,7 +31,9 @@ program namespace_modules_33
     if (kind(r) /= 8 .or. abs(r - real(0.5, b%env%real64)) > 1e-12) error stop
     if (kind(k) /= 1 .or. k /= 5) error stop
 
-    ! The parent component `t` of type u, which extends a%t (D5)
+    ! The parent component `t` of type u, which extends a%t (D5), and the
+    ! variable `t` of the module that defines u
+    if (t /= 3) error stop
     v%y = 3
     v%t%x = 5
     if (v%x /= 5 .or. v%t%x /= 5) error stop
@@ -43,5 +45,5 @@ program namespace_modules_33
     s = v%t
     if (s%x /= 9) error stop
 
-    print *, a%x, s%x, v%t%x, w%t%x, w%y, r, k
+    print *, a%x, s%x, v%t%x, w%t%x, w%y, r, k, t
 end program
