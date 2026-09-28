@@ -3411,8 +3411,6 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
 
 void set_intrinsic(ASR::symbol_t* sym);
 
-void get_sliced_indices(ASR::ArraySection_t* arr_sec, std::vector<size_t> &sliced_indices);
-
 static inline bool is_pointer(ASR::ttype_t *x) {
     return ASR::is_a<ASR::Pointer_t>(*x);
 }
@@ -9753,19 +9751,16 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
                 ASR::dimension_t* m_dims = nullptr;
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
                 if( ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
-                    bool is_arr_sec = ASR::is_a<ASR::ArraySection_t>(*a_args[i].m_value);
-                    std::vector<size_t> sliced_indices;
-                    if (is_arr_sec) {
-                        get_sliced_indices(ASR::down_cast<ASR::ArraySection_t>(a_args[i].m_value), sliced_indices);
-                    }
                     Vec<ASR::dimension_t> m_dims_vec; m_dims_vec.reserve(al, n_dims);
                     for( size_t j = 0; j < n_dims; j++ ) {
                         ASR::dimension_t m_dim_vec;
                         m_dim_vec.loc = m_dims[j].loc;
                         m_dim_vec.m_start = i32one;
-                        size_t dim = is_arr_sec ? sliced_indices[j] : (j + 1);
+                        // `dim` of ArraySize is a dimension of the argument
+                        // itself; for a section such as `x(1,:)` that skips
+                        // the scalar-subscripted dimensions of `x`.
                         m_dim_vec.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, m_dims[j].loc,
-                            a_args[i].m_value, i32j(dim), ASRUtils::expr_type(i32one), nullptr));
+                            a_args[i].m_value, i32j(j + 1), ASRUtils::expr_type(i32one), nullptr));
                         m_dims_vec.push_back(al, m_dim_vec);
                     }
                     m_dims = m_dims_vec.p;
@@ -10031,6 +10026,21 @@ static inline bool is_array_indexed_with_array_indices(T* x) {
     return is_array_indexed_with_array_indices(x->m_args, x->n_args);
 }
 
+// The part of nonzero rank of a chain of components, as in `w%nest` with `w`
+// an array, or `s%w` with `s` a scalar and `w` an array component: walk down
+// the chain for as long as the parent of a component is itself an array. What
+// is left is the array whose elements the chain takes its components from.
+static inline ASR::expr_t* get_struct_member_chain_array_part(ASR::expr_t* expr) {
+    while( ASR::is_a<ASR::StructInstanceMember_t>(*expr) ) {
+        ASR::expr_t* parent = ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v;
+        if( !ASRUtils::is_array(ASRUtils::expr_type(parent)) ) {
+            break;
+        }
+        expr = parent;
+    }
+    return expr;
+}
+
 // Selecting an element of an array component of an array, as in `w%u(2)` or
 // `w%nest%v(2)` with `w` an array, reads one element of the component out of
 // every element of the base. The subscripts consume the rank of the
@@ -10039,13 +10049,14 @@ static inline bool is_array_indexed_with_array_indices(T* x) {
 // whose shape the reference carries, or nullptr when it carries none.
 //
 // What such a reference denotes is a view of the base strided by the size of
-// an element of the base, and no `array_physical_type` says that. Giving it
-// the base's shape is therefore only sound where the lowering below knows how
-// to walk it: a whole array variable of a statically known shape, reached
-// through components that hold their value inline. A base behind a descriptor
-// or an indirection (`allocatable`, `pointer`, an assumed-shape dummy) and a
-// base that is already a section or an element are left alone, so that such a
-// reference keeps the type, and the behaviour, it has always had.
+// an element of the base, and no `array_physical_type` says that. It is never
+// handed to a backend as it is: the passes index the base element by element
+// and select the component out of each element. The base has to be reached
+// through components that hold their value inline, and has to bottom out in
+// an array variable (of any kind: fixed size, `allocatable`, `pointer`,
+// assumed-shape), in an array component of a scalar, as in `s%w%u(1)`, or in
+// a section of either, as in `w(2:4)%u(1)`. The array passes bind such a
+// section to a pointer, or copy it, before they index it.
 static inline ASR::expr_t* struct_base_lending_shape(ASR::ArrayItem_t* x) {
     if( is_array_indexed_with_array_indices(x->m_args, x->n_args) ||
         x->m_v == nullptr ||
@@ -10058,33 +10069,37 @@ static inline ASR::expr_t* struct_base_lending_shape(ASR::ArrayItem_t* x) {
     }
     // Every component between the base array and the one being indexed must
     // hold its value inline, or the reference denotes an array of
-    // indirections, which this type representation cannot express.
-    ASR::expr_t* root = base;
-    while( ASR::is_a<ASR::StructInstanceMember_t>(*root) ) {
+    // indirections, which this type representation cannot express. The part
+    // of nonzero rank itself, such as the component `w` of a scalar in
+    // `s%w%u(1)`, may be of any kind.
+    ASR::expr_t* root = get_struct_member_chain_array_part(base);
+    for( ASR::expr_t* e = base; e != root;
+            e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v ) {
         ASR::StructInstanceMember_t* member =
-            ASR::down_cast<ASR::StructInstanceMember_t>(root);
+            ASR::down_cast<ASR::StructInstanceMember_t>(e);
         if( ASRUtils::is_allocatable(member->m_type) ||
             ASR::is_a<ASR::Pointer_t>(*member->m_type) ) {
             return nullptr;
         }
-        root = member->m_v;
     }
-    // The chain has to bottom out in a whole array variable. A section or an
-    // element underneath carries an offset and a stride of its own, which the
-    // shape taken from it would not describe.
-    if( !ASR::is_a<ASR::Var_t>(*root) ) {
+    // The chain has to bottom out in an array variable or an array component
+    // of a scalar, or in a section of one, as in `w(2:4)%u(1)`: a section is
+    // an array in its own right, whose shape the reference takes. An element
+    // underneath is a scalar. A section with a vector subscript is not
+    // supported here and is left alone.
+    if( ASR::is_a<ASR::ArraySection_t>(*root) ) {
+        ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(root);
+        if( is_array_indexed_with_array_indices(section) ) {
+            return nullptr;
+        }
+        root = section->m_v;
+    }
+    if( !ASR::is_a<ASR::Var_t>(*root) &&
+        !ASR::is_a<ASR::StructInstanceMember_t>(*root) ) {
         return nullptr;
     }
     ASR::ttype_t* root_type = ASRUtils::expr_type(root);
-    if( root_type == nullptr || ASRUtils::is_allocatable(root_type) ||
-        ASR::is_a<ASR::Pointer_t>(*root_type) ||
-        !ASRUtils::is_array(root_type) ) {
-        return nullptr;
-    }
-    // Only a statically shaped, contiguous base. Anything reached through a
-    // descriptor has neither the shape nor the stride this type would claim.
-    if( ASRUtils::extract_physical_type(root_type) !=
-            ASR::array_physical_typeType::FixedSizeArray ) {
+    if( root_type == nullptr || !ASRUtils::is_array(root_type) ) {
         return nullptr;
     }
     return base;
