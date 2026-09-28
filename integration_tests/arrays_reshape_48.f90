@@ -53,6 +53,8 @@ do k = 1, 3
 
     call assign_assumed_shape(rb, rs(4:1:-1))
     if (rb(1, 1)%c /= 'dx' .or. rb(1, 1)%a(1) /= 4) error stop 5
+    if (rb(2, 1)%c /= 'cx' .or. rb(1, 2)%a(2) /= 4) error stop 8
+    if (rb(2, 2)%c /= 'ax' .or. rb(2, 2)%a(2) /= 2) error stop 9
 
     call assign_explicit_shape(rb, rs, 2)
     if (rb(1, 1)%c /= 'ax' .or. rb(2, 1)%a(2) /= 4) error stop 6
