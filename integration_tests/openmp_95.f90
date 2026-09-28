@@ -10,7 +10,7 @@ subroutine s(b, n)
     !$omp parallel do
     do i = 1, n
         b(i) = 3*i
-        c(mod(i, 4) + 1) = 0
+        if (i <= size(c)) c(i) = 0
     end do
     !$omp end parallel do
     block
