@@ -16027,8 +16027,9 @@ public:
         }
         llvm::BasicBlock *target = llvm_goto_targets[x.m_target_id];
         // End the constructs that the branch leaves: those that do not
-        // contain the target (a branch cannot enter a construct).
+        // contain the target.
         auto target_scopes = goto_target_scopes.find(x.m_target_id);
+        bool enters_construct = false;
         if (target_scopes != goto_target_scopes.end()) {
             const std::vector<SymbolTable*> &scopes = target_scopes->second;
             size_t kept = 0;
@@ -16036,9 +16037,20 @@ public:
                     block_cleanups[kept].symtab == scopes[kept]) {
                 kept++;
             }
-            leave_innermost_blocks(kept);
+            // A branch cannot enter a construct from outside it. Semantics
+            // makes such a GoTo, which is never executed, for the labels of
+            // an assigned GO TO without a label list: a branch into the
+            // BLOCK or ASSOCIATE construct would skip its declarations.
+            enters_construct = kept < scopes.size();
+            if (!enters_construct) {
+                leave_innermost_blocks(kept);
+            }
         }
-        builder->CreateBr(target);
+        if (enters_construct) {
+            builder->CreateUnreachable();
+        } else {
+            builder->CreateBr(target);
+        }
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_goto");
         start_new_block(bb);
     }
