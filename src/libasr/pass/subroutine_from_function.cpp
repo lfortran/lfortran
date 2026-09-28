@@ -60,15 +60,12 @@ public:
             
             /* Transform This Function Into Subroutine IF NEEDED */
             bool transform_success = PassUtils::handle_fn_return_var(al, x_ptr, PassUtils::is_aggregate_or_array_or_nonPrimitive_type);
-            if(transform_success) {
-                Function__TO__ReturnType_MAP_[x_ptr] = return_type;
-            }
+            if(transform_success) {Function__TO__ReturnType_MAP_[x_ptr] = return_type;}
+
             /* Visit Functions In Current SymTable */
             for (auto &str_sym_pair : x.m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Function_t>(*str_sym_pair.second)) {
                     this->visit_Function(*down_cast<ASR::Function_t>(str_sym_pair.second));
-                } else if (ASR::is_a<ASR::Template_t>(*str_sym_pair.second)) {
-                    this->visit_Template(*down_cast<ASR::Template_t>(str_sym_pair.second));
                 }
             }
 
@@ -112,6 +109,10 @@ public:
                 }
             }
         }
+
+        // The procedures of a template are transformed like any others:
+        // ReplaceFunctionCallWithSubroutineCallVisitor rewrites the calls in
+        // their bodies too, so the callees must take the new signature.
         void visit_Template(const ASR::Template_t &x) {
             for (auto &a : x.m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Function_t>(*a.second)) {
@@ -250,22 +251,6 @@ class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunction
                 *ASR::down_cast<ASR::Variable_t>(member));
             if (new_type != nullptr) {
                 const_cast<ASR::StructInstanceMember_t&>(x).m_type = new_type;
-            }
-        }
-
-        void visit_Template(const ASR::Template_t &x) {
-            for (auto &a : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Function_t>(*a.second)) {
-                    this->visit_Function(*down_cast<ASR::Function_t>(a.second));
-                } else if (ASR::is_a<ASR::Template_t>(*a.second)) {
-                    this->visit_Template(*down_cast<ASR::Template_t>(a.second));
-                }
-            }
-            for (auto &a : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Variable_t>(*a.second) &&
-                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(a.second)))) {
-                    this->visit_Variable(*down_cast<ASR::Variable_t>(a.second));
-                }
             }
         }
 };
@@ -721,6 +706,10 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             return it == pointer_base_.end() ? sym : it->second;
         }
 
+        // True when `a` and `b` may designate overlapping storage, i.e. they
+        // are rooted at the same variable.  A whole object and one of its
+        // components or elements alias each other, so the two designators do
+        // not have to have the same shape (`t` aliases `t%v` and `t%v(1:2)`).
         static bool expr_has_pointer_component(ASR::expr_t *e) {
              while (e != nullptr) {
                 if (ASRUtils::is_pointer(ASRUtils::expr_type(e))) return true;
@@ -749,26 +738,19 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                             && ASR::down_cast<ASR::Variable_t>(sym)->m_target_attr;
                     }
                     case ASR::exprType::ArrayItem:
-                        e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
-                        break;
+                        e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v; break;
                     case ASR::exprType::ArraySection:
-                        e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
-                        break;
+                        e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v; break;
                     case ASR::exprType::StructInstanceMember:
-                        e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
-                        break;
+                        e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v; break;
                     case ASR::exprType::UnionInstanceMember:
-                        e = ASR::down_cast<ASR::UnionInstanceMember_t>(e)->m_v;
-                        break;
+                        e = ASR::down_cast<ASR::UnionInstanceMember_t>(e)->m_v; break;
                     case ASR::exprType::StringItem:
-                        e = ASR::down_cast<ASR::StringItem_t>(e)->m_arg;
-                        break;
+                        e = ASR::down_cast<ASR::StringItem_t>(e)->m_arg; break;
                     case ASR::exprType::StringSection:
-                        e = ASR::down_cast<ASR::StringSection_t>(e)->m_arg;
-                        break;
+                        e = ASR::down_cast<ASR::StringSection_t>(e)->m_arg; break;
                     case ASR::exprType::ArrayPhysicalCast:
-                        e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
-                        break;
+                        e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg; break;
                     default:
                         return false;
                 }
@@ -776,10 +758,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             return false;
         }
 
-        // True when `a` and `b` may designate overlapping storage, i.e. they
-        // are rooted at the same variable.  A whole object and one of its
-        // components or elements alias each other, so the two designators do
-        // not have to have the same shape (`t` aliases `t%v` and `t%v(1:2)`).
+        // True when `a` and `b` may designate overlapping storage
         bool expr_may_alias(ASR::expr_t *a, ASR::expr_t *b) {
             ASR::symbol_t *a_sym = designator_base_symbol(a);
             if (a_sym == nullptr) return false;
@@ -787,21 +766,18 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             ASR::symbol_t *b_sym = designator_base_symbol(b);
             if (b_sym == nullptr) return false;
 
-            // 1. The original static source-order map check
+            // 1. Static source-order map check
             if (resolve_pointer_base(a_sym) == resolve_pointer_base(b_sym)) {
                 return true;
             }
 
-            // 2. The Flow-Insensitive Fallback for POINTER/TARGET aliasing (Issue #13300)
+            // 2. Flow-Insensitive Fallback for POINTER/TARGET aliasing (#13300)
             bool a_is_ptr = ASRUtils::is_pointer(ASRUtils::expr_type(a));
             bool b_is_ptr = ASRUtils::is_pointer(ASRUtils::expr_type(b));
-
+            
             bool a_has_ptr_or_tgt = expr_has_pointer_or_target(a);
             bool b_has_ptr_or_tgt = expr_has_pointer_or_target(b);
 
-            // Only pessimistically assume aliasing if at least ONE of the arguments 
-            // involves a POINTER. If they are both just TARGETs (like compiler temporaries), 
-            // they cannot secretly alias each other.
             if (a_has_ptr_or_tgt && b_has_ptr_or_tgt) {
                 if (a_is_ptr || b_is_ptr || expr_has_pointer_component(a) || expr_has_pointer_component(b)) {
                     return true;
@@ -810,6 +786,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
             return false;
         }
+
         // Remember what a pointer was associated with, so that a later call
         // argument that reaches this pass as a pointer temporary can still be
         // recognised as designating part of the assignment target.
@@ -1142,13 +1119,6 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             pointer_base_.clear();
         }
 
-        void visit_Template(const ASR::Template_t &x) {
-            pointer_base_.clear();
-            ASR::CallReplacerOnExpressionsVisitor \
-            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Template(x);
-            pointer_base_.clear();
-        }
-
         void visit_Assignment(const ASR::Assignment_t &x) {
             if(is_function_call_returning_aggregate_type(x.m_value)) {
                 if (x.m_overloaded) {
@@ -1202,6 +1172,8 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
      */
     void visit_WhileLoop(const ASR::WhileLoop_t &x){
         Vec<ASR::stmt_t*> pass_result_TMP; // Move pass_result
+        pass_result_TMP.p   = pass_result.p;
+        pass_result_TMP.n   = pass_result.n;
         pass_result_TMP.max = pass_result.max;
 
         pass_result.reserve(al, 0); // Reset
