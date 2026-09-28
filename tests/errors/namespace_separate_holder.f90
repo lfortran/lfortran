@@ -1,7 +1,7 @@
 ! A derived type with a component declared through a module entity, for
-! namespace_separate_component.f90, and a module with a variable declared
-! through a module entity and a separate module procedure, for
-! namespace_separate_submodule.f90.
+! cc_64 of namespace_continue_compilation.f90, and a module with a variable
+! declared through a module entity and a separate module procedure, for its
+! submodule cc_65.
 module nssep_holder
     use, namespace :: l => nssep_types
     implicit none

@@ -459,11 +459,28 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extra_args)
 
     if semantics_only_cc:
-        run_test(filename, "asr", "lfortran --semantics-only --continue-compilation --no-color {infile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
+        # The modfiles of the extrafiles are compiled first, as for `asr`,
+        # so that the test can load modules compiled separately.
+        skip_test = False
+        for extrafile in extrafiles:
+            extrafile_ = extrafile.rstrip().lstrip()
+
+            if no_llvm and len(extrafile_) > 0:
+                log.info(f"{filename} * asr   SKIPPED because LLVM is not enabled")
+                skip_test = True
+                break
+
+            if len(extrafile_) > 0:
+                extrafile_ = os.path.join("tests", extrafile_)
+                modfile = extrafile_[:-4] + ".mod"
+                if not os.path.exists(modfile):
+                    run_cmd("lfortran -c {}".format(extrafile_))
+        if not skip_test:
+            run_test(filename, "asr", "lfortran --semantics-only --continue-compilation --no-color {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if document_symbols:
         skip_test = False

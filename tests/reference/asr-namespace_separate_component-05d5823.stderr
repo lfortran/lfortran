@@ -1,5 +1,0 @@
-semantic error: Type mismatch in argument `v`: expected `t` but got `u`
- --> tests/errors/namespace_separate_component.f90:9:15
-  |
-9 |     call take(h%c)
-  |               ^^^ 

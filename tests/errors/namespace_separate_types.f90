@@ -1,5 +1,5 @@
-! Derived types and procedures with dummy arguments of them, for
-! namespace_separate_component.f90 and namespace_separate_submodule.f90.
+! Derived types and procedures with dummy arguments of them, for cc_64 and
+! cc_65 of namespace_continue_compilation.f90.
 module nssep_types
     implicit none
     type :: t

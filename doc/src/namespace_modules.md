@@ -223,13 +223,12 @@ Constraints:
 * C2: An *access-spec* is allowed only in the specification part of a
   module (like an *access-stmt*). (`cc_31`)
 * C3: The `::` is required (as it is whenever a *module-nature* is given).
-  (`errors/namespace_modules_16`)
+  (`cc_60`)
 * C4: A namespace import has neither a *rename-list* nor `ONLY`. A USE
   statement that is not a namespace import cannot rename the module
   (`use :: b => a` is invalid). Members cannot be renamed "inside" a module
   entity (comments 19–25: like the components of a derived type, the
-  members of a module keep their names). (`cc_02`,
-  `errors/namespace_modules_03`, `cc_17`)
+  members of a module keep their names). (`cc_02`, `cc_59`, `cc_17`)
 * C5: A module shall not import itself (existing rule for USE).
   (`cc_22`)
 
@@ -441,12 +440,12 @@ was accessed through a module entity, with no extra import
 Not allowed:
 
 * Declaring an entity with a qualified name, e.g. `integer :: L%y`
-  (`errors/namespace_modules_25`).
+  (`cc_63`).
 * A qualified name as a DO variable. The syntax requires a variable name,
-  as it does for `do obj%i = ...` today (`errors/namespace_modules_19`).
+  as it does for `do obj%i = ...` today (`cc_61`).
 * A qualified name as the kind parameter of a literal constant, e.g.
   `1.5_L%dp`. The syntax requires a digit string or a named-constant name.
-  Write `real(1.5, L%dp)` instead (`errors/namespace_modules_20`).
+  Write `real(1.5, L%dp)` instead (`cc_62`).
 * A derived type used as if it were a data object, e.g. `L%t%x`
   (`cc_24`).
 
@@ -675,7 +674,7 @@ document. For each, the source is given.
     as for every USE statement.
 23. **People will try `use, namespace :: sm => m, only: t1 => thing1`**
     (comments 17–25). It is an error with a clear message
-    (`cc_02`, `errors/namespace_modules_03`). Members keep their names, as
+    (`cc_02`, `cc_59`). Members keep their names, as
     components do. Combine with an ordinary `use m, only: t1 => thing1`.
 
 ### Semantic questions
@@ -763,8 +762,7 @@ document. For each, the source is given.
   `type_to_str_fortran_symbol`), so it does not depend on the scope, on
   the local name of the module entity, or on whether the symbol was
   declared in this file, in a `.mod` file or in the parent of a submodule
-  (`errors/namespace_separate_component.f90`,
-  `errors/namespace_separate_submodule.f90`). The same holds for a type
+  (`cc_64`, `cc_65`). The same holds for a type
   renamed by an ordinary USE (`use m, only: tt => t`, `cc_55`). The
   same printer also builds two internal names, the specializations of
   `pass_array_by_data` and the helper procedure of `move_alloc`, which
@@ -782,11 +780,10 @@ document. For each, the source is given.
 * **Portability**: with `--std=f23` (or `--std=legacy`), every
   `use, namespace` statement gets a warning that it is an LFortran extension
   (`tests/warnings/namespace_modules_std_01`).
-* **Diagnostics**: the semantic errors are all reported with
+* **Diagnostics**: the syntax and semantic errors are all reported with
   `--continue-compilation` by one file,
-  `tests/errors/namespace_continue_compilation.f90` (cases `cc_NN`); the
-  syntax errors are in `tests/errors/namespace_modules_*`. Their messages
-  are in `tests/reference/`.
+  `tests/errors/namespace_continue_compilation.f90` (cases `cc_NN`). Their
+  messages are in `tests/reference/`.
 
 Known limitations of the prototype:
 
@@ -870,11 +867,14 @@ checked with GFortran through a mechanical translation to standard Fortran
 registered in `integration_tests/CMakeLists.txt` with the `llvm` label. They
 cannot carry the `gfortran` label, since GFortran does not support the
 syntax. The error tests are registered in `tests/tests.toml`: the
-semantic errors are the cases `cc_NN` (subroutines or modules, each with a
-comment) of `tests/errors/namespace_continue_compilation.f90`, which is
-checked with `--continue-compilation` so that every case is reported, and
-the syntax errors are separate files `tests/errors/namespace_modules_NN.f90`,
-since parsing stops at the first one. Also registered are the `--std`
+syntax and semantic errors are the cases `cc_NN` (subroutines, modules or a
+submodule, each with a comment) of
+`tests/errors/namespace_continue_compilation.f90`, which is checked with
+`--continue-compilation` so that every case is reported: the parser skips a
+statement with a syntax error and continues. Its extrafiles
+`namespace_separate_types.f90` and `namespace_separate_holder.f90` are
+compiled first, so that `cc_64` and `cc_65` load their modules from `.mod`
+files. Also registered are the `--std`
 warning test (`tests/warnings/namespace_modules_std_01.f90`), `ast_f90`
 round trips of
 `namespace_modules_05`, `_07`, `_20` and `_28` and the ASR of
@@ -919,16 +919,15 @@ round trips of
 | `namespace_modules_35` | `type(L%pt)` of a parameterized derived type is the same type as `type(pt)` in its module, `type(pp)` with `pp => pt` and a variable `type(l%pt)` of another module |
 
 In the table of error tests, `cc_NN` is a case of
-`errors/namespace_continue_compilation.f90`, and the other tests are
-separate files in `errors/` (`namespace_modules_NN.f90`, and
-`namespace_separate_*.f90`, whose modules are in
-`namespace_separate_types.f90` and `namespace_separate_holder.f90`).
+`errors/namespace_continue_compilation.f90`. `cc_59` to `cc_63` are syntax
+errors, and `cc_64` and `cc_65` use modules compiled separately (`.mod`
+files) from `errors/namespace_separate_types.f90` and
+`errors/namespace_separate_holder.f90`.
 
 | Error test | Error |
 |---|---|
 | `cc_01` | Member used without qualification |
 | `cc_02` | `only` with a namespace import |
-| `namespace_modules_03` | Rename list with a namespace import |
 | `cc_04` | No such member |
 | `cc_05` | Private member |
 | `cc_06` | Module entity used as a value |
@@ -941,15 +940,11 @@ separate files in `errors/` (`namespace_modules_NN.f90`, and
 | `cc_13` | Qualifier with a module that was only used with plain USE (D2) |
 | `cc_14` | Qualifier with a module that was not used |
 | `cc_15` | `namespace` modifier repeated |
-| `namespace_modules_16` | Missing `::` |
 | `cc_17` | Module renamed in an ordinary USE |
 | `cc_18` | Defined operator not imported by a namespace import |
-| `namespace_modules_19` | Qualified name as a DO variable |
-| `namespace_modules_20` | Qualified name as a literal kind parameter |
 | `cc_21` | Module entity hidden by a local variable in an internal procedure |
 | `cc_22` | Module imports itself |
 | `cc_24` | Type used as a data object |
-| `namespace_modules_25` | Declaring a qualified name |
 | `cc_27` | Assignment to a named constant |
 | `cc_28` | Private module entity of a module, accessed as `b%a%x` |
 | `cc_29` | Two module entities named `a` for different modules, referenced |
@@ -982,5 +977,10 @@ separate files in `errors/` (`namespace_modules_NN.f90`, and
 | `cc_56` | ALLOCATE of a component declared as `type(l%u)` in another module that is neither allocatable nor a pointer (the type is shown as `u`) |
 | `cc_57` | DEALLOCATE of the structure constructor `l%u(1)` (the type is shown as `u`) |
 | `cc_58` | Variable declared as `type(l%pt)`, a parameterized derived type with default type parameters, passed for a dummy argument of another type (the type is shown as `pt_4`) |
-| `namespace_separate_component` | As `cc_54`, with the modules compiled separately (`.mod` files) |
-| `namespace_separate_submodule` | Structure constructor `l%u(1)` passed for a dummy argument of another type in a submodule whose separately compiled parent declared the symbol for `l%u` |
+| `cc_59` | Rename list with a namespace import |
+| `cc_60` | Missing `::` |
+| `cc_61` | Qualified name as a DO variable |
+| `cc_62` | Qualified name as a literal kind parameter |
+| `cc_63` | Declaring a qualified name |
+| `cc_64` | As `cc_54`, with the modules compiled separately (`.mod` files) |
+| `cc_65` | Structure constructor `l%u(1)` passed for a dummy argument of another type in a submodule whose separately compiled parent declared the symbol for `l%u` |

@@ -1,8 +1,11 @@
-! Semantic errors of namespace imports (`use, namespace`, see
+! Syntax and semantic errors of namespace imports (`use, namespace`, see
 ! doc/src/namespace_modules.md), all reported with --continue-compilation.
 ! Each case is a separate program unit, headed by a comment saying what it
-! checks. The syntax errors are in separate files (namespace_modules_03, _16,
-! _19, _20 and _25), since parsing stops at the first one.
+! checks. The syntax errors (cc_59 to cc_63) are reported first, since the
+! whole file is parsed before semantics; the parser skips the offending
+! statement and continues. The cases cc_64 and cc_65 use modules compiled
+! separately (the extrafiles namespace_separate_types.f90 and
+! namespace_separate_holder.f90), loaded from their modfiles.
 
 module nscc_m
     implicit none
@@ -609,6 +612,75 @@ subroutine cc_58()
     type(l%pt) :: b
     call take(b)
 end subroutine
+
+! A rename list cannot be combined with a namespace import: syntax error.
+subroutine cc_59()
+    use, namespace :: m => nscc_m, y => x
+    implicit none
+end subroutine
+
+! The double colon is required after the NAMESPACE modifier, as for the
+! INTRINSIC and NON_INTRINSIC modifiers: syntax error.
+subroutine cc_60()
+    use, namespace m => nscc_m
+    implicit none
+end subroutine
+
+! A DO variable must be a variable name, not a module-qualified name: syntax
+! error. The loop is on one line so that its END DO is skipped with it.
+subroutine cc_61()
+    use, namespace :: m => nscc_m
+    implicit none
+    do m%x = 1, 3; end do
+end subroutine
+
+! A named constant for the kind parameter of a literal constant (cc_62)
+module nscc_kinds
+    implicit none
+    integer, parameter :: dp = kind(1.0d0)
+end module
+
+! The kind parameter of a literal constant must be a digit string or a named
+! constant name; a module-qualified name is not allowed: syntax error. Use
+! real(1.5, m%dp) instead.
+subroutine cc_62()
+    use, namespace :: m => nscc_kinds
+    implicit none
+    real :: y
+    y = 1.5_m%dp
+    print *, y
+end subroutine
+
+! An entity cannot be declared inside a module entity; a qualified name is not
+! an object name: syntax error.
+subroutine cc_63()
+    use, namespace :: m => nscc_m
+    implicit none
+    integer :: m%y
+    print *, m%x
+end subroutine
+
+! The component, declared as `type(l%u)` in the separately compiled module
+! nssep_holder, is passed for a dummy argument of another type: the type is
+! shown by its name, `u`.
+subroutine cc_64()
+    use nssep_types, only: take
+    use nssep_holder, only: holder
+    implicit none
+    type(holder) :: h
+    call take(h%c)
+end subroutine
+
+! In a submodule of the separately compiled module nssep_parent, which declared
+! the symbol for `l%u`, a structure constructor `l%u(1)` is passed for a dummy
+! argument of another type: the type is shown by its name, `u`.
+submodule (nssep_parent) cc_65
+    implicit none
+contains
+    module subroutine run()
+        call l%take(l%u(1))
+    end subroutine
+end submodule
 
 program namespace_continue_compilation
     implicit none

@@ -6214,35 +6214,6 @@ ast_f90 = true
 [[test]]
 filename = "errors/namespace_continue_compilation.f90"
 semantics_only_cc = true
-
-[[test]]
-filename = "errors/namespace_modules_03.f90"
-asr = true
-
-[[test]]
-filename = "errors/namespace_modules_16.f90"
-asr = true
-
-[[test]]
-filename = "errors/namespace_modules_19.f90"
-asr = true
-
-[[test]]
-filename = "errors/namespace_modules_20.f90"
-asr = true
-
-[[test]]
-filename = "errors/namespace_modules_25.f90"
-asr = true
-
-[[test]]
-filename = "errors/namespace_separate_component.f90"
-asr = true
-extrafiles = "errors/namespace_separate_types.f90, errors/namespace_separate_holder.f90"
-
-[[test]]
-filename = "errors/namespace_separate_submodule.f90"
-asr = true
 extrafiles = "errors/namespace_separate_types.f90, errors/namespace_separate_holder.f90"
 
 [[test]]
