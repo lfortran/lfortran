@@ -26612,9 +26612,12 @@ public:
     }
 
     // The symbol that the module-qualified name `a%b%t` in a type-spec
-    // position designates (`qualifier` is [a, b], `name` is t, see AST.asdl).
+    // position designates (`qualifier` is [a, b], `name` is t, see AST.asdl):
+    // a type or an interface, or only a derived type if `derived_type_only`
+    // (the type-spec of ALLOCATE).
     ASR::symbol_t* resolve_qualified_type_name(char **qualifier,
-            size_t n_qualifier, const char *name, const Location &loc) {
+            size_t n_qualifier, const char *name, const Location &loc,
+            bool derived_type_only = false) {
         LCOMPILERS_ASSERT(n_qualifier > 0);
         std::vector<std::string> parts;
         for (size_t i = 0; i < n_qualifier; i++) {
@@ -26628,11 +26631,17 @@ public:
         size_t used = 0;
         ASR::symbol_t *sym = resolve_module_qualified(parts, used, loc);
         ASR::symbol_t *entity = ASRUtils::symbol_get_past_external(sym);
-        if (used != parts.size() || !(ASR::is_a<ASR::Struct_t>(*entity) ||
+        std::string written = join_qualified_name(parts, parts.size());
+        if (derived_type_only) {
+            if (used != parts.size() || !ASR::is_a<ASR::Struct_t>(*entity)) {
+                module_reference_error("'" + written
+                    + "' is not a derived type", loc);
+            }
+        } else if (used != parts.size() || !(ASR::is_a<ASR::Struct_t>(*entity) ||
                 ASR::is_a<ASR::Union_t>(*entity) ||
                 ASR::is_a<ASR::Enum_t>(*entity) ||
                 ASR::is_a<ASR::Function_t>(*entity))) {
-            module_reference_error("'" + join_qualified_name(parts, parts.size())
+            module_reference_error("'" + written
                 + "' does not name a type or an interface", loc);
         }
         return sym;

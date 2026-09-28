@@ -3554,7 +3554,12 @@ public:
     std::string allocate_type_spec_name(const AST::Name_t &x) {
         const Location &loc = x.base.base.loc;
         if (x.n_member == 0) {
-            return type_spec_name(nullptr, 0, x.m_id, loc);
+            std::string name = to_lower(x.m_id);
+            if (is_module_reference(current_scope->resolve_symbol(name))) {
+                module_reference_error("'" + name + "' is a module, not a "
+                    "derived type", loc);
+            }
+            return name;
         }
         bool is_type_name = is_module_reference(current_scope->resolve_symbol(
             to_lower(x.m_member[0].m_name)));
@@ -3564,18 +3569,11 @@ public:
         if (!is_type_name) return designator_lookup_name(x);
         Vec<char*> qualifier;
         qualifier.reserve(al, x.n_member);
-        std::string written;
         for (size_t i = 0; i < x.n_member; i++) {
             qualifier.push_back(al, x.m_member[i].m_name);
-            written += to_lower(x.m_member[i].m_name) + "%";
         }
-        ASR::symbol_t *t = resolve_qualified_type_name(qualifier.p,
-            qualifier.size(), x.m_id, loc);
-        if (!ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(t))) {
-            module_reference_error("'" + written + to_lower(x.m_id)
-                + "' is not a derived type", loc);
-        }
-        return ASRUtils::symbol_name(t);
+        return ASRUtils::symbol_name(resolve_qualified_type_name(qualifier.p,
+            qualifier.size(), x.m_id, loc, true));
     }
 
     void visit_Allocate(const AST::Allocate_t& x) {
