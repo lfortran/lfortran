@@ -960,5 +960,7 @@ separate files in `errors/` (`namespace_modules_NN.f90`, and
 | `cc_53` | Type mismatch where `l%u` in a sibling procedure designates the expected type (the type is shown as `u`) |
 | `cc_54` | Component declared as `type(l%u)` in another module passed for a dummy argument of another type |
 | `cc_55` | Structure constructor of a type renamed by an ordinary USE (`uu => u`) passed for a dummy argument of another type (the type is shown as `u`, as for a module entity) |
+| `cc_56` | ALLOCATE of a component declared as `type(l%u)` in another module that is neither allocatable nor a pointer (the type is shown as `u`) |
+| `cc_57` | DEALLOCATE of the structure constructor `l%u(1)` (the type is shown as `u`) |
 | `namespace_separate_component` | As `cc_54`, with the modules compiled separately (`.mod` files) |
 | `namespace_separate_submodule` | Structure constructor `l%u(1)` passed for a dummy argument of another type in a submodule whose separately compiled parent declared the symbol for `l%u` |

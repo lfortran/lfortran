@@ -4152,7 +4152,7 @@ public:
                 ASR::symbol_t* sym = get_allocate_expr_sym(alloc_expr);
                 ASR::ttype_t* sym_type = sym ? ASRUtils::symbol_type(sym) : nullptr;
                 if (!sym_type || (!ASRUtils::is_allocatable(sym_type) && !ASRUtils::is_pointer(sym_type))) {
-                    std::string type_str = ASRUtils::type_to_str_python_expr(alloc_type, alloc_expr);
+                    std::string type_str = ASRUtils::type_to_str_fortran_expr(alloc_type, alloc_expr);
                     std::string var_name = sym ? ASRUtils::symbol_name(sym) : "variable";
                     diag.add(Diagnostic(
                         "Allocate should only be called with Allocatable or Pointer type inputs, found " + type_str,
@@ -4351,7 +4351,7 @@ public:
             } else {
                 diag.add(Diagnostic(
                     "Cannot deallocate variables in expression " +
-                    ASRUtils::type_to_str_python_expr(ASRUtils::expr_type((tmp_expr)), tmp_expr),
+                    ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type((tmp_expr)), tmp_expr),
                     Level::Error, Stage::Semantic, {
                         Label("",{tmp_expr->base.loc})
                     }));

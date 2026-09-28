@@ -573,6 +573,23 @@ subroutine cc_55()
     call take(uu(1))
 end subroutine
 
+! ALLOCATE of a component that is neither allocatable nor a pointer,
+! declared as `type(l%u)` in another module: its type is shown as `u`.
+subroutine cc_56()
+    use nscc_holder, only: holder
+    implicit none
+    type(holder) :: h
+    allocate(h%c)
+end subroutine
+
+! DEALLOCATE of a structure constructor accessed through a module entity:
+! its type is shown as `u`.
+subroutine cc_57()
+    use, namespace :: l => nscc_types
+    implicit none
+    deallocate(l%u(1))
+end subroutine
+
 program namespace_continue_compilation
     implicit none
 end program

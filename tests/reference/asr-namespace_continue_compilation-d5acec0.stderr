@@ -294,3 +294,15 @@ semantic error: Type mismatch in argument `v`: expected `t` but got `u`
     |
 573 |     call take(uu(1))
     |               ^^^^^ 
+
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found u
+   --> tests/errors/namespace_continue_compilation.f90:582:14
+    |
+582 |     allocate(h%c)
+    |              ^^^ 'h' is not allocatable or pointer
+
+semantic error: Cannot deallocate variables in expression u
+   --> tests/errors/namespace_continue_compilation.f90:590:16
+    |
+590 |     deallocate(l%u(1))
+    |                ^^^^^^ 
