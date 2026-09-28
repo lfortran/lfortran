@@ -486,6 +486,7 @@ public:
         }
         unit->m_items = items.p;
         unit->n_items = items.size();
+        instantiate_pending_bodies();
     }
 
     template <typename T>
@@ -3026,7 +3027,7 @@ public:
 
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = type_subs_it->second;
         std::map<std::string, ASR::symbol_t*> symbol_subs = symbol_subs_it->second;
-        std::set<ASR::symbol_t*> instantiated_bodies;
+        std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> symbols;
 
         if (x.n_symbols == 0) {
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
@@ -3037,7 +3038,7 @@ public:
                     if (new_s == nullptr) {
                         continue;
                     }
-                    instantiate_body(al, type_subs, symbol_subs, new_s, s, instantiated_bodies);
+                    symbols.push_back({new_s, s});
                 }
             }
         } else {
@@ -3052,10 +3053,10 @@ public:
                 if (s == nullptr || new_s == nullptr) {
                     continue;
                 }
-                instantiate_body(al, type_subs, symbol_subs, new_s, s, instantiated_bodies);
+                symbols.push_back({new_s, s});
             }
         }
-
+        queue_body_instantiation(type_subs, symbol_subs, symbols);
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
