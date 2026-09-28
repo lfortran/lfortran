@@ -427,6 +427,49 @@ module cc_45
     end type
 end module
 
+! Derived types and a procedure with a dummy argument of one of them
+! (cc_46 to cc_48)
+module nscc_types
+    implicit none
+    type :: t
+        integer :: k = 1
+    end type
+    type :: u
+        integer :: k = 2
+    end type
+contains
+    subroutine take(v)
+        type(t), intent(in) :: v
+    end subroutine
+end module
+
+! A structure constructor accessed through a module entity passed for a dummy
+! argument of another type: the type is shown as written, `l%u`.
+subroutine cc_46()
+    use nscc_types, only: take
+    use, namespace :: l => nscc_types
+    implicit none
+    call take(l%u(1))
+end subroutine
+
+! An array constructor with a type-spec accessed through a module entity
+! passed for a scalar dummy argument of another type.
+subroutine cc_47()
+    use nscc_types, only: take
+    use, namespace :: l => nscc_types
+    implicit none
+    call take([l%u :: l%u(3)])
+end subroutine
+
+! A structure constructor accessed through a module entity assigned to a
+! variable of another type.
+subroutine cc_48()
+    use, namespace :: l => nscc_types
+    implicit none
+    type(l%t) :: y
+    y = l%u(1)
+end subroutine
+
 program namespace_continue_compilation
     implicit none
 end program

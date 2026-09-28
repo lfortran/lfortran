@@ -60,10 +60,11 @@ void load_rtlib() {
     const std::string m_ieee_arithmetic = "lfortran_intrinsic_ieee_arithmetic";
 }
 
-Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
+static Result<ASR::TranslationUnit_t*> ast_to_asr_util(Allocator &al,
     AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics,
     SymbolTable *symbol_table, bool symtab_only,
-    CompilerOptions &compiler_options, LCompilers::LocationManager &lm)
+    CompilerOptions &compiler_options, LCompilers::LocationManager &lm,
+    ModuleEntityState &module_entities)
 {
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> implicit_mapping;
     std::map<uint64_t, ASR::symbol_t*> common_variables_hash;
@@ -75,7 +76,6 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> entry_functions;
     std::map<std::string, std::vector<int>> entry_function_arguments_mapping;
     std::map<uint32_t, std::vector<ASR::stmt_t*>> data_structure;
-    ModuleEntityState module_entities;
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
         compiler_options, implicit_mapping, common_variables_hash, common_variables_byte_offset,
@@ -146,6 +146,19 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
 #endif
     }
     return tu;
+}
+
+Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
+    AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics,
+    SymbolTable *symbol_table, bool symtab_only,
+    CompilerOptions &compiler_options, LCompilers::LocationManager &lm)
+{
+    ModuleEntityState module_entities;
+    size_t first = diagnostics.diagnostics.size();
+    Result<ASR::TranslationUnit_t*> res = ast_to_asr_util(al, ast, diagnostics,
+        symbol_table, symtab_only, compiler_options, lm, module_entities);
+    module_entities.show_written_names(diagnostics, first);
+    return res;
 }
 
 } // namespace LCompilers::LFortran

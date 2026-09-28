@@ -234,3 +234,21 @@ semantic error: 'm%x' is not a subroutine
     |
 376 |     call m%x()
     |     ^^^^^^^^^^ 
+
+semantic error: Type mismatch in argument `v`: expected `t` but got `l%u`
+   --> tests/errors/namespace_continue_compilation.f90:452:15
+    |
+452 |     call take(l%u(1))
+    |               ^^^^^^ 
+
+semantic error: Type mismatch in argument `v`: expected `t` but got `l%u[:]`
+   --> tests/errors/namespace_continue_compilation.f90:461:15
+    |
+461 |     call take([l%u :: l%u(3)])
+    |               ^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/namespace_continue_compilation.f90:470:5
+    |
+470 |     y = l%u(1)
+    |     ^   ^^^^^^ type mismatch (t and l%u)

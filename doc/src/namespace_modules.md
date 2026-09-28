@@ -750,9 +750,18 @@ document. For each, the source is given.
   listed as a document symbol. These symbols are recorded as such when they
   are created (`ModuleEntityState`, shared by the symbol table and body
   visitors), so that a module does not export them. The designator is then
-  analysed as if it named that symbol; diagnostics about it show the name
-  as written (`a%f`). The rest of semantics, the ASR passes and the LLVM
-  backend see only ordinary use-associated entities.
+  analysed as if it named that symbol. The rest of semantics, the ASR passes
+  and the LLVM backend see only ordinary use-associated entities.
+* **Names in diagnostics**: semantic diagnostics never show a generated
+  name. The ones reported while a designator is resolved show it as
+  written there (`a%f`). Before the diagnostics of a file are reported, every other
+  generated name in them (for example the type of `a%t(1)` in a type
+  mismatch reported for the enclosing statement) is replaced with the name
+  as written at the reference that declared the symbol, recorded in
+  `ModuleEntityState::written_names`. A symbol is declared once per scope
+  and is host associated into the scopes it contains, so a contained scope
+  that imports the same module under another local name sees the name as
+  written in its host.
 * **Portability**: with `--std=f23` (or `--std=legacy`), every
   `use, namespace` statement gets a warning that it is an LFortran extension
   (`tests/warnings/namespace_modules_std_01`).
@@ -775,7 +784,9 @@ Known limitations of the prototype:
   import is not ordered after the file that defines the module.
 * The ASR verification error that LFortran reports instead of a semantic
   error for `call f()` where `f` is a function (lfortran/lfortran#13804)
-  names the generated symbol (`f~of_m`) when `f` is written `L%f`.
+  shows `L%f` when the verification at the end of semantics reports it
+  (in builds with assertions). A later verification, after an ASR pass,
+  names the generated symbol (`f~of_m`).
 * `errors/namespace_modules_23` (a local entity named like a module used
   in the scope) and `errors/namespace_modules_26` (an interface body
   without `IMPORT`) are not diagnosed yet. LFortran does not enforce these
@@ -889,3 +900,6 @@ the separate file `errors/namespace_modules_NN.f90`.
 | `cc_43` | Generic function `g%gen(2)` in an array bound of a module variable (not a constant expression) |
 | `cc_44` | Module entity as a parent type (`extends(m)`) |
 | `cc_45` | Function as a parent type (`extends(g%gen_int)`) |
+| `cc_46` | Structure constructor `l%u(1)` passed for a dummy argument of another type (the type is shown as `l%u`) |
+| `cc_47` | Array constructor `[l%u :: ...]` passed for a scalar dummy argument of another type |
+| `cc_48` | Structure constructor `l%u(1)` assigned to a variable of another type |
