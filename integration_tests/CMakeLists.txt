@@ -3670,6 +3670,7 @@ RUN(NAME template_lapack_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_interface_01 LABELS llvm llvm_wasm llvm_wasm_emcc)                   # FIXME: add visit_OverloadedBinOp to wasm
 RUN(NAME template_commutative LABELS llvm llvm_wasm llvm_wasm_emcc)                    # FIXME: add visit_OverloadedBinOp to wasm
 RUN(NAME template_intrinsic_func_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_intrinsic_func_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_intrinsic_op_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_operator_scope_01 LABELS llvm)
 RUN(NAME template_operator_scope_02 LABELS llvm)
@@ -3708,6 +3709,8 @@ RUN(NAME template_struct_member_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_merge_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_access_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_inline_case_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_contains_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_contains_order_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_local_param_dim_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3873,6 +3876,10 @@ RUN(NAME nested_vars_09 LABELS gfortran llvm)
 RUN(NAME nested_vars_10 LABELS gfortran llvm)
 RUN(NAME nested_vars_11 LABELS gfortran llvm)
 RUN(NAME nested_vars_12 LABELS gfortran llvm EXTRAFILES nested_vars_12a.f90 nested_vars_12b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME nested_vars_13 LABELS gfortran llvm)
+RUN(NAME nested_vars_14 LABELS gfortran llvm)
+RUN(NAME nested_vars_15 LABELS gfortran llvm)
+RUN(NAME nested_vars_16 LABELS gfortran llvm)
 
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
@@ -4871,6 +4878,7 @@ RUN(NAME structure_constructor_args_21 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_22 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_23 LABELS llvm) # gfortran 13 miscompiles unallocated scalar allocatable data sources
 RUN(NAME structure_constructor_args_24 LABELS llvm) # gfortran 13 miscompiles unallocated scalar allocatable data sources
+RUN(NAME structure_constructor_args_25 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_28 LABELS gfortran llvm)
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
@@ -5058,6 +5066,10 @@ RUN(NAME intent_out_array_structs_01 LABELS gfortran llvm)
 RUN(NAME intent_out_array_of_struct_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_array_default_init_01 LABELS gfortran llvm)
 RUN(NAME intent_out_array_default_init_02 LABELS gfortran llvm)
+RUN(NAME intent_out_array_default_init_03 LABELS gfortran llvm)
+# gfortran 13.3 does not apply these defaults to a scalar intent(out) dummy
+# of a finalizable type (it keeps the caller's values), so llvm only
+RUN(NAME intent_out_array_default_init_04 LABELS llvm)
 RUN(NAME array_shape_func_call LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_neg_extent_01 LABELS gfortran llvm)
 
