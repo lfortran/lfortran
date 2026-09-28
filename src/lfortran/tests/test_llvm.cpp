@@ -166,6 +166,15 @@ TEST_CASE("LLVM target configuration") {
 
 namespace {
 
+// A pointer to `t`: typed before LLVM 17, opaque from then on.
+llvm::Type *pointer_to(llvm::Type *t) {
+#if LLVM_VERSION_MAJOR >= 17
+    return llvm::PointerType::getUnqual(t->getContext());
+#else
+    return t->getPointerTo();
+#endif
+}
+
 // A module with `n` tables of startup records in the form `asr_to_llvm`
 // emits them, independent of the object format: each table passed to the
 // engine by a constructor of its own, as when several are linked into one.
@@ -173,8 +182,12 @@ std::unique_ptr<llvm::Module> global_init_module(llvm::LLVMContext &context,
         const std::string &triple, int n) {
     std::unique_ptr<llvm::Module> module = std::make_unique<llvm::Module>(
         "global_init", context);
+#if LLVM_VERSION_MAJOR >= 21
+    module->setTargetTriple(llvm::Triple(triple));
+#else
     module->setTargetTriple(triple);
-    llvm::Type *i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
+#endif
+    llvm::Type *i8_ptr = pointer_to(llvm::Type::getInt8Ty(context));
     llvm::Type *i32 = llvm::Type::getInt32Ty(context);
     llvm::FunctionType *void_fn = llvm::FunctionType::get(
         llvm::Type::getVoidTy(context), {}, false);
@@ -182,7 +195,7 @@ std::unique_ptr<llvm::Module> global_init_module(llvm::LLVMContext &context,
             llvm::Type::getVoidTy(context), {i8_ptr}, false),
         llvm::Function::ExternalLinkage, "_lcompilers_init_ctor", module.get());
     llvm::StructType *table_type = llvm::StructType::get(context,
-        {i32, i32, i8_ptr, i32->getPointerTo()});
+        {i32, i32, i8_ptr, pointer_to(i32)});
     for (int i = 0; i < n; i++) {
         llvm::GlobalVariable *table = new llvm::GlobalVariable(*module,
             table_type, true, llvm::GlobalVariable::InternalLinkage,
