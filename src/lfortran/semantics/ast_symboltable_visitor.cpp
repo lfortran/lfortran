@@ -3491,6 +3491,8 @@ public:
             // This allows instantiation from ASR alone (e.g. when loaded from .mod files).
             SymbolTable *parent_scope_pdt = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope_pdt);
+            TypeDefinitionScope pdt_definition(type_definition_scopes,
+                current_scope);
             data_member_names.reserve(al, 0);
             final_proc_names.reserve(al, 0);
             is_derived_type = true;
@@ -3625,6 +3627,8 @@ public:
         }
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        TypeDefinitionScope type_definition(type_definition_scopes,
+            current_scope);
         data_member_names.reserve(al, 0);
         final_proc_names.reserve(al, 0);
         is_derived_type = true;
@@ -3803,6 +3807,8 @@ public:
         dt_name = to_lower(x.m_name);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        TypeDefinitionScope union_definition(type_definition_scopes,
+            current_scope);
         data_member_names.reserve(al, 0);
         is_derived_type = true;
         ASR::accessType dflt_access_copy = dflt_access;
@@ -6896,6 +6902,8 @@ public:
     void visit_Enum(const AST::Enum_t &x) {
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        TypeDefinitionScope enum_definition(type_definition_scopes,
+            current_scope);
         std::string sym_name = "lcompilers__nameless_enum";
         sym_name = parent_scope->get_unique_name(sym_name);
         Vec<char *> m_members;

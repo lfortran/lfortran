@@ -26480,23 +26480,43 @@ public:
         return t;
     }
 
+    // The scopes of the derived types, unions and enumerations whose
+    // definitions are being processed. Their Struct, Union or Enum may not
+    // exist yet, so their scopes have no owner to tell what they are.
+    std::set<SymbolTable*> type_definition_scopes;
+
+    // Records `scope` as the scope of a type definition while it is alive.
+    class TypeDefinitionScope {
+        std::set<SymbolTable*> &scopes;
+        SymbolTable *scope;
+    public:
+        TypeDefinitionScope(std::set<SymbolTable*> &scopes, SymbolTable *scope)
+            : scopes{scopes}, scope{scope} {
+            scopes.insert(scope);
+        }
+        ~TypeDefinitionScope() {
+            scopes.erase(scope);
+        }
+    };
+
+    // The scope of a derived type, union or enumeration, whose symbols are
+    // its components or enumerators.
+    bool is_type_definition_scope(SymbolTable *scope) {
+        if (type_definition_scopes.count(scope)) return true;
+        if (!scope->asr_owner || !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+            return false;
+        }
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+        return ASR::is_a<ASR::Struct_t>(*owner) || ASR::is_a<ASR::Enum_t>(*owner)
+            || ASR::is_a<ASR::Union_t>(*owner);
+    }
+
     // The scope that receives the symbols created for member references: the
-    // nearest enclosing scope that is not a derived type or similar.
+    // nearest enclosing scope that is not the scope of a type definition,
+    // where `use mod, only: member` would declare them.
     SymbolTable* member_reference_scope() {
         SymbolTable *scope = current_scope;
-        if (is_derived_type && !scope->asr_owner && scope->parent) {
-            // A derived type that is being defined: its Struct does not exist
-            // yet
-            scope = scope->parent;
-        }
-        while (scope->asr_owner && scope->parent &&
-                ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
-            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
-            if (!ASR::is_a<ASR::Struct_t>(*owner) &&
-                    !ASR::is_a<ASR::Enum_t>(*owner) &&
-                    !ASR::is_a<ASR::Union_t>(*owner)) {
-                break;
-            }
+        while (scope->parent && is_type_definition_scope(scope)) {
             scope = scope->parent;
         }
         return scope;
