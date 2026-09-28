@@ -6338,3 +6338,8 @@ asr = true
 [[test]]
 filename = "errors/namespace_modules_35.f90"
 asr = true
+
+[[test]]
+filename = "warnings/namespace_modules_std_01.f90"
+asr = true
+options = "--std=f23"

@@ -753,6 +753,9 @@ document. For each, the source is given.
   analysed as if it named that symbol; diagnostics about it show the name
   as written (`a%f`). The rest of semantics, the ASR passes and the LLVM
   backend see only ordinary use-associated entities.
+* **Portability**: with `--std=f23` (or `--std=legacy`), every
+  `use, namespace` statement gets a warning that it is an LFortran extension
+  (`tests/warnings/namespace_modules_std_01`).
 * **Diagnostics**: the error tests in `tests/errors/namespace_modules_*`
   have their messages in `tests/reference/`.
 

@@ -26757,6 +26757,21 @@ public:
     // `local` for the module `m` in the current scope.
     void declare_module_reference(const std::string &msym, const AST::Use_t &x) {
         const Location &loc = x.base.base.loc;
+        // The body visitor visits the USE statements again, except those of
+        // a BLOCK construct, which only it visits
+        bool in_block = current_scope->asr_owner
+            && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)
+            && ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(
+                current_scope->asr_owner));
+        if (compiler_options.warn_lfortran_extensions
+                && (!is_body_visitor || in_block)) {
+            diag.add(diag::Diagnostic(
+                "'use, namespace' is an LFortran extension",
+                diag::Level::Warning, diag::Stage::Semantic, {
+                    diag::Label("help: in standard Fortran, use 'use "
+                        + to_lower(x.m_module) + ", only: ...' instead",
+                        {loc})}));
+        }
         if (count_use_attributes(x, AST::simple_attributeType::AttrNamespace) > 1) {
             module_reference_error("the 'namespace' modifier appears more "
                 "than once", loc);
