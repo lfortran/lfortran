@@ -1913,10 +1913,27 @@ namespace LCompilers {
             llvm::Value* source_data,
             llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
             llvm::Type* elem_type, int rank, llvm::Module* /*module*/) {
+            for_each_element_of_descriptor(dest_llvm_type, dest_desc, elem_type,
+                rank, "copy_to_strided",
+                [&](llvm::Value* iter, llvm::Value* dest_ptr) {
+                    // Read from contiguous source
+                    llvm::Value* src_ptr = llvm_utils->create_ptr_gep2(
+                        elem_type, source_data, iter);
+                    llvm::Value* elem_val = llvm_utils->CreateLoad2(elem_type, src_ptr);
+
+                    // Write to strided destination
+                    builder->CreateStore(elem_val, dest_ptr);
+                });
+        }
+
+        void SimpleCMODescriptor::for_each_element_of_descriptor(
+            llvm::Type* desc_llvm_type, llvm::Value* desc,
+            llvm::Type* elem_type, int rank, const std::string& loop_name,
+            const std::function<void(llvm::Value*, llvm::Value*)>& body) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
 
             llvm::Value* dim_des_array = get_pointer_to_dimension_descriptor_array(
-                dest_llvm_type, dest_desc, true);
+                desc_llvm_type, desc, true);
 
             std::vector<llvm::Value*> extents(rank);
             llvm::Value* num_elements = llvm::ConstantInt::get(
@@ -1933,15 +1950,15 @@ namespace LCompilers {
                 num_elements = builder->CreateMul(num_elements, extents[d]);
             }
 
-            llvm::Value* dest_data = get_pointer_to_data(dest_llvm_type, dest_desc);
-            dest_data = llvm_utils->CreateLoad2(elem_type->getPointerTo(), dest_data);
+            llvm::Value* data = get_pointer_to_data(desc_llvm_type, desc);
+            data = llvm_utils->CreateLoad2(elem_type->getPointerTo(), data);
 
             llvm::Value* iter_ptr = builder->CreateAlloca(
                 index_type, nullptr, "strided_copy_iter");
             builder->CreateStore(
                 llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
                 iter_ptr);
-            llvm_utils->create_loop("copy_to_strided",
+            llvm_utils->create_loop(loop_name.c_str(),
                 [&]() {
                     llvm::Value* iter = llvm_utils->CreateLoad2(index_type, iter_ptr);
                     return builder->CreateICmpSLT(iter, num_elements);
@@ -1962,18 +1979,11 @@ namespace LCompilers {
                         llvm::Value* dim_offset = builder->CreateMul(dim_idx, stride);
                         linear_offset = builder->CreateAdd(linear_offset, dim_offset);
                     }
-                    llvm::Value* base_offset = get_offset(dest_llvm_type, dest_desc);
+                    llvm::Value* base_offset = get_offset(desc_llvm_type, desc);
                     linear_offset = builder->CreateAdd(linear_offset, base_offset);
 
-                    // Read from contiguous source
-                    llvm::Value* src_ptr = llvm_utils->create_ptr_gep2(
-                        elem_type, source_data, iter);
-                    llvm::Value* elem_val = llvm_utils->CreateLoad2(elem_type, src_ptr);
-
-                    // Write to strided destination
-                    llvm::Value* dest_ptr = llvm_utils->create_ptr_gep2(
-                        elem_type, dest_data, linear_offset);
-                    builder->CreateStore(elem_val, dest_ptr);
+                    body(iter, llvm_utils->create_ptr_gep2(
+                        elem_type, data, linear_offset));
 
                     llvm::Value* new_iter = builder->CreateAdd(iter,
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
