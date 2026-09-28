@@ -450,7 +450,8 @@ bool is_init_runtime_function(const ASR::symbol_t *sym) {
             || type->m_deftype != ASR::deftypeType::Interface
             || type->m_bindc_name == nullptr
             || fn->m_symtab->parent == nullptr
-            || fn->m_symtab->parent->parent != nullptr) {
+            || fn->m_symtab->parent->asr_owner == nullptr
+            || fn->m_symtab->parent->asr_owner->type != ASR::asrType::unit) {
         return false;
     }
     for (InitRuntimeFn kind : {InitRuntimeFn::Begin, InitRuntimeFn::End,
