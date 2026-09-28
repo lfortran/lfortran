@@ -312,10 +312,27 @@ public:
                 // from the nested procedure.
                 if ( current_scope && par_func_sym &&
                     !is_sym_in_scope_chain(v->m_parent_symtab, current_scope)) {
-                    nesting_map[par_func_sym].insert(x.m_v);
+                    nesting_map[get_declaring_procedure(v)].insert(x.m_v);
                 }
             }
         }
+    }
+
+    // The procedure (or program) that declares `v`. It owns the context
+    // for `v` and synchronizes it around its calls. Usually this is the
+    // parent of the current procedure, but a procedure nested more than
+    // one level deep (e.g. a template instantiated inside an internal
+    // procedure) can reference a variable of a more distant ancestor.
+    ASR::symbol_t* get_declaring_procedure(ASR::Variable_t* v) {
+        SymbolTable* host_scope = get_host_scope(v->m_parent_symtab);
+        if (host_scope->asr_owner != nullptr
+                && ASR::is_a<ASR::symbol_t>(*host_scope->asr_owner)) {
+            ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(host_scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner) || ASR::is_a<ASR::Program_t>(*owner)) {
+                return owner;
+            }
+        }
+        return par_func_sym;
     }
 
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {

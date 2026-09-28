@@ -1691,9 +1691,12 @@ public:
     // construct: its interface bodies named by a deferred argument declare
     // deferred procedures, and its other items (e.g. external procedures)
     // stay in the subprogram, so a block that mixes both is split.
+    // An interface body named as the interface-name of a
+    // `deferred procedure(...)` statement (`deferred_ifaces`) belongs to the
+    // Template as well, so that the statement, visited there, sees it.
     static AST::decl_stmt_t *deferred_argument_part(Allocator &al,
             AST::decl_stmt_t *item, char **temp_args, size_t n_temp_args,
-            bool deferred) {
+            const std::set<std::string> &deferred_ifaces, bool deferred) {
         if (AST::is_a<AST::Declaration_t>(*item)
                 && is_deferred_const_decl(
                     *AST::down_cast<AST::Declaration_t>(item))) {
@@ -1709,7 +1712,9 @@ public:
         if (AST::is_a<AST::DeferredInterfaceHeader_t>(*iface.m_header)) {
             return deferred ? item : nullptr;
         }
-        if (!AST::is_a<AST::InterfaceHeader_t>(*iface.m_header)) {
+        bool is_abstract = AST::is_a<AST::AbstractInterfaceHeader_t>(
+            *iface.m_header);
+        if (!is_abstract && !AST::is_a<AST::InterfaceHeader_t>(*iface.m_header)) {
             return deferred ? nullptr : item;
         }
         Vec<AST::interface_item_t*> selected;
@@ -1725,11 +1730,15 @@ public:
                 } else if (AST::is_a<AST::Function_t>(*proc)) {
                     name = AST::down_cast<AST::Function_t>(proc)->m_name;
                 }
-                for (size_t j = 0; name && j < n_temp_args; j++) {
+                for (size_t j = 0; name && !is_abstract && j < n_temp_args;
+                        j++) {
                     if (to_lower(name) == to_lower(temp_args[j])) {
                         is_deferred = true;
                         break;
                     }
+                }
+                if (name && deferred_ifaces.count(to_lower(name)) > 0) {
+                    is_deferred = true;
                 }
             }
             if (is_deferred == deferred) selected.push_back(al, iface.m_items[i]);
@@ -1739,6 +1748,20 @@ public:
         return AST::down_cast<AST::decl_stmt_t>(AST::make_Interface_t(al,
             iface.base.base.loc, iface.m_header, iface.m_trivia,
             selected.p, selected.size()));
+    }
+
+    // The interface-names of the `deferred procedure(...)` statements in
+    // `items`.
+    static std::set<std::string> deferred_procedure_interfaces(
+            AST::decl_stmt_t **items, size_t n_items) {
+        std::set<std::string> names;
+        for (size_t i = 0; i < n_items; i++) {
+            if (AST::is_a<AST::DeferredProcedure_t>(*items[i])) {
+                names.insert(to_lower(AST::down_cast<AST::DeferredProcedure_t>(
+                    items[i])->m_interface_name));
+            }
+        }
+        return names;
     }
 
     static std::string deferred_const_spelling_msg(const std::string &name) {
@@ -1842,6 +1865,8 @@ public:
         // this procedure (possibly an interface body) has been processed.
         std::map<std::string, ASR::presenceType> saved_assgnd_presence = assgnd_presence;
         assgnd_presence.clear();
+        std::set<std::string> deferred_ifaces = deferred_procedure_interfaces(
+            x.m_items, x.n_items);
         if (x.n_temp_args > 0) {
             is_template = true;
 
@@ -1877,7 +1902,8 @@ public:
                 // Deferred constants and procedures belong to the Template,
                 // exactly like a `deferred type` statement.
                 if (AST::decl_stmt_t *deferred_part = deferred_argument_part(
-                        al, x.m_items[i], x.m_temp_args, x.n_temp_args, true)) {
+                        al, x.m_items[i], x.m_temp_args, x.n_temp_args,
+                        deferred_ifaces, true)) {
                     visit_decl_stmt(*deferred_part);
                 }
             }
@@ -1951,7 +1977,7 @@ public:
             AST::decl_stmt_t *item = x.m_items[i];
             if (x.n_temp_args > 0) {
                 item = deferred_argument_part(al, item, x.m_temp_args,
-                    x.n_temp_args, false);
+                    x.n_temp_args, deferred_ifaces, false);
                 if (!item) continue;
             }
             is_Function = true;
@@ -2452,6 +2478,8 @@ public:
         std::map<std::string, ASR::presenceType> saved_assgnd_presence = assgnd_presence;
         assgnd_presence.clear();
         std::map<std::string, std::vector<std::pair<std::string, Location>>> ext_overloaded_op_procs;
+        std::set<std::string> deferred_ifaces = deferred_procedure_interfaces(
+            x.m_items, x.n_items);
 
         if (x.n_temp_args > 0) {
             is_template = true;
@@ -2491,7 +2519,8 @@ public:
                 // Deferred constants and procedures belong to the Template,
                 // exactly like a `deferred type` statement.
                 if (AST::decl_stmt_t *deferred_part = deferred_argument_part(
-                        al, x.m_items[i], x.m_temp_args, x.n_temp_args, true)) {
+                        al, x.m_items[i], x.m_temp_args, x.n_temp_args,
+                        deferred_ifaces, true)) {
                     visit_decl_stmt(*deferred_part);
                 }
             }
@@ -2558,7 +2587,7 @@ public:
             AST::decl_stmt_t *item = x.m_items[i];
             if (x.n_temp_args > 0) {
                 item = deferred_argument_part(al, item, x.m_temp_args,
-                    x.n_temp_args, false);
+                    x.n_temp_args, deferred_ifaces, false);
                 if (!item) continue;
             }
             is_Function = true;
@@ -6335,96 +6364,8 @@ public:
                         // Handling intrinsic function (e.g. min, max) as
                         // instantiate's argument: build a wrapper function that
                         // calls the intrinsic with the restriction's signature.
-                        SymbolTable *parent_scope = current_scope;
-                        current_scope = al.make_new<SymbolTable>(parent_scope);
-                        Vec<ASR::expr_t*> wargs;
-                        wargs.reserve(al, f->n_args);
-                        Vec<ASR::expr_t*> call_args;
-                        call_args.reserve(al, f->n_args);
-                        for (size_t j=0; j<f->n_args; j++) {
-                            ASR::ttype_t *var_type = ASRUtils::duplicate_type(al,
-                                ASRUtils::subs_expr_type(type_subs, f->m_args[j]));
-                            ASR::symbol_t *var_type_decl =
-                                ASRUtils::get_struct_sym_from_struct_expr(f->m_args[j]);
-                            std::string var_name = "arg" + std::to_string(j);
-                            ASR::asr_t *v = ASRUtils::make_Variable_t_util(al,
-                                arg_attr->base.loc, current_scope,
-                                s2c(al, var_name), nullptr, 0, ASR::intentType::In,
-                                nullptr, nullptr, ASR::storage_typeType::Default,
-                                var_type, var_type_decl, ASR::abiType::Source,
-                                ASR::accessType::Private, ASR::presenceType::Required,
-                                false);
-                            current_scope->add_symbol(var_name,
-                                ASR::down_cast<ASR::symbol_t>(v));
-                            ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
-                                arg_attr->base.loc, current_scope->get_symbol(var_name)));
-                            wargs.push_back(al, var_expr);
-                            call_args.push_back(al, var_expr);
-                        }
-
-                        ASRUtils::create_intrinsic_function create_func =
-                            ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(arg);
-                        ASR::asr_t *call_value_asr = create_func(al,
-                            arg_attr->base.loc, call_args, diag);
-                        if (call_value_asr == nullptr) {
-                            throw SemanticAbort();
-                        }
-                        ASR::expr_t *call_value = ASRUtils::EXPR(call_value_asr);
-
-                        ASR::ttype_t *return_type = ASRUtils::duplicate_type(al,
-                            ASRUtils::subs_expr_type(type_subs, f->m_return_var));
-                        ASR::asr_t *return_v = ASRUtils::make_Variable_t_util(al,
-                            arg_attr->base.loc, current_scope, s2c(al, "ret"),
-                            nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
-                            ASR::storage_typeType::Default, return_type,
-                            ASRUtils::get_struct_sym_from_struct_expr(call_value),
-                            ASR::abiType::Source, ASR::accessType::Private,
-                            ASR::presenceType::Required, false);
-                        current_scope->add_symbol("ret",
-                            ASR::down_cast<ASR::symbol_t>(return_v));
-                        ASR::expr_t *return_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
-                            arg_attr->base.loc, current_scope->get_symbol("ret")));
-
-                        if (!ASRUtils::check_equal_type(
-                                ASRUtils::expr_type(call_value), return_type,
-                                call_value, f->m_return_var)) {
-                            diag.add(diag::Diagnostic(
-                                "Unapplicable types for intrinsic function " + arg,
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {arg_attr->base.loc})}));
-                            throw SemanticAbort();
-                        }
-
-                        Vec<ASR::stmt_t*> body;
-                        body.reserve(al, 1);
-                        ASRUtils::make_ArrayBroadcast_t_util(al,
-                            arg_attr->base.loc, return_expr, call_value);
-                        ASR::stmt_t *assignment = ASRUtils::STMT(
-                            ASRUtils::make_Assignment_t_util(al,
-                                arg_attr->base.loc, return_expr, call_value,
-                                nullptr, false, false));
-                        body.push_back(al, assignment);
-
-                        std::string func_name = parent_scope->get_unique_name(
-                            arg + "_intrinsic");
-                        ASR::FunctionType_t *req_type =
-                            ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
-                        ASR::asr_t *op_function = ASRUtils::make_Function_t_util(
-                            al, arg_attr->base.loc, current_scope,
-                            s2c(al, func_name), nullptr, 0, wargs.p, wargs.size(),
-                            body.p, body.size(), return_expr,
-                            ASR::abiType::Source, ASR::accessType::Public,
-                            ASR::deftypeType::Implementation, nullptr,
-                            req_type->m_elemental, req_type->m_pure,
-                            req_type->m_module, req_type->m_inline,
-                            req_type->m_static, nullptr, 0, f->m_deterministic,
-                            f->m_side_effect_free, true);
-                        ASR::symbol_t *op_sym =
-                            ASR::down_cast<ASR::symbol_t>(op_function);
-                        parent_scope->add_symbol(func_name, op_sym);
-
-                        current_scope = parent_scope;
-                        symbol_subs[f->m_name] = op_sym;
+                        symbol_subs[f->m_name] = make_intrinsic_procedure_wrapper(
+                            arg, f, type_subs, current_scope, arg_attr->base.loc);
                     } else {
                         if (!f_arg0) {
                             diag.add(diag::Diagnostic(

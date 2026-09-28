@@ -3016,3 +3016,15 @@ semantic error: `exit` statements cannot leave a `do concurrent` loop
      |
 2018 |             if (i == 2) exit  ! {Error} `exit` statements cannot leave a `do concurrent` loop
      |                         ^^^^ 
+
+semantic error: Arguments to max0 must be of real, integer or character type
+    --> tests/errors/continue_compilation_1.f90:2061:21
+     |
+2061 |     print *, iita_g{max, logical}(.true., .false.)  ! {Error} Arguments to max0 must be of real, integer or character type
+     |                     ^^^ 
+
+semantic error: Unapplicable types for intrinsic function max
+    --> tests/errors/continue_compilation_1.f90:2062:21
+     |
+2062 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
+     |                     ^^^ 
