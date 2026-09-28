@@ -5860,7 +5860,19 @@ public:
                 ASR::ttype_t *ttype = determine_type(attr->base.loc, req_param,
                     attr, false, false, dims, nullptr, type_declaration, current_procedure_abi_type);
 
-                req_arg = ASRUtils::type_to_str_fortran_symbol(ttype, type_declaration);
+                // `req_arg` is the name that the instantiation looks up in
+                // the current scope, so a derived type or an enumeration is
+                // given by the local name of its symbol here, not by the
+                // name of the type that diagnostics show.
+                if (ASR::is_a<ASR::StructType_t>(*ttype) && type_declaration) {
+                    req_arg = ASRUtils::symbol_name(type_declaration);
+                } else if (ASR::is_a<ASR::EnumType_t>(*ttype)) {
+                    req_arg = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::EnumType_t>(ttype)->m_enum_type);
+                } else {
+                    req_arg = ASRUtils::type_to_str_fortran_symbol(ttype,
+                        type_declaration);
+                }
                 // A REQUIRE statement passes instantiation arguments too
                 // (16.5.5.1), so C1628 applies to them as well.
                 ASR::symbol_t *req_param_sym = (req->m_symtab)->get_symbol(req_param);
