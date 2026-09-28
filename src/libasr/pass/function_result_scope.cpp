@@ -53,7 +53,8 @@
  *
  * The header of an IF, DO, DO CONCURRENT, FORALL or SELECT CASE construct
  * is evaluated into variables at the start of a BLOCK that then executes
- * the construct, so that its results are finalized after the construct.
+ * the construct, so that its results are finalized after the construct
+ * (only the results are, for a character selector of SELECT CASE).
  * The condition of a DO WHILE is evaluated, and tested, by a BLOCK at the
  * start of each iteration, whose results are finalized before the body
  * executes (F2018 11.1.7.4.1 p2).
@@ -548,10 +549,12 @@ ASR::expr_t* create_header_variable(Allocator &al, SymbolTable* scope,
 // statement into variables of `scope`, which the statement then uses, and
 // then executes `rest`, which is the statement itself if it is a construct:
 // the results are finalized when the BLOCK completes, after the construct.
+// Unless `into_variables` is set, only the references to such functions are
+// evaluated first, and the statement evaluates the rest of each value.
 // nullptr if none of the values references such a function.
 ASR::stmt_t* make_header_block(Allocator &al, SymbolTable* scope,
         const Location &loc, const std::vector<ASR::expr_t**> &header,
-        const std::vector<ASR::stmt_t*> &rest) {
+        const std::vector<ASR::stmt_t*> &rest, bool into_variables = true) {
     // No SymbolTable is made for a header without such a reference:
     // each one takes a number from the global counter, which names
     // things in the generated code.
@@ -570,9 +573,12 @@ ASR::stmt_t* make_header_block(Allocator &al, SymbolTable* scope,
         if (!references_results(*value)) {
             continue;
         }
-        ASR::expr_t* variable = create_header_variable(al, scope, *value);
         replacer.current_expr = value;
         replacer.replace_expr(*value);
+        if (!into_variables) {
+            continue;
+        }
+        ASR::expr_t* variable = create_header_variable(al, scope, *value);
         block_body.push_back(al, ASRUtils::STMT(
             ASRUtils::make_Assignment_t_util(al, (*value)->base.loc,
                 variable, *value, nullptr, false, false)));
@@ -623,9 +629,10 @@ public:
 
     ASR::stmt_t* make_header_block(const Location &loc,
             const std::vector<ASR::expr_t**> &header,
-            const std::vector<ASR::stmt_t*> &rest) {
+            const std::vector<ASR::stmt_t*> &rest,
+            bool into_variables = true) {
         return LCompilers::make_header_block(al, current_scope, loc, header,
-            rest);
+            rest, into_variables);
     }
 
     // The BLOCK made of `x`, a statement that references such functions.
@@ -707,10 +714,7 @@ public:
                 break;
             }
             case ASR::stmtType::Select: {
-                ASR::expr_t** test = &ASR::down_cast<ASR::Select_t>(&x)->m_test;
-                if (!ASRUtils::is_character(*ASRUtils::expr_type(*test))) {
-                    header.push_back(test);
-                }
+                header.push_back(&ASR::down_cast<ASR::Select_t>(&x)->m_test);
                 break;
             }
             case ASR::stmtType::DoLoop: {
@@ -876,8 +880,15 @@ public:
                     if (construct) {
                         rest.push_back(x);
                     }
+                    // The length of a character selector may be known only
+                    // once it is evaluated. It is left to the SELECT CASE
+                    // construct, which evaluates it once, and only the
+                    // results it references are evaluated before.
+                    bool into_variables = !(ASR::is_a<ASR::Select_t>(*x) &&
+                        ASRUtils::is_character(*ASRUtils::expr_type(
+                            ASR::down_cast<ASR::Select_t>(x)->m_test)));
                     ASR::stmt_t* header_block = make_header_block(
-                        x->base.loc, header, rest);
+                        x->base.loc, header, rest, into_variables);
                     if (header_block != nullptr) {
                         body.push_back(al, header_block);
                         if (construct) {

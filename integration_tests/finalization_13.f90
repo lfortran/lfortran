@@ -35,6 +35,11 @@ contains
         type(t), intent(in) :: x
         value = x%v
     end function
+    function key(x) result(r)
+        type(t), intent(in) :: x
+        character(len=:), allocatable :: r
+        r = repeat(achar(x%v + 23), x%v - 40)
+    end function
     subroutine finish(x)
         type(t), intent(inout) :: x
         if (x%v == 42) finished = finished + 1
@@ -110,6 +115,17 @@ program finalization_13
         error stop "select case"
     end select
     if (strict) call check(finished == 1, "select case: after")
+
+    finished = 0
+    select case (key(make(42)) // "x")
+    case ("Ax")
+        error stop "character select case: Ax"
+    case ("AAx")
+        call check(finished == 0, "character select case: inside")
+    case default
+        error stop "character select case"
+    end select
+    if (strict) call check(finished == 1, "character select case: after")
 
     finished = 0
     a = -1
