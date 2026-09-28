@@ -49,7 +49,7 @@
 
 #include <libasr/runtime/lfortran_intrinsics.h>
 
-#if defined(COMPILE_TO_WASM)
+#if defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)
 #elif defined(_WIN32)
 #include <windows.h>
 #include <psapi.h>
@@ -124,7 +124,7 @@ static void lcompilers_init_increment_u64(uint64_t *p) {
 }
 
 static void lcompilers_init_yield(void) {
-#if defined(COMPILE_TO_WASM)
+#if defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)
 #elif defined(_WIN32)
     SwitchToThread();
 #else
@@ -141,7 +141,7 @@ typedef struct lcompilers_init_lease {
 } lcompilers_init_lease;
 
 /* The thread's own identity, the address of a thread local. */
-#if defined(COMPILE_TO_WASM)
+#if defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)
 static int lcompilers_init_thread_token;
 static lcompilers_init_lease *lcompilers_init_own_leases;
 /* How deep in dispatches this thread is, and whether it runs the
@@ -165,7 +165,7 @@ static _Thread_local int lcompilers_init_collective_active;
 static _Thread_local int lcompilers_init_bootstraps_ran;
 #endif
 
-#if defined(COMPILE_TO_WASM)
+#if defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)
 #elif defined(_WIN32)
 static SRWLOCK lcompilers_init_mutex = SRWLOCK_INIT;
 static SRWLOCK lcompilers_init_registry_mutex = SRWLOCK_INIT;
@@ -194,7 +194,7 @@ static void lcompilers_init_lock(void) {
         lcompilers_init_depth++;
         return;
     }
-#if defined(COMPILE_TO_WASM)
+#if defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)
 #elif defined(_WIN32)
     AcquireSRWLockExclusive(&lcompilers_init_mutex);
 #else
@@ -207,7 +207,7 @@ static void lcompilers_init_lock(void) {
 static void lcompilers_init_unlock(void) {
     if (--lcompilers_init_depth > 0) return;
     lcompilers_init_store_u64(&lcompilers_init_owner, 0);
-#if defined(COMPILE_TO_WASM)
+#if defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)
 #elif defined(_WIN32)
     ReleaseSRWLockExclusive(&lcompilers_init_mutex);
 #else
@@ -216,7 +216,7 @@ static void lcompilers_init_unlock(void) {
 }
 
 static void lcompilers_init_registry_lock(void) {
-#if defined(COMPILE_TO_WASM)
+#if defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)
 #elif defined(_WIN32)
     AcquireSRWLockExclusive(&lcompilers_init_registry_mutex);
 #else
@@ -225,7 +225,7 @@ static void lcompilers_init_registry_lock(void) {
 }
 
 static void lcompilers_init_registry_unlock(void) {
-#if defined(COMPILE_TO_WASM)
+#if defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)
 #elif defined(_WIN32)
     ReleaseSRWLockExclusive(&lcompilers_init_registry_mutex);
 #else
@@ -233,14 +233,14 @@ static void lcompilers_init_registry_unlock(void) {
 #endif
 }
 
-#if !defined(COMPILE_TO_WASM) && !defined(_WIN32) && !defined(__APPLE__)
+#if !(defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)) && !defined(_WIN32) && !defined(__APPLE__)
 static int lcompilers_init_registry_trylock(void) {
     return pthread_mutex_trylock(&lcompilers_init_registry_mutex) == 0;
 }
 #endif
 
 static void lcompilers_init_log_lock(void) {
-#if defined(COMPILE_TO_WASM)
+#if defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)
 #elif defined(_WIN32)
     AcquireSRWLockExclusive(&lcompilers_init_log_mutex);
 #else
@@ -249,7 +249,7 @@ static void lcompilers_init_log_lock(void) {
 }
 
 static void lcompilers_init_log_unlock(void) {
-#if defined(COMPILE_TO_WASM)
+#if defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)
 #elif defined(_WIN32)
     ReleaseSRWLockExclusive(&lcompilers_init_log_mutex);
 #else
@@ -442,7 +442,7 @@ static int lcompilers_init_dispatched_valid;
  * or whatever a static runtime is linked into -- is pinned the first time the
  * engine registers a notification, so no later unload can leave the loader
  * calling into unmapped code. */
-#if defined(__APPLE__) && !defined(COMPILE_TO_WASM)
+#if defined(__APPLE__) && !(defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__))
 static int32_t lcompilers_init_engine_pinned;
 
 static void lcompilers_init_pin_engine(void) {
@@ -461,7 +461,7 @@ static void lcompilers_init_pin_engine(void) {
     }
     lcompilers_init_store_release(&lcompilers_init_engine_pinned, 1);
 }
-#elif defined(_WIN32) && !defined(COMPILE_TO_WASM)
+#elif defined(_WIN32) && !(defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__))
 static int32_t lcompilers_init_engine_pinned;
 
 static void lcompilers_init_pin_engine(void) {
@@ -519,7 +519,7 @@ static void lcompilers_init_snapshot_add(lcompilers_init_snapshot *out, size_t i
     out->count++;
 }
 
-#if !defined(COMPILE_TO_WASM)
+#if !(defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__))
 /* A table the loader lists, of an image known to stay mapped meanwhile,
  * with the registry lock held: its entry, added to `out` unless the image
  * was unloaded. The table's instance word tells what this mapping of the
@@ -568,7 +568,7 @@ static void lcompilers_init_adopt_locked(const lcompilers_init_table *t,
 #endif
 
 
-#if !defined(COMPILE_TO_WASM) && (defined(_WIN32) || defined(__APPLE__))
+#if !(defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)) && (defined(_WIN32) || defined(__APPLE__))
 /* The tables in `size` bytes of a section at `data` that object files
  * contribute to, each one `lcompilers_init_table`, passed to `visit`. The
  * linker aligns every contribution and may pad between them, or after the
@@ -592,7 +592,7 @@ static void lcompilers_init_scan_section(const unsigned char *data, size_t size,
 #endif
 
 
-#if defined(COMPILE_TO_WASM)
+#if defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)
 /* Every object file publishes its table from a constructor that runs before
  * this one, and this one before any that can dispatch; see
  * lcompilers_init_abi.h. */
@@ -1482,7 +1482,7 @@ static void lcompilers_init_run(int32_t phase) {
 }
 
 LFORTRAN_API void _lcompilers_init_ctor(const lcompilers_init_table *table) {
-#if defined(COMPILE_TO_WASM)
+#if defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__)
     /* Published already, from a constructor that ran before this one,
      * unless the object file has only the object-format-independent
      * records. */
@@ -1499,7 +1499,7 @@ LFORTRAN_API void _lcompilers_init_ctor(const lcompilers_init_table *table) {
     }
     lcompilers_init_registry_unlock();
 #endif
-#if defined(_WIN32) && !defined(COMPILE_TO_WASM)
+#if defined(_WIN32) && !(defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__))
     /* A DLL's constructors run under the loader lock, where running
      * initializers is unsafe. The executable's constructor, a Fortran main
      * program or the host's lfortran_initialize() then does the work, with
@@ -1600,7 +1600,7 @@ LFORTRAN_API void _lcompilers_init_remove_records(const lcompilers_init_table *t
 
 LFORTRAN_API void _lcompilers_init_unload(const lcompilers_init_table *table) {
     if (table == NULL) return;
-#if defined(_WIN32) && !defined(COMPILE_TO_WASM)
+#if defined(_WIN32) && !(defined(COMPILE_TO_WASM) || defined(__EMSCRIPTEN__))
     if (lcompilers_init_process_ending()) return;
 #endif
     lcompilers_init_registry_lock();
