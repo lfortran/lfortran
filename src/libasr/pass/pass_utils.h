@@ -795,6 +795,24 @@ namespace LCompilers {
         };
 
     namespace ReplacerUtils {
+        /*
+        F2018 7.5.10: if the data source `source` of an allocatable
+        component is an unallocated allocatable object, the component
+        of the constructed value is unallocated. When `source` is an
+        allocatable variable or component, returns
+
+            if (allocated(source)) then
+                assign ! component = source
+            else
+                deallocate(component) ! only if allocated
+            end if
+
+        otherwise returns `assign` unchanged.
+        */
+        ASR::stmt_t* guard_allocatable_component_assignment(Allocator& al,
+            const Location& loc, ASR::expr_t* source, ASR::expr_t* component,
+            ASR::stmt_t* assign);
+
         template <typename T>
         void replace_StructConstructor(ASR::StructConstructor_t* x,
             T* replacer, bool inside_symtab, bool& remove_original_statement,
@@ -907,11 +925,17 @@ namespace LCompilers {
                         assign = ASRUtils::STMT(ASRUtils::make_Associate_t_util(replacer->al,
                                                     x->base.base.loc, derived_ref, x_m_args_i));
                     } else {
-                        bool member_realloc = realloc_lhs ||
+                        bool member_is_allocatable =
                             ASRUtils::is_allocatable(ASRUtils::expr_type(derived_ref));
+                        bool member_realloc = realloc_lhs || member_is_allocatable;
                         assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
                                                     x->base.base.loc, derived_ref,
                                                     x_m_args_i, nullptr, member_realloc, false));
+                        if( member_is_allocatable ) {
+                            assign = guard_allocatable_component_assignment(
+                                replacer->al, x->base.base.loc,
+                                x->m_args[i].m_value, derived_ref, assign);
+                        }
                     }
                     result_vec->push_back(replacer->al, assign);
                 }
