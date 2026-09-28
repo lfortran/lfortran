@@ -7,12 +7,6 @@ type :: outer
     type(w) :: in
     character(len=3) :: d(2, 2)
 end type
-contains
-subroutine check_reshaped(x)
-    type(w), intent(in) :: x(:, :)
-    if (any(x(2, 2)%c /= ['ab', 'cd', 'zz'])) error stop 10
-    if (any(x(1, 2)%c /= ['ab', 'cd', 'ef'])) error stop 11
-end subroutine
 end module
 
 program derived_types_213
@@ -21,7 +15,6 @@ implicit none
 type(w) :: rs(4), rb(2, 2)
 type(w), allocatable :: ra(:), rab(:, :)
 type(outer) :: ro(4), rob(2, 2)
-class(w), allocatable :: ca(:)
 integer :: i
 
 ! reshape of an array of structs with a character-array component
@@ -52,12 +45,4 @@ ro(2)%d(1, 2) = 'xyz'
 rob = reshape(ro, [2, 2])
 if (any(rob(2, 2)%in%c /= ['ab', 'cd', 'zz'])) error stop 6
 if (rob(2, 1)%d(1, 2) /= 'xyz' .or. rob(2, 1)%d(2, 2) /= 'ddd') error stop 7
-
-! reshape of a class(w) array
-allocate(ca(4))
-do i = 1, 4
-    ca(i)%c = ['ab', 'cd', 'ef']
-end do
-ca(4)%c(3) = 'zz'
-call check_reshaped(reshape(ca, [2, 2]))
 end program

@@ -2748,7 +2748,8 @@ RUN(NAME derived_types_206 LABELS gfortran llvm)
 RUN(NAME derived_types_207 LABELS gfortran llvm)
 RUN(NAME derived_types_208 LABELS gfortran llvm)
 RUN(NAME derived_types_209 LABELS gfortran llvm)
-RUN(NAME derived_types_213 LABELS gfortran llvm NO_DETECT_LEAKS) # pre-existing leaks: assigning a reshape of a struct array leaks one member buffer per element (#13666, also on main with a scalar character component), and the class-array reshape temporary is never freed (#13621); remove NO_DETECT_LEAKS once fixed
+RUN(NAME derived_types_213 LABELS gfortran llvm)
+RUN(NAME derived_types_214 LABELS llvm) # gfortran segfaults on reshape () of a polymorphic array passed to a class dummy
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
