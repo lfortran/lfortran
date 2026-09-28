@@ -22150,6 +22150,16 @@ public:
                     // Handling functions passed as instantiate's arguments
                     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
                     ASR::symbol_t *f_arg0 = current_scope->resolve_symbol(arg);
+                    if (!f_arg0
+                            && ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(arg)) {
+                        // Handling intrinsic function (e.g. min, max) as an
+                        // inline instantiation argument
+                        SymbolTable *wrapper_scope = is_nested
+                            ? current_scope->parent : current_scope;
+                        symbol_subs[f->m_name] = make_intrinsic_procedure_wrapper(
+                            arg, f, type_subs, wrapper_scope, arg_attr->base.loc);
+                        continue;
+                    }
                     if (!f_arg0) {
                         diag.add(Diagnostic("The function argument " + arg + " is not found",
                             Level::Error, Stage::Semantic, {Label("", {arg_attr->base.loc})}));
@@ -26513,6 +26523,109 @@ public:
 
         // make custom operators names distinct by appending "~~" to the begining of their names
         return "~~" + op;
+    }
+
+    // Build a wrapper function in `scope` that calls the intrinsic
+    // function `arg` (e.g. min, max) with the signature of the deferred
+    // procedure `f`, so that the intrinsic can be passed as a template
+    // instantiation argument.
+    ASR::symbol_t* make_intrinsic_procedure_wrapper(const std::string &arg,
+            ASR::Function_t *f,
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs,
+            SymbolTable *scope, const Location &loc) {
+        SymbolTable *saved_scope = current_scope;
+        SymbolTable *parent_scope = scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        Vec<ASR::expr_t*> wargs;
+        wargs.reserve(al, f->n_args);
+        Vec<ASR::expr_t*> call_args;
+        call_args.reserve(al, f->n_args);
+        for (size_t j=0; j<f->n_args; j++) {
+            ASR::ttype_t *var_type = ASRUtils::duplicate_type(al,
+                ASRUtils::subs_expr_type(type_subs, f->m_args[j]));
+            ASR::symbol_t *var_type_decl =
+                ASRUtils::get_struct_sym_from_struct_expr(f->m_args[j]);
+            std::string var_name = "arg" + std::to_string(j);
+            ASR::asr_t *v = ASRUtils::make_Variable_t_util(al,
+                loc, current_scope,
+                s2c(al, var_name), nullptr, 0, ASR::intentType::In,
+                nullptr, nullptr, ASR::storage_typeType::Default,
+                var_type, var_type_decl, ASR::abiType::Source,
+                ASR::accessType::Private, ASR::presenceType::Required,
+                false);
+            current_scope->add_symbol(var_name,
+                ASR::down_cast<ASR::symbol_t>(v));
+            ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+                loc, current_scope->get_symbol(var_name)));
+            wargs.push_back(al, var_expr);
+            call_args.push_back(al, var_expr);
+        }
+
+        ASRUtils::create_intrinsic_function create_func =
+            ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(arg);
+        ASR::asr_t *call_value_asr = create_func(al,
+            loc, call_args, diag);
+        if (call_value_asr == nullptr) {
+            current_scope = saved_scope;
+            throw SemanticAbort();
+        }
+        ASR::expr_t *call_value = ASRUtils::EXPR(call_value_asr);
+
+        ASR::ttype_t *return_type = ASRUtils::duplicate_type(al,
+            ASRUtils::subs_expr_type(type_subs, f->m_return_var));
+        ASR::asr_t *return_v = ASRUtils::make_Variable_t_util(al,
+            loc, current_scope, s2c(al, "ret"),
+            nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
+            ASR::storage_typeType::Default, return_type,
+            ASRUtils::get_struct_sym_from_struct_expr(call_value),
+            ASR::abiType::Source, ASR::accessType::Private,
+            ASR::presenceType::Required, false);
+        current_scope->add_symbol("ret",
+            ASR::down_cast<ASR::symbol_t>(return_v));
+        ASR::expr_t *return_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+            loc, current_scope->get_symbol("ret")));
+
+        if (!ASRUtils::check_equal_type(
+                ASRUtils::expr_type(call_value), return_type,
+                call_value, f->m_return_var)) {
+            diag.add(Diagnostic(
+                "Unapplicable types for intrinsic function " + arg,
+                Level::Error, Stage::Semantic, {
+                    Label("", {loc})}));
+            current_scope = saved_scope;
+            throw SemanticAbort();
+        }
+
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        ASRUtils::make_ArrayBroadcast_t_util(al,
+            loc, return_expr, call_value);
+        ASR::stmt_t *assignment = ASRUtils::STMT(
+            ASRUtils::make_Assignment_t_util(al,
+                loc, return_expr, call_value,
+                nullptr, false, false));
+        body.push_back(al, assignment);
+
+        std::string func_name = parent_scope->get_unique_name(
+            arg + "_intrinsic");
+        ASR::FunctionType_t *req_type =
+            ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
+        ASR::asr_t *op_function = ASRUtils::make_Function_t_util(
+            al, loc, current_scope,
+            s2c(al, func_name), nullptr, 0, wargs.p, wargs.size(),
+            body.p, body.size(), return_expr,
+            ASR::abiType::Source, ASR::accessType::Public,
+            ASR::deftypeType::Implementation, nullptr,
+            req_type->m_elemental, req_type->m_pure,
+            req_type->m_module, req_type->m_inline,
+            req_type->m_static, nullptr, 0, f->m_deterministic,
+            f->m_side_effect_free, true);
+        ASR::symbol_t *op_sym =
+            ASR::down_cast<ASR::symbol_t>(op_function);
+        parent_scope->add_symbol(func_name, op_sym);
+
+        current_scope = saved_scope;
+        return op_sym;
     }
 
     // A specific procedure of a generic operator can be bound to a deferred
