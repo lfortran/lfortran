@@ -4058,18 +4058,6 @@ filename = "errors/array_04.f90"
 asr = true
 
 [[test]]
-filename = "errors/derived_type_nonconst_bound_01.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_nonconst_bound_01.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_nonconst_bound_02.f90"
-asr = true
-
-[[test]]
 filename = "errors/array_05.f90"
 asr = true
 

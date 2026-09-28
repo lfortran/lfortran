@@ -1361,6 +1361,18 @@ semantic error: instantiated procedure 'own_tmpl' has the same name as the templ
 2289 |         instantiate own_tmpl {integer}, only: own_tmpl => five  ! {Error} instantiated procedure 'own_tmpl' has the same name as the template 'own_tmpl' it instantiates
      |                                               ~~~~~~~~~~~~~~~~ help: give the instance a different local name, e.g. `only: own_tmpl_instance => five`
 
+semantic error: Explicit shaped array with nonconstant bounds
+    --> tests/errors/continue_compilation_templates_01.f90:2301:26
+     |
+2301 |             integer :: b(n*nonconst_bound_m)  ! {Error} Explicit shaped array with nonconstant bounds
+     |                          ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Explicit shaped array with nonconstant bounds
+    --> tests/errors/continue_compilation_templates_01.f90:2308:26
+     |
+2308 |             integer :: b(max(n*nonconst_bound_m, 5))  ! {Error} Explicit shaped array with nonconstant bounds
+     |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
     |

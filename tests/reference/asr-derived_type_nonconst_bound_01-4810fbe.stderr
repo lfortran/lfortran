@@ -1,5 +1,0 @@
-semantic error: Explicit shaped array with nonconstant bounds
- --> tests/errors/derived_type_nonconst_bound_01.f90:6:22
-  |
-6 |         integer :: b(m*2)
-  |                      ^^^ 
