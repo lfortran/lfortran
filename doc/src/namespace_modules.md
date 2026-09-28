@@ -765,7 +765,12 @@ document. For each, the source is given.
   declared in this file, in a `.mod` file or in the parent of a submodule
   (`errors/namespace_separate_component.f90`,
   `errors/namespace_separate_submodule.f90`). The same holds for a type
-  renamed by an ordinary USE (`use m, only: tt => t`, `cc_55`). An
+  renamed by an ordinary USE (`use m, only: tt => t`, `cc_55`). The
+  same printer also builds two internal names, the specializations of
+  `pass_array_by_data` and the helper procedure of `move_alloc`, which
+  therefore also contain the name of the type rather than the local name;
+  both are made unique by other means (the name of the specialized
+  procedure, and `get_unique_name`). An
   instance of a parameterized derived type is named after the type and
   its kind values, not after the local name of the type: `type(L%pt)`
   uses the instance `pt_4` declared in the module that defines `pt`, the
@@ -791,6 +796,12 @@ Known limitations of the prototype:
   the module where it is defined (lfortran/lfortran#13729). Derived types
   made public by `public :: t` or `type, public :: t` in a module whose
   default accessibility is `PRIVATE` work (`namespace_modules_32`).
+* Only the LLVM backend is supported and tested. The other backends and
+  the source printers write the generated names of the symbols declared
+  for module entities (`x~of_M`, see above) into their output, which is
+  then not valid source: the C backend (`--backend=c`, `--show-c`) emits
+  `struct box_t~of_m*`, and `--show-fortran` and `--show-julia` print such
+  names too.
 * The Fortran dependency scanner of CMake does not recognize
   `use, namespace`, so a file whose only USE of a module is a namespace
   import is not ordered after the file that defines the module.
@@ -904,6 +915,7 @@ round trips of
 | `namespace_modules_31` | A module entity named like a module that the host accesses through another module entity |
 | `namespace_modules_32` | Types of a module with default `PRIVATE`: `public :: t`, `type, public :: u`, a generic constructor named like its type |
 | `namespace_modules_33` | Separate compilation (`.mod` files): `use b` of a module with public module entities, `a%x`, `b%a%x`, `b%env%real64`; parent component `v%t` of a type that extends `a%t` in that module, which also has a variable `t` |
+| `namespace_modules_34` | Enumerator initializers that reference named constants through a module entity (`l%k`, `l%offsets(2)`), in a module, a main program and a procedure |
 | `namespace_modules_35` | `type(L%pt)` of a parameterized derived type is the same type as `type(pt)` in its module, `type(pp)` with `pp => pt` and a variable `type(l%pt)` of another module |
 
 In the table of error tests, `cc_NN` is a case of
