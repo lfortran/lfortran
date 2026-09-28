@@ -3913,6 +3913,7 @@ class ParallelRegionVisitor :
                     current_stmt = do_loop->m_body[0];
                 }
             }
+            evaluate_result_bounds_once(heads, loc);
             
             // Calculate total iterations
             ASR::expr_t* total_iterations = b.i32(1);
