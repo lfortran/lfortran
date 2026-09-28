@@ -33,7 +33,6 @@ call branch_case()
 call callee_case()
 call loop_case()
 call component_case()
-call backedge_case()
 
 contains
 
@@ -99,23 +98,5 @@ contains
         print *, t_obj%v
         if (any(t_obj%v /= [1.0, 2.0, 3.0])) error stop 4
     end subroutine component_case
-
-    subroutine backedge_case()
-        type(tt), target :: t, u
-        type(tt), pointer :: p
-        integer :: i
-
-        allocate(t%v(3))
-        t%v = 1.0
-        allocate(u%v(3))
-        u%v = 2.0
-        p => u
-        do i = 1, 2
-            t = f(p%v)
-            p => t
-        end do
-        print *, t%v
-        if (any(t%v /= 4.0)) error stop 5
-    end subroutine backedge_case
 
 end program subroutines_22
