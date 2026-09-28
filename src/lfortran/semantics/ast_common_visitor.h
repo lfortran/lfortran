@@ -5564,13 +5564,12 @@ public:
         LCOMPILERS_ASSERT(parent_scope != nullptr);
         std::string iface_name = "~proc_" + sym + "_" +
             current_scope->get_counter();
-        SymbolTable* fn_scope = al.make_new<SymbolTable>(parent_scope);
-        ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Function_t(
-                al, attr_loc, fn_scope, s2c(al, iface_name),
-                proc_type, nullptr, 0, nullptr, 0, nullptr, 0,
-                nullptr, ASR::accessType::Public, false, false,
-                nullptr, nullptr, nullptr));
+        ASRUtils::SymbolDuplicator duplicator(al);
+        duplicator.duplicate_symbol((ASR::symbol_t*)func, parent_scope);
+        ASR::symbol_t* iface = parent_scope->get_symbol(sym);
+        parent_scope->erase_symbol(sym);
+        ASR::Function_t* iface_func = ASR::down_cast<ASR::Function_t>(iface);
+        iface_func->m_name = s2c(al, iface_name);
         parent_scope->add_symbol(iface_name, iface);
         ASR::asr_t* proc_var = ASRUtils::make_Variable_t_util(
             al, attr_loc, current_scope,
