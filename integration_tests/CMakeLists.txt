@@ -3916,6 +3916,7 @@ RUN(NAME finalization_09 LABELS gfortran llvm)
 RUN(NAME finalization_10 LABELS gfortran llvm EXTRAFILES finalization_10_module.f90)
 RUN(NAME finalization_11 LABELS gfortran llvm EXTRAFILES finalization_11_module.f90)
 RUN(NAME finalization_12 LABELS gfortran llvm)
+RUN(NAME finalization_13 LABELS gfortran llvm)
 
 RUN(NAME read_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN read_02_data.txt)

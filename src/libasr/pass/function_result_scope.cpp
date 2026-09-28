@@ -51,13 +51,19 @@
  *   final subroutine, and then its temporary is made a variable of the
  *   BLOCK, for the same reason.
  *
- * A statement that contains other statements, or that can transfer control,
- * is not put in a BLOCK, since leaving the BLOCK by EXIT, CYCLE or RETURN
- * would skip the finalization at its end. Instead, the header of an IF,
- * DO, DO CONCURRENT, FORALL or SELECT CASE construct is evaluated into
- * variables by a BLOCK of its own before the construct, and the condition of
- * a DO WHILE by one at the start of each iteration. A WHERE construct holds only
- * assignments and WHERE constructs, so it is made a BLOCK as a whole.
+ * The header of an IF, DO, DO CONCURRENT, FORALL or SELECT CASE construct
+ * is evaluated into variables at the start of a BLOCK that then executes
+ * the construct, so that its results are finalized after the construct.
+ * The condition of a DO WHILE is evaluated at the start of a BLOCK that
+ * makes up each iteration, whose results are finalized after the iteration.
+ * The results referenced by the selector of an ASSOCIATE construct are
+ * associated with pointers of the construct, so they are finalized when it
+ * completes. A construct left by EXIT, CYCLE or RETURN completes as well,
+ * and the backend finalizes the variables of the BLOCK or ASSOCIATE
+ * constructs that such a branch leaves. The header of an arithmetic IF, a
+ * statement that branches, is evaluated by a BLOCK of its own before the
+ * branch. A WHERE construct holds only assignments and WHERE constructs, so
+ * it is made a BLOCK as a whole.
  */
 
 namespace LCompilers {
@@ -626,11 +632,14 @@ public:
         return ASRUtils::EXPR(ASR::make_Var_t(al, value->base.loc, sym));
     }
 
-    // The BLOCK that evaluates the header values `header` of a construct
-    // into variables, which the construct then uses. nullptr if none of them
-    // references such a function.
+    // The BLOCK that evaluates the header values `header` of a statement
+    // into variables, which the statement then uses, and then executes
+    // `rest`, which is the statement itself if it is a construct: the
+    // results are finalized when the BLOCK completes, after the construct.
+    // nullptr if none of the values references such a function.
     ASR::stmt_t* make_header_block(const Location &loc,
-            const std::vector<ASR::expr_t**> &header) {
+            const std::vector<ASR::expr_t**> &header,
+            const std::vector<ASR::stmt_t*> &rest) {
         // No SymbolTable is made for a header without such a reference:
         // each one takes a number from the global counter, which names
         // things in the generated code.
@@ -643,7 +652,7 @@ public:
         }
         SymbolTable* block_scope = al.make_new<SymbolTable>(current_scope);
         Vec<ASR::stmt_t*> block_body;
-        block_body.reserve(al, header.size() + 1);
+        block_body.reserve(al, header.size() + rest.size() + 1);
         AssociateResults replacer(al, block_scope, block_body);
         for (ASR::expr_t** value : header) {
             if (!references_results(*value)) {
@@ -659,6 +668,9 @@ public:
         }
         if (block_body.size() == 0) {
             return nullptr;
+        }
+        for (ASR::stmt_t* stmt : rest) {
+            block_body.push_back(al, stmt);
         }
         return make_block(loc, block_scope, block_body);
     }
@@ -717,32 +729,102 @@ public:
 
     // do while (c) ... end do
     //   becomes
-    // do while (.true.); block; h = c; end block; if (.not. h) exit; ...
+    // do while (.true.); block; h = c; if (.not. h) exit; ...; end block
+    //
+    // The condition is evaluated once per iteration, so its results are
+    // finalized at the end of each iteration (or when EXIT or CYCLE leaves
+    // the BLOCK), after the body has executed.
     void evaluate_condition_in_block(ASR::WhileLoop_t &x) {
+        ASRUtils::ASRBuilder b(al, x.base.base.loc);
         std::vector<ASR::expr_t**> header = {&x.m_test};
         ASR::stmt_t* condition_block = make_header_block(x.base.base.loc,
-            header);
+            header, {});
         LCOMPILERS_ASSERT(condition_block != nullptr);
-        ASRUtils::ASRBuilder b(al, x.base.base.loc);
-        Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body + 2);
-        body.push_back(al, condition_block);
-        body.push_back(al, b.If(b.Eq(x.m_test, b.logical_false()),
+        // The BLOCK holds the evaluation of the condition, into the
+        // variable that is now the test; the rest of the iteration follows.
+        ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(
+            ASR::down_cast<ASR::BlockCall_t>(condition_block)->m_m);
+        Vec<ASR::stmt_t*> block_body;
+        block_body.reserve(al, block->n_body + x.n_body + 1);
+        for (size_t i = 0; i < block->n_body; i++) {
+            block_body.push_back(al, block->m_body[i]);
+        }
+        block_body.push_back(al, b.If(b.Eq(x.m_test, b.logical_false()),
             {b.Exit()}, {}));
         for (size_t i = 0; i < x.n_body; i++) {
-            body.push_back(al, x.m_body[i]);
+            block_body.push_back(al, x.m_body[i]);
         }
+        block->m_body = block_body.p;
+        block->n_body = block_body.size();
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        body.push_back(al, condition_block);
         x.m_body = body.p;
         x.n_body = body.size();
         x.m_test = b.logical_true();
     }
 
+    // Whether `x` gives its value to an associate name of the ASSOCIATE
+    // construct whose body is being transformed. Semantics makes these the
+    // first statements of the body: an association with the selector, or
+    // an assignment of the value of an expression selector.
+    bool is_selector_statement(ASR::stmt_t* x) {
+        if (current_scope->asr_owner == nullptr ||
+                !ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) ||
+                !ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(
+                    current_scope->asr_owner))) {
+            return false;
+        }
+        ASR::expr_t* target = nullptr;
+        if (ASR::is_a<ASR::Associate_t>(*x)) {
+            target = ASR::down_cast<ASR::Associate_t>(x)->m_target;
+        } else if (ASR::is_a<ASR::Assignment_t>(*x)) {
+            target = ASR::down_cast<ASR::Assignment_t>(x)->m_target;
+        }
+        return target != nullptr && ASR::is_a<ASR::Var_t>(*target) &&
+            current_scope->get_symbol(ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(target)->m_v)) ==
+                ASR::down_cast<ASR::Var_t>(target)->m_v;
+    }
+
+    // The references in the selector statement `x` (see
+    // is_selector_statement) are associated with pointers of the ASSOCIATE
+    // construct, so that their results are finalized after the construct
+    // (F2018 7.5.6.3 p5), not after the statement that evaluates the
+    // selector. A selector that is itself such a reference is associated
+    // with the associate name by semantics already, and only the
+    // references in its arguments are replaced.
+    void associate_selector_results(ASR::stmt_t* x, Vec<ASR::stmt_t*> &body) {
+        AssociateResults replacer(al, current_scope, body);
+        ASR::expr_t* value = ASR::is_a<ASR::Associate_t>(*x) ?
+            ASR::down_cast<ASR::Associate_t>(x)->m_value : nullptr;
+        if (value != nullptr && is_result_reference(value)) {
+            replacer.replace_call_arguments(ASR::down_cast<ASR::FunctionCall_t>(
+                ASRUtils::get_past_array_physical_cast(value)));
+        } else {
+            AssociateStatementResults statement_replacer(replacer);
+            statement_replacer.current_scope = current_scope;
+            statement_replacer.visit_stmt(*x);
+        }
+        body.push_back(al, x);
+    }
+
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_body);
+        bool selectors = true;
         for (size_t i = 0; i < n_body; i++) {
             ASR::stmt_t* x = m_body[i];
             visit_stmt(*x);
+            selectors = selectors && is_selector_statement(x);
+            if (selectors) {
+                if (references_results(*x)) {
+                    associate_selector_results(x, body);
+                } else {
+                    body.push_back(al, x);
+                }
+                continue;
+            }
             if (ASR::is_a<ASR::Where_t>(*x) || ASRUtils::is_single_statement(*x)) {
                 // The associate name of an ASSOCIATE construct is associated
                 // with the result by semantics already.
@@ -761,10 +843,21 @@ public:
             } else {
                 std::vector<ASR::expr_t**> header = construct_header(*x);
                 if (!header.empty()) {
+                    // An arithmetic IF is a statement that branches: its
+                    // results are finalized before the branch. The results
+                    // in the header of a construct are finalized after it.
+                    bool construct = !ASR::is_a<ASR::IfArithmetic_t>(*x);
+                    std::vector<ASR::stmt_t*> rest;
+                    if (construct) {
+                        rest.push_back(x);
+                    }
                     ASR::stmt_t* header_block = make_header_block(
-                        x->base.loc, header);
+                        x->base.loc, header, rest);
                     if (header_block != nullptr) {
                         body.push_back(al, header_block);
+                        if (construct) {
+                            continue;
+                        }
                     }
                 }
             }
