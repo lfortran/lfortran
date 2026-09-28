@@ -2279,11 +2279,11 @@
                                             __asr___instantiated_generic_sum:
                                                 (Function
                                                     (SymbolTable
-                                                        25
+                                                        27
                                                         {
                                                             arr:
                                                                 (Variable
-                                                                    25
+                                                                    27
                                                                     arr
                                                                     []
                                                                     In
@@ -2313,7 +2313,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    25
+                                                                    27
                                                                     i
                                                                     []
                                                                     Local
@@ -2337,7 +2337,7 @@
                                                                 ),
                                                             n:
                                                                 (Variable
-                                                                    25
+                                                                    27
                                                                     n
                                                                     []
                                                                     Local
@@ -2361,7 +2361,7 @@
                                                                 ),
                                                             res:
                                                                 (Variable
-                                                                    25
+                                                                    27
                                                                     res
                                                                     []
                                                                     ReturnVar
@@ -2408,11 +2408,11 @@
                                                     )
                                                     [cast_integer
                                                     ~add_intrinsic]
-                                                    [(Var 25 arr)]
+                                                    [(Var 27 arr)]
                                                     [(Assignment
-                                                        (Var 25 n)
+                                                        (Var 27 n)
                                                         (ArraySize
-                                                            (Var 25 arr)
+                                                            (Var 27 arr)
                                                             ()
                                                             (Integer 4)
                                                             ()
@@ -2422,7 +2422,7 @@
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 25 res)
+                                                        (Var 27 res)
                                                         (FunctionCall
                                                             2 cast_integer
                                                             ()
@@ -2438,16 +2438,16 @@
                                                     (If
                                                         ()
                                                         (IntegerCompare
-                                                            (Var 25 n)
+                                                            (Var 27 n)
                                                             Gt
                                                             (IntegerConstant 0 (Integer 4) Decimal)
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(Assignment
-                                                            (Var 25 res)
+                                                            (Var 27 res)
                                                             (ArrayItem
-                                                                (Var 25 arr)
+                                                                (Var 27 arr)
                                                                 [(()
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
@@ -2461,20 +2461,20 @@
                                                         )
                                                         (DoLoop
                                                             ()
-                                                            ((Var 25 i)
+                                                            ((Var 27 i)
                                                             (IntegerConstant 2 (Integer 4) Decimal)
-                                                            (Var 25 n)
+                                                            (Var 27 n)
                                                             ())
                                                             [(Assignment
-                                                                (Var 25 res)
+                                                                (Var 27 res)
                                                                 (FunctionCall
                                                                     20 ~add_intrinsic
                                                                     ()
-                                                                    [((Var 25 res))
+                                                                    [((Var 27 res))
                                                                     ((ArrayItem
-                                                                        (Var 25 arr)
+                                                                        (Var 27 arr)
                                                                         [(()
-                                                                        (Var 25 i)
+                                                                        (Var 27 i)
                                                                         ())]
                                                                         (Integer 4)
                                                                         ColMajor
@@ -2492,7 +2492,7 @@
                                                         )]
                                                         []
                                                     )]
-                                                    (Var 25 res)
+                                                    (Var 27 res)
                                                     Public
                                                     .true.
                                                     .true.
@@ -2933,11 +2933,11 @@
                                             __instantiated_generic_avg1:
                                                 (Function
                                                     (SymbolTable
-                                                        27
+                                                        26
                                                         {
                                                             arr:
                                                                 (Variable
-                                                                    27
+                                                                    26
                                                                     arr
                                                                     []
                                                                     In
@@ -2967,7 +2967,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    27
+                                                                    26
                                                                     i
                                                                     []
                                                                     Local
@@ -2991,7 +2991,7 @@
                                                                 ),
                                                             n:
                                                                 (Variable
-                                                                    27
+                                                                    26
                                                                     n
                                                                     []
                                                                     Local
@@ -3015,7 +3015,7 @@
                                                                 ),
                                                             res:
                                                                 (Variable
-                                                                    27
+                                                                    26
                                                                     res
                                                                     []
                                                                     ReturnVar
@@ -3063,11 +3063,11 @@
                                                     [__asr___instantiated_generic_sum1
                                                     div_real
                                                     cast_real]
-                                                    [(Var 27 arr)]
+                                                    [(Var 26 arr)]
                                                     [(Assignment
-                                                        (Var 27 n)
+                                                        (Var 26 n)
                                                         (ArraySize
-                                                            (Var 27 arr)
+                                                            (Var 26 arr)
                                                             ()
                                                             (Integer 4)
                                                             ()
@@ -3079,14 +3079,14 @@
                                                     (If
                                                         ()
                                                         (IntegerCompare
-                                                            (Var 27 n)
+                                                            (Var 26 n)
                                                             Gt
                                                             (IntegerConstant 0 (Integer 4) Decimal)
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(Assignment
-                                                            (Var 27 res)
+                                                            (Var 26 res)
                                                             (FunctionCall
                                                                 2 div_real
                                                                 ()
@@ -3094,7 +3094,7 @@
                                                                     20 __asr___instantiated_generic_sum1
                                                                     ()
                                                                     [((ArrayPhysicalCast
-                                                                        (Var 27 arr)
+                                                                        (Var 26 arr)
                                                                         DescriptorArray
                                                                         DescriptorArray
                                                                         (Array
@@ -3110,7 +3110,7 @@
                                                                     ()
                                                                     ()
                                                                 ))
-                                                                ((Var 27 n))]
+                                                                ((Var 26 n))]
                                                                 (Real 4)
                                                                 ()
                                                                 ()
@@ -3120,7 +3120,7 @@
                                                             .false.
                                                         )]
                                                         [(Assignment
-                                                            (Var 27 res)
+                                                            (Var 26 res)
                                                             (FunctionCall
                                                                 2 cast_real
                                                                 ()
@@ -3134,7 +3134,7 @@
                                                             .false.
                                                         )]
                                                     )]
-                                                    (Var 27 res)
+                                                    (Var 26 res)
                                                     Private
                                                     .true.
                                                     .true.
@@ -3392,11 +3392,11 @@
                                             ~add_intrinsic1:
                                                 (Function
                                                     (SymbolTable
-                                                        26
+                                                        25
                                                         {
                                                             arg0:
                                                                 (Variable
-                                                                    26
+                                                                    25
                                                                     arg0
                                                                     []
                                                                     In
@@ -3420,7 +3420,7 @@
                                                                 ),
                                                             arg1:
                                                                 (Variable
-                                                                    26
+                                                                    25
                                                                     arg1
                                                                     []
                                                                     In
@@ -3444,7 +3444,7 @@
                                                                 ),
                                                             ret:
                                                                 (Variable
-                                                                    26
+                                                                    25
                                                                     ret
                                                                     []
                                                                     ReturnVar
@@ -3485,14 +3485,14 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 26 arg0)
-                                                    (Var 26 arg1)]
+                                                    [(Var 25 arg0)
+                                                    (Var 25 arg1)]
                                                     [(Assignment
-                                                        (Var 26 ret)
+                                                        (Var 25 ret)
                                                         (RealBinOp
-                                                            (Var 26 arg0)
+                                                            (Var 25 arg0)
                                                             Add
-                                                            (Var 26 arg1)
+                                                            (Var 25 arg1)
                                                             (Real 4)
                                                             ()
                                                         )
@@ -3500,7 +3500,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 26 ret)
+                                                    (Var 25 ret)
                                                     Public
                                                     .false.
                                                     .true.
