@@ -1921,6 +1921,20 @@ class PRIFInterface {
             SymbolTable *from = ASRUtils::symbol_parent_symtab(&h.var->base);
             std::string name = unit.m_symtab->get_unique_name(h.name, false);
             from->erase_symbol(h.key);
+            // The cobounds of a saved coarray are constant expressions. Keep
+            // their values: the named constants they may refer to stay behind.
+            for (size_t i = 0; i < h.var->n_codims; i++) {
+                ASR::codimension_t &c = h.var->m_codims[i];
+                for (ASR::expr_t **bound : {&c.m_start, &c.m_end}) {
+                    if (*bound == nullptr) continue;
+                    ASR::expr_t *value = ASRUtils::expr_value(*bound);
+                    if (value == nullptr) {
+                        throw LCompilersException("the cobounds of a saved "
+                            "coarray must be constant expressions");
+                    }
+                    *bound = value;
+                }
+            }
             h.var->m_name = s2c(al, name);
             h.var->m_parent_symtab = unit.m_symtab;
             h.var->m_abi = h.abi;
