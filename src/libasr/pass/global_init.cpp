@@ -637,6 +637,33 @@ namespace {
                     body, {});
             }
 
+            // Whether the guard wraps nothing but calls of the initializers
+            // this one depends on, storage set up for no variable and the
+            // end of the initialization: an initializer with nothing of its
+            // own to do. Each of those calls is guarded itself, so the calls
+            // alone, collected in `calls`, do all of it, and nothing reads
+            // the state -- storage a target without module variables, such
+            // as MLIR, need not have.
+            bool idle_guard(ASR::If_t *guard, std::vector<ASR::stmt_t*> &calls) {
+                for (size_t i = 0; i < guard->n_body; i++) {
+                    ASR::stmt_t *s = guard->m_body[i];
+                    if (ASR::is_a<ASR::GlobalInitStorage_t>(*s)
+                            && ASR::down_cast<ASR::GlobalInitStorage_t>(s)->n_targets == 0) {
+                        continue;
+                    }
+                    if (!ASR::is_a<ASR::SubroutineCall_t>(*s)) return false;
+                    ASR::symbol_t *name = ASR::down_cast<ASR::SubroutineCall_t>(s)->m_name;
+                    if (is_init_runtime_call(name, InitRuntimeFn::End)) continue;
+                    ASR::symbol_t *target = ASRUtils::symbol_get_past_external(name);
+                    if (!ASR::is_a<ASR::Function_t>(*target)
+                            || !is_owner_global_init(ASR::down_cast<ASR::Function_t>(target))) {
+                        return false;
+                    }
+                    calls.push_back(s);
+                }
+                return true;
+            }
+
             void expand_body(SymbolTable *scope, ASR::stmt_t **&m_body, size_t &n_body) {
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, n_body);
@@ -660,7 +687,12 @@ namespace {
                     if (ASR::is_a<ASR::If_t>(*s)) {
                         ASR::If_t *guard = ASR::down_cast<ASR::If_t>(s);
                         if (ASR::expr_t *state = guarded_state(guard->m_test)) {
-                            body.push_back(al, expand_guard(guard, state));
+                            std::vector<ASR::stmt_t*> calls;
+                            if (idle_guard(guard, calls)) {
+                                for (ASR::stmt_t *call : calls) body.push_back(al, call);
+                            } else {
+                                body.push_back(al, expand_guard(guard, state));
+                            }
                             changed = true;
                             continue;
                         }

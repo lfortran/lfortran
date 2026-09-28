@@ -1524,6 +1524,7 @@ filename = "../integration_tests/modules_01.f90"
 ast = true
 asr = true
 llvm = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/modules_02.f90"

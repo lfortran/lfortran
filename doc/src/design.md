@@ -214,7 +214,9 @@ set of initializers to run is found.
   `GlobalInitDispatch` by calls of the initializers in stable id order (the
   local ones, then the collective bootstraps, then the collective ones) and
   each guard by plain code on its state, so nothing of the runtime engine is
-  left. Fortran source (`--show-fortran`, `--backend=fortran`) therefore needs
+  left. An initializer with nothing of its own to do keeps only the calls of
+  those it depends on and uses no state, so MLIR, which lays out no module
+  variables, can compile a program that uses modules. Fortran source (`--show-fortran`, `--backend=fortran`) therefore needs
   no runtime to start up, and the names the passes created that are not
   Fortran names, such as those starting with an underscore or longer than 63
   characters, are renamed the way `--apply-fortran-mangling` renames them: a

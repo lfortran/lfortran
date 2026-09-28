@@ -173,7 +173,9 @@ namespace LCompilers {
         // `GlobalInitDispatch` by calls to every root, the local ones first,
         // then the collective bootstraps and the collective ones, and each
         // guard by plain code on its state, so that nothing of the runtime
-        // engine is left.
+        // engine is left. The guard of an initializer with nothing of its
+        // own to do becomes the calls of those it depends on alone, which
+        // leaves its state unused.
         void expand_closed_world_dispatch(Allocator &al,
             ASR::TranslationUnit_t &unit);
 
