@@ -58,8 +58,8 @@
  * makes up each iteration, whose results are finalized after the iteration.
  * The results referenced by the selector of an ASSOCIATE construct are
  * associated with pointers of the construct, so they are finalized when it
- * completes. A construct left by EXIT, CYCLE or RETURN completes as well,
- * and the backend finalizes the variables of the BLOCK or ASSOCIATE
+ * completes. A construct left by EXIT, CYCLE, RETURN or GO TO completes as
+ * well, and the backend finalizes the variables of the BLOCK or ASSOCIATE
  * constructs that such a branch leaves. The header of an arithmetic IF, a
  * statement that branches, is evaluated by a BLOCK of its own before the
  * branch. A WHERE construct holds only assignments and WHERE constructs, so

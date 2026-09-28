@@ -172,6 +172,47 @@ static std::string compute_llvm_function_name(
     return fn_name;
 }
 
+// For each statement label of a procedure body, the BLOCK and ASSOCIATE
+// constructs that contain the labeled statement, outermost first.
+class GoToTargetScopes : public ASR::BaseWalkVisitor<GoToTargetScopes> {
+public:
+    std::map<uint64_t, std::vector<SymbolTable*>> &scopes;
+    std::vector<SymbolTable*> enclosing;
+
+    GoToTargetScopes(std::map<uint64_t, std::vector<SymbolTable*>> &scopes_):
+        scopes(scopes_) {}
+
+    void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+        scopes[x.m_id] = enclosing;
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        // The label of the BLOCK statement is outside the construct.
+        if (x.m_label != -1) {
+            scopes[x.m_label] = enclosing;
+        }
+        ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        enclosing.push_back(block->m_symtab);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+        enclosing.pop_back();
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t* block = ASR::down_cast<ASR::AssociateBlock_t>(
+            x.m_m);
+        enclosing.push_back(block->m_symtab);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+        enclosing.pop_back();
+    }
+
+    void visit_expr(const ASR::expr_t & /*x*/) {}
+    void visit_ttype(const ASR::ttype_t & /*x*/) {}
+};
+
 } // anonymous namespace
 
 class ASRToLLVMVisitor : public ASR::BaseVisitor<ASRToLLVMVisitor>
@@ -374,6 +415,9 @@ public:
     std::set<uint64_t> llvm_fn_from_bare_implicit_interface;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
+    // The BLOCK and ASSOCIATE constructs that contain each labeled statement
+    // of the procedure being generated (see GoToTargetScopes).
+    std::map<uint64_t, std::vector<SymbolTable*>> goto_target_scopes;
     std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
     std::set<uint32_t> global_string_allocated;
     const ASR::Function_t *parent_function = nullptr;
@@ -399,8 +443,8 @@ public:
         bool writes_back_chars;
     };
     std::vector<BlockCleanup> block_cleanups; /* Enclosing BLOCK and ASSOCIATE
-        constructs, innermost last, whose cleanup is emitted by an EXIT, CYCLE
-        or RETURN that leaves them */
+        constructs, innermost last, whose cleanup is emitted by an EXIT, CYCLE,
+        RETURN or GO TO that leaves them */
 
     struct FlatCopyback {
         llvm::Value* flat_buf;
@@ -722,6 +766,11 @@ public:
     }
 
     void predeclare_goto_targets(llvm::Function *fn, ASR::stmt_t **body, size_t n) {
+        goto_target_scopes.clear();
+        GoToTargetScopes target_scopes(goto_target_scopes);
+        for (size_t i = 0; i < n; i++) {
+            target_scopes.visit_stmt(*body[i]);
+        }
         for (size_t i = 0; i < n; i++) {
             if (body[i]->type != ASR::stmtType::GoToTarget) continue;
             ASR::GoToTarget_t *gt = ASR::down_cast<ASR::GoToTarget_t>(body[i]);
@@ -15877,14 +15926,25 @@ public:
     // `loop_or_block_end[target]` leaves (all of them if `all`), innermost
     // first.
     void leave_blocks(size_t target, bool all=false) {
+        size_t kept = 0;
+        while (!all && kept < block_cleanups.size() &&
+                block_cleanups[kept].end_index <= target) {
+            kept++;
+        }
+        leave_innermost_blocks(kept);
+    }
+
+    // End every enclosing BLOCK or ASSOCIATE construct but the outermost
+    // `kept` ones, innermost first.
+    void leave_innermost_blocks(size_t kept) {
         size_t heap_end = heap_fixed_size_arrays.n;
         size_t wb_end = pending_char_writebacks.size();
-        for (auto b = block_cleanups.rbegin();
-                b != block_cleanups.rend() && (all || b->end_index > target); ++b) {
-            emit_block_cleanup(*b, heap_end, wb_end);
-            heap_end = b->heap_arrays_before;
-            if (b->writes_back_chars) {
-                wb_end = b->char_writebacks_before;
+        for (size_t i = block_cleanups.size(); i > kept; i--) {
+            const BlockCleanup &b = block_cleanups[i - 1];
+            emit_block_cleanup(b, heap_end, wb_end);
+            heap_end = b.heap_arrays_before;
+            if (b.writes_back_chars) {
+                wb_end = b.char_writebacks_before;
             }
         }
     }
@@ -15966,6 +16026,18 @@ public:
             llvm_goto_targets[x.m_target_id] = new_target;
         }
         llvm::BasicBlock *target = llvm_goto_targets[x.m_target_id];
+        // End the constructs that the branch leaves: those that do not
+        // contain the target (a branch cannot enter a construct).
+        auto target_scopes = goto_target_scopes.find(x.m_target_id);
+        if (target_scopes != goto_target_scopes.end()) {
+            const std::vector<SymbolTable*> &scopes = target_scopes->second;
+            size_t kept = 0;
+            while (kept < block_cleanups.size() && kept < scopes.size() &&
+                    block_cleanups[kept].symtab == scopes[kept]) {
+                kept++;
+            }
+            leave_innermost_blocks(kept);
+        }
         builder->CreateBr(target);
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_goto");
         start_new_block(bb);
