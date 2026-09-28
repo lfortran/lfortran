@@ -753,7 +753,7 @@ document. For each, the source is given.
   visitors), so that a module does not export them. The designator is then
   analysed as if it named that symbol. The rest of semantics, the ASR passes
   and the LLVM backend see only ordinary use-associated entities.
-* **Names in diagnostics**: semantic diagnostics never show a generated
+* **Names in diagnostics**: semantic diagnostics do not show a generated
   name. The ones reported while a designator is resolved show it as
   written there (`a%f`). Everywhere else a derived type or an enumeration
   type is shown by its own name, as for a variable declared with that type:
@@ -765,9 +765,15 @@ document. For each, the source is given.
   declared in this file, in a `.mod` file or in the parent of a submodule
   (`errors/namespace_separate_component.f90`,
   `errors/namespace_separate_submodule.f90`). The same holds for a type
-  renamed by an ordinary USE (`use m, only: tt => t`, `cc_55`). Only the
-  messages of internal compiler errors (failed assertions) can still
-  contain a generated name.
+  renamed by an ordinary USE (`use m, only: tt => t`, `cc_55`). An
+  instance of a parameterized derived type is named after the type and
+  its kind values, not after the local name of the type: `type(L%pt)`
+  uses the instance `pt_4` declared in the module that defines `pt`, the
+  same one as `type(pt)`, so the two are the same type
+  (`namespace_modules_35`) and a diagnostic shows it as `pt_4` (`cc_58`). The exceptions that can still
+  contain a generated name are the messages of internal compiler errors
+  (failed assertions) and of `_lfortran_eq`, an LFortran-internal
+  intrinsic that prints Python-style type names.
 * **Portability**: with `--std=f23` (or `--std=legacy`), every
   `use, namespace` statement gets a warning that it is an LFortran extension
   (`tests/warnings/namespace_modules_std_01`).
@@ -898,6 +904,7 @@ round trips of
 | `namespace_modules_31` | A module entity named like a module that the host accesses through another module entity |
 | `namespace_modules_32` | Types of a module with default `PRIVATE`: `public :: t`, `type, public :: u`, a generic constructor named like its type |
 | `namespace_modules_33` | Separate compilation (`.mod` files): `use b` of a module with public module entities, `a%x`, `b%a%x`, `b%env%real64`; parent component `v%t` of a type that extends `a%t` in that module, which also has a variable `t` |
+| `namespace_modules_35` | `type(L%pt)` of a parameterized derived type is the same type as `type(pt)` in its module, `type(pp)` with `pp => pt` and a variable `type(l%pt)` of another module |
 
 In the table of error tests, `cc_NN` is a case of
 `errors/namespace_continue_compilation.f90`, and the other tests are
@@ -962,5 +969,6 @@ separate files in `errors/` (`namespace_modules_NN.f90`, and
 | `cc_55` | Structure constructor of a type renamed by an ordinary USE (`uu => u`) passed for a dummy argument of another type (the type is shown as `u`, as for a module entity) |
 | `cc_56` | ALLOCATE of a component declared as `type(l%u)` in another module that is neither allocatable nor a pointer (the type is shown as `u`) |
 | `cc_57` | DEALLOCATE of the structure constructor `l%u(1)` (the type is shown as `u`) |
+| `cc_58` | Variable declared as `type(l%pt)`, a parameterized derived type with default type parameters, passed for a dummy argument of another type (the type is shown as `pt_4`) |
 | `namespace_separate_component` | As `cc_54`, with the modules compiled separately (`.mod` files) |
 | `namespace_separate_submodule` | Structure constructor `l%u(1)` passed for a dummy argument of another type in a submodule whose separately compiled parent declared the symbol for `l%u` |

@@ -306,3 +306,9 @@ semantic error: Cannot deallocate variables in expression u
     |
 590 |     deallocate(l%u(1))
     |                ^^^^^^ 
+
+semantic error: Type mismatch in argument `v`: expected `t` but got `pt_4`
+   --> tests/errors/namespace_continue_compilation.f90:610:15
+    |
+610 |     call take(b)
+    |               ^ 

@@ -2044,6 +2044,7 @@ RUN(NAME namespace_modules_31 LABELS llvm)
 RUN(NAME namespace_modules_32 LABELS llvm)
 RUN(NAME namespace_modules_33 LABELS llvm EXTRAFILES namespace_modules_33_mod.f90)
 RUN(NAME namespace_modules_34 LABELS llvm)
+RUN(NAME namespace_modules_35 LABELS llvm)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
 
@@ -2564,6 +2565,10 @@ RUN(NAME pdt_18 LABELS llvm flang)
 # gfortran rejects a default initializer on a component whose kind is a kind
 # parameter of the type, so this test is not labelled `gfortran`
 RUN(NAME pdt_19 LABELS llvm flang)
+RUN(NAME pdt_20 LABELS gfortran llvm)
+# GFortran reports the two types named `pt` as ambiguous, although only one of
+# them is accessible by that name, so this test is not labelled `gfortran`
+RUN(NAME pdt_21 LABELS llvm)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)

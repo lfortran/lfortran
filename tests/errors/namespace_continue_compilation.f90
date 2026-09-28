@@ -590,6 +590,26 @@ subroutine cc_57()
     deallocate(l%u(1))
 end subroutine
 
+! A parameterized derived type with default type parameters (cc_58)
+module nscc_pdt
+    implicit none
+    type :: pt(k)
+        integer, kind :: k = 4
+        integer(k) :: v = 1
+    end type
+end module
+
+! A variable of a parameterized derived type declared as `type(l%pt)` passed
+! for a dummy argument of another type: its type is shown as `pt_4`, the
+! instance of `pt` for k = 4, as for `type(pt)`.
+subroutine cc_58()
+    use nscc_types, only: take
+    use, namespace :: l => nscc_pdt
+    implicit none
+    type(l%pt) :: b
+    call take(b)
+end subroutine
+
 program namespace_continue_compilation
     implicit none
 end program

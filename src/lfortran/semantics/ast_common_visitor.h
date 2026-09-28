@@ -10738,10 +10738,20 @@ public:
 
         std::map<int64_t, int64_t> sentinel_to_actual;
         std::map<std::string, int64_t> kind_values;
-        std::string monomorphized_name = pdt_name;
+        // The instance is declared in `pdt_scope` under a name built from the
+        // name of the PDT itself (`instance_name`), so every reference to the
+        // PDT with the same kind values shares one instance, whatever local
+        // name it is accessed by (`use m, only: pp => pt`, or a module
+        // entity). In the current scope it is accessed by a name built from
+        // the local name of the PDT (`monomorphized_name`), which does not
+        // clash with another PDT of the same name in the current scope.
+        std::string kind_suffix;
         for (size_t i = 0; i < kind_val_vec.size(); i++) {
-            monomorphized_name += "_" + std::to_string(kind_val_vec[i]);
+            kind_suffix += "_" + std::to_string(kind_val_vec[i]);
         }
+        std::string monomorphized_name = pdt_name + kind_suffix;
+        std::string instance_name =
+            std::string(ASRUtils::symbol_name(pdt_sym_orig)) + kind_suffix;
         for (size_t i = 0; i < pdt_struct->n_kind_params; i++) {
             std::string kp_name(pdt_struct->m_kind_params[i]);
             int64_t kind_val = kind_val_vec[child_offset + i];
@@ -10749,6 +10759,31 @@ public:
             sentinel_to_actual[sentinel] = kind_val;
             kind_values[kp_name] = kind_val;
         }
+
+        // The symbol that names `instance` from the current scope: an
+        // ExternalSymbol `monomorphized_name` declared in the current scope if
+        // the instance is declared in a module and the name is not taken.
+        auto import_instance = [&](ASR::symbol_t* instance) -> ASR::symbol_t* {
+            if (current_scope->resolve_symbol(monomorphized_name) != nullptr) {
+                return instance;
+            }
+            ASR::symbol_t* module_sym = nullptr;
+            if (pdt_scope->asr_owner != nullptr &&
+                ASR::is_a<ASR::symbol_t>(*pdt_scope->asr_owner)) {
+                module_sym = ASR::down_cast<ASR::symbol_t>(pdt_scope->asr_owner);
+            }
+            if (module_sym == nullptr || !ASR::is_a<ASR::Module_t>(*module_sym)) {
+                return instance;
+            }
+            ASR::symbol_t* ext = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_ExternalSymbol_t(al, loc, current_scope,
+                    s2c(al, monomorphized_name), instance,
+                    ASRUtils::symbol_name(module_sym),
+                    nullptr, 0, s2c(al, instance_name),
+                    ASR::accessType::Public));
+            current_scope->add_symbol(monomorphized_name, ext);
+            return ext;
+        };
 
         // Check if the monomorphized struct already exists in scope
         ASR::symbol_t *v = current_scope->resolve_symbol(monomorphized_name);
@@ -10769,10 +10804,12 @@ public:
         // Also check pdt_scope directly: when the inner PDT lives in a
         // different module, current_scope->resolve_symbol won't reach it.
         {
-            ASR::symbol_t *pdt_existing = pdt_scope->get_symbol(monomorphized_name);
+            ASR::symbol_t *pdt_existing = pdt_scope->get_symbol(instance_name);
             if (pdt_existing && ASR::is_a<ASR::Struct_t>(*pdt_existing)) {
-                ASR::symbol_t* type_decl_sym = ASRUtils::import_struct_type(
-                    al, pdt_existing, current_scope);
+                ASR::symbol_t* type_decl_sym =
+                    monomorphized_name == instance_name
+                    ? ASRUtils::import_struct_type(al, pdt_existing, current_scope)
+                    : import_instance(pdt_existing);
                 type_declaration = type_decl_sym;
                 ASR::ttype_t *type = ASRUtils::make_StructType_t_util(
                     al, loc, type_decl_sym, true);
@@ -10845,7 +10882,9 @@ public:
                     actual_inner.push_back(s);
                 }
             }
-            if (inner_name == pdt_name && actual_inner == kind_val_vec) {
+            if (ASRUtils::symbol_get_past_external(
+                        pdt_scope->resolve_symbol(inner_name)) == pdt_sym_orig
+                    && actual_inner == kind_val_vec) {
                 self_recursive_members.push_back(item.first);
                 continue;
             }
@@ -10948,7 +10987,7 @@ public:
         new_parent = ASRUtils::import_type_declaration(al, new_parent,
             pdt_scope);
         tmp = ASR::make_Struct_t(al, loc, new_scope,
-            s2c(al, monomorphized_name), nullptr,
+            s2c(al, instance_name), nullptr,
             struct_dependencies.p, struct_dependencies.size(),
             new_data_member_names.p, new_data_member_names.size(),
             pdt_final_proc_names.p, pdt_final_proc_names.size(),
@@ -10969,29 +11008,12 @@ public:
             var->m_type_declaration = struct_sym;
         }
 
-        pdt_scope->add_symbol(monomorphized_name, struct_sym);
+        pdt_scope->add_symbol(instance_name, struct_sym);
 
         // If the monomorphized struct was created in a different scope (e.g.
         // the module scope) from the calling scope, create an ExternalSymbol
         // in the calling scope so the type_declaration reference is valid.
-        ASR::symbol_t* type_decl_sym = struct_sym;
-        if (current_scope->resolve_symbol(monomorphized_name) == nullptr) {
-            ASR::symbol_t* module_sym = nullptr;
-            if (pdt_scope->asr_owner != nullptr &&
-                ASR::is_a<ASR::symbol_t>(*pdt_scope->asr_owner)) {
-                module_sym = ASR::down_cast<ASR::symbol_t>(pdt_scope->asr_owner);
-            }
-            if (module_sym && ASR::is_a<ASR::Module_t>(*module_sym)) {
-                ASR::symbol_t* ext = ASR::down_cast<ASR::symbol_t>(
-                    ASR::make_ExternalSymbol_t(al, loc, current_scope,
-                        s2c(al, monomorphized_name), struct_sym,
-                        ASRUtils::symbol_name(module_sym),
-                        nullptr, 0, s2c(al, monomorphized_name),
-                        ASR::accessType::Public));
-                current_scope->add_symbol(monomorphized_name, ext);
-                type_decl_sym = ext;
-            }
-        }
+        ASR::symbol_t* type_decl_sym = import_instance(struct_sym);
 
         type_declaration = type_decl_sym;
         ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, loc, type_decl_sym, true);
