@@ -1822,11 +1822,11 @@
                                             __asr___instantiated_swap:
                                                 (Function
                                                     (SymbolTable
-                                                        22
+                                                        24
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    22
+                                                                    24
                                                                     lhs
                                                                     []
                                                                     InOut
@@ -1850,7 +1850,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    22
+                                                                    24
                                                                     rhs
                                                                     []
                                                                     InOut
@@ -1874,7 +1874,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    22
+                                                                    24
                                                                     t
                                                                     []
                                                                     In
@@ -1898,7 +1898,7 @@
                                                                 ),
                                                             tmp:
                                                                 (Variable
-                                                                    22
+                                                                    24
                                                                     tmp
                                                                     []
                                                                     Local
@@ -1939,25 +1939,25 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 22 lhs)
-                                                    (Var 22 rhs)]
+                                                    [(Var 24 lhs)
+                                                    (Var 24 rhs)]
                                                     [(Assignment
-                                                        (Var 22 tmp)
-                                                        (Var 22 lhs)
+                                                        (Var 24 tmp)
+                                                        (Var 24 lhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 22 lhs)
-                                                        (Var 22 rhs)
+                                                        (Var 24 lhs)
+                                                        (Var 24 rhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 22 rhs)
-                                                        (Var 22 tmp)
+                                                        (Var 24 rhs)
+                                                        (Var 24 tmp)
                                                         ()
                                                         .false.
                                                         .false.
@@ -1971,11 +1971,11 @@
                                             __asr___instantiated_swap1:
                                                 (Function
                                                     (SymbolTable
-                                                        23
+                                                        25
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    23
+                                                                    25
                                                                     lhs
                                                                     []
                                                                     InOut
@@ -1999,7 +1999,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    23
+                                                                    25
                                                                     rhs
                                                                     []
                                                                     InOut
@@ -2023,7 +2023,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    23
+                                                                    25
                                                                     t
                                                                     []
                                                                     In
@@ -2047,7 +2047,7 @@
                                                                 ),
                                                             tmp:
                                                                 (Variable
-                                                                    23
+                                                                    25
                                                                     tmp
                                                                     []
                                                                     Local
@@ -2088,25 +2088,25 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 23 lhs)
-                                                    (Var 23 rhs)]
+                                                    [(Var 25 lhs)
+                                                    (Var 25 rhs)]
                                                     [(Assignment
-                                                        (Var 23 tmp)
-                                                        (Var 23 lhs)
+                                                        (Var 25 tmp)
+                                                        (Var 25 lhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 23 lhs)
-                                                        (Var 23 rhs)
+                                                        (Var 25 lhs)
+                                                        (Var 25 rhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 23 rhs)
-                                                        (Var 23 tmp)
+                                                        (Var 25 rhs)
+                                                        (Var 25 tmp)
                                                         ()
                                                         .false.
                                                         .false.
@@ -2120,11 +2120,11 @@
                                             __asr___instantiated_swap11:
                                                 (Function
                                                     (SymbolTable
-                                                        26
+                                                        27
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    26
+                                                                    27
                                                                     lhs
                                                                     []
                                                                     InOut
@@ -2148,7 +2148,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    26
+                                                                    27
                                                                     rhs
                                                                     []
                                                                     InOut
@@ -2172,7 +2172,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    26
+                                                                    27
                                                                     t
                                                                     []
                                                                     In
@@ -2196,7 +2196,7 @@
                                                                 ),
                                                             tmp:
                                                                 (Variable
-                                                                    26
+                                                                    27
                                                                     tmp
                                                                     []
                                                                     Local
@@ -2237,25 +2237,25 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 26 lhs)
-                                                    (Var 26 rhs)]
+                                                    [(Var 27 lhs)
+                                                    (Var 27 rhs)]
                                                     [(Assignment
-                                                        (Var 26 tmp)
-                                                        (Var 26 lhs)
+                                                        (Var 27 tmp)
+                                                        (Var 27 lhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 26 lhs)
-                                                        (Var 26 rhs)
+                                                        (Var 27 lhs)
+                                                        (Var 27 rhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 26 rhs)
-                                                        (Var 26 tmp)
+                                                        (Var 27 rhs)
+                                                        (Var 27 tmp)
                                                         ()
                                                         .false.
                                                         .false.
@@ -2448,11 +2448,11 @@
                                             __asr___instantiated_swap2:
                                                 (Function
                                                     (SymbolTable
-                                                        25
+                                                        26
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    25
+                                                                    26
                                                                     lhs
                                                                     []
                                                                     InOut
@@ -2476,7 +2476,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    25
+                                                                    26
                                                                     rhs
                                                                     []
                                                                     InOut
@@ -2500,7 +2500,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    25
+                                                                    26
                                                                     t
                                                                     []
                                                                     In
@@ -2524,7 +2524,7 @@
                                                                 ),
                                                             tmp:
                                                                 (Variable
-                                                                    25
+                                                                    26
                                                                     tmp
                                                                     []
                                                                     Local
@@ -2565,25 +2565,25 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 25 lhs)
-                                                    (Var 25 rhs)]
+                                                    [(Var 26 lhs)
+                                                    (Var 26 rhs)]
                                                     [(Assignment
-                                                        (Var 25 tmp)
-                                                        (Var 25 lhs)
+                                                        (Var 26 tmp)
+                                                        (Var 26 lhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 25 lhs)
-                                                        (Var 25 rhs)
+                                                        (Var 26 lhs)
+                                                        (Var 26 rhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 25 rhs)
-                                                        (Var 25 tmp)
+                                                        (Var 26 rhs)
+                                                        (Var 26 tmp)
                                                         ()
                                                         .false.
                                                         .false.
@@ -3158,11 +3158,11 @@
                                             __instantiated_quicksort1:
                                                 (Function
                                                     (SymbolTable
-                                                        24
+                                                        22
                                                         {
                                                             arr:
                                                                 (Variable
-                                                                    24
+                                                                    22
                                                                     arr
                                                                     []
                                                                     InOut
@@ -3192,7 +3192,7 @@
                                                                 ),
                                                             high:
                                                                 (Variable
-                                                                    24
+                                                                    22
                                                                     high
                                                                     []
                                                                     In
@@ -3216,7 +3216,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    24
+                                                                    22
                                                                     i
                                                                     []
                                                                     Local
@@ -3240,7 +3240,7 @@
                                                                 ),
                                                             last:
                                                                 (Variable
-                                                                    24
+                                                                    22
                                                                     last
                                                                     []
                                                                     Local
@@ -3264,7 +3264,7 @@
                                                                 ),
                                                             low:
                                                                 (Variable
-                                                                    24
+                                                                    22
                                                                     low
                                                                     []
                                                                     In
@@ -3288,7 +3288,7 @@
                                                                 ),
                                                             pivot:
                                                                 (Variable
-                                                                    24
+                                                                    22
                                                                     pivot
                                                                     []
                                                                     Local
@@ -3339,24 +3339,24 @@
                                                     __asr___instantiated_swap2
                                                     __asr___instantiated_swap11
                                                     __instantiated_quicksort1]
-                                                    [(Var 24 arr)
-                                                    (Var 24 low)
-                                                    (Var 24 high)]
+                                                    [(Var 22 arr)
+                                                    (Var 22 low)
+                                                    (Var 22 high)]
                                                     [(If
                                                         ()
                                                         (IntegerCompare
-                                                            (Var 24 low)
+                                                            (Var 22 low)
                                                             Lt
-                                                            (Var 24 high)
+                                                            (Var 22 high)
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(Assignment
-                                                            (Var 24 pivot)
+                                                            (Var 22 pivot)
                                                             (ArrayItem
-                                                                (Var 24 arr)
+                                                                (Var 22 arr)
                                                                 [(()
-                                                                (Var 24 high)
+                                                                (Var 22 high)
                                                                 ())]
                                                                 (Real 4)
                                                                 ColMajor
@@ -3367,9 +3367,9 @@
                                                             .false.
                                                         )
                                                         (Assignment
-                                                            (Var 24 last)
+                                                            (Var 22 last)
                                                             (IntegerBinOp
-                                                                (Var 24 low)
+                                                                (Var 22 low)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Integer 4)
@@ -3381,10 +3381,10 @@
                                                         )
                                                         (DoLoop
                                                             ()
-                                                            ((Var 24 i)
-                                                            (Var 24 low)
+                                                            ((Var 22 i)
+                                                            (Var 22 low)
                                                             (IntegerBinOp
-                                                                (Var 24 high)
+                                                                (Var 22 high)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Integer 4)
@@ -3397,23 +3397,23 @@
                                                                     6 lt_real
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 24 arr)
+                                                                        (Var 22 arr)
                                                                         [(()
-                                                                        (Var 24 i)
+                                                                        (Var 22 i)
                                                                         ())]
                                                                         (Real 4)
                                                                         ColMajor
                                                                         ()
                                                                     ))
-                                                                    ((Var 24 pivot))]
+                                                                    ((Var 22 pivot))]
                                                                     (Logical 4)
                                                                     ()
                                                                     ()
                                                                 )
                                                                 [(Assignment
-                                                                    (Var 24 last)
+                                                                    (Var 22 last)
                                                                     (IntegerBinOp
-                                                                        (Var 24 last)
+                                                                        (Var 22 last)
                                                                         Add
                                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Integer 4)
@@ -3427,18 +3427,18 @@
                                                                     16 __asr___instantiated_swap2
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 24 arr)
+                                                                        (Var 22 arr)
                                                                         [(()
-                                                                        (Var 24 last)
+                                                                        (Var 22 last)
                                                                         ())]
                                                                         (Real 4)
                                                                         ColMajor
                                                                         ()
                                                                     ))
                                                                     ((ArrayItem
-                                                                        (Var 24 arr)
+                                                                        (Var 22 arr)
                                                                         [(()
-                                                                        (Var 24 i)
+                                                                        (Var 22 i)
                                                                         ())]
                                                                         (Real 4)
                                                                         ColMajor
@@ -3455,10 +3455,10 @@
                                                             16 __asr___instantiated_swap11
                                                             ()
                                                             [((ArrayItem
-                                                                (Var 24 arr)
+                                                                (Var 22 arr)
                                                                 [(()
                                                                 (IntegerBinOp
-                                                                    (Var 24 last)
+                                                                    (Var 22 last)
                                                                     Add
                                                                     (IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Integer 4)
@@ -3470,9 +3470,9 @@
                                                                 ()
                                                             ))
                                                             ((ArrayItem
-                                                                (Var 24 arr)
+                                                                (Var 22 arr)
                                                                 [(()
-                                                                (Var 24 high)
+                                                                (Var 22 high)
                                                                 ())]
                                                                 (Real 4)
                                                                 ColMajor
@@ -3485,7 +3485,7 @@
                                                             16 __instantiated_quicksort1
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 24 arr)
+                                                                (Var 22 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -3497,8 +3497,8 @@
                                                                 )
                                                                 ()
                                                             ))
-                                                            ((Var 24 low))
-                                                            ((Var 24 last))]
+                                                            ((Var 22 low))
+                                                            ((Var 22 last))]
                                                             ()
                                                             .false.
                                                         )
@@ -3506,7 +3506,7 @@
                                                             16 __instantiated_quicksort1
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 24 arr)
+                                                                (Var 22 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -3519,13 +3519,13 @@
                                                                 ()
                                                             ))
                                                             ((IntegerBinOp
-                                                                (Var 24 last)
+                                                                (Var 22 last)
                                                                 Add
                                                                 (IntegerConstant 2 (Integer 4) Decimal)
                                                                 (Integer 4)
                                                                 ()
                                                             ))
-                                                            ((Var 24 high))]
+                                                            ((Var 22 high))]
                                                             ()
                                                             .false.
                                                         )]
@@ -3540,11 +3540,11 @@
                                             __instantiated_quicksort2:
                                                 (Function
                                                     (SymbolTable
-                                                        27
+                                                        23
                                                         {
                                                             arr:
                                                                 (Variable
-                                                                    27
+                                                                    23
                                                                     arr
                                                                     []
                                                                     InOut
@@ -3579,7 +3579,7 @@
                                                                 ),
                                                             high:
                                                                 (Variable
-                                                                    27
+                                                                    23
                                                                     high
                                                                     []
                                                                     In
@@ -3603,7 +3603,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    27
+                                                                    23
                                                                     i
                                                                     []
                                                                     Local
@@ -3627,7 +3627,7 @@
                                                                 ),
                                                             last:
                                                                 (Variable
-                                                                    27
+                                                                    23
                                                                     last
                                                                     []
                                                                     Local
@@ -3651,7 +3651,7 @@
                                                                 ),
                                                             low:
                                                                 (Variable
-                                                                    27
+                                                                    23
                                                                     low
                                                                     []
                                                                     In
@@ -3675,7 +3675,7 @@
                                                                 ),
                                                             pivot:
                                                                 (Variable
-                                                                    27
+                                                                    23
                                                                     pivot
                                                                     []
                                                                     Local
@@ -3735,24 +3735,24 @@
                                                     [__asr___instantiated_swap3
                                                     __asr___instantiated_swap12
                                                     __instantiated_quicksort2]
-                                                    [(Var 27 arr)
-                                                    (Var 27 low)
-                                                    (Var 27 high)]
+                                                    [(Var 23 arr)
+                                                    (Var 23 low)
+                                                    (Var 23 high)]
                                                     [(If
                                                         ()
                                                         (IntegerCompare
-                                                            (Var 27 low)
+                                                            (Var 23 low)
                                                             Lt
-                                                            (Var 27 high)
+                                                            (Var 23 high)
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(Assignment
-                                                            (Var 27 pivot)
+                                                            (Var 23 pivot)
                                                             (ArrayItem
-                                                                (Var 27 arr)
+                                                                (Var 23 arr)
                                                                 [(()
-                                                                (Var 27 high)
+                                                                (Var 23 high)
                                                                 ())]
                                                                 (StructType
                                                                     [(Real 4)]
@@ -3768,9 +3768,9 @@
                                                             .false.
                                                         )
                                                         (Assignment
-                                                            (Var 27 last)
+                                                            (Var 23 last)
                                                             (IntegerBinOp
-                                                                (Var 27 low)
+                                                                (Var 23 low)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Integer 4)
@@ -3782,10 +3782,10 @@
                                                         )
                                                         (DoLoop
                                                             ()
-                                                            ((Var 27 i)
-                                                            (Var 27 low)
+                                                            ((Var 23 i)
+                                                            (Var 23 low)
                                                             (IntegerBinOp
-                                                                (Var 27 high)
+                                                                (Var 23 high)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Integer 4)
@@ -3798,9 +3798,9 @@
                                                                     6 lt_my_type
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 27 arr)
+                                                                        (Var 23 arr)
                                                                         [(()
-                                                                        (Var 27 i)
+                                                                        (Var 23 i)
                                                                         ())]
                                                                         (StructType
                                                                             [(Real 4)]
@@ -3811,15 +3811,15 @@
                                                                         ColMajor
                                                                         ()
                                                                     ))
-                                                                    ((Var 27 pivot))]
+                                                                    ((Var 23 pivot))]
                                                                     (Logical 4)
                                                                     ()
                                                                     ()
                                                                 )
                                                                 [(Assignment
-                                                                    (Var 27 last)
+                                                                    (Var 23 last)
                                                                     (IntegerBinOp
-                                                                        (Var 27 last)
+                                                                        (Var 23 last)
                                                                         Add
                                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Integer 4)
@@ -3833,9 +3833,9 @@
                                                                     16 __asr___instantiated_swap3
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 27 arr)
+                                                                        (Var 23 arr)
                                                                         [(()
-                                                                        (Var 27 last)
+                                                                        (Var 23 last)
                                                                         ())]
                                                                         (StructType
                                                                             [(Real 4)]
@@ -3847,9 +3847,9 @@
                                                                         ()
                                                                     ))
                                                                     ((ArrayItem
-                                                                        (Var 27 arr)
+                                                                        (Var 23 arr)
                                                                         [(()
-                                                                        (Var 27 i)
+                                                                        (Var 23 i)
                                                                         ())]
                                                                         (StructType
                                                                             [(Real 4)]
@@ -3871,10 +3871,10 @@
                                                             16 __asr___instantiated_swap12
                                                             ()
                                                             [((ArrayItem
-                                                                (Var 27 arr)
+                                                                (Var 23 arr)
                                                                 [(()
                                                                 (IntegerBinOp
-                                                                    (Var 27 last)
+                                                                    (Var 23 last)
                                                                     Add
                                                                     (IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Integer 4)
@@ -3891,9 +3891,9 @@
                                                                 ()
                                                             ))
                                                             ((ArrayItem
-                                                                (Var 27 arr)
+                                                                (Var 23 arr)
                                                                 [(()
-                                                                (Var 27 high)
+                                                                (Var 23 high)
                                                                 ())]
                                                                 (StructType
                                                                     [(Real 4)]
@@ -3911,7 +3911,7 @@
                                                             16 __instantiated_quicksort2
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 27 arr)
+                                                                (Var 23 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -3928,8 +3928,8 @@
                                                                 )
                                                                 ()
                                                             ))
-                                                            ((Var 27 low))
-                                                            ((Var 27 last))]
+                                                            ((Var 23 low))
+                                                            ((Var 23 last))]
                                                             ()
                                                             .false.
                                                         )
@@ -3937,7 +3937,7 @@
                                                             16 __instantiated_quicksort2
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 27 arr)
+                                                                (Var 23 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -3955,13 +3955,13 @@
                                                                 ()
                                                             ))
                                                             ((IntegerBinOp
-                                                                (Var 27 last)
+                                                                (Var 23 last)
                                                                 Add
                                                                 (IntegerConstant 2 (Integer 4) Decimal)
                                                                 (Integer 4)
                                                                 ()
                                                             ))
-                                                            ((Var 27 high))]
+                                                            ((Var 23 high))]
                                                             ()
                                                             .false.
                                                         )]
