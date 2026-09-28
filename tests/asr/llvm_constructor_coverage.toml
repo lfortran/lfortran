@@ -10,6 +10,7 @@
 "symbol.Requirement" = "non-executable"
 "symbol.Template" = "non-executable"
 "symbol.Namelist" = "helper:formatted I/O"
+"symbol.ModuleReference" = "metadata"
 
 "stmt.Assign" = "helper:legacy assigned goto"
 "stmt.DoConcurrentLoop" = "lowered:do_loops"
