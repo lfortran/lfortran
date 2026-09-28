@@ -764,14 +764,12 @@ document. For each, the source is given.
 
 Known limitations of the prototype:
 
-* A derived type of a module whose default accessibility is `PRIVATE`,
-  made public by `public :: t` or by `type, public :: t`, is reported as a
-  private entity when it is accessed as `L%t`, and `type, private :: t` is
-  not enforced. LFortran does not record these in the derived type yet (its
-  `access` is the default accessibility where the type is defined), and
-  recording them changes which type-bound procedure names ordinary USE
-  statements import. Variables, named constants, procedures and generics
-  are not affected.
+* `type, private :: t` is not enforced: `L%t` accepts a derived type that
+  is private in its module, exactly as `use M, only: t` does in LFortran
+  today, since the derived type records only the default accessibility of
+  the module where it is defined (lfortran/lfortran#13729). Derived types
+  made public by `public :: t` or `type, public :: t` in a module whose
+  default accessibility is `PRIVATE` work (`namespace_modules_32`).
 * The ASR verification error that LFortran reports instead of a semantic
   error for `call f()` where `f` is a function (lfortran/lfortran#13804)
   names the generated symbol (`f~of_m`) when `f` is written `L%f`.
@@ -834,6 +832,7 @@ round trips of
 | `namespace_modules_29` | Chains in type-specs, constant expressions, generic calls, constructors, `type is` |
 | `namespace_modules_30` | Deferred type-bound procedure with `procedure(L%iface)`; `type(L%t)` in a BLOCK; `real(L%dp) function f()` |
 | `namespace_modules_31` | A module entity named like a module that the host accesses through another module entity |
+| `namespace_modules_32` | Types of a module with default `PRIVATE`: `public :: t`, `type, public :: u`, a generic constructor named like its type |
 
 In the table of error tests, `cc_NN` is a case of
 `errors/namespace_continue_compilation.f90` and `namespace_modules_NN` is

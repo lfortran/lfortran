@@ -26428,8 +26428,6 @@ public:
                 return ASR::down_cast<ASR::CustomOperator_t>(sym)->m_access;
             case ASR::symbolType::ExternalSymbol:
                 return ASR::down_cast<ASR::ExternalSymbol_t>(sym)->m_access;
-            case ASR::symbolType::Struct:
-                return ASR::down_cast<ASR::Struct_t>(sym)->m_access;
             case ASR::symbolType::Enum:
                 return ASR::down_cast<ASR::Enum_t>(sym)->m_access;
             case ASR::symbolType::ModuleReference:
@@ -26439,7 +26437,10 @@ public:
         }
     }
 
-    // The public entity `member` of module `mod`, or an error.
+    // The public entity `member` of module `mod`, or an error. A derived type
+    // defined in `mod` is always accessible, as for `use mod, only: member`:
+    // its Struct records only the default accessibility of the module, not
+    // `public :: t` or `type, public :: t` (#13729).
     ASR::symbol_t* module_member(ASR::Module_t *mod, const std::string &member,
             const Location &loc) {
         ASR::symbol_t *t = mod->m_symtab->get_symbol(member);
@@ -26447,7 +26448,8 @@ public:
             module_reference_error("module '" + module_key(mod)
                 + "' has no entity '" + member + "'", loc);
         }
-        if (symbol_access(t) == ASR::accessType::Private) {
+        if (!ASR::is_a<ASR::Struct_t>(*t) &&
+                symbol_access(t) == ASR::accessType::Private) {
             module_reference_error("'" + member + "' is a private entity of "
                 "module '" + module_key(mod) + "'", loc);
         }
