@@ -165,6 +165,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     symbol_duplicator.duplicate_symbol(item.second, new_symtab);
                 }
             }
+            symbol_duplicator.fixup_local_type_declarations(new_symtab, x->m_symtab);
             // The duplicated body's BlockCall statements still reference
             // Block symbols in the original symtab. Remap them to the
             // corresponding duplicated Blocks in new_symtab.
@@ -620,7 +621,34 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         edit_symbol_pointer(name)
+        edit_original_name(x->m_original_name);
         ASR::BaseExprReplacer<EditProcedureReplacer>::replace_FunctionCall(x);
+    }
+
+    // A call through a call-site interface names the procedure it calls
+    // as its original name; in the copy that is the copied procedure.
+    void edit_original_name(ASR::symbol_t*& original_name) {
+        if (original_name == nullptr) {
+            return;
+        }
+        SymbolTable* symtab = ASRUtils::symbol_parent_symtab(original_name);
+        if (symtab->get_counter() != current_scope->get_counter() &&
+                !ASRUtils::is_parent(symtab, current_scope)) {
+            ASR::symbol_t* resolved = current_scope->resolve_symbol(
+                ASRUtils::symbol_name(original_name));
+            if (resolved != nullptr) {
+                original_name = resolved;
+            }
+        }
+    }
+
+    // The interface of a cast made at a call site of the copied procedure
+    // is a symbol of that procedure, so the copy casts to its own copy.
+    void replace_FunctionPointerCast(ASR::FunctionPointerCast_t* x) {
+        if (x->m_to) {
+            edit_symbol_pointer(to)
+        }
+        ASR::BaseExprReplacer<EditProcedureReplacer>::replace_FunctionPointerCast(x);
     }
 
 };
@@ -656,6 +684,8 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
         ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
         edit_symbol_reference(name)
+        replacer.current_scope = current_scope;
+        replacer.edit_original_name(xx.m_original_name);
         ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_SubroutineCall(x);
     }
 

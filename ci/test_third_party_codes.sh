@@ -241,11 +241,12 @@ time_section "🧪 Testing Fiats" '
   if [[ "$(uname)" == "Darwin" ]]; then
     rm -rf build
     git fetch https://github.com/certik/fiats lf1
-    git checkout f5d91ae48c01297a7fb183957654a73721ad4520
-    # Fiats computes in real(8), which Metal has no type for, so some of its
-    # `do concurrent` loops cannot be offloaded. Waive the strict policy here
-    # until 64-bit floats are emulated on Metal; without this the loops are a
-    # hard error rather than a fall back to the CPU.
+    git checkout 869584f56955fe591304587eb34068b814448c33
+    # Fiats computes in real(8), which is on the unsupported list for Metal
+    # (it has no 64-bit float), so --gpu-allow-cpu-fallback runs those
+    # `do concurrent` loops on the CPU with a warning; every other loop is
+    # offloaded. The lf1 branch turns the loops LFortran cannot offload yet
+    # into serial loops.
     fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal --gpu-allow-cpu-fallback"
   fi
 
@@ -281,6 +282,12 @@ time_section "🧪 Testing Formal" '
   #fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
   rm -rf build
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+  if [[ "$(uname)" == "Darwin" ]]; then
+    # Every do concurrent in Formal is offloaded to Metal. A loop the
+    # compiler cannot lower is a compile error, so this keeps it that way.
+    rm -rf build
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag --gpu=metal
+  fi
 
   print_success "Done with Formal"
   cd ..

@@ -4,7 +4,7 @@ target datalayout = "..."
 
 %xx.base.3_class = type <{ i32 (...)**, %xx.base.3* }>
 %xx.base.3 = type { i32 }
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @_Name_base = private unnamed_addr constant [5 x i8] c"base\00", align 1
 @_Type_Info_base = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @_Name_base, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8

@@ -48,6 +48,21 @@ public:
             return unsupported(
                 GpuDecline(GpuDeclineReason::StructDeclarationUnknown));
         }
+        // A member of a real kind wider than the floor every device shares
+        // keeps the type off every device, whichever member the walk below
+        // would turn down first, so it is looked for before them.
+        {
+            GpuDeviceCapabilities shared_floor;
+            std::set<ASR::Struct_t*> visited;
+            ASR::ttype_t *member_type = nullptr;
+            if (!gpu_struct_members_ok(struct_sym, visited, shared_floor,
+                        &member_type)
+                    && shared_floor.lacks_real_width(member_type)) {
+                return unsupported(GpuDecline(
+                    GpuDeclineReason::StructMemberTypeWidth, "",
+                    member_type));
+            }
+        }
         if (st->m_parent && !struct_is_plain(st->m_parent)) return false;
         for (size_t i = 0; i < st->n_members; i++) {
             ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
