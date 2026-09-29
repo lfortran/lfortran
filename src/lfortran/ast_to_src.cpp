@@ -2253,6 +2253,7 @@ public:
         r += syn(gr::Conditional);
         r += "end if";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -2326,6 +2327,7 @@ public:
         r += syn(gr::Repeat);
         r += "end where";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -2889,6 +2891,7 @@ public:
         r += syn(gr::Repeat);
         r.append("end do");
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -3157,6 +3160,7 @@ public:
         r += syn(gr::Repeat);
         r += "end do";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -4419,6 +4423,7 @@ public:
         r += syn(gr::Conditional);
         r += "end select";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -4619,6 +4624,7 @@ public:
         r += syn(gr::Conditional);
         r += "end select";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
