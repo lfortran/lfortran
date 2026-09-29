@@ -2577,6 +2577,9 @@ public:
         r += syn(gr::Repeat);
         r += "do";
         r += syn();
+        if (x.m_nonblock) {
+            r += " " + std::to_string(x.m_do_label);
+        }
         if (x.m_var) {
             r.append(" ");
             r.append(x.m_var);
@@ -2606,6 +2609,29 @@ public:
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
+        }
+        if (x.m_nonblock) {
+            // The loop ends on its labelled terminal statement: the body
+            // printed it if it is an action statement or an inner loop
+            // sharing it, otherwise it was a `<label> continue`
+            if (printed_labels.count(x.m_do_label) == 0) {
+                printed_labels.insert(x.m_do_label);
+                r += indent;
+                r += std::to_string(x.m_do_label);
+                r += " continue";
+                if (x.m_trivia) {
+                    r += print_trivia_after(*x.m_trivia);
+                } else {
+                    r.append("\n");
+                }
+            } else if (x.m_trivia) {
+                // The comments after the terminal statement of the body
+                r.pop_back();
+                r += print_trivia_after(*x.m_trivia);
+            }
+            dec_indent();
+            s = r;
+            return;
         }
         dec_indent();
         r += indent;

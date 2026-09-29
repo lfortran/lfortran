@@ -3006,6 +3006,11 @@ filename = "../integration_tests/doloop_21.f90"
 ast_f90 = true
 
 [[test]]
+filename = "../integration_tests/doloop_22.f90"
+ast_f90 = true
+ast_f90_fixed_form = true
+
+[[test]]
 filename = "fixedform_doloop.f"
 ast = true
 

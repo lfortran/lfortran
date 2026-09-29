@@ -6,6 +6,7 @@
             0
             ()
             240
+            .true.
             k
             (- (+ 1 (/ 1 2)) (** 3 4))
             mp
@@ -44,6 +45,7 @@
                 0
                 ()
                 220
+                .true.
                 j
                 (/ (FuncCallOrArray
                     f
@@ -102,6 +104,7 @@
                 0
                 ()
                 240
+                .true.
                 i
                 (/ (FuncCallOrArray
                     f
@@ -133,6 +136,7 @@
                     0
                     ()
                     230
+                    .true.
                     j
                     (+ (+ (+ 1 2) (/ (+ 1 3) 4)) (FuncCallOrArray
                         f
