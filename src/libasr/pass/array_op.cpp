@@ -15,6 +15,28 @@
 
 namespace LCompilers {
 
+bool is_parameter_designator(ASR::expr_t* expr) {
+    while (expr != nullptr) {
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            return ASR::is_a<ASR::Variable_t>(*sym) &&
+                ASR::down_cast<ASR::Variable_t>(sym)->m_storage ==
+                    ASR::storage_typeType::Parameter;
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            expr = ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v;
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v;
+        } else if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArraySection_t>(expr)->m_v;
+        } else {
+            return false;
+        }
+    }
+    return false;
+}
+
 class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressReplacer> {
 
     public:
@@ -56,7 +78,18 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
         }
     }
 
-    void replace_ArrayItem(ASR::ArrayItem_t* /*x*/) {
+    void replace_ArrayItem(ASR::ArrayItem_t* x) {
+        // `w%u(2)` with `w` an array is an array although its subscripts are
+        // scalar: they select one element of the component out of every
+        // element of the base, so the shape comes from the base. Descend
+        // past the component to the base array, so that the loop indexes
+        // the array the shape actually comes from.
+        if( !ASRUtils::is_array(x->m_type) ||
+            ASRUtils::struct_base_lending_shape(x) == nullptr ) {
+            return ;
+        }
+        ASR::BaseExprReplacer<ArrayVarAddressReplacer>::replace_StructInstanceMember(
+            ASR::down_cast<ASR::StructInstanceMember_t>(x->m_v));
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
@@ -253,6 +286,21 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
             ASR::StructInstanceMember_t& xx = const_cast<ASR::StructInstanceMember_t&>(x);
             xx.m_type = ASRUtils::extract_type(x.m_type);
         }
+    }
+
+    void visit_ArrayItem(const ASR::ArrayItem_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_ArrayItem(x);
+        // The shape of `w%u(2)` is the shape of its base `w`. Once the base
+        // has been indexed by the loop this element selection is a scalar
+        // again, so it must not keep claiming the shape it inherited.
+        if( !ASRUtils::is_array(x.m_type) ||
+            ASRUtils::is_array_indexed_with_array_indices(x.m_args, x.n_args) ||
+            ASRUtils::struct_base_lending_shape(
+                const_cast<ASR::ArrayItem_t*>(&x)) != nullptr ) {
+            return ;
+        }
+        ASR::ArrayItem_t& xx = const_cast<ASR::ArrayItem_t&>(x);
+        xx.m_type = ASRUtils::extract_type(x.m_type);
     }
 
     void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t& x){
@@ -494,7 +542,19 @@ public:
         // Don't go inside these
         void visit_ttype(const ASR::ttype_t &) {}
         void visit_ArraySection(const ASR::ArraySection_t&) {}
-        void visit_ArrayItem(const ASR::ArrayItem_t&) {}
+
+        void visit_ArrayItem(const ASR::ArrayItem_t& x) {
+            // An ordinary element selection is a scalar and has no shape to
+            // contribute. `w%u(2)` with `w` an array is different: it reads
+            // one element of the component out of every element of the base,
+            // so it is shaped like that base. Contribute the base, which is
+            // the expression that carries the shape.
+            ASR::expr_t* base = ASRUtils::struct_base_lending_shape(
+                const_cast<ASR::ArrayItem_t*>(&x));
+            if (base != nullptr) {
+                visit_expr(*base);
+            }
+        }
         void visit_ArraySize(const ASR::ArraySize_t&) {}
         void visit_ArrayReshape(const ASR::ArrayReshape_t&) {}
         void visit_ArrayBound(const ASR::ArrayBound_t&) {}
@@ -639,6 +699,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         remove_original_stmt(false), pass_options(pass_options_) {
         pass_result.n = 0;
         pass_result.reserve(al, 0);
+    }
+
+    void visit_Template(const ASR::Template_t& /*x*/) {
+        // Scalarize concrete specializations, not deferred-type definitions.
     }
 
     void visit_Variable(const ASR::Variable_t& /*x*/) {
@@ -2058,6 +2122,16 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::ArrayReshape_t* ar = ASR::down_cast<ASR::ArrayReshape_t>(xx.m_value);
             if ( ar->m_value != nullptr ) {
                 xx.m_value = ar->m_value;
+            }
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_value)) {
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(xx.m_value);
+            if (member->m_value != nullptr &&
+                    is_parameter_designator(member->m_v) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(member->m_value)) &&
+                    ASRUtils::is_value_constant(member->m_value)) {
+                xx.m_value = member->m_value;
             }
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) ||

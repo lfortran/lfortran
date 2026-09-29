@@ -231,7 +231,7 @@ namespace LCompilers {
             fnTy = llvm::FunctionType::get(
                 llvm::Type::getVoidTy(context), {character_type, character_type}, false);
             struct_copy_functype = fnTy;  // void (i8*, i8*)
-            string_descriptor = llvm::StructType::create(context,string_descriptor_members, "string_descriptor", true);
+            string_descriptor = llvm::StructType::create(context,string_descriptor_members, "string_descriptor");
         }
 
     llvm::Value* LLVMUtils::lfortran_free(llvm::Value* ptr) {
@@ -1152,6 +1152,9 @@ namespace LCompilers {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
                         ASRUtils::symbol_get_past_external(type_declaration));
                     type = get_function_type(*fn, module)->getPointerTo();
+                } else if (ASRUtils::is_opaque_procedure_type(asr_type)) {
+                    type = get_opaque_procedure_ptr_type(
+                        *ASR::down_cast<ASR::FunctionType_t>(asr_type), module);
                 } else {
                     // No type declaration available (e.g., procedure parameter
                     // of implicit interface). Create function type directly
@@ -1289,6 +1292,14 @@ namespace LCompilers {
             }
         }
         return args;
+    }
+
+    llvm::PointerType* LLVMUtils::get_opaque_procedure_ptr_type(const ASR::FunctionType_t &x,
+            llvm::Module* module) {
+        llvm::Type* return_type = x.m_return_var_type != nullptr
+            ? get_type_from_ttype_t_util(nullptr, x.m_return_var_type, module)
+            : llvm::Type::getVoidTy(context);
+        return llvm::FunctionType::get(return_type, {}, false)->getPointerTo();
     }
 
     llvm::FunctionType* LLVMUtils::get_function_type(const ASR::Function_t &x, llvm::Module* module) {
@@ -1777,6 +1788,9 @@ namespace LCompilers {
                     }
                     if (fn_from_expr) {
                         llvm_type = get_function_type(*fn_from_expr, module)->getPointerTo();
+                    } else if (ASRUtils::is_opaque_procedure_type(asr_type)) {
+                        llvm_type = get_opaque_procedure_ptr_type(
+                            *ASR::down_cast<ASR::FunctionType_t>(asr_type), module);
                     } else {
                         // For implicit interfaces / null procedure pointers, arg_expr
                         // can be null or not resolve to a concrete Function_t.
@@ -1990,6 +2004,14 @@ namespace LCompilers {
 #if LLVM_VERSION_MAJOR >= 8
         return builder->CreateLoad(t, x, is_volatile);
 #else
+        // LLVM 7 has no `CreateLoad(Type*, Value*, bool)` and `CreateLoad(x)`
+        // loads the pointee type of `x`. Callers rely on `t` being honored
+        // (e.g. loading the data pointer through a descriptor pointer), as
+        // it is by LLVM 8+, so cast the pointer to `t*` when they differ.
+        if (t != x->getType()->getPointerElementType()) {
+            x = builder->CreateBitCast(x, t->getPointerTo(
+                x->getType()->getPointerAddressSpace()));
+        }
         return builder->CreateLoad(x, is_volatile);
 #endif
     }
@@ -2200,7 +2222,8 @@ namespace LCompilers {
 #if LLVM_VERSION_MAJOR < 15
         ASR::String_t* str_type = ASRUtils::get_string_type(type);
         switch(ASRUtils::extract_physical_type(type)){
-            case ASR::DescriptorArray:{
+            case ASR::DescriptorArray:
+            case ASR::AssumedRankArray:{
                 switch (str_type->m_physical_type){
                     // A pointer to the Array Descriptor => `{ %string_descriptor*, i32, %dimension_descriptor*, i1, i32 }`
                     case ASR::DescriptorString:{
@@ -2650,7 +2673,8 @@ namespace LCompilers {
         ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(type));
         ASR::String_t* str = ASRUtils::get_string_type(arr->m_type);
         switch(arr->m_physical_type){
-            case ASR::DescriptorArray: {
+            case ASR::DescriptorArray:
+            case ASR::AssumedRankArray: {
                 llvm::Type* type_ = get_type_from_ttype_t_util(nullptr, ASRUtils::type_get_past_allocatable_pointer(type), module);
                 llvm::Value* str_desc = builder->CreateLoad(
                     get_StringType(ASRUtils::extract_type(type))->getPointerTo(),
@@ -2671,7 +2695,8 @@ namespace LCompilers {
         ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(type));
         ASR::String_t* str = ASRUtils::get_string_type(arr->m_type);
         switch(arr->m_physical_type){
-            case ASR::DescriptorArray: {
+            case ASR::DescriptorArray:
+            case ASR::AssumedRankArray: {
                 llvm::Type* type_ = get_type_from_ttype_t_util(nullptr, ASRUtils::type_get_past_allocatable_pointer(type), module);
                 llvm::Value* str_desc = builder->CreateLoad(
                     get_StringType(ASRUtils::extract_type(type))->getPointerTo(),
@@ -3707,7 +3732,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             case ASR::ttypeType::UnsignedInteger:
             case ASR::ttypeType::Real:
             case ASR::ttypeType::Logical:
-            case ASR::ttypeType::Complex: {
+            case ASR::ttypeType::Complex:
+            case ASR::ttypeType::CPtr: {
                 if( ASRUtils::is_array(asr_src_type) ) {
                     ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(asr_src_type);
                     llvm::DataLayout data_layout(module->getDataLayout());
@@ -3773,8 +3799,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     ASRUtils::get_string_type(asr_src_type),
                     /*is_dest_allocatable=*/true);
                 break;
-            case ASR::ttypeType::FunctionType:
-            case ASR::ttypeType::CPtr: {
+            case ASR::ttypeType::FunctionType: {
                 LLVM::CreateStore(*builder, src, dest);
                 break ;
             }
@@ -3883,6 +3908,23 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 break;
             }
             case ASR::ttypeType::StructType: {
+                if (llvm::isa<llvm::Constant>(src) && !src->getType()->isPointerTy()) {
+                    // A constant structure (a StructConstant, or a named
+                    // constant holding one) is copied from storage holding
+                    // its value, exactly like a variable in `a = b`. A value
+                    // that refers to other globals (e.g. character data)
+                    // is stored into a stack slot instead of static data:
+                    // its packed string descriptors would place relocated
+                    // pointers at offsets some linkers reject.
+                    llvm::Constant* value = llvm::cast<llvm::Constant>(src);
+                    if (value->needsRelocation()) {
+                        src = CreateAlloca(value->getType());
+                        builder->CreateStore(value, src);
+                    } else {
+                        src = new llvm::GlobalVariable(*module, value->getType(), true,
+                            llvm::GlobalValue::PrivateLinkage, value, "struct_constant");
+                    }
+                }
                 if (ASRUtils::is_unlimited_polymorphic_type(
                     ASRUtils::get_struct_sym_from_struct_expr(src_expr)) && !ASRUtils::is_array(asr_src_type) &&
                     !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(asr_dest_type))) {
@@ -10310,54 +10352,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     bool LLVMStruct::try_call_struct_defined_assignment(ASR::Struct_t* struct_t,
             llvm::Value* dest, llvm::Value* src, llvm::Module* module,
             bool value_is_class) {
-        ASR::symbol_t* da_sym = ASRUtils::resolve_struct_assign_symbol(struct_t);
-        if (da_sym == nullptr) {
-            return false;
-        }
-        da_sym = ASRUtils::symbol_get_past_external(da_sym);
-        if (!ASR::is_a<ASR::CustomOperator_t>(*da_sym)) {
-            return false;
-        }
-
-        ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(da_sym);
-        ASR::symbol_t* matching_func_sym = nullptr;
-        for (size_t ip = 0; ip < custom_op->n_procs; ip++) {
-            ASR::symbol_t* assign_proc =
-                ASRUtils::symbol_get_past_external(custom_op->m_procs[ip]);
-            ASR::symbol_t* candidate;
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*assign_proc)) {
-                candidate = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::StructMethodDeclaration_t>(
-                        assign_proc)->m_proc);
-            } else {
-                candidate = assign_proc;
-            }
-            if (!ASR::is_a<ASR::Function_t>(*candidate)) {
-                continue;
-            }
-            ASR::Function_t* cand_func = ASR::down_cast<ASR::Function_t>(candidate);
-            if (cand_func->n_args < 2) {
-                continue;
-            }
-            // Both formals must be type/class of struct_t (type_declaration).
-            auto formal_matches = [&](ASR::expr_t* arg) {
-                ASR::Variable_t* var = ASRUtils::EXPR2VAR(arg);
-                ASR::ttype_t* t = ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(var->m_type)));
-                if (!ASR::is_a<ASR::StructType_t>(*t) ||
-                        var->m_type_declaration == nullptr) {
-                    return false;
-                }
-                return ASRUtils::symbol_get_past_external(var->m_type_declaration)
-                    == &struct_t->base;
-            };
-            if (formal_matches(cand_func->m_args[0]) &&
-                    formal_matches(cand_func->m_args[1])) {
-                matching_func_sym = candidate;
-                break;
-            }
-        }
+        ASR::symbol_t* matching_func_sym =
+            ASRUtils::resolve_struct_defined_assignment_proc(struct_t);
         if (matching_func_sym == nullptr) {
             return false;
         }
@@ -10779,22 +10775,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     int mem_idx = 0;
                     mem_idx = llvm_utils->name2memidx[der_type_name][mem_name];
                     llvm::Value* src_member = nullptr;
-                    if (llvm::isa<llvm::ConstantStruct>(src) ||
-                        llvm::isa<llvm::ConstantAggregateZero>(src)) {
-                        ASR::ttype_t* mem_type_check = ASRUtils::symbol_type(mem_sym);
-                        bool is_simple_scalar =
-                            !LLVM::is_llvm_struct(mem_type_check) &&
-                            !ASRUtils::is_array(mem_type_check) &&
-                            !ASRUtils::is_pointer(mem_type_check) &&
-                            !ASRUtils::is_allocatable(mem_type_check) &&
-                            !ASRUtils::is_descriptorString(mem_type_check);
-                        if (!is_simple_scalar &&
-                            !ASRUtils::is_value_constant(ASRUtils::EXPR(
-                                ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)))) {
-                            continue;
-                        }
-                        src_member = builder->CreateExtractValue(src, {static_cast<unsigned int>(mem_idx)});
-                    } else if (!src->getType()->isPointerTy()) {
+                    if (!src->getType()->isPointerTy()) {
                         src_member = builder->CreateExtractValue(src, {static_cast<unsigned int>(mem_idx)});
                     } else {
                         src_member = llvm_utils->create_gep2(llvm_utils->name2dertype[der_type_name], src, mem_idx);
@@ -10818,8 +10799,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         !ASRUtils::is_array(member_type) &&
                         !ASRUtils::is_pointer(member_type) &&
                         !ASRUtils::is_descriptorString(member_type) &&
-                        !llvm::isa<llvm::ConstantStruct>(src) &&
-                        !llvm::isa<llvm::ConstantAggregateZero>(src) &&
                         src->getType()->isPointerTy()) {
                         src_member = llvm_utils->CreateLoad2(mem_type, src_member);
                     }

@@ -57,7 +57,7 @@ ASDL consists of three fundamental constructs: ***types, constructors***, and
 Let's take an example of a node from [ASR.asdl](https://github.com/lfortran/lfortran/blob/main/src/libasr/ASR.asdl):
 
 ```text
-Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, location start_name, location end_name)
+Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, identifier? global_init, location start_name, location end_name)
 ```
 
 ### Types

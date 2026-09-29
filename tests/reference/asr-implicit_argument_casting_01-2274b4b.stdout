@@ -368,7 +368,9 @@
                                                 )
                                                 ()
                                             )
-                                            (CPtr)
+                                            (CPtr
+                                                CPtrUnspecified
+                                            )
                                             ()
                                         )
                                         (Var 4 w_cast)
@@ -547,7 +549,9 @@
                         ()
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )
