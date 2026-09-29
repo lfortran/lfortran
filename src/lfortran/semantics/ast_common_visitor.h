@@ -15425,7 +15425,6 @@ public:
                             continue;
                         }
 
-
                         // Legacy sequence association passes the address of the first element.
                         // For externals (implicit interface), force PointerArray to match the ABI.
                         // For known/internal procedures (including recursive self-calls), do not
