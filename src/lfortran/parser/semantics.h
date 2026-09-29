@@ -288,6 +288,15 @@ static inline decl_stmt_t** IFSTMTS(Allocator &al, ast_t* x)
     return s;
 }
 
+// Mark the If node of an `else if (...) then` part, the only statement of
+// the `orelse` of the enclosing If, to tell it from `else` followed by an
+// IF construct
+static inline ast_t* ELSE_IF(ast_t* x)
+{
+    down_cast2<If_t>(x)->m_else_if = true;
+    return x;
+}
+
 static inline kind_item_t *make_kind_item_t(Allocator &al,
     Location &loc, char *id, ast_t *value, kind_item_typeType type)
 {
@@ -2024,7 +2033,7 @@ ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
         /*body*/ IFSTMTS(p.m_a, body), \
         /*n_body*/ 1, \
         /*a_orelse*/ nullptr, \
-        /*n_orelse*/ 0, nullptr, nullptr, nullptr)
+        /*n_orelse*/ 0, /*else_if*/ false, nullptr, nullptr, nullptr)
 
 #define IFARITHMETIC(cond, lt_label, eq_label, gt_label, l) \
         make_IfArithmetic_t(p.m_a, l, 0, nullptr, \
@@ -2038,21 +2047,22 @@ ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), \
         /*a_orelse*/ nullptr, \
-        /*n_orelse*/ 0, trivia_cast(trivia), nullptr, nullptr)
+        /*n_orelse*/ 0, /*else_if*/ false, trivia_cast(trivia), nullptr, nullptr)
 
 #define IF2(cond, trivia, body, orelse, l) make_If_t(p.m_a, l, 0, nullptr, \
         /*test*/ EXPR(cond), \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), \
         /*a_orelse*/ STMTS(orelse), \
-        /*n_orelse*/ orelse.size(), nullptr, trivia_cast(trivia), nullptr)
+        /*n_orelse*/ orelse.size(), /*else_if*/ false, nullptr, \
+        trivia_cast(trivia), nullptr)
 
 #define IF3(cond, trivia, body, ifblock, l) make_If_t(p.m_a, l, 0, nullptr, \
         /*test*/ EXPR(cond), \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), \
-        /*a_orelse*/ IFSTMTS(p.m_a, ifblock), \
-        /*n_orelse*/ 1, trivia_cast(trivia), nullptr, nullptr)
+        /*a_orelse*/ IFSTMTS(p.m_a, ELSE_IF(ifblock)), \
+        /*n_orelse*/ 1, /*else_if*/ false, trivia_cast(trivia), nullptr, nullptr)
 
 #define WHERESINGLE(cond, body, l) make_Where_t(p.m_a, l, 0, nullptr, \
         /*test*/ EXPR(cond), \
