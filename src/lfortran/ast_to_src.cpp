@@ -3684,7 +3684,9 @@ public:
             }
         }
         s = "";
-        if (left_precedence == 9) {
+        if (left_precedence == 9 && x.m_op != operatorType::Add
+                && x.m_op != operatorType::Sub) {
+            // `-a + b` is `(-a) + b`, but `-a*b` is `-(a*b)`
             s += "(" + left + ")";
         } else if (x.m_op == operatorType::Pow) {
             // `**` is right-associative: `(a**b)**c` needs its parentheses
