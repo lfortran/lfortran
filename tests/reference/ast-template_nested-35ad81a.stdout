@@ -56,63 +56,70 @@
                 )]
                 []
                 []
-            )]
-            [(Function
-                F
-                [(x)
-                (y)]
-                []
-                z
+            )
+            (Interface
+                (DeferredInterfaceHeader)
                 ()
-                ()
-                [(Declaration
-                    (AttrType
-                        TypeType
+                [(InterfaceProc
+                    (Function
+                        F
+                        [(x)
+                        (y)]
                         []
+                        z
                         ()
-                        T
-                        None
-                    )
-                    [(AttrIntent
-                        In
-                    )]
-                    [(x
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())
-                    (y
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Declaration
-                    (AttrType
-                        TypeType
+                        ()
+                        [(Declaration
+                            (AttrType
+                                TypeType
+                                []
+                                ()
+                                T
+                                None
+                            )
+                            [(AttrIntent
+                                In
+                            )]
+                            [(x
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())
+                            (y
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())]
+                            ()
+                        )
+                        (Declaration
+                            (AttrType
+                                TypeType
+                                []
+                                ()
+                                T
+                                None
+                            )
+                            []
+                            [(z
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())]
+                            ()
+                        )]
                         []
-                        ()
-                        T
-                        None
+                        []
                     )
-                    []
-                    [(z
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
                 )]
-                []
-                []
             )]
+            []
         )
         (Template
             add_t

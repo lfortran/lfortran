@@ -150,8 +150,10 @@
             :enable_fall_through false
           )
         ]
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

@@ -27,63 +27,70 @@
                 )]
                 []
                 []
-            )]
-            [(Function
-                ne
-                [(lhs)
-                (rhs)]
-                []
+            )
+            (Interface
+                (DeferredInterfaceHeader)
                 ()
-                ()
-                ()
-                [(Declaration
-                    (AttrType
-                        TypeType
-                        []
-                        ()
-                        t
-                        None
-                    )
-                    [(AttrIntent
-                        In
-                    )]
-                    [(lhs
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())
-                    (rhs
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Declaration
-                    (AttrType
-                        TypeLogical
+                [(InterfaceProc
+                    (Function
+                        ne
+                        [(lhs)
+                        (rhs)]
                         []
                         ()
                         ()
-                        None
+                        ()
+                        [(Declaration
+                            (AttrType
+                                TypeType
+                                []
+                                ()
+                                t
+                                None
+                            )
+                            [(AttrIntent
+                                In
+                            )]
+                            [(lhs
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())
+                            (rhs
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())]
+                            ()
+                        )
+                        (Declaration
+                            (AttrType
+                                TypeLogical
+                                []
+                                ()
+                                ()
+                                None
+                            )
+                            []
+                            [(ne
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())]
+                            ()
+                        )]
+                        []
+                        []
                     )
-                    []
-                    [(ne
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
                 )]
-                []
-                []
             )]
+            []
         )
         (Template
             change_positions_tmpl

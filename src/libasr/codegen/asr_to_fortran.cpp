@@ -1051,7 +1051,12 @@ public:
         } else if (x.m_value && !ASR::is_a<ASR::ArrayReshape_t>(*x.m_symbolic_value)) {
             ASR::ttype_t *base_type_value = ASRUtils::type_get_past_allocatable_pointer(x.m_type);
             bool is_c_ptr = ASR::is_a<ASR::CPtr_t>(*base_type_value);
-            if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value) && !is_c_ptr) {
+            // `p => tgt` and `p => null()` are both pointer assignments and
+            // are spelled with an arrow; a c pointer is an ordinary value.
+            bool is_pointer_init = ASRUtils::is_pointer(x.m_type)
+                && ASRUtils::is_pointer_association_initializer(x.m_value);
+            if ((ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value) || is_pointer_init)
+                    && !is_c_ptr) {
                 r += " => ";
             } else {
                 r += " = ";
@@ -2534,6 +2539,18 @@ public:
         src = r;
     }
 
+    void visit_StructConstant(const ASR::StructConstant_t &x) {
+        std::string r = ASRUtils::symbol_name(x.m_dt_sym);
+        r += "(";
+        for(size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i].m_value);
+            r += src;
+            if (i < x.n_args - 1) r += ", ";
+        }
+        r += ")";
+        src = r;
+    }
+
     // void visit_EnumConstructor(const ASR::EnumConstructor_t &x) {}
 
     // void visit_UnionConstructor(const ASR::UnionConstructor_t &x) {}
@@ -2881,8 +2898,16 @@ public:
             r += "[" + get_array_constructor_type_spec(x.m_type) + " :: ]";
         } else {
             r += "[";
+            bool use_element_visitor = ASR::is_a<ASR::StructType_t>(*elem_type)
+                || ASR::is_a<ASR::CPtr_t>(*elem_type);
             for(size_t i = 0; i < fixed_size; i++) {
-                r += ASRUtils::fetch_ArrayConstant_value(x, i) + kind_suffix;
+                if (use_element_visitor) {
+                    ASR::expr_t* value = ASRUtils::fetch_ArrayConstant_value(al, x, i);
+                    visit_expr(*value);
+                    r += src;
+                } else {
+                    r += ASRUtils::fetch_ArrayConstant_value(x, i) + kind_suffix;
+                }
                 if (i < fixed_size - 1) r += ", ";
             }
             r += "]";

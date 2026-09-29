@@ -64,6 +64,7 @@
         false
         false
         false
+        nil
       )
       "generated" (Program
         (SymbolTable
@@ -145,8 +146,10 @@
             nil
           )
         ]
+        nil
       )
     }
   )
   []
+  nil
 )

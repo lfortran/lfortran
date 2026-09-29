@@ -113,7 +113,9 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "transform_optional_argument_functions",
                         "array_op", "select_case",
                         "class_constructor", "implied_do_loops",
-                        "pass_array_by_data", "init_expr", "where",
+                        "pass_array_by_data", "init_expr", "global_init",
+                        "global_init_wire",
+                        "where",
                         "nested_vars", "intent_out_deallocate", "openmp",
                         "array_struct_temporary", "coarray"] and
                 _pass not in optimization_passes):
@@ -658,17 +660,35 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             extra_args)
 
     if pass_ is not None and not fortran:
-        cmd = "lfortran "
-        if is_cumulative_pass:
-            cmd += "--cumulative "
-        cmd += "--pass=" + pass_ + \
-            " --show-asr --no-color {infile} -o {outfile}"
-        pass_ = pass_.replace(",", "_")
-        run_test(filename, "pass_{}".format(pass_), cmd,
-                filename,
-                update_reference,
-                verify_hash,
-                extra_args)
+        # A pass can need the modfiles of the modules the test uses, the same
+        # way an `asr` test does: `--separate-compilation` only reads a module
+        # from a modfile if one is there to read.
+        skip_test = False
+        for extrafile in extrafiles:
+            extrafile_ = extrafile.rstrip().lstrip()
+            if len(extrafile_) == 0:
+                continue
+            if no_llvm:
+                log.info(f"{filename} * pass  SKIPPED because LLVM is not enabled")
+                skip_test = True
+                break
+            extrafile_ = os.path.join("tests", extrafile_)
+            modfile = extrafile_[:-4] + ".mod"
+            if not os.path.exists(modfile):
+                run_cmd("lfortran -c {}".format(extrafile_))
+
+        if not skip_test:
+            cmd = "lfortran "
+            if is_cumulative_pass:
+                cmd += "--cumulative "
+            cmd += "--pass=" + pass_ + \
+                " --show-asr --no-color {infile} -o {outfile}"
+            pass_ = pass_.replace(",", "_")
+            run_test(filename, "pass_{}".format(pass_), cmd,
+                    filename,
+                    update_reference,
+                    verify_hash,
+                    extra_args)
     if llvm:
         if no_llvm:
             log.info(f"{filename} * llvm   SKIPPED as requested")

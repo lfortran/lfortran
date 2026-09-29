@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 %class_circle1.circle.3_class = type <{ i32 (...)**, %class_circle1.circle.3* }>
 %class_circle1.circle.3 = type { float }
 
@@ -13,9 +13,9 @@ target datalayout = "..."
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [31 x i8] c"S-DESC-K1-12,R4,S-DESC-K1-8,R4\00", align 1
 @string_const_data = private constant [12 x i8] c"Circle: r = "
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([12 x i8], [12 x i8]* @string_const_data, i32 0, i32 0), i64 12 }>
+@string_const = private global %string_descriptor { i8* getelementptr inbounds ([12 x i8], [12 x i8]* @string_const_data, i32 0, i32 0), i64 12 }
 @string_const_data.1 = private constant [8 x i8] c" area = "
-@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([8 x i8], [8 x i8]* @string_const_data.1, i32 0, i32 0), i64 8 }>
+@string_const.2 = private global %string_descriptor { i8* getelementptr inbounds ([8 x i8], [8 x i8]* @string_const_data.1, i32 0, i32 0), i64 8 }
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define float @__module_class_circle1_circle_area(%class_circle1.circle.3_class* %this) {
