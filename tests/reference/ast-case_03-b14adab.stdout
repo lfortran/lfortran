@@ -74,7 +74,9 @@
             marks
             [(CaseStmt
                 [(CaseCondRange
-                    (+ 40 b)
+                    (Parenthesis
+                        (+ 40 b)
+                    )
                     ()
                 )]
                 ()
@@ -92,7 +94,9 @@
             (CaseStmt
                 [(CaseCondRange
                     ()
-                    (- 39 a)
+                    (Parenthesis
+                        (- 39 a)
+                    )
                 )]
                 ()
                 [(Print
@@ -153,7 +157,9 @@
             marks
             [(CaseStmt
                 [(CaseCondRange
-                    (+ 40 b)
+                    (Parenthesis
+                        (+ 40 b)
+                    )
                     ()
                 )]
                 ()
@@ -171,7 +177,9 @@
             (CaseStmt
                 [(CaseCondRange
                     0
-                    (- 39 a)
+                    (Parenthesis
+                        (- 39 a)
+                    )
                 )]
                 ()
                 [(Print

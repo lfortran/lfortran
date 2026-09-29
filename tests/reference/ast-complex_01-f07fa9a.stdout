@@ -128,7 +128,9 @@
             []
             []
             ()
-            (+ (+ a b) (* i_ (- a b)))
+            (+ (+ a b) (* i_ (Parenthesis
+                (- a b)
+            )))
             Equal
             ())]
             (TriviaNode
