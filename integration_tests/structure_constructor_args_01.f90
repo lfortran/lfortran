@@ -26,6 +26,8 @@ type :: ptr_t
 end type
 type :: u_t
     type(ptr_t) :: part = ptr_t(null(), null(), null(), null(), 6)
+    ! null() for the allocatable components of a component default
+    type(a_t) :: apart = a_t(null(), null(), null(), null(), null(), null(), 13)
 end type
 type(a_t) :: mv = a_t(null(), null(), null(), null(), null(), null(), 7)
 type(a_t), parameter :: pa = a_t(null(), null(), null(), null(), null(), null(), 10)
@@ -59,6 +61,7 @@ subroutine mixed(n)
     if (associated(lu%part%next)) error stop 10
     if (associated(lu%part%cp)) error stop 11
     if (lu%part%x /= 6) error stop 12
+    call check(lu%apart, 13)
 end subroutine
 end module
 

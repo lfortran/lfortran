@@ -1331,3 +1331,734 @@ subroutine structure_constructor_null_component_2()
     type(t_null_array_component) :: v2
     v2 = t_null_array_component(1.0d0, ins=null())  ! {Error} null() cannot be the value of component 'ins' of type type(t_null_inner_2), dimension(3, 2), which is neither a pointer nor allocatable
 end subroutine
+
+! `c_null_ptr` and `c_null_funptr` are valid for a plain `type(c_ptr)` or
+! `type(c_funptr)` component, but `null()` is not.
+subroutine structure_constructor_null_component_3()
+    use iso_c_binding, only: c_ptr, c_funptr, c_null_ptr, c_null_funptr
+    implicit none
+    type :: t_null_c_component
+        integer :: h
+        type(c_ptr) :: p = c_null_ptr
+        type(c_funptr) :: f = c_null_funptr
+    end type
+    type(t_null_c_component), parameter :: p1 = t_null_c_component(1, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    type(t_null_c_component) :: v1
+    v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_funptr), which is neither a pointer nor allocatable
+end subroutine
+
+! The same for a parameterized derived type and for an extended type, whose
+! parent components come first.
+subroutine structure_constructor_null_component_4()
+    use iso_c_binding, only: c_ptr, c_null_ptr
+    implicit none
+    type :: t_null_c_pdt(k)
+        integer, kind :: k
+        integer(k) :: h
+        type(c_ptr) :: p = c_null_ptr
+    end type
+    type :: t_null_c_base
+        integer :: h
+        type(c_ptr) :: q = c_null_ptr
+    end type
+    type, extends(t_null_c_base) :: t_null_c_ext
+        type(c_ptr) :: p
+    end type
+    type(t_null_c_pdt(4)) :: a
+    type(t_null_c_ext) :: e
+    a = t_null_c_pdt(4)(h=1, p=null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    e = t_null_c_ext(1, c_null_ptr, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+end subroutine
+
+! `null()` for an integer component of a parameterized derived type.
+subroutine structure_constructor_null_component_5()
+    implicit none
+    type :: t_null_int_pdt(k)
+        integer, kind :: k
+        integer(k) :: h
+        integer :: j
+    end type
+    type(t_null_int_pdt(4)) :: a
+    a = t_null_int_pdt(4)(null(), 2)  ! {Error} null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
+    a = t_null_int_pdt(4)(h=null(), j=2)  ! {Error} null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
+end subroutine
+
+! A null constant whose type the component does not accept: `c_null_ptr` for
+! an integer or real component, and `null(mold)` with a mold of another type.
+subroutine structure_constructor_null_component_6()
+    use iso_c_binding, only: c_null_ptr, c_null_funptr
+    implicit none
+    type :: t_null_mismatch
+        integer, pointer :: ip
+        integer, allocatable :: ia(:)
+        real, pointer :: rp
+        integer :: h
+        real :: r
+    end type
+    type :: t_null_mismatch_pdt(k)
+        integer, kind :: k
+        integer(k) :: h
+    end type
+    type(t_null_mismatch) :: v
+    type(t_null_mismatch_pdt(4)) :: a
+    integer, pointer :: ip
+    v = t_null_mismatch(c_null_ptr, null(), null(), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ip' of type integer(4)
+    v = t_null_mismatch(null(), c_null_ptr, null(), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ia' of type integer(4), dimension(:)
+    v = t_null_mismatch(null(), null(), null(ip), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type integer(4) cannot be the value of component 'rp' of type real(4)
+    v = t_null_mismatch(null(), null(), null(), c_null_ptr, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+    v = t_null_mismatch(null(), null(), null(), 1, r=c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'r' of type real(4)
+    a = t_null_mismatch_pdt(4)(c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+end subroutine
+
+subroutine derived_type_scalar_broadcast_parameter_array_oob()
+    implicit none
+    type :: t_scalar_broadcast_oob
+        integer :: h
+    end type
+    type(t_scalar_broadcast_oob), parameter :: a(2) = t_scalar_broadcast_oob(7)
+    type(t_scalar_broadcast_oob), parameter :: b(0:1) = t_scalar_broadcast_oob(8)
+    type(t_scalar_broadcast_oob), parameter :: c(0:1, -2:-1) = t_scalar_broadcast_oob(9)
+    integer, parameter :: k1 = a(3)%h  ! {Error} Array index 3 is out of bounds (1 to 2) in dimension 1
+    integer, parameter :: k2 = a(0)%h  ! {Error} Array index 0 is out of bounds (1 to 2) in dimension 1
+    integer, parameter :: k3 = a(-1)%h  ! {Error} Array index -1 is out of bounds (1 to 2) in dimension 1
+    integer, parameter :: k4 = b(-1)%h  ! {Error} Array index -1 is out of bounds (0 to 1) in dimension 1
+    integer, parameter :: k5 = c(0, 0)%h  ! {Error} Array index 0 is out of bounds (-2 to -1) in dimension 2
+end subroutine
+
+module scalar_struct_array_shape_errors_1
+    implicit none
+contains
+    subroutine scalar_struct_array_assumed_size(a)
+        type :: scalar_shape_t
+            integer :: i
+        end type
+        type(scalar_shape_t) :: a(*) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
+    end subroutine
+
+    subroutine scalar_struct_array_nonconstant_extent(n)
+        integer, intent(in) :: n
+        type :: scalar_shape_t
+            integer :: i
+        end type
+        type(scalar_shape_t) :: a(n) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
+    end subroutine
+end module
+
+subroutine associate_constant_selector_assignment()
+    implicit none
+    type :: associate_const_a_t
+        integer :: x
+    end type
+    type :: associate_const_b_t
+        type(associate_const_a_t) :: a
+        integer :: y
+    end type
+    type(associate_const_b_t), parameter :: pb = associate_const_b_t(associate_const_a_t(10), 30)
+    type(associate_const_b_t), parameter :: pba(1) = [associate_const_b_t(associate_const_a_t(11), 31)]
+
+    associate (q => pb)
+        q = associate_const_b_t(associate_const_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (q => pb)
+        q%a%x = 5  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pb%a)
+        r%x = 6  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (q => pba)
+        q(1)%a%x = 7  ! {Error} Cannot assign to a constant variable
+    end associate
+end subroutine
+
+subroutine associate_nested_constant_selector_assignment()
+    implicit none
+    type :: associate_nested_const_a_t
+        integer :: x
+    end type
+    type :: associate_nested_const_b_t
+        type(associate_nested_const_a_t) :: a
+        integer :: y
+    end type
+    type(associate_nested_const_b_t), parameter :: pb = associate_nested_const_b_t(associate_nested_const_a_t(10), 30)
+    type(associate_nested_const_b_t), parameter :: pba(1) = [associate_nested_const_b_t(associate_nested_const_a_t(11), 31)]
+
+    associate (q => pb)
+        associate (r => q)
+            r%y = 88  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pb)
+        associate (r => q%a)
+            r%x = 99  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pb)
+        associate (r => q%a%x)
+            r = 77  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pba)
+        associate (r => q(1))
+            r%a%x = 66  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pb)
+        associate (r => q)
+            associate (s => r)
+                s%y = 55  ! {Error} Cannot assign to a constant variable
+            end associate
+        end associate
+    end associate
+end subroutine
+
+subroutine associate_parameter_array_selector_assignment()
+    implicit none
+    type :: associate_param_array_a_t
+        integer :: x
+    end type
+    type :: associate_param_array_b_t
+        type(associate_param_array_a_t) :: a
+        integer :: y
+    end type
+    type(associate_param_array_b_t), parameter :: pba(2) = [ &
+        associate_param_array_b_t(associate_param_array_a_t(11), 31), &
+        associate_param_array_b_t(associate_param_array_a_t(12), 32)]
+    integer :: i
+
+    i = 1
+
+    associate (r => pba(1))
+        r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(i))
+        r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(1:2))
+        r(1) = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(1)%a)
+        r = associate_param_array_a_t(1)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(1)%a%x)
+        r = 1  ! {Error} Cannot assign to a constant variable
+    end associate
+end subroutine
+
+subroutine cptr_funptr_mismatch()
+    use iso_c_binding, only: c_ptr, c_funptr, c_null_ptr, c_null_funptr
+    implicit none
+    type(c_ptr) :: cp
+    type(c_funptr) :: fp
+    type :: cptr_funptr_t
+        type(c_ptr) :: p
+        type(c_funptr) :: f
+    end type
+    type(cptr_funptr_t) :: v
+    cp = c_null_funptr  ! {Error} Type mismatch in assignment, the types must be compatible
+    fp = c_null_ptr  ! {Error} Type mismatch in assignment, the types must be compatible
+    v = cptr_funptr_t(c_null_funptr, c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'p' of type type(c_ptr)
+    v = cptr_funptr_t(c_null_ptr, c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'f' of type type(c_funptr)
+end subroutine
+
+subroutine cptr_funptr_intrinsic_result_mismatch()
+    use iso_c_binding, only: c_int, c_ptr, c_funptr, c_loc, c_funloc
+    implicit none
+    interface
+        subroutine cptr_funptr_bindc_target() bind(c)
+            import
+        end subroutine
+        function returns_c_ptr_for_mismatch() result(r)
+            import c_ptr
+            type(c_ptr) :: r
+        end function
+    end interface
+    integer(c_int), target :: x
+    type(c_ptr) :: cp
+    type(c_funptr) :: fp
+    fp = c_loc(x)  ! {Error} Type mismatch in assignment, the types must be compatible
+    cp = c_funloc(cptr_funptr_bindc_target)  ! {Error} Type mismatch in assignment, the types must be compatible
+    fp = returns_c_ptr_for_mismatch()  ! {Error} Type mismatch in assignment, the types must be compatible
+end subroutine
+
+subroutine null_assignment_nonpointer_cptr()
+    use iso_c_binding, only: c_ptr
+    implicit none
+    type(c_ptr) :: p
+    p = null()  ! {Error} null() cannot be assigned to an entity of type type(c_ptr), which is not a pointer
+end subroutine
+
+subroutine pointer_component_constructor_target()
+    use iso_c_binding, only: c_ptr, c_null_ptr
+    implicit none
+    type :: cptr_pointer_component_t
+        type(c_ptr), pointer :: cp
+    end type
+    type :: integer_pointer_component_t
+        integer, pointer :: ip
+    end type
+    integer :: v
+    type(cptr_pointer_component_t) :: a
+    type(integer_pointer_component_t) :: b
+    a = cptr_pointer_component_t(c_null_ptr)  ! {Error} the value of pointer component 'cp' must be a pointer, a target or null()
+    b = integer_pointer_component_t(1)  ! {Error} the value of pointer component 'ip' must be a pointer, a target or null()
+    b = integer_pointer_component_t(v)  ! {Error} the value of pointer component 'ip' must be a pointer, a target or null()
+end subroutine
+
+subroutine cptr_component_constructor_type_mismatch()
+    use iso_c_binding, only: c_ptr
+    implicit none
+    type :: payload_t
+        integer :: k
+    end type
+    type :: cptr_component_t
+        type(c_ptr) :: p
+    end type
+    type(payload_t), parameter :: payload = payload_t(1)
+    type(cptr_component_t) :: a
+    a = cptr_component_t(payload)  ! {Error} type mismatch in structure constructor: value of type type(payload_t) cannot be the value of component 'p' of type type(c_ptr)
+    a = cptr_component_t(1)  ! {Error} type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
+end subroutine
+
+subroutine cfunptr_diagnostic_type_name()
+    use iso_c_binding, only: c_funptr
+    implicit none
+    type(c_funptr) :: f
+    call takes_integer(f)  ! {Error} Type mismatch in argument `x`: expected `integer(4)` but got `type(c_funptr)`
+    if (f) print *, "bad"  ! {Error} Expected logical expression in if statement, but recieved type(c_funptr) instead
+contains
+    subroutine takes_integer(x)
+        integer, intent(in) :: x
+    end subroutine
+end subroutine
+
+subroutine null_initializer_nonpointer_integer()
+    implicit none
+    integer :: i = null()  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+end subroutine
+
+subroutine null_initializer_nonpointer_cptr()
+    use iso_c_binding, only: c_ptr
+    implicit none
+    type(c_ptr) :: p = null()  ! {Error} null() cannot initialize 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+end subroutine
+
+subroutine null_initializer_nonpointer_component()
+    implicit none
+    type :: null_init_t
+        integer :: k = null()  ! {Error} null() cannot initialize 'k' of type integer(4), which is neither a pointer nor allocatable
+    end type
+end subroutine
+
+subroutine derived_type_constructor_too_many_null_args()
+    implicit none
+    type :: plain_t
+        integer :: value
+    end type
+    type :: parameterized_t(k)
+        integer, kind :: k
+        integer :: value
+    end type
+    type(plain_t) :: pv = plain_t(1, null())  ! {Error} too many arguments in derived type constructor
+    print *, plain_t(1, null())  ! {Error} too many arguments in derived type constructor
+    print *, parameterized_t(4, 1, null())  ! {Error} too many arguments in derived type constructor
+    print *, parameterized_t(4, null())(1)  ! {Error} too many arguments in parameterized derived type constructor
+    print *, parameterized_t(4)(1, null())  ! {Error} too many arguments in parameterized derived type constructor
+end subroutine
+
+subroutine parent_component_keyword_conflicts()
+    implicit none
+    type :: pck_base_t
+        integer :: x
+    end type
+    type, extends(pck_base_t) :: pck_e_t
+        integer :: z
+    end type
+    type, extends(pck_e_t) :: pck_f_t
+        integer :: w
+    end type
+    type(pck_e_t) :: e
+    type(pck_e_t) :: ee(2)
+    type(pck_base_t) :: arr(2)
+    type(pck_f_t) :: f
+    integer :: i
+    e = pck_e_t(pck_base_t=pck_base_t(11), x=3, z=51)  ! {Error} component 'x' is already specified by the parent component 'pck_base_t'
+    e = pck_e_t(x=3, pck_base_t=pck_base_t(11), z=51)  ! {Error} component 'x' is already specified, it cannot also be given by the parent component 'pck_base_t'
+    e = pck_e_t(pck_base_t=42, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not integer(4)
+    e = pck_e_t(pck_base_t=arr, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_base_t), dimension(2)
+    e = pck_e_t(pck_base_t=f, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_f_t)
+    ee = [ (pck_e_t(pck_base_t=pck_make(i), z=i), i = 1, 2) ]  ! {Error} the value given for the parent component 'pck_base_t' must be a constant or a variable inside an implied do loop, it would otherwise be evaluated once for every component of 'pck_base_t'
+contains
+    function pck_make(i) result(res)
+        integer, intent(in) :: i
+        type(pck_base_t) :: res
+        res = pck_base_t(i)
+    end function
+end subroutine
+
+! `null()` is not permitted as the TARGET= argument to the `associated`
+! intrinsic.
+subroutine associated_null_target_in_continue_compilation_1()
+    implicit none
+    integer, pointer :: a(:)
+    a => null()
+    if (associated(a, null())) print *, "bad"  ! {Error} NULL() is not permitted as the TARGET= argument to 'associated'
+end subroutine
+
+! Fortran 2023 10.1.11: a specification expression is a restricted expression.
+! An object designator is a permitted primary only when its base object is a
+! dummy argument, is in a common block, or is made accessible by use or host
+! association. A variable local to the same scoping unit is none of those, so
+! it may not size another local or give one a length. A named constant, and an
+! inquiry such as `size` or `len` about a local, stay permitted.
+subroutine local_in_specification_expr_in_continue_compilation_1(n, s)
+    implicit none
+    integer, intent(in) :: n
+    character(len=*), intent(in) :: s
+    integer, parameter :: lse_p = 3
+    type :: lse_t
+        integer :: x
+    end type
+    type(lse_t), save :: lse_a(1) = lse_t(4)
+    integer :: lse_m
+    integer :: lse_c
+    common /lse_blk/ lse_c
+    integer :: ok_dummy(n)
+    integer :: ok_common(lse_c)
+    integer :: ok_param(lse_p)
+    integer :: ok_inquiry(size(ok_dummy))
+    character(len=n) :: ok_str
+    character(len=len(ok_str)) :: ok_len
+    character(len=len(s)) :: ok_assumed
+    integer :: bad_member(lse_a(1)%x)  ! {Error} the variable 'lse_a' is local to this scoping unit, so it cannot appear in a specification expression
+    integer :: bad_scalar(lse_m)  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+    character(len=lse_m) :: bad_len  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+    print *, size(ok_dummy), size(ok_param), size(ok_inquiry), size(ok_common)
+    print *, len(ok_str), len(ok_len), len(ok_assumed)
+end subroutine
+
+! `w%u(2)` with `w` an array takes one element of the component out of every
+! element of the base, so what it denotes is strided by the size of an element
+! of `w`. Passing it would hand the callee the elements that follow the first
+! one in memory instead, and an `intent(inout)` or `intent(out)` dummy would
+! write them back. It is rejected until the argument is built by gathering the
+! elements it names.
+subroutine element_of_array_component_as_argument_in_continue_compilation_1()
+    implicit none
+    type :: eac_t
+        integer :: u(3)
+    end type
+    type(eac_t) :: w(2)
+    w(1)%u = [1, 2, 3]
+    w(2)%u = [4, 5, 6]
+    print *, w%u(2)
+    print *, size(w%u(2))
+    call eac_inout(w%u(2))  ! {Error} Passing an element of an array component of an array as an argument is not supported yet
+    call eac_in(w%u(2))  ! {Error} Passing an element of an array component of an array as an argument is not supported yet
+contains
+    subroutine eac_inout(a)
+        integer, intent(inout) :: a(:)
+        a = -a
+    end subroutine
+    subroutine eac_in(a)
+        integer, intent(in) :: a(:)
+        print *, a
+    end subroutine
+end subroutine
+
+module partial_template_instantiation
+    implicit none
+    template tmpl {t}
+        deferred type :: t
+    contains
+        function identity(x) result(y)
+            type(t), intent(in) :: x
+            type(t) :: y
+            y = x
+        end function
+        function outer(x) result(y)
+            type(t), intent(in) :: x
+            type(t) :: y
+            y = identity(x)
+        end function
+    end template
+    instantiate tmpl {real}, only: outer_real => outer, missing_symbol  ! {Error} Symbol missing_symbol was not found
+    instantiate tmpl {integer}, only: outer_integer => outer
+end module
+
+! The `optional` attribute given to `p` in `oas_a` applies only to that
+! procedure; the dummy `p` of `oas_b` is still required.
+subroutine optional_attribute_scope_in_continue_compilation_1()
+    implicit none
+    call oas_a()
+    call oas_b()  ! {Error} Required argument `p` is missing in procedure call
+contains
+    subroutine oas_a(p)
+        optional :: p
+        integer :: p
+        if (present(p)) print *, p
+    end subroutine
+    subroutine oas_b(p)
+        integer :: p
+        print *, p
+    end subroutine
+end subroutine
+
+module template_scope_restrictions_m
+    implicit none
+    template unary{t, op}
+        deferred type :: t
+        deferred interface
+            function op(x) result(value)
+                type(t), intent(in) :: x
+                type(t) :: value
+            end function
+        end interface
+    end template
+contains
+    subroutine check_forward_restrictions()
+        instantiate unary{integer, scalar}
+        ! Check every restriction against the completed actual, not its provisional interface.
+        instantiate unary{real, scalar}  ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, real_result}  ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, binary}  ! {Error} Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+        instantiate unary{integer, assign_value}  ! {Error} The restriction argument assign_value should have a return value
+    contains
+        integer function scalar(x) result(value)
+            integer, intent(in) :: x
+            value = x
+        end function
+        real function real_result(x) result(value)
+            integer, intent(in) :: x
+            value = real(x)
+        end function
+        integer function binary(x, y) result(value)
+            integer, intent(in) :: x, y
+            value = x + y
+        end function
+        subroutine assign_value(x)
+            integer, intent(in) :: x
+        end subroutine
+    end subroutine
+end module
+
+module template_scope_recovery_m
+    implicit none
+    template unary{t, op}
+        deferred type :: t
+        deferred interface
+            function op(x) result(value)
+                type(t), intent(in) :: x
+                type(t) :: value
+            end function
+        end interface
+        type :: holder
+            type(t) :: value
+        end type
+    contains
+        function apply(x) result(value)
+            type(t), intent(in) :: x
+            type(t) :: value
+            value = op(x)
+        end function
+    end template
+contains
+    subroutine check_rejected_bodies()
+        instantiate unary{real, scalar}, only: rejected_apply => apply, rejected_holder => holder ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, scalar}, only: apply_scalar => apply
+        instantiate unary{integer, real_result}, only: apply_real_result => apply ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, binary}, only: apply_binary => apply ! {Error} Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+        instantiate unary{integer, assign_value}, only: apply_assign_value => apply ! {Error} The restriction argument assign_value should have a return value
+        integer, parameter :: offset = 20
+        type(rejected_holder) :: item
+        procedure(rejected_apply), pointer :: rejected_callback
+        procedure(apply_scalar), pointer :: callback
+
+        item%value = 1.0
+        callback => apply_scalar
+        if (scalar(2) /= 22) error stop
+        if (apply_scalar(3) /= 23) error stop
+        if (callback(4) /= 24) error stop
+        print *, after_template_recovery_missing ! {Error} Variable 'after_template_recovery_missing' is not declared
+    contains
+        integer function scalar(x) result(value)
+            integer, intent(in) :: x
+            value = x + offset
+        end function
+        real function real_result(x) result(value)
+            integer, intent(in) :: x
+            value = real(x)
+        end function
+        integer function binary(x, y) result(value)
+            integer, intent(in) :: x, y
+            value = x + y
+        end function
+        subroutine assign_value(x)
+            integer, intent(in) :: x
+        end subroutine
+    end subroutine
+end module
+
+module template_scope_templated_function_m
+    implicit none
+    template unary{op}
+        deferred interface
+            integer function op(x)
+                integer, intent(in) :: x
+            end function
+        end interface
+    contains
+        integer function apply(x) result(value)
+            integer, intent(in) :: x
+            value = op(x)
+        end function
+    end template
+contains
+    subroutine check_templated_function()
+        instantiate unary{abs}, only: rejected_function => apply ! {Error} templated procedure 'abs' cannot be used as a procedure argument
+        instantiate unary{increment}, only: valid_function => apply
+        if (valid_function(2) /= 3) error stop
+        print *, after_templated_function_missing ! {Error} Variable 'after_templated_function_missing' is not declared
+    contains
+        template function abs{t}(x) result(value)
+            deferred type :: t
+            type(t), intent(in) :: x
+            type(t) :: value
+            value = x
+        end function
+        integer function increment(x) result(value)
+            integer, intent(in) :: x
+            value = x + 1
+        end function
+    end subroutine
+end module
+
+module template_scope_templated_subroutine_m
+    implicit none
+    template action{op}
+        deferred interface
+            subroutine op(x)
+                integer, intent(inout) :: x
+            end subroutine
+        end interface
+    contains
+        subroutine apply(x)
+            integer, intent(inout) :: x
+            call op(x)
+        end subroutine
+    end template
+contains
+    subroutine actual(x)
+        integer, intent(inout) :: x
+        x = x + 10
+    end subroutine
+    subroutine check_templated_subroutine()
+        instantiate action{op=actual}, only: rejected_subroutine => apply ! {Error} templated procedure 'actual' cannot be used as a procedure argument
+        instantiate action{assign_value}, only: valid_subroutine => apply
+        integer :: value
+        value = 2
+        call valid_subroutine(value)
+        if (value /= 3) error stop
+        print *, after_templated_subroutine_missing ! {Error} Variable 'after_templated_subroutine_missing' is not declared
+    contains
+        template subroutine actual{t}(x)
+            deferred type :: t
+            type(t), intent(inout) :: x
+            x = x
+        end subroutine
+        subroutine assign_value(x)
+            integer, intent(inout) :: x
+            x = x + 1
+        end subroutine
+    end subroutine
+end module
+
+subroutine inherited_parent_component_keyword_conflicts()
+    implicit none
+    type :: ipck_base_t
+        integer :: b1
+    end type
+    type, extends(ipck_base_t) :: ipck_der_t
+        integer :: d1
+    end type
+    type, extends(ipck_der_t) :: ipck_der2_t
+        integer :: e1
+    end type
+    type(ipck_der2_t) :: e
+    e = ipck_der2_t(ipck_base_t=ipck_base_t(1), ipck_der_t=ipck_der_t(2, 3), e1=4)  ! {Error} component 'b1' is already specified, it cannot also be given by the parent component 'ipck_der_t'
+    e = ipck_der2_t(ipck_der_t=ipck_der_t(2, 3), ipck_base_t=ipck_base_t(1), e1=4)  ! {Error} component 'b1' is already specified, it cannot also be given by the parent component 'ipck_base_t'
+    e = ipck_der2_t(ipck_base_t=ipck_base_t(1), b1=2, d1=3, e1=4)  ! {Error} component 'b1' is already specified by the parent component 'ipck_base_t'
+    e = ipck_der2_t(b1=2, ipck_base_t=ipck_base_t(1), d1=3, e1=4)  ! {Error} component 'b1' is already specified, it cannot also be given by the parent component 'ipck_base_t'
+    e = ipck_der2_t(ipck_der_t=1.0, ipck_base_t=ipck_base_t(1), e1=3)  ! {Error} type mismatch in structure constructor: the parent component 'ipck_der_t' requires a scalar value of type type(ipck_der_t), not real(4)
+end subroutine
+
+! An EXIT statement without a construct name belongs to the innermost enclosing
+! DO construct; a BLOCK or IF construct does not count, and it may not leave a
+! DO CONCURRENT construct.
+subroutine exit_without_construct_name_1()
+    implicit none
+    integer :: i, n
+    n = 0
+    block
+        if (n == 0) exit  ! {Error} `exit` statements without a construct name cannot be outside of loops
+        n = 1
+    end block
+    do concurrent (i = 1:3)
+        block
+            if (i == 2) exit  ! {Error} `exit` statements cannot leave a `do concurrent` loop
+        end block
+    end do
+    do concurrent (i = 1:3)
+        do n = 1, 3
+            if (n == i) exit
+        end do
+    end do
+end subroutine
+
+module inline_intrinsic_template_arg_1
+    implicit none
+contains
+    template function iita_g{f, t}(x, y) result(r)
+        deferred type :: t
+        interface
+            pure elemental function f(a, b) result(c)
+                import :: t
+                type(t), intent(in) :: a, b
+                type(t) :: c
+            end function
+        end interface
+        type(t), intent(in) :: x, y
+        type(t) :: r
+        r = f(x, y)
+    end function
+
+    template function iita_h{f}(x, y) result(r)
+        interface
+            pure elemental function f(a, b) result(c)
+                integer, intent(in) :: a, b
+                logical :: c
+            end function
+        end interface
+        integer, intent(in) :: x, y
+        logical :: r
+        r = f(x, y)
+    end function
+end module
+
+subroutine inline_intrinsic_template_arg_errors()
+    use inline_intrinsic_template_arg_1
+    implicit none
+    print *, iita_g{max, logical}(.true., .false.)  ! {Error} Arguments to max0 must be of real, integer or character type
+    print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
+    print *, iita_g{max, integer}(1, 2)
+end subroutine
