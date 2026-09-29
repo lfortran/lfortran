@@ -1881,7 +1881,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     // whose callee may define them, rather than of a constructor.
     void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
         size_t x_n_args, ASR::expr_t **orig_args, const std::string& name_hint,
-        bool is_call) {
+        bool is_call, bool is_elemental_array_call=false) {
         /* For other frontends, we might need to traverse the arguments
            in reverse order. */
         for( size_t i = 0; i < x_n_args; i++ ) {
@@ -1957,6 +1957,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             } else if( x_m_args[i].m_value &&
                        !ASRUtils::is_array(ASRUtils::expr_type(x_m_args[i].m_value)) &&
                        ASRUtils::is_struct(*ASRUtils::expr_type(x_m_args[i].m_value)) &&
+                       // Left to subroutine_from_function, which returns the
+                       // result into a variable that is finalized once the
+                       // statement is done (see ReplaceExprWithTemporary::
+                       // replace_expr), unless the procedure is elemental
+                       // and invoked once per element, which would evaluate
+                       // the reference again for each of them.
+                       (is_elemental_array_call ||
+                        !ASRUtils::is_finalizable_function_reference(x_m_args[i].m_value)) &&
                        !ASR::is_a<ASR::Var_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                        !ASR::is_a<ASR::ArrayItem_t>(
@@ -2491,8 +2499,18 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 orig_args = func->m_args;
             }
         }
+        bool is_elemental_array_call = false;
+        if (ASRUtils::is_elemental(x.m_name)) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i].m_value && ASRUtils::is_array(
+                        ASRUtils::expr_type(x.m_args[i].m_value))) {
+                    is_elemental_array_call = true;
+                }
+            }
+        }
         traverse_call_args(x_m_args, x.m_args, x.n_args, orig_args,
-            name_hint + ASRUtils::symbol_name(x.m_name), true);
+            name_hint + ASRUtils::symbol_name(x.m_name), true,
+            is_elemental_array_call);
         T& xx = const_cast<T&>(x);
         xx.m_args = x_m_args.p;
         xx.n_args = x_m_args.size();
@@ -2707,6 +2725,40 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         // Do nothing
     }
 
+    // Whether the expression being replaced is an operand of an array
+    // expression, which is evaluated element by element once lowered.
+    bool in_array_context = false;
+
+    // A reference to a function whose result is finalized after the statement
+    // (F2018 7.5.6.3 p5) is left in place (see replace_FunctionCall), so that
+    // subroutine_from_function returns the result into a variable that is
+    // finalized once the statement is done. The function_result_scope pass
+    // associates every such reference that a statement evaluates once with a
+    // pointer before this pass; those that remain are in an implied DO loop,
+    // a branch of a conditional expression, a FORALL or a parallel region.
+    // In an array expression, which the loop it becomes would evaluate once
+    // per element, a scalar operand that contains such a reference is
+    // evaluated once, before the statement, into a variable.
+    void replace_expr(ASR::expr_t* x) {
+        if (x == nullptr) {
+            return;
+        }
+        ASR::ttype_t* type = ASRUtils::expr_type(x);
+        bool is_array_expr = type != nullptr && ASRUtils::is_array(type);
+        if (in_array_context && type != nullptr && !is_array_expr &&
+                !ASRUtils::is_struct(*type) &&
+                ASRUtils::contains_finalizable_function_reference(x)) {
+            force_replace_current_expr_for_scalar(current_expr,
+                "_finalizable_result_", al, current_body, current_scope,
+                exprs_with_target);
+            return;
+        }
+        bool in_array_context_copy = in_array_context;
+        in_array_context = in_array_context || is_array_expr;
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_expr(x);
+        in_array_context = in_array_context_copy;
+    }
+
     bool is_current_expr_linked_to_target(ExprsWithTargetType& exprs_with_target, ASR::expr_t** &current_expr) {
         return exprs_with_target.find(*current_expr) != exprs_with_target.end();
     }
@@ -2775,6 +2827,24 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         if( ASRUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
             // std::cout << f << "\n";
+            if (ASRUtils::is_array(x->m_type)) {
+                // The function is invoked once per element: see replace_expr.
+                for (size_t i = 0; i < x->n_args; i++) {
+                    if (ASRUtils::contains_finalizable_function_reference(
+                            x->m_args[i].m_value)) {
+                        ASR::expr_t** current_expr_copy = current_expr;
+                        current_expr = &x->m_args[i].m_value;
+                        replace_expr(x->m_args[i].m_value);
+                        current_expr = current_expr_copy;
+                    }
+                }
+            }
+            return ;
+        }
+        // Left to subroutine_from_function (see replace_expr).
+        if( !in_array_context &&
+                ASRUtils::is_finalizable_function_reference(*current_expr) ) {
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_FunctionCall(x);
             return ;
         }
 
@@ -3365,7 +3435,11 @@ class ReplaceExprWithTemporaryVisitor:
             is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value);
 
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+        // A scalar value is assigned to each element of an array target.
+        replacer.in_array_context = ASRUtils::is_array(
+            ASRUtils::expr_type(x.m_target));
         call_replacer();
+        replacer.in_array_context = false;
         replacer.lhs_var = nullptr;
         bool is_assignment_target_array_section_item = ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) &&
                     ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) && !is_directly_addressable_expr(x.m_value);
@@ -3392,6 +3466,23 @@ class ReplaceExprWithTemporaryVisitor:
     }
 
     void visit_Associate(const ASR::Associate_t& /*x*/) {
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        // An elemental subroutine referenced with an array argument is
+        // invoked once per element.
+        bool elemental_array_call = false;
+        if (ASRUtils::is_elemental(x.m_name)) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i].m_value && ASRUtils::is_array(
+                        ASRUtils::expr_type(x.m_args[i].m_value))) {
+                    elemental_array_call = true;
+                }
+            }
+        }
+        replacer.in_array_context = elemental_array_call;
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_SubroutineCall(x);
+        replacer.in_array_context = false;
     }
 
     void visit_FileWrite(const ASR::FileWrite_t& x) {
@@ -3552,7 +3643,10 @@ class TransformVariableInitialiser:
                 x.m_storage == ASR::storage_typeType::Save &&
                 value &&
                 ASRUtils::is_value_constant(value)
-            )
+            ) ||
+            // It must be evaluated before the declarations that depend on
+            // it (e.g. an automatic array bound), not in the body.
+            ASRUtils::is_entry_initialized_local(x)
         ) {
             return;
         }

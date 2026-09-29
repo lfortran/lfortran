@@ -172,6 +172,47 @@ static std::string compute_llvm_function_name(
     return fn_name;
 }
 
+// For each statement label of a procedure body, the BLOCK and ASSOCIATE
+// constructs that contain the labeled statement, outermost first.
+class GoToTargetScopes : public ASR::BaseWalkVisitor<GoToTargetScopes> {
+public:
+    std::map<uint64_t, std::vector<SymbolTable*>> &scopes;
+    std::vector<SymbolTable*> enclosing;
+
+    GoToTargetScopes(std::map<uint64_t, std::vector<SymbolTable*>> &scopes_):
+        scopes(scopes_) {}
+
+    void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+        scopes[x.m_id] = enclosing;
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        // The label of the BLOCK statement is outside the construct.
+        if (x.m_label != -1) {
+            scopes[x.m_label] = enclosing;
+        }
+        ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        enclosing.push_back(block->m_symtab);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+        enclosing.pop_back();
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t* block = ASR::down_cast<ASR::AssociateBlock_t>(
+            x.m_m);
+        enclosing.push_back(block->m_symtab);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+        enclosing.pop_back();
+    }
+
+    void visit_expr(const ASR::expr_t & /*x*/) {}
+    void visit_ttype(const ASR::ttype_t & /*x*/) {}
+};
+
 } // anonymous namespace
 
 class ASRToLLVMVisitor : public ASR::BaseVisitor<ASRToLLVMVisitor>
@@ -374,6 +415,9 @@ public:
     std::set<uint64_t> llvm_fn_from_bare_implicit_interface;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
+    // The BLOCK and ASSOCIATE constructs that contain each labeled statement
+    // of the procedure being generated (see GoToTargetScopes).
+    std::map<uint64_t, std::vector<SymbolTable*>> goto_target_scopes;
     std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
     std::set<uint32_t> global_string_allocated;
     const ASR::Function_t *parent_function = nullptr;
@@ -392,10 +436,15 @@ public:
         size_t heap_arrays_before;
         size_t char_writebacks_before;
         llvm::Value* saved_stack;
-        size_t end_index; // index of the BLOCK's end in `loop_or_block_end`
+        // The number of entries of `loop_or_block_end` on entry: a branch to
+        // one of the first `end_index` entries leaves the construct.
+        size_t end_index;
+        // An ASSOCIATE construct has no character data to write back.
+        bool writes_back_chars;
     };
-    std::vector<BlockCleanup> block_cleanups; /* Enclosing BLOCK constructs,
-        innermost last, whose cleanup is emitted by an EXIT that leaves them */
+    std::vector<BlockCleanup> block_cleanups; /* Enclosing BLOCK and ASSOCIATE
+        constructs, innermost last, whose cleanup is emitted by an EXIT, CYCLE,
+        RETURN or GO TO that leaves them */
 
     struct FlatCopyback {
         llvm::Value* flat_buf;
@@ -717,6 +766,11 @@ public:
     }
 
     void predeclare_goto_targets(llvm::Function *fn, ASR::stmt_t **body, size_t n) {
+        goto_target_scopes.clear();
+        GoToTargetScopes target_scopes(goto_target_scopes);
+        for (size_t i = 0; i < n; i++) {
+            target_scopes.visit_stmt(*body[i]);
+        }
         for (size_t i = 0; i < n; i++) {
             if (body[i]->type != ASR::stmtType::GoToTarget) continue;
             ASR::GoToTarget_t *gt = ASR::down_cast<ASR::GoToTarget_t>(body[i]);
@@ -2296,7 +2350,7 @@ public:
                         if (!curr_arg.m_type) {
                             llvm_utils->deepcopy(m_source, source_handle, target_struct,
                                 ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source)),
-                                curr_arg_m_a_type, module.get());
+                                curr_arg_m_a_type, module.get(), false, false);
                         }
 
                         continue;
@@ -2350,7 +2404,8 @@ public:
                             this->visit_expr(*m_source);
                             ptr_loads = ptr_loads_copy;
 
-                            llvm_utils->deepcopy(m_source, tmp, x_arr, ASRUtils::expr_type(m_source), curr_arg_m_a_type, module.get());
+                            llvm_utils->deepcopy(m_source, tmp, x_arr, ASRUtils::expr_type(m_source), curr_arg_m_a_type, module.get(),
+                                false, false);
                         }
                     } else {
                         ASR::ttype_t* dest_asr_type = curr_arg.m_type;
@@ -2362,7 +2417,8 @@ public:
                         bool is_arg_unlimited_poly = ASRUtils::is_unlimited_polymorphic_type(&src_struct_sym->base);
                         // If no type specified then use curr_arg_m_a_type as default
                         if (m_source && !m_source_is_class) {
-                            dest_asr_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source));
+                            // The value of a pointer SOURCE is that of its target.
+                            dest_asr_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(m_source));
                             dest_class_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(m_source));
                             malloc_size = SizeOfTypeUtil(m_source, dest_asr_type, llvm_utils->getIntType(4),
                                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
@@ -2512,7 +2568,8 @@ public:
                                 !ASRUtils::is_string_only(ASRUtils::expr_type(m_source))) {
                                 src = llvm_utils->CreateLoad2(dest_type, src);
                             }
-                            llvm_utils->deepcopy(m_source, src, dest, dest_asr_type, dest_asr_type, module.get());
+                            llvm_utils->deepcopy(m_source, src, dest, dest_asr_type, dest_asr_type, module.get(),
+                                false, false);
                         }
                     }
                 }
@@ -8485,7 +8542,11 @@ public:
                     if (m_dims[i].m_length != nullptr &&  ASR::is_a<ASR::Var_t>(*m_dims[i].m_length)) {
                         ASR::Var_t* m_length_var = ASR::down_cast<ASR::Var_t>(m_dims[i].m_length);
                         ASR::symbol_t* m_length_sym = ASRUtils::symbol_get_past_external(m_length_var->m_v);
-                        if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
+                        // A local initialized on entry already holds the
+                        // bound as evaluated on entry.
+                        if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym) &&
+                                !ASRUtils::is_entry_initialized_local(
+                                    *ASR::down_cast<ASR::Variable_t>(m_length_sym))) {
                             ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
                             uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
                             llvm::Type* deep_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length,
@@ -8719,7 +8780,8 @@ public:
             // type_->print(llvm::outs()); llvm::outs() << "\n";
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base));
             ASR::expr_t* init_expr = v->m_symbolic_value;
-            if( v->m_storage != ASR::storage_typeType::Parameter ) {
+            if( v->m_storage != ASR::storage_typeType::Parameter &&
+                    !ASRUtils::is_entry_initialized_local(*v) ) {
                 for( size_t i = 0; i < v->n_dependencies; i++ ) {
                     std::string variable_name = v->m_dependencies[i];
                     ASR::symbol_t* dep_sym = x.m_symtab->resolve_symbol(variable_name);
@@ -14889,28 +14951,21 @@ public:
             }
         }
 
+        block_cleanups.push_back({associate_block->m_symtab, heap_arrays_before,
+            pending_char_writebacks.size(), saved_stack, loop_or_block_end.size(),
+            false});
         for (size_t i = 0; i < associate_block->n_body; i++) {
             this->visit_stmt(*(associate_block->m_body[i]));
         }
 
         llvm::BasicBlock* end_BB = llvm::BasicBlock::Create(context, std::string(associate_block->m_name) + "_end");
         start_new_block(end_BB);
-        llvm_symtab_finalizer.finalize_symtab(associate_block->m_symtab);
-
-        // Free associate-block-local heap arrays
-        for (size_t i = heap_arrays_before; i < heap_fixed_size_arrays.n; i++) {
-            llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
-        }
+        // Finalize, free associate-block-local heap arrays and restore the
+        // stack pointer to reclaim block-scoped alloca space.
+        emit_block_cleanup(block_cleanups.back(), heap_fixed_size_arrays.n,
+            pending_char_writebacks.size());
         heap_fixed_size_arrays.n = heap_arrays_before;
-
-        // Restore stack pointer to reclaim block-scoped alloca space
-#if LLVM_VERSION_MAJOR >= 18
-        builder->CreateStackRestore(saved_stack);
-#else
-        llvm::Function *stackrestore_fn = llvm::Intrinsic::getDeclaration(
-            module.get(), llvm::Intrinsic::stackrestore);
-        builder->CreateCall(stackrestore_fn, {saved_stack});
-#endif
+        block_cleanups.pop_back();
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x) {
@@ -14957,7 +15012,7 @@ public:
         declare_vars(*block);
         in_block_context = false;
         block_cleanups.push_back({block->m_symtab, heap_arrays_before,
-            wb_before, saved_stack, loop_or_block_end.size()});
+            wb_before, saved_stack, loop_or_block_end.size(), true});
         loop_or_block_end.push_back(blockend);
         loop_or_block_end_names.push_back(blockend_name);
         for (size_t i = 0; i < block->n_body; i++) {
@@ -14984,7 +15039,8 @@ public:
     // stack pointer saved on entry.
     void emit_block_cleanup(const BlockCleanup &b, size_t heap_end,
             size_t wb_end) {
-        for (size_t i = b.char_writebacks_before; i < wb_end; i++) {
+        for (size_t i = b.char_writebacks_before;
+                b.writes_back_chars && i < wb_end; i++) {
             auto& wb = pending_char_writebacks[i];
             llvm_utils->writeback_char_to_polymorphic_descriptors(
                 wb.original_descs_i8, wb.consolidated_desc, wb.n_elems_i64);
@@ -15866,17 +15922,37 @@ public:
         return true;
     }
 
-    // Branch to `loop_or_block_end[target]`, first ending every BLOCK
-    // construct that the branch leaves, innermost first.
-    void exit_to(size_t target) {
+    // End every BLOCK or ASSOCIATE construct that a branch to
+    // `loop_or_block_end[target]` leaves (all of them if `all`), innermost
+    // first.
+    void leave_blocks(size_t target, bool all=false) {
+        size_t kept = 0;
+        while (!all && kept < block_cleanups.size() &&
+                block_cleanups[kept].end_index <= target) {
+            kept++;
+        }
+        leave_innermost_blocks(kept);
+    }
+
+    // End every enclosing BLOCK or ASSOCIATE construct but the outermost
+    // `kept` ones, innermost first.
+    void leave_innermost_blocks(size_t kept) {
         size_t heap_end = heap_fixed_size_arrays.n;
         size_t wb_end = pending_char_writebacks.size();
-        for (auto b = block_cleanups.rbegin();
-                b != block_cleanups.rend() && b->end_index > target; ++b) {
-            emit_block_cleanup(*b, heap_end, wb_end);
-            heap_end = b->heap_arrays_before;
-            wb_end = b->char_writebacks_before;
+        for (size_t i = block_cleanups.size(); i > kept; i--) {
+            const BlockCleanup &b = block_cleanups[i - 1];
+            emit_block_cleanup(b, heap_end, wb_end);
+            heap_end = b.heap_arrays_before;
+            if (b.writes_back_chars) {
+                wb_end = b.char_writebacks_before;
+            }
         }
+    }
+
+    // Branch to `loop_or_block_end[target]`, first ending every construct
+    // that the branch leaves.
+    void exit_to(size_t target) {
+        leave_blocks(target);
         builder->CreateBr(loop_or_block_end[target]);
     }
 
@@ -15922,12 +15998,14 @@ public:
                 }
             }
             if (i >= 0) {
+                leave_blocks(loop_end_index[i]);
                 builder->CreateBr(loop_head[i]);
             } else {
                 throw CodeGenError("Could not find loop named " + std::string(x.m_stmt_name) + " in parent scope to cycle to.",
                 x.base.base.loc);
             }
         } else {
+            leave_blocks(loop_end_index.back());
             builder->CreateBr(loop_head.back());
         }
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_cycle");
@@ -15935,6 +16013,7 @@ public:
     }
 
     void visit_Return(const ASR::Return_t & /* x */) {
+        leave_blocks(0, true);
         builder->CreateBr(proc_return);
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_return");
         start_new_block(bb);
@@ -15947,7 +16026,31 @@ public:
             llvm_goto_targets[x.m_target_id] = new_target;
         }
         llvm::BasicBlock *target = llvm_goto_targets[x.m_target_id];
-        builder->CreateBr(target);
+        // End the constructs that the branch leaves: those that do not
+        // contain the target.
+        auto target_scopes = goto_target_scopes.find(x.m_target_id);
+        bool enters_construct = false;
+        if (target_scopes != goto_target_scopes.end()) {
+            const std::vector<SymbolTable*> &scopes = target_scopes->second;
+            size_t kept = 0;
+            while (kept < block_cleanups.size() && kept < scopes.size() &&
+                    block_cleanups[kept].symtab == scopes[kept]) {
+                kept++;
+            }
+            // A branch cannot enter a construct from outside it. Semantics
+            // makes such a GoTo, which is never executed, for the labels of
+            // an assigned GO TO without a label list: a branch into the
+            // BLOCK or ASSOCIATE construct would skip its declarations.
+            enters_construct = kept < scopes.size();
+            if (!enters_construct) {
+                leave_innermost_blocks(kept);
+            }
+        }
+        if (enters_construct) {
+            builder->CreateUnreachable();
+        } else {
+            builder->CreateBr(target);
+        }
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_goto");
         start_new_block(bb);
     }
