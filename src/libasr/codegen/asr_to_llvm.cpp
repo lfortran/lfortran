@@ -2697,6 +2697,7 @@ public:
     }
 
     void visit_Allocate(const ASR::Allocate_t& x) {
+        if (compiler_options.emit_debug_info) debug_emit_loc(x);
         visit_AllocateUtil(x, x.m_stat, false, x.m_source);
     }
 
