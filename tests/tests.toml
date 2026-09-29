@@ -6186,5 +6186,5 @@ filename = "../integration_tests/global_init_07.f90"
 pass = "global_init"
 
 [[test]]
-filename = "string_array_empty_constant.f90"
+filename = "../integration_tests/string_122.f90"
 asr = true
