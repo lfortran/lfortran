@@ -3,7 +3,7 @@ source_filename = "LFortran"
 target datalayout = "..."
 
 %complex_4 = type <{ float, float }>
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @associate_02.t1 = internal global i32 2
 @associate_02.t2 = internal global double 2.000000e+00

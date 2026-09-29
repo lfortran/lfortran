@@ -15,10 +15,10 @@ lays out the launch (device_launch_expand.cpp) both raise these; the wording
 the user sees is built in one place, from the reason and what little it
 quotes, so that the decision and its phrasing cannot drift apart.
 
-Every reason is classified, and the classification is what the offload policy
-is meant to act on: a `NotImplemented` decline is a gap in this compiler and
-one day will not be raised at all, while a `BackendCannot` decline is a fact
-about the device that no amount of work here would change.
+A decline is raised by the offloading pipeline, after the unsupported-construct
+check (gpu_unsupported_check.h) has committed the loop to the device, so every
+decline is a compile-time error: a loop the pipeline cannot lower yet is a gap
+in this compiler, whatever the reason.
 */
 
 // The device dialect a loop is being offloaded to. Nothing outside
@@ -40,6 +40,9 @@ struct GpuDeviceCapabilities {
     // branches on it.
     GpuDevice device = GpuDevice::None;
 
+    // The name a diagnostic calls the device by, such as "Metal".
+    std::string name;
+
     // Whether a device was selected at all. When none was, the offload
     // passes have nothing to do.
     bool device_selected() const { return device != GpuDevice::None; }
@@ -50,15 +53,9 @@ struct GpuDeviceCapabilities {
     // whose widest type is narrower than the host's would stride through
     // that buffer at the wrong size: it would read and write the wrong
     // elements, and nothing would say so. A loop touching data wider than
-    // this stays on the host.
+    // this cannot be offloaded.
     int max_integer_kind = 8;
     int max_real_kind = 8;
-
-    // Whether a kernel can write text out as it runs. A device that can is
-    // only waiting on the lowering for a Fortran print or write to be
-    // written here; a device that cannot has no way to run one at all, and
-    // no amount of work here would give it one.
-    bool device_printf = true;
 
     // Whether a kernel can bring the program to a halt from a thread. There
     // is no exit code to deliver either way -- a grid has no status to
@@ -90,6 +87,13 @@ struct GpuDeviceCapabilities {
     // checks already ask on every device.
     bool narrows_scalar_types() const;
 
+    // Whether `t` is a real wider than every floating point type this device
+    // has -- `real(8)` on a device with no 64-bit float, or a real wider than
+    // the shared floor on any device. No lowering could give such data a
+    // device representation, which is what sets it apart from every other
+    // type this device turns down.
+    bool lacks_real_width(ASR::ttype_t *t) const;
+
     // Whether the pass splices device callees into the kernel body for this
     // device. It does so exactly when a device function may not declare a
     // run-time sized local. The splice is also what can leave a section of a
@@ -100,20 +104,15 @@ struct GpuDeviceCapabilities {
     }
 };
 
-// What a decline says about the compiler and about the device.
-enum class GpuDeclineClass {
-    // LFortran could lower this onto the selected device, but does not yet.
-    // Every one of these is a gap to be closed.
-    NotImplemented,
-    // The selected device genuinely cannot express it, so no amount of work
-    // in this pass would put this loop on this device.
-    BackendCannot,
-};
-
 enum class GpuDeclineReason {
     None,
 
     // --- the shape of the loop itself ---
+    LoopNestShape,
+    LoopNestNotCopyable,
+    // A loop still assigned to the device once the offload pass is done,
+    // which the pass never reached.
+    LoopNotLowered,
     ReductionClause,
     LoopWithoutIndex,
     IncompleteLoopHead,
@@ -124,6 +123,19 @@ enum class GpuDeclineReason {
     UnsizedLocalArray,
     AliasTemporaryRuntimeSized,
     UngatherableStridedSection,
+    // A section passed to a procedure has to be copied into a contiguous
+    // per-thread buffer, but a dimension before its last has an extent that
+    // changes from one iteration to the next, so no buffer the host sizes
+    // can hold it contiguously.
+    SectionLeadingExtentVaries,
+    // A section passed to a procedure has to be copied into a contiguous
+    // per-thread buffer before the statement that makes the call, but no
+    // such copy serves the call (see GpuSectionConflict): a do while
+    // condition or a FORALL evaluates it again after changing a value it
+    // depends on, a condition it is evaluated under calls a procedure that
+    // is not pure, or a construct has no place for the copy (see
+    // GpuSectionSite).
+    SectionCopyNotPlaceable,
     DeviceFunctionInlining,
     DeviceFunctionImplementation,
     RecursiveDeviceFunction,
@@ -178,6 +190,42 @@ enum class GpuDeclineReason {
     ScalarKindMismatch,
 };
 
+// Where a section passed to a procedure is evaluated, as far as copying it
+// into a contiguous buffer is concerned. `Statement` is the one site where
+// the copy can be placed: right before the statement that makes the call.
+enum class GpuSectionSite {
+    Statement,
+    WhileCondition,
+    ConditionalExpression,
+    ImpliedDo,
+    Forall,
+    Where,
+    SelectType,
+    SelectRank,
+    Construct,
+};
+
+// Why a copy placed before the statement cannot serve a section evaluated
+// at a site other than `Statement`.
+enum class GpuSectionConflict {
+    // The construct has no place for the copy: a WHERE, a SELECT TYPE, a
+    // SELECT RANK, an implied DO or a construct not known to this pass.
+    NoPlace,
+    // The construct changes a value that the section, or a condition it
+    // is evaluated under, depends on before evaluating it again.
+    ValueChanges,
+    // A condition the section is evaluated under calls a procedure that
+    // is not pure, which the copy would have to call again.
+    ImpureCondition,
+};
+
+// Where a section is evaluated, and why no copy before the statement
+// serves it when that site is not `Statement`.
+struct GpuSectionPlace {
+    GpuSectionSite site = GpuSectionSite::Statement;
+    GpuSectionConflict conflict = GpuSectionConflict::NoPlace;
+};
+
 // A decline, with the little the message quotes alongside it.
 struct GpuDecline {
     GpuDeclineReason reason = GpuDeclineReason::None;
@@ -185,10 +233,12 @@ struct GpuDecline {
     // routine an unsupported statement was found in.
     std::string name;
     // The element type the decline is about, when the reason is about a
-    // type. The classification asks the selected device whether it has a
-    // type of that width, so that the same reason can be a limit of the
-    // device on one backend and a gap in this pass on another.
+    // type, which the message names.
     ASR::ttype_t *type = nullptr;
+    // Where the section is evaluated, when the reason is about a section,
+    // and why no copy placed before the statement serves it.
+    GpuSectionSite site = GpuSectionSite::Statement;
+    GpuSectionConflict conflict = GpuSectionConflict::NoPlace;
 
     GpuDecline() = default;
     explicit GpuDecline(GpuDeclineReason reason_) : reason(reason_) {}
@@ -197,6 +247,10 @@ struct GpuDecline {
     GpuDecline(GpuDeclineReason reason_, const std::string &name_,
             ASR::ttype_t *type_)
         : reason(reason_), name(name_), type(type_) {}
+    GpuDecline(GpuDeclineReason reason_, const std::string &name_,
+            const GpuSectionPlace &place)
+        : reason(reason_), name(name_), site(place.site),
+          conflict(place.conflict) {}
 
     bool declined() const { return reason != GpuDeclineReason::None; }
 };
@@ -209,19 +263,12 @@ GpuDevice gpu_device_selected(const PassOptions &pass_options);
 GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device);
 GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options);
 
-// Whether this decline is a gap in LFortran or a limit of the device.
-GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
-        const GpuDeviceCapabilities &caps);
-
 // The whole clause the diagnostic reads, lowercase and naming nothing
 // internal. This is the only place the wording of a decline is written.
 std::string gpu_decline_message(const GpuDecline &decline);
 
-// A stable, greppable name for a class, for `--gpu-decline-stats`.
-const char* gpu_decline_class_name(GpuDeclineClass cls);
-
 void report_gpu_decline(const PassOptions &options, const Location &where,
-    const GpuDecline &decline, bool has_fallback = true);
+    const GpuDecline &decline);
 
 } // namespace LCompilers
 

@@ -759,6 +759,11 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         result_var = result_var_copy;
     }
 
+    void replace_StructConstant(ASR::StructConstant_t* /*x*/) {
+        // A StructConstant is emitted as static data, so its array
+        // arguments stay constants and are never expanded into temporaries
+    }
+
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
         const Location& loc = x->base.base.loc;
         ASR::expr_t* result_var_copy = result_var;
@@ -804,8 +809,14 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     ASRUtils::type_get_past_allocatable(x->m_type), &dims);
             }
         }
+        // A temporary of a derived type is declared by the type's symbol, so
+        // an expression naming that type is passed along.
+        ASR::expr_t* struct_expr = nullptr;
+        if (ASRUtils::is_struct(*result_type_)) {
+            struct_expr = ASRUtils::EXPR((ASR::asr_t*) x);
+        }
         result_var = PassUtils::create_var(result_counter, "_array_constant_",
-                        loc, result_type_, al, current_scope);
+                        loc, result_type_, al, current_scope, struct_expr);
         result_counter += 1;
         *current_expr = result_var;
 
@@ -941,6 +952,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 
         void visit_Variable(const ASR::Variable_t& /*x*/) {
             // Do nothing, already handled in init_expr pass
+        }
+
+        void visit_StructConstant(const ASR::StructConstant_t& /*x*/) {
+            // Its arguments are constants emitted as static data
         }
 
         void visit_ttype(const ASR::ttype_t& /*x*/) {

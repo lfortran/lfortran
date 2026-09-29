@@ -6,23 +6,21 @@
 #include <libasr/containers.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_preflight.h>
-#include <libasr/pass/gpu_offload_undo.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/parallel_canonicalize.h>
 
 namespace LCompilers {
 
 // Replaces the region with the launch of the kernel the draft above built:
-// the copies the host makes on either side of the dispatch, the dispatch
-// itself, and the GpuOffload node that still carries the host loop as its
-// alternative. Everything it needs is in `plan`; from here the offload is
-// certain, so this is also where what the launch cannot honour is reported.
+// the copies the host makes on either side of the dispatch and the dispatch
+// itself. Everything it needs is in `plan`; the region was committed to the
+// device before this pass ran, so this is also where what the launch cannot
+// honour is reported.
 void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         const ParallelLoopNest &work, const Location &loc,
         GpuLaunchPlan &plan) {
-    // The loop is offloaded from here on, so this is where a clause the
-    // launch cannot honour is reported: before this every exit still
-    // leaves the loop on the host, where the clause is honoured.
+    // The kernel is built, so this is where a clause the launch cannot
+    // honour is reported: a loop that is an error is not also warned about.
     for (size_t i = 0; i < region.n_clauses; i++) {
         std::string clause_name = unhonoured_clause(region.m_clauses[i]);
         if (!clause_name.empty()) {
@@ -34,8 +32,8 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // A `stop` the kernel runs as a trap is reported for the same reason:
     // the launch does halt where the program said to halt, but the stop
     // code and the kind of termination do not survive the crossing. A
-    // device with no trap never gets here -- the loop was declined above
-    // and runs on the host, where the statement means all of what it says.
+    // device with no trap never gets here: such a loop is an error before
+    // this.
     {
         GpuStopStatementFinder stops;
         for (size_t i = 0; i < work.n_body; i++) {
@@ -179,11 +177,52 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // Collect all launch-related statements into a temporary Vec.
     // If any involved variable is optional, wrap them in a
     // present() guard so the host never reads a null descriptor.
-    plan.gather_guard->commit();
     Vec<ASR::stmt_t*> launch_stmts;
     launch_stmts.reserve(al, plan.gather_stmts.n + pre_launch_stmts.n
         + plan.scatter_stmts.n + plan.liveout_scalars.size() + 2
         + plan.liveout_scalars.size());
+    // The limits of the loops are evaluated once, as the loop evaluates
+    // them before its first iteration, into host variables that everything
+    // below reads: the component fit, the kernel's arguments and the grid.
+    std::vector<ASR::expr_t*> starts, ends;
+    {
+        auto evaluate_once = [&](ASR::expr_t *&limit,
+                const std::string &name) {
+            if (ASR::is_a<ASR::IntegerConstant_t>(*limit)) return;
+            ASR::symbol_t *sym = gpu_new_variable(al, loc, current_scope,
+                current_scope->get_unique_name(name),
+                ASRUtils::duplicate_type(al, ASRUtils::expr_type(limit)));
+            launch_stmts.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)), limit,
+                    nullptr, false, false)));
+            for (size_t i = 0; i < plan.call_args.n; i++) {
+                if (plan.call_args.p[i].m_value == limit) {
+                    plan.call_args.p[i].m_value =
+                        ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+                }
+            }
+            limit = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+        };
+        for (size_t d = 0; d < plan.n_dims; d++) {
+            evaluate_once(plan.dim_info[d].host_start, "__gpu_loop_start");
+            evaluate_once(plan.dim_info[d].host_end, "__gpu_loop_end");
+            starts.push_back(plan.dim_info[d].host_start);
+            ends.push_back(plan.dim_info[d].host_end);
+        }
+    }
+    // The components the kernel writes are made ready from the loop as the
+    // source wrote it, which the rewrites above left untouched, and before
+    // any element is gathered into a copy.
+    {
+        ParallelLoopNest source;
+        if (parallel_loop_nest(region, source)) {
+            for (ASR::stmt_t *stmt : build_component_fit(source, starts, ends,
+                    loc)) {
+                launch_stmts.push_back(al, stmt);
+            }
+        }
+    }
     for (size_t gi = 0; gi < plan.gather_stmts.n; gi++) {
         launch_stmts.push_back(al, plan.gather_stmts.p[gi]);
     }
@@ -396,8 +435,6 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // launch block in if(present(v1) .and. present(v2) ...) so
     // the host never tries to read a null descriptor or compute
     // ArraySize on an absent argument.
-    Vec<ASR::stmt_t*> device_body;
-    device_body.reserve(al, launch_stmts.n);
     if (!plan.optional_syms.empty()) {
         ASR::ttype_t *log_type = ASRUtils::TYPE(
             ASR::make_Logical_t(al, loc, 4));
@@ -424,22 +461,17 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         }
         Vec<ASR::stmt_t*> empty_else;
         empty_else.reserve(al, 0);
-        device_body.push_back(al, ASRUtils::STMT(
+        pass_result.reserve(al, 1);
+        pass_result.push_back(al, ASRUtils::STMT(
             ASR::make_If_t(al, loc, nullptr, guard,
                 launch_stmts.p, launch_stmts.n,
                 empty_else.p, empty_else.n)));
     } else {
+        pass_result.reserve(al, launch_stmts.n);
         for (size_t i = 0; i < launch_stmts.n; i++) {
-            device_body.push_back(al, launch_stmts.p[i]);
+            pass_result.push_back(al, launch_stmts.p[i]);
         }
     }
-    Vec<ASR::stmt_t*> fallback;
-    fallback.reserve(al, 1);
-    fallback.push_back(al, const_cast<ASR::stmt_t*>(&region.base));
-    pass_result.reserve(al, 1);
-    pass_result.push_back(al, ASRUtils::STMT(ASR::make_GpuOffload_t(al,
-        loc, ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
-        device_body.p, device_body.n, fallback.p, fallback.n)));
 }
 
 } // namespace LCompilers

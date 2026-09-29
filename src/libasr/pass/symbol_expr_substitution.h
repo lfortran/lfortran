@@ -23,6 +23,28 @@ public:
         LCOMPILERS_ASSERT(duplicator.success && copy);
         *current_expr = copy;
     }
+
+    // An element of a name that stands for `ArrayPhysicalCast(a)` is the
+    // same element of `a`: the cast changes how the array is represented,
+    // not its bounds. Selecting through the cast would leave the element
+    // hanging off an expression rather than the array itself, which no
+    // consumer that follows the designator back to its variable recognises
+    // -- the GPU kernel layout among them, which then cannot find the
+    // buffers backing `it(k)%c` for `associate(it => s)`.
+    void replace_ArrayItem(ASR::ArrayItem_t *x) {
+        bool substituted = ASR::is_a<ASR::Var_t>(*x->m_v)
+            && assoc_map.count(ASR::down_cast<ASR::Var_t>(x->m_v)->m_v);
+        ASR::BaseExprReplacer<AssociateVarResolver>::replace_ArrayItem(x);
+        if (!substituted || !ASR::is_a<ASR::ArrayPhysicalCast_t>(*x->m_v)) {
+            return;
+        }
+        ASR::expr_t *array =
+            ASR::down_cast<ASR::ArrayPhysicalCast_t>(x->m_v)->m_arg;
+        if (ASR::is_a<ASR::Var_t>(*array)
+                || ASR::is_a<ASR::StructInstanceMember_t>(*array)) {
+            x->m_v = array;
+        }
+    }
 };
 
 class AssociateVarResolverVisitor :
