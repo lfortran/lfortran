@@ -1161,6 +1161,27 @@ static inline reduce_opType convert_id_to_reduce_type(
     }
 }
 
+// A sign that starts a level-2 expression applies to the whole add-operand:
+// `-a*b/c` is `-(a*b/c)` (F2018 R705, R706). The grammar gives the sign a
+// higher precedence than `*` and `/`, so that the extension `a*-b*c` groups
+// as `(a*(-b))*c` like in GFortran; a sign that starts the left operand of
+// `*` or `/` (and is not inside parentheses) is moved over the product here.
+static inline ast_t* mul_operation(Allocator &al, const Location &l,
+        expr_t *x, operatorType op, expr_t *y) {
+    if (x->type == exprType::UnaryOp && x->base.loc.first == l.first) {
+        UnaryOp_t *sign = down_cast<UnaryOp_t>(x);
+        if (sign->m_op == unaryopType::USub
+                || sign->m_op == unaryopType::UAdd) {
+            Location product_loc = l;
+            product_loc.first = sign->m_operand->base.loc.first;
+            expr_t *product = EXPR(make_BinOp_t(al, product_loc,
+                sign->m_operand, op, y));
+            return make_UnaryOp_t(al, l, sign->m_op, product);
+        }
+    }
+    return make_BinOp_t(al, l, x, op, y);
+}
+
 #define TYPE ast_t*
 
 // Assign last_* location to `a` from `b`
@@ -1168,8 +1189,8 @@ static inline reduce_opType convert_id_to_reduce_type(
 
 #define ADD(x, y, l) make_BinOp_t(p.m_a, l, EXPR(x), operatorType::Add, EXPR(y))
 #define SUB(x, y, l) make_BinOp_t(p.m_a, l, EXPR(x), operatorType::Sub, EXPR(y))
-#define MUL(x, y, l) make_BinOp_t(p.m_a, l, EXPR(x), operatorType::Mul, EXPR(y))
-#define DIV(x, y, l) make_BinOp_t(p.m_a, l, EXPR(x), operatorType::Div, EXPR(y))
+#define MUL(x, y, l) mul_operation(p.m_a, l, EXPR(x), operatorType::Mul, EXPR(y))
+#define DIV(x, y, l) mul_operation(p.m_a, l, EXPR(x), operatorType::Div, EXPR(y))
 #define POW(x, y, l) make_BinOp_t(p.m_a, l, EXPR(x), operatorType::Pow, EXPR(y))
 #define UNARY_MINUS(x, l) make_UnaryOp_t(p.m_a, l, unaryopType::USub, EXPR(x))
 #define UNARY_PLUS(x, l) make_UnaryOp_t(p.m_a, l, unaryopType::UAdd, EXPR(x))

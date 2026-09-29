@@ -1,0 +1,476 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            expr_23:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            j:
+                                (Variable
+                                    2
+                                    j
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    expr_23
+                    []
+                    [(Assignment
+                        (Var 2 a)
+                        (RealConstant
+                            3.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 b)
+                        (RealConstant
+                            4.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 c)
+                        (RealConstant
+                            2.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (RealUnaryMinus
+                            (RealBinOp
+                                (RealBinOp
+                                    (Var 2 a)
+                                    Mul
+                                    (Var 2 b)
+                                    (Real 4)
+                                    ()
+                                )
+                                Div
+                                (Var 2 c)
+                                (Real 4)
+                                ()
+                            )
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (Var 2 x)
+                            NotEq
+                            (RealUnaryMinus
+                                (RealConstant
+                                    6.000000
+                                    (Real 4)
+                                )
+                                (Real 4)
+                                (RealConstant
+                                    -6.000000
+                                    (Real 4)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (RealUnaryMinus
+                            (RealBinOp
+                                (RealBinOp
+                                    (Var 2 a)
+                                    Pow
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (Real 4)
+                                    ()
+                                )
+                                Mul
+                                (Var 2 b)
+                                (Real 4)
+                                ()
+                            )
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (Var 2 x)
+                            NotEq
+                            (RealUnaryMinus
+                                (RealConstant
+                                    36.000000
+                                    (Real 4)
+                                )
+                                (Real 4)
+                                (RealConstant
+                                    -36.000000
+                                    (Real 4)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (RealBinOp
+                            (Var 2 a)
+                            Mul
+                            (Var 2 b)
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (Var 2 x)
+                            NotEq
+                            (RealConstant
+                                12.000000
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (RealBinOp
+                            (RealUnaryMinus
+                                (Var 2 a)
+                                (Real 4)
+                                ()
+                            )
+                            Mul
+                            (Var 2 b)
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (Var 2 x)
+                            NotEq
+                            (RealUnaryMinus
+                                (RealConstant
+                                    12.000000
+                                    (Real 4)
+                                )
+                                (Real 4)
+                                (RealConstant
+                                    -12.000000
+                                    (Real 4)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (RealBinOp
+                            (Var 2 c)
+                            Sub
+                            (RealBinOp
+                                (Var 2 a)
+                                Mul
+                                (Var 2 b)
+                                (Real 4)
+                                ()
+                            )
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (Var 2 x)
+                            NotEq
+                            (RealUnaryMinus
+                                (RealConstant
+                                    10.000000
+                                    (Real 4)
+                                )
+                                (Real 4)
+                                (RealConstant
+                                    -10.000000
+                                    (Real 4)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalNot
+                            (RealCompare
+                                (Var 2 c)
+                                Gt
+                                (RealUnaryMinus
+                                    (RealBinOp
+                                        (Var 2 a)
+                                        Mul
+                                        (Var 2 b)
+                                        (Real 4)
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerConstant 7 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 j)
+                        (IntegerConstant 2 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (IntegerUnaryMinus
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Div
+                                        (Var 2 j)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Mul
+                                    (Var 2 j)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerUnaryMinus
+                                (IntegerConstant 6 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant -6 (Integer 4) Decimal)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                    ()
+                )
+        })
+    []
+    ()
+)
