@@ -18,8 +18,18 @@ on:
 # When it isn't a PR against main but instead a commit pushed (or merged) to main, then `group` will
 # evaluate to `${{ github.sha }}` but "cancel-in-progress" evaluates to false, so the CI on main
 # will run in a new group `${{ github.sha }}`, but no previous CI will be cancelled on main
+#
+# Adding or removing any label other than Tests::Run-Exhaustive also triggers
+# this workflow (GitHub cannot filter `labeled` events by label name). Such a
+# run skips every job (see the `if:` conditions below) and gets its own
+# `group` (suffixed with the unique run id), so it does not cancel an
+# Exhaustive run that is already in progress for the PR.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
+  group: >-
+    ${{ github.workflow }}-${{ github.event.number || github.sha }}${{
+    (github.event.action == 'labeled' || github.event.action == 'unlabeled') &&
+    github.event.label.name != 'Tests::Run-Exhaustive' &&
+    format('-{0}', github.run_id) || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 
@@ -36,7 +46,9 @@ jobs:
     if: >-
       ${{ github.event_name == 'push' ||
           (github.event_name == 'pull_request' &&
-           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') &&
+           ((github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+            github.event.label.name == 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -118,7 +130,10 @@ jobs:
     # here also cover the Release build (Quick checks builds Debug).
     if: >-
       ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+          (github.event_name == 'pull_request' &&
+           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') &&
+           ((github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+            github.event.label.name == 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -230,7 +245,10 @@ jobs:
     # Run on push to main, or only when the specific label is modified on a PR
     if: >-
       ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+          (github.event_name == 'pull_request' &&
+           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') &&
+           ((github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+            github.event.label.name == 'Tests::Run-Exhaustive')) }}
     strategy:
       fail-fast: false
       matrix:
@@ -502,7 +520,10 @@ jobs:
     # compiler. Same PR/main gating as the other LLVM version jobs.
     if: >-
       ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+          (github.event_name == 'pull_request' &&
+           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') &&
+           ((github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+            github.event.label.name == 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -609,7 +630,10 @@ jobs:
     # Run on push to main, or only when the specific label is modified on a PR
     if: >-
       ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+          (github.event_name == 'pull_request' &&
+           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') &&
+           ((github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+            github.event.label.name == 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -644,7 +668,10 @@ jobs:
     # Run on push to main, or only when the specific label is modified on a PR
     if: >-
       ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+          (github.event_name == 'pull_request' &&
+           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') &&
+           ((github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+            github.event.label.name == 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -668,7 +695,10 @@ jobs:
     # Run on push to main, or only when the specific label is modified on a PR
     if: >-
       ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+          (github.event_name == 'pull_request' &&
+           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') &&
+           ((github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+            github.event.label.name == 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -724,7 +754,10 @@ jobs:
     # Run on push to main, or only when the specific label is modified on a PR
     if: >-
       ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+          (github.event_name == 'pull_request' &&
+           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') &&
+           ((github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+            github.event.label.name == 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -778,7 +811,10 @@ jobs:
     # Run on push to main, or only when the specific label is modified on a PR
     if: >-
       ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+          (github.event_name == 'pull_request' &&
+           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') &&
+           ((github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+            github.event.label.name == 'Tests::Run-Exhaustive')) }}
     permissions:
       contents: read
       packages: write
@@ -821,7 +857,10 @@ jobs:
     runs-on: ubuntu-24.04
     if: >-
       ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+          (github.event_name == 'pull_request' &&
+           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') &&
+           ((github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+            github.event.label.name == 'Tests::Run-Exhaustive')) }}
     defaults:
       run:
         shell: bash -l {0}
