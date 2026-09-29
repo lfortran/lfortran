@@ -149,6 +149,31 @@ public:
     std::set<std::string> labels;
     size_t starting_n_body = 0;
     bool in_loop = false;
+    // True when the innermost enclosing loop is a DO CONCURRENT construct
+    bool in_do_concurrent = false;
+
+    // Marks the body of a loop as being inside a loop and restores the
+    // previous state when the loop visitor exits, including when it exits
+    // through a SemanticAbort (e.g. with --continue-compilation).
+    class LoopScope {
+        bool &in_loop;
+        bool &in_do_concurrent;
+        bool saved_in_loop;
+        bool saved_in_do_concurrent;
+    public:
+        LoopScope(bool &in_loop_, bool &in_do_concurrent_, bool is_do_concurrent)
+                : in_loop(in_loop_), in_do_concurrent(in_do_concurrent_),
+                  saved_in_loop(in_loop_), saved_in_do_concurrent(in_do_concurrent_) {
+            in_loop = true;
+            in_do_concurrent = is_do_concurrent;
+        }
+        ~LoopScope() {
+            in_loop = saved_in_loop;
+            in_do_concurrent = saved_in_do_concurrent;
+        }
+        LoopScope(const LoopScope &) = delete;
+        LoopScope &operator=(const LoopScope &) = delete;
+    };
     int all_loops_blocks_nesting = 0;
     int all_blocks_nesting = 0;
     int pragma_nesting_level = 0;
@@ -461,6 +486,7 @@ public:
         }
         unit->m_items = items.p;
         unit->n_items = items.size();
+        instantiate_pending_bodies();
     }
 
     template <typename T>
@@ -2651,22 +2677,20 @@ public:
                     // expressions, recursively handling nested structs.
                     // Appends the expanded (leaf) expressions to `expanded`.
                     std::function<void(ASR::expr_t*, Vec<ASR::expr_t*>&)> expand_struct_expr;
-                    expand_struct_expr = [&](ASR::expr_t* struct_expr,
-                                             Vec<ASR::expr_t*>& expanded) {
-                        ASR::ttype_t* stype = ASRUtils::expr_type(struct_expr);
-                        stype = ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(stype));
-                        if (!ASR::is_a<ASR::StructType_t>(*stype)) {
-                            expanded.push_back(al, struct_expr);
-                            return;
-                        }
-                        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
-                            ASRUtils::get_struct_sym_from_struct_expr(struct_expr));
-                        ASR::Struct_t *struct_def = ASR::down_cast<ASR::Struct_t>(struct_sym);
-
-                        if (struct_def->n_members == 0) {
-                            expanded.push_back(al, struct_expr);
-                            return;
+                    // Appends the components of `struct_def` held by
+                    // `struct_expr`. The inherited components of an extended
+                    // type come first in component order (F2023 7.5.7.2), so
+                    // the parent is expanded before the type's own members.
+                    std::function<void(ASR::expr_t*, ASR::Struct_t*, Vec<ASR::expr_t*>&)>
+                        expand_struct_components;
+                    expand_struct_components = [&](ASR::expr_t* struct_expr,
+                                                   ASR::Struct_t* struct_def,
+                                                   Vec<ASR::expr_t*>& expanded) {
+                        if (struct_def->m_parent != nullptr) {
+                            ASR::symbol_t *parent_sym = ASRUtils::symbol_get_past_external(
+                                struct_def->m_parent);
+                            expand_struct_components(struct_expr,
+                                ASR::down_cast<ASR::Struct_t>(parent_sym), expanded);
                         }
                         for (size_t j = 0; j < struct_def->n_members; j++) {
                             char *member_name = struct_def->m_members[j];
@@ -2682,6 +2706,25 @@ public:
                             // Recursively expand if the member is itself a struct
                             expand_struct_expr(member_expr, expanded);
                         }
+                    };
+                    expand_struct_expr = [&](ASR::expr_t* struct_expr,
+                                             Vec<ASR::expr_t*>& expanded) {
+                        ASR::ttype_t* stype = ASRUtils::expr_type(struct_expr);
+                        stype = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(stype));
+                        if (!ASR::is_a<ASR::StructType_t>(*stype)) {
+                            expanded.push_back(al, struct_expr);
+                            return;
+                        }
+                        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(struct_expr));
+                        ASR::Struct_t *struct_def = ASR::down_cast<ASR::Struct_t>(struct_sym);
+
+                        if (struct_def->n_members == 0 && struct_def->m_parent == nullptr) {
+                            expanded.push_back(al, struct_expr);
+                            return;
+                        }
+                        expand_struct_components(struct_expr, struct_def, expanded);
                     };
 
                     Vec<ASR::expr_t*> new_values_vec;
@@ -2962,32 +3005,58 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
-        ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
-        ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(ASRUtils::symbol_get_past_external(sym));
+        // Substitutions are recorded only after the whole instantiation succeeds.
+        // With --continue-compilation, a failed declaration can leave some symbols
+        // behind, but its bodies must not be built with missing substitutions.
+        auto type_subs_it = instantiate_types.find(x.base.base.loc.first);
+        auto symbol_subs_it = instantiate_symbols.find(x.base.base.loc.first);
+        if (type_subs_it == instantiate_types.end()
+                || symbol_subs_it == instantiate_symbols.end()) {
+            return;
+        }
 
-        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = instantiate_types[x.base.base.loc.first];
-        std::map<std::string, ASR::symbol_t*> symbol_subs = instantiate_symbols[x.base.base.loc.first];
+        ASR::symbol_t *sym = current_scope->resolve_symbol(to_lower(x.m_name));
+        if (sym == nullptr) {
+            return;
+        }
+        ASR::symbol_t *template_sym = ASRUtils::symbol_get_past_external(sym);
+        if (!ASR::is_a<ASR::Template_t>(*template_sym)) {
+            return;
+        }
+        ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(template_sym);
+
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = type_subs_it->second;
+        std::map<std::string, ASR::symbol_t*> symbol_subs = symbol_subs_it->second;
+        std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> symbols;
 
         if (x.n_symbols == 0) {
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
-                    instantiate_body(al, type_subs, symbol_subs, current_scope->resolve_symbol(s_name), s);
+                    ASR::symbol_t *new_s = current_scope->resolve_symbol(s_name);
+                    if (new_s == nullptr) {
+                        continue;
+                    }
+                    symbols.push_back({new_s, s});
                 }
             }
         } else {
             for (size_t i = 0; i < x.n_symbols; i++){
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(to_lower(use_symbol->m_remote_sym));
-                std::string new_s_name = use_symbol->m_remote_sym;
+                std::string new_s_name = to_lower(use_symbol->m_remote_sym);
                 if (use_symbol->m_local_rename) {
                     new_s_name = to_lower(use_symbol->m_local_rename);
                 }
-                instantiate_body(al, type_subs, symbol_subs, current_scope->resolve_symbol(new_s_name), s);
+                ASR::symbol_t *new_s = current_scope->resolve_symbol(new_s_name);
+                if (s == nullptr || new_s == nullptr) {
+                    continue;
+                }
+                symbols.push_back({new_s, s});
             }
         }
-
+        queue_body_instantiation(type_subs, symbol_subs, symbols);
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
@@ -5254,9 +5323,11 @@ public:
         current_scope = v->m_symtab;
         current_module = v;
 
+        // Instantiations need bodies too; transform_stmts skips declarations.
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if(x.m_items[i]->type == AST::decl_stmtType::Template){
+            if (x.m_items[i]->type == AST::decl_stmtType::Template ||
+                x.m_items[i]->type == AST::decl_stmtType::Instantiate) {
                 visit_decl_stmt(*x.m_items[i]);
             }
         }
@@ -6804,12 +6875,24 @@ public:
                 // raise an error
                 bool is_array_concat = false;
                 int flat_size = 0;
-                if( AST::is_a<AST::ArrayInitializer_t>(*x.m_value)){
-                     AST::ArrayInitializer_t *temp_array =
-                            AST::down_cast<AST::ArrayInitializer_t>(x.m_value);
-                    for(size_t i=0; i < temp_array->n_args; i++){
-                        this->visit_expr(*temp_array->m_args[i]);
-                        ASR::expr_t *temp = ASRUtils::EXPR(tmp);
+                if( AST::is_a<AST::ArrayInitializer_t>(*x.m_value) &&
+                    ASR::is_a<ASR::ArrayConstructor_t>(*value) ){
+                    // The shape of the value is measured from the expression
+                    // already built for this assignment: the elements of the
+                    // array constructor are its arguments, in source order.
+                    // Visiting the elements a second time would build that
+                    // expression again, and an element which needs a statement
+                    // of its own - the assignment of the temporary a structure
+                    // constructor evaluates its parent component value into,
+                    // for one - would have that statement run twice. An array
+                    // constructor whose elements are all compile time
+                    // constants is folded into a single constant whose type
+                    // carries the flattened size already, and the check on the
+                    // dimensions below covers that.
+                    ASR::ArrayConstructor_t *value_constructor =
+                        ASR::down_cast<ASR::ArrayConstructor_t>(value);
+                    for(size_t i=0; i < value_constructor->n_args; i++){
+                        ASR::expr_t *temp = value_constructor->m_args[i];
                         ASR::ttype_t* temp_type = ASRUtils::type_get_past_allocatable_pointer(
                             ASRUtils::expr_type(temp));
                         if( temp_type->type == ASR::ttypeType::Array ) {
@@ -7006,6 +7089,7 @@ public:
         }
         // Handle Conversion from BOZ to Real Type for assign statements
         ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+        bool rhs_is_null_intrinsic = is_null_intrinsic_reference(x.m_value);
         if (AST::is_a<AST::BOZ_t>(*x.m_value)){
             //For assigning Scalar Variable
             if (ASR::is_a<ASR::Var_t>(*target)){
@@ -7026,16 +7110,38 @@ public:
                 }
             }
         }
+        if (rhs_is_null_intrinsic) {
+            current_variable_type_ = ASRUtils::expr_type(target);
+        }
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        SetChar current_module_dependencies_copy = current_module_dependencies;
         try {
             this->visit_expr(*x.m_value);
         } catch (const SemanticAbort &e) {
             if (!compiler_options.continue_compilation) throw e;
+            if (is_template || is_requirement || is_current_procedure_templated ||
+                    ASRUtils::is_owned_by_template(current_scope)) {
+                current_function_dependencies = current_function_dependencies_copy;
+                current_module_dependencies = current_module_dependencies_copy;
+                tmp = nullptr;
+            }
         }
         current_variable_type_ = temp_current_variable_type_;
         if (tmp == nullptr) {
+            current_function_dependencies = current_function_dependencies_copy;
+            current_module_dependencies = current_module_dependencies_copy;
             throw SemanticAbort();
         }
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
+        if (rhs_is_null_intrinsic && !ASRUtils::is_pointer(ASRUtils::expr_type(target))) {
+            diag.add(Diagnostic("null() cannot be assigned to an entity of type "
+                + ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(target), target)
+                + ", which is not a pointer",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.m_value->base.loc})
+                }));
+            throw SemanticAbort();
+        }
         if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(value)) &&
                 ASR::is_a<ASR::Var_t>(*value)) {
             std::string var_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(value)->m_v);
@@ -7237,7 +7343,11 @@ public:
                  ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic) ||
                 target->type == ASR::exprType::CoarrayRef
             );
+            // A deferred type of a template has no implicit conversion to or
+            // from any other type; the type check below reports the mismatch.
             if (lhs_supports_implicit_cast &&
+                !ASRUtils::is_type_parameter(*target_type) &&
+                !ASRUtils::is_type_parameter(*value_type) &&
                 !ASRUtils::check_equal_type(target_type, value_type, target, value)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
@@ -7514,6 +7624,28 @@ public:
                         al, loc, nullptr, if_test, if_body.p, if_body.n, nullptr, 0));
                     current_body->push_back(al, if_stmt);
                 }
+            }
+        }
+
+        // Assigning a structure constructor to a scalar variable of derived
+        // type is an intrinsic assignment, and an intrinsic assignment does
+        // more than write the components: it finalizes the variable, and it
+        // routes a component of derived type through that type's defined
+        // assignment. Both act on the variable once the value exists, so the
+        // constructor is evaluated into a temporary and the variable is
+        // assigned from it. Written straight into the variable, as the
+        // structure constructor is otherwise lowered, neither would happen.
+        // An array or allocatable variable is already assigned from a
+        // temporary, so only the scalar case is handled here.
+        if( overloaded_stmt == nullptr &&
+            ASR::is_a<ASR::StructConstructor_t>(*value) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(target)) &&
+            !ASRUtils::is_allocatable(ASRUtils::expr_type(target)) &&
+            ASRUtils::struct_assignment_is_more_than_a_copy(
+                ASRUtils::get_struct_sym_from_struct_expr(target)) ) {
+            ASR::expr_t* evaluated_value = evaluate_into_temporary(value);
+            if( evaluated_value != nullptr ) {
+                value = evaluated_value;
             }
         }
 
@@ -8224,8 +8356,8 @@ public:
             }
         }
         if (x.n_temp_args > 0) {
-            ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
-            sub_name = handle_templated(x.m_name, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)),
+            sub_name = handle_templated(x.m_name,
+                ASRUtils::is_owned_by_template(current_scope),
                 x.m_temp_args, x.n_temp_args, x.base.base.loc);
         }
         SymbolTable* scope = current_scope;
@@ -8926,8 +9058,8 @@ public:
                         }
                         // Check if types are equal
                         if (!skip_check && !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[i+offset])) {
-                            std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, nullptr);
-                            std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, nullptr);
+                            std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, passed_arg);
+                            std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, f->m_args[i+offset]);
                             diag.add(diag::Diagnostic(
                                 "Type mismatch in argument `" + std::string(v->m_name) +
                                 "`: expected `" + param_type_str + "` but got `" +passed_type_str + "`",
@@ -9295,12 +9427,21 @@ public:
     void visit_Where(const AST::Where_t &x) {
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        // The bodies below run only for the elements the mask selects, so a
+        // statement they need which must run whatever the mask selects is
+        // emitted into the body that holds this construct. A nested `where`
+        // is masked too, so the outermost one is the one to remember.
+        Vec<ASR::stmt_t*>* body_enclosing_where_copy = body_enclosing_where;
+        if (body_enclosing_where == nullptr) {
+            body_enclosing_where = current_body;
+        }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
         Vec<ASR::stmt_t*> orelse;
         orelse.reserve(al, x.n_orelse);
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
+        body_enclosing_where = body_enclosing_where_copy;
         if (ASRUtils::is_array(ASRUtils::expr_type(test))) {
             if (ASR::is_a<ASR::Logical_t>(*ASRUtils::extract_type(ASRUtils::expr_type(test)))) {
                 // verify that `test` is *not* the ttype of an expression as we then
@@ -9337,8 +9478,7 @@ public:
 
     void visit_WhileLoop(const AST::WhileLoop_t &x) {
         all_loops_blocks_nesting += 1;
-        bool in_loop_copy = in_loop;
-        in_loop = true;
+        LoopScope loop_scope(in_loop, in_do_concurrent, false);
         // Statements the condition needs (e.g. associating the
         // procedure-pointer temporary of a call through an implicit
         // interface) must run before every evaluation of the condition.
@@ -9375,7 +9515,6 @@ public:
         tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), nullptr, 0);
         all_loops_blocks_nesting -= 1;
-        in_loop = in_loop_copy;
     }
 
     #define cast_as_loop_var(conv_candidate) \
@@ -9396,8 +9535,7 @@ public:
                 throw SemanticAbort();
             }
         }
-        bool in_loop_copy = in_loop;
-        in_loop = true;
+        LoopScope loop_scope(in_loop, in_do_concurrent, false);
         all_loops_blocks_nesting += 1;
         all_blocks_nesting++;
         ASR::expr_t *var, *start, *end;
@@ -9549,15 +9687,13 @@ public:
                 ASR::make_LogicalConstant_t(al, x.base.base.loc, true, cond_type));
             tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, cond, body.p, body.size(), nullptr, 0);
         }
-        in_loop = in_loop_copy;
         all_loops_blocks_nesting -= 1;
         all_blocks_nesting--;
     }
 
     void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
         all_loops_blocks_nesting += 1;
-        bool in_loop_copy = in_loop;
-        in_loop = true;
+        LoopScope loop_scope(in_loop, in_do_concurrent, true);
         Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
         heads.reserve(al,x.n_control);
         AST::decl_attribute_t *current_type = nullptr;
@@ -9701,7 +9837,6 @@ public:
         tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
                 body.size());
         all_loops_blocks_nesting -= 1;
-        in_loop = in_loop_copy;
     }
 
     void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
@@ -9841,7 +9976,24 @@ public:
     }
 
     void visit_Exit(const AST::Exit_t &x) {
-        if (all_loops_blocks_nesting == 0) {
+        if (x.m_stmt_name == nullptr) {
+            // Without a construct name, EXIT belongs to the innermost
+            // enclosing DO construct; BLOCK, IF, SELECT, ... do not count.
+            if (!in_loop) {
+                diag.add(Diagnostic("`exit` statements without a construct name cannot be outside of loops",
+                                    Level::Error,
+                                    Stage::Semantic,
+                                    { Label("", { x.base.base.loc }) }));
+                throw SemanticAbort();
+            }
+            if (in_do_concurrent) {
+                diag.add(Diagnostic("`exit` statements cannot leave a `do concurrent` loop",
+                                    Level::Error,
+                                    Stage::Semantic,
+                                    { Label("", { x.base.base.loc }) }));
+                throw SemanticAbort();
+            }
+        } else if (all_loops_blocks_nesting == 0) {
             diag.add(Diagnostic("`exit` statements cannot be outside of loops or blocks",
                                 Level::Error,
                                 Stage::Semantic,
@@ -10761,10 +10913,19 @@ public:
     }
 
     void visit_Template(const AST::Template_t &x){
+        // A template whose specification failed has no symbol: the symbol table
+        // visitor adds it only once the whole template is built, and with
+        // --continue-compilation an error inside it is reported and the abort
+        // swallowed. That diagnostic is already recorded, so there is nothing
+        // to do here but skip the body.
+        ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
+        if (t == nullptr || !ASR::is_a<ASR::Template_t>(*t)) {
+            return;
+        }
+
         is_template = true;
 
         SymbolTable* old_scope = current_scope;
-        ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Template_t* v = ASR::down_cast<ASR::Template_t>(t);
         current_scope = v->m_symtab;
         for (size_t i=0; i<x.n_items; i++) {

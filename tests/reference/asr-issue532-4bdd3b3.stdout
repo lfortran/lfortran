@@ -12,6 +12,7 @@
                     issue532
                     []
                     []
+                    ()
                 ),
             issue532_mod:
                 (Module
@@ -246,7 +247,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

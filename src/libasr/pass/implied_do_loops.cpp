@@ -809,8 +809,14 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     ASRUtils::type_get_past_allocatable(x->m_type), &dims);
             }
         }
+        // A temporary of a derived type is declared by the type's symbol, so
+        // an expression naming that type is passed along.
+        ASR::expr_t* struct_expr = nullptr;
+        if (ASRUtils::is_struct(*result_type_)) {
+            struct_expr = ASRUtils::EXPR((ASR::asr_t*) x);
+        }
         result_var = PassUtils::create_var(result_counter, "_array_constant_",
-                        loc, result_type_, al, current_scope);
+                        loc, result_type_, al, current_scope, struct_expr);
         result_counter += 1;
         *current_expr = result_var;
 
