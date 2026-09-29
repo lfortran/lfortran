@@ -3647,7 +3647,7 @@ public:
             s += "(" + left + ")";
         }
         s +=  boolop2str(x.m_op);
-        if (right_precedence >= last_expr_precedence) {
+        if (right_precedence > last_expr_precedence) {
             s += right;
         } else {
             s += "(" + right + ")";
@@ -3686,6 +3686,13 @@ public:
         s = "";
         if (left_precedence == 9) {
             s += "(" + left + ")";
+        } else if (x.m_op == operatorType::Pow) {
+            // `**` is right-associative: `(a**b)**c` needs its parentheses
+            if (left_precedence > last_expr_precedence) {
+                s += left;
+            } else {
+                s += "(" + left + ")";
+            }
         } else {
             if (left_precedence >= last_expr_precedence) {
                 s += left;
@@ -3696,7 +3703,9 @@ public:
         s +=  op2str(x.m_op);
         if (right_precedence == 9) {
             s += "(" + right + ")";
-        } else if (x.m_op == operatorType::Sub || x.m_op == operatorType::Div) {
+        } else if (x.m_op != operatorType::Pow) {
+            // Left-associative, and floating-point `+` and `*` are not
+            // associative: `a*(b*c)` must not be printed as `a*b*c`
             if (right_precedence > last_expr_precedence) {
                 s += right;
             } else {
@@ -3728,7 +3737,7 @@ public:
         s += syn(gr::Operator);
         s += "." + std::string(x.m_op) + ".";
         s += syn();
-        if (right_precedence >= last_expr_precedence) {
+        if (right_precedence > last_expr_precedence) {
             s += right;
         } else {
             s += "(" + right + ")";
@@ -3775,7 +3784,7 @@ public:
         int expr_precedence = last_expr_precedence;
         if (x.m_op == AST::unaryopType::USub) {
             last_expr_precedence = 9;
-            if (expr_precedence >= last_expr_precedence) {
+            if (expr_precedence > last_expr_precedence) {
                 s = "-" + s;
             } else {
                 s = "-(" + s + ")";
