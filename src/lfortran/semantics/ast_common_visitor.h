@@ -5552,7 +5552,9 @@ public:
     }
 
     // Turn the dummy procedure `sym`, declared by an interface body as
-    // `func`, into an optional procedure variable.
+    // `func`, into an optional procedure variable. The interface body `func`
+    // is moved to the parent scope under a unique name and becomes the
+    // variable's type declaration, keeping its arguments and symbol table.
     void make_optional_procedure_dummy(const std::string &sym,
             ASR::Function_t* func, const Location &attr_loc) {
         ASR::ttype_t* proc_type = func->m_function_signature;
@@ -5564,12 +5566,9 @@ public:
         LCOMPILERS_ASSERT(parent_scope != nullptr);
         std::string iface_name = "~proc_" + sym + "_" +
             current_scope->get_counter();
-        ASRUtils::SymbolDuplicator duplicator(al);
-        duplicator.duplicate_symbol((ASR::symbol_t*)func, parent_scope);
-        ASR::symbol_t* iface = parent_scope->get_symbol(sym);
-        parent_scope->erase_symbol(sym);
-        ASR::Function_t* iface_func = ASR::down_cast<ASR::Function_t>(iface);
-        iface_func->m_name = s2c(al, iface_name);
+        func->m_name = s2c(al, iface_name);
+        func->m_symtab->parent = parent_scope;
+        ASR::symbol_t* iface = &func->base;
         parent_scope->add_symbol(iface_name, iface);
         ASR::asr_t* proc_var = ASRUtils::make_Variable_t_util(
             al, attr_loc, current_scope,
