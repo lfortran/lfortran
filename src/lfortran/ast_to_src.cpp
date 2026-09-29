@@ -1,4 +1,5 @@
 #include <cctype>
+#include <set>
 #include <lfortran/ast_to_src.h>
 #include <libasr/string_utils.h>
 #include <libasr/bigint.h>
@@ -115,6 +116,9 @@ public:
     // The precedence of the last expression, using the table
     // 10.1 in the Fortran 2018 standard:
     int last_expr_precedence;
+    // Statement labels printed so far: the label of the statement that
+    // terminates nested `do <label>` loops must only be printed once
+    std::set<int64_t> printed_labels;
 
     // Syntax highlighting groups
     enum gr {
@@ -2597,6 +2601,7 @@ public:
         } else {
             r.append("\n");
         }
+        printed_labels.erase(x.m_do_label);
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_decl_stmt(*x.m_body[i]);
@@ -2605,7 +2610,11 @@ public:
         dec_indent();
         r += indent;
         r += syn(gr::Repeat);
-        if (x.m_do_label != 0) {
+        // The body already printed the label if it ends with the labelled
+        // statement that terminates the loop (`10 a(i) = 0`) or with an
+        // inner loop sharing it (`do 10 j = ...` / `do 10 i = ...`)
+        if (x.m_do_label != 0 && printed_labels.count(x.m_do_label) == 0) {
+            printed_labels.insert(x.m_do_label);
             r += std::to_string(x.m_do_label);
             r += " ";
         }
@@ -3549,6 +3558,7 @@ public:
         if (x.m_label == 0) {
             return "";
         } else {
+            printed_labels.insert(x.m_label);
             return std::to_string(x.m_label) + " ";
         }
     }
