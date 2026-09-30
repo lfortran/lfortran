@@ -845,6 +845,7 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::Requirement: return "Requirement";
         case ASR::symbolType::Template: return "Template";
         case ASR::symbolType::Namelist: return "Namelist";
+        case ASR::symbolType::ModuleReference: return "ModuleReference";
         default: {
             LCOMPILERS_ASSERT(false);
         }
@@ -1224,6 +1225,9 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::Namelist: {
             return ASR::down_cast<ASR::Namelist_t>(f)->m_group_name;
         }
+        case ASR::symbolType::ModuleReference: {
+            return ASR::down_cast<ASR::ModuleReference_t>(f)->m_name;
+        }
         default : throw LCompilersException("Not implemented");
     }
 }
@@ -1386,11 +1390,15 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
             if (struct_sym == nullptr) {
                 return "derived_type";
             }
-            return ASRUtils::symbol_name(struct_sym);
+            // The name of the type itself: an ExternalSymbol's local name
+            // can be a name the frontend declared for its own use.
+            return ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(struct_sym));
         }
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(t);
-            return ASRUtils::symbol_name(enum_type->m_enum_type);
+            return ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(enum_type->m_enum_type));
         }
         case ASR::ttypeType::UnionType: {
             return "union";
@@ -1728,6 +1736,9 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Namelist: {
             return ASR::down_cast<ASR::Namelist_t>(f)->m_parent_symtab;
         }
+        case ASR::symbolType::ModuleReference: {
+            return ASR::down_cast<ASR::ModuleReference_t>(f)->m_parent_symtab;
+        }
         default : throw LCompilersException("Not implemented for type " +
               std::to_string(f->type));
     }
@@ -1766,6 +1777,9 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::ExternalSymbol: {
             return nullptr;
             //throw LCompilersException("ExternalSymbol does not have a symtab");
+        }
+        case ASR::symbolType::ModuleReference: {
+            return nullptr;
         }
         case ASR::symbolType::StructMethodDeclaration: {
             return nullptr;
@@ -7118,6 +7132,14 @@ class SymbolDuplicator {
                 ASR::Namelist_t* namelist = ASR::down_cast<ASR::Namelist_t>(symbol);
                 new_symbol = duplicate_Namelist(namelist, destination_symtab);
                 new_symbol_name = namelist->m_group_name;
+                break;
+            }
+            case ASR::symbolType::ModuleReference: {
+                ASR::ModuleReference_t* mref = ASR::down_cast<ASR::ModuleReference_t>(symbol);
+                new_symbol = ASR::down_cast<ASR::symbol_t>(ASR::make_ModuleReference_t(
+                    al, mref->base.base.loc, destination_symtab, mref->m_name,
+                    mref->m_module_name, mref->m_access));
+                new_symbol_name = mref->m_name;
                 break;
             }
             case ASR::symbolType::Requirement: {

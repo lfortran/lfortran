@@ -1,0 +1,865 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            namespace_modules_01:
+                (Program
+                    (SymbolTable
+                        6
+                        {
+                            counter:
+                                (Variable
+                                    6
+                                    counter
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            counter~of_namespace_modules_01_utils:
+                                (ExternalSymbol
+                                    6
+                                    counter~of_namespace_modules_01_utils
+                                    2 counter
+                                    namespace_modules_01_utils
+                                    []
+                                    counter
+                                    Private
+                                ),
+                            increment~of_namespace_modules_01_utils:
+                                (ExternalSymbol
+                                    6
+                                    increment~of_namespace_modules_01_utils
+                                    2 increment
+                                    namespace_modules_01_utils
+                                    []
+                                    increment
+                                    Private
+                                ),
+                            lfortran_tmp:
+                                (Variable
+                                    6
+                                    lfortran_tmp
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            namespace_modules_01_utils:
+                                (ModuleReference
+                                    6
+                                    namespace_modules_01_utils
+                                    namespace_modules_01_utils
+                                    Public
+                                ),
+                            scale~of_namespace_modules_01_utils:
+                                (ExternalSymbol
+                                    6
+                                    scale~of_namespace_modules_01_utils
+                                    2 scale
+                                    namespace_modules_01_utils
+                                    []
+                                    scale
+                                    Private
+                                ),
+                            twice:
+                                (Variable
+                                    6
+                                    twice
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            twice~of_namespace_modules_01_utils:
+                                (ExternalSymbol
+                                    6
+                                    twice~of_namespace_modules_01_utils
+                                    2 twice
+                                    namespace_modules_01_utils
+                                    []
+                                    twice
+                                    Private
+                                ),
+                            x:
+                                (Variable
+                                    6
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            x~of_namespace_modules_01_utils:
+                                (ExternalSymbol
+                                    6
+                                    x~of_namespace_modules_01_utils
+                                    2 x
+                                    namespace_modules_01_utils
+                                    []
+                                    x
+                                    Private
+                                )
+                        })
+                    namespace_modules_01
+                    [namespace_modules_01_utils]
+                    [(Assignment
+                        (Var 6 counter)
+                        (IntegerConstant 100 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 6 x)
+                        (RealUnaryMinus
+                            (RealConstant
+                                3.000000
+                                (Real 4)
+                            )
+                            (Real 4)
+                            (RealConstant
+                                -3.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 6 twice)
+                        (IntegerConstant 7 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 6 counter~of_namespace_modules_01_utils)
+                            NotEq
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 6 x~of_namespace_modules_01_utils)
+                                    Sub
+                                    (RealConstant
+                                        1.500000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000001
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (SubroutineCall
+                        6 increment~of_namespace_modules_01_utils
+                        ()
+                        [((IntegerConstant 5 (Integer 4) Decimal))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        6 increment~of_namespace_modules_01_utils
+                        ()
+                        [((IntegerConstant 2 (Integer 4) Decimal))]
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 6 counter~of_namespace_modules_01_utils)
+                            NotEq
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 6 counter~of_namespace_modules_01_utils)
+                        (IntegerBinOp
+                            (Var 6 counter~of_namespace_modules_01_utils)
+                            Add
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 6 counter~of_namespace_modules_01_utils)
+                            NotEq
+                            (IntegerConstant 8 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (FunctionCall
+                                6 twice~of_namespace_modules_01_utils
+                                ()
+                                [((IntegerConstant 21 (Integer 4) Decimal))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 42 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 6 lfortran_tmp)
+                        (FunctionCall
+                            6 twice~of_namespace_modules_01_utils
+                            ()
+                            [((IntegerConstant 3 (Integer 4) Decimal))]
+                            (Integer 4)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (FunctionCall
+                                6 twice~of_namespace_modules_01_utils
+                                ()
+                                [((Var 6 lfortran_tmp))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 12 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (SubroutineCall
+                        6 scale~of_namespace_modules_01_utils
+                        ()
+                        [((Var 6 x~of_namespace_modules_01_utils))
+                        (())]
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 6 x~of_namespace_modules_01_utils)
+                                    Sub
+                                    (RealConstant
+                                        15.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (SubroutineCall
+                        6 scale~of_namespace_modules_01_utils
+                        ()
+                        [((Var 6 x~of_namespace_modules_01_utils))
+                        ((RealConstant
+                            2.000000
+                            (Real 4)
+                        ))]
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 6 x~of_namespace_modules_01_utils)
+                                    Sub
+                                    (RealConstant
+                                        30.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 6 counter)
+                            NotEq
+                            (IntegerConstant 100 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 6 x)
+                                    Add
+                                    (RealConstant
+                                        3.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000001
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 6 twice)
+                            NotEq
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 6 counter~of_namespace_modules_01_utils)
+                            (Var 6 x~of_namespace_modules_01_utils)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                    ()
+                ),
+            namespace_modules_01_utils:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            counter:
+                                (Variable
+                                    2
+                                    counter
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            increment:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            n:
+                                                (Variable
+                                                    3
+                                                    n
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    increment
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 3 n)]
+                                    [(Assignment
+                                        (Var 2 counter)
+                                        (IntegerBinOp
+                                            (Var 2 counter)
+                                            Add
+                                            (Var 3 n)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            scale:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            a:
+                                                (Variable
+                                                    5
+                                                    a
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            factor:
+                                                (Variable
+                                                    5
+                                                    factor
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    scale
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 5 a)
+                                    (Var 5 factor)]
+                                    [(If
+                                        ()
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 5 factor)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 5 a)
+                                            (RealBinOp
+                                                (Var 5 a)
+                                                Mul
+                                                (Var 5 factor)
+                                                (Real 4)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        [(Assignment
+                                            (Var 5 a)
+                                            (RealBinOp
+                                                (Var 5 a)
+                                                Mul
+                                                (Cast
+                                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                                    IntegerToReal
+                                                    (Real 4)
+                                                    (RealConstant
+                                                        10.000000
+                                                        (Real 4)
+                                                    )
+                                                    ()
+                                                )
+                                                (Real 4)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            twice:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            i:
+                                                (Variable
+                                                    4
+                                                    i
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            twice:
+                                                (Variable
+                                                    4
+                                                    twice
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    twice
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 4 i)]
+                                    [(Assignment
+                                        (Var 4 twice)
+                                        (IntegerBinOp
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            Mul
+                                            (Var 4 i)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 4 twice)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    (RealConstant
+                                        1.500000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        1.500000
+                                        (Real 4)
+                                    )
+                                    Save
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    namespace_modules_01_utils
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+    ()
+)

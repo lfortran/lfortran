@@ -352,14 +352,17 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        ModuleEntityState &module_entities,
+        LCompilers::LocationManager &lm)
       : CommonVisitor(
             al, symbol_table, diagnostics, compiler_options, implicit_mapping,
             common_variables_hash, common_variables_byte_offset,
             external_procedures_mapping,
             explicit_intrinsic_procedures_mapping,
             instantiate_types, instantiate_symbols, entry_functions,
-            entry_function_arguments_mapping, data_structure, lm
+            entry_function_arguments_mapping, data_structure,
+            module_entities, lm
         ) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
@@ -713,7 +716,14 @@ public:
         // use statements are processed before private/public, so ExternalSymbols
         // may have been created with the wrong default access.
         for (auto &item : current_scope->get_scope()) {
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+            // The symbols declared for module-qualified references are
+            // private to this module
+            if (module_entities.member_symbols.count(item.second)) continue;
+            if (ASR::is_a<ASR::ModuleReference_t>(*item.second)) {
+                ASR::down_cast<ASR::ModuleReference_t>(item.second)->m_access =
+                    assgnd_access.count(item.first) ? assgnd_access[item.first]
+                                                    : dflt_access;
+            } else if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
                 ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
                 if (assgnd_access.count(item.first)) {
                     es->m_access = assgnd_access[item.first];
@@ -984,7 +994,7 @@ public:
                                     al, decl->m_vartype->base.loc, 
                                     AST::decl_typeType::TypeType,
                                     nullptr, 0, decl->m_vartype, 
-                                    nullptr, AST::symbolType::None)));
+                                    nullptr, nullptr, 0, AST::symbolType::None)));
                         
                     } 
 
@@ -1987,14 +1997,15 @@ public:
                                     al, decl.m_vartype->base.loc, 
                                     AST::decl_typeType::TypeType,
                                     nullptr, 0, decl.m_vartype, 
-                                    nullptr, AST::symbolType::None)));
+                                    nullptr, nullptr, 0, AST::symbolType::None)));
                         
                     } 
 
                     LCOMPILERS_ASSERT(type);
 
                     if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
-                           type->m_name && type->m_name == sym_name) {
+                           type->m_name && type->n_qualifier == 0 &&
+                           type->m_name == sym_name) {
                         procedure_decl_indices.push_back(al, i);
                         continue;
                     }
@@ -2404,7 +2415,7 @@ public:
                     throw SemanticAbort();
                 }
             }
-            AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, nullptr, AST::symbolType::None);
+            AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, nullptr, nullptr, 0, AST::symbolType::None);
             AST::decl_attribute_t* r_attr = AST::down_cast<AST::decl_attribute_t>(r_ast);
             r = AST::down_cast<AST::AttrType_t>(r_attr);
         }
@@ -2599,13 +2610,14 @@ public:
                                     al, decl.m_vartype->base.loc, 
                                     AST::decl_typeType::TypeType,
                                     nullptr, 0, decl.m_vartype, 
-                                    nullptr, AST::symbolType::None)));
+                                    nullptr, nullptr, 0, AST::symbolType::None)));
                         
                     } 
 
                     LCOMPILERS_ASSERT(type);
                     if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
-                           type->m_name && type->m_name == sym_name) {
+                           type->m_name && type->n_qualifier == 0 &&
+                           type->m_name == sym_name) {
                         procedure_decl_indices.push_back(al, i);
                         continue;
                     }
@@ -2844,7 +2856,7 @@ public:
                     }
 
                     LCOMPILERS_ASSERT(return_type->m_name);
-                    std::string derived_type_name = to_lower(return_type->m_name);
+                    std::string derived_type_name = type_spec_name(*return_type);
                     ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
                     if (!v) {
                         diag.add(diag::Diagnostic(
@@ -3466,14 +3478,32 @@ public:
         ASR::symbol_t* parent_sym = nullptr;
         if( attr_extend != nullptr ) {
             std::string parent_sym_name = to_lower(attr_extend->m_name);
-            if( current_scope->get_symbol(parent_sym_name) == nullptr ) {
+            if (attr_extend->n_qualifier > 0) {
+                parent_sym = resolve_qualified_type_name(
+                    attr_extend->m_qualifier, attr_extend->n_qualifier,
+                    attr_extend->m_name, attr_extend->base.base.loc);
+                if (!ASR::is_a<ASR::Struct_t>(
+                        *ASRUtils::symbol_get_past_external(parent_sym))) {
+                    std::string written;
+                    for (size_t i = 0; i < attr_extend->n_qualifier; i++) {
+                        written += to_lower(attr_extend->m_qualifier[i]) + "%";
+                    }
+                    module_reference_error("'" + written + parent_sym_name
+                        + "' is not a derived type", attr_extend->base.base.loc);
+                }
+            } else if (is_module_reference(current_scope->resolve_symbol(
+                    parent_sym_name))) {
+                module_reference_error("'" + parent_sym_name + "' is a module; "
+                    "it does not name a type", attr_extend->base.base.loc);
+            } else if( current_scope->get_symbol(parent_sym_name) == nullptr ) {
                 diag.add(diag::Diagnostic(
                     parent_sym_name + " is not defined.",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
+            } else {
+                parent_sym = current_scope->get_symbol(parent_sym_name);
             }
-            parent_sym = current_scope->get_symbol(parent_sym_name);
             // C1616: "The name of a deferred type shall not appear as a
             // parent-type-name in a type-attr-spec." (16.4.1.2), restated by
             // NOTE 1 there: "A deferred type cannot be extended, even if it has
@@ -3496,6 +3526,8 @@ public:
             // This allows instantiation from ASR alone (e.g. when loaded from .mod files).
             SymbolTable *parent_scope_pdt = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope_pdt);
+            TypeDefinitionScope pdt_definition(type_definition_scopes,
+                current_scope);
             data_member_names.reserve(al, 0);
             final_proc_names.reserve(al, 0);
             is_derived_type = true;
@@ -3630,6 +3662,8 @@ public:
         }
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        TypeDefinitionScope type_definition(type_definition_scopes,
+            current_scope);
         data_member_names.reserve(al, 0);
         final_proc_names.reserve(al, 0);
         is_derived_type = true;
@@ -3808,6 +3842,8 @@ public:
         dt_name = to_lower(x.m_name);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        TypeDefinitionScope union_definition(type_definition_scopes,
+            current_scope);
         data_member_names.reserve(al, 0);
         is_derived_type = true;
         ASR::accessType dflt_access_copy = dflt_access;
@@ -3926,7 +3962,8 @@ public:
             ClassProcInfo remote_sym_str;
             remote_sym_str.loc = x.base.base.loc;
             if( x.m_name ) {
-                remote_sym_str.name = to_lower(x.m_name);
+                remote_sym_str.name = type_spec_name(x.m_qualifier,
+                    x.n_qualifier, x.m_name, x.base.base.loc);
             } else {
                 remote_sym_str.name = to_lower(use_sym->m_remote_sym);
             }
@@ -5402,6 +5439,10 @@ public:
 
         ASR::symbol_t *t = current_scope->resolve_symbol(msym);
         SymbolTable *tu_symtab = current_scope->get_tu_scope();
+        if (is_module_reference(t)) {
+            // A module reference named like the module (`use, namespace :: m`)
+            t = tu_symtab->get_symbol(msym);
+        }
         bool load_submodules = (!compiler_options.separate_compilation && in_program);
         if (!t) {
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
@@ -5854,7 +5895,19 @@ public:
                 ASR::ttype_t *ttype = determine_type(attr->base.loc, req_param,
                     attr, false, false, dims, nullptr, type_declaration, current_procedure_abi_type);
 
-                req_arg = ASRUtils::type_to_str_fortran_symbol(ttype, type_declaration);
+                // `req_arg` is the name that the instantiation looks up in
+                // the current scope, so a derived type or an enumeration is
+                // given by the local name of its symbol here, not by the
+                // name of the type that diagnostics show.
+                if (ASR::is_a<ASR::StructType_t>(*ttype) && type_declaration) {
+                    req_arg = ASRUtils::symbol_name(type_declaration);
+                } else if (ASR::is_a<ASR::EnumType_t>(*ttype)) {
+                    req_arg = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::EnumType_t>(ttype)->m_enum_type);
+                } else {
+                    req_arg = ASRUtils::type_to_str_fortran_symbol(ttype,
+                        type_declaration);
+                }
                 // A REQUIRE statement passes instantiation arguments too
                 // (16.5.5.1), so C1628 applies to them as well.
                 ASR::symbol_t *req_param_sym = (req->m_symtab)->get_symbol(req_param);
@@ -6808,6 +6861,8 @@ public:
     void visit_Enum(const AST::Enum_t &x) {
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        TypeDefinitionScope enum_definition(type_definition_scopes,
+            current_scope);
         std::string sym_name = "lcompilers__nameless_enum";
         sym_name = parent_scope->get_unique_name(sym_name);
         Vec<char *> m_members;
@@ -6898,14 +6953,17 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        ModuleEntityState &module_entities,
+        LCompilers::LocationManager &lm)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options,
                          implicit_mapping, common_variables_hash,
                          common_variables_byte_offset, external_procedures_mapping,
                          explicit_intrinsic_procedures_mapping,
                          instantiate_types, instantiate_symbols, entry_functions,
-                         entry_function_arguments_mapping, data_structure, lm);
+                         entry_function_arguments_mapping, data_structure,
+                         module_entities, lm);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticAbort &) {

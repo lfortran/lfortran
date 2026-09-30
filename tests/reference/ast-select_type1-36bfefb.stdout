@@ -25,6 +25,7 @@
                     []
                     ()
                     ()
+                    []
                     None
                 )
                 ()
@@ -51,6 +52,7 @@
                     []
                     ()
                     ()
+                    []
                     None
                 )
                 ()
@@ -79,6 +81,7 @@
                     Star)]
                     ()
                     ()
+                    []
                     None
                 )
                 ()
@@ -101,6 +104,7 @@
             )
             (TypeStmtName
                 point
+                []
                 ()
                 [(Print
                     0
@@ -121,6 +125,7 @@
             )
             (ClassStmt
                 point2
+                []
                 ()
                 [(Print
                     0

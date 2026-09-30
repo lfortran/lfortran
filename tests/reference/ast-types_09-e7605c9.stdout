@@ -5,6 +5,7 @@
         [(Use
             []
             iso_c_binding
+            ()
             [(UseSymbol
                 c_char
                 ()
@@ -22,6 +23,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -57,6 +59,7 @@
                 Value)]
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -123,6 +126,7 @@
                     Colon)]
                     ()
                     ()
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -148,6 +152,7 @@
                     Colon)]
                     ()
                     ()
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -176,6 +181,7 @@
                     Star)]
                     ()
                     ()
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -208,6 +214,7 @@
                     AttrIntrinsic
                 )]
                 iso_fortran_env
+                ()
                 [(UseSymbol
                     int32
                     ()
@@ -223,6 +230,7 @@
                     Value)]
                     ()
                     ()
+                    []
                     None
                 )
                 []

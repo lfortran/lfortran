@@ -6023,6 +6023,10 @@ filename = "asr/verify/call_statement_names_a_function.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/call_statement_names_a_renamed_function.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/function_call_result_type_mismatch.asr"
 asr = true
 
@@ -6184,3 +6188,35 @@ filename = "../integration_tests/global_init_07.f90"
 # from the initializer it knows while the storage is sized from the value the
 # generated code has at that point.
 pass = "global_init"
+
+# Namespace imports (use, namespace), doc/src/namespace_modules.md
+
+[[test]]
+filename = "../integration_tests/namespace_modules_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/namespace_modules_05.f90"
+ast_f90 = true
+
+[[test]]
+filename = "../integration_tests/namespace_modules_07.f90"
+ast_f90 = true
+
+[[test]]
+filename = "../integration_tests/namespace_modules_20.f90"
+ast_f90 = true
+
+[[test]]
+filename = "../integration_tests/namespace_modules_28.f90"
+ast_f90 = true
+
+[[test]]
+filename = "errors/namespace_continue_compilation.f90"
+semantics_only_cc = true
+extrafiles = "errors/namespace_separate_types.f90, errors/namespace_separate_holder.f90"
+
+[[test]]
+filename = "warnings/namespace_modules_std_01.f90"
+asr = true
+options = "--std=f23"

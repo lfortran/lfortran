@@ -46,6 +46,7 @@
                                 []
                                 ()
                                 t
+                                []
                                 None
                             )
                             [(AttrIntent
@@ -73,6 +74,7 @@
                                 []
                                 ()
                                 ()
+                                []
                                 None
                             )
                             []
@@ -142,6 +144,7 @@
                         []
                         ()
                         t
+                        []
                         None
                     )
                     [(AttrIntent
@@ -164,6 +167,7 @@
                         []
                         ()
                         ()
+                        []
                         None
                     )
                     [(SimpleAttribute
@@ -195,6 +199,7 @@
                         []
                         ()
                         ()
+                        []
                         None
                     )
                     []
@@ -442,6 +447,7 @@
         [(Use
             []
             template_02_m
+            ()
             []
             .false.
             ()
@@ -457,6 +463,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             (AttrIntrinsicOperator
@@ -474,6 +481,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             (AttrIntrinsicOperator
@@ -494,6 +502,7 @@
                 (ArrayInitializer
                     ()
                     ()
+                    []
                     [3
                     3
                     6
@@ -520,6 +529,7 @@
                 (ArrayInitializer
                     ()
                     ()
+                    []
                     [(String "a" ())
                     (String "a" ())
                     (String "b" ())

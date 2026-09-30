@@ -13,6 +13,7 @@
                 AttrIntrinsic
             )]
             iso_fortran_env
+            ()
             []
             .false.
             ()
@@ -23,6 +24,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -50,6 +52,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -78,6 +81,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -115,6 +119,7 @@
                 []
                 ()
                 event_type
+                []
                 None
             )
             [(SimpleAttribute
@@ -139,6 +144,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             []

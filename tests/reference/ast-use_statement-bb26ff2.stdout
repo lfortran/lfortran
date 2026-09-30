@@ -16,6 +16,7 @@
                 AttrIntrinsic
             )]
             example
+            ()
             [(UseSymbol
                 rename
                 name
@@ -32,6 +33,7 @@
                 AttrIntrinsic
             )]
             example
+            ()
             [(IntrinsicOperator
                 POW
             )]
@@ -43,6 +45,7 @@
                 AttrIntrinsic
             )]
             example
+            ()
             [(IntrinsicOperator
                 NOT
             )]
@@ -54,6 +57,7 @@
                 AttrIntrinsic
             )]
             example
+            ()
             [(DefinedOperator
                 "in"
             )]
@@ -65,6 +69,7 @@
                 AttrIntrinsic
             )]
             example
+            ()
             [(RenameOperator
                 "plus"
                 "add"
@@ -77,6 +82,7 @@
                 AttrNon_Intrinsic
             )]
             example
+            ()
             []
             .false.
             ()
@@ -86,6 +92,7 @@
                 AttrNon_Intrinsic
             )]
             EXAMPLE
+            ()
             []
             .false.
             ()
@@ -95,6 +102,7 @@
                 AttrNon_Intrinsic
             )]
             example
+            ()
             [(UseAssignment)]
             .true.
             ()
@@ -104,6 +112,7 @@
                 AttrNon_Intrinsic
             )]
             example
+            ()
             [(IntrinsicOperator
                 EQ
             )]
@@ -115,6 +124,7 @@
                 AttrNon_Intrinsic
             )]
             example
+            ()
             [(IntrinsicOperator
                 OR
             )]
@@ -126,6 +136,7 @@
                 AttrNon_Intrinsic
             )]
             example
+            ()
             [(DefinedOperator
                 "definedoperator"
             )]
@@ -135,6 +146,7 @@
         (Use
             []
             example
+            ()
             [(IntrinsicOperator
                 PLUS
             )]
@@ -144,6 +156,7 @@
         (Use
             []
             example
+            ()
             [(UseSymbol
                 sample
                 ()
@@ -154,6 +167,7 @@
         (Use
             []
             example
+            ()
             [(UseSymbol
                 rename
                 sample
@@ -164,6 +178,7 @@
         (Use
             []
             example
+            ()
             [(IntrinsicOperator
                 STAR
             )]
@@ -173,6 +188,7 @@
         (Use
             []
             example
+            ()
             [(IntrinsicOperator
                 DIV
             )]
@@ -182,6 +198,7 @@
         (Use
             []
             example
+            ()
             [(IntrinsicOperator
                 DIV
             )]
@@ -191,6 +208,7 @@
         (Use
             []
             example
+            ()
             [(IntrinsicOperator
                 NOTEQ
             )]
@@ -200,6 +218,7 @@
         (Use
             []
             example
+            ()
             [(IntrinsicOperator
                 GT
             )]
@@ -209,6 +228,7 @@
         (Use
             []
             example
+            ()
             [(IntrinsicOperator
                 LTE
             )]
@@ -218,6 +238,7 @@
         (Use
             []
             example
+            ()
             [(IntrinsicOperator
                 AND
             )]
@@ -227,6 +248,7 @@
         (Use
             []
             example
+            ()
             [(IntrinsicOperator
                 EQV
             )]
@@ -236,6 +258,7 @@
         (Use
             []
             example
+            ()
             [(DefinedOperator
                 "dot"
             )]
@@ -245,6 +268,7 @@
         (Use
             []
             example
+            ()
             [(UseWrite
                 formatted
             )]
@@ -254,6 +278,7 @@
         (Use
             []
             example
+            ()
             [(UseRead
                 unformatted
             )]
@@ -263,6 +288,7 @@
         (Use
             []
             example
+            ()
             []
             .true.
             ()
@@ -270,6 +296,7 @@
         (Use
             []
             example
+            ()
             [(RenameOperator
                 "localDefop"
                 "useDefop"

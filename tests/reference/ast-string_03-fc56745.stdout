@@ -18,6 +18,7 @@
                 Value)]
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -40,6 +41,7 @@
         [(Use
             []
             string_03_mod
+            ()
             [(UseSymbol
                 intro
                 ()
@@ -63,6 +65,7 @@
                 Value)]
                 ()
                 ()
+                []
                 None
             )
             []
@@ -83,6 +86,7 @@
                 Value)]
                 ()
                 ()
+                []
                 None
             )
             []
@@ -103,6 +107,7 @@
                 Value)]
                 ()
                 ()
+                []
                 None
             )
             []
@@ -123,6 +128,7 @@
                 Value)]
                 ()
                 ()
+                []
                 None
             )
             []
@@ -143,6 +149,7 @@
                 Value)]
                 ()
                 ()
+                []
                 None
             )
             []

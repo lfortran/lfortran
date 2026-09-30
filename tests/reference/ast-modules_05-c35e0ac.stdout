@@ -25,6 +25,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -48,6 +49,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -68,6 +70,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -104,6 +107,7 @@
         [(Use
             []
             modules_05_mod
+            ()
             [(UseSymbol
                 a
                 ()

@@ -152,6 +152,16 @@ public:
             indent_spaces{indent}, indent_unit{indent_unit}
         { }
 
+    // `a%b%t` for the qualifier [a, b] and the name t (see AST.asdl).
+    static std::string qualified_name(char **qualifier, size_t n_qualifier,
+            const char *name) {
+        std::string r;
+        for (size_t i = 0; i < n_qualifier; i++) {
+            r += std::string(qualifier[i]) + "%";
+        }
+        return r + name;
+    }
+
     std::string syn(const gr &g=gr::Reset) {
         std::string syn_color;
         if (use_colors) {
@@ -642,7 +652,7 @@ public:
         r += syn();
         if (x.m_name) {
             r += "(";
-            r.append(x.m_name);
+            r.append(qualified_name(x.m_qualifier, x.n_qualifier, x.m_name));
             r += ")";
         }
         for (size_t i=0; i<x.n_attr; i++) {
@@ -1257,9 +1267,13 @@ public:
             r += ", ";
             this->visit_decl_attribute(*x.m_nature[i]);
             r.append(s);
-            r += " ::";
         }
+        if (x.n_nature > 0) r += " ::";
         r += " ";
+        if (x.m_local_name) {
+            r.append(x.m_local_name);
+            r += " => ";
+        }
         r.append(x.m_module);
         if (x.m_only_present || x.n_symbols > 0) {
             r.append(", ");
@@ -1672,6 +1686,7 @@ public:
             ATTRTYPE(Kind)
             ATTRTYPE(Len)
             ATTRTYPE(Module)
+            ATTRTYPE(Namespace)
             ATTRTYPE(NoPass)
             ATTRTYPE(NonDeferred)
             ATTRTYPE(Non_Intrinsic)
@@ -1770,7 +1785,7 @@ public:
         }
         if (x.m_name) {
             r.append("(");
-            r.append(x.m_name);
+            r.append(qualified_name(x.m_qualifier, x.n_qualifier, x.m_name));
             r.append(")");
         }
         if (x.m_sym == symbolType::Asterisk) {
@@ -1843,7 +1858,7 @@ public:
         r += "extends";
         r += syn();
         r += "(";
-        r.append(x.m_name);
+        r.append(qualified_name(x.m_qualifier, x.n_qualifier, x.m_name));
         r += ")";
         s = r;
     }
@@ -3951,7 +3966,8 @@ public:
             r.append(s);
             r += " :: ";
         } else if (x.m_classtype) {
-            r.append(x.m_classtype);
+            r.append(qualified_name(x.m_qualifier, x.n_qualifier,
+                x.m_classtype));
             r += " :: ";
         }
         for (size_t i=0; i<x.n_args; i++) {
@@ -4634,7 +4650,7 @@ public:
         r += syn();
         r += " (";
         if (x.m_name) {
-            r.append(x.m_name);
+            r.append(qualified_name(x.m_qualifier, x.n_qualifier, x.m_name));
         }
         r += ")";
         if(x.m_trivia){
@@ -4681,7 +4697,7 @@ public:
         r += syn();
         r += " (";
         if (x.m_id) {
-            r.append(x.m_id);
+            r.append(qualified_name(x.m_qualifier, x.n_qualifier, x.m_id));
         }
         r += ")";
         if(x.m_trivia){

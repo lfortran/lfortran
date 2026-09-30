@@ -1,0 +1,13 @@
+{
+    "basename": "asr-namespace_modules_std_01-71fdbc3",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/namespace_modules_std_01.f90",
+    "infile_hash": "499e6d03f67d6db8dba0941c9fc906408ef1e7c6319e51f4013bd111",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-namespace_modules_std_01-71fdbc3.stdout",
+    "stdout_hash": "67418662afd369047bba01f4ed8eb604768a0fbff1fcc1ac02d2d010",
+    "stderr": "asr-namespace_modules_std_01-71fdbc3.stderr",
+    "stderr_hash": "5354780c19a0a4565546d6e06cd26fcc05e3ff0d694e6641bc9e7de2",
+    "returncode": 0
+}

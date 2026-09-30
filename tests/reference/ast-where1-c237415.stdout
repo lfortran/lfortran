@@ -12,6 +12,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             []
@@ -31,6 +32,7 @@
                 (ArrayInitializer
                     ()
                     ()
+                    []
                     [1
                     2
                     3
@@ -42,6 +44,7 @@
                 (ArrayInitializer
                     ()
                     ()
+                    []
                     [2
                     2]
                 )
@@ -109,6 +112,7 @@
                     (ArrayInitializer
                         ()
                         ()
+                        []
                         [2
                         3
                         6
@@ -120,6 +124,7 @@
                     (ArrayInitializer
                         ()
                         ()
+                        []
                         [2
                         2]
                     )
@@ -213,6 +218,7 @@
                     (ArrayInitializer
                         ()
                         ()
+                        []
                         [3
                         4
                         12
@@ -224,6 +230,7 @@
                     (ArrayInitializer
                         ()
                         ()
+                        []
                         [2
                         2]
                     )

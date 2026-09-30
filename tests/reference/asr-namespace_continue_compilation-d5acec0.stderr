@@ -1,0 +1,356 @@
+syntax error: Token ',' is unexpected here
+   --> tests/errors/namespace_continue_compilation.f90:618:34
+    |
+618 |     use, namespace :: m => nscc_m, y => x
+    |                                  ^ 
+
+syntax error: Token 'm' (of type 'identifier') is unexpected here
+   --> tests/errors/namespace_continue_compilation.f90:625:20
+    |
+625 |     use, namespace m => nscc_m
+    |                    ^ 
+
+syntax error: Token '%' is unexpected here
+   --> tests/errors/namespace_continue_compilation.f90:634:9
+    |
+634 |     do m%x = 1, 3; end do
+    |         ^ 
+
+syntax error: Token '%' is unexpected here
+   --> tests/errors/namespace_continue_compilation.f90:650:14
+    |
+650 |     y = 1.5_m%dp
+    |              ^ 
+
+syntax error: Token '%' is unexpected here
+   --> tests/errors/namespace_continue_compilation.f90:659:17
+    |
+659 |     integer :: m%y
+    |                 ^ 
+
+semantic error: at most one of 'public' and 'private' may appear in a namespace import
+   --> tests/errors/namespace_continue_compilation.f90:127:5
+    |
+127 |     use, namespace, public, private :: a => nscc_m
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Module 'cc_22' modfile was not found
+   --> tests/errors/namespace_continue_compilation.f90:133:5
+    |
+133 |     use, namespace :: self => cc_22
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'only' cannot be used with a namespace import; use a separate 'use nscc_m, only: ...' statement
+   --> tests/errors/namespace_continue_compilation.f90:148:5
+    |
+148 |     use, namespace :: nscc_m, only: x
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Symbol is already declared in the same scope
+   --> tests/errors/namespace_continue_compilation.f90:197:16
+    |
+197 |     integer :: m
+    |                ^ redeclaration
+    |
+195 |     use, namespace :: m => nscc_m
+    |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ original declaration
+
+semantic error: 'u' is already declared in this scope
+   --> tests/errors/namespace_continue_compilation.f90:203:5
+    |
+203 |     use, namespace :: u => nscc_m2
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+202 |     use, namespace :: u => nscc_m
+    |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ previous declaration
+
+semantic error: the 'namespace' modifier appears more than once
+   --> tests/errors/namespace_continue_compilation.f90:242:5
+    |
+242 |     use, namespace, namespace :: m => nscc_m
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a module can only be renamed in a namespace import: 'use, namespace :: m => nscc_m'
+   --> tests/errors/namespace_continue_compilation.f90:249:5
+    |
+249 |     use :: m => nscc_m
+    |     ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'public' and 'private' in a namespace import are only allowed in the specification part of a module
+   --> tests/errors/namespace_continue_compilation.f90:310:5
+    |
+310 |     use, namespace, private :: m => nscc_m
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'a' is a private entity of module 'nscc_private_decl'
+   --> tests/errors/namespace_continue_compilation.f90:317:34
+    |
+317 |     use nscc_private_decl, only: a
+    |                                  ^ 
+
+semantic error: 'nscc_m' is not a module imported with 'use, namespace'
+   --> tests/errors/namespace_continue_compilation.f90:327:5
+    |
+327 |     type(nscc_m%t) :: b
+    |     ^^^^^^^^^^^^^^ 
+
+semantic error: 'nscc_m' is ambiguous: different entities are accessible under this name
+   --> tests/errors/namespace_continue_compilation.f90:343:9
+    |
+343 |         type(nscc_m%t) :: b
+    |         ^^^^^^^^^^^^^^ 
+
+semantic error: 'm' is a module; it does not name a type or an interface
+   --> tests/errors/namespace_continue_compilation.f90:351:5
+    |
+351 |     type(m) :: a
+    |     ^^^^^^^ 
+
+semantic error: 'm%x' does not name a type or an interface
+   --> tests/errors/namespace_continue_compilation.f90:358:5
+    |
+358 |     type(m%x) :: a
+    |     ^^^^^^^^^ 
+
+semantic error: 'm' is a module; it does not name a type or an interface
+   --> tests/errors/namespace_continue_compilation.f90:365:5
+    |
+365 |     class(m), allocatable :: a
+    |     ^^^^^^^^ 
+
+semantic error: 'm' is a module; it does not name a type or an interface
+   --> tests/errors/namespace_continue_compilation.f90:372:5
+    |
+372 |     procedure(m), pointer :: p
+    |     ^^^^^^^^^^^^ 
+
+semantic error: 'm' is a module; only the public or private attribute can be specified for it
+   --> tests/errors/namespace_continue_compilation.f90:386:13
+    |
+386 |     save :: m
+    |             ^ 
+
+semantic error: 'm' is a module; only the public or private attribute can be specified for it
+   --> tests/errors/namespace_continue_compilation.f90:393:16
+    |
+393 |     parameter (m = 3)
+    |                ^^^^^ 
+
+semantic error: Explicit shaped array with nonconstant bounds
+   --> tests/errors/namespace_continue_compilation.f90:414:18
+    |
+414 |     integer :: w(g%gen(2))
+    |                  ^^^^^^^^ 
+
+semantic error: 'm' is a module; it does not name a type
+   --> tests/errors/namespace_continue_compilation.f90:421:11
+    |
+421 |     type, extends(m) :: u
+    |           ^^^^^^^^^^ 
+
+semantic error: 'g%gen_int' is not a derived type
+   --> tests/errors/namespace_continue_compilation.f90:429:11
+    |
+429 |     type, extends(g%gen_int) :: u
+    |           ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Arguments do not match for any generic procedure, swap
+   --> tests/errors/namespace_continue_compilation.f90:121:9
+    |
+121 |         call g%swap(c, d)
+    |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'x' is not declared
+   --> tests/errors/namespace_continue_compilation.f90:143:14
+    |
+143 |     print *, x
+    |              ^ 'x' is undeclared
+
+semantic error: module 'nscc_m' has no entity 'nosuch'
+   --> tests/errors/namespace_continue_compilation.f90:156:14
+    |
+156 |     print *, m%nosuch
+    |              ^^^^^^^^ 
+
+semantic error: 'hidden' is a private entity of module 'nscc_m'
+   --> tests/errors/namespace_continue_compilation.f90:163:25
+    |
+163 |     print *, m%visible, m%hidden
+    |                         ^^^^^^^^ 
+
+semantic error: 'm' is a module; it can only be used to access its entities, as in 'm%name'
+   --> tests/errors/namespace_continue_compilation.f90:171:14
+    |
+171 |     print *, m
+    |              ^ 
+
+semantic error: 'm' is a module; it can only be used to access its entities, as in 'm%name'
+   --> tests/errors/namespace_continue_compilation.f90:178:15
+    |
+178 |     call show(m)
+    |               ^ 
+
+semantic error: 'm' is a module; it can only be used to access its entities, as in 'm%name'
+   --> tests/errors/namespace_continue_compilation.f90:190:5
+    |
+190 |     m = 1
+    |     ^ 
+
+semantic error: 'u' is ambiguous: different entities are accessible under this name
+   --> tests/errors/namespace_continue_compilation.f90:213:14
+    |
+213 |     print *, u%x
+    |              ^^^ 
+
+semantic error: Variable p is PROTECTED and cannot appear in LHS of assignment
+   --> tests/errors/namespace_continue_compilation.f90:222:5
+    |
+222 |     m%p = 2
+    |     ^^^ 
+
+semantic error: 'nscc_m' is a module that is not imported as a namespace in this scope; use 'use, namespace :: nscc_m' to access its entities as 'nscc_m%name'
+   --> tests/errors/namespace_continue_compilation.f90:231:14
+    |
+231 |     print *, nscc_m%x
+    |              ^^^^^^^^ 
+
+semantic error: 'nscc_m2' is a module that is not imported as a namespace in this scope; use 'use, namespace :: nscc_m2' to access its entities as 'nscc_m2%name'
+   --> tests/errors/namespace_continue_compilation.f90:237:14
+    |
+237 |     print *, nscc_m2%x
+    |              ^^^^^^^^^ 
+
+semantic error: `dot` is not defined or imported
+   --> tests/errors/namespace_continue_compilation.f90:259:14
+    |
+259 |     print *, a .dot. b
+    |              ^^^^^^^^^ 
+
+semantic error: Variable 'm' is not a derived or union type
+   --> tests/errors/namespace_continue_compilation.f90:272:18
+    |
+272 |         print *, m%x
+    |                  ^^^ 
+
+semantic error: 't' is a derived type, not a data object; it has no components
+   --> tests/errors/namespace_continue_compilation.f90:280:14
+    |
+280 |     print *, m%t%x
+    |              ^^^^^ 
+
+semantic error: Cannot assign to a constant variable
+   --> tests/errors/namespace_continue_compilation.f90:287:5
+    |
+287 |     m%n = 4
+    |     ^^^^^^^ assignment here
+    |
+ 15 |     integer, parameter :: n = 3
+    |                           ~~~~~ declared as constant
+
+semantic error: 'a' is a private entity of module 'nscc_private_a'
+   --> tests/errors/namespace_continue_compilation.f90:295:14
+    |
+295 |     print *, b%a%x
+    |              ^^^^^ 
+
+semantic error: 'a' is ambiguous: different entities are accessible under this name
+   --> tests/errors/namespace_continue_compilation.f90:304:14
+    |
+304 |     print *, a%x
+    |              ^^^ 
+
+semantic error: 'm%x' is not a subroutine
+   --> tests/errors/namespace_continue_compilation.f90:379:5
+    |
+379 |     call m%x()
+    |     ^^^^^^^^^^ 
+
+semantic error: Type mismatch in argument `v`: expected `t` but got `u`
+   --> tests/errors/namespace_continue_compilation.f90:455:15
+    |
+455 |     call take(l%u(1))
+    |               ^^^^^^ 
+
+semantic error: Type mismatch in argument `v`: expected `t` but got `u[:]`
+   --> tests/errors/namespace_continue_compilation.f90:464:15
+    |
+464 |     call take([l%u :: l%u(3)])
+    |               ^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/namespace_continue_compilation.f90:473:5
+    |
+473 |     y = l%u(1)
+    |     ^   ^^^^^^ type mismatch (t and u)
+
+semantic error: 'm' is a module, not a derived type
+   --> tests/errors/namespace_continue_compilation.f90:481:14
+    |
+481 |     allocate(m :: y)
+    |              ^ 
+
+semantic error: 'm%x' is not a derived type
+   --> tests/errors/namespace_continue_compilation.f90:489:14
+    |
+489 |     allocate(m%x :: y)
+    |              ^^^ 
+
+semantic error: 'g%gen_int' is not a derived type
+   --> tests/errors/namespace_continue_compilation.f90:498:14
+    |
+498 |     allocate(g%gen_int :: y)
+    |              ^^^^^^^^^ 
+
+semantic error: Type mismatch in argument `v`: expected `t` but got `u`
+   --> tests/errors/namespace_continue_compilation.f90:516:19
+    |
+516 |         call take(k%u(1))
+    |                   ^^^^^^ 
+
+semantic error: Type mismatch in argument `v`: expected `u` but got `u`
+   --> tests/errors/namespace_continue_compilation.f90:548:23
+    |
+548 |         call l%take_u(k%u(1))
+    |                       ^^^^^^ 
+
+semantic error: Type mismatch in argument `v`: expected `t` but got `u`
+   --> tests/errors/namespace_continue_compilation.f90:568:15
+    |
+568 |     call take(h%c)
+    |               ^^^ 
+
+semantic error: Type mismatch in argument `v`: expected `t` but got `u`
+   --> tests/errors/namespace_continue_compilation.f90:576:15
+    |
+576 |     call take(uu(1))
+    |               ^^^^^ 
+
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found u
+   --> tests/errors/namespace_continue_compilation.f90:585:14
+    |
+585 |     allocate(h%c)
+    |              ^^^ 'h' is not allocatable or pointer
+
+semantic error: Cannot deallocate variables in expression u
+   --> tests/errors/namespace_continue_compilation.f90:593:16
+    |
+593 |     deallocate(l%u(1))
+    |                ^^^^^^ 
+
+semantic error: Type mismatch in argument `v`: expected `t` but got `pt_4`
+   --> tests/errors/namespace_continue_compilation.f90:613:15
+    |
+613 |     call take(b)
+    |               ^ 
+
+semantic error: Type mismatch in argument `v`: expected `t` but got `u`
+   --> tests/errors/namespace_continue_compilation.f90:671:15
+    |
+671 |     call take(h%c)
+    |               ^^^ 
+
+semantic error: Type mismatch in argument `v`: expected `t` but got `u`
+   --> tests/errors/namespace_continue_compilation.f90:681:21
+    |
+681 |         call l%take(l%u(1))
+    |                     ^^^^^^ 

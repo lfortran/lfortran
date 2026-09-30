@@ -18,6 +18,7 @@ ExternalSymbol
 Function
 GenericProcedure
 Module
+ModuleReference
 Namelist
 Program
 Requirement

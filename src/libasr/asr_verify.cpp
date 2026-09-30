@@ -2849,7 +2849,9 @@ public:
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' was declared external with no interface; the call must reference the signature inferred at this call site.");
             }
             // A CALL statement discards no result, because a procedure
-            // invoked by one has none to discard.
+            // invoked by one has none to discard. The message names the
+            // procedure itself: the local name of an ExternalSymbol for it
+            // can be one the frontend generated.
             ASR::symbol_t *called = s;
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*called)) {
                 called = ASRUtils::symbol_get_past_external(
@@ -2861,7 +2863,7 @@ public:
                         called)->m_return_var == nullptr,
                     "asr.verify.call.subroutine_returns_nothing",
                     "SubroutineCall::m_name '" +
-                    std::string(symbol_name(x.m_name)) +
+                    std::string(symbol_name(s)) +
                     "' returns a value, so it cannot be called as a "
                     "subroutine");
             }

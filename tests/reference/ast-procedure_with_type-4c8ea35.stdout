@@ -8,6 +8,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -31,9 +32,11 @@
                     []
                     ()
                     ()
+                    []
                     None
                 )
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -54,6 +57,7 @@
                 []
                 ()
                 doubleprecision
+                []
                 None
             )
             [(SimpleAttribute
@@ -74,6 +78,7 @@
                 []
                 ()
                 integer
+                []
                 None
             )
             [(SimpleAttribute
@@ -94,6 +99,7 @@
                 []
                 ()
                 real
+                []
                 None
             )
             [(SimpleAttribute
@@ -114,6 +120,7 @@
                 []
                 ()
                 complex
+                []
                 None
             )
             [(SimpleAttribute
@@ -139,9 +146,11 @@
                     Value)]
                     ()
                     ()
+                    []
                     None
                 )
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -162,6 +171,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -197,9 +207,11 @@
                     Value)]
                     ()
                     ()
+                    []
                     None
                 )
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -228,9 +240,11 @@
                     Value)]
                     ()
                     ()
+                    []
                     None
                 )
                 ()
+                []
                 None
             )
             [(SimpleAttribute

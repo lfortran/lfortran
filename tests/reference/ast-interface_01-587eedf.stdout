@@ -54,6 +54,7 @@
                     []
                     ()
                     ()
+                    []
                     None
                 )
                 [(AttrIntent
@@ -93,6 +94,7 @@
                     []
                     ()
                     ()
+                    []
                     None
                 )
                 [(AttrIntent
@@ -123,6 +125,7 @@
         [(Use
             []
             interface_01_mod
+            ()
             [(UseSymbol
                 a
                 ()
@@ -144,6 +147,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             []
@@ -162,6 +166,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             []

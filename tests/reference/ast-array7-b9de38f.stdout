@@ -9,6 +9,7 @@
                     []
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -29,6 +30,7 @@
                     []
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -44,6 +46,7 @@
                 []
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute

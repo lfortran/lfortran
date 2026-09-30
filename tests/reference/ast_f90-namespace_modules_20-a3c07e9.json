@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-namespace_modules_20-a3c07e9",
+    "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/../integration_tests/namespace_modules_20.f90",
+    "infile_hash": "20782b65e52d5026caadce66c258bed794a4ffba737b4d821aff9b70",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-namespace_modules_20-a3c07e9.stdout",
+    "stdout_hash": "26e852329a3cacc257263ed7ec6312916783cffc0f621724796bcc2e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

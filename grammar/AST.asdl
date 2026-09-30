@@ -85,8 +85,8 @@ decl_stmt
 -- Everything that can appear in the body of a program unit, in source
 -- order: use, import and implicit statements, declarations and executable
 -- statements. This mirrors the `decl_statement` rule of the parser.
-    = Use(decl_attribute* nature, identifier module, use_symbol* symbols,
-        bool only_present, trivia? trivia)
+    = Use(decl_attribute* nature, identifier module, identifier? local_name,
+        use_symbol* symbols, bool only_present, trivia? trivia)
     | Declaration(decl_attribute? vartype, decl_attribute* attributes,
         var_sym* syms, trivia? trivia)
     | DeclarationPragma(pragma_type type, string text, trivia? trivia)
@@ -202,7 +202,8 @@ expr
         fnarg* args, keyword* keywords, fnarg* subargs, decl_attribute* temp_args)
     | CoarrayRef(identifier name, struct_member* member,
         fnarg* args, keyword* fnkw, coarrayarg* coargs, keyword* cokw)
-    | ArrayInitializer(decl_attribute? vartype, identifier? classtype, expr* args)
+    | ArrayInitializer(decl_attribute? vartype, identifier? classtype,
+        identifier* qualifier, expr* args)
     | ImpliedDoLoop(expr* values, identifier var, expr start, expr end,
         expr? increment)
     | Num(int n, string? kind)
@@ -258,7 +259,7 @@ intrinsicop
     | CONCAT
 
 procedure_decl
-    = DerivedTypeProc(identifier? name, decl_attribute* attr,
+    = DerivedTypeProc(identifier? name, identifier* qualifier, decl_attribute* attr,
         use_symbol* symbols, trivia? trivia)
     | GenericOperator(decl_attribute* attr, intrinsicop op, identifier* names, trivia? trivia)
     | GenericDefinedOperator(decl_attribute* attr, string optype,
@@ -276,14 +277,18 @@ decl_attribute
     | AttrCodimension(codimension* codim)
     | AttrCommon(common_block* blks)
     | AttrEquivalence(equi* args)
-    | AttrExtends(identifier name)
+-- `qualifier` (here and in AttrType, DerivedTypeProc, ArrayInitializer,
+-- TypeStmtName and ClassStmt): the module entities in front of a
+-- module-qualified name (`use, namespace`). `a%b%t` has the qualifier [a, b]
+-- and the name t. It is empty for a plain name.
+    | AttrExtends(identifier name, identifier* qualifier)
     | AttrIntent(attr_intent intent)
     | AttrName(identifier name)
     | AttrNamelist(namelist_group* groups)
     | AttrPass(identifier? name)
     | SimpleAttribute(simple_attribute attr)
     | AttrType(decl_type type, kind_item* kind, decl_attribute? attr,
-        identifier? name, symbol sym)
+        identifier? name, identifier* qualifier, symbol sym)
     | AttrTypeList(decl_type type, decl_attribute* attr)
     | AttrAssignment()
     | AttrIntrinsicOperator(intrinsicop op)
@@ -314,6 +319,7 @@ simple_attribute
     | AttrKind
     | AttrLen
     | AttrModule
+    | AttrNamespace
     | AttrNoPass
     | AttrNonDeferred
     | AttrNon_Intrinsic
@@ -442,9 +448,11 @@ rank_stmt
     | RankDefault(trivia? trivia, decl_stmt* body)
 
 type_stmt
-    = TypeStmtName(identifier? name, trivia? trivia, decl_stmt* body)
+    = TypeStmtName(identifier? name, identifier* qualifier, trivia? trivia,
+        decl_stmt* body)
     | TypeStmtType(decl_attribute? vartype, trivia? trivia, decl_stmt* body)
-    | ClassStmt(identifier? id, trivia? trivia, decl_stmt* body)
+    | ClassStmt(identifier? id, identifier* qualifier, trivia? trivia,
+        decl_stmt* body)
     | ClassDefault(trivia? trivia, decl_stmt* body)
 
 use_symbol

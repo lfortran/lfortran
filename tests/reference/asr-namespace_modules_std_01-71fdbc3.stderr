@@ -1,0 +1,23 @@
+warning: 'use, namespace' is an LFortran extension
+ --> tests/warnings/namespace_modules_std_01.f90:9:5
+  |
+9 |     use, namespace :: m => namespace_modules_std_01_m
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: in standard Fortran, use 'use namespace_modules_std_01_m, only: ...' instead
+
+warning: 'use, namespace' is an LFortran extension
+  --> tests/warnings/namespace_modules_std_01.f90:14:5
+   |
+14 |     use, namespace :: namespace_modules_std_01_m
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: in standard Fortran, use 'use namespace_modules_std_01_m, only: ...' instead
+
+warning: 'use, namespace' is an LFortran extension
+  --> tests/warnings/namespace_modules_std_01.f90:24:9
+   |
+24 |         use, namespace :: m => namespace_modules_std_01_m
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: in standard Fortran, use 'use namespace_modules_std_01_m, only: ...' instead
+
+warning: 'use, namespace' is an LFortran extension
+  --> tests/warnings/namespace_modules_std_01.f90:19:9
+   |
+19 |         use, intrinsic, namespace :: env => iso_fortran_env
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: in standard Fortran, use 'use iso_fortran_env, only: ...' instead

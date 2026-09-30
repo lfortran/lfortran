@@ -5,6 +5,7 @@
         [(Use
             []
             iso_c_binding
+            ()
             [(UseSymbol
                 c_int
                 ()
@@ -43,6 +44,7 @@
                         Value)]
                         ()
                         ()
+                        []
                         None
                     )]
                     r
@@ -62,6 +64,7 @@
                             Value)]
                             ()
                             ()
+                            []
                             None
                         )
                         [(SimpleAttribute
@@ -87,6 +90,7 @@
                             Value)]
                             ()
                             ()
+                            []
                             None
                         )
                         [(SimpleAttribute

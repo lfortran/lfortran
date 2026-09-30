@@ -438,6 +438,7 @@ namespace LCompilers::CommandLineInterface {
         if (opts.arg_standard == "" || opts.arg_standard == "lf") {
             // The default LFortran behavior, do nothing
         } else if (opts.arg_standard == "f23") {
+            compiler_options.warn_lfortran_extensions = true;
             compiler_options.show_style_suggestions = false;
             if (style_suggestions) {
                 compiler_options.show_style_suggestions = true;
@@ -456,6 +457,7 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.po.realloc_lhs_arrays = true;
         } else if (opts.arg_standard == "legacy") {
             // f23
+            compiler_options.warn_lfortran_extensions = true;
             compiler_options.show_style_suggestions = false;
             if (style_suggestions) {
                 compiler_options.show_style_suggestions = true;

@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    197 // shift/reduce conflicts
+%expect    203 // shift/reduce conflicts
 %expect-rr 185 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -308,6 +308,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_MOLD
 %token <string> KW_NAME
 %token <string> KW_NAMELIST
+%token <string> KW_NAMESPACE
 %token <string> KW_NEW_INDEX
 %token <string> KW_NOPASS
 %token <string> KW_NON_INTRINSIC
@@ -399,6 +400,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> expr_list
 %type <vec_ast> expr_list_opt
 %type <ast> id
+%type <vec_ast> qualified_id
 %type <vec_ast> id_list
 %type <vec_ast> id_list_opt
 %type <ast> script_unit
@@ -919,6 +921,9 @@ procedure_decl
             $$ = DERIVED_TYPE_PROC($2, $3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PROCEDURE "(" id ")" proc_modifiers use_symbol_list sep {
             $$ = DERIVED_TYPE_PROC1($3, $5, $6, TRIVIA_AFTER($7, @$), @$); }
+    | KW_PROCEDURE "(" qualified_id ")" proc_modifiers use_symbol_list sep {
+            $$ = derived_type_proc_qualified(p.m_a, $3, $5, $6,
+                trivia_cast(TRIVIA_AFTER($7, @$)), @$); }
     | KW_GENERIC access_spec_list KW_OPERATOR "(" operator_type ")" "=>" id_list sep {
             $$ = GENERIC_OPERATOR($2, $5, $8, TRIVIA_AFTER($9, @$), @$); }
     | KW_GENERIC access_spec_list KW_OPERATOR "(" "/)" "=>" id_list sep {
@@ -1343,6 +1348,10 @@ use_statement
 
 use_statement1
     : KW_USE use_modifiers id { $$ = USE1($2, $3, nullptr, @$); }
+    | KW_USE use_modifiers id "=>" id {
+            $$ = make_Use_t(p.m_a, @$, VEC_CAST($2, decl_attribute),
+                $2.size(), name2char($5), name2char($3), nullptr, 0, false,
+                nullptr); }
     | KW_USE use_modifiers id "," KW_ONLY ":" use_symbol_list {
             $$ = USE2($2, $3, $7, nullptr, @$); }
     | KW_USE use_modifiers id "," KW_ONLY ":" {
@@ -1392,6 +1401,9 @@ use_modifier_list
 use_modifier
     : KW_INTRINSIC { $$ = SIMPLE_ATTR(Intrinsic, @$); }
     | KW_NON_INTRINSIC { $$ = SIMPLE_ATTR(Non_Intrinsic, @$); }
+    | KW_NAMESPACE { $$ = SIMPLE_ATTR(Namespace, @$); }
+    | KW_PUBLIC { $$ = SIMPLE_ATTR(Public, @$); }
+    | KW_PRIVATE { $$ = SIMPLE_ATTR(Private, @$); }
     ;
 
 var_decl_star
@@ -1614,6 +1626,7 @@ var_modifier
     | KW_VALUE { $$ = SIMPLE_ATTR(Value, @$); }
     | KW_VOLATILE { $$ = SIMPLE_ATTR(Volatile, @$); }
     | KW_EXTENDS "(" id ")" { $$ = EXTENDS($3, @$); }
+    | KW_EXTENDS "(" qualified_id ")" { $$ = extends_qualified(p.m_a, $3, @$); }
     | bind { $$ = BIND($1, @$); }
     | KW_KIND { $$ = SIMPLE_ATTR(Kind, @$); }
     | KW_LEN { $$ = SIMPLE_ATTR(Len, @$); }
@@ -1665,9 +1678,13 @@ declaration_type_spec
     | KW_TYPE "(" intrinsic_type_spec ")" %dprec 2 { $$ = ATTR_TYPE_ATTR(
         Type, $3, @$); }
     | KW_TYPE "(" id ")" %dprec 1 { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
+    | KW_TYPE "(" qualified_id ")" %dprec 1 { $$ = attr_type_qualified(p.m_a,
+        decl_typeType::TypeType, $3, @$); }
     | KW_TYPE "(" id "(" kind_arg_list ")" ")" %dprec 1 { $$ = ATTR_TYPE_NAME_KIND(Type, $3, $5, @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
+    | KW_CLASS "(" qualified_id ")" { $$ = attr_type_qualified(p.m_a,
+        decl_typeType::TypeClass, $3, @$); }
     | KW_CLASS "(" id "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_NAME_KIND(Class, $3, $5, @$); }
     | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
     ;
@@ -1675,6 +1692,8 @@ declaration_type_spec
 var_type
     : declaration_type_spec { $$ = $1; }
     | KW_PROCEDURE "(" id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
+    | KW_PROCEDURE "(" qualified_id ")" { $$ = attr_type_qualified(p.m_a,
+        decl_typeType::TypeProcedure, $3, @$); }
     | KW_PROCEDURE "(" ")" { $$ = ATTR_TYPE(Procedure, @$); }
     | KW_PROCEDURE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
         Procedure, ATTR_TYPE_KIND(Integer, $5, @$), @$); }
@@ -2205,6 +2224,12 @@ select_type_body_statement
                 TRIVIA_AFTER($9, @$), $10, @$); }
     | KW_TYPE KW_IS "(" var_type ")" sep statements { $$ = TYPE_STMTVAR($4, TRIVIA_AFTER($6, @$), $7, @$); }
     | KW_CLASS KW_IS "(" id ")" sep statements { $$ = CLASS_STMT($4, TRIVIA_AFTER($6, @$), $7, @$); }
+    | KW_CLASS KW_IS "(" qualified_id ")" sep statements {
+            $$ = class_stmt_qualified(p.m_a, $4,
+                trivia_cast(TRIVIA_AFTER($6, @$)), $7, @$); }
+    | KW_TYPE KW_IS "(" qualified_id ")" sep statements {
+            $$ = type_stmt_name_qualified(p.m_a, $4,
+                trivia_cast(TRIVIA_AFTER($6, @$)), $7, @$); }
     | KW_CLASS KW_DEFAULT sep statements { $$ = CLASS_DEFAULT(TRIVIA_AFTER($3, @$), $4, @$); }
     ;
 
@@ -2554,6 +2579,9 @@ def_unary_operand
     | "[" expr_list_opt rbracket { $$ = ARRAY_IN1($2, @$); }
     | "[" var_type "::" expr_list_opt rbracket { $$ = ARRAY_IN2($2, $4, @$); }
     | "[" id "::" expr_list_opt rbracket { $$ = ARRAY_IN3($2, $4, @$); }
+    | "[" struct_member_star id "::" expr_list_opt rbracket {
+            $$ = array_initializer_qualified(p.m_a, $2, $3, EXPRS($5),
+                $5.size(), @$, p.diag); }
     ;
 
 expr
@@ -2562,6 +2590,9 @@ expr
     | "[" expr_list_opt rbracket { $$ = ARRAY_IN1($2, @$); }
     | "[" var_type "::" expr_list_opt rbracket %dprec 2 { $$ = ARRAY_IN2($2, $4, @$); }
     | "[" id "::" expr_list_opt rbracket %dprec 1 { $$ = ARRAY_IN3($2, $4, @$); }
+    | "[" struct_member_star id "::" expr_list_opt rbracket %dprec 1 {
+            $$ = array_initializer_qualified(p.m_a, $2, $3, EXPRS($5),
+                $5.size(), @$, p.diag); }
     | TK_INTEGER { $$ = INTEGER($1, @$); }
     | TK_REAL { $$ = REAL($1, @$); }
     | TK_STRING { $$ = STRING($1, @$); }
@@ -2691,6 +2722,14 @@ id_opt
     ;
 
 
+// A name qualified by module entities, `a%b` or `a%b%c`, in the positions
+// that otherwise take only a type or interface name: the list of its names
+// (see qualified_last_name). Semantics resolves the module entities.
+qualified_id
+    : id "%" id { LIST_NEW($$); LIST_ADD($$, $1); LIST_ADD($$, $3); }
+    | qualified_id "%" id { $$ = $1; LIST_ADD($$, $3); }
+    ;
+
 id
     : TK_NAME { $$ = SYMBOL($1, @$); }
     | KW_ABSTRACT { $$ = SYMBOL($1, @$); }
@@ -2801,6 +2840,7 @@ id
     | KW_MOLD { $$ = SYMBOL($1, @$); }
     | KW_NAME { $$ = SYMBOL($1, @$); }
     | KW_NAMELIST { $$ = SYMBOL($1, @$); }
+    | KW_NAMESPACE { $$ = SYMBOL($1, @$); }
     | KW_NEW_INDEX { $$ = SYMBOL($1, @$); }
     | KW_NOPASS { $$ = SYMBOL($1, @$); }
     | KW_NON_INTRINSIC { $$ = SYMBOL($1, @$); }
