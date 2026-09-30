@@ -8485,11 +8485,12 @@ public:
         if (ASR::is_a<ASR::Function_t>(*sym)) {
             f = ASR::down_cast<ASR::Function_t>(sym);
             if (ASRUtils::is_intrinsic_procedure(f)) {
-                if (intrinsic_module_procedures_as_asr_nodes.find(sub_name) !=
+                std::string orig_name = f->m_name;
+                if (intrinsic_module_procedures_as_asr_nodes.find(orig_name) !=
                     intrinsic_module_procedures_as_asr_nodes.end()) {
-                    if (sub_name == "c_f_pointer") {
+                    if (orig_name == "c_f_pointer") {
                         tmp = create_CFPointer(x);
-                    } else if (sub_name == "c_f_procpointer") {
+                    } else if (orig_name == "c_f_procpointer") {
                         tmp = create_CFProcPointer(x);
                     } else {
                         LCOMPILERS_ASSERT(false)
