@@ -34,14 +34,16 @@ module template_apply_m_template_07
         deferred type :: T
         deferred type :: U
         deferred type :: V
-        pure elemental function op_func(lhs, rhs) result(res)
-            type(T), intent(in) :: lhs
-            type(U), intent(in) :: rhs
-            type(V) :: res
-        end function
+        deferred interface
+            pure elemental function op_func(lhs, rhs) result(res)
+                type(T), intent(in) :: lhs
+                type(U), intent(in) :: rhs
+                type(V) :: res
+            end function
+        end interface
     end requirement
 
-    template apply_t(T, lt)
+    template apply_t {T, lt}
         ! R1636: the :: is optional and the instantiation-arg-spec-list may be empty
         require no_args_r {}
         require op_r {T, T, logical, lt}
@@ -57,7 +59,7 @@ module template_apply_m_template_07
     end template
 
     ! R1602: the deferred-arg-name-list of a TEMPLATE is optional
-    template no_args_t()
+    template no_args_t {}
         private
         public :: answer
     contains

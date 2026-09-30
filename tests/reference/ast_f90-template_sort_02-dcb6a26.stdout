@@ -27,16 +27,18 @@ requirement op_r {T, U, V, op_func}
 deferred type :: T
 deferred type :: U
 deferred type :: V
-pure elemental function op_func(lhs, rhs) result(res)
-type(T), intent(in) :: lhs
-type(T), intent(in) :: rhs
-type(V) :: res
-end function op_func
-end requirement
+deferred interface
+    pure elemental function op_func(lhs, rhs) result(res)
+    type(T), intent(in) :: lhs
+    type(T), intent(in) :: rhs
+    type(V) :: res
+    end function op_func
+end interface
+end requirement op_r
 
 contains
 
-subroutine swap {T}(lhs, rhs)
+template subroutine swap {T}(lhs, rhs)
 deferred type :: T
 type(T), intent(inout) :: lhs
 type(T), intent(inout) :: rhs
@@ -50,7 +52,7 @@ end subroutine swap
 
 ! non-generic reference
 
-recursive subroutine quicksort {T, lt}(arr, low, high)
+recursive template subroutine quicksort {T, lt}(arr, low, high)
 require :: op_r {T, T, logical, lt}
 type(T), intent(inout) :: arr(:)
 integer, intent(in) :: low, high

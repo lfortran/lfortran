@@ -4,7 +4,7 @@
 module template_instantiate_rename_01_m
     implicit none
 
-    template tmpl_t(t)
+    template tmpl_t {t}
         deferred type :: t
     contains
         function id(x) result(r)

@@ -4,7 +4,7 @@ module template_03_m
       deferred type :: T
       deferred type :: U
       deferred type :: V
-      interface
+      deferred interface
         elemental function op(a, b)
           type(T), intent(in) :: a
           type(U), intent(in) :: b
@@ -13,7 +13,7 @@ module template_03_m
       end interface
     end requirement
     
-    template axpy_tmpl(T, U, V, W, plus, times)
+    template axpy_tmpl {T, U, V, W, plus, times}
       public :: axpy
       require :: op {V, W, V, plus}
       require :: op {T, U, W, times}

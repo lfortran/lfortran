@@ -16,10 +16,12 @@ module template_program_01_m
 
     requirement r {t, f}
         deferred type :: t
-        pure function f(x, y) result(z)
-            type(t), intent(in) :: x, y
-            type(t) :: z
-        end function
+        deferred interface
+            pure function f(x, y) result(z)
+                type(t), intent(in) :: x, y
+                type(t) :: z
+            end function
+        end interface
     end requirement
 
 contains
@@ -30,14 +32,14 @@ contains
         z = x + y
     end function
 
-    function add_generic {t, f} (x, y) result(z)
+    template function add_generic {t, f} (x, y) result(z)
         require r {t, f}
         type(t), intent(in) :: x, y
         type(t) :: z
         z = f(x, y)
     end function
 
-    subroutine add_sub {t, f} (x, y, z)
+    template subroutine add_sub {t, f} (x, y, z)
         require r {t, f}
         type(t), intent(in) :: x, y
         type(t), intent(out) :: z

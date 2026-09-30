@@ -287,7 +287,7 @@ class ASRToLLVMVisitor;
             llvm::StructType *complex_type_4, *complex_type_8;
             llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
             llvm::PointerType *character_type;
-            llvm::Type* string_descriptor; /* <{ i8* --DATA-- , i64 --LENGTH-- }> */
+            llvm::Type* string_descriptor; /* { i8* --DATA-- , i64 --LENGTH-- } */
             llvm::Type* vptr_type;
             llvm::Type* dim_descr_type_; // dimension_descriptor type (used with descriptorArrays)
             llvm::FunctionType* struct_copy_functype;
@@ -826,6 +826,9 @@ class ASRToLLVMVisitor;
 
             llvm::Value* get_array_size(llvm::Value* array_ptr, llvm::Type* array_llvm_type, ASR::ttype_t* array_asr_type, ASRToLLVMVisitor *asr_to_llvm_visitor);
 
+            // Number of elements read from the descriptor at runtime, as i64.
+            llvm::Value* get_descriptor_array_size(llvm::Value* array_ptr, llvm::Type* array_llvm_type);
+
 
             llvm::Type* get_type_from_ttype_t(ASR::expr_t* arg_expr, ASR::ttype_t* asr_type,
                 ASR::symbol_t *type_declaration, ASR::storage_typeType m_storage,
@@ -852,9 +855,12 @@ class ASRToLLVMVisitor;
 
             void set_set_api(ASR::Set_t* set_type);
 
+            // `finalize_dest` false: `dest` has just been allocated, so the
+            // copy defines it rather than assigning to it, and it is not
+            // finalized first.
             void deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::ttype_t* asr_dest_type, ASR::ttype_t* asr_src_type, llvm::Module* module,
-                bool use_defined_assignment = false);
+                bool use_defined_assignment = false, bool finalize_dest = true);
 
             llvm::Value* convert_kind(llvm::Value* val, llvm::Type* target_type);
 
@@ -1367,11 +1373,19 @@ class ASRToLLVMVisitor;
                     verify(arr, get_llvm_type(&arr_t->base, struct_sym)->getPointerTo());
                     auto const data = builder_->CreateLoad(array_data_ptr_type, 
                                                             llvm_utils_->create_gep2(arr_llvm_t, arr, 0));
+                    // The finalizer is cached per rank and element type and
+                    // reused for every descriptor array of that type, so the
+                    // size must come from the descriptor, never from the
+                    // (possibly constant) shape of the array it is emitted for.
+                    auto const descriptor_size_lazy = [&]() {
+                        insert_BB_for_readability("Calculate_arraySize");
+                        return llvm_utils_->get_descriptor_array_size(arr, arr_llvm_t);
+                    };
                     if(arr_t->m_type->type == ASR::StructType){
                         check_if_allocated_then_finalize(data, arr_t->m_type, struct_sym,[&](){
-                            free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);});
+                            free_array_data(data, arr_t->m_type, struct_sym, descriptor_size_lazy);});
                     } else {
-                        free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
+                        free_array_data(data, arr_t->m_type, struct_sym, descriptor_size_lazy);
                     }
 
                     free_array_ptr_to_consecutive_data(data, arr_t->m_type);
@@ -2897,7 +2911,7 @@ class ASRToLLVMVisitor;
 
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
-                bool use_defined_assignment = false);
+                bool use_defined_assignment = false, bool finalize_dest = true);
 
             // Copy dimension descriptors and rank from src to dest array descriptor.
             void copy_dimension_descriptors(

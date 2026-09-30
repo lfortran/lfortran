@@ -5,8 +5,8 @@ public :: struct_t, test_template
 
 requirement r {t}
 deferred type :: t
-end requirement
-template struct_t(t)
+end requirement r
+template struct_t {t}
 require :: r {t}
 private
 public :: tuple
@@ -33,7 +33,7 @@ contains
     end function get_snd
 
 
-end template
+end template struct_t
 
 contains
 

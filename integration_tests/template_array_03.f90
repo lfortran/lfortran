@@ -55,24 +55,26 @@ module template_array_03_m
 
         deferred type :: t
 
-        pure function plus_t(l, r) result(result)
-            type(t), intent(in) :: l, r
-            type(t) :: result
-        end function
+        deferred interface
+            pure function plus_t(l, r) result(result)
+                type(t), intent(in) :: l, r
+                type(t) :: result
+            end function
 
-        pure function zero_t(x) result(result)
-            type(t), intent(in) :: x
-            type(t) :: result
-        end function
+            pure function zero_t(x) result(result)
+                type(t), intent(in) :: x
+                type(t) :: result
+            end function
 
-        pure function mult_t(l, r) result(result)
-            type(t), intent(in) :: l, r
-            type(t) :: result
-        end function
+            pure function mult_t(l, r) result(result)
+                type(t), intent(in) :: l, r
+                type(t) :: result
+            end function
+        end interface
 
     end requirement
 !
-    template array_tmpl(t, plus_t, zero_t, mult_t)
+    template array_tmpl {t, plus_t, zero_t, mult_t}
 
         require :: operations {t, plus_t, zero_t, mult_t}
         private
@@ -84,7 +86,7 @@ module template_array_03_m
             integer, parameter, intent(in) :: i, j, k
             type(t), intent(in) :: a(i,j), b(j,k)
             type(t) :: r(i,k)
-            integer :: x = 1, y = 1, z = 1
+            integer :: x, y, z
             type(t) :: elem
             do x = 1, i
                 do z = 1, k

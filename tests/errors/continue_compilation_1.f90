@@ -1715,6 +1715,365 @@ subroutine associated_null_target_in_continue_compilation_1()
     if (associated(a, null())) print *, "bad"  ! {Error} NULL() is not permitted as the TARGET= argument to 'associated'
 end subroutine
 
+
+! Fortran 2023 10.1.11: a specification expression is a restricted expression.
+! An object designator is a permitted primary only when its base object is a
+! dummy argument, is in a common block, or is made accessible by use or host
+! association. A variable local to the same scoping unit is none of those, so
+! it may not size another local or give one a length. A named constant, and an
+! inquiry such as `size` or `len` about a local, stay permitted.
+subroutine local_in_specification_expr_in_continue_compilation_1(n, s)
+    implicit none
+    integer, intent(in) :: n
+    character(len=*), intent(in) :: s
+    integer, parameter :: lse_p = 3
+    type :: lse_t
+        integer :: x
+    end type
+    type(lse_t), save :: lse_a(1) = lse_t(4)
+    integer :: lse_m
+    integer :: lse_c
+    common /lse_blk/ lse_c
+    integer :: ok_dummy(n)
+    integer :: ok_common(lse_c)
+    integer :: ok_param(lse_p)
+    integer :: ok_inquiry(size(ok_dummy))
+    character(len=n) :: ok_str
+    character(len=len(ok_str)) :: ok_len
+    character(len=len(s)) :: ok_assumed
+    integer :: bad_member(lse_a(1)%x)  ! {Error} the variable 'lse_a' is local to this scoping unit, so it cannot appear in a specification expression
+    integer :: bad_scalar(lse_m)  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+    character(len=lse_m) :: bad_len  ! {Error} the variable 'lse_m' is local to this scoping unit, so it cannot appear in a specification expression
+    print *, size(ok_dummy), size(ok_param), size(ok_inquiry), size(ok_common)
+    print *, len(ok_str), len(ok_len), len(ok_assumed)
+end subroutine
+
+! `w%u(2)` with `w` an array takes one element of the component out of every
+! element of the base, so what it denotes is strided by the size of an element
+! of `w`. Passing it would hand the callee the elements that follow the first
+! one in memory instead, and an `intent(inout)` or `intent(out)` dummy would
+! write them back. It is rejected until the argument is built by gathering the
+! elements it names.
+subroutine element_of_array_component_as_argument_in_continue_compilation_1()
+    implicit none
+    type :: eac_t
+        integer :: u(3)
+    end type
+    type(eac_t) :: w(2)
+    w(1)%u = [1, 2, 3]
+    w(2)%u = [4, 5, 6]
+    print *, w%u(2)
+    print *, size(w%u(2))
+    call eac_inout(w%u(2))  ! {Error} Passing an element of an array component of an array as an argument is not supported yet
+    call eac_in(w%u(2))  ! {Error} Passing an element of an array component of an array as an argument is not supported yet
+contains
+    subroutine eac_inout(a)
+        integer, intent(inout) :: a(:)
+        a = -a
+    end subroutine
+    subroutine eac_in(a)
+        integer, intent(in) :: a(:)
+        print *, a
+    end subroutine
+end subroutine
+
+module partial_template_instantiation
+    implicit none
+    template tmpl {t}
+        deferred type :: t
+    contains
+        function identity(x) result(y)
+            type(t), intent(in) :: x
+            type(t) :: y
+            y = x
+        end function
+        function outer(x) result(y)
+            type(t), intent(in) :: x
+            type(t) :: y
+            y = identity(x)
+        end function
+    end template
+    instantiate tmpl {real}, only: outer_real => outer, missing_symbol  ! {Error} Symbol missing_symbol was not found
+    instantiate tmpl {integer}, only: outer_integer => outer
+end module
+
+! The `optional` attribute given to `p` in `oas_a` applies only to that
+! procedure; the dummy `p` of `oas_b` is still required.
+subroutine optional_attribute_scope_in_continue_compilation_1()
+    implicit none
+    call oas_a()
+    call oas_b()  ! {Error} Required argument `p` is missing in procedure call
+contains
+    subroutine oas_a(p)
+        optional :: p
+        integer :: p
+        if (present(p)) print *, p
+    end subroutine
+    subroutine oas_b(p)
+        integer :: p
+        print *, p
+    end subroutine
+end subroutine
+
+module template_scope_restrictions_m
+    implicit none
+    template unary{t, op}
+        deferred type :: t
+        deferred interface
+            function op(x) result(value)
+                type(t), intent(in) :: x
+                type(t) :: value
+            end function
+        end interface
+    end template
+contains
+    subroutine check_forward_restrictions()
+        instantiate unary{integer, scalar}
+        ! Check every restriction against the completed actual, not its provisional interface.
+        instantiate unary{real, scalar}  ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, real_result}  ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, binary}  ! {Error} Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+        instantiate unary{integer, assign_value}  ! {Error} The restriction argument assign_value should have a return value
+    contains
+        integer function scalar(x) result(value)
+            integer, intent(in) :: x
+            value = x
+        end function
+        real function real_result(x) result(value)
+            integer, intent(in) :: x
+            value = real(x)
+        end function
+        integer function binary(x, y) result(value)
+            integer, intent(in) :: x, y
+            value = x + y
+        end function
+        subroutine assign_value(x)
+            integer, intent(in) :: x
+        end subroutine
+    end subroutine
+end module
+
+module template_scope_recovery_m
+    implicit none
+    template unary{t, op}
+        deferred type :: t
+        deferred interface
+            function op(x) result(value)
+                type(t), intent(in) :: x
+                type(t) :: value
+            end function
+        end interface
+        type :: holder
+            type(t) :: value
+        end type
+    contains
+        function apply(x) result(value)
+            type(t), intent(in) :: x
+            type(t) :: value
+            value = op(x)
+        end function
+    end template
+contains
+    subroutine check_rejected_bodies()
+        instantiate unary{real, scalar}, only: rejected_apply => apply, rejected_holder => holder ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, scalar}, only: apply_scalar => apply
+        instantiate unary{integer, real_result}, only: apply_real_result => apply ! {Error} Restriction type mismatch with provided function argument
+        instantiate unary{integer, binary}, only: apply_binary => apply ! {Error} Number of arguments mismatch, restriction expects a function with 1 parameters, but a function with 2 parameters is provided
+        instantiate unary{integer, assign_value}, only: apply_assign_value => apply ! {Error} The restriction argument assign_value should have a return value
+        integer, parameter :: offset = 20
+        type(rejected_holder) :: item
+        procedure(rejected_apply), pointer :: rejected_callback
+        procedure(apply_scalar), pointer :: callback
+
+        item%value = 1.0
+        callback => apply_scalar
+        if (scalar(2) /= 22) error stop
+        if (apply_scalar(3) /= 23) error stop
+        if (callback(4) /= 24) error stop
+        print *, after_template_recovery_missing ! {Error} Variable 'after_template_recovery_missing' is not declared
+    contains
+        integer function scalar(x) result(value)
+            integer, intent(in) :: x
+            value = x + offset
+        end function
+        real function real_result(x) result(value)
+            integer, intent(in) :: x
+            value = real(x)
+        end function
+        integer function binary(x, y) result(value)
+            integer, intent(in) :: x, y
+            value = x + y
+        end function
+        subroutine assign_value(x)
+            integer, intent(in) :: x
+        end subroutine
+    end subroutine
+end module
+
+module template_scope_templated_function_m
+    implicit none
+    template unary{op}
+        deferred interface
+            integer function op(x)
+                integer, intent(in) :: x
+            end function
+        end interface
+    contains
+        integer function apply(x) result(value)
+            integer, intent(in) :: x
+            value = op(x)
+        end function
+    end template
+contains
+    subroutine check_templated_function()
+        instantiate unary{abs}, only: rejected_function => apply ! {Error} templated procedure 'abs' cannot be used as a procedure argument
+        instantiate unary{increment}, only: valid_function => apply
+        if (valid_function(2) /= 3) error stop
+        print *, after_templated_function_missing ! {Error} Variable 'after_templated_function_missing' is not declared
+    contains
+        template function abs{t}(x) result(value)
+            deferred type :: t
+            type(t), intent(in) :: x
+            type(t) :: value
+            value = x
+        end function
+        integer function increment(x) result(value)
+            integer, intent(in) :: x
+            value = x + 1
+        end function
+    end subroutine
+end module
+
+module template_scope_templated_subroutine_m
+    implicit none
+    template action{op}
+        deferred interface
+            subroutine op(x)
+                integer, intent(inout) :: x
+            end subroutine
+        end interface
+    contains
+        subroutine apply(x)
+            integer, intent(inout) :: x
+            call op(x)
+        end subroutine
+    end template
+contains
+    subroutine actual(x)
+        integer, intent(inout) :: x
+        x = x + 10
+    end subroutine
+    subroutine check_templated_subroutine()
+        instantiate action{op=actual}, only: rejected_subroutine => apply ! {Error} templated procedure 'actual' cannot be used as a procedure argument
+        instantiate action{assign_value}, only: valid_subroutine => apply
+        integer :: value
+        value = 2
+        call valid_subroutine(value)
+        if (value /= 3) error stop
+        print *, after_templated_subroutine_missing ! {Error} Variable 'after_templated_subroutine_missing' is not declared
+    contains
+        template subroutine actual{t}(x)
+            deferred type :: t
+            type(t), intent(inout) :: x
+            x = x
+        end subroutine
+        subroutine assign_value(x)
+            integer, intent(inout) :: x
+            x = x + 1
+        end subroutine
+    end subroutine
+end module
+
+subroutine inherited_parent_component_keyword_conflicts()
+    implicit none
+    type :: ipck_base_t
+        integer :: b1
+    end type
+    type, extends(ipck_base_t) :: ipck_der_t
+        integer :: d1
+    end type
+    type, extends(ipck_der_t) :: ipck_der2_t
+        integer :: e1
+    end type
+    type(ipck_der2_t) :: e
+    e = ipck_der2_t(ipck_base_t=ipck_base_t(1), ipck_der_t=ipck_der_t(2, 3), e1=4)  ! {Error} component 'b1' is already specified, it cannot also be given by the parent component 'ipck_der_t'
+    e = ipck_der2_t(ipck_der_t=ipck_der_t(2, 3), ipck_base_t=ipck_base_t(1), e1=4)  ! {Error} component 'b1' is already specified, it cannot also be given by the parent component 'ipck_base_t'
+    e = ipck_der2_t(ipck_base_t=ipck_base_t(1), b1=2, d1=3, e1=4)  ! {Error} component 'b1' is already specified by the parent component 'ipck_base_t'
+    e = ipck_der2_t(b1=2, ipck_base_t=ipck_base_t(1), d1=3, e1=4)  ! {Error} component 'b1' is already specified, it cannot also be given by the parent component 'ipck_base_t'
+    e = ipck_der2_t(ipck_der_t=1.0, ipck_base_t=ipck_base_t(1), e1=3)  ! {Error} type mismatch in structure constructor: the parent component 'ipck_der_t' requires a scalar value of type type(ipck_der_t), not real(4)
+end subroutine
+
+! An EXIT statement without a construct name belongs to the innermost enclosing
+! DO construct; a BLOCK or IF construct does not count, and it may not leave a
+! DO CONCURRENT construct.
+subroutine exit_without_construct_name_1()
+    implicit none
+    integer :: i, n
+    n = 0
+    block
+        if (n == 0) exit  ! {Error} `exit` statements without a construct name cannot be outside of loops
+        n = 1
+    end block
+    do concurrent (i = 1:3)
+        block
+            if (i == 2) exit  ! {Error} `exit` statements cannot leave a `do concurrent` loop
+        end block
+    end do
+    do concurrent (i = 1:3)
+        do n = 1, 3
+            if (n == i) exit
+        end do
+    end do
+end subroutine
+
+module inline_intrinsic_template_arg_1
+    implicit none
+contains
+    template function iita_g{f, t}(x, y) result(r)
+        deferred type :: t
+        interface
+            pure elemental function f(a, b) result(c)
+                import :: t
+                type(t), intent(in) :: a, b
+                type(t) :: c
+            end function
+        end interface
+        type(t), intent(in) :: x, y
+        type(t) :: r
+        r = f(x, y)
+    end function
+
+    template function iita_h{f}(x, y) result(r)
+        interface
+            pure elemental function f(a, b) result(c)
+                integer, intent(in) :: a, b
+                logical :: c
+            end function
+        end interface
+        integer, intent(in) :: x, y
+        logical :: r
+        r = f(x, y)
+    end function
+end module
+
+subroutine inline_intrinsic_template_arg_errors()
+    use inline_intrinsic_template_arg_1
+    implicit none
+    print *, iita_g{max, logical}(.true., .false.)  ! {Error} Arguments to max0 must be of real, integer or character type
+    print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
+    print *, iita_g{max, integer}(1, 2)
+end subroutine
+
+! The OPTIONAL and VALUE check also applies to a BIND(C) procedure that has
+! internal procedures.
+subroutine bindc_optional_value_contains(x) bind(c)  ! {Error} Variable `x` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value_contains` is BIND(C)
+    implicit none
+    integer, optional, value :: x
+contains
+    subroutine inner()
+    end subroutine
+end subroutine
+
 subroutine non_dummy_intent_statement(x)
     implicit none
     integer :: x, y

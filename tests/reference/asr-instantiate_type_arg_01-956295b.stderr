@@ -1,5 +1,0 @@
-semantic error: the instantiation argument 'no_such_type' for 't' is not declared
-  --> tests/errors/instantiate_type_arg_01.f90:23:23
-   |
-23 |     instantiate tmpl {no_such_type}, only: s
-   |                       ^^^^^^^^^^^^ 'no_such_type' is undeclared

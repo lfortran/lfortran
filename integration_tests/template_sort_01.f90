@@ -26,14 +26,16 @@ module template_sort_01_m
         deferred type :: T
         deferred type :: U
         deferred type :: V
-        pure elemental function op_func(lhs, rhs) result(res)
-            type(T), intent(in) :: lhs
-            type(T), intent(in) :: rhs
-            type(V) :: res
-        end function
+        deferred interface
+            pure elemental function op_func(lhs, rhs) result(res)
+                type(T), intent(in) :: lhs
+                type(T), intent(in) :: rhs
+                type(V) :: res
+            end function
+        end interface
     end requirement
 
-    template qsort_t(T, lt)
+    template qsort_t {T, lt}
         require :: op_r {T, T, logical, lt}
         private
         public :: qsort

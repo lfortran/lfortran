@@ -5,17 +5,19 @@ module sort_m
 
     requirement comparable {T, lt, gt}
         deferred type :: T
-        elemental function lt(lhs, rhs)
-            type(T), intent(in) :: lhs, rhs
-            logical :: lt
-        end function
-        elemental function gt(lhs, rhs)
-            type(T), intent(in) :: lhs, rhs
-            logical :: gt
-        end function
+        deferred interface
+            elemental function lt(lhs, rhs)
+                type(T), intent(in) :: lhs, rhs
+                logical :: lt
+            end function
+            elemental function gt(lhs, rhs)
+                type(T), intent(in) :: lhs, rhs
+                logical :: gt
+            end function
+        end interface
     end requirement
 
-    template sort_tmpl(T, lt, gt)
+    template sort_tmpl {T, lt, gt}
         private
         public :: sorted_order, sorted, sort
 

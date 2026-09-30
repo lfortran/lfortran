@@ -5,7 +5,7 @@ module template_instantiate_subp_01_m
 
 contains
 
-    subroutine swap{t}(x, y)
+    template subroutine swap{t}(x, y)
         deferred type :: t
         type(t), intent(inout) :: x, y
         type(t) :: tmp

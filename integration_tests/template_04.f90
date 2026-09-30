@@ -6,26 +6,30 @@ module template_04_semigroup
 
     requirement semigroup {T, combine}
         deferred type :: T
-        elemental function combine(x, y) result(combined)
-            type(T), intent(in) :: x, y
-            type(T) :: combined
-        end function
+        deferred interface
+            elemental function combine(x, y) result(combined)
+                type(T), intent(in) :: x, y
+                type(T) :: combined
+            end function
+        end interface
     end requirement
 
     requirement extended_semigroup {T, combine, sconcat, stimes}
         require :: semigroup {T, combine}
-        pure function sconcat(list) result(combined)
-            type(T), intent(in) :: list(:) !! Must contain at least one element
-            type(T) :: combined
-        end function
-        elemental function stimes(n, a) result(repeated)
-            integer, intent(in) :: n
-            type(T), intent(in) :: a
-            type(T) :: repeated
-        end function
+        deferred interface
+            pure function sconcat(list) result(combined)
+                type(T), intent(in) :: list(:) !! Must contain at least one element
+                type(T) :: combined
+            end function
+            elemental function stimes(n, a) result(repeated)
+                integer, intent(in) :: n
+                type(T), intent(in) :: a
+                type(T) :: repeated
+            end function
+        end interface
     end requirement
 
-    template derive_extended_semigroup(T, combine)
+    template derive_extended_semigroup {T, combine}
         require :: semigroup {T, combine}
         private
         public :: sconcat, stimes
@@ -67,21 +71,25 @@ module template_04_monoid
 
     requirement monoid {T, combine, empty}
         require :: semigroup {T, combine}
-        pure function empty()
-            type(T) :: empty
-        end function
+        deferred interface
+            pure function empty()
+                type(T) :: empty
+            end function
+        end interface
     end requirement
 
     requirement extended_monoid {T, combine, sconcat, stimes, empty, mconcat}
         require :: extended_semigroup {T, combine, sconcat, stimes}
         require :: monoid {T, combine, empty}
-        pure function mconcat(list) result(combined)
-            type(T), intent(in) :: list(:)
-            type(T) :: combined
-        end function
+        deferred interface
+            pure function mconcat(list) result(combined)
+                type(T), intent(in) :: list(:)
+                type(T) :: combined
+            end function
+        end interface
     end requirement
 
-    template derive_extended_monoid(T, combine, empty)
+    template derive_extended_monoid {T, combine, empty}
         require :: monoid {T, combine, empty}
         private
         public :: stimes, mconcat
@@ -130,18 +138,22 @@ module template_04_unitring
 
     requirement unit_ring_only_minus {T, plus, zero, mult, one, minus}
         require :: semiring {T, plus, zero, mult, one}
-        elemental function minus(x, y) result(difference)
-            type(T), intent(in) :: x, y
-            type(T) :: difference
-        end function
+        deferred interface
+            elemental function minus(x, y) result(difference)
+                type(T), intent(in) :: x, y
+                type(T) :: difference
+            end function
+        end interface
     end requirement
 
     requirement unit_ring_only_negate {T, plus, zero, mult, one, negate}
         require :: semiring {T, plus, zero, mult, one}
-        elemental function negate(x) result(negated)
-            type(T), intent(in) :: x
-            type(T) :: negated
-        end function
+        deferred interface
+            elemental function negate(x) result(negated)
+                type(T), intent(in) :: x
+                type(T) :: negated
+            end function
+        end interface
     end requirement
 
     requirement unit_ring {T, plus, zero, mult, one, minus, negate}
@@ -149,7 +161,7 @@ module template_04_unitring
         require ::  unit_ring_only_negate {T, plus, zero, mult, one, negate}
     end requirement
 
-    template derive_unit_ring_from_minus(T, plus, zero, mult, one, minus)
+    template derive_unit_ring_from_minus {T, plus, zero, mult, one, minus}
         require :: unit_ring_only_minus {T, plus, zero, mult, one, minus}
         private
         public :: negate
@@ -161,7 +173,7 @@ module template_04_unitring
         end function
     end template
 
-    template derive_unit_ring_from_negate(T, plus, zero, mult, one, negate)
+    template derive_unit_ring_from_negate {T, plus, zero, mult, one, negate}
         require :: unit_ring_only_negate {T, plus, zero, mult, one, negate}
         private
         public :: minus
@@ -189,18 +201,22 @@ module template_04_field
 
     requirement field_only_division {T, plus, zero, mult, one, minus, negate, divide}
         require :: unit_ring {T, plus, zero, mult, one, minus, negate}
-        elemental function divide(x, y) result(quotient)
-            type(T), intent(in) :: x, y
-            type(T) :: quotient
-        end function
+        deferred interface
+            elemental function divide(x, y) result(quotient)
+                type(T), intent(in) :: x, y
+                type(T) :: quotient
+            end function
+        end interface
     end requirement
 
     requirement field_only_inverse {T, plus, zero, mult, one, minus, negate, invert}
         require :: unit_ring {T, plus, zero, mult, one, minus, negate}
-        elemental function invert(x) result(inverse)
-            type(T), intent(in) :: x
-            type(T) :: inverse
-        end function
+        deferred interface
+            elemental function invert(x) result(inverse)
+                type(T), intent(in) :: x
+                type(T) :: inverse
+            end function
+        end interface
     end requirement
 
     requirement field {T, plus, zero, mult, one, minus, negate, divide, invert}
@@ -208,7 +224,7 @@ module template_04_field
         require :: field_only_inverse {T, plus, zero, mult, one, minus, negate, invert}
     end requirement
 
-    template derive_field_from_division(T, plus, zero, mult, one, minus, negate, divide)
+    template derive_field_from_division {T, plus, zero, mult, one, minus, negate, divide}
         require :: field_only_division {T, plus, zero, mult, one, minus, negate, divide}
         private
         public :: invert
@@ -220,7 +236,7 @@ module template_04_field
         end function
     end template
 
-    template derive_field_from_inverse(T, plus, zero, mult, one, minus, negate, invert)
+    template derive_field_from_inverse {T, plus, zero, mult, one, minus, negate, invert}
         require :: field_only_inverse {T, plus, zero, mult, one, minus, negate, invert}
         private
         public :: divide
@@ -244,9 +260,9 @@ module template_04_matrix
     private
     public :: matrix_tmpl
 
-    template matrix_tmpl(T, plus_t, zero_t, times_t, one_t, n)
+    template matrix_tmpl {T, plus_t, zero_t, times_t, one_t, n}
         require :: semiring {T, plus_t, zero_t, times_t, one_t}
-        integer :: n
+        deferred integer, parameter :: n
 
         private
         public :: &
@@ -269,7 +285,7 @@ module template_04_matrix
             procedure times_matrix
         end interface        
 
-        template matrix_subtraction_t(minus_t)
+        template matrix_subtraction_t {minus_t}
             require :: unit_ring_only_minus {T, plus_t, zero_t, times_t, one_t, minus_t}
 
             private
@@ -279,7 +295,7 @@ module template_04_matrix
                 procedure minus_matrix
             end interface
 
-            template gaussian_solver_tmpl(div_t)
+            template gaussian_solver_tmpl {div_t}
                 instantiate derive_unit_ring_from_minus {T, plus_t, zero_t, times_t, one_t, minus_t}, only: negate
                 require :: field_only_division {T, plus_t, zero_t, times_t, one_t, minus_t, negate, div_t}      
             contains
@@ -447,10 +463,12 @@ m2%elements(2,2) = 1
 m3 = integer_plus_matrix(m1, m2)
 print *, m3%elements(1,1), m3%elements(1,2)
 print *, m3%elements(2,1), m3%elements(2,2), achar(10)
+if (any(m3%elements /= reshape([2, 2, 2, 2], [2, 2]))) error stop
 
 m4 = integer_times_matrix(m3, m2)
 print *, m4%elements(1,1), m4%elements(1,2)
 print *, m4%elements(2,1), m4%elements(2,2), achar(10)
+if (any(m4%elements /= reshape([6, 6, 6, 6], [2, 2]))) error stop
 
 instantiate matrix_tmpl {real, operator(+), zero_real, operator(*), one_real, n}, &
     only: real_matrix => matrix, &
@@ -477,8 +495,10 @@ r2%elements(2,2) = 1
 r3 = real_plus_matrix(r1, r2)
 print *, r3%elements(1,1), r3%elements(1,2)
 print *, r3%elements(2,1), r3%elements(2,2), achar(10)
+if (any(abs(r3%elements - reshape([2.2, 2.0, 2.5, 2.0], [2, 2])) > 1.0e-5)) error stop
 
 r4 = real_times_matrix(r3, r2)
 print *, r4%elements(1,1), r4%elements(1,2)
 print *, r4%elements(2,1), r4%elements(2,2), achar(10)
+if (any(abs(r4%elements - reshape([7.2, 6.0, 8.0, 7.0], [2, 2])) > 1.0e-5)) error stop
 end program
