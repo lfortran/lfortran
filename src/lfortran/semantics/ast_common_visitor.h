@@ -1398,7 +1398,7 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
                                                     result_type, value);
             return;
         } else if( ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::type_get_past_allocatable_pointer(operand_type)) ) {
+                    *ASRUtils::extract_type(operand_type)) ) {
             ASR::expr_t* overloaded_uminus = nullptr;
             if( ASRUtils::use_overloaded_unary_minus(operand,
                 current_scope, asr, al,

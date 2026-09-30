@@ -1,0 +1,540 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            neg:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            1_v_x:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_v_x
+                                                    3 x
+                                                    m
+                                                    [v]
+                                                    x
+                                                    Public
+                                                ),
+                                            a:
+                                                (Variable
+                                                    4
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Real 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 v
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            neg:
+                                                (Variable
+                                                    4
+                                                    neg
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Real 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 v
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    neg
+                                    (FunctionType
+                                        [(StructType
+                                            [(Real 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        (StructType
+                                            [(Real 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 4 a)]
+                                    [(Assignment
+                                        (StructInstanceMember
+                                            (Var 4 neg)
+                                            4 1_v_x
+                                            (Real 4)
+                                            ()
+                                        )
+                                        (RealUnaryMinus
+                                            (StructInstanceMember
+                                                (Var 4 a)
+                                                4 1_v_x
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 4 neg)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            v:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    Local
+                                                    (Cast
+                                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                                        IntegerToReal
+                                                        (Real 4)
+                                                        (RealConstant
+                                                            0.000000
+                                                            (Real 4)
+                                                        )
+                                                        ()
+                                                    )
+                                                    (RealConstant
+                                                        0.000000
+                                                        (Real 4)
+                                                    )
+                                                    Save
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    v
+                                    (StructType
+                                        [(Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [x]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
+                                ),
+                            ~sub:
+                                (CustomOperator
+                                    2
+                                    ~sub
+                                    [2 neg]
+                                    Public
+                                )
+                        })
+                    m
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                ),
+            p:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            1_v_x:
+                                (ExternalSymbol
+                                    5
+                                    1_v_x
+                                    3 x
+                                    m
+                                    [v]
+                                    x
+                                    Public
+                                ),
+                            neg:
+                                (ExternalSymbol
+                                    5
+                                    neg
+                                    2 neg
+                                    m
+                                    []
+                                    neg
+                                    Public
+                                ),
+                            q:
+                                (Variable
+                                    5
+                                    q
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (StructType
+                                            [(Real 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    5 v
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            qq:
+                                (Variable
+                                    5
+                                    qq
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (StructType
+                                            [(Real 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    5 v
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            v:
+                                (ExternalSymbol
+                                    5
+                                    v
+                                    2 v
+                                    m
+                                    []
+                                    v
+                                    Public
+                                ),
+                            ~sub:
+                                (ExternalSymbol
+                                    5
+                                    ~sub
+                                    2 ~sub
+                                    m
+                                    []
+                                    ~sub
+                                    Public
+                                )
+                        })
+                    p
+                    [m]
+                    [(Assignment
+                        (StructInstanceMember
+                            (Var 5 q)
+                            5 1_v_x
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            ()
+                        )
+                        (ArrayBroadcast
+                            (Cast
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    2.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (ArrayConstant
+                                4
+                                [3]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            (ArrayConstant
+                                12
+                                [2.00000000e+00, 2.00000000e+00, 2.00000000e+00]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 5 qq)
+                        (ArrayBroadcast
+                            (OverloadedUnaryMinus
+                                (Var 5 q)
+                                (StructType
+                                    [(Real 4)]
+                                    []
+                                    .true.
+                                    .false.
+                                )
+                                ()
+                                (FunctionCall
+                                    5 neg
+                                    5 neg
+                                    [((Var 5 q))]
+                                    (StructType
+                                        [(Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ()
+                                    ()
+                                )
+                            )
+                            (ArrayConstant
+                                4
+                                [3]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (StructType
+                                    [(Real 4)]
+                                    []
+                                    .true.
+                                    .false.
+                                )
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StructInstanceMember
+                                (Var 5 qq)
+                                5 1_v_x
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ()
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (RealCompare
+                                    (StructInstanceMember
+                                        (Var 5 qq)
+                                        5 1_v_x
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                            Global
+                                        )
+                                        ()
+                                    )
+                                    NotEq
+                                    (Cast
+                                        (IntegerUnaryMinus
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -2 (Integer 4) Decimal)
+                                        )
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            -2.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                    Global
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                    ()
+                )
+        })
+    []
+    ()
+)
