@@ -1,0 +1,13 @@
+{
+    "basename": "asr-derived_type_local_bound_01-1f32334",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/derived_type_local_bound_01.f90",
+    "infile_hash": "334882ae51bca2e647de6767e7825b902a56f551bdc9b9ea87bf0faf",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-derived_type_local_bound_01-1f32334.stderr",
+    "stderr_hash": "df373c30d1c55a1230e01816e62633335df286997c76f80b4a62a0cd",
+    "returncode": 2
+}

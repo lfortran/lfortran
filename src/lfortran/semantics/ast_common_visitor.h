@@ -2901,7 +2901,7 @@ public:
                 error = true;
             } else if (!ASRUtils::is_value_constant(dim_expr)) {
                 bool in_function_scope = in_Subroutine;
-                if (!in_function_scope) {
+                if (!in_function_scope && !is_derived_type) {
                     SymbolTable* scope = current_scope;
                     while (scope != nullptr && !in_function_scope) {
                         if (scope->asr_owner != nullptr &&
@@ -2913,7 +2913,7 @@ public:
                         scope = scope->parent;
                     }
                 }
-                if (!in_function_scope) {
+                if (!in_function_scope || is_derived_type) {
                     diag.add(Diagnostic(
                         "Explicit shaped array with nonconstant bounds",
                         Level::Error, Stage::Semantic, {
