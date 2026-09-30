@@ -1930,6 +1930,9 @@ public:
         if (subroutine_has_alternate_returns) {
             current_procedure_args.push_back("__lfortran_alt_ret");
         }
+        // Restored on exit: the enclosing procedure (the host of an internal
+        // procedure or of an interface body) keeps its own ABI.
+        ASR::abiType current_procedure_abi_type_copy = current_procedure_abi_type;
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
         extract_bind(x, current_procedure_abi_type, bindc_name, diag);
@@ -2326,7 +2329,7 @@ public:
            in nested functions, and also in callback.f90 test, but it may not
            matter since we would have already checked the intent */
         current_procedure_args.clear();
-        current_procedure_abi_type = ASR::abiType::Source;
+        current_procedure_abi_type = current_procedure_abi_type_copy;
 
         // print_implicit_dictionary(implicit_dictionary);
         // get hash of the function and add it to the implicit_mapping
@@ -2539,7 +2542,10 @@ public:
             current_procedure_args.push_back(to_lower(arg));
         }
 
-        // Determine the ABI (Source or BindC for now)
+        // Determine the ABI (Source or BindC for now). Restored on exit: the
+        // enclosing procedure (the host of an internal procedure or of an
+        // interface body) keeps its own ABI.
+        ASR::abiType current_procedure_abi_type_copy = current_procedure_abi_type;
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
         extract_bind(x, current_procedure_abi_type, bindc_name, diag);
@@ -3188,7 +3194,7 @@ public:
             current_scope = parent_scope;
         }
         current_procedure_args.clear();
-        current_procedure_abi_type = ASR::abiType::Source;
+        current_procedure_abi_type = current_procedure_abi_type_copy;
         current_symbol = -1;
         // print_implicit_dictionary(implicit_dictionary);
         // get hash of the function and add it to the implicit_mapping
