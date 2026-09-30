@@ -160,6 +160,57 @@ ASR::symbol_t* resolve_struct_defined_assignment_proc(ASR::Struct_t* s);
 // of derived type in its own right (F2018 7.5.7.2) and is copied as one.
 bool struct_assignment_is_more_than_a_copy(ASR::symbol_t* struct_sym);
 
+// Whether finalizing an entity of the derived type `struct_sym` does anything
+// (F2018 7.5.6.2): the type or a type it extends has a final subroutine, or
+// a nonpointer, nonallocatable, nonpolymorphic scalar component (inherited
+// ones included) is of a type for which this holds.
+bool struct_needs_finalization(ASR::symbol_t* struct_sym);
+
+// Whether a function result of type `type`, declared by `struct_sym`, is one
+// that F2018 7.5.6.3 p5 finalizes after the statement that references the
+// function: a nonpointer, nonallocatable, nonpolymorphic scalar of a derived
+// type whose finalization does anything. Such a result is not finalized when
+// the function is invoked, as an intent(out) dummy argument would be.
+bool is_finalizable_function_result(ASR::ttype_t* type,
+        ASR::symbol_t* struct_sym);
+
+// Whether `expr` is a function reference whose result is one of those.
+bool is_finalizable_function_reference(ASR::expr_t* expr);
+
+// Whether `expr` or one of its subexpressions is such a reference.
+bool contains_finalizable_function_reference(ASR::expr_t* expr);
+
+// Whether `x` contains no other statement and does not transfer control
+// elsewhere, so that it can be made the body of a BLOCK that is left only
+// by completing it (or by terminating the program).
+static inline bool is_single_statement(const ASR::stmt_t &x) {
+    switch (x.type) {
+        case ASR::stmtType::DoConcurrentLoop:
+        case ASR::stmtType::OMPRegion:
+        case ASR::stmtType::DoLoop:
+        case ASR::stmtType::ForAllSingle:
+        case ASR::stmtType::ForEach:
+        case ASR::stmtType::If:
+        case ASR::stmtType::IfArithmetic:
+        case ASR::stmtType::Select:
+        case ASR::stmtType::SelectType:
+        case ASR::stmtType::SelectRank:
+        case ASR::stmtType::Where:
+        case ASR::stmtType::WhileLoop:
+        case ASR::stmtType::ChangeTeam:
+        case ASR::stmtType::AssociateBlockCall:
+        case ASR::stmtType::BlockCall:
+        case ASR::stmtType::GoTo:
+        case ASR::stmtType::GoToTarget:
+        case ASR::stmtType::Cycle:
+        case ASR::stmtType::Exit:
+        case ASR::stmtType::Return:
+            return false;
+        default:
+            return true;
+    }
+}
+
 ASR::symbol_t* get_union_sym_from_union_expr(ASR::expr_t* expression);
 static inline bool is_unlimited_polymorphic_type(ASR::Struct_t* st);
 static inline bool is_unlimited_polymorphic_type(ASR::ttype_t* const t);
@@ -2233,6 +2284,18 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
             return false;
         }
     }
+}
+
+// A local that is neither saved nor a parameter is initialized on every entry
+// to its procedure or BLOCK. A non-constant initializer on such a local is
+// how a pass evaluates a specification expression, such as the bound of an
+// automatic array, exactly once on entry.
+static inline bool is_entry_initialized_local(const ASR::Variable_t &v) {
+    return v.m_intent == ASR::intentType::Local &&
+        v.m_storage == ASR::storage_typeType::Default &&
+        v.m_symbolic_value != nullptr && v.m_value == nullptr &&
+        ASR::is_a<ASR::Integer_t>(*v.m_type) &&
+        !is_value_constant(v.m_symbolic_value);
 }
 
 static inline bool is_value_constant(ASR::expr_t *a_value, int64_t& const_value) {
