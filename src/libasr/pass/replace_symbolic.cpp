@@ -366,6 +366,11 @@ public:
             }
         }
         transform_stmts(xx.m_body, xx.n_body);
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                visit_Block(*ASR::down_cast<ASR::Block_t>(item.second));
+            }
+        }
 
         // freeing out variables
         if (!symbolic_vars_to_free.empty()) {
