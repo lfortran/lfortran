@@ -2062,3 +2062,13 @@ subroutine inline_intrinsic_template_arg_errors()
     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
     print *, iita_g{max, integer}(1, 2)
 end subroutine
+
+! The OPTIONAL and VALUE check also applies to a BIND(C) procedure that has
+! internal procedures.
+subroutine bindc_optional_value_contains(x) bind(c)  ! {Error} Variable `x` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value_contains` is BIND(C)
+    implicit none
+    integer, optional, value :: x
+contains
+    subroutine inner()
+    end subroutine
+end subroutine
