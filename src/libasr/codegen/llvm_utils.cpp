@@ -3726,7 +3726,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     void LLVMUtils::deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                              ASR::ttype_t* asr_dest_type,
                              ASR::ttype_t* asr_src_type, llvm::Module* module,
-                             bool use_defined_assignment) {
+                             bool use_defined_assignment, bool finalize_dest) {
         switch( ASRUtils::type_get_past_array(asr_src_type)->type ) {
             case ASR::ttypeType::Integer:
             case ASR::ttypeType::UnsignedInteger:
@@ -3951,7 +3951,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                 builder->CreateBitCast(dest, vptr_type->getPointerTo()));
                         }
                     }
-                    struct_api->struct_deepcopy(src_expr, src, asr_src_type, asr_dest_type, dest, module, use_defined_assignment);
+                    struct_api->struct_deepcopy(src_expr, src, asr_src_type, asr_dest_type, dest, module,
+                        use_defined_assignment, finalize_dest);
                 }
                 break;
             }
@@ -10439,7 +10440,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
     void LLVMStruct::struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                                     ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
-                                    bool use_defined_assignment)
+                                    bool use_defined_assignment, bool finalize_dest)
     {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(src_ty)));
         ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
@@ -10686,7 +10687,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                             struct_sym, dest_elem_ptr, elem_type, false);
                     }
                     llvm_utils->deepcopy(src_expr, src_elem_ptr, dest_elem_ptr,
-                        elem_type, ASRUtils::extract_type(dest_ty), module);
+                        elem_type, ASRUtils::extract_type(dest_ty), module,
+                        false, finalize_dest);
                 }
 
             llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
@@ -10700,10 +10702,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 copy_dimension_descriptors(llvm_array_type, src, dest, module);
             }
         } else {
-            call_struct_finalize_fn(dest, dest_ty, 
-                ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(
-                        ASRUtils::get_struct_sym_from_struct_expr(src_expr)))); /*Assume src and dest are same*/
+            if (finalize_dest) {
+                call_struct_finalize_fn(dest, dest_ty,
+                    ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(src_expr)))); /*Assume src and dest are same*/
+            }
             if (ASRUtils::is_class_type(ASRUtils::extract_type(dest_ty))) {
                 if (!ASRUtils::is_value_constant(src_expr)) {
                     // Store Vptr from src to dest
