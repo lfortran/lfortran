@@ -54,6 +54,7 @@
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/intent_out_deallocate.h>
 #include <libasr/pass/array_struct_temporary.h>
+#include <libasr/pass/function_result_scope.h>
 #include <libasr/pass/conditional_expr.h>
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
@@ -142,6 +143,7 @@ namespace LCompilers {
             {"gpu_device_allocatable", &pass_promote_device_allocatable},
             {"conditional_expr", &pass_replace_conditional_expr},
             {"array_struct_temporary", &pass_array_struct_temporary},
+            {"function_result_scope", &pass_function_result_scope},
             {"coarray", &pass_replace_coarray}
         };
 
@@ -285,6 +287,10 @@ namespace LCompilers {
                 // region.
                 "parallel_canonicalize",
                 "parallel_dispatch",
+                // Each statement that references a function whose result is
+                // finalized after the statement becomes a BLOCK here, before
+                // the passes below split it into several statements.
+                "function_result_scope",
                 "implied_do_loops",
                 // Every loop the dispatch assigned to the device becomes a
                 // kernel and its launch. Nothing is kept to run it on the

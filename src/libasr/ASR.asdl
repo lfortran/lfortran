@@ -18,6 +18,13 @@ symbol
     | Struct(symbol_table symtab, identifier name, ttype struct_signature, identifier* dependencies, identifier* members, identifier* member_functions, abi abi, access access, bool is_packed, bool is_abstract, bool is_sequence, call_arg* initializers, expr? alignment, symbol? parent, identifier* kind_params)
     | Enum(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, enumtype enum_value_type, ttype type, symbol? parent)
     | Union(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, call_arg* initializers, symbol? parent)
+    -- A Local integer Variable of Default storage whose symbolic_value is not
+    -- constant and whose value is empty is initialized on every entry to its
+    -- procedure or BLOCK, before the declarations that depend on it
+    -- (ASRUtils::is_entry_initialized_local). The function_call_in_declaration
+    -- pass creates such locals to evaluate automatic array bounds exactly
+    -- once. The initializer references only dummy arguments, host or module
+    -- entities, parameters and other such locals (checked by asr_verify).
     | Variable(symbol_table parent_symtab, identifier name, identifier* dependencies, intent intent,
                expr? symbolic_value, expr? value, storage_type storage, ttype type, symbol? type_declaration,
                abi abi, access access, presence presence, bool value_attr, bool target_attr, bool contiguous_attr,
