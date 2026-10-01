@@ -1,0 +1,38 @@
+name: Exhaustive checks cleanup
+
+# GitHub creates a workflow run for every label added to or removed from a PR
+# and `on:` cannot filter by label name, so a run for an unrelated label is
+# unavoidable. Exhaustive-Checks-Trigger.yml already keeps such a run from
+# cancelling a running suite, but the run still publishes a skipped check, and
+# being the newest run of "Exhaustive checks" it sorts above the suite that is
+# actually doing the work. Deleting the run removes its check suite, leaving
+# exactly one "Exhaustive checks" entry on the PR: the real one.
+#
+# `workflow_run` runs are attached to the default branch rather than to the PR
+# head, so this cleanup never appears among the PR's own checks.
+on:
+  workflow_run:
+    workflows: ["Exhaustive checks"]
+    types: [completed]
+
+# Deleting a run needs `actions: write`; nothing here reads the repository.
+permissions:
+  actions: write
+
+jobs:
+  delete_noop_run:
+    name: Delete a run that did not start the suite
+    # A run whose gate was skipped started no job of the suite, so it carries no
+    # result worth keeping. Any run that did work concludes success, failure or
+    # cancelled instead and is left alone -- in particular a suite cancelled by
+    # a new commit keeps its logs.
+    if: ${{ github.event.workflow_run.conclusion == 'skipped' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete the run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID"
+          echo "deleted no-op run $RUN_ID"
