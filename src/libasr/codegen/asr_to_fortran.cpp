@@ -1357,9 +1357,8 @@ public:
             std::string import_name;
             append_import_name(import_name);
             if (src.size() + import_name.size() > 120) {
-                // A rename of two long names does not fit on a line; break
-                // it between tokens, where a continuation needs no leading
-                // ampersand.
+                // Long names do not fit on a line; break it between tokens,
+                // where a continuation needs no leading ampersand.
                 std::string cont = "&\n" + indent + std::string(2 * indent_spaces, ' ');
                 src += cont + x.m_name;
                 if (std::strcmp(x.m_name, x.m_original_name) != 0) {
