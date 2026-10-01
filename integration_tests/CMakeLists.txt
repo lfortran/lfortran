@@ -3574,6 +3574,7 @@ RUN(NAME bits_07 LABELS gfortran llvm)
 RUN(NAME cpu_time_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 # RUN(NAME cpu_time_02_wasm LABELS wasm)
 RUN(NAME system_clock_01 LABELS gfortran llvm)
+RUN(NAME secnds_01 LABELS gfortran llvm fortran) # secnds GNU extension
 RUN(NAME boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME boz_02 LABELS llvm llvm_wasm llvm_wasm_emcc) #remove gfortran label, as functionality is not supported by gfortran
 RUN(NAME boz_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

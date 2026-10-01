@@ -1880,6 +1880,7 @@ public:
         // Legacy F77 alias for command_argument_count (no args).
         {"iargc", IntrinsicSignature({}, 0, 0)},
         {"rand", IntrinsicSignature({"flag"}, 0, 1)},
+        {"secnds", IntrinsicSignature({"x"}, 1, 1)},
         {"this_image", IntrinsicSignature({}, 0, 0)},
         {"num_images", IntrinsicSignature({}, 0, 0)},
         {"ishftc", IntrinsicSignature({"i", "shift", "size"}, 2, 3)},

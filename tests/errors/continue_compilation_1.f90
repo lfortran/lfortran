@@ -2072,3 +2072,9 @@ contains
     subroutine inner()
     end subroutine
 end subroutine
+
+subroutine secnds_argument_errors()
+    implicit none
+    print *, secnds(0.0d0)  ! {Error} The argument of 'secnds' intrinsic must be a scalar real(4), found real(8)
+    print *, secnds(1)  ! {Error} The argument of 'secnds' intrinsic must be a scalar real(4), found integer(4)
+end subroutine

@@ -73,6 +73,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(CompilerVersion)
         INTRINSIC_NAME_CASE(CommandArgumentCount)
         INTRINSIC_NAME_CASE(Rand)
+        INTRINSIC_NAME_CASE(Secnds)
         INTRINSIC_NAME_CASE(ThisImage)
         INTRINSIC_NAME_CASE(NumImages)
         INTRINSIC_NAME_CASE(Spacing)
@@ -339,6 +340,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args, &CommandArgumentCount::create_CommandArgumentCount}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rand),
             {&Rand::instantiate_Rand, &Rand::verify_args, &Rand::create_Rand}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Secnds),
+            {&Secnds::instantiate_Secnds, &Secnds::verify_args, &Secnds::create_Secnds}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::ThisImage),
             {nullptr, &ThisImage::verify_args, &ThisImage::create_ThisImage}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::NumImages),
@@ -611,6 +614,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args, &CommandArgumentCount::create_CommandArgumentCount}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rand),
             {&Rand::instantiate_Rand, &Rand::verify_args, &Rand::create_Rand}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Secnds),
+            {&Secnds::instantiate_Secnds, &Secnds::verify_args, &Secnds::create_Secnds}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::ThisImage),
             {nullptr, &ThisImage::verify_args, &ThisImage::create_ThisImage}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::NumImages),
@@ -692,6 +697,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 // Legacy F77 alias for command_argument_count.
                 {"iargc", {&CommandArgumentCount::create_CommandArgumentCount, nullptr}},
                 {"rand", {&Rand::create_Rand, nullptr}},
+                {"secnds", {&Secnds::create_Secnds, nullptr}},
                 {"this_image", {&ThisImage::create_ThisImage, &ThisImage::eval_ThisImage}},
                 {"num_images", {&NumImages::create_NumImages, &NumImages::eval_NumImages}},
                 {"lcobound", {&LCoBound::create_LCoBound, &LCoBound::eval_LCoBound}},
