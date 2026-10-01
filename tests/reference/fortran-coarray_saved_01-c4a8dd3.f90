@@ -33,7 +33,7 @@ end subroutine mod_sub
 
 end module coarray_saved_mod
 
-type :: prif_coarray_handle
+type, bind(c) :: prif_coarray_handle
     type(c_ptr) :: info
 end type prif_coarray_handle
 

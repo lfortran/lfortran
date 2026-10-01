@@ -974,11 +974,17 @@ public:
         if (x.m_is_abstract) {
             r += ", abstract";
         }
+        if (x.m_abi == ASR::abiType::BindC) {
+            r += ", bind(c)";
+        }
         r += " :: ";
         r.append(x.m_name);
         handle_line_truncation(r, 2);
         r += "\n";
         inc_indent();
+        if (x.m_is_sequence) {
+            r += indent + "sequence\n";
+        }
         bool old_in_struct_member_declaration = in_struct_member_declaration;
         in_struct_member_declaration = true;
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
