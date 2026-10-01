@@ -11,16 +11,7 @@ on:
     branches:
       - main
 
-# GitHub dispatches a run for every label added or removed on a PR and `on:`
-# cannot filter by label name, so both the group and the gate below key on
-# `github.event.label.name` -- the label this event is about -- rather than on
-# the PR's whole label set, which stays true once the label is there.
-#
-# Group based on `Tests::Run-Exhaustive`, so that a run for some other label
-# cannot cancel an exhaustive suite that is already running. The group is
-# picked before any job's `if` is evaluated, so without the split such a run
-# would cancel the suite and only then skip its own job.
-#
+
 # 4 possibilities:
 # (label is null, label is Tests::Run-Exhaustive)
 # (0, 0) : a label event for some other label      --> FALSE
@@ -43,10 +34,6 @@ concurrency:
 
 jobs:
   exhaustive:
-    # The only gate on the suite. Because it sits on the job that calls the
-    # workflow, a run for an unrelated label publishes a single skipped check
-    # instead of one per job in the suite.
-    #
     # push                               -> run (every merge to main)
     # opened/reopened/synchronize        -> run when the PR carries the label
     # labeled with Tests::Run-Exhaustive -> run (the manual trigger)
