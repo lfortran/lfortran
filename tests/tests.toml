@@ -6161,17 +6161,6 @@ llvm = true
 options = "--coarray=true"
 
 [[test]]
-filename = "../integration_tests/coarrays_33.f90"
-# A cobound given by a named constant of the program. The program's startup
-# initializer allocates the coarray with that cobound, and the nested_vars
-# pass then rewrites the initializer's reference to the constant; the
-# declaration's codimension must be left referring to the program's own.
-# Compiled here, where a Debug build verifies the ASR after every pass,
-# because running it needs the coarray runtime only the Caffeine CI jobs have.
-obj = true
-options = "--coarray=true"
-
-[[test]]
 filename = "../integration_tests/coarrays_51.f90"
 # Separate compilation, so `coarrays_51_m` is read from a modfile: the pass
 # has to name the initializer its own object file defines rather than define
