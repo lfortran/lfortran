@@ -2337,3 +2337,20 @@ contains
         x = [1, 2, 3]  ! {Error} type mismatch (t[:] and integer[:])
     end subroutine
 end module
+
+! An INSTANTIATE only-list may name a generic spec, which must be one the
+! template defines. Naming one it does not define used to crash in
+! visit_Instantiate instead of being reported (#13583).
+module continue_compilation_templates_01_only_generic_spec
+    implicit none
+    template instantiate_only_generic_spec_t {t}
+        deferred type :: t
+    contains
+        subroutine instantiate_only_generic_spec_s(x)
+            type(t), intent(inout) :: x
+        end subroutine
+    end template
+    instantiate instantiate_only_generic_spec_t {integer}, only: operator(+)  ! {Error} operator(+) is not defined in template 'instantiate_only_generic_spec_t'
+    instantiate instantiate_only_generic_spec_t {real}, only: assignment(=)  ! {Error} assignment(=) is not defined in template 'instantiate_only_generic_spec_t'
+    instantiate instantiate_only_generic_spec_t {real}, only: operator(.plus.)  ! {Error} operator(.plus.) is not defined in template 'instantiate_only_generic_spec_t'
+end module
