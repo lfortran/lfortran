@@ -3049,6 +3049,25 @@ public:
             }
         } else {
             for (size_t i = 0; i < x.n_symbols; i++){
+                std::string remote_sym, local_sym, spec;
+                if (instantiation_generic_spec(x.m_symbols[i], remote_sym,
+                        local_sym, spec)) {
+                    // The specific procedures of a generic spec are recorded
+                    // in the substitutions by their names in the template.
+                    // A deferred procedure is replaced by its actual argument,
+                    // which has no body to instantiate.
+                    ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(
+                        temp->m_symtab->get_symbol(remote_sym));
+                    for (size_t j = 0; j < op->n_procs; j++) {
+                        ASR::symbol_t *s = op->m_procs[j];
+                        std::string s_name = ASRUtils::symbol_name(s);
+                        if (ASRUtils::is_template_arg(template_sym, s_name)) {
+                            continue;
+                        }
+                        symbols.push_back({symbol_subs[s_name], s});
+                    }
+                    continue;
+                }
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(to_lower(use_symbol->m_remote_sym));
                 std::string new_s_name = to_lower(use_symbol->m_remote_sym);
