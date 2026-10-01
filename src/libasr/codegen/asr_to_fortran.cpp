@@ -260,19 +260,6 @@ public:
         return ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sym));
     }
 
-    // The module whose scope `scope` is, or is nested in, or nullptr.
-    static ASR::Module_t* enclosing_module(SymbolTable *scope) {
-        for (; scope != nullptr; scope = scope->parent) {
-            if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
-                    && ASR::is_a<ASR::Module_t>(
-                        *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
-                return ASR::down_cast<ASR::Module_t>(
-                    ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
-            }
-        }
-        return nullptr;
-    }
-
     // Every symbol `unit` names, however deeply: variables, the types they
     // are declared with, procedures it calls. The symbol an import stands
     // for, not the import.
@@ -1116,7 +1103,7 @@ public:
         // What the procedure imports itself. A module's own procedure never
         // imports from that module, which it reaches by host association.
         if (!is_interface) {
-            ASR::Module_t *own = enclosing_module(x.m_symtab->parent);
+            ASR::Module_t *own = ASRUtils::get_sym_module0(&x.base);
             for (auto &item : x.m_symtab->get_scope()) {
                 if (!is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
                 ASR::ExternalSymbol_t *e = down_cast<ASR::ExternalSymbol_t>(item.second);
