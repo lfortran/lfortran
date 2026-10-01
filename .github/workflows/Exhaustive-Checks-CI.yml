@@ -1,27 +1,12 @@
-name: Exhaustive checks
+name: Exhaustive checks (called)
 
+# Called by Exhaustive-Checks-Trigger.yml, which owns the triggers, the
+# concurrency group and the `Tests::Run-Exhaustive` gate. The jobs below are
+# unconditional: if this workflow runs at all, the trigger has already decided
+# the suite should run. `github` is still the trigger's event, so github.ref /
+# github.sha / github.event.number behave exactly as before.
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - 'v*'
-  pull_request:
-    types: [opened, reopened, synchronize, labeled, unlabeled]
-    branches:
-      - main
-
-# For a PR #7488 against main branch, the `group` will become: CI-{{ 7488 || github.sha }}
-# which eventually evaluates to: CI-7488 and 'sha' isn't used.
-# NOTE: `||` acts as a logical OR and a default operator both,
-# see: https://docs.github.com/en/actions/learn-github-actions/expressions#operators.
-# When it isn't a PR against main but instead a commit pushed (or merged) to main, then `group` will
-# evaluate to `${{ github.sha }}` but "cancel-in-progress" evaluates to false, so the CI on main
-# will run in a new group `${{ github.sha }}`, but no previous CI will be cancelled on main
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
+  workflow_call:
 
 env:
   MACOSX_DEPLOYMENT_TARGET: 15.0
@@ -30,13 +15,8 @@ jobs:
   debug_outOfSource:
     name: Check Out-of-Source Debug build
     runs-on: ubuntu-latest
-    # Main and Tests::Run-Exhaustive PRs only. Hosts option-combination
-    # tests moved out of Quick checks (llvm -sc, --detect-leaks, C++
-    # compiler build).
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' &&
-           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # Hosts option-combination tests moved out of Quick checks
+    # (llvm -sc, --detect-leaks, C++ compiler build).
     steps:
       - uses: actions/checkout@v7
         with:
@@ -113,12 +93,9 @@ jobs:
   release:
     name: Check Release build
     runs-on: ubuntu-latest
-    # Main and Tests::Run-Exhaustive PRs only. Hosts --std=f23 and
-    # llvm_single_invocation, moved out of Quick checks. llvm / llvm -f
-    # here also cover the Release build (Quick checks builds Debug).
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # Hosts --std=f23 and llvm_single_invocation, moved out of Quick
+    # checks. llvm / llvm -f here also cover the Release build (Quick
+    # checks builds Debug).
     steps:
       - uses: actions/checkout@v7
         with:
@@ -227,10 +204,6 @@ jobs:
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     strategy:
       fail-fast: false
       matrix:
@@ -499,10 +472,7 @@ jobs:
     runs-on: ubuntu-latest
     # llvm_wasm / llvm_wasm_emcc need a Debug build with WITH_TARGET_WASM.
     # Kept separate from Test LLVM 19 so third-party codes use a Release
-    # compiler. Same PR/main gating as the other LLVM version jobs.
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # compiler.
     steps:
       - uses: actions/checkout@v7
         with:
@@ -606,10 +576,6 @@ jobs:
   upload_tarball:
     name: Upload Tarball
     runs-on: ubuntu-latest
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -641,10 +607,6 @@ jobs:
   test_without_llvm:
     name: Test without LLVM Backend
     runs-on: ubuntu-latest
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -665,10 +627,6 @@ jobs:
   test_mlir:
     name: Test MLIR backend
     runs-on: ubuntu-latest
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -721,10 +679,6 @@ jobs:
   upload_docs:
     name: Documentation
     runs-on: ubuntu-latest
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -775,10 +729,6 @@ jobs:
 
   build-and-push-image:
     runs-on: ubuntu-latest
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     permissions:
       contents: read
       packages: write
@@ -819,9 +769,6 @@ jobs:
   build_xlfortran_jupyterlite:
     name: Build xlfortran JupyterLite kernel and run tests
     runs-on: ubuntu-24.04
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     defaults:
       run:
         shell: bash -l {0}

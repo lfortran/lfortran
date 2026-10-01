@@ -1,0 +1,72 @@
+name: Exhaustive checks
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+    branches:
+      - main
+
+# GitHub dispatches a run for every label added or removed on a PR and `on:`
+# cannot filter by label name, so both the group and the gate below key on
+# `github.event.label.name` -- the label this event is about -- rather than on
+# the PR's whole label set, which stays true once the label is there.
+#
+# Group based on `Tests::Run-Exhaustive`, so that a run for some other label
+# cannot cancel an exhaustive suite that is already running. The group is
+# picked before any job's `if` is evaluated, so without the split such a run
+# would cancel the suite and only then skip its own job.
+#
+# 4 possibilities:
+# (label is null, label is Tests::Run-Exhaustive)
+# (0, 0) : a label event for some other label      --> FALSE
+# (0, 1) : a label event for Tests::Run-Exhaustive --> TRUE
+# (1, 0) : no label at all (push/synchronize/...)  --> TRUE
+# (1, 1) : not possible
+#
+# Only 2 groups -- i.e.
+# 1: Exhaustive checks-123true
+# 2: Exhaustive checks-123false
+#
+# push/synchronize keep group 1, so a new commit still supersedes a running
+# suite, and removing the label also keeps group 1, so it still stops one.
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{ github.event.number || github.sha }}${{
+    github.event.label.name == null
+    || github.event.label.name == 'Tests::Run-Exhaustive' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  exhaustive:
+    # The only gate on the suite. Because it sits on the job that calls the
+    # workflow, a run for an unrelated label publishes a single skipped check
+    # instead of one per job in the suite.
+    #
+    # push                               -> run (every merge to main)
+    # opened/reopened/synchronize        -> run when the PR carries the label
+    # labeled with Tests::Run-Exhaustive -> run (the manual trigger)
+    # any other labeled/unlabeled event  -> skip
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') &&
+           (github.event.action == 'reopened' ||
+            github.event.action == 'opened' ||
+            github.event.action == 'synchronize')) ||
+          (github.event.label.name == 'Tests::Run-Exhaustive' &&
+           github.event.action == 'labeled') }}
+    # A called workflow can only reduce the caller's permissions, so grant the
+    # union of what its jobs declare: 
+    #  - packages:write for build-and-push-image,
+    #  - pages:write + id-token:write for deploy_jupyterlite.
+    permissions:
+      contents: read
+      packages: write
+      pages: write
+      id-token: write
+    secrets: inherit # upload_docs needs SSH_PRIVATE_KEY_DOCS.
+    uses: ./.github/workflows/Exhaustive-Checks-CI.yml
