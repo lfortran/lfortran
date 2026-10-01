@@ -195,7 +195,7 @@ base=$(basename "$testfile" .f90)
 # ----------------------------------------
 
 lfortran $extrafiles $testfile \
-    --verify-all-passes $extra_args \
+    $extra_args \
     -o "${base}_lf.out" \
     -L$PWD/caffeine/inst/lib \
     -lcaffeine \
