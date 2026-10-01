@@ -4071,3 +4071,9 @@ semantic error: procedure 'pf' is referenced as a function, but its interface ha
      |
 3250 |         x = o%pf()  ! {Error} procedure 'pf' is referenced as a function, but its interface has no result
      |             ^^^^^^ 'pf' cannot be called as a function
+
+semantic error: Required argument `get_ptr` at position 2 is missing in procedure call
+    --> tests/errors/continue_compilation_1.f90:3273:20
+     |
+3273 |     call take_proc(x)
+     |                    ^ 
