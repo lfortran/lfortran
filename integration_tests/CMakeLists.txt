@@ -450,6 +450,8 @@ RUN(NAME use_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm fortran)
 RUN(NAME use_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm fortran)
 RUN(NAME use_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm)
 RUN(NAME use_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm)
+RUN(NAME use_05 LABELS gfortran llvm fortran)
+RUN(NAME use_06 LABELS gfortran llvm fortran)
 RUN(NAME symbol_table_jloop_01 LABELS gfortran llvm)
 
 RUN(NAME value_attribute_01 LABELS gfortran llvm)
@@ -2013,6 +2015,7 @@ RUN(NAME modules_72 LABELS gfortran llvm
 RUN(NAME modules_73 LABELS gfortran llvm EXTRAFILES modules_73_mod.f90)
 RUN(NAME module_func_generic_submodule LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME modules_74 LABELS gfortran llvm)
+RUN(NAME modules_75 LABELS gfortran llvm fortran)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
 
@@ -3697,6 +3700,7 @@ RUN(NAME template_instantiate_case_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_order_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_own_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_instantiate_only_op_01 LABELS llvm)
 RUN(NAME template_instantiate_scope_01 LABELS llvm)
 RUN(NAME template_instantiate_scope_02 LABELS llvm)
 RUN(NAME template_instantiate_scope_03 LABELS llvm)
@@ -3810,6 +3814,7 @@ RUN(NAME external_22 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_23 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_24 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_25 LABELS gfortran llvm NO_STD_F23 EXTRA_ARGS --std=f23)
+RUN(NAME external_26 LABELS gfortran llvm fortran EXTRAFILES external_26_procs.f90)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c)
 
@@ -5647,6 +5652,7 @@ RUN(NAME gpu_metal_375 FAIL NO_FAST LABELS metal cuda_cpu) # bounds checking rep
 RUN(NAME gpu_metal_359 FAIL NO_FAST LABELS metal cuda_cpu) # bounds checking reports a component that is not allocated without --realloc-lhs-arrays
 RUN(NAME gpu_metal_363 FAIL NO_FAST LABELS metal cuda_cpu) # bounds checking reports a component an `if` lets the loop write that is not allocated without --realloc-lhs-arrays
 RUN(NAME gpu_metal_364 FAIL NO_FAST NO_STD_F23 LABELS llvm metal cuda_cpu) # bounds checking reports a component the loop assigns an array to that is not allocated without --realloc-lhs-arrays; --std=f23 allocates it on assignment
+RUN(NAME gpu_metal_377 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_377_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME gpu_decline_01 LABELS gfortran llvm)

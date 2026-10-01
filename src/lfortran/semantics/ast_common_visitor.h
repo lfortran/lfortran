@@ -26566,6 +26566,86 @@ public:
         return "~~" + op;
     }
 
+    static std::string instantiation_intrinsic_op_str(AST::intrinsicopType op) {
+        switch (op) {
+            case AST::intrinsicopType::AND: return ".and.";
+            case AST::intrinsicopType::OR: return ".or.";
+            case AST::intrinsicopType::XOR: return ".xor.";
+            case AST::intrinsicopType::EQV: return ".eqv.";
+            case AST::intrinsicopType::NEQV: return ".neqv.";
+            case AST::intrinsicopType::PLUS: return "+";
+            case AST::intrinsicopType::MINUS: return "-";
+            case AST::intrinsicopType::STAR: return "*";
+            case AST::intrinsicopType::DIV: return "/";
+            case AST::intrinsicopType::POW: return "**";
+            case AST::intrinsicopType::NOT: return ".not.";
+            case AST::intrinsicopType::EQ: return "==";
+            case AST::intrinsicopType::GT: return ">";
+            case AST::intrinsicopType::GTE: return ">=";
+            case AST::intrinsicopType::LT: return "<";
+            case AST::intrinsicopType::LTE: return "<=";
+            case AST::intrinsicopType::NOTEQ: return "/=";
+            case AST::intrinsicopType::CONCAT: return "//";
+        }
+        return "";
+    }
+
+    // An item of the only-list of an INSTANTIATE statement names an entity
+    // or a generic spec (operator, assignment or defined input/output). For
+    // a generic spec, return true and set the name of the generic in the
+    // template (`remote_sym`), its name in the instantiating scope
+    // (`local_sym`) and its spelling for diagnostics (`spec`).
+    bool instantiation_generic_spec(AST::use_symbol_t *item,
+            std::string &remote_sym, std::string &local_sym, std::string &spec) {
+        switch (item->type) {
+            case AST::use_symbolType::UseSymbol: {
+                return false;
+            }
+            case AST::use_symbolType::UseAssignment: {
+                remote_sym = "~assign";
+                spec = "assignment(=)";
+                break;
+            }
+            case AST::use_symbolType::IntrinsicOperator: {
+                AST::intrinsicopType op =
+                    AST::down_cast<AST::IntrinsicOperator_t>(item)->m_op;
+                remote_sym = intrinsic2str[op];
+                spec = "operator(" + instantiation_intrinsic_op_str(op) + ")";
+                break;
+            }
+            case AST::use_symbolType::DefinedOperator: {
+                std::string op_name = to_lower(
+                    AST::down_cast<AST::DefinedOperator_t>(item)->m_opName);
+                remote_sym = update_custom_op_name(op_name);
+                spec = "operator(." + op_name + ".)";
+                break;
+            }
+            case AST::use_symbolType::RenameOperator: {
+                AST::RenameOperator_t *rename =
+                    AST::down_cast<AST::RenameOperator_t>(item);
+                std::string op_name = to_lower(rename->m_use_defop);
+                remote_sym = update_custom_op_name(op_name);
+                local_sym = update_custom_op_name(
+                    to_lower(rename->m_local_defop));
+                spec = "operator(." + op_name + ".)";
+                return true;
+            }
+            case AST::use_symbolType::UseWrite:
+            case AST::use_symbolType::UseRead: {
+                bool is_write = AST::is_a<AST::UseWrite_t>(*item);
+                std::string id = to_lower(is_write
+                    ? AST::down_cast<AST::UseWrite_t>(item)->m_id
+                    : AST::down_cast<AST::UseRead_t>(item)->m_id);
+                std::string kind = is_write ? "write" : "read";
+                remote_sym = "~" + kind + "_" + id;
+                spec = kind + "(" + id + ")";
+                break;
+            }
+        }
+        local_sym = remote_sym;
+        return true;
+    }
+
     // Build a wrapper function in `scope` that calls the intrinsic
     // function `arg` (e.g. min, max) with the signature of the deferred
     // procedure `f`, so that the intrinsic can be passed as a template
