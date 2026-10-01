@@ -520,7 +520,7 @@ jobs:
       - name: Test coarray runtime with Caffeine
         shell: bash -e -l {0}
         if: ${{ matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos') }}
-        run: ci/test_caffeine.sh
+        run: ci/test_caffeine.sh --verify-all-passes
 
   test_llvm_wasm:
     name: Test LLVM 19 WASM (ubuntu-latest)
