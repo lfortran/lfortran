@@ -6185,6 +6185,20 @@ filename = "../integration_tests/global_init_07.f90"
 # generated code has at that point.
 pass = "global_init"
 
+# A pass that rejects the program: `--show-asr` reports its error and prints
+# no ASR.
+[[test]]
+filename = "show_pass_error_01.f90"
+pass = "parallel_canonicalize,parallel_dispatch"
+options = "--gpu=metal"
+
+# The same with `--show-fortran`, which prints no Fortran.
+[[test]]
+filename = "show_pass_error_02.f90"
+fortran = true
+pass = "parallel_canonicalize,parallel_dispatch"
+options = "--gpu=metal"
+
 [[test]]
 filename = "../integration_tests/string_122.f90"
 asr = true
