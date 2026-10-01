@@ -1,29 +1,20 @@
 program gpu_metal_377
-! Reuse of inner do-loop variable across multiple do concurrent constructs.
-! Verifies that inner do-loop variables are treated as thread-local scalars
-! rather than liveout buffers when referenced in later loops.
+! Test: do concurrent calling a submodule function whose implementation
+! uses a module that has a module variable and a module procedure. With
+! --separate-compilation the GPU offload pass loads that module to resolve
+! the submodule's dependencies; it must only declare the module's symbols,
+! so that they are not defined again next to the module's own object file.
+use gpu_metal_377_m, only : compute
 implicit none
-integer :: i, j
-real :: a(10, 2), b(10, 2)
+integer :: i, y(4)
 
-do concurrent (i = 1:10)
-    do j = 1, 2
-        a(i, j) = real(i + j)
-    end do
+do concurrent (i = 1:4)
+  y(i) = compute(i)
 end do
 
-do concurrent (i = 1:10)
-    do j = 1, 2
-        b(i, j) = a(i, j) * 2.0
-    end do
-end do
-
-do i = 1, 10
-    do j = 1, 2
-        if (abs(a(i, j) - real(i + j)) > 1.0e-5) error stop 1
-        if (abs(b(i, j) - real(i + j) * 2.0) > 1.0e-5) error stop 2
-    end do
-end do
-
-print *, "PASSED"
+print *, y
+if (y(1) /= 11) error stop
+if (y(2) /= 12) error stop
+if (y(3) /= 13) error stop
+if (y(4) /= 14) error stop
 end program
