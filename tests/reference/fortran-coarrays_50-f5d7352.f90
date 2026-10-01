@@ -92,6 +92,7 @@ call __module_prif_prif_stop(.false.)
 contains
 
 subroutine __lfortran_global_init_coarrays_50()
+    use coarrays_50_m, only: __lfortran_global_init_coarrays_50_m
     logical(4), save :: __lfortran_global_init_done = .false.
     integer(4) :: stat
     if (.not. __lfortran_global_init_done) then
