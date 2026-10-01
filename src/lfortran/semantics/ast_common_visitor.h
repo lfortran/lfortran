@@ -5573,6 +5573,16 @@ public:
             bool is_subroutine = false;
             external_procedures.push_back(sym);
             ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
+            ASR::symbol_t *local_sym = current_scope->get_symbol(sym);
+            bool is_optional_dummy = (local_sym &&
+                ASR::is_a<ASR::Variable_t>(*local_sym) &&
+                ASR::down_cast<ASR::Variable_t>(local_sym)->m_presence ==
+                    ASR::presenceType::Optional) ||
+                (!local_sym && assgnd_presence.count(sym) &&
+                assgnd_presence[sym] == ASR::presenceType::Optional &&
+                std::find(current_procedure_args.begin(),
+                    current_procedure_args.end(), sym)
+                    != current_procedure_args.end());
             // Respect the default accessibility of the enclosing scope (e.g. a
             // module `private` statement) as well as any explicit access already
             // assigned to this name. An external procedure declared in a
@@ -5697,6 +5707,10 @@ public:
                 false, false, false);
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
             current_scope = parent_scope;
+            if (is_optional_dummy) {
+                make_optional_procedure_dummy(sym,
+                    ASR::down_cast2<ASR::Function_t>(tmp), loc);
+            }
         } else {
             diag.add(Diagnostic(
                 "function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`",
@@ -9055,7 +9069,22 @@ public:
                     is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
                     (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
                 if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);
-                if ( current_scope->get_symbol( sym ) != nullptr && ( is_external && !is_attr_external ) ) {
+                ASR::symbol_t *ext_sym = current_scope->get_symbol(sym);
+                if ( ext_sym != nullptr && is_external && !is_attr_external &&
+                        ASR::is_a<ASR::Variable_t>(*ext_sym) &&
+                        ASR::down_cast<ASR::Variable_t>(ext_sym)->m_presence ==
+                            ASR::presenceType::Optional ) {
+                    /*
+                        return type of an optional external dummy procedure,
+                        already turned into an optional procedure variable
+                        external :: x
+                        optional :: x
+                        integer :: x -> we are handling this case
+                    */
+                    ASR::down_cast<ASR::FunctionType_t>(
+                        ASR::down_cast<ASR::Variable_t>(ext_sym)->m_type)
+                        ->m_return_var_type = type;
+                } else if ( ext_sym != nullptr && ( is_external && !is_attr_external ) ) {
                     /*
                         return type of external function is specified
                         external :: x
@@ -9087,6 +9116,18 @@ public:
                         ASRUtils::EXPR2VAR(f->m_return_var)->m_type = type;
                         ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
                         ft->m_return_var_type = type;
+                    }
+                }
+                // A Function symbol cannot carry presence, so an optional
+                // external dummy procedure becomes an optional procedure
+                // variable, e.g. `integer, external, optional :: p`.
+                if (is_external && is_argument &&
+                        s_presence == ASR::presenceType::Optional) {
+                    ASR::symbol_t *proc_sym = current_scope->get_symbol(sym);
+                    if (proc_sym && ASR::is_a<ASR::Function_t>(*proc_sym)) {
+                        make_optional_procedure_dummy(sym,
+                            ASR::down_cast<ASR::Function_t>(proc_sym),
+                            x.m_syms[i].loc);
                     }
                 }
                 current_variable_type_ = type;
