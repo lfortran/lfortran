@@ -149,6 +149,19 @@ public:
         }
     }
 
+    // The name a call spells for procedure `sym`: an import's local name,
+    // which is what the scope of the call declares (`use m, only: g => f`
+    // calls `g`), and the procedure's own name otherwise.
+    std::string call_name(ASR::symbol_t *sym) {
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+            std::string local = ASR::down_cast<ASR::ExternalSymbol_t>(sym)->m_name;
+            // An internal helper is not imported under its own name; see
+            // `visit_ExternalSymbol`.
+            if (local.find('@') == std::string::npos) return local;
+        }
+        return ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sym));
+    }
+
     template <typename T>
     void visit_body(const T &x, std::string &r, bool apply_indent=true) {
         if (apply_indent) {
@@ -390,11 +403,18 @@ public:
         }
 
         // Main program
+        bool has_program = false;
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
                 r += src;
+                has_program = true;
             }
+        }
+        // A program contains the external procedures of its file; a file
+        // without one has them on their own.
+        if (!has_program) {
+            r += tu_functions;
         }
         src = r;
     }
@@ -713,6 +733,18 @@ public:
         r += "\n";
 
         inc_indent();
+        // What the procedure imports itself. A module's own procedure never
+        // imports from that module, which it reaches by host association.
+        if (!is_interface) {
+            ASR::Module_t *own = ASRUtils::get_sym_module0(&x.base);
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (!is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
+                ASR::ExternalSymbol_t *e = down_cast<ASR::ExternalSymbol_t>(item.second);
+                if (own && strcmp(e->m_module_name, own->m_name) == 0) continue;
+                visit_symbol(*item.second);
+                r += src;
+            }
+        }
         {
             std::string variable_declaration;
             std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
@@ -910,7 +942,19 @@ public:
             src += "use ";
             src.append(x.m_module_name);
             src += ", only: ";
-            append_import_name(src);
+            std::string import_name;
+            append_import_name(import_name);
+            if (src.size() + import_name.size() > 120) {
+                // Long names do not fit on a line; break it between tokens,
+                // where a continuation needs no leading ampersand.
+                std::string cont = "&\n" + indent + std::string(2 * indent_spaces, ' ');
+                src += cont + x.m_name;
+                if (std::strcmp(x.m_name, x.m_original_name) != 0) {
+                    src += " => " + cont + std::string(x.m_original_name);
+                }
+            } else {
+                src += import_name;
+            }
             src += "\n";
         }
     }
@@ -1871,8 +1915,10 @@ public:
         if (x.m_dt) {
             visit_expr(*x.m_dt);
             r += src + "%";
+            r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
+        } else {
+            r += call_name(x.m_name);
         }
-        r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         r += "(";
         bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
         size_t start_idx = is_method ? 1 : 0;
@@ -2279,8 +2325,10 @@ public:
             if (x.m_dt) {
                 visit_expr(*x.m_dt);
                 r += src + "%";
+                r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
+            } else {
+                r += call_name(x.m_name);
             }
-            r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         }
         r += "(";
         bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
