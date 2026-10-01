@@ -6206,3 +6206,17 @@ filename = "../integration_tests/module_teardown_02.f90"
 # owns nothing registering one again.
 llvm = true
 options = "--detect-leaks"
+
+# A pass that rejects the program: `--show-asr` reports its error and prints
+# no ASR.
+[[test]]
+filename = "show_pass_error_01.f90"
+pass = "parallel_canonicalize,parallel_dispatch"
+options = "--gpu=metal"
+
+# The same with `--show-fortran`, which prints no Fortran.
+[[test]]
+filename = "show_pass_error_02.f90"
+fortran = true
+pass = "parallel_canonicalize,parallel_dispatch"
+options = "--gpu=metal"

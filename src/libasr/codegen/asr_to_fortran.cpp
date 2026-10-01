@@ -765,9 +765,8 @@ public:
                 has_program = true;
             }
         }
-        // A program contains the external procedures of its file, which is
-        // what it has to see of them; a file without one has them on their
-        // own.
+        // A program contains the external procedures of its file; a file
+        // without one has them on their own.
         if (!has_program) {
             r += tu_functions;
         }
