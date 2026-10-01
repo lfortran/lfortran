@@ -1,0 +1,39 @@
+name: Exhaustive checks cleanup
+
+# Exhaustive checks runs on every pull request but its jobs are gated on the
+# `Tests::Run-Exhaustive` label, so a pull request without that label collects a
+# run whose every job is skipped. GitHub publishes a check for each of those
+# skipped jobs, and dispatches a further such run for every label added or
+# removed, because `on:` cannot filter by label name. The result is a pull
+# request carrying a dozen or more "Exhaustive checks" entries that report
+# nothing.
+#
+# A run whose conclusion is `skipped` started no job and so holds no result.
+# Deleting it removes its check suite and those entries with it. Any run that
+# did work concludes success, failure or cancelled instead and is left alone, so
+# a suite cancelled by a new commit keeps its logs.
+#
+# `workflow_run` runs are attached to the default branch rather than to the pull
+# request head, so this workflow never appears among a pull request's checks.
+on:
+  workflow_run:
+    workflows: ["Exhaustive checks"]
+    types: [completed]
+
+# Deleting a run needs `actions: write`; nothing here reads the repository.
+permissions:
+  actions: write
+
+jobs:
+  delete_skipped_run:
+    name: Delete a run whose jobs were all skipped
+    if: ${{ github.event.workflow_run.conclusion == 'skipped' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete the run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID"
+          echo "deleted skipped run $RUN_ID"
