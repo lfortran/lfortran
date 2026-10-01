@@ -726,6 +726,18 @@ public:
         r += "\n";
 
         inc_indent();
+        // What the procedure imports itself. A module's own procedure never
+        // imports from that module, which it reaches by host association.
+        if (!is_interface) {
+            ASR::Module_t *own = ASRUtils::get_sym_module0(&x.base);
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (!is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
+                ASR::ExternalSymbol_t *e = down_cast<ASR::ExternalSymbol_t>(item.second);
+                if (own && strcmp(e->m_module_name, own->m_name) == 0) continue;
+                visit_symbol(*item.second);
+                r += src;
+            }
+        }
         {
             std::string variable_declaration;
             std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
