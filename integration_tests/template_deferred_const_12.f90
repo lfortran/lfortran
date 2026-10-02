@@ -1,6 +1,6 @@
-! A named constant of a template initialized with a mathematical intrinsic
-! (`sin`, `cos`, `exp`, `log`, ...) of a deferred constant is evaluated when
-! the template is instantiated (#13476).
+! A named constant of a template initialized with an intrinsic (`sin`, `cos`,
+! `exp`, `log`, `ishft`, ...) of a deferred constant is evaluated when the
+! template is instantiated (#13476).
 
 module template_deferred_const_12_m
     implicit none
@@ -29,6 +29,11 @@ module template_deferred_const_12_m
             integer :: a(k)
             f_size = size(a)
         end function
+
+        integer function f_ishft()
+            integer, parameter :: k = ishft(n, 1) + 1
+            f_ishft = k
+        end function
     end template
 end module
 
@@ -36,7 +41,7 @@ program template_deferred_const_12
     use template_deferred_const_12_m
     implicit none
     instantiate t {3}, only: f_sin3 => f_sin, f_sum3 => f_sum, &
-        f_exp_log3 => f_exp_log, f_size3 => f_size
+        f_exp_log3 => f_exp_log, f_size3 => f_size, f_ishft3 => f_ishft
     real(8), parameter :: y = 3.0d0
 
     if (abs(f_sin3() - sin(3.0)) > 1e-6) error stop 1
@@ -45,5 +50,6 @@ program template_deferred_const_12
     if (abs(f_exp_log3() - (exp(3.0) + log(3.0) + log10(3.0))) > 1e-5) &
         error stop 3
     if (f_size3() /= 3) error stop 4
-    print *, f_sin3(), f_sum3(), f_exp_log3(), f_size3()
+    if (f_ishft3() /= 7) error stop 5
+    print *, f_sin3(), f_sum3(), f_exp_log3(), f_size3(), f_ishft3()
 end program
