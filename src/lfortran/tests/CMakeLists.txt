@@ -105,6 +105,26 @@ if (XEUS_LFORTRAN_WASM_BUILD)
 endif()
 add_test(test_lfortran ${PROJECT_BINARY_DIR}/test_lfortran)
 
+# This runs a native compiler whose C backend invokes gcc directly.
+if (NOT WIN32 AND NOT EMSCRIPTEN AND NOT CMAKE_CROSSCOMPILING)
+    find_program(LFORTRAN_RUNTIME_HEADER_TEST_PYTHON NAMES python python3)
+    find_program(LFORTRAN_RUNTIME_HEADER_TEST_GCC NAMES gcc)
+    if (LFORTRAN_RUNTIME_HEADER_TEST_PYTHON AND LFORTRAN_RUNTIME_HEADER_TEST_GCC)
+        add_test(
+            NAME test_runtime_header_layout
+            COMMAND ${LFORTRAN_RUNTIME_HEADER_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/tests/runtime_header_layout.py
+                --lfortran $<TARGET_FILE:lfortran>
+                --source-runtime-dir ${CMAKE_SOURCE_DIR}/src/libasr/runtime
+                --fixture ${CMAKE_SOURCE_DIR}/integration_tests/expr_02.f90
+                --work-dir ${CMAKE_CURRENT_BINARY_DIR}
+        )
+        set_tests_properties(test_runtime_header_layout PROPERTIES TIMEOUT 120)
+    else()
+        message(WARNING "runtime header layout test requires Python and gcc")
+    endif()
+endif()
+
 # These tests drive the lfortran executable. This directory is configured
 # before src/bin, so `if (TARGET lfortran)` is not usable yet; mirror the
 # condition under which src/bin creates the target instead.
