@@ -3739,6 +3739,7 @@ RUN(NAME template_procedure_dummy_01 LABELS llvm)
 RUN(NAME template_contains_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_contains_order_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_requirement_abstract_interface_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_local_param_dim_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
