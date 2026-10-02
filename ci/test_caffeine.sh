@@ -211,7 +211,7 @@ if [[ " $extrafiles " == *".c "* ]]; then
         if [[ "$f" == *.c ]]; then
             ${CC:-cc} $CPPFLAGS -c "$f" -o "$o"
         else
-            lfortran -c $extra_args "$f" -o "$o"
+            lfortran "$@" -c $extra_args "$f" -o "$o"
         fi
         objects="$objects $o"
     done
@@ -222,7 +222,7 @@ if [[ " $extrafiles " == *".c "* ]]; then
         -lgasnet-smp-seq
     rm -f $objects
 else
-lfortran $extrafiles $testfile \
+lfortran "$@" $extrafiles $testfile \
     $extra_args \
     -o "${base}_lf.out" \
     -L"$PWD/caffeine/inst/lib" \

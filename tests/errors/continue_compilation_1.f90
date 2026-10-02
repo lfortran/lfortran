@@ -2072,3 +2072,12 @@ contains
     subroutine inner()
     end subroutine
 end subroutine
+
+module derived_type_nonconst_bound_in_continue_compilation_1_m
+    implicit none
+    integer :: dtncb_m = 3
+    type :: dtncb_t
+        ! `dtncb_m` is not a named constant, so `dtncb_m*2` is not constant
+        integer :: b(dtncb_m*2)  ! {Error} Explicit shaped array with nonconstant bounds
+    end type
+end module
