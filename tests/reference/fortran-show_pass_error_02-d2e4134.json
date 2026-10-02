@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-show_pass_error_02-d2e4134",
+    "cmd": "lfortran --pass=parallel_canonicalize,parallel_dispatch --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --gpu=metal",
+    "infile": "tests/show_pass_error_02.f90",
+    "infile_hash": "64dae682984d08ede5104e48f2790dba8e3d3ae9761778f30bdf844e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "fortran-show_pass_error_02-d2e4134.stderr",
+    "stderr_hash": "ebcf2510b8f8a9dbe5ec6430862fd5f9d0dadb3caaf49c22b89410ad",
+    "returncode": 1
+}
