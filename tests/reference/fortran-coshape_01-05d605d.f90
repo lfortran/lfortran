@@ -1,4 +1,4 @@
-type :: prif_coarray_handle
+type, bind(c) :: prif_coarray_handle
     type(c_ptr) :: info
 end type prif_coarray_handle
 
@@ -28,9 +28,8 @@ subroutine __lfortran_global_init_coshape_01()
 end subroutine __lfortran_global_init_coshape_01
 
 interface
-    subroutine __module_prif_prif_allocate_coarray(lcobounds, ucobounds, size_in_bytes, final_proc,&
-        &
-         coarray_handle, allocated_memory, stat, errmsg, errmsg_alloc)
+    subroutine __module_prif_prif_allocate_coarray(lcobounds, ucobounds, size_in_bytes, final_proc, coarray_handle,&
+         allocated_memory, stat, errmsg, errmsg_alloc)
         type(c_ptr), intent(out) :: allocated_memory
         type(prif_coarray_handle), intent(out) :: coarray_handle
         character(len=*, kind=1), intent(inout), optional :: errmsg

@@ -868,6 +868,18 @@ semantic error: templated procedure 'actual' cannot be used as a procedure argum
 1966 |         instantiate action{op=actual}, only: rejected_subroutine => apply ! {Error} templated procedure 'actual' cannot be used as a procedure argument
      |                               ^^^^^^ 
 
+semantic error: Variable `x` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value_contains` is BIND(C)
+    --> tests/errors/continue_compilation_1.f90:2068:42
+     |
+2068 | subroutine bindc_optional_value_contains(x) bind(c)  ! {Error} Variable `x` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value_contains` is BIND(C)
+     |                                          ^ 
+
+semantic error: Explicit shaped array with nonconstant bounds
+    --> tests/errors/continue_compilation_1.f90:2081:22
+     |
+2081 |         integer :: b(dtncb_m*2)  ! {Error} Explicit shaped array with nonconstant bounds
+     |                      ^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -3016,3 +3028,15 @@ semantic error: `exit` statements cannot leave a `do concurrent` loop
      |
 2018 |             if (i == 2) exit  ! {Error} `exit` statements cannot leave a `do concurrent` loop
      |                         ^^^^ 
+
+semantic error: Arguments to max0 must be of real, integer or character type
+    --> tests/errors/continue_compilation_1.f90:2061:21
+     |
+2061 |     print *, iita_g{max, logical}(.true., .false.)  ! {Error} Arguments to max0 must be of real, integer or character type
+     |                     ^^^ 
+
+semantic error: Unapplicable types for intrinsic function max
+    --> tests/errors/continue_compilation_1.f90:2062:21
+     |
+2062 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
+     |                     ^^^ 

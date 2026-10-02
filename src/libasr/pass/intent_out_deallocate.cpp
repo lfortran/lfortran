@@ -735,6 +735,41 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
 public:
     IntentOutDeallocateVisitor(Allocator& al_) : al(al_) {}
 
+    // What an intent(out) dummy of derived type gets on entry, less the
+    // finalization; see initialize_function_result_on_entry.
+    void emit_function_result_entry_stmts(ASR::Function_t &fn,
+            ASR::expr_t *result, Vec<ASR::stmt_t*> &out_stmts) {
+        ASR::Variable_t* result_var = ASRUtils::EXPR2VAR(result);
+        ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(
+            result_var->m_type_declaration);
+        LCOMPILERS_ASSERT(decl_sym != nullptr &&
+            ASR::is_a<ASR::Struct_t>(*decl_sym));
+        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(decl_sym);
+        Location loc = result_var->base.base.loc;
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(
+            ASR::make_Logical_t(al, loc, 4));
+        emit_struct_default_init_stmts(result, struct_type, fn.m_symtab, loc,
+            out_stmts);
+        emit_struct_cleanup_stmts(result, struct_type, fn.m_symtab, loc,
+            logical_type, out_stmts);
+    }
+
+    // See finalize_entity.
+    void emit_entity_finalization(ASR::expr_t *entity, SymbolTable *scope,
+            Vec<ASR::stmt_t*> &out_stmts) {
+        ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(entity));
+        LCOMPILERS_ASSERT(decl_sym != nullptr &&
+            ASR::is_a<ASR::Struct_t>(*decl_sym));
+        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(decl_sym);
+        const Location &loc = entity->base.loc;
+        if (struct_hierarchy_has_finalizer(struct_type)) {
+            emit_final_calls(entity, struct_type, scope, loc, out_stmts);
+        }
+        emit_struct_component_finalize_stmts(entity, struct_type, scope, loc,
+            out_stmts);
+    }
+
     void visit_Function(const ASR::Function_t &x) {
         ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(&x);
         if (func_type->m_abi == ASR::abiType::ExternalUndefined) {
@@ -973,6 +1008,28 @@ void pass_intent_out_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
 
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
+}
+
+void finalize_entity(Allocator &al, ASR::expr_t *entity, SymbolTable *scope,
+                     Vec<ASR::stmt_t*> &out) {
+    IntentOutDeallocateVisitor iod(al);
+    iod.emit_entity_finalization(entity, scope, out);
+}
+
+void initialize_function_result_on_entry(Allocator &al, ASR::Function_t &fn,
+                                         ASR::expr_t *result) {
+    IntentOutDeallocateVisitor iod(al);
+    Vec<ASR::stmt_t*> body;
+    body.reserve(al, fn.n_body + 1);
+    iod.emit_function_result_entry_stmts(fn, result, body);
+    if (body.size() == 0) {
+        return;
+    }
+    for (size_t i = 0; i < fn.n_body; i++) {
+        body.push_back(al, fn.m_body[i]);
+    }
+    fn.m_body = body.p;
+    fn.n_body = body.size();
 }
 
 

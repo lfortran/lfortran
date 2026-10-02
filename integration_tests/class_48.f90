@@ -53,7 +53,7 @@ contains
       integer, intent(in) :: data
 
       self%scalar_data = data
-      allocate(self%array_data(4))  ! initialize to zeroes
+      allocate(self%array_data(4), source=0)
    end function
 
    function Series_nested_scalar_int(data) result(self)

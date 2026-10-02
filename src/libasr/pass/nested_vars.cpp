@@ -208,6 +208,10 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if ( ASR::is_a<ASR::Variable_t>(*item.second) ) {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if ( ASRUtils::is_entry_initialized_local(*v) ) {
+                    // E.g. an automatic array bound that uses a host variable.
+                    visit_expr(*v->m_symbolic_value);
+                }
                 if ( ASRUtils::is_array(v->m_type) ) {
                     ASR::dimension_t* m_dims;
                     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, m_dims);
@@ -312,10 +316,27 @@ public:
                 // from the nested procedure.
                 if ( current_scope && par_func_sym &&
                     !is_sym_in_scope_chain(v->m_parent_symtab, current_scope)) {
-                    nesting_map[par_func_sym].insert(x.m_v);
+                    nesting_map[get_declaring_procedure(v)].insert(x.m_v);
                 }
             }
         }
+    }
+
+    // The procedure (or program) that declares `v`. It owns the context
+    // for `v` and synchronizes it around its calls. Usually this is the
+    // parent of the current procedure, but a procedure nested more than
+    // one level deep (e.g. a template instantiated inside an internal
+    // procedure) can reference a variable of a more distant ancestor.
+    ASR::symbol_t* get_declaring_procedure(ASR::Variable_t* v) {
+        SymbolTable* host_scope = get_host_scope(v->m_parent_symtab);
+        if (host_scope->asr_owner != nullptr
+                && ASR::is_a<ASR::symbol_t>(*host_scope->asr_owner)) {
+            ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(host_scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner) || ASR::is_a<ASR::Program_t>(*owner)) {
+                return owner;
+            }
+        }
+        return par_func_sym;
     }
 
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
@@ -476,6 +497,9 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
     std::map<ASR::symbol_t*, ASR::symbol_t*> func_to_nested_module;
     std::map<std::pair<ASR::symbol_t*, ASR::symbol_t*>, ASR::symbol_t*> nested_namelists;
     std::map<ASR::symbol_t*, ASR::symbol_t*> assumed_length_ctx_var_len;
+    // A derived type declared in a program and moved into a context module
+    // -> its ExternalSymbol left in the program
+    std::map<ASR::symbol_t*, ASR::symbol_t*> moved_program_structs;
 
     ReplaceNestedVisitor(Allocator& al_,
         std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &n_map) : al(al_),
@@ -643,13 +667,24 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                 m_derived_type_or_class_type = ASR::down_cast<ASR::symbol_t>(fn);
                                 current_scope->add_symbol(fn_name, m_derived_type_or_class_type);
                             } else {
+                                // A module cannot refer into a program, so
+                                // move the program's type into the context
+                                // module and import it back into the program
+                                // under its own name.
+                                std::string struct_name = ASRUtils::symbol_name(
+                                    derived_type_or_class_type);
+                                SymbolTable* program_scope = ASRUtils::symbol_parent_symtab(
+                                    derived_type_or_class_type);
                                 ASRUtils::SymbolDuplicator sd(al);
                                 sd.duplicate_symbol(derived_type_or_class_type, current_scope);
-                                ASR::down_cast<ASR::Program_t>(
-                                    ASRUtils::get_asr_owner(&var->base))->m_symtab->erase_symbol(
-                                        ASRUtils::symbol_name(derived_type_or_class_type));
+                                program_scope->erase_symbol(struct_name);
                                 m_derived_type_or_class_type = current_scope->get_symbol(
-                                    ASRUtils::symbol_name(derived_type_or_class_type));
+                                    struct_name);
+                                moved_program_structs[derived_type_or_class_type] =
+                                    make_external_symbol(al, program_scope,
+                                        m_derived_type_or_class_type, struct_name,
+                                        module_name, struct_name,
+                                        ASR::accessType::Public);
                             }
                         }
                         if (ASR::is_a<ASR::StructType_t>(*var_type_)) {
@@ -1743,6 +1778,125 @@ public:
     }
 };
 
+/*
+A derived type declared in a program and used by a contained procedure is
+moved into the context module, and the program imports it back with an
+ExternalSymbol. This visitor rewrites every remaining reference to the moved
+(and now erased) type or to its components, so that each resolves in its own
+scope: variable declarations of contained procedures, structure constructors
+and constants, type guards and casts, allocation type specs and component
+accesses.
+*/
+class ReplaceMovedProgramStructs:
+    public ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs> {
+private:
+    Allocator &al;
+    // moved type -> its copy in the context module
+    std::map<ASR::symbol_t*, ASR::symbol_t*> moved;
+
+public:
+    ReplaceMovedProgramStructs(Allocator &al_,
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &moved_program_structs)
+            : al(al_) {
+        for (auto &it: moved_program_structs) {
+            moved[it.first] = ASRUtils::symbol_get_past_external(it.second);
+        }
+    }
+
+    // The copy of a moved type, as seen from `scope`
+    ASR::symbol_t *replace_type(ASR::symbol_t *sym, SymbolTable *scope) {
+        if (sym == nullptr) return sym;
+        auto it = moved.find(sym);
+        if (it == moved.end()) return sym;
+        ASR::symbol_t *new_struct = it->second;
+        std::string name = ASRUtils::symbol_name(new_struct);
+        ASR::symbol_t *visible = scope->resolve_symbol(name);
+        if (visible != nullptr &&
+                ASRUtils::symbol_get_past_external(visible) == new_struct) {
+            return visible;
+        }
+        std::string unique_name = name;
+        if (visible != nullptr) {
+            unique_name = scope->get_unique_name(name, false);
+        }
+        return make_external_symbol(al, scope, new_struct, unique_name,
+            ASRUtils::symbol_name(ASRUtils::get_asr_owner(new_struct)), name,
+            ASR::accessType::Public);
+    }
+
+    // A component of a moved type -> the same component of its copy
+    ASR::symbol_t *replace_component(ASR::symbol_t *sym) {
+        ASR::asr_t *owner = ASRUtils::symbol_parent_symtab(sym)->asr_owner;
+        if (owner == nullptr || !ASR::is_a<ASR::symbol_t>(*owner)) return sym;
+        auto it = moved.find(ASR::down_cast<ASR::symbol_t>(owner));
+        if (it == moved.end()) return sym;
+        ASR::symbol_t *component = ASR::down_cast<ASR::Struct_t>(it->second)
+            ->m_symtab->get_symbol(ASRUtils::symbol_name(sym));
+        return component != nullptr ? component : sym;
+    }
+
+    void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
+        ASR::ExternalSymbol_t &xx = const_cast<ASR::ExternalSymbol_t&>(x);
+        xx.m_external = replace_component(xx.m_external);
+    }
+
+    void visit_Struct(const ASR::Struct_t &x) {
+        ASR::Struct_t &xx = const_cast<ASR::Struct_t&>(x);
+        xx.m_parent = replace_type(xx.m_parent, xx.m_symtab->parent);
+        ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs>::visit_Struct(x);
+    }
+
+    void visit_Variable(const ASR::Variable_t &x) {
+        ASR::Variable_t &xx = const_cast<ASR::Variable_t&>(x);
+        xx.m_type_declaration = replace_type(xx.m_type_declaration,
+            xx.m_parent_symtab);
+        ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs>::visit_Variable(x);
+    }
+
+    // A type named by an expression, such as the destination type of a
+    // class-to-type cast in a type guard
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::Var_t &xx = const_cast<ASR::Var_t&>(x);
+        xx.m_v = replace_type(xx.m_v, current_scope);
+    }
+
+    void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+        ASR::StructConstructor_t &xx = const_cast<ASR::StructConstructor_t&>(x);
+        xx.m_dt_sym = replace_type(xx.m_dt_sym, current_scope);
+        ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs>::visit_StructConstructor(x);
+    }
+
+    void visit_StructConstant(const ASR::StructConstant_t &x) {
+        ASR::StructConstant_t &xx = const_cast<ASR::StructConstant_t&>(x);
+        xx.m_dt_sym = replace_type(xx.m_dt_sym, current_scope);
+        ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs>::visit_StructConstant(x);
+    }
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+        ASR::StructInstanceMember_t &xx = const_cast<ASR::StructInstanceMember_t&>(x);
+        xx.m_m = replace_component(xx.m_m);
+        ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs>::visit_StructInstanceMember(x);
+    }
+
+    void visit_alloc_arg(const ASR::alloc_arg_t &x) {
+        ASR::alloc_arg_t &xx = const_cast<ASR::alloc_arg_t&>(x);
+        xx.m_sym_subclass = replace_type(xx.m_sym_subclass, current_scope);
+        ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs>::visit_alloc_arg(x);
+    }
+
+    void visit_TypeStmtName(const ASR::TypeStmtName_t &x) {
+        ASR::TypeStmtName_t &xx = const_cast<ASR::TypeStmtName_t&>(x);
+        xx.m_sym = replace_type(xx.m_sym, current_scope);
+        ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs>::visit_TypeStmtName(x);
+    }
+
+    void visit_ClassStmt(const ASR::ClassStmt_t &x) {
+        ASR::ClassStmt_t &xx = const_cast<ASR::ClassStmt_t&>(x);
+        xx.m_sym = replace_type(xx.m_sym, current_scope);
+        ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs>::visit_ClassStmt(x);
+    }
+};
+
 void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& /*pass_options*/) {
     NestedVarVisitor v(al);
@@ -1752,6 +1906,10 @@ void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     AssignNestedVars z(al, w.nested_var_to_ext_var, w.nesting_map,
         w.assumed_length_ctx_var_len);
     z.visit_TranslationUnit(unit);
+    if (!w.moved_program_structs.empty()) {
+        ReplaceMovedProgramStructs r(al, w.moved_program_structs);
+        r.visit_TranslationUnit(unit);
+    }
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);
 }

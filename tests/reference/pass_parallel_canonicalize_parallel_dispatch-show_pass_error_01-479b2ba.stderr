@@ -1,0 +1,5 @@
+ASR pass error: parallel loop cannot be offloaded: the Metal GPU does not support real(8); pass `--gpu-allow-cpu-fallback` to run it on the CPU instead
+ --> tests/show_pass_error_01.f90:9:5
+  |
+9 |     x(i) = real(i, 8)
+  |     ^^^^ 'x' is real(8)
