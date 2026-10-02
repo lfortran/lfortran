@@ -10495,7 +10495,7 @@ public:
                                 value = a->m_value;
                             }
                         }
-                    } else {
+                    } else if (!is_derived_type) {
                         implicit_save = true;
                         storage_type = ASR::storage_typeType::Save; // implicit save
                     }
