@@ -101,6 +101,7 @@
         (If
             120
             ()
+            0
             (< a b)
             [(Assignment
                 0

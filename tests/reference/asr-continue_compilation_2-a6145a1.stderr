@@ -1015,3 +1015,13 @@ semantic error: Dummy argument 'y' of pure function must have INTENT(IN) or VALU
     |
 585 |         integer :: x, y
     |                       ^ 
+
+semantic error: duplicate statement label 86
+   --> tests/errors/continue_compilation_2.f90:596:5 - 598:10
+    |
+596 |        if (i < 3) then
+    |        ^^^^^^^^^^^^^^^...
+...
+    |
+598 |    86  end if  ! {Error} duplicate statement label 86
+    | ...^^^^^^^^^^ 

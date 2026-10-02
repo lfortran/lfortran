@@ -98,6 +98,7 @@
         (If
             0
             ()
+            0
             (FuncCallOrArray
                 all
                 []
@@ -202,6 +203,7 @@
         (If
             0
             ()
+            0
             (FuncCallOrArray
                 all
                 []

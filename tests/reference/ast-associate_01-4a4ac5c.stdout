@@ -323,6 +323,7 @@
             (If
                 0
                 ()
+                0
                 (/= (FuncCallOrArray
                     size
                     []
@@ -367,6 +368,7 @@
         (If
             0
             ()
+            0
             (== (FuncCallOrArray
                 a
                 []
@@ -441,6 +443,7 @@
         (If
             0
             ()
+            0
             (/= a_1 (Real "10."))
             [(ErrorStop
                 0
@@ -456,6 +459,7 @@
         (If
             0
             ()
+            0
             (/= c_234 (Real "3."))
             [(ErrorStop
                 0
@@ -471,6 +475,7 @@
         (If
             0
             ()
+            0
             (/= c_121 (Real "17."))
             [(ErrorStop
                 0

@@ -2251,6 +2251,10 @@ public:
         }
         r += indent;
         r += syn(gr::Conditional);
+        if (x.m_end_label != 0) {
+            r += std::to_string(x.m_end_label);
+            r += " ";
+        }
         r += "end if";
         r += syn();
         if(x.m_trivia){
