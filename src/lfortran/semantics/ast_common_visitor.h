@@ -2865,6 +2865,44 @@ public:
         }
     }
 
+    // An integer expression built only from constants and named constants
+    // is a constant expression even when a named constant has no value yet
+    // (a deferred template parameter, which is folded at instantiation).
+    bool is_named_constant_expr(ASR::expr_t* expr) {
+        if (ASRUtils::is_value_constant(expr)) {
+            return true;
+        }
+        switch (expr->type) {
+            case ASR::exprType::IntegerBinOp: {
+                ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+                return is_named_constant_expr(binop->m_left) &&
+                    is_named_constant_expr(binop->m_right);
+            }
+            case ASR::exprType::IntegerUnaryMinus: {
+                return is_named_constant_expr(
+                    ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_arg);
+            }
+            case ASR::exprType::Cast: {
+                return is_named_constant_expr(
+                    ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
+            }
+            case ASR::exprType::IntrinsicElementalFunction: {
+                ASR::IntrinsicElementalFunction_t* func =
+                    ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+                for (size_t i = 0; i < func->n_args; i++) {
+                    if (func->m_args[i] != nullptr &&
+                            !is_named_constant_expr(func->m_args[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
     void dimension_attribute_error_check(ASR::expr_t* dim_expr) {
         check_intent_out_in_spec_expr(dim_expr);
         bool error = false;
@@ -2899,7 +2937,7 @@ public:
             ASR::ttype_t* dim_expr_type = ASRUtils::expr_type(dim_expr);
             if (dim_expr_type->type != ASR::ttypeType::Integer) {
                 error = true;
-            } else if (!ASRUtils::is_value_constant(dim_expr)) {
+            } else if (!is_named_constant_expr(dim_expr)) {
                 bool in_function_scope = in_Subroutine;
                 if (!in_function_scope) {
                     SymbolTable* scope = current_scope;
@@ -5514,7 +5552,9 @@ public:
     }
 
     // Turn the dummy procedure `sym`, declared by an interface body as
-    // `func`, into an optional procedure variable.
+    // `func`, into an optional procedure variable. The interface body `func`
+    // is moved to the parent scope under a unique name and becomes the
+    // variable's type declaration, keeping its arguments and symbol table.
     void make_optional_procedure_dummy(const std::string &sym,
             ASR::Function_t* func, const Location &attr_loc) {
         ASR::ttype_t* proc_type = func->m_function_signature;
@@ -5526,13 +5566,9 @@ public:
         LCOMPILERS_ASSERT(parent_scope != nullptr);
         std::string iface_name = "~proc_" + sym + "_" +
             current_scope->get_counter();
-        SymbolTable* fn_scope = al.make_new<SymbolTable>(parent_scope);
-        ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Function_t(
-                al, attr_loc, fn_scope, s2c(al, iface_name),
-                proc_type, nullptr, 0, nullptr, 0, nullptr, 0,
-                nullptr, ASR::accessType::Public, false, false,
-                nullptr, nullptr, nullptr));
+        func->m_name = s2c(al, iface_name);
+        func->m_symtab->parent = parent_scope;
+        ASR::symbol_t* iface = &func->base;
         parent_scope->add_symbol(iface_name, iface);
         ASR::asr_t* proc_var = ASRUtils::make_Variable_t_util(
             al, attr_loc, current_scope,

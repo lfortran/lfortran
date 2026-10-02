@@ -176,10 +176,19 @@ public:
         }
     }
 
+    // Break every line of `r` longer than `line_length`, after the last
+    // comma that keeps it within, into continuation lines. A line already
+    // short enough, one an earlier call broke included, is left as it is.
     void handle_line_truncation(std::string &r, int i_level, int line_length=120) {
         size_t current_pos = 0;
         std::string indent = std::string(i_level * indent_spaces, ' ');
-        while (current_pos + line_length < r.length()) {
+        while (current_pos < r.length()) {
+            size_t line_end = r.find('\n', current_pos);
+            if (line_end == std::string::npos) line_end = r.length();
+            if (line_end - current_pos <= (size_t)line_length) {
+                current_pos = line_end + 1;
+                continue;
+            }
             size_t break_pos = r.find_last_of(',', current_pos + line_length);
             if (break_pos == std::string::npos || break_pos <= current_pos) {
                 break_pos = current_pos + line_length - 1;
@@ -974,11 +983,17 @@ public:
         if (x.m_is_abstract) {
             r += ", abstract";
         }
+        if (x.m_abi == ASR::abiType::BindC) {
+            r += ", bind(c)";
+        }
         r += " :: ";
         r.append(x.m_name);
         handle_line_truncation(r, 2);
         r += "\n";
         inc_indent();
+        if (x.m_is_sequence) {
+            r += indent + "sequence\n";
+        }
         bool old_in_struct_member_declaration = in_struct_member_declaration;
         in_struct_member_declaration = true;
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
