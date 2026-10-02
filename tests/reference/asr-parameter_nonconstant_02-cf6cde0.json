@@ -1,0 +1,13 @@
+{
+    "basename": "asr-parameter_nonconstant_02-cf6cde0",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/parameter_nonconstant_02.f90",
+    "infile_hash": "dc88449d1c2aef4d8aedb33b1d548ca1d4de95a6e126929f92af6b92",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-parameter_nonconstant_02-cf6cde0.stderr",
+    "stderr_hash": "ab86f595e6932861c0f59f2ecddad69ffee19b692451f5f24af621db",
+    "returncode": 2
+}

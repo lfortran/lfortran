@@ -6198,3 +6198,11 @@ filename = "show_pass_error_02.f90"
 fortran = true
 pass = "parallel_canonicalize,parallel_dispatch"
 options = "--gpu=metal"
+
+[[test]]
+filename = "errors/parameter_nonconstant_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/parameter_nonconstant_02.f90"
+asr = true
