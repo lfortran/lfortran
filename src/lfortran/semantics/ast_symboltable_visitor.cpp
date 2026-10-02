@@ -6764,6 +6764,10 @@ public:
                     current_scope = parent_scope;
                     symbol_subs[f->m_name] = op_sym;
                 }
+            } else if (AST::is_a<AST::AttrDefinedOperator_t>(*arg_attr)) {
+                bind_defined_operator_arg(
+                    *AST::down_cast<AST::AttrDefinedOperator_t>(arg_attr),
+                    param, param_sym, type_subs, symbol_subs, current_scope);
             } else if (AST::is_a<AST::AttrExpr_t>(*arg_attr)) {
                 // Handling a constant expression passed for a deferred constant
                 symbol_subs[param] = make_instantiation_const_arg(
