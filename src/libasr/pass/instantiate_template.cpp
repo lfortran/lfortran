@@ -1020,6 +1020,50 @@ public:
 
 };
 
+// A procedure defined in the template itself, as opposed to a template
+// parameter (a requirement's procedure), which is substituted by the
+// instantiation's argument.
+static bool is_template_procedure(ASR::symbol_t* s) {
+    ASR::symbol_t* owner = ASRUtils::get_asr_owner(s);
+    if (owner == nullptr || !ASR::is_a<ASR::Template_t>(*owner)
+            || !ASR::is_a<ASR::Function_t>(*s)
+            || ASRUtils::get_FunctionType(s)->m_deftype
+                != ASR::deftypeType::Implementation) {
+        return false;
+    }
+    ASR::Template_t* t = ASR::down_cast<ASR::Template_t>(owner);
+    std::string name = ASRUtils::symbol_name(s);
+    for (size_t i = 0; i < t->n_args; i++) {
+        if (name == t->m_args[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Collects the procedures called in a declaration.
+class DeclarationCallCollector
+    : public ASR::BaseWalkVisitor<DeclarationCallCollector>
+{
+public:
+    std::vector<ASR::symbol_t*> procedures;
+
+    void collect(const ASR::Variable_t &x) {
+        visit_ttype(*x.m_type);
+        if (x.m_symbolic_value) {
+            visit_expr(*x.m_symbolic_value);
+        }
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        procedures.push_back(x.m_name);
+        ASR::BaseWalkVisitor<DeclarationCallCollector>::visit_FunctionCall(x);
+    }
+};
+
 // An associate block of a template procedure is instantiated as an
 // associate block of the instantiated procedure, so `new_scope` corresponds
 // to `old_scope` of the template. Returns the instantiated scope that
@@ -1817,6 +1861,34 @@ public:
         return ASR::make_Var_t(al, x->base.base.loc, sym);
     }
 
+    // A declaration can call a procedure of the template, such as the getter
+    // the semantics generate for a host-module variable used as an
+    // explicit-shape bound. The call must refer to the instantiated
+    // procedure, which is created in the corresponding scope of this
+    // instantiation, like a type the ONLY list does not name; its body is
+    // completed by BodyInstantiator::instantiate_Variable.
+    ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t* x) {
+        ASR::asr_t* call = BaseExprStmtDuplicator<SymbolInstantiator>::duplicate_FunctionCall(x);
+        if (!is_template_procedure(x->m_name)) {
+            return call;
+        }
+        std::string call_name = ASRUtils::symbol_name(x->m_name);
+        if (symbol_subs.find(call_name) == symbol_subs.end()) {
+            SymbolTable* scope = corresponding_target_scope(
+                ASRUtils::symbol_parent_symtab(x->m_name));
+            std::string name = scope->get_unique_name("__asr_" + call_name, false);
+            SymbolInstantiator t(al, scope, type_subs, symbol_subs, name, x->m_name,
+                diagnostics);
+            t.instantiate();
+        }
+        ASR::FunctionCall_t* new_call = ASR::down_cast2<ASR::FunctionCall_t>(call);
+        new_call->m_name = symbol_subs[call_name];
+        if (x->m_original_name == x->m_name) {
+            new_call->m_original_name = new_call->m_name;
+        }
+        return call;
+    }
+
     /* require */
 
     ASR::require_instantiation_t* duplicate_Require(ASR::Require_t* x) {
@@ -1832,6 +1904,20 @@ public:
     }
 
     /* utility */
+
+    // The scope of this instantiation that corresponds to `source_ancestor`,
+    // a scope of the template enclosing the symbol being instantiated.
+    SymbolTable* corresponding_target_scope(SymbolTable* source_ancestor) {
+        SymbolTable* source_scope = ASRUtils::symbol_parent_symtab(sym);
+        SymbolTable* scope = target_scope;
+        while (source_scope != source_ancestor) {
+            LCOMPILERS_ASSERT(source_scope != nullptr && scope != nullptr);
+            source_scope = source_scope->parent;
+            scope = scope->parent;
+        }
+        LCOMPILERS_ASSERT(scope != nullptr);
+        return scope;
+    }
 
     ASR::ttype_t* substitute_type(ASR::expr_t* expr, ASR::ttype_t *ttype) {
         switch (ttype->type) {
@@ -1857,15 +1943,8 @@ public:
                     // An ONLY list need not name a procedure's local types.
                     // Instantiate the dependency in the corresponding template
                     // scope, shared by all procedures of this instantiation.
-                    SymbolTable* source_scope = ASRUtils::symbol_parent_symtab(sym);
-                    SymbolTable* struct_scope = target_scope;
-                    SymbolTable* source_struct_scope = ASRUtils::symbol_parent_symtab(struct_sym);
-                    while (source_scope != source_struct_scope) {
-                        LCOMPILERS_ASSERT(source_scope != nullptr && struct_scope != nullptr);
-                        source_scope = source_scope->parent;
-                        struct_scope = struct_scope->parent;
-                    }
-                    LCOMPILERS_ASSERT(struct_scope != nullptr);
+                    SymbolTable* struct_scope = corresponding_target_scope(
+                        ASRUtils::symbol_parent_symtab(struct_sym));
                     std::string name = struct_scope->get_unique_name("__asr_" + struct_name, false);
                     SymbolInstantiator t(al, struct_scope, type_subs, symbol_subs, name, struct_sym,
                         diagnostics);
@@ -2013,6 +2092,18 @@ public:
             t_b.instantiate();
         }
 
+        // Procedures called in the declarations, such as the getter of a
+        // host-module variable used as a bound, are dependencies too.
+        DeclarationCallCollector calls;
+        for (auto const &sym_pair: new_scope->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
+                calls.collect(*ASR::down_cast<ASR::Variable_t>(sym_pair.second));
+            }
+        }
+        for (ASR::symbol_t* proc: calls.procedures) {
+            ADD_ASR_DEPENDENCIES(new_scope, proc, dependencies);
+        }
+
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_stmts);
         for (size_t i=0; i<n_stmts; i++) {
@@ -2061,6 +2152,22 @@ public:
     }
 
     void instantiate_Variable(ASR::Variable_t* x) {
+        // Symbol instantiation creates the template procedures called in the
+        // declaration without their bodies; complete them here.
+        DeclarationCallCollector calls;
+        calls.collect(*x);
+        for (ASR::symbol_t* proc: calls.procedures) {
+            if (!is_template_procedure(proc)) {
+                continue;
+            }
+            auto it = symbol_subs.find(ASRUtils::symbol_name(proc));
+            if (it != symbol_subs.end()) {
+                BodyInstantiator t(al, type_subs, symbol_subs, it->second, proc,
+                    instantiated_bodies);
+                t.instantiate();
+            }
+        }
+
         ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(x->m_type_declaration);
         if (type_decl == nullptr || !ASR::is_a<ASR::Struct_t>(*type_decl)) {
             return;
@@ -2193,8 +2300,12 @@ public:
             ADD_ASR_DEPENDENCIES(new_scope, name, dependencies);
         }
 
+        // A call made by its own name must keep naming the instantiated
+        // procedure, not the template's.
+        ASR::symbol_t* original_name = x->m_original_name == x->m_name
+            ? name : x->m_original_name;
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name,
-            x->m_original_name, args.p, args.size(), type, value, dt);
+            original_name, args.p, args.size(), type, value, dt);
     }
 
     ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t* x) {
@@ -2258,8 +2369,10 @@ public:
             ADD_ASR_DEPENDENCIES(new_scope, name, dependencies);
         }
 
+        ASR::symbol_t* original_name = x->m_original_name == x->m_name
+            ? name : x->m_original_name;
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name,
-            x->m_original_name, args.p, args.size(), dt, nullptr, false);
+            original_name, args.p, args.size(), dt, nullptr, false);
     }
 
     ASR::asr_t* duplicate_DoLoop(ASR::DoLoop_t *x) {
