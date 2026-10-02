@@ -4866,6 +4866,7 @@ RUN(NAME nullify_07 LABELS gfortran llvm)
 
 RUN(NAME fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME fortran_02 LABELS gfortran fortran)
+RUN(NAME fortran_03 LABELS gfortran llvm fortran)
 
 RUN(NAME contig LABELS gfortran llvm)
 RUN(NAME contig_stmt_01 LABELS gfortran llvm)
