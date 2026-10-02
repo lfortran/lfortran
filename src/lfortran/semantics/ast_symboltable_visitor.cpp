@@ -5752,6 +5752,16 @@ public:
         }
 
         for (auto &item: current_scope->get_scope()) {
+            // An abstract interface (NOTE 2 of 16.6.1, J3/26-007r1) is a
+            // local entity of the requirement, not a deferred argument, so
+            // its name does not have to be one of the requirement's
+            // parameters.
+            if (ASR::is_a<ASR::Function_t>(*item.second)
+                    && ASRUtils::get_FunctionType(
+                        ASR::down_cast<ASR::Function_t>(item.second))->m_deftype
+                        == ASR::deftypeType::Interface) {
+                continue;
+            }
             bool defined = false;
             std::string sym = item.first;
             for (size_t i=0; i<x.n_namelist; i++) {
