@@ -393,7 +393,8 @@ If clean and the PR does not have the label yet, add it:
 `gh pr edit <PR> --repo lfortran/lfortran --add-label Tests::Run-Exhaustive`.
 Wait until now because the exhaustive suite is expensive, and while the label
 is present it reruns on every push (`.github/workflows/Exhaustive-Checks-CI.yml`
-triggers on `labeled` and `synchronize`). If `gh` lacks permission to add
+triggers on `synchronize`, and `Exhaustive-Checks-Label-CI.yml` reruns it when
+the label is added). If `gh` lacks permission to add
 labels, tell the user and ask them to add it. Record the label in `state.md`,
 then start the next round with only the CI watch; the head SHA is unchanged,
 so the review stands, and this round does not count toward the cap.

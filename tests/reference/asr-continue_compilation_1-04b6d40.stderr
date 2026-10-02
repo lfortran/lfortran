@@ -868,6 +868,18 @@ semantic error: templated procedure 'actual' cannot be used as a procedure argum
 1966 |         instantiate action{op=actual}, only: rejected_subroutine => apply ! {Error} templated procedure 'actual' cannot be used as a procedure argument
      |                               ^^^^^^ 
 
+semantic error: Variable `x` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value_contains` is BIND(C)
+    --> tests/errors/continue_compilation_1.f90:2068:42
+     |
+2068 | subroutine bindc_optional_value_contains(x) bind(c)  ! {Error} Variable `x` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value_contains` is BIND(C)
+     |                                          ^ 
+
+semantic error: Explicit shaped array with nonconstant bounds
+    --> tests/errors/continue_compilation_1.f90:2081:22
+     |
+2081 |         integer :: b(dtncb_m*2)  ! {Error} Explicit shaped array with nonconstant bounds
+     |                      ^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
