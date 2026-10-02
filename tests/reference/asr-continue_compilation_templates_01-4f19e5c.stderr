@@ -1379,10 +1379,22 @@ semantic error: operator(.plus.) is not defined in template 'instantiate_only_ge
 2355 |     instantiate instantiate_only_generic_spec_t {real}, only: operator(.plus.)  ! {Error} operator(.plus.) is not defined in template 'instantiate_only_generic_spec_t'
      |                                                               ^^^^^^^^^^^^^^^^ 'instantiate_only_generic_spec_t' has no operator(.plus.) to instantiate
 
-semantic error: the instantiation argument 'operator(.minus.)' for 't' requires a deferred procedure
-    --> tests/errors/continue_compilation_templates_01.f90:2435:30
+semantic error: Explicit shaped array with nonconstant bounds
+    --> tests/errors/continue_compilation_templates_01.f90:2366:26
      |
-2435 |         instantiate defop_t {operator(.minus.), integer}, only: defop_g => defop_f  ! {Error} the instantiation argument 'operator(.minus.)' for 't' requires a deferred procedure
+2366 |             integer :: b(n*nonconst_bound_m)  ! {Error} Explicit shaped array with nonconstant bounds
+     |                          ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Explicit shaped array with nonconstant bounds
+    --> tests/errors/continue_compilation_templates_01.f90:2373:26
+     |
+2373 |             integer :: b(max(n*nonconst_bound_m, 5))  ! {Error} Explicit shaped array with nonconstant bounds
+     |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the instantiation argument 'operator(.minus.)' for 't' requires a deferred procedure
+    --> tests/errors/continue_compilation_templates_01.f90:2455:30
+     |
+2455 |         instantiate defop_t {operator(.minus.), integer}, only: defop_g => defop_f  ! {Error} the instantiation argument 'operator(.minus.)' for 't' requires a deferred procedure
      |                              ^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
@@ -1453,13 +1465,13 @@ semantic error: Type mismatch in assignment, the types must be compatible
      |         ^   ^^^^^^^^^ type mismatch (t[:] and integer[:])
 
 semantic error: the defined operator '.plus.' is not declared
-    --> tests/errors/continue_compilation_templates_01.f90:2427:30
+    --> tests/errors/continue_compilation_templates_01.f90:2447:30
      |
-2427 |         print *, defop_apply{operator(.plus.)}(9, 2)  ! {Error} the defined operator '.plus.' is not declared
+2447 |         print *, defop_apply{operator(.plus.)}(9, 2)  ! {Error} the defined operator '.plus.' is not declared
      |                              ^^^^^^^^^^^^^^^^ 
 
 semantic error: no specific procedure of the defined operator '.minus.' matches the interface of 'op'
-    --> tests/errors/continue_compilation_templates_01.f90:2431:31
+    --> tests/errors/continue_compilation_templates_01.f90:2451:31
      |
-2431 |         print *, defop_applyr{operator(.minus.)}(9.0, 2.0)  ! {Error} no specific procedure of the defined operator '.minus.' matches the interface of 'op'
+2451 |         print *, defop_applyr{operator(.minus.)}(9.0, 2.0)  ! {Error} no specific procedure of the defined operator '.minus.' matches the interface of 'op'
      |                               ^^^^^^^^^^^^^^^^^ 

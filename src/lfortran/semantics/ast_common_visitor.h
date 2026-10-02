@@ -2865,6 +2865,44 @@ public:
         }
     }
 
+    // An integer expression built only from constants and named constants
+    // is a constant expression even when a named constant has no value yet
+    // (a deferred template parameter, which is folded at instantiation).
+    bool is_named_constant_expr(ASR::expr_t* expr) {
+        if (ASRUtils::is_value_constant(expr)) {
+            return true;
+        }
+        switch (expr->type) {
+            case ASR::exprType::IntegerBinOp: {
+                ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+                return is_named_constant_expr(binop->m_left) &&
+                    is_named_constant_expr(binop->m_right);
+            }
+            case ASR::exprType::IntegerUnaryMinus: {
+                return is_named_constant_expr(
+                    ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_arg);
+            }
+            case ASR::exprType::Cast: {
+                return is_named_constant_expr(
+                    ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
+            }
+            case ASR::exprType::IntrinsicElementalFunction: {
+                ASR::IntrinsicElementalFunction_t* func =
+                    ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+                for (size_t i = 0; i < func->n_args; i++) {
+                    if (func->m_args[i] != nullptr &&
+                            !is_named_constant_expr(func->m_args[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
     void dimension_attribute_error_check(ASR::expr_t* dim_expr) {
         check_intent_out_in_spec_expr(dim_expr);
         bool error = false;
@@ -2899,7 +2937,7 @@ public:
             ASR::ttype_t* dim_expr_type = ASRUtils::expr_type(dim_expr);
             if (dim_expr_type->type != ASR::ttypeType::Integer) {
                 error = true;
-            } else if (!ASRUtils::is_value_constant(dim_expr)) {
+            } else if (!is_named_constant_expr(dim_expr)) {
                 bool in_function_scope = in_Subroutine;
                 if (!in_function_scope) {
                     SymbolTable* scope = current_scope;
