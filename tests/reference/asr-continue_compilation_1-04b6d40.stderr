@@ -874,6 +874,12 @@ semantic error: Variable `x` cannot have both the OPTIONAL and VALUE attribute b
 2068 | subroutine bindc_optional_value_contains(x) bind(c)  ! {Error} Variable `x` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value_contains` is BIND(C)
      |                                          ^ 
 
+semantic error: Explicit shaped array with nonconstant bounds
+    --> tests/errors/continue_compilation_1.f90:2081:22
+     |
+2081 |         integer :: b(dtncb_m*2)  ! {Error} Explicit shaped array with nonconstant bounds
+     |                      ^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

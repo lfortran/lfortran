@@ -2354,3 +2354,23 @@ module continue_compilation_templates_01_only_generic_spec
     instantiate instantiate_only_generic_spec_t {real}, only: assignment(=)  ! {Error} assignment(=) is not defined in template 'instantiate_only_generic_spec_t'
     instantiate instantiate_only_generic_spec_t {real}, only: operator(.plus.)  ! {Error} operator(.plus.) is not defined in template 'instantiate_only_generic_spec_t'
 end module
+
+! Component bounds in a template's derived type must be constant: a
+! deferred constant combined with a non-constant variable is rejected.
+module continue_compilation_templates_01_nonconst_bound
+    implicit none
+    integer :: nonconst_bound_m = 3
+    template nonconst_bound_tmpl_01 {n}
+        deferred integer, parameter :: n
+        type :: nonconst_bound_t_01
+            integer :: b(n*nonconst_bound_m)  ! {Error} Explicit shaped array with nonconstant bounds
+        end type
+    end template
+
+    template nonconst_bound_tmpl_02 {n}
+        deferred integer, parameter :: n
+        type :: nonconst_bound_t_02
+            integer :: b(max(n*nonconst_bound_m, 5))  ! {Error} Explicit shaped array with nonconstant bounds
+        end type
+    end template
+end module
