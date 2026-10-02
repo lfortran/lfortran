@@ -1,5 +1,0 @@
-semantic error: Initialization of `y` must reduce to a compile time constant.
- --> tests/errors/parameter_nonconstant_01.f90:3:5
-  |
-3 |     integer, parameter :: y = abs(bla)
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
