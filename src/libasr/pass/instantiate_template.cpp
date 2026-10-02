@@ -1020,6 +1020,25 @@ public:
 
 };
 
+// An associate block of a template procedure is instantiated as an
+// associate block of the instantiated procedure, so `new_scope` corresponds
+// to `old_scope` of the template. Returns the instantiated scope that
+// corresponds to `scope`, a scope enclosing `old_scope`, by leaving the
+// associate blocks between them; other scopes are left to the callers.
+static SymbolTable* instantiated_enclosing_scope(SymbolTable* old_scope,
+        SymbolTable* new_scope, SymbolTable* scope) {
+    while (old_scope != nullptr && old_scope != scope
+            && old_scope->asr_owner != nullptr
+            && ASR::is_a<ASR::symbol_t>(*old_scope->asr_owner)
+            && ASR::is_a<ASR::AssociateBlock_t>(
+                *ASR::down_cast<ASR::symbol_t>(old_scope->asr_owner))) {
+        LCOMPILERS_ASSERT(new_scope->parent != nullptr);
+        old_scope = old_scope->parent;
+        new_scope = new_scope->parent;
+    }
+    return new_scope;
+}
+
 class SymbolInstantiator : public ASR::BaseExprStmtDuplicator<SymbolInstantiator>
 {
 public:
@@ -1110,6 +1129,10 @@ public:
                 ASR::CustomOperator_t* x = ASR::down_cast<ASR::CustomOperator_t>(sym);
                 return instantiate_CustomOperator(x);
             }
+            case (ASR::symbolType::AssociateBlock) : {
+                ASR::AssociateBlock_t* x = ASR::down_cast<ASR::AssociateBlock_t>(sym);
+                return instantiate_AssociateBlock(x);
+            }
             default: {
                 std::string sym_name = ASRUtils::symbol_name(sym);
                 throw LCompilersException("Instantiation of " + sym_name
@@ -1118,12 +1141,10 @@ public:
         }
     }
 
-    ASR::symbol_t* instantiate_Function(ASR::Function_t* x) {
-        dependencies.clear(al);
-        new_scope = al.make_new<SymbolTable>(target_scope);
-
+    // Instantiates the symbols of `symtab` into `new_scope`.
+    void instantiate_local_symbols(SymbolTable* symtab) {
         std::vector<std::pair<std::string, ASR::symbol_t*>> instantiation_vector;
-        for (auto &sym_pair: x->m_symtab->get_scope()) {
+        for (auto &sym_pair: symtab->get_scope()) {
             // instatiate variables first as they might be used in the
             // instantiation of other symbols like StructMethodDeclaration
             if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
@@ -1143,6 +1164,12 @@ public:
                 diagnostics);
             t.instantiate();
         }
+    }
+
+    ASR::symbol_t* instantiate_Function(ASR::Function_t* x) {
+        dependencies.clear(al);
+        new_scope = al.make_new<SymbolTable>(target_scope);
+        instantiate_local_symbols(x->m_symtab);
 
         Vec<ASR::expr_t*> args;
         args.reserve(al, x->n_args);
@@ -1181,6 +1208,16 @@ public:
         symbol_subs[x->m_name] = f;
 
         return f;
+    }
+
+    // The body is instantiated with the body of the enclosing procedure.
+    ASR::symbol_t* instantiate_AssociateBlock(ASR::AssociateBlock_t* x) {
+        new_scope = al.make_new<SymbolTable>(target_scope);
+        instantiate_local_symbols(x->m_symtab);
+        ASR::symbol_t* b = ASR::down_cast<ASR::symbol_t>(ASR::make_AssociateBlock_t(
+            al, x->base.base.loc, new_scope, s2c(al, new_sym_name), nullptr, 0));
+        target_scope->add_symbol(new_sym_name, b);
+        return b;
     }
 
     ASR::symbol_t* instantiate_Variable(ASR::Variable_t* x) {
@@ -1517,13 +1554,19 @@ public:
             ASR::array_physical_typeType::FixedSizeArray, true);
     }
 
-    // A variable declared in the module that hosts the template is shared
-    // storage reached by host association: the instantiation must refer to
-    // the original variable, never own a copy of it. Returns nullptr for
-    // every variable that is copied, as before: variables owned by the
-    // template itself (locals and arguments of its procedures, struct
-    // members), named constants, which have no storage to share, and
-    // program variables.
+    // A variable declared in the scope that hosts the template (a module or
+    // a main program) is shared storage reached by host association: the
+    // instantiation must refer to the original variable, never own a copy
+    // of it. Returns nullptr for every variable that is copied, as before:
+    // variables owned by the template itself (locals and arguments of its
+    // procedures, struct members), named constants, which have no storage
+    // to share, and variables of a non-module host that does not enclose
+    // the instantiated procedure.
+    //
+    // The decision depends only on where the variable and the instantiated
+    // procedure live, so all host variables of one procedure are either
+    // shared or copied together, whether they are reached from its
+    // declarations or from its body.
     //
     // Reachability is decided by scope ancestry, not by name lookup: a
     // same-named local at the instantiation site must not capture the
@@ -1558,6 +1601,14 @@ public:
                 module->m_name, nullptr, 0, x->m_name, x->m_access));
             target_scope->add_symbol(x->m_name, e);
             return e;
+        }
+        // Any other host, e.g. a main program, is reachable by host
+        // association if it encloses the instantiated procedure, at any
+        // depth (e.g. instantiated inside an internal procedure).
+        for (SymbolTable* s = target_scope->parent; s != nullptr; s = s->parent) {
+            if (s == host_scope) {
+                return var_sym;
+            }
         }
         return nullptr;
     }
@@ -1796,6 +1847,11 @@ public:
                 return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, ttype->base.loc,
                     substitute_type(expr, a->m_type)));
             }
+            case (ASR::ttypeType::Pointer) : {
+                ASR::Pointer_t *p = ASR::down_cast<ASR::Pointer_t>(ttype);
+                return ASRUtils::make_Pointer_t_util(al, ttype->base.loc,
+                    substitute_type(expr, p->m_type));
+            }
             default : return ttype;
         }
     }
@@ -1806,6 +1862,7 @@ class BodyInstantiator : public ASR::BaseExprStmtDuplicator<BodyInstantiator>
 {
 public:
     SymbolTable* new_scope;
+    SymbolTable* old_scope = nullptr;   // scope of the template that new_scope instantiates
     std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
     std::map<std::string,ASR::symbol_t*>& symbol_subs;
     std::set<ASR::symbol_t*>& instantiated_bodies;
@@ -1874,15 +1931,22 @@ public:
         }
     }
 
-    void instantiate_Function(ASR::Function_t* x) {
-        ASR::Function_t* new_f = ASR::down_cast<ASR::Function_t>(new_sym);
-        new_scope = new_f->m_symtab;
-
-        for (auto const &sym_pair: x->m_symtab->get_scope()) {
+    // Instantiates the symbols of `old_scope` into `new_scope`, with their
+    // bodies, and returns the instantiated statements of `stmts`.
+    Vec<ASR::stmt_t*> instantiate_local_scope(ASR::stmt_t** stmts, size_t n_stmts) {
+        for (auto const &sym_pair: old_scope->get_scope()) {
             ASR::symbol_t* sym_i = sym_pair.second;
 
             SymbolInstantiator t_i(al, new_scope, type_subs, symbol_subs, sym_pair.first, sym_i);
             ASR::symbol_t* new_sym_i = t_i.instantiate();
+
+            if (ASR::is_a<ASR::AssociateBlock_t>(*sym_i)) {
+                // Part of this procedure's body, so it shares its
+                // dependencies.
+                instantiate_AssociateBlock(ASR::down_cast<ASR::AssociateBlock_t>(sym_i),
+                    ASR::down_cast<ASR::AssociateBlock_t>(new_sym_i));
+                continue;
+            }
 
             BodyInstantiator t_b(al, type_subs, symbol_subs, new_sym_i, sym_i,
                 instantiated_bodies);
@@ -1890,13 +1954,34 @@ public:
         }
 
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x->n_body);
-        for (size_t i=0; i<x->n_body; i++) {
-            ASR::stmt_t *new_body = this->duplicate_stmt(x->m_body[i]);
+        body.reserve(al, n_stmts);
+        for (size_t i=0; i<n_stmts; i++) {
+            ASR::stmt_t *new_body = this->duplicate_stmt(stmts[i]);
             if (new_body != nullptr) {
                 body.push_back(al, new_body);
             }
         }
+        return body;
+    }
+
+    void instantiate_AssociateBlock(ASR::AssociateBlock_t* x,
+            ASR::AssociateBlock_t* new_b) {
+        SymbolTable* outer_old_scope = old_scope;
+        SymbolTable* outer_new_scope = new_scope;
+        old_scope = x->m_symtab;
+        new_scope = new_b->m_symtab;
+        Vec<ASR::stmt_t*> body = instantiate_local_scope(x->m_body, x->n_body);
+        new_b->m_body = body.p;
+        new_b->n_body = body.size();
+        old_scope = outer_old_scope;
+        new_scope = outer_new_scope;
+    }
+
+    void instantiate_Function(ASR::Function_t* x) {
+        ASR::Function_t* new_f = ASR::down_cast<ASR::Function_t>(new_sym);
+        new_scope = new_f->m_symtab;
+        old_scope = x->m_symtab;
+        Vec<ASR::stmt_t*> body = instantiate_local_scope(x->m_body, x->n_body);
 
         SetChar deps_vec;
         deps_vec.reserve(al, new_f->n_dependencies + dependencies.size());
@@ -1979,7 +2064,10 @@ public:
     ASR::asr_t* duplicate_Var(ASR::Var_t* x) {
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
 
-        SymbolInstantiator t_i(al, new_scope, type_subs, symbol_subs, sym_name, x->m_v);
+        // A variable of the procedure used in its associate block.
+        SymbolTable* scope = instantiated_enclosing_scope(old_scope, new_scope,
+            ASRUtils::symbol_parent_symtab(x->m_v));
+        SymbolInstantiator t_i(al, scope, type_subs, symbol_subs, sym_name, x->m_v);
         ASR::symbol_t* sym = t_i.instantiate();
 
         BodyInstantiator t_b(al, type_subs, symbol_subs, sym, x->m_v,
@@ -2243,6 +2331,12 @@ public:
 
     /* stmt */
 
+    ASR::asr_t* duplicate_AssociateBlockCall(ASR::AssociateBlockCall_t* x) {
+        ASR::symbol_t* m = new_scope->get_symbol(ASRUtils::symbol_name(x->m_m));
+        LCOMPILERS_ASSERT(m != nullptr && ASR::is_a<ASR::AssociateBlock_t>(*m));
+        return ASR::make_AssociateBlockCall_t(al, x->base.base.loc, m);
+    }
+
     ASR::asr_t* duplicate_Assignment(ASR::Assignment_t *x) {
         ASR::expr_t *target = duplicate_expr(x->m_target);
         ASR::expr_t *value = duplicate_expr(x->m_value);
@@ -2333,6 +2427,11 @@ public:
                 ASR::Allocatable_t *a = ASR::down_cast<ASR::Allocatable_t>(ttype);
                 return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, ttype->base.loc,
                     substitute_type(expr, a->m_type)));
+            }
+            case (ASR::ttypeType::Pointer) : {
+                ASR::Pointer_t *p = ASR::down_cast<ASR::Pointer_t>(ttype);
+                return ASRUtils::make_Pointer_t_util(al, ttype->base.loc,
+                    substitute_type(expr, p->m_type));
             }
             default : return ttype;
         }

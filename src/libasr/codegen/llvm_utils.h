@@ -865,9 +865,12 @@ class ASRToLLVMVisitor;
 
             void set_set_api(ASR::Set_t* set_type);
 
+            // `finalize_dest` false: `dest` has just been allocated, so the
+            // copy defines it rather than assigning to it, and it is not
+            // finalized first.
             void deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::ttype_t* asr_dest_type, ASR::ttype_t* asr_src_type, llvm::Module* module,
-                bool use_defined_assignment = false);
+                bool use_defined_assignment = false, bool finalize_dest = true);
 
             llvm::Value* convert_kind(llvm::Value* val, llvm::Type* target_type);
 
@@ -2938,7 +2941,7 @@ class ASRToLLVMVisitor;
 
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
-                bool use_defined_assignment = false);
+                bool use_defined_assignment = false, bool finalize_dest = true);
 
             // Copy dimension descriptors and rank from src to dest array descriptor.
             void copy_dimension_descriptors(

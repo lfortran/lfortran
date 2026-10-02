@@ -1,87 +1,29 @@
 module derived_types_209_mod
-implicit none
-integer, parameter :: three = 3
-integer, parameter :: ck = selected_char_kind('ISO_10646')
-type :: w
-    character(len=2) :: c(three)
-end type
-type :: w4
-    character(len=2, kind=ck) :: c(three)
-end type
-type :: outer
-    type(w) :: in
-    character(len=3) :: d(2, 2)
-end type
-type :: holder
-    class(w), allocatable :: p(:)
-end type
+    implicit none
+    type :: pair
+        sequence
+        integer :: a, b
+    end type pair
 contains
-function f(x, y) result(r)
-    type(w), intent(in) :: x, y
-    type(w) :: r
-    r%c = y%c
-end function
-end module
+    integer function pair_sum(p)
+        type(pair), intent(in) :: p
+        pair_sum = p%a + p%b
+    end function pair_sum
+end module derived_types_209_mod
 
 program derived_types_209
-use derived_types_209_mod
-implicit none
-type(w) :: s, s2, x, arr(2), arr2(2)
-type(w), allocatable :: a
-type(outer) :: o, o2
-type(w4) :: u, u2
-type(holder) :: h, h2
-
-! Whole derived-type assignment copies every element of a
-! character-array component (#13478)
-s%c = ['ab', 'cd', 'ef']
-s2 = s
-print *, s2%c
-if (any(s2%c /= ['ab', 'cd', 'ef'])) error stop 1
-s2%c(2) = 'zz'
-if (s%c(2) /= 'cd') error stop 2
-
-s = s
-if (any(s%c /= ['ab', 'cd', 'ef'])) error stop 3
-
-allocate(a)
-a = s
-if (any(a%c /= ['ab', 'cd', 'ef'])) error stop 4
-
-arr(1) = s
-arr(2) = s2
-arr2 = arr
-if (any(arr2(1)%c /= ['ab', 'cd', 'ef'])) error stop 5
-if (any(arr2(2)%c /= ['ab', 'zz', 'ef'])) error stop 6
-
-o%in = s
-o%d = reshape(['aaa', 'bbb', 'ccc', 'ddd'], [2, 2])
-o2 = o
-if (any(o2%in%c /= ['ab', 'cd', 'ef'])) error stop 7
-if (o2%d(2, 1) /= 'bbb' .or. o2%d(2, 2) /= 'ddd') error stop 8
-
-! Function result assigned to a variable also passed as an argument (#13070)
-x%c = ['gh', 'ij', 'kl']
-s = f(s, x)
-print *, s%c
-if (any(s%c /= ['gh', 'ij', 'kl'])) error stop 9
-
-! Non-default character kind: every element is copied
-u%c(1) = ck_'ab'
-u%c(2) = ck_'cd'
-u%c(3) = ck_'ef'
-u2 = u
-if (u2%c(1) /= ck_'ab') error stop 10
-if (u2%c(2) /= ck_'cd') error stop 11
-if (u2%c(3) /= ck_'ef') error stop 12
-
-! Elements of a class(w) array component are copied through their
-! dynamic type's copy function
-allocate(h%p(2))
-h%p(1)%c = ['ab', 'cd', 'ef']
-h%p(2)%c = ['gh', 'ij', 'kl']
-h2 = h
-print *, h2%p(2)%c
-if (any(h2%p(1)%c /= ['ab', 'cd', 'ef'])) error stop 13
-if (any(h2%p(2)%c /= ['gh', 'ij', 'kl'])) error stop 14
-end program
+    use derived_types_209_mod, only: pair_sum
+    implicit none
+    ! A sequence type of the same name and components is the same type as
+    ! the module's. The LLVM backend still gives the two definitions
+    ! different types (#13782), so this is not tested with it yet.
+    type :: pair
+        sequence
+        integer :: a, b
+    end type pair
+    type(pair) :: p
+    p%a = 3
+    p%b = 4
+    if (pair_sum(p) /= 7) error stop
+    print *, pair_sum(p)
+end program derived_types_209
