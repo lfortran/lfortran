@@ -5651,7 +5651,9 @@ public:
     }
 
     // Turn the dummy procedure `sym`, declared by an interface body as
-    // `func`, into an optional procedure variable.
+    // `func`, into an optional procedure variable. The interface body `func`
+    // is moved to the parent scope under a unique name and becomes the
+    // variable's type declaration, keeping its arguments and symbol table.
     void make_optional_procedure_dummy(const std::string &sym,
             ASR::Function_t* func, const Location &attr_loc) {
         ASR::ttype_t* proc_type = func->m_function_signature;
@@ -5663,13 +5665,9 @@ public:
         LCOMPILERS_ASSERT(parent_scope != nullptr);
         std::string iface_name = "~proc_" + sym + "_" +
             current_scope->get_counter();
-        SymbolTable* fn_scope = al.make_new<SymbolTable>(parent_scope);
-        ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Function_t(
-                al, attr_loc, fn_scope, s2c(al, iface_name),
-                proc_type, nullptr, 0, nullptr, 0, nullptr, 0,
-                nullptr, ASR::accessType::Public, false, false,
-                nullptr, nullptr, nullptr));
+        func->m_name = s2c(al, iface_name);
+        func->m_symtab->parent = parent_scope;
+        ASR::symbol_t* iface = &func->base;
         parent_scope->add_symbol(iface_name, iface);
         ASR::asr_t* proc_var = ASRUtils::make_Variable_t_util(
             al, attr_loc, current_scope,
@@ -22501,6 +22499,11 @@ public:
                     current_scope = parent_scope;
                     symbol_subs[f->m_name] = op_sym;
                 }
+            } else if (AST::is_a<AST::AttrDefinedOperator_t>(*arg_attr)) {
+                bind_defined_operator_arg(
+                    *AST::down_cast<AST::AttrDefinedOperator_t>(arg_attr),
+                    param, param_sym, type_subs, symbol_subs,
+                    is_nested ? current_scope->parent : current_scope);
             } else if (AST::is_a<AST::AttrExpr_t>(*arg_attr)) {
                 // Handling a constant expression passed for a deferred constant
                 SymbolTable *const_scope = is_nested ? current_scope->parent : current_scope;
@@ -26879,6 +26882,53 @@ public:
                 nullptr, 0, s2c(al, name), ASR::accessType::Private));
         scope->add_symbol(local_name, imported);
         return imported;
+    }
+
+    // Bind the deferred procedure `param_sym` of a template to the specific
+    // procedure of the defined operator passed as an instantiation argument,
+    // e.g. `operator(.minus.)`.
+    void bind_defined_operator_arg(const AST::AttrDefinedOperator_t &x,
+            const std::string &param, ASR::symbol_t *param_sym,
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs,
+            std::map<std::string, ASR::symbol_t*> &symbol_subs,
+            SymbolTable *op_scope) {
+        std::string op = to_lower(x.m_op_name);
+        if (!ASR::is_a<ASR::Function_t>(*param_sym)) {
+            diag.add(diag::Diagnostic(
+                "the instantiation argument 'operator(." + op + ".)' for '"
+                + param + "' requires a deferred procedure",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        std::string op_name = update_custom_op_name(op);
+        ASR::symbol_t *op_sym = current_scope->resolve_symbol(op_name);
+        ASR::symbol_t *orig_sym = op_sym
+            ? ASRUtils::symbol_get_past_external(op_sym) : nullptr;
+        if (!orig_sym || !ASR::is_a<ASR::CustomOperator_t>(*orig_sym)) {
+            diag.add(diag::Diagnostic(
+                "the defined operator '." + op + ".' is not declared",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
+        ASR::CustomOperator_t *gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
+        for (size_t i = 0; i < gen_proc->n_procs; i++) {
+            ASR::symbol_t *proc = gen_proc->m_procs[i];
+            if (check_restriction(type_subs, symbol_subs, f, proc,
+                    x.base.base.loc, diag, []() { throw SemanticAbort(); }, false)) {
+                symbol_subs[f->m_name] = make_operator_proc_visible(
+                    proc, op_name, op_scope);
+                return;
+            }
+        }
+        diag.add(diag::Diagnostic(
+            "no specific procedure of the defined operator '." + op
+            + ".' matches the interface of '" + param + "'",
+            diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label("", {x.base.base.loc})}));
+        throw SemanticAbort();
     }
 
     ASR::symbol_t* resolve_custom_operator_proc(const std::string& intrinsic_op_name, ASR::expr_t *left, ASR::expr_t *right,
