@@ -1467,15 +1467,10 @@ struct FixedFormRecursiveDescent {
             // end entire loop nesting with single `CONTINUE`
             // the usual terminal statement for do loops
             if (next_is(cur, "continue")) {
-                // Drop the redundant CONTINUE keyword. The TK_LABEL pushed
-                // by eat_label() above already precedes the `end_do` we
-                // are about to push, so via `enddo : TK_LABEL KW_END_DO`
-                // it attaches as `m_do_label` on the DoLoop AST node and
-                // is converted to an ASR GoToTarget at the end of the
-                // (innermost) loop body during AST->ASR. This preserves
-                // `GO TO <label>` cycle semantics.
-                next_line(cur);
-                t.cur = cur;
+                // The parser drops the `<label> CONTINUE` and marks the
+                // loops it terminates as nonblock (see `nonblock_do`)
+                push_token_advance(cur, "continue");
+                tokenize_line(cur);
             } else {
                 // TODO: add a continue label
                 lex_body_statement(cur);
@@ -1493,9 +1488,9 @@ struct FixedFormRecursiveDescent {
             // end entire loop nesting with single `CONTINUE`
             // the usual terminal statement for do loops
             if (next_is(cur, "continue")) {
-                // See note above; label attaches to innermost end_do.
-                next_line(cur);
-                t.cur = cur;
+                // See note above.
+                push_token_advance(cur, "continue");
+                tokenize_line(cur);
             } else {
                 // TODO: add a continue label
                 lex_body_statement(cur);
@@ -1510,9 +1505,9 @@ struct FixedFormRecursiveDescent {
         } else {
             // end one nesting of loop
             if (next_is(cur, "continue")) {
-                // See note above; label attaches to end_do.
-                next_line(cur);
-                t.cur = cur;
+                // See note above.
+                push_token_advance(cur, "continue");
+                tokenize_line(cur);
             } else {
                 // TODO: add a continue label
                 lex_body_statement(cur);

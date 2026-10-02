@@ -36,12 +36,12 @@ end if
 
 !     (d) Legacy `DO <label> ... <label> CONTINUE` form.
 s = 0
-do i = 1, 5
+do 3 i = 1, 5
     if (i == 3) then
         go to 3
     end if
     s = s + i
-3 end do
+    3 continue
 if (s /= 12) then
     error stop
 end if
