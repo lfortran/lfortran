@@ -1190,6 +1190,10 @@ public:
                 ASR::CustomOperator_t* x = ASR::down_cast<ASR::CustomOperator_t>(sym);
                 return instantiate_CustomOperator(x);
             }
+            case (ASR::symbolType::GenericProcedure) : {
+                ASR::GenericProcedure_t* x = ASR::down_cast<ASR::GenericProcedure_t>(sym);
+                return instantiate_GenericProcedure(x);
+            }
             case (ASR::symbolType::AssociateBlock) : {
                 ASR::AssociateBlock_t* x = ASR::down_cast<ASR::AssociateBlock_t>(sym);
                 return instantiate_AssociateBlock(x);
@@ -1862,6 +1866,78 @@ public:
         return new_scope->resolve_symbol(x->m_name);
     }
 
+    static bool is_in_template(SymbolTable* scope) {
+        for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+            if (s->asr_owner != nullptr && ASR::is_a<ASR::symbol_t>(*s->asr_owner)
+                    && ASR::is_a<ASR::Template_t>(
+                        *ASR::down_cast<ASR::symbol_t>(s->asr_owner))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // A procedure declared outside the template, e.g. a module procedure,
+    // is not instantiated: the existing procedure is referenced from
+    // target_scope, through an ExternalSymbol if it is not visible there.
+    ASR::symbol_t* reference_host_procedure(ASR::symbol_t* proc) {
+        ASR::symbol_t* proc_past = ASRUtils::symbol_get_past_external(proc);
+        std::string name = ASRUtils::symbol_name(proc);
+        ASR::symbol_t* visible = target_scope->resolve_symbol(name);
+        if (visible != nullptr
+                && ASRUtils::symbol_get_past_external(visible) == proc_past) {
+            return visible;
+        }
+        SymbolTable* host_scope = ASRUtils::symbol_parent_symtab(proc_past);
+        if (host_scope->asr_owner == nullptr
+                || !ASR::is_a<ASR::symbol_t>(*host_scope->asr_owner)
+                || !ASR::is_a<ASR::Module_t>(
+                    *ASR::down_cast<ASR::symbol_t>(host_scope->asr_owner))) {
+            return nullptr;
+        }
+        ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(
+            ASR::down_cast<ASR::symbol_t>(host_scope->asr_owner));
+        char* original_name = ASRUtils::symbol_name(proc_past);
+        std::string ext_name = target_scope->get_unique_name(
+            "1_" + std::string(module->m_name) + "_" + original_name, false);
+        ASR::symbol_t* e = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+            al, proc_past->base.loc, target_scope, s2c(al, ext_name), proc_past,
+            module->m_name, nullptr, 0, original_name, ASR::accessType::Private));
+        target_scope->add_symbol(ext_name, e);
+        return e;
+    }
+
+    // A generic interface declared in a templated procedure: a specific that
+    // is part of the template, such as a deferred procedure, is instantiated
+    // in the same scope, so that a deferred procedure becomes the procedure
+    // it is instantiated with. Any other specific is the existing procedure.
+    ASR::symbol_t* instantiate_GenericProcedure(ASR::GenericProcedure_t* x) {
+        Vec<ASR::symbol_t*> procs;
+        procs.reserve(al, x->n_procs);
+        for (size_t i = 0; i < x->n_procs; i++) {
+            ASR::symbol_t* proc = x->m_procs[i];
+            std::string proc_name = ASRUtils::symbol_name(proc);
+            ASR::symbol_t* new_proc = nullptr;
+            if (symbol_subs.find(proc_name) == symbol_subs.end()
+                    && !is_in_template(ASRUtils::symbol_parent_symtab(proc))) {
+                new_proc = reference_host_procedure(proc);
+            }
+            if (new_proc == nullptr) {
+                SymbolInstantiator t(al, target_scope, type_subs, symbol_subs,
+                    proc_name, proc, diagnostics);
+                new_proc = t.instantiate();
+            }
+            procs.push_back(al, new_proc);
+        }
+
+        ASR::symbol_t* new_x = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_GenericProcedure_t(al, x->base.base.loc, target_scope,
+                s2c(al, new_sym_name), procs.p, procs.size(), x->m_access));
+        target_scope->add_symbol(new_sym_name, new_x);
+
+        return new_x;
+    }
+
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
 
@@ -2082,6 +2158,9 @@ public:
             case (ASR::symbolType::CustomOperator) : {
                 break;
             }
+            case (ASR::symbolType::GenericProcedure) : {
+                break;
+            }
             default: {
                 std::string sym_name = ASRUtils::symbol_name(sym);
                 throw LCompilersException("Instantiation body of " + sym_name
@@ -2274,6 +2353,29 @@ public:
         return ASR::make_Var_t(al, x->base.base.loc, sym);
     }
 
+    // A call through a generic interface declared in the templated procedure
+    // refers to that generic's instantiation.
+    // Any other generic interface of the template, e.g. one declared in a
+    // template block, is not reachable from the instantiation: the call then
+    // only refers to its resolved specific.
+    ASR::symbol_t* instantiate_original_name(ASR::symbol_t* original_name) {
+        if (original_name == nullptr
+                || !ASR::is_a<ASR::GenericProcedure_t>(*original_name)) {
+            return original_name;
+        }
+        SymbolTable* generic_scope = ASRUtils::symbol_parent_symtab(original_name);
+        if (generic_scope == ASRUtils::symbol_symtab(sym)) {
+            ASR::symbol_t* new_original_name = new_scope->get_symbol(
+                ASRUtils::symbol_name(original_name));
+            LCOMPILERS_ASSERT(new_original_name != nullptr);
+            return new_original_name;
+        }
+        if (SymbolInstantiator::is_in_template(generic_scope)) {
+            return nullptr;
+        }
+        return original_name;
+    }
+
     ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t* x) {
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
@@ -2325,7 +2427,7 @@ public:
         // A call made by its own name must keep naming the instantiated
         // procedure, not the template's.
         ASR::symbol_t* original_name = x->m_original_name == x->m_name
-            ? name : x->m_original_name;
+            ? name : instantiate_original_name(x->m_original_name);
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name,
             original_name, args.p, args.size(), type, value, dt);
     }
@@ -2392,7 +2494,7 @@ public:
         }
 
         ASR::symbol_t* original_name = x->m_original_name == x->m_name
-            ? name : x->m_original_name;
+            ? name : instantiate_original_name(x->m_original_name);
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name,
             original_name, args.p, args.size(), dt, nullptr, false);
     }

@@ -2265,7 +2265,37 @@ public:
     std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure;
     LCompilers::LocationManager &lm;
 
-    std::map<std::string, std::vector<std::pair<std::string, Location>>> generic_procedures;
+    // A specific procedure named in a generic interface block, with the scope
+    // of that block: the generic interface is created in that scope and the
+    // specific is looked up from it, so a generic declared in a procedure can
+    // name the procedure's dummy procedures.
+    struct GenericSpecific {
+        std::string name;
+        Location loc;
+        SymbolTable *scope;
+    };
+    std::map<std::string, std::vector<GenericSpecific>> generic_procedures;
+
+    // Whether a generic interface `name` is declared in `scope` (or, if
+    // `enclosing` is true, in a scope enclosing it) and not built yet.
+    bool is_pending_generic_procedure(const std::string &name,
+            SymbolTable *scope, bool enclosing) {
+        auto it = generic_procedures.find(name);
+        if (it == generic_procedures.end()) {
+            return false;
+        }
+        for (auto &specific : it->second) {
+            for (SymbolTable *s = scope; s != nullptr; s = s->parent) {
+                if (s == specific.scope) {
+                    return true;
+                }
+                if (!enclosing) {
+                    break;
+                }
+            }
+        }
+        return false;
+    }
     /*
      * A struct to store the information of a postponed call to genericProcedure
      * The information should be consumed by function `evaluate_delayed_generic_procedure_calls`
@@ -3095,9 +3125,9 @@ public:
 
     bool is_funcCall_to_unresolved_genereicProcedure(AST::expr_t* expr){
         return AST::is_a<AST::FuncCallOrArray_t>(*expr) &&
-            (generic_procedures.find(
-                AST::down_cast<AST::FuncCallOrArray_t>(expr)->m_func)
-            != generic_procedures.end());
+            is_pending_generic_procedure(
+                AST::down_cast<AST::FuncCallOrArray_t>(expr)->m_func,
+                current_scope, true);
     }
 
     bool is_type_bound_func_call(AST::expr_t* expr) {
