@@ -2374,3 +2374,84 @@ module continue_compilation_templates_01_nonconst_bound
         end type
     end template
 end module
+
+! A defined operator can be a template instantiation argument (#13549). These
+! cover its diagnostics: an undeclared operator, an operator with no specific
+! procedure matching the deferred interface, and an operator passed where the
+! template expects a deferred type.
+module continue_compilation_templates_01_defop_ops
+    implicit none
+    interface operator(.minus.)
+        procedure defop_sub_int
+    end interface
+contains
+    pure function defop_sub_int(x, y) result(r)
+        integer, intent(in) :: x, y
+        integer :: r
+        r = x - y
+    end function
+end module
+
+module continue_compilation_templates_01_defop_tmpl
+    implicit none
+
+    requirement defop_req {T, op}
+        deferred type :: T
+        deferred interface
+            pure function op(x, y) result(z)
+                type(T), intent(in) :: x, y
+                type(T) :: z
+            end function
+        end interface
+    end requirement
+
+    template defop_t {T, op}
+        require :: defop_req {T, op}
+    contains
+        pure function defop_f(x, y) result(z)
+            type(T), intent(in) :: x, y
+            type(T) :: z
+            z = op(x, y)
+        end function
+    end template
+contains
+    template function defop_apply{op}(x, y) result(r)
+        deferred interface
+            pure integer function op(x, y)
+                integer, intent(in) :: x, y
+            end function
+        end interface
+        integer, intent(in) :: x, y
+        integer :: r
+        r = op(x, y)
+    end function
+
+    template function defop_applyr{op}(x, y) result(r)
+        deferred interface
+            pure real function op(x, y)
+                real, intent(in) :: x, y
+            end function
+        end interface
+        real, intent(in) :: x, y
+        real :: r
+        r = op(x, y)
+    end function
+end module
+
+module continue_compilation_templates_01_defop
+    use continue_compilation_templates_01_defop_ops
+    use continue_compilation_templates_01_defop_tmpl
+    implicit none
+contains
+    subroutine defop_undeclared()
+        print *, defop_apply{operator(.plus.)}(9, 2)  ! {Error} the defined operator '.plus.' is not declared
+    end subroutine
+
+    subroutine defop_no_match()
+        print *, defop_applyr{operator(.minus.)}(9.0, 2.0)  ! {Error} no specific procedure of the defined operator '.minus.' matches the interface of 'op'
+    end subroutine
+
+    subroutine defop_for_type()
+        instantiate defop_t {operator(.minus.), integer}, only: defop_g => defop_f  ! {Error} the instantiation argument 'operator(.minus.)' for 't' requires a deferred procedure
+    end subroutine
+end module
