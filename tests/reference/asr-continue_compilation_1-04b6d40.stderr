@@ -881,15 +881,15 @@ semantic error: Explicit shaped array with nonconstant bounds
      |                      ^^^^^^^^^ 
 
 semantic error: Initialization of `pnc_y1` must reduce to a compile time constant.
-    --> tests/errors/continue_compilation_1.f90:2091:5
+    --> tests/errors/continue_compilation_1.f90:2088:5
      |
-2091 |     integer, parameter :: pnc_y1 = abs(pnc_bla)  ! {Error} Initialization of `pnc_y1` must reduce to a compile time constant.
+2088 |     integer, parameter :: pnc_y1 = abs(pnc_bla)  ! {Error} Initialization of `pnc_y1` must reduce to a compile time constant.
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Initialization of `pnc_y2` must reduce to a compile time constant.
-    --> tests/errors/continue_compilation_1.f90:2092:5
+    --> tests/errors/continue_compilation_1.f90:2089:5
      |
-2092 |     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
+2089 |     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
