@@ -1214,6 +1214,33 @@ public:
         return f;
     }
 
+    // The interface of a `procedure(iface) ::` entity in the instantiation.
+    // A deferred interface of the template stands for its argument, and an
+    // interface declared next to the entity for its copy there. Any other
+    // interface is the same one, which make_Variable_t_util imports into the
+    // new scope when it is not visible from there.
+    ASR::symbol_t* instantiate_interface(ASR::Variable_t* x) {
+        ASR::symbol_t* iface = x->m_type_declaration;
+        if (iface == nullptr) {
+            return nullptr;
+        }
+        ASR::symbol_t* definition = ASRUtils::symbol_get_past_external(iface);
+        std::string name = ASRUtils::symbol_name(definition);
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(definition);
+        if (owner != nullptr && ASR::is_a<ASR::Template_t>(*owner)
+                && symbol_subs.find(name) != symbol_subs.end()) {
+            return symbol_subs[name];
+        }
+        if (ASRUtils::symbol_parent_symtab(iface) == x->m_parent_symtab) {
+            // Variables are instantiated before the other symbols of their
+            // scope, so the copy of the interface may not exist yet.
+            SymbolInstantiator t(al, target_scope, type_subs, symbol_subs,
+                ASRUtils::symbol_name(iface), iface, diagnostics);
+            return t.instantiate();
+        }
+        return iface;
+    }
+
     // The body is instantiated with the body of the enclosing procedure.
     ASR::symbol_t* instantiate_AssociateBlock(ASR::AssociateBlock_t* x) {
         new_scope = al.make_new<SymbolTable>(target_scope);
@@ -1275,6 +1302,8 @@ public:
                    && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(new_type))) {
             ASR::TypeParameter_t* param = ASR::down_cast<ASR::TypeParameter_t>(ASRUtils::extract_type(x->m_type));
             type_decl = type_subs[param->m_param].second;
+        } else if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(new_type))) {
+            type_decl = instantiate_interface(x);
         }
 
         ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
@@ -2469,9 +2498,27 @@ public:
         return &substitute_type(nullptr, &x->base)->base;
     }
 
+    // A bound of an expression's type may refer to a named constant local
+    // to the instantiated procedure, e.g. `k` in `integer, parameter ::
+    // k = n; integer :: x(k)`, which has a value once the deferred constant
+    // `n` is substituted. Use that value, as the frontend does for the same
+    // declaration outside a template, so that the type does not depend on
+    // a symbol of the procedure's scope (passes copy expression types into
+    // new functions, e.g. the helpers of array intrinsics).
+    ASR::expr_t* fold_dimension(ASR::expr_t* dim) {
+        if (dim && ASRUtils::expr_value(dim)) {
+            return ASRUtils::expr_value(dim);
+        }
+        return dim;
+    }
+
     ASR::asr_t* duplicate_Array(ASR::Array_t* x) {
         ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(
             ASRUtils::TYPE(BaseExprStmtDuplicator::duplicate_Array(x)));
+        for (size_t i = 0; i < array->n_dims; i++) {
+            array->m_dims[i].m_start = fold_dimension(array->m_dims[i].m_start);
+            array->m_dims[i].m_length = fold_dimension(array->m_dims[i].m_length);
+        }
         // Substitution can change the layout: character arrays cannot be fixed-size.
         return &ASRUtils::make_Array_t_util(al, array->base.base.loc,
             array->m_type, array->m_dims, array->n_dims, ASR::abiType::Source,
