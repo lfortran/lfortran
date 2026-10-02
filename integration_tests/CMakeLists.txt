@@ -121,7 +121,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             target_compile_options(${name} PUBLIC ${extra_args} --backend=llvm --target=wasm32-wasi)
             target_link_options(${name} PUBLIC --backend=llvm --target=wasm32-wasi
                 -Wl,-zstack-size=52428800 -Wl,--initial-memory=268435456 -Wl,--max-memory=268435456)
-            add_test(${name} ${WASM_EXEC_RUNTIME} ${CURRENT_BINARY_DIR}/${name} --dir=.)
+            add_test(${name} ${WASM_EXEC_RUNTIME} --dir=. ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_wasm_emcc")
             find_program(WASM_EXEC_RUNTIME node)
             execute_process(COMMAND "${WASM_EXEC_RUNTIME}" --version
