@@ -5,6 +5,7 @@
 #include <libasr/asr.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/semantic_exception.h>
 
 namespace LCompilers {
@@ -1557,7 +1558,42 @@ public:
             value, dest);
     }
 
-    // An intrinsic of a deferred constant, e.g. `abs(-n)` or `int(n*2.5)`,
+    // The compile-time value of an intrinsic whose arguments `args` are all
+    // constants, computed by the intrinsic's evaluation function `eval`;
+    // nullptr if an argument has no compile-time value, or if `eval` reports
+    // an error, which is passed on.
+    ASR::expr_t* eval_intrinsic(ASRUtils::eval_intrinsic_function eval,
+            Vec<ASR::expr_t*> &args, ASR::ttype_t* type, const Location &loc) {
+        Vec<ASR::expr_t*> arg_values;
+        arg_values.reserve(al, args.size());
+        for (size_t i = 0; i < args.size(); i++) {
+            // An array argument is passed through a change of its physical
+            // type, which carries no value of its own.
+            arg_values.push_back(al, args[i]
+                ? ASRUtils::get_past_array_physical_cast(args[i]) : nullptr);
+        }
+        if (eval == nullptr || !ASRUtils::all_args_evaluated(arg_values, true)) {
+            return nullptr;
+        }
+        for (size_t i = 0; i < arg_values.size(); i++) {
+            if (arg_values[i]) {
+                arg_values.p[i] = ASRUtils::expr_value(arg_values[i]);
+            }
+        }
+        diag::Diagnostics eval_diagnostics;
+        ASR::expr_t* value = eval(al, loc, type, arg_values, eval_diagnostics);
+        if (eval_diagnostics.has_error()) {
+            value = nullptr;
+            if (diagnostics) {
+                for (auto &d: eval_diagnostics.diagnostics) {
+                    diagnostics->diagnostics.push_back(d);
+                }
+            }
+        }
+        return value;
+    }
+
+    // An intrinsic of a deferred constant, e.g. `abs(-n)` or `sin(real(n))`,
     // evaluated by the intrinsic's own evaluation function.
     ASR::asr_t* duplicate_IntrinsicElementalFunction(
             ASR::IntrinsicElementalFunction_t* x) {
@@ -1568,47 +1604,58 @@ public:
         }
         ASR::ttype_t* type = duplicate_ttype(x->m_type);
         ASR::expr_t* value = duplicate_expr(x->m_value);
-        ASRUtils::eval_intrinsic_function eval =
-            ASRUtils::IntrinsicElementalFunctionRegistry::get_eval_function(
-                x->m_intrinsic_id);
-        if (value == nullptr && eval && !ASRUtils::is_array(type)) {
-            Vec<ASR::expr_t*> arg_values;
-            arg_values.reserve(al, args.size());
-            for (size_t i = 0; i < args.size(); i++) {
-                ASR::expr_t* arg_value = ASRUtils::expr_value(args[i]);
-                if (arg_value == nullptr
-                        || !(ASR::is_a<ASR::IntegerConstant_t>(*arg_value)
-                            || ASR::is_a<ASR::RealConstant_t>(*arg_value))) {
-                    break;
-                }
-                arg_values.push_back(al, arg_value);
-            }
-            // `eval_Mod` divides an integer by the second argument unchecked,
-            // while `eval_Modulo` reports a zero second argument itself.
-            int64_t divisor = -1;
-            if (arg_values.size() == args.size()
-                    && x->m_intrinsic_id == static_cast<int64_t>(
-                        ASRUtils::IntrinsicElementalFunctions::Mod)
-                    && ASRUtils::extract_value(arg_values[1], divisor)
-                    && divisor == 0) {
-                report_error("Second argument of mod cannot be 0",
-                    x->base.base.loc);
-            } else if (arg_values.size() == args.size()) {
-                diag::Diagnostics eval_diagnostics;
-                value = eval(al, x->base.base.loc, type, arg_values,
-                    eval_diagnostics);
-                if (eval_diagnostics.has_error()) {
-                    value = nullptr;
-                    if (diagnostics) {
-                        for (auto &d: eval_diagnostics.diagnostics) {
-                            diagnostics->diagnostics.push_back(d);
-                        }
-                    }
-                }
-            }
+        // `eval_Mod` divides an integer by the second argument unchecked,
+        // while `eval_Modulo` reports a zero second argument itself.
+        int64_t divisor = -1;
+        if (value == nullptr
+                && x->m_intrinsic_id == static_cast<int64_t>(
+                    ASRUtils::IntrinsicElementalFunctions::Mod)
+                && ASRUtils::all_args_evaluated(args)
+                && ASRUtils::extract_value(ASRUtils::expr_value(args[1]), divisor)
+                && divisor == 0) {
+            report_error("Second argument of mod cannot be 0",
+                x->base.base.loc);
+        } else if (value == nullptr) {
+            value = eval_intrinsic(
+                ASRUtils::IntrinsicElementalFunctionRegistry::get_eval_function(
+                    x->m_intrinsic_id), args, type, x->base.base.loc);
         }
         return ASRUtils::make_IntrinsicElementalFunction_t_util(al,
             x->base.base.loc, x->m_intrinsic_id, args.p, args.size(),
+            x->m_overload_id, type, value);
+    }
+
+    // An array constructor of a deferred constant, e.g. `[n, 2*n]`, becomes
+    // an array constant once its elements are.
+    ASR::asr_t* duplicate_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            args.push_back(al, duplicate_expr(x->m_args[i]));
+        }
+        return ASRUtils::make_ArrayConstructor_t_util(al, x->base.base.loc,
+            args.p, args.size(), duplicate_ttype(x->m_type),
+            x->m_storage_format, duplicate_expr(x->m_struct_var));
+    }
+
+    // A transformational intrinsic of a deferred constant, e.g.
+    // `sum([n, n])`, evaluated by the intrinsic's own evaluation function.
+    ASR::asr_t* duplicate_IntrinsicArrayFunction(
+            ASR::IntrinsicArrayFunction_t* x) {
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            args.push_back(al, duplicate_expr(x->m_args[i]));
+        }
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        if (value == nullptr) {
+            value = eval_intrinsic(
+                ASRUtils::IntrinsicArrayFunctionRegistry::get_eval_function(
+                    x->m_arr_intrinsic_id), args, type, x->base.base.loc);
+        }
+        return ASRUtils::make_IntrinsicArrayFunction_t_util(al,
+            x->base.base.loc, x->m_arr_intrinsic_id, args.p, args.size(),
             x->m_overload_id, type, value);
     }
 

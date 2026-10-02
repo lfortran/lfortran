@@ -1991,10 +1991,10 @@ module requirement_undeclared_arg_1
 
 end module
 
-! A named constant of a template initialized with an intrinsic function of a
-! deferred constant is folded at instantiation for the numeric intrinsics
-! such as `abs` or `max`; the others are rejected instead of leaving the
-! constant without a value (#13357).
+! A named constant of a template is initialized with a constant expression;
+! one of a deferred constant, such as `sin(real(n))`, is evaluated when the
+! template is instantiated, but a variable never reduces to a constant
+! (#13357).
 module template_deferred_const_intrinsic_1
     implicit none
 
@@ -2003,27 +2003,27 @@ module template_deferred_const_intrinsic_1
     contains
         function f() result(r)
             real :: r
-            real, parameter :: x = sin(real(n))  ! {Error} initialization of named constant `x` with this expression of a deferred constant is not supported yet
+            real, parameter :: x = -r  ! {Error} Initialization of `x` must reduce to a compile time constant.
             r = x
         end function
     end template
 
 end module
 
-! The rejection of such an initializer is final, so that instantiating the
-! template reports it instead of failing on a constant without a value; the
-! instantiation reports a division by zero in the initializer it evaluates
+! Instantiating a template evaluates the initializers of its named constants
+! that use a deferred constant, and reports the errors of that evaluation,
+! such as a division by zero or the square root of a negative number
 ! (#13357).
 module template_deferred_const_instantiated_1
     implicit none
     integer, parameter :: three = 3
 
-    template tmpl_ishft {n}
+    template tmpl_sqrt {n}
         deferred integer, parameter :: n
     contains
         function f() result(r)
             integer :: r
-            integer, parameter :: k = ishft(n, 1) + 1  ! {Error} initialization of named constant `k` with this expression of a deferred constant is not supported yet
+            integer, parameter :: k = int(sqrt(real(n - 4)))  ! {Error} Argument of `sqrt` has a negative argument
             r = k
         end function
     end template
@@ -2060,8 +2060,8 @@ module template_deferred_const_instantiated_1
 
 contains
 
-    subroutine use_ishft()
-        instantiate tmpl_ishft {three}
+    subroutine use_sqrt()
+        instantiate tmpl_sqrt {three}
     end subroutine
 
     subroutine use_div()
