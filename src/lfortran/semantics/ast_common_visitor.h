@@ -10321,8 +10321,7 @@ public:
                             } else if ( ASR::is_a<ASR::ArrayConstructor_t>(*init_expr) ||
                                 ( ASR::is_a<ASR::Cast_t>(*init_expr) &&
                                 ASR::is_a<ASR::ArrayConstructor_t>(*ASR::down_cast<ASR::Cast_t>(init_expr)->m_arg) )
-                                || ASR::is_a<ASR::IntrinsicElementalFunction_t>(*init_expr) ||
-                                ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr) ||
+                                || ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr) ||
                                 ASR::is_a<ASR::TypeInquiry_t>(*init_expr) ||
                                 ASR::is_a<ASR::StringLen_t>(*init_expr) ) {
                                 // For IntrinsicArrayFunction (transformational intrinsics like minloc, maxloc, sum, etc.),
@@ -10353,12 +10352,6 @@ public:
                                         }
                                     }
                                 }
-                                value = init_expr;
-                            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr) ||
-                                        ASR::is_a<ASR::ComplexBinOp_t>(*init_expr)) {
-                                value = init_expr;
-                            } else if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr) || ASR::is_a<ASR::BitCast_t>(*init_expr) ||
-                                ASR::is_a<ASR::IntegerCompare_t>(*init_expr)) {
                                 value = init_expr;
                             } else {
                                 diag.add(Diagnostic(
