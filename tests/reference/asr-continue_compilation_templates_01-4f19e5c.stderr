@@ -1361,6 +1361,36 @@ semantic error: instantiated procedure 'own_tmpl' has the same name as the templ
 2289 |         instantiate own_tmpl {integer}, only: own_tmpl => five  ! {Error} instantiated procedure 'own_tmpl' has the same name as the template 'own_tmpl' it instantiates
      |                                               ~~~~~~~~~~~~~~~~ help: give the instance a different local name, e.g. `only: own_tmpl_instance => five`
 
+semantic error: operator(+) is not defined in template 'instantiate_only_generic_spec_t'
+    --> tests/errors/continue_compilation_templates_01.f90:2353:66
+     |
+2353 |     instantiate instantiate_only_generic_spec_t {integer}, only: operator(+)  ! {Error} operator(+) is not defined in template 'instantiate_only_generic_spec_t'
+     |                                                                  ^^^^^^^^^^^ 'instantiate_only_generic_spec_t' has no operator(+) to instantiate
+
+semantic error: assignment(=) is not defined in template 'instantiate_only_generic_spec_t'
+    --> tests/errors/continue_compilation_templates_01.f90:2354:63
+     |
+2354 |     instantiate instantiate_only_generic_spec_t {real}, only: assignment(=)  ! {Error} assignment(=) is not defined in template 'instantiate_only_generic_spec_t'
+     |                                                               ^^^^^^^^^^^^^ 'instantiate_only_generic_spec_t' has no assignment(=) to instantiate
+
+semantic error: operator(.plus.) is not defined in template 'instantiate_only_generic_spec_t'
+    --> tests/errors/continue_compilation_templates_01.f90:2355:63
+     |
+2355 |     instantiate instantiate_only_generic_spec_t {real}, only: operator(.plus.)  ! {Error} operator(.plus.) is not defined in template 'instantiate_only_generic_spec_t'
+     |                                                               ^^^^^^^^^^^^^^^^ 'instantiate_only_generic_spec_t' has no operator(.plus.) to instantiate
+
+semantic error: Explicit shaped array with nonconstant bounds
+    --> tests/errors/continue_compilation_templates_01.f90:2366:26
+     |
+2366 |             integer :: b(n*nonconst_bound_m)  ! {Error} Explicit shaped array with nonconstant bounds
+     |                          ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Explicit shaped array with nonconstant bounds
+    --> tests/errors/continue_compilation_templates_01.f90:2373:26
+     |
+2373 |             integer :: b(max(n*nonconst_bound_m, 5))  ! {Error} Explicit shaped array with nonconstant bounds
+     |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
     |

@@ -194,7 +194,7 @@ base=$(basename "$testfile" .f90)
 # Compile with LFortran + caffeine
 # ----------------------------------------
 
-lfortran $extrafiles $testfile \
+lfortran "$@" $extrafiles $testfile \
     $extra_args \
     -o "${base}_lf.out" \
     -L$PWD/caffeine/inst/lib \
