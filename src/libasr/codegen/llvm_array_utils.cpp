@@ -1406,12 +1406,20 @@ namespace LCompilers {
                 llvm::Value* dest_data = llvm_utils->CreateLoad2(
                     llvm_data_type->getPointerTo(), first_ptr);
                 ASR::ttype_t* elem_type = ASRUtils::extract_type(asr_data_type);
+                ASR::Struct_t* elem_struct_sym = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(array_expr)));
                 for_each_element_of_descriptor(arr_type, array, llvm_data_type,
                     ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array_expr)),
                     "reshape_deepcopy",
                     [&](llvm::Value* iter, llvm::Value* src_elem) {
                         llvm::Value* dest_elem = builder->CreateInBoundsGEP(
                             llvm_data_type, dest_data, iter);
+                        // Give the element the member storage a struct owns
+                        // (e.g. fixed-size character array buffers), which
+                        // deepcopy copies into.
+                        llvm_utils->struct_api->allocate_struct_members(
+                            elem_struct_sym, dest_elem, elem_type);
                         llvm_utils->deepcopy(array_expr, src_elem, dest_elem,
                             elem_type, elem_type, module);
                     });
