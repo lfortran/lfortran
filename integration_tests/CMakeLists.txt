@@ -2760,6 +2760,9 @@ RUN(NAME derived_types_208 LABELS gfortran llvm)
 # The LLVM backend does not treat the two definitions of the sequence type as
 # the same type yet (#13782); see derived_types_209.f90.
 RUN(NAME derived_types_209 LABELS gfortran fortran)
+RUN(NAME derived_types_213 LABELS gfortran llvm)
+RUN(NAME derived_types_214 LABELS llvm) # gfortran segfaults on reshape () of a polymorphic array passed to a class dummy
+RUN(NAME derived_types_215 LABELS gfortran llvm)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)

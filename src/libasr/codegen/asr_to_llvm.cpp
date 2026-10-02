@@ -4956,6 +4956,27 @@ public:
                     builder->CreateMemSet(target_,
                         llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
                         llvm_total_bytes, llvm::MaybeAlign());
+                    // Give each element the member storage a struct owns
+                    // (e.g. fixed-size character array buffers), which
+                    // deepcopy copies into.
+                    ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(x.m_array)));
+                    llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+                    llvm::Value* elem_idx = llvm_utils->CreateAlloca(*builder, i64_ty);
+                    builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), elem_idx);
+                    llvm_utils->create_loop("reshape_allocate_members", [&]() {
+                        return builder->CreateICmpSLT(
+                            llvm_utils->CreateLoad2(i64_ty, elem_idx),
+                            llvm::ConstantInt::get(i64_ty, target_size));
+                    }, [&]() {
+                        llvm::Value* idx_val = llvm_utils->CreateLoad2(i64_ty, elem_idx);
+                        allocate_array_members_of_struct(struct_sym,
+                            builder->CreateInBoundsGEP(llvm_data_type, target_, idx_val),
+                            element_type);
+                        builder->CreateStore(builder->CreateAdd(idx_val,
+                            llvm::ConstantInt::get(i64_ty, 1)), elem_idx);
+                    });
                     for (int64_t i = 0; i < copy_size; i++) {
                         llvm::Value* src_elem = llvm_utils->create_gep2(
                             src_target_type, array, i);
