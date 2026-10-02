@@ -2895,6 +2895,44 @@ public:
         }
     }
 
+    // An integer expression built only from constants and named constants
+    // is a constant expression even when a named constant has no value yet
+    // (a deferred template parameter, which is folded at instantiation).
+    bool is_named_constant_expr(ASR::expr_t* expr) {
+        if (ASRUtils::is_value_constant(expr)) {
+            return true;
+        }
+        switch (expr->type) {
+            case ASR::exprType::IntegerBinOp: {
+                ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+                return is_named_constant_expr(binop->m_left) &&
+                    is_named_constant_expr(binop->m_right);
+            }
+            case ASR::exprType::IntegerUnaryMinus: {
+                return is_named_constant_expr(
+                    ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_arg);
+            }
+            case ASR::exprType::Cast: {
+                return is_named_constant_expr(
+                    ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
+            }
+            case ASR::exprType::IntrinsicElementalFunction: {
+                ASR::IntrinsicElementalFunction_t* func =
+                    ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+                for (size_t i = 0; i < func->n_args; i++) {
+                    if (func->m_args[i] != nullptr &&
+                            !is_named_constant_expr(func->m_args[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
     void dimension_attribute_error_check(ASR::expr_t* dim_expr) {
         check_intent_out_in_spec_expr(dim_expr);
         bool error = false;
@@ -2929,7 +2967,7 @@ public:
             ASR::ttype_t* dim_expr_type = ASRUtils::expr_type(dim_expr);
             if (dim_expr_type->type != ASR::ttypeType::Integer) {
                 error = true;
-            } else if (!ASRUtils::is_value_constant(dim_expr)) {
+            } else if (!is_named_constant_expr(dim_expr)) {
                 bool in_function_scope = in_Subroutine;
                 if (!in_function_scope) {
                     SymbolTable* scope = current_scope;
@@ -15183,7 +15221,8 @@ public:
                     ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
                     std::vector<int> array_arg_index;
                     for (size_t i = 0; i < f->n_args; i++) {
-                        if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
+                        if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i])) &&
+                            !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(f->m_args[i]))) {
                             array_arg_index.push_back(i);
                         }
                     }
@@ -15422,7 +15461,8 @@ public:
             // call b(w(icon)) -> call b(w(icon:)) if b is expecting an array
             std::map<int, ASR::ttype_t*> array_arg_idx;
             for (size_t i = 0; i < f->n_args; i++) {
-                if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
+                if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i])) &&
+                    !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(f->m_args[i]))) {
                     array_arg_idx[i] = ASRUtils::expr_type(f->m_args[i]);
                 }
             }
@@ -15676,6 +15716,7 @@ public:
             // Check if a scalar (ArrayItem) is passed to an array argument
             for (size_t i = 0; i < f->n_args && i < args.size(); i++) {
                 if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i])) &&
+                        !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(f->m_args[i])) &&
                         args[i].m_value &&
                         ASR::is_a<ASR::ArrayItem_t>(*args[i].m_value) &&
                         !ASRUtils::is_array(ASRUtils::expr_type(args[i].m_value))) {
@@ -26553,6 +26594,86 @@ public:
 
         // make custom operators names distinct by appending "~~" to the begining of their names
         return "~~" + op;
+    }
+
+    static std::string instantiation_intrinsic_op_str(AST::intrinsicopType op) {
+        switch (op) {
+            case AST::intrinsicopType::AND: return ".and.";
+            case AST::intrinsicopType::OR: return ".or.";
+            case AST::intrinsicopType::XOR: return ".xor.";
+            case AST::intrinsicopType::EQV: return ".eqv.";
+            case AST::intrinsicopType::NEQV: return ".neqv.";
+            case AST::intrinsicopType::PLUS: return "+";
+            case AST::intrinsicopType::MINUS: return "-";
+            case AST::intrinsicopType::STAR: return "*";
+            case AST::intrinsicopType::DIV: return "/";
+            case AST::intrinsicopType::POW: return "**";
+            case AST::intrinsicopType::NOT: return ".not.";
+            case AST::intrinsicopType::EQ: return "==";
+            case AST::intrinsicopType::GT: return ">";
+            case AST::intrinsicopType::GTE: return ">=";
+            case AST::intrinsicopType::LT: return "<";
+            case AST::intrinsicopType::LTE: return "<=";
+            case AST::intrinsicopType::NOTEQ: return "/=";
+            case AST::intrinsicopType::CONCAT: return "//";
+        }
+        return "";
+    }
+
+    // An item of the only-list of an INSTANTIATE statement names an entity
+    // or a generic spec (operator, assignment or defined input/output). For
+    // a generic spec, return true and set the name of the generic in the
+    // template (`remote_sym`), its name in the instantiating scope
+    // (`local_sym`) and its spelling for diagnostics (`spec`).
+    bool instantiation_generic_spec(AST::use_symbol_t *item,
+            std::string &remote_sym, std::string &local_sym, std::string &spec) {
+        switch (item->type) {
+            case AST::use_symbolType::UseSymbol: {
+                return false;
+            }
+            case AST::use_symbolType::UseAssignment: {
+                remote_sym = "~assign";
+                spec = "assignment(=)";
+                break;
+            }
+            case AST::use_symbolType::IntrinsicOperator: {
+                AST::intrinsicopType op =
+                    AST::down_cast<AST::IntrinsicOperator_t>(item)->m_op;
+                remote_sym = intrinsic2str[op];
+                spec = "operator(" + instantiation_intrinsic_op_str(op) + ")";
+                break;
+            }
+            case AST::use_symbolType::DefinedOperator: {
+                std::string op_name = to_lower(
+                    AST::down_cast<AST::DefinedOperator_t>(item)->m_opName);
+                remote_sym = update_custom_op_name(op_name);
+                spec = "operator(." + op_name + ".)";
+                break;
+            }
+            case AST::use_symbolType::RenameOperator: {
+                AST::RenameOperator_t *rename =
+                    AST::down_cast<AST::RenameOperator_t>(item);
+                std::string op_name = to_lower(rename->m_use_defop);
+                remote_sym = update_custom_op_name(op_name);
+                local_sym = update_custom_op_name(
+                    to_lower(rename->m_local_defop));
+                spec = "operator(." + op_name + ".)";
+                return true;
+            }
+            case AST::use_symbolType::UseWrite:
+            case AST::use_symbolType::UseRead: {
+                bool is_write = AST::is_a<AST::UseWrite_t>(*item);
+                std::string id = to_lower(is_write
+                    ? AST::down_cast<AST::UseWrite_t>(item)->m_id
+                    : AST::down_cast<AST::UseRead_t>(item)->m_id);
+                std::string kind = is_write ? "write" : "read";
+                remote_sym = "~" + kind + "_" + id;
+                spec = kind + "(" + id + ")";
+                break;
+            }
+        }
+        local_sym = remote_sym;
+        return true;
     }
 
     // Build a wrapper function in `scope` that calls the intrinsic
