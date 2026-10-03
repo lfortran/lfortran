@@ -10,9 +10,7 @@ go to (1, 2, 3), n
 2 a = a + 20
 3 a = a + 30
 
-if (a /= 60) then
-    error stop
-end if
+if (a /= 60) error stop
 
 assign 30 to n
 
@@ -21,8 +19,6 @@ go to n, (10, 20, 30)
 20 a = a + a
 30 a = a - a
 
-if (a /= 0) then
-    error stop
-end if
+if (a /= 0) error stop
 
 end program goto_03

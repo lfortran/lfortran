@@ -415,6 +415,7 @@ RUN(NAME print_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2)
 RUN(NAME print_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME print_14 LABELS gfortran llvm)
 RUN(NAME print_15 LABELS llvm)
+RUN(NAME print_16 LABELS gfortran llvm EXTRA_ARGS --std=f23)
 
 RUN(NAME print_arr_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm c fortran)
 RUN(NAME print_arr_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm c fortran)
@@ -571,6 +572,7 @@ RUN(NAME if_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fort
 RUN(NAME if_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm c fortran)
 RUN(NAME if_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # select case range
 RUN(NAME if_07 LABELS gfortran llvm)
+RUN(NAME if_09 LABELS gfortran llvm)
 
 RUN(NAME while_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
 RUN(NAME while_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm c fortran)
@@ -1291,6 +1293,7 @@ RUN(NAME format_108 LABELS gfortran llvm)
 RUN(NAME format_109 LABELS gfortran llvm)
 RUN(NAME format_110 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME format_111 LABELS gfortran llvm)
+RUN(NAME format_112 LABELS gfortran llvm)
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
 RUN(NAME submodule_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2495,6 +2498,7 @@ RUN(NAME complex_36 LABELS gfortran llvm)
 RUN(NAME complex_37 LABELS gfortran llvm)
 RUN(NAME complex_38 LABELS gfortran llvm)
 RUN(NAME complex_39 LABELS gfortran llvm)
+RUN(NAME complex_40 LABELS gfortran llvm)
 RUN(NAME complex_allocatable_scalar_01 LABELS gfortran llvm)
 RUN(NAME complex_array_member_access LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_implicit_cast LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3766,6 +3770,7 @@ RUN(NAME template_requirement_abstract_interface_01 LABELS llvm llvm_wasm llvm_w
 RUN(NAME template_local_param_dim_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_struct_dependency_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_require_intrinsic_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_reshape_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -5674,6 +5679,7 @@ RUN(NAME gpu_metal_367 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_373 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_374 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_378 LABELS llvm cuda_cpu) # integer(8) loop index is supported on cuda_cpu; metal declines integer(8); gfortran on CI lacks reduce clause
+RUN(NAME gpu_metal_379 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
