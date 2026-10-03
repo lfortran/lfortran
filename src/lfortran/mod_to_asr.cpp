@@ -360,7 +360,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
     ASR::asr_t *asr;
     Location loc;
     asr = ASR::make_TranslationUnit_t(al, loc,
-        parent_scope, nullptr, 0);
+        parent_scope, nullptr, 0, nullptr);
     ASR::TranslationUnit_t *tu = down_cast2<ASR::TranslationUnit_t>(asr);
     diag::Diagnostics diagnostics;
     LCOMPILERS_ASSERT(asr_verify(*tu, true, diagnostics));

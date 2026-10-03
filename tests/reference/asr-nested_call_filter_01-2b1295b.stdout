@@ -67,6 +67,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     []
@@ -104,6 +105,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -144,6 +146,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             nested_call_filter_mod:
                 (Module
@@ -194,6 +197,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 y)]
@@ -223,7 +227,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

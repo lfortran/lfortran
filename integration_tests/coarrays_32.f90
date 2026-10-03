@@ -4,7 +4,7 @@ program coarrays_32
     real, allocatable :: prototype(:,:)
     real, allocatable :: target_arr(:,:)[:]
 
-    allocate(prototype(10:12, 20:23))
+    allocate(prototype(3, 4))
 
     allocate(target_arr[*], mold=prototype)
 

@@ -4,6 +4,12 @@ program coarray_collectives_01
     integer :: val
     character(2) :: str = "hi"
 
+    type :: Point
+        real :: x, y
+    end type Point
+    type(Point) :: pt
+    integer, allocatable :: arr(:)
+
     me = this_image()
     n_images = num_images()
 
@@ -16,6 +22,9 @@ program coarray_collectives_01
     call co_max(str)
     call co_min(str)    
     call co_broadcast(val, 1)
+    call co_broadcast(pt, 1)
+    allocate(arr(5))
+    call co_broadcast(arr(1:5:2), 1)
 
     sync all
 end program

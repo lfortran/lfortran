@@ -189,6 +189,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 (Logical 4)]
@@ -199,6 +200,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     7 profile_config_t
@@ -245,6 +247,7 @@
                     [(Allocate
                         [((Var 7 profile_name)
                         []
+                        []
                         (IntegerConstant 40 (Integer 4) Decimal)
                         ()
                         (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString))]
@@ -254,6 +257,7 @@
                     )
                     (Allocate
                         [((Var 7 compiler_name)
+                        []
                         []
                         (IntegerConstant 40 (Integer 4) Decimal)
                         ()
@@ -266,6 +270,7 @@
                         [((Var 7 profiles)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 5 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -285,6 +290,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             modules_45_fpm_manifest_profile:
                 (Module
@@ -438,6 +444,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 1 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     2 file_scope_flag
                                                     Source
@@ -601,6 +608,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -793,6 +801,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -1075,6 +1084,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
                                                                 (Logical 4)]
@@ -1085,6 +1095,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 profile_config_t
@@ -1192,6 +1203,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     (Logical 4)]
@@ -1202,6 +1214,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         (Integer 4)
@@ -1217,6 +1230,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [new_profile]
                                     [(Var 6 profile_name)
@@ -1352,6 +1366,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 (Logical 4)]
@@ -1489,6 +1504,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 (Logical 4)]
@@ -1762,6 +1778,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     2 file_scope_flag
                                                     Source
@@ -1913,6 +1930,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )
                                                         (Logical 4)]
@@ -1982,6 +2000,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Logical 4)
                                         (Logical 4)
@@ -2017,6 +2036,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             (Logical 4)]
@@ -2034,6 +2054,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 profile_name)
@@ -2161,6 +2182,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -2336,6 +2358,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         (Logical 4)]
@@ -2371,7 +2394,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

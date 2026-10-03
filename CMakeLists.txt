@@ -235,6 +235,9 @@ if (WITH_LLVM)
     find_package(LLVM REQUIRED)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
     message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+    if (LLVM_VERSION_MAJOR GREATER_EQUAL 16)
+        list(APPEND LFORTRAN_LLVM_COMPONENTS targetparser)
+    endif()
 
     # LLVM 8 needs the ipo library for PassManagerBuilder
     if (LLVM_VERSION_MAJOR LESS 9)
@@ -349,8 +352,8 @@ endfunction()
 # XEUS (Fortran kernel)
 set(WITH_XEUS no CACHE BOOL "Build with XEUS support")
 if (WITH_XEUS)
-    find_package(xeus 6.0.0 REQUIRED)
-    find_package(xeus-zmq 4.0.0 REQUIRED)
+    find_package(xeus 5.0.0 REQUIRED)
+    find_package(xeus-zmq 3.0.0 REQUIRED)
     set(HAVE_LFORTRAN_XEUS yes)
 
     configure_lfortran_kernel()
@@ -558,6 +561,7 @@ if (WITH_RUNTIME_LIBRARY)
     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
     "-DCMAKE_PREFIX_PATH=\"${CMAKE_PREFIX_PATH}\""
     "-DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+    "-DWITH_XEUS=${WITH_XEUS}"
 #    "-DCMAKE_VERBOSE_MAKEFILE:BOOL=${CMAKE_VERBOSE_MAKEFILE}"
     "-DCMAKE_Fortran_COMPILER=${LFORTRAN_PATH}"
     "-DLFORTRAN_NESTED_BUILD=yes"

@@ -132,6 +132,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 9 self)
@@ -311,6 +312,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_manifest_modules_30:
                 (Module
@@ -394,6 +396,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )]
                                                         []
@@ -464,6 +467,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -482,6 +486,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 10 package)
@@ -509,12 +514,14 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             ()
                                         )
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -548,6 +555,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 ()
@@ -597,6 +605,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_manifest_package_modules_30:
                 (Module
@@ -646,6 +655,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     4 executable_config
@@ -713,6 +723,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         []
@@ -740,6 +751,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             modules_30:
                 (Program
@@ -756,7 +768,9 @@
                             (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

@@ -1,0 +1,11 @@
+warning: 'a' edit descriptor with an integer(4) item is a legacy Fortran 66 feature (deleted in Fortran 77); use a character item instead
+  --> tests/warnings/format_a_integer_01.f90:10:20
+   |
+10 | write(out4, "(a)") word
+   |                    ^^^^ 
+
+warning: 'a' edit descriptor with an integer(1) item is a legacy Fortran 66 feature (deleted in Fortran 77); use a character item instead
+  --> tests/warnings/format_a_integer_01.f90:11:15
+   |
+11 | write(*, fmt) esc, '[2J'
+   |               ^^^ 

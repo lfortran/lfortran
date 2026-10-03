@@ -45,7 +45,7 @@
         )
         (Requirement
             r
-            [t]
+            [(t)]
             [(DerivedType
                 t
                 []

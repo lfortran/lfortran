@@ -1,8 +1,8 @@
 diff --git a/src/lfortran/parser/parser.yy b/src/lfortran/parser/parser.yy
-index 7acf93adf7..1417518bcd 100644
+index 4aba8c225d..20cce70b73 100644
 --- a/src/lfortran/parser/parser.yy
 +++ b/src/lfortran/parser/parser.yy
-@@ -2581,177 +2581,4 @@ id_opt
+@@ -2680,179 +2680,4 @@ id_opt
  
  id
      : TK_NAME { $$ = SYMBOL($1, @$); }
@@ -17,6 +17,7 @@ index 7acf93adf7..1417518bcd 100644
 -    | KW_BACKSPACE { $$ = SYMBOL($1, @$); }
 -    | KW_BIND { $$ = SYMBOL($1, @$); }
 -    | KW_BLOCK { $$ = SYMBOL($1, @$); }
+-    | KW_BYTE { $$ = SYMBOL($1, @$); }
 -    | KW_CALL { $$ = SYMBOL($1, @$); }
 -    | KW_CASE { $$ = SYMBOL($1, @$); }
 -    | KW_CHANGE { $$ = SYMBOL($1, @$); }
@@ -75,6 +76,7 @@ index 7acf93adf7..1417518bcd 100644
 -    | KW_EVENT { $$ = SYMBOL($1, @$); }
 -    | KW_EXIT { $$ = SYMBOL($1, @$); }
 -    | KW_EXTENDS { $$ = SYMBOL($1, @$); }
+-    | KW_EXTENSIBLE { $$ = SYMBOL($1, @$); }
 -    | KW_EXTERNAL { $$ = SYMBOL($1, @$); }
 -    | KW_FILE { $$ = SYMBOL($1, @$); }
 -    | KW_FINAL { $$ = SYMBOL($1, @$); }

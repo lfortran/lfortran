@@ -148,12 +148,14 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 lhs)
                                     (Var 6 rhs)]
                                     [(Allocate
                                         [((Var 6 lhs)
+                                        []
                                         []
                                         (IntegerConstant 10 (Integer 4) Decimal)
                                         ()
@@ -201,6 +203,7 @@
                                         ()
                                         ()
                                         .true.
+                                        ()
                                         ()
                                         ()
                                         ()
@@ -421,6 +424,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 8 lhs)
@@ -913,6 +917,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 9 hour)
@@ -1242,6 +1247,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 lhs)
@@ -1264,6 +1270,7 @@
                                         )
                                         [(Allocate
                                             [((Var 7 lhs)
+                                            []
                                             []
                                             (IntegerConstant 12 (Integer 4) Decimal)
                                             ()
@@ -1323,9 +1330,11 @@
                                             ()
                                             ()
                                             ()
+                                            ()
                                         )]
                                         [(Allocate
                                             [((Var 7 lhs)
+                                            []
                                             []
                                             (IntegerConstant 8 (Integer 4) Decimal)
                                             ()
@@ -1373,6 +1382,7 @@
                                             ()
                                             ()
                                             .true.
+                                            ()
                                             ()
                                             ()
                                             ()
@@ -1445,7 +1455,7 @@
                                                     Local
                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -1469,7 +1479,7 @@
                                                     Local
                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -1504,7 +1514,7 @@
                                                     Local
                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -1707,7 +1717,7 @@
                                                     Local
                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -1757,7 +1767,7 @@
                                                     Local
                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -1781,7 +1791,7 @@
                                                     Local
                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -1888,7 +1898,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -212,8 +212,8 @@ public:
                   }
                   if (new_data) {
                     ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                              array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                    value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
+                                              array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                    value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                             new_data, new_array_type, array->m_storage_format));
                   }
                 }
@@ -273,9 +273,9 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                                new_data, new_array_type, array->m_storage_format));
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                     }
                 }
             }
@@ -312,9 +312,9 @@ public:
                   }
                   if (new_data) {
                       ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                      value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                              new_data, new_array_type, array->m_storage_format));
+                                                array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                      value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                   }
               }
             }
@@ -360,9 +360,9 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                                new_data, new_array_type, array->m_storage_format));
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                     }
                 }
             }
@@ -465,9 +465,9 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                                new_data, new_array_type, array->m_storage_format));
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                     }
                 }
             }
@@ -521,9 +521,9 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                                new_data, new_array_type, array->m_storage_format));
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                     }
                 }
             }
@@ -563,9 +563,9 @@ public:
 
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                                                new_data, new_array_type, array->m_storage_format));
+                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                     }
                 }
             }
@@ -582,20 +582,15 @@ public:
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array->m_type);
                     bool *data = (bool*) array->m_data;
                     size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
-                    int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
                     bool *new_array = al.allocate<bool>(array_size);
                     for (size_t i = 0; i < array_size; i++) {
                         new_array[i] = data[i];
                     }
                     ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                      array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                    // NOTE: Logical ArrayConstant_t data is stored packed one byte per element (`sizeof(bool) == 1`)
-                    // regardless of Fortran kind. However, asr_verify (asr_verify.cpp:1579) computes `fixed_size * kind`
-                    // and checks `n_data == x.m_n_data`. Keeping `array_size * dest_kind` here is currently required to
-                    // pass ASR verification when `dest_kind != 1`, even though `m_n_data` and the allocated buffer size
-                    // disagree (`al.allocate<bool>(array_size)`). This underlying `m_n_data`-for-logicals convention
-                    // and verification mismatch should be tracked and reconciled across asr_verify and ASDL serialization.
-                    value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
+                                                      array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                    // Logical ArrayConstant_t data is stored packed one byte per element (`sizeof(bool) == 1`)
+                    // regardless of Fortran kind, while m_n_data follows the Fortran kind size convention.
+                    value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                                             new_array, new_array_type, array->m_storage_format));
                 }
             }
@@ -645,9 +640,9 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                                                new_data, new_array_type, array->m_storage_format));
+                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                     }
                 }
             }
