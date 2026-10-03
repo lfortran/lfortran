@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-overloaded_unary_array_01-c2a0ebf",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/overloaded_unary_array_01.f90",
+    "infile_hash": "3cd103414cf4219d0fbdf6e2c25a7baffab420fad674e55127b1ccc9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-overloaded_unary_array_01-c2a0ebf.stdout",
+    "stdout_hash": "2f30e4a7d4008e25202a15c79f13e32644e077c859e7821a0c078095",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

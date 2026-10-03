@@ -3106,6 +3106,11 @@ filename = "../integration_tests/operator_overloading_04.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/overloaded_unary_array_01.f90"
+asr = true
+llvm = true
+
+[[test]]
 filename = "../integration_tests/operator_overloading_08.f90"
 asr = true
 
