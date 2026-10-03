@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             time:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             values:
                                 (Variable
@@ -67,6 +69,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -80,6 +83,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             zone:
                                 (Variable
@@ -103,6 +107,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     test_time_and_date
@@ -238,7 +243,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

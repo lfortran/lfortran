@@ -4,6 +4,7 @@ program nullify_07
   allocate(character(len=5) :: str)
   str = "Hello"
   print *, str
+  deallocate(str)
   nullify(str)
   if(len(str) /= 0) error stop
 end program nullify_07

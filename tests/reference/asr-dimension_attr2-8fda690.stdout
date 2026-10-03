@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -44,6 +45,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -57,6 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -72,6 +75,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -85,6 +89,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     f
@@ -94,6 +99,7 @@
                             [((IntegerConstant 1 (Integer 4) Decimal)
                             (IntegerConstant 3 (Integer 4) Decimal))]
                             PointerArray
+                            Global
                         )]
                         (Integer 4)
                         Source
@@ -106,6 +112,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 x)]
@@ -118,4 +125,5 @@
                 )
         })
     []
+    ()
 )

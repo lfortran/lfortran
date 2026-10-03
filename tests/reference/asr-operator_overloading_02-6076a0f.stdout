@@ -39,6 +39,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             ~assign:
                                 (ExternalSymbol
@@ -111,6 +112,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             overload_assignment_m:
                 (Module
@@ -144,6 +146,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             tf:
                                                 (Variable
@@ -167,6 +170,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     logical_gets_integer
@@ -184,6 +188,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 tf)
@@ -234,6 +239,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             logical_gets_integer:
                                                 (ExternalSymbol
@@ -267,6 +273,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     logical_gets_integer_use
@@ -284,6 +291,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 tf)
@@ -322,7 +330,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

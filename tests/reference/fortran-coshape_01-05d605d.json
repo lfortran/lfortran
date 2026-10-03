@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-coshape_01-05d605d",
+    "cmd": "lfortran --pass=coarray --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --coarray=true",
+    "infile": "tests/coshape_01.f90",
+    "infile_hash": "938820579bde34f4bbb3d05d98a841a586d98d53dfa356d54e9d540f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-coshape_01-05d605d.f90",
+    "stdout_hash": "3d17424656129c563df1d17a02c7bb34d0aebfc6f32a1d009a1df628",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

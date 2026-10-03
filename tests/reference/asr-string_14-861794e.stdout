@@ -12,6 +12,7 @@
                     string_14
                     []
                     []
+                    ()
                 ),
             string_14_stdlib_string_type:
                 (Module
@@ -45,6 +46,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             iostat:
                                                 (Variable
@@ -68,6 +70,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             iotype:
                                                 (Variable
@@ -91,6 +94,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             line:
                                                 (Variable
@@ -116,6 +120,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -146,6 +151,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             unit:
                                                 (Variable
@@ -169,6 +175,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             v_list:
                                                 (Variable
@@ -184,6 +191,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -197,6 +205,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     read_formatted
@@ -216,6 +225,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (String 1 () AssumedLength DescriptorString)]
@@ -230,6 +240,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 string)
@@ -274,6 +285,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     string_type
@@ -292,6 +304,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
@@ -324,6 +337,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             iostat:
                                                 (Variable
@@ -347,6 +361,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             iotype:
                                                 (Variable
@@ -370,6 +385,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -400,6 +416,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             unit:
                                                 (Variable
@@ -423,6 +440,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             v_list:
                                                 (Variable
@@ -438,6 +456,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -451,6 +470,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     write_formatted
@@ -470,6 +490,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (String 1 () AssumedLength DescriptorString)]
@@ -484,6 +505,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 string)
@@ -520,7 +542,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

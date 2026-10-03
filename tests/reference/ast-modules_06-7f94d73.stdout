@@ -6,12 +6,11 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             ()
             [(SimpleAttribute
                 AttrPrivate
@@ -37,7 +36,6 @@
                 (EndOfLine)]
             )
         )]
-        []
         [(Function
             b
             []
@@ -55,10 +53,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
-            []
             [(Assignment
                 0
                 b
@@ -81,12 +75,12 @@
             )]
             .true.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             ()
             [(SimpleAttribute
                 AttrPrivate
@@ -112,7 +106,6 @@
                 (EndOfLine)]
             )
         )]
-        []
         [(Function
             a
             []
@@ -130,10 +123,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
-            []
             [(Assignment
                 0
                 a

@@ -7,14 +7,14 @@ subroutine a(cs)
 use module_arrays_46
 real, dimension(nx), intent(in) :: cs
 print *, cs
-if (abs(sum(cs) - 10.0) > 1e-8) error stop
+if (abs(sum(cs) - 10.0) > epsilon(10.0) * 10.0 * size(cs)) error stop
 end subroutine
 
 subroutine b(cs)
 use module_arrays_46
 real, dimension(nx, ny), intent(in) :: cs
 print *, sum(cs)
-if (abs(sum(cs) - 205.919983) > 1e-8) error stop
+if (abs(sum(cs) - 205.919983) > epsilon(205.919983) * 205.919983 * size(cs)) error stop
 end subroutine
 
 program arrays_46

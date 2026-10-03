@@ -45,6 +45,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             logical_and:
                                 (ExternalSymbol
@@ -84,6 +85,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             ~add:
                                 (ExternalSymbol
@@ -348,6 +350,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             operator_overloading_01_overload_asterisk_m:
                 (Module
@@ -381,6 +384,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             log1:
                                                 (Variable
@@ -404,6 +408,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             log2:
                                                 (Variable
@@ -427,6 +432,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     bin_add
@@ -444,6 +450,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 log1)
@@ -530,6 +537,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             log2:
                                                 (Variable
@@ -553,6 +561,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             logical_and:
                                                 (Variable
@@ -576,6 +585,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     logical_and
@@ -593,6 +603,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 log1)
@@ -637,7 +648,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

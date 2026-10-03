@@ -20,6 +20,7 @@
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/while_else.h>
 #include <libasr/pass/replace_init_expr.h>
+#include <libasr/pass/global_init.h>
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_select_case.h>
@@ -51,14 +52,24 @@
 #include <libasr/pass/transform_optional_argument_functions.h>
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/unique_symbols.h>
-#include <libasr/pass/insert_deallocate.h>
+#include <libasr/pass/intent_out_deallocate.h>
 #include <libasr/pass/array_struct_temporary.h>
+#include <libasr/pass/function_result_scope.h>
+#include <libasr/pass/conditional_expr.h>
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/replace_openmp.h>
+#include <libasr/pass/parallel_canonicalize.h>
+#include <libasr/pass/parallel_dispatch.h>
+#include <libasr/pass/replace_gpu_offload.h>
+#include <libasr/pass/device_partition.h>
+#include <libasr/pass/device_launch_expand.h>
+#include <libasr/pass/gpu_memory_space.h>
+#include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
+#include <libasr/pass/replace_coarray.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pickle.h>
@@ -110,16 +121,30 @@ namespace LCompilers {
             {"subroutine_from_function", &pass_create_subroutine_from_function},
             {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
             {"init_expr", &pass_replace_init_expr},
+            {"global_init", &pass_global_init},
+            {"global_init_wire", &pass_global_init_wire},
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"openmp", &pass_replace_openmp},
+            {"parallel_canonicalize", &pass_parallel_canonicalize},
+            {"parallel_dispatch", &pass_parallel_dispatch},
+            {"omp_region_flatten", &pass_flatten_omp_regions},
+            {"gpu_offload", &pass_replace_gpu_offload},
+            {"device_partition", &pass_device_partition},
+            {"device_launch_expand", &pass_device_launch_expand},
+            {"gpu_memory_space", &pass_gpu_memory_space},
+            {"gpu_kernel_finalize", &pass_gpu_kernel_finalize},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
-            {"insert_deallocate", &pass_insert_deallocate},
+            {"intent_out_deallocate", &pass_intent_out_deallocate},
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
-            {"array_struct_temporary", &pass_array_struct_temporary}
+            {"gpu_device_allocatable", &pass_promote_device_allocatable},
+            {"conditional_expr", &pass_replace_conditional_expr},
+            {"array_struct_temporary", &pass_array_struct_temporary},
+            {"function_result_scope", &pass_function_result_scope},
+            {"coarray", &pass_replace_coarray}
         };
 
         bool apply_default_passes;
@@ -131,8 +156,9 @@ namespace LCompilers {
         bool rtlib=false;
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
-                           [[maybe_unused]] diag::Diagnostics &diagnostics,
+                           diag::Diagnostics &diagnostics,
                            double &cummulative_time_taken_by_passes_in_microseconds) {
+            pass_options.diagnostics = &diagnostics;
             if (pass_options.pass_cumulative) {
                 std::vector<std::string> _with_optimization_passes;
                 _with_optimization_passes.insert(
@@ -186,14 +212,20 @@ namespace LCompilers {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
                 auto t1 = std::chrono::high_resolution_clock::now();
+                bool had_error = diagnostics.has_error();
                 _passes_db[passes[i]](al, *asr, pass_options);
+                if (!had_error && diagnostics.has_error()) return;
+                bool verify_after_pass = pass_options.verify_all_passes;
 #if defined(WITH_LFORTRAN_ASSERT)
-                if (!asr_verify(*asr, true, diagnostics)) {
-                    std::cerr << diagnostics.render2();
-                    throw LCompilersException("Verify failed in the pass: "
-                        + passes[i]);
-                };
+                verify_after_pass = true;
 #endif
+                if (verify_after_pass &&
+                        !asr_verify(*asr, true, diagnostics)) {
+                    std::cerr << diagnostics.render2();
+                    throw LCompilersException(
+                        "pass=" + passes[i],
+                        LFORTRAN_ASR_PASS_VERIFY_FAILED);
+                }
                 auto t2 = std::chrono::high_resolution_clock::now();
                 if (pass_options.time_report) {
                     int time_taken_by_current_pass = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
@@ -243,10 +275,42 @@ namespace LCompilers {
             _passes = {
                 "global_stmts",
                 "init_expr",
+                // A declaration initializer no target can lay out as static
+                // data becomes an executable statement of a startup
+                // initializer here, which the passes below lower like any
+                // other procedure body.
+                "global_init",
                 "function_call_in_declaration",
-                "openmp",
+                // Every parallel loop, however it was written, becomes one
+                // canonical `OMPRegion` before anything decides how to lower
+                // it, and the pass after that writes the decision into the
+                // region.
+                "parallel_canonicalize",
+                "parallel_dispatch",
+                // Each statement that references a function whose result is
+                // finalized after the statement becomes a BLOCK here, before
+                // the passes below split it into several statements.
+                "function_result_scope",
                 "implied_do_loops",
+                // Every loop the dispatch assigned to the device becomes a
+                // kernel and its launch. Nothing is kept to run it on the
+                // host instead: a loop this cannot lower is an error.
+                "gpu_offload",
+                "openmp",
+                // Whatever OpenMP construct no lowering claimed is unwrapped
+                // here, so it runs serially instead of reaching a code
+                // generator that cannot lower it.
+                "omp_region_flatten",
+                // Everything a kernel reaches is device code, and the
+                // passes below have to know which routines those are.
+                "device_partition",
+                "gpu_device_allocatable",
+                "conditional_expr",
                 "array_struct_temporary",
+                "coarray",
+                // Every pass that can create a startup initializer has run,
+                // so the calls that make them run can be put in now.
+                "global_init_wire",
                 "transform_optional_argument_functions",
                 "select_case",
                 "nested_vars",
@@ -259,6 +323,13 @@ namespace LCompilers {
                 "intrinsic_function",
                 "intrinsic_subroutine",
                 "subroutine_from_function",
+                // A pass above can add a routine of its own, such as the
+                // shared lowering of an intrinsic, so the partition is
+                // taken again before the device passes below read it.
+                "device_partition",
+                // A routine's array result becomes an argument here, so a
+                // device routine's result needs the shape of that argument.
+                "gpu_device_allocatable",
                 "array_op",
                 "pass_array_by_data",
                 "array_passed_in_function_call",
@@ -267,11 +338,19 @@ namespace LCompilers {
                 "print_list_tuple",
                 "print_struct_type",
                 "array_dim_intrinsics_update",
+                // A device routine's address spaces are settled here, once
+                // every array of device code has the type it is emitted
+                // with, and before the code generators read those types.
+                "gpu_memory_space",
+                // Lay out each kernel, now that shared lowering has given it
+                // the shape the device code generators see.
+                "gpu_kernel_finalize",
+                "device_launch_expand",
                 "do_loops",
                 "while_else",
                 "unused_functions",
                 "unique_symbols",
-                "insert_deallocate",
+                "intent_out_deallocate",
             };
             _optimization_passes = {
                 "replace_with_compile_time_values",
@@ -288,6 +367,11 @@ namespace LCompilers {
             // These are re-write passes which are already handled
             // appropriately in C backend.
             _c_skip_passes = {
+                // The C backend prints the OpenMP constructs as pragmas and
+                // lets the C compiler lower them, so the passes that take
+                // them apart have nothing to do there.
+                "parallel_canonicalize",
+                "omp_region_flatten",
                 "replace_with_compile_time_values",
                 "pass_list_expr",
                 "print_list_tuple",
@@ -360,7 +444,9 @@ namespace LCompilers {
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
+                bool had_error = diagnostics.has_error();
                 _passes_db[passes[i]](al, *asr, pass_options);
+                if (!had_error && diagnostics.has_error()) return;
                 if (pass_options.dump_all_passes) {
                     std::string str_i = std::to_string(pass_cnt_asr_dump+1);
                     if ( pass_cnt_asr_dump < 9 )  str_i = "0" + str_i;
@@ -401,13 +487,17 @@ namespace LCompilers {
                         << "\n" << fortran_code.result << "\n";
                     outfile.close();
                 }
+                bool verify_after_pass = pass_options.verify_all_passes;
 #if defined(WITH_LFORTRAN_ASSERT)
-                if (!asr_verify(*asr, true, diagnostics)) {
-                    std::cerr << diagnostics.render2();
-                    throw LCompilersException("Verify failed in the pass: "
-                        + passes[i]);
-                };
+                verify_after_pass = true;
 #endif
+                if (verify_after_pass &&
+                        !asr_verify(*asr, true, diagnostics)) {
+                    std::cerr << diagnostics.render2();
+                    throw LCompilersException(
+                        "pass=" + passes[i],
+                        LFORTRAN_ASR_PASS_VERIFY_FAILED);
+                }
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass ends: '" << passes[i] << "'\n";
                 }
@@ -425,6 +515,17 @@ namespace LCompilers {
 
         void do_not_use_default_passes() {
             apply_default_passes = false;
+        }
+
+        void skip_pass(const std::string &pass_name) {
+            if( std::find(_skip_passes.begin(), _skip_passes.end(), pass_name)
+                    == _skip_passes.end() ) {
+                _skip_passes.push_back(pass_name);
+            }
+        }
+
+        bool has_user_defined_passes() const {
+            return !_user_defined_passes.empty();
         }
 
         void use_fortran_passes() {

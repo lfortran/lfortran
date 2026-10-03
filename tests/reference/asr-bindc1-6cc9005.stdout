@@ -36,8 +36,10 @@
                                     ()
                                     ()
                                     Default
-                                    (CPtr)
-                                    ()
+                                    (CPtr
+                                        CPointer
+                                    )
+                                    2 c_ptr
                                     Source
                                     Public
                                     Required
@@ -49,6 +51,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -74,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     bindc1
@@ -82,16 +86,20 @@
                         (Var 2 p)
                         (PointerToCPtr
                             (Var 2 x)
-                            (CPtr)
+                            (CPtr
+                                CPointer
+                            )
                             ()
                         )
                         ()
                         .false.
                         .false.
                     )]
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
 )

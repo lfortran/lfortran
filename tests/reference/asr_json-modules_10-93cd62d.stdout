@@ -77,7 +77,8 @@
                                                 "inline": false,
                                                 "static": false,
                                                 "restrictions": [],
-                                                "is_restriction": false
+                                                "is_restriction": false,
+                                                "exec_space": "Host"
                                             },
                                             "loc": {
                                                 "first": 220,
@@ -140,7 +141,8 @@
                         ],
                         "loaded_from_mod": false,
                         "intrinsic": false,
-                        "has_submodules": false
+                        "has_submodules": false,
+                        "global_init": []
                     },
                     "loc": {
                         "first": 148,
@@ -260,7 +262,8 @@
                                         "is_volatile": false,
                                         "is_protected": false,
                                         "pass_attr": "NotMethod",
-                                        "self_argument": []
+                                        "self_argument": [],
+                                        "codims": []
                                     },
                                     "loc": {
                                         "first": 38,
@@ -295,7 +298,8 @@
                                                 "inline": false,
                                                 "static": false,
                                                 "restrictions": [],
-                                                "is_restriction": false
+                                                "is_restriction": false,
+                                                "exec_space": "Host"
                                             },
                                             "loc": {
                                                 "first": 65,
@@ -421,7 +425,8 @@
                         "dependencies": [],
                         "loaded_from_mod": false,
                         "intrinsic": false,
-                        "has_submodules": false
+                        "has_submodules": false,
+                        "global_init": []
                     },
                     "loc": {
                         "first": 0,
@@ -436,7 +441,8 @@
                 }
             }
         },
-        "items": []
+        "items": [],
+        "global_init": []
     },
     "loc": {
         "first": 0,

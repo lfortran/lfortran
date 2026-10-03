@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             lfortran_iomsg:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     write2
@@ -87,6 +89,8 @@
                         ()
                         ()
                         ()
+                        ()
+                        ()
                     )
                     (FileRead
                         0
@@ -101,6 +105,8 @@
                         [(Var 2 i)]
                         ()
                         .false.
+                        ()
+                        ()
                         ()
                         ()
                     )
@@ -119,7 +125,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

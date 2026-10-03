@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             lfortran_iomsg1:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             lfortran_iomsg2:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             line:
                                 (Variable
@@ -98,6 +101,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             u:
                                 (Variable
@@ -121,6 +125,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     test_backspace_01
@@ -151,6 +156,9 @@
                         ()
                         ()
                         ()
+                        ()
+                        ()
+                        ()
                     )
                     (FileRead
                         0
@@ -168,6 +176,8 @@
                         [(Var 2 line)]
                         ()
                         .true.
+                        ()
+                        ()
                         ()
                         ()
                     )
@@ -196,10 +206,13 @@
                         ()
                         ()
                         ()
+                        ()
+                        ()
                     )
                     (FileBackspace
                         0
                         (Var 2 u)
+                        ()
                         ()
                         ()
                     )
@@ -219,6 +232,8 @@
                         [(Var 2 line)]
                         ()
                         .true.
+                        ()
+                        ()
                         ()
                         ()
                     )
@@ -250,6 +265,8 @@
                         ()
                         ()
                         ()
+                        ()
+                        ()
                     )
                     (FileWrite
                         0
@@ -273,6 +290,8 @@
                         ()
                         ()
                         .true.
+                        ()
+                        ()
                         ()
                         ()
                         ()
@@ -302,7 +321,9 @@
                         ()
                         ()
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

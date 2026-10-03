@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [9 x i8] c"R4,R4,R4\00", align 1
@@ -34,6 +34,8 @@ declare float @_lfortran_scos(float)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  %stringFormat_desc1 = alloca %string_descriptor, align 8
+  %stringFormat_desc = alloca %string_descriptor, align 8
   %2 = call i8* @_lfortran_get_default_allocator()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca float, align 4
@@ -75,9 +77,8 @@ associate_block_start:                            ; preds = %.entry
   %20 = alloca float, align 4
   store float %19, float* %20, align 4
   %21 = load float*, float** %v, align 8
-  %22 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @serialization_info, i32 0, i32 0), i64* %12, i32 0, i32 0, i32 0, i32 0, float* %16, float* %20, float* %21)
+  %22 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @serialization_info, i32 0, i32 0), i64* %12, i32 0, i32 0, i32 0, i32 0, i32 0, float* %16, float* %20, float* %21)
   %23 = load i64, i64* %12, align 8
-  %stringFormat_desc = alloca %string_descriptor, align 8
   %24 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %22, i8** %24, align 8
   %25 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
@@ -87,7 +88,7 @@ associate_block_start:                            ; preds = %.entry
   %28 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
   %29 = load i64, i64* %28, align 8
   %30 = trunc i64 %29 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %27, i32 %30, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %27, i32 %30, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   %31 = icmp eq i8* %22, null
   br i1 %31, label %free_done, label %free_nonnull
 
@@ -109,9 +110,8 @@ associate_block_end:                              ; preds = %free_done
 FINALIZE_SYMTABLE_associate_block:                ; preds = %associate_block_end
   call void @llvm.stackrestore(i8* %3)
   %36 = alloca i64, align 8
-  %37 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %36, i32 0, i32 0, i32 0, i32 0, float* %myreal)
+  %37 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %36, i32 0, i32 0, i32 0, i32 0, i32 0, float* %myreal)
   %38 = load i64, i64* %36, align 8
-  %stringFormat_desc1 = alloca %string_descriptor, align 8
   %39 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 0
   store i8* %37, i8** %39, align 8
   %40 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 1
@@ -121,7 +121,7 @@ FINALIZE_SYMTABLE_associate_block:                ; preds = %associate_block_end
   %43 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 1
   %44 = load i64, i64* %43, align 8
   %45 = trunc i64 %44 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %42, i32 %45, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %42, i32 %45, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
   %46 = icmp eq i8* %37, null
   br i1 %46, label %free_done3, label %free_nonnull2
 
@@ -164,11 +164,11 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 ; Function Attrs: nounwind
 declare i8* @llvm.stacksave() #0
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...)
 
 declare i8* @_lfortran_get_default_allocator()
 
-declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 

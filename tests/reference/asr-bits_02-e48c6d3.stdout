@@ -35,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             all_zeros:
                                 (Variable
@@ -58,6 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             bits_kind:
                                 (ExternalSymbol
@@ -113,6 +115,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     bits_02
@@ -150,9 +153,11 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env)
         })
     []
+    ()
 )

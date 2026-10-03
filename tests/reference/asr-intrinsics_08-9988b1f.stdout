@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -67,6 +68,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -102,6 +104,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             z:
                                 (Variable
@@ -116,6 +119,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 2 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                            Global
                                         )
                                         (ArrayConstant
                                             8
@@ -125,6 +129,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 FixedSizeArray
+                                                Global
                                             )
                                             ColMajor
                                         )
@@ -152,6 +157,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     intrinsics_08
@@ -189,7 +195,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

@@ -17,8 +17,8 @@
                                                     4
                                                     1_string_type_raw
                                                     3 raw
-                                                    string_type
-                                                    []
+                                                    operator_overloading_04_stdlib_string_type
+                                                    [string_type]
                                                     raw
                                                     Public
                                                 ),
@@ -51,6 +51,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             rhs:
                                                 (Variable
@@ -74,6 +75,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     assign_string_char
@@ -98,6 +100,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 lhs)
@@ -151,6 +154,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     string_type
@@ -169,6 +173,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
@@ -184,8 +189,8 @@
                                                     5
                                                     1_string_type_raw
                                                     3 raw
-                                                    string_type
-                                                    []
+                                                    operator_overloading_04_stdlib_string_type
+                                                    [string_type]
                                                     raw
                                                     Public
                                                 ),
@@ -228,6 +233,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             trimmed_string:
                                                 (Variable
@@ -258,6 +264,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     trim_string
@@ -288,6 +295,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 string)]
@@ -339,6 +347,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             operator_overloading_stdlib_string_use:
                 (Module
@@ -389,6 +398,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             last:
                                                 (Variable
@@ -412,6 +422,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -442,6 +453,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             ~assign:
                                                 (ExternalSymbol
@@ -482,6 +494,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 string)]
@@ -509,6 +522,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             stdlib_string:
                 (Program
@@ -520,7 +534,9 @@
                     stdlib_string
                     []
                     []
+                    ()
                 )
         })
     []
+    ()
 )

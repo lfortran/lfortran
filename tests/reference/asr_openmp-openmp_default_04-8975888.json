@@ -1,0 +1,13 @@
+{
+    "basename": "asr_openmp-openmp_default_04-8975888",
+    "cmd": "lfortran --show-asr --no-color --openmp {infile} -o {outfile}",
+    "infile": "tests/errors/openmp_default_04.f90",
+    "infile_hash": "7f679f39f7b1b69c964b2a7277cc9ec1f488fd83fb4c40580ca85639",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr_openmp-openmp_default_04-8975888.stderr",
+    "stderr_hash": "9ff9078db048ef8d9c7027dc7594959ba1b72b358a0185081dbebe65",
+    "returncode": 2
+}

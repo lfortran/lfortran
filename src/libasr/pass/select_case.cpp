@@ -87,6 +87,13 @@ inline ASR::expr_t* gen_test_expr_CaseStmt_Range(Allocator& al, const Location& 
 }
 
 void case_to_if(Allocator& al, const ASR::Select_t& x, ASR::expr_t* a_test, Vec<ASR::stmt_t*>& body) {
+    if( x.n_body == 0 ) {
+        body.reserve(al, x.n_default);
+        for( size_t i = 0; i < x.n_default; i++ ) {
+            body.push_back(al, x.m_default[i]);
+        }
+        return;
+    }
     int idx = (int) x.n_body - 1;
     ASR::case_stmt_t* case_body = x.m_body[idx];
     ASR::stmt_t* last_if_else = nullptr;
@@ -146,7 +153,8 @@ Vec<ASR::stmt_t*> replace_selectcase(Allocator &al, const ASR::Select_t &select_
         ASR::ttype_t* a_type = ASRUtils::expr_type(a);
         if (ASRUtils::is_character(*a_type)) {
             a_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
-                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                ASRUtils::TYPE(ASR::make_String_t(al, loc,
+                    ASRUtils::extract_kind_from_ttype_t(a_type), nullptr,
                     ASR::string_length_kindType::DeferredLength,
                     ASR::string_physical_typeType::DescriptorString))));
         }
@@ -243,7 +251,8 @@ Vec<ASR::stmt_t*> replace_selectcase_with_fall_through(
         ASR::ttype_t* a_type = ASRUtils::expr_type(a);
         if (ASRUtils::is_character(*a_type)) {
             a_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
-                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                ASRUtils::TYPE(ASR::make_String_t(al, loc,
+                    ASRUtils::extract_kind_from_ttype_t(a_type), nullptr,
                     ASR::string_length_kindType::DeferredLength,
                     ASR::string_physical_typeType::DescriptorString))));
         }
@@ -293,6 +302,9 @@ public:
             pass_result = replace_selectcase_with_fall_through(al, x, current_scope);
         } else {
             pass_result = replace_selectcase(al, x, current_scope);
+        }
+        if( pass_result.size() == 0 ) {
+            remove_original_stmt = true;
         }
     }
 };

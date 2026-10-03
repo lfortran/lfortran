@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -34,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     module_12
@@ -42,6 +44,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             prog_module_12:
                 (Program
@@ -98,7 +101,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

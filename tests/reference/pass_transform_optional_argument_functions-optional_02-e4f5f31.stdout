@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             __libasr_created_variable_pointer_:
                                 (Variable
@@ -54,6 +55,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             f1:
                                 (ExternalSymbol
@@ -89,6 +91,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     optional_02
@@ -154,6 +157,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             optional_02_m:
                 (Module
@@ -187,6 +191,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             r:
                                                 (Variable
@@ -212,6 +217,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -235,6 +241,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     f1
@@ -254,6 +261,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 x)
@@ -278,7 +286,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

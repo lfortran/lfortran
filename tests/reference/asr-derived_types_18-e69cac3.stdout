@@ -12,8 +12,8 @@
                                     5
                                     1_t_1_i
                                     3 i
-                                    t_1
-                                    []
+                                    derived_types_18_module_1
+                                    [t_1]
                                     i
                                     Public
                                 ),
@@ -32,8 +32,8 @@
                                     5
                                     1_t_2_r
                                     4 r
-                                    t_2
-                                    []
+                                    derived_types_18_module_1
+                                    [t_2]
                                     r
                                     Public
                                 ),
@@ -84,6 +84,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             type_2:
                                 (Variable
@@ -112,6 +113,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     derived_types_10
@@ -201,6 +203,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             derived_types_18_module_1:
                 (Module
@@ -234,6 +237,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     t_1
@@ -248,6 +252,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -282,6 +287,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     t_2
@@ -298,6 +304,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     2 t_1
@@ -310,7 +317,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

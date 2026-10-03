@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     entry1
@@ -63,6 +64,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             x:
                 (Function
@@ -91,6 +93,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     x
@@ -107,6 +110,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [x_main__lcompilers]
                     [(Var 3 dummy)]
@@ -151,6 +155,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             entry__lcompilers:
                                 (Variable
@@ -174,6 +179,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     x_main__lcompilers
@@ -191,6 +197,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 5 entry__lcompilers)
@@ -308,6 +315,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     y
@@ -324,6 +332,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [x_main__lcompilers]
                     [(Var 4 dummy)]
@@ -343,4 +352,5 @@
                 )
         })
     []
+    ()
 )

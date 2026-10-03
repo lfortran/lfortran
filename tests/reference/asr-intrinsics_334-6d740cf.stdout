@@ -44,6 +44,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     base
@@ -60,6 +61,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -80,6 +82,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -94,6 +97,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             i:
                                 (Variable
@@ -117,6 +121,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             struct_from:
                                 (Variable
@@ -147,6 +152,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             struct_from2:
                                 (Variable
@@ -168,6 +174,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     2 toml_value
@@ -182,6 +189,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             struct_from3:
                                 (Variable
@@ -212,6 +220,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             struct_to:
                                 (Variable
@@ -242,6 +251,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             struct_to2:
                                 (Variable
@@ -263,6 +273,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     2 toml_value
@@ -277,6 +288,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             struct_to3:
                                 (Variable
@@ -307,6 +319,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             to:
                                 (Variable
@@ -323,6 +336,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -337,6 +351,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             toml_value:
                                 (Struct
@@ -351,7 +366,7 @@
                                                     Local
                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -365,6 +380,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     toml_value
@@ -379,6 +395,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -501,6 +518,7 @@
                         [((Var 2 from)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 5 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -518,6 +536,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 5 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ColMajor
                         )
@@ -529,6 +548,7 @@
                         [((Var 2 to)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 5 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -568,6 +588,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ColMajor
                                 )
@@ -576,6 +597,7 @@
                                     [(()
                                     ())]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             )]
@@ -630,6 +652,7 @@
                     )
                     (Allocate
                         [((Var 2 struct_from)
+                        []
                         []
                         ()
                         ()
@@ -706,6 +729,7 @@
                         [((Var 2 struct_from2)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 3 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -839,6 +863,7 @@
                     (Allocate
                         [((Var 2 struct_from3)
                         []
+                        []
                         ()
                         2 toml_value
                         (StructType
@@ -898,6 +923,7 @@
                     (Allocate
                         [((Var 2 struct_from)
                         []
+                        []
                         ()
                         ()
                         ())]
@@ -952,7 +978,9 @@
                             2 ~select_type_block_2
                         )]
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

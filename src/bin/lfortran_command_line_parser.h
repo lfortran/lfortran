@@ -36,6 +36,8 @@ namespace LCompilers::CommandLineInterface {
         bool show_tokens = false;
         bool show_ast = false;
         bool show_asr = false;
+        bool from_asr = false;
+        bool verify_asr = false;
         bool show_ast_f90 = false;
         std::string arg_pass;
         bool arg_no_color = false;
@@ -50,6 +52,7 @@ namespace LCompilers::CommandLineInterface {
         bool show_asm = false;
         bool show_wat = false;
         bool show_julia = false;
+        bool show_gpu_kernel_source = false;
         bool show_fortran = false;
         bool static_link = false;
         bool shared_link = false;
@@ -59,6 +62,7 @@ namespace LCompilers::CommandLineInterface {
         std::string linker{""};
         std::string linker_path{""};
         bool print_targets = false;
+        bool print_c_include_dir = false;
         bool fixed_form_infer = false;
         bool cpp = false;
         bool cpp_infer = false;

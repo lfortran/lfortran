@@ -90,10 +90,6 @@
         []
         ()
         ()
-        []
-        []
-        []
-        []
         [(DoLoop
             0
             ()
@@ -194,10 +190,6 @@
                         "! nonlabeled do inside a labeled do"
                     )]
                 )
-            )
-            (Continue
-                50
-                ()
             )]
             ()
             (TriviaNode

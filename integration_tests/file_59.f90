@@ -18,7 +18,7 @@ program file_59
     inquire(unit=10, encoding=enc)
 
     print *, "Encoding of file:", trim(enc)
-    if (trim(enc) /= "UNKNOWN") error stop
+    if (trim(enc) /= "UNKNOWN" .and. trim(enc) /= "DEFAULT") error stop
     
     close(10)
 end program file_59

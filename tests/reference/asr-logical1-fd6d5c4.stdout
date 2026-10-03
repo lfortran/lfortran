@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             b:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     logical1
@@ -88,7 +90,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

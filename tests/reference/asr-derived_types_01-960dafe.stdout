@@ -22,8 +22,8 @@
                                     8
                                     1_x_i
                                     3 i
-                                    x
-                                    []
+                                    derived_types_01_m_01
+                                    [x]
                                     i
                                     Public
                                 ),
@@ -32,8 +32,8 @@
                                     8
                                     1_x_r
                                     3 r
-                                    x
-                                    []
+                                    derived_types_01_m_01
+                                    [x]
                                     r
                                     Public
                                 ),
@@ -42,8 +42,8 @@
                                     8
                                     1_y_d
                                     4 d
-                                    1_y
-                                    []
+                                    derived_types_01_m_01
+                                    [y]
                                     d
                                     Public
                                 ),
@@ -52,8 +52,8 @@
                                     8
                                     1_z_k
                                     7 k
-                                    z
-                                    []
+                                    derived_types_01_m_02
+                                    [z]
                                     k
                                     Public
                                 ),
@@ -62,8 +62,8 @@
                                     8
                                     1_z_l
                                     7 l
-                                    z
-                                    []
+                                    derived_types_01_m_02
+                                    [z]
                                     l
                                     Public
                                 ),
@@ -95,6 +95,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             c:
                                 (Variable
@@ -136,6 +137,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             set:
                                 (ExternalSymbol
@@ -562,6 +564,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             derived_types_01_m_01:
                 (Module
@@ -578,8 +581,8 @@
                                                     5
                                                     1_x_i
                                                     3 i
-                                                    x
-                                                    []
+                                                    derived_types_01_m_01
+                                                    [x]
                                                     i
                                                     Public
                                                 ),
@@ -588,8 +591,8 @@
                                                     5
                                                     1_x_r
                                                     3 r
-                                                    x
-                                                    []
+                                                    derived_types_01_m_01
+                                                    [x]
                                                     r
                                                     Public
                                                 ),
@@ -621,6 +624,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     set
@@ -643,6 +647,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 a)]
@@ -706,6 +711,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             r:
                                                 (Variable
@@ -729,6 +735,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     x
@@ -745,6 +752,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -779,6 +787,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             d:
                                                 (Variable
@@ -808,6 +817,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     y
@@ -832,6 +842,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -844,6 +855,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             derived_types_01_m_02:
                 (Module
@@ -887,6 +899,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             l:
                                                 (Variable
@@ -922,6 +935,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     z
@@ -952,6 +966,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -964,7 +979,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

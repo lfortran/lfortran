@@ -24,6 +24,7 @@
                     .false.
                     NotMethod
                     ()
+                    []
                 )
         })
     [(IntegerBinOp
@@ -46,4 +47,5 @@
         .false.
         .false.
     )]
+    ()
 )

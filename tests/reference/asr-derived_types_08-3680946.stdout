@@ -12,8 +12,8 @@
                                     6
                                     1_rectangle_length
                                     4 length
-                                    rectangle
-                                    []
+                                    shape_mod
+                                    [rectangle]
                                     length
                                     Public
                                 ),
@@ -22,8 +22,8 @@
                                     6
                                     1_rectangle_width
                                     4 width
-                                    rectangle
-                                    []
+                                    shape_mod
+                                    [rectangle]
                                     width
                                     Public
                                 ),
@@ -32,8 +32,8 @@
                                     6
                                     1_shape_color
                                     3 color
-                                    shape
-                                    []
+                                    shape_mod
+                                    [shape]
                                     color
                                     Public
                                 ),
@@ -42,18 +42,18 @@
                                     6
                                     1_shape_filled
                                     3 filled
-                                    shape
-                                    []
+                                    shape_mod
+                                    [shape]
                                     filled
                                     Public
                                 ),
-                            1_shape_initialize_subrout:
+                            1_shape_initialize:
                                 (ExternalSymbol
                                     6
-                                    1_shape_initialize_subrout
+                                    1_shape_initialize
                                     3 initialize
-                                    shape
-                                    []
+                                    shape_mod
+                                    [shape]
                                     initialize
                                     Public
                                 ),
@@ -62,8 +62,8 @@
                                     6
                                     1_shape_x
                                     3 x
-                                    shape
-                                    []
+                                    shape_mod
+                                    [shape]
                                     x
                                     Public
                                 ),
@@ -72,8 +72,8 @@
                                     6
                                     1_shape_y
                                     3 y
-                                    shape
-                                    []
+                                    shape_mod
+                                    [shape]
                                     y
                                     Public
                                 ),
@@ -115,6 +115,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             rectangle:
                                 (ExternalSymbol
@@ -166,12 +167,13 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     derived_types_08
                     [shape_mod]
                     [(SubroutineCall
-                        6 1_shape_initialize_subrout
+                        6 1_shape_initialize
                         ()
                         [((Var 6 shp))
                         ((IntegerConstant 1 (Integer 4) Decimal))
@@ -185,7 +187,7 @@
                         .false.
                     )
                     (SubroutineCall
-                        6 1_shape_initialize_subrout
+                        6 1_shape_initialize
                         ()
                         [((Var 6 rect))
                         ((IntegerConstant 2 (Integer 4) Decimal))
@@ -312,6 +314,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             shape_mod:
                 (Module
@@ -328,8 +331,8 @@
                                                     5
                                                     1_shape_color
                                                     3 color
-                                                    shape
-                                                    []
+                                                    shape_mod
+                                                    [shape]
                                                     color
                                                     Public
                                                 ),
@@ -338,8 +341,8 @@
                                                     5
                                                     1_shape_filled
                                                     3 filled
-                                                    shape
-                                                    []
+                                                    shape_mod
+                                                    [shape]
                                                     filled
                                                     Public
                                                 ),
@@ -348,8 +351,8 @@
                                                     5
                                                     1_shape_x
                                                     3 x
-                                                    shape
-                                                    []
+                                                    shape_mod
+                                                    [shape]
                                                     x
                                                     Public
                                                 ),
@@ -358,8 +361,8 @@
                                                     5
                                                     1_shape_y
                                                     3 y
-                                                    shape
-                                                    []
+                                                    shape_mod
+                                                    [shape]
                                                     y
                                                     Public
                                                 ),
@@ -385,6 +388,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             filled:
                                                 (Variable
@@ -408,6 +412,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             sh:
                                                 (Variable
@@ -439,6 +444,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -462,6 +468,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -485,6 +492,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     initialize_subrout
@@ -513,6 +521,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 sh)
@@ -601,6 +610,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             width:
                                                 (Variable
@@ -624,6 +634,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     rectangle
@@ -640,6 +651,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -674,6 +686,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             filled:
                                                 (Variable
@@ -697,6 +710,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             initialize:
                                                 (StructMethodDeclaration
@@ -731,6 +745,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -754,6 +769,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     shape
@@ -776,6 +792,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -788,7 +805,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

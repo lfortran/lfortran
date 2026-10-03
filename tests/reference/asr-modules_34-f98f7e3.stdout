@@ -24,6 +24,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_manifest_modules_34:
                 (Module
@@ -47,6 +48,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_manifest_package_modules_34:
                 (Module
@@ -82,6 +84,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             version:
                                                 (Variable
@@ -99,6 +102,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )]
                                                         []
@@ -117,6 +121,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     package_config_t
@@ -131,6 +136,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -147,6 +153,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -171,6 +178,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_modules_34:
                 (Module
@@ -192,8 +200,8 @@
                                                                     6
                                                                     1_package_config_t_version
                                                                     11 version
-                                                                    package_config_t
-                                                                    []
+                                                                    fpm_manifest_package_modules_34
+                                                                    [package_config_t]
                                                                     version
                                                                     Public
                                                                 ),
@@ -212,8 +220,8 @@
                                                                     6
                                                                     1_version_t_to_string
                                                                     14 to_string
-                                                                    1_version_t
-                                                                    []
+                                                                    fpm_versioning_modules_34
+                                                                    [version_t]
                                                                     to_string
                                                                     Public
                                                                 ),
@@ -241,6 +249,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 )
                                                         })
                                                     associate_block
@@ -272,6 +281,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )]
                                                                 []
@@ -291,6 +301,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )]
                                                                 []
@@ -324,6 +335,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             package:
                                                 (Variable
@@ -345,6 +357,7 @@
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                             )]
                                                             []
@@ -367,6 +380,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             version:
                                                 (Variable
@@ -392,6 +406,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     build_model
@@ -407,6 +422,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )]
                                                 []
@@ -428,6 +444,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 package)]
@@ -459,6 +476,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_versioning_modules_34:
                 (Module
@@ -475,8 +493,8 @@
                                                     15
                                                     1_version_t_to_string
                                                     14 to_string
-                                                    version_t
-                                                    []
+                                                    fpm_versioning_modules_34
+                                                    [version_t]
                                                     to_string
                                                     Public
                                                 ),
@@ -496,6 +514,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )]
                                                         []
@@ -514,6 +533,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -539,6 +559,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     as_string
@@ -550,6 +571,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -569,6 +591,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 15 self)]
@@ -614,6 +637,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )]
                                                         []
@@ -632,6 +656,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -657,6 +682,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     to_string
@@ -668,6 +694,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -688,6 +715,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 16 self)
@@ -719,6 +747,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -733,6 +762,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
@@ -754,6 +784,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         []
@@ -765,6 +796,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -779,6 +811,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             modules_34:
                 (Program
@@ -795,7 +828,9 @@
                             (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

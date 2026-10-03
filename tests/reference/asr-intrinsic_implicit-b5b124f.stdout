@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             b:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             max0:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     fppasu
@@ -91,6 +94,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -155,4 +159,5 @@
                 )
         })
     []
+    ()
 )

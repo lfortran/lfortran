@@ -39,6 +39,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     modules_06
@@ -68,6 +69,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             modules_06_a:
                 (Module
@@ -101,6 +103,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     b
@@ -117,6 +120,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -146,7 +150,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

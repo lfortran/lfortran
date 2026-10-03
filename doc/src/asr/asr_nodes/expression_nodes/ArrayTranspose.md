@@ -1,101 +1,91 @@
 # ArrayTranspose
 
-Array or matrix transpose.
+The transpose of a rank two array.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 ArrayTranspose(expr matrix, ttype type, expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`matrix`  | expression array, single or multi dimensional, square matrix |
-|`type` | table entry type |
-|`value` | expression value |
+| Argument | Description |
+|----------|-------------|
+| `matrix` | the array to transpose. |
+| `type` | the array type of the result, with the extents exchanged. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the ArrayTranspose  represents.
+The value of the expression.
 
 ## Description
 
-**ArrayTranspose** represents transpose of square matrix, where row are stored
-in column values and column values are store in rows.
-
-## Types
-
-Only accepts integers.
+`transpose(a)`. It is a node of its own rather than an intrinsic call so that
+passes can recognise it: transposing an operand of a matrix multiplication,
+for instance, can often be folded into the multiplication.
 
 ## Examples
 
-```fortran
-integer :: a(3, 4), b(4, 3)
-b = transpose(a)
+```clojure
+(ArrayTranspose
+  :matrix (Var
+    :v (SymbolRef 1 "a")
+  )
+  :type (Array
+    :type (Integer
+      :kind 4
+    )
+    :dims [
+      (dimension
+        :start (IntegerConstant
+          :n 1
+          :type (Integer
+            :kind 4
+          )
+          :intboz_type :Decimal
+        )
+        :length (IntegerConstant
+          :n 3
+          :type (Integer
+            :kind 4
+          )
+          :intboz_type :Decimal
+        )
+      )
+      (dimension
+        :start (IntegerConstant
+          :n 1
+          :type (Integer
+            :kind 4
+          )
+          :intboz_type :Decimal
+        )
+        :length (IntegerConstant
+          :n 2
+          :type (Integer
+            :kind 4
+          )
+          :intboz_type :Decimal
+        )
+      )
+    ]
+    :physical_type :FixedSizeArray
+    :memory_space :Global
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            a:
-                (Variable
-                    1
-                    a
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                    (IntegerConstant 3 (Integer 4 [])))
-                    ((IntegerConstant 1 (Integer 4 []))
-                    (IntegerConstant 4 (Integer 4 [])))])
-                    Source
-                    Public
-                    Required
-                    .false.
-                ),
-            b:
-                (Variable
-                    1
-                    b
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                    (IntegerConstant 4 (Integer 4 [])))
-                    ((IntegerConstant 1 (Integer 4 []))
-                    (IntegerConstant 3 (Integer 4 [])))])
-                    Source
-                    Public
-                    Required
-                    .false.
-                )
-
-        })
-    [(=
-        (Var 1 b)
-        (ArrayTranspose
-            (Var 1 a)
-            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-            (IntegerConstant 4 (Integer 4 [])))
-            ((IntegerConstant 1 (Integer 4 []))
-            (IntegerConstant 3 (Integer 4 [])))])
-            ()
-        )
-        ()
-    )]
-)
-
+```{literalinclude} ../../examples/arraytranspose.asr
+:language: clojure
 ```
 
 ## See Also
 
+[ArrayReshape](ArrayReshape.md), [ArrayPack](ArrayPack.md), [IntrinsicArrayFunction](IntrinsicArrayFunction.md)

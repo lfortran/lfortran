@@ -10,9 +10,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -69,8 +66,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             N
             (FuncCallOrArray
@@ -90,12 +87,14 @@
             0
             ()
             [(ConcurrentControl
+                ()
                 i
                 1
                 N
                 ()
             )
             (ConcurrentControl
+                ()
                 j
                 1
                 N
@@ -154,9 +153,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -223,8 +219,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             x
             (Real "1.0")
@@ -234,6 +230,7 @@
             0
             ()
             [(ConcurrentControl
+                ()
                 i
                 1
                 10
@@ -373,9 +370,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -442,8 +436,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             x
             (Real "1.0")
@@ -453,6 +447,7 @@
             0
             ()
             [(ConcurrentControl
+                ()
                 i
                 1
                 10
@@ -592,9 +587,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -661,8 +653,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             x
             (Real "1.0")
@@ -672,6 +664,7 @@
             0
             ()
             [(ConcurrentControl
+                ()
                 i
                 1
                 10

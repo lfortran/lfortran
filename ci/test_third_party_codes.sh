@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "##[group] Setup"
 set -ex  # Exit immediately on any error
 
 # Default to gfortran if FC is not set
@@ -39,14 +40,39 @@ run_test() {
   print_success "Success: $1"
 }
 
+# Assert that the current git HEAD matches the expected commit SHA.
+#
+# This is the analogue of a lockfile entry (cf. pixi.lock): a branch or tag
+# checkout gives us a human-readable reference, but upstream may move it. By
+# pinning the exact commit here we fail fast if upstream silently changes the
+# code we are testing against. If the assertion fails, investigate the
+# upstream change, then update the SHA after review.
+#
+# Usage:
+#   git checkout v3.1.0
+#   assert_git_commit 584fc171514172ff701df9b37f3229826a17e35d
+assert_git_commit() {
+  local expected="$1"
+  local label="${2:-$(basename "$PWD")}"
+  local actual
+  actual=$(git rev-parse HEAD)
+  if [ "$actual" != "$expected" ]; then
+    echo "ERROR [$label]: expected commit $expected but HEAD is $actual" >&2
+    echo "       (upstream branch/tag may have moved; update the pin after review)" >&2
+    exit 1
+  fi
+}
+
 time_section() {
   local LABEL="$1"
   local BLOCK="$2"
   local START=$(date +%s)
+  echo "##[group] $LABEL"
   print_section "$LABEL"
-  eval "$BLOCK"
+  ( set -x ; eval "$BLOCK" )
   local END=$(date +%s)
   print_subsection "⏱ Duration: $((END - START)) seconds"
+  echo "##[endgroup]"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -85,10 +111,13 @@ fi
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
-time_section "🧪 Testing assert" '
-  git clone https://github.com/pranavchiku/assert.git
-  cd assert
-  export PATH="$(pwd)/../src/bin:$PATH"
+set +x
+echo "##[endgroup]" # end of Setup
+
+time_section "🧪 Testing conda-forge fpm" '
+  mkdir conda-fpm
+  cd conda-fpm
+
   micromamba install -c conda-forge fpm=0.12.0
 
   # To debug https://github.com/lfortran/lfortran/issues/7732:
@@ -96,17 +125,72 @@ time_section "🧪 Testing assert" '
   realpath $(which fpm)
   ls -l $(dirname $(realpath $(which fpm)))/../lib
   ls -l $CONDA_PREFIX/lib
+
   fpm --version
 
-  git checkout -t origin/fix-test
-  git checkout 535434d2f44508aa06231c6c2fe95f9e11292769
+  cd ..
+  rm -rf conda-fpm
+'
+
+time_section "🧪 Testing caffeine" '
+  git clone -b main https://github.com/BerkeleyLab/caffeine.git
+  cd caffeine
+
+  micromamba install -c conda-forge fpm=0.12.0
+
+  fpm --version
+
+  export CC=clang
+  export CXX=clang++
+  echo PATH="$PATH"
+
+  # Output some toolchain information for debugging
+  for tool in ${FC} ${CC} ${CXX} fpm ; do
+    if command -v $tool > /dev/null 2>&1 ; then
+       ( echo ; set -x ; w=$(which $tool) ; ls -al $w ; ls -alhL $w ; $tool --version )
+    fi
+  done
+
+  # inject ISO_Fortran_binding.h into the C include path
+  export CPPFLAGS="-I$(lfortran --print-c-include-dir)"
+
+  # checkout a snapshot more recent than the current release
+  git checkout 341a507bfd61c464fe6db4b8185520e6461e5a9b
+
+  # Now build and test caffeine with LFortran
+  export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug" 
+  ./install.sh --yes --prefix=$PWD/inst --verbose
+
+  # Execute Caffeine unit tests
+  export CAF_IMAGES=4
+  ./run-fpm.sh test --verbose 
+
+  # Execute Caffeine end-to-end test (exercises LFortran+PRIF integration)
+  ./run-fpm.sh run --verbose
+
+  print_success "Done with caffeine"
+  cd ..
+  rm -rf caffeine
+'
+
+
+time_section "🧪 Testing assert" '
+  git clone -b main https://github.com/berkeleylab/assert.git
+  cd assert
+
+  micromamba install -c conda-forge fpm=0.12.0
+
+  # Release 3.1.2
+  git checkout 3.1.2
+  assert_git_commit 1eb0cb9ce1421c76b6ab977370b6339918f20918
+
   git clean -dfx
   fpm build --compiler=$FC --flag "--cpp" --verbose
   fpm test --compiler=$FC --flag "--cpp"
 
   git clean -dfx
   print_subsection "Testing with assertions enabled"
-  fpm test --compiler=$FC --verbose --flag '--cpp -DASSERTIONS -DASSERT_PARALLEL_CALLBACKS'
+  fpm test --compiler=$FC --verbose --flag "--cpp -DASSERTIONS -DASSERT_PARALLEL_CALLBACKS"
 
   cd ../
   rm -rf assert
@@ -119,19 +203,14 @@ time_section "🧪 Testing splpak" '
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  # To debug https://github.com/lfortran/lfortran/issues/7732:
-  which fpm
-  realpath $(which fpm)
-  ls -l $(dirname $(realpath $(which fpm)))/../lib
-  ls -l $CONDA_PREFIX/lib
   fpm --version
 
   git checkout lf-2
-  git checkout 460bd22f4ac716e5266412e8ed35ce07aa664f08
+  assert_git_commit 460bd22f4ac716e5266412e8ed35ce07aa664f08
 
   git clean -dfx
-  fpm build --compiler=$FC --profile release --flag "--cpp -DREAL32" --verbose
-  fpm test --compiler=$FC --profile release --flag "--cpp -DREAL32"
+  fpm build --compiler=$FC --profile release --flag "--cpp -DREAL32 --no-fast-math" --verbose
+  fpm test --compiler=$FC --profile release --flag "--cpp -DREAL32 --no-fast-math"
 
   cd ../
   rm -rf splpak
@@ -159,6 +238,18 @@ time_section "🧪 Testing Fiats" '
   git checkout 0a2ff33cf8c06c6379d8e8883e846577a29f2f5e
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
+  if [[ "$(uname)" == "Darwin" ]]; then
+    rm -rf build
+    git fetch https://github.com/certik/fiats lf1
+    git checkout 869584f56955fe591304587eb34068b814448c33
+    # Fiats computes in real(8), which is on the unsupported list for Metal
+    # (it has no 64-bit float), so --gpu-allow-cpu-fallback runs those
+    # `do concurrent` loops on the CPU with a warning; every other loop is
+    # offloaded. The lf1 branch turns the loops LFortran cannot offload yet
+    # into serial loops.
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal --gpu-allow-cpu-fallback"
+  fi
+
   print_success "Done with Fiats"
   cd ..
 '
@@ -170,7 +261,7 @@ time_section "🧪 Testing smart-pointers" '
   micromamba install -c conda-forge fpm
 
   git checkout -t origin/lf2
-  git checkout 95de5105c6a469b64feb39e999567f5e2fcdd033
+  assert_git_commit 95de5105c6a469b64feb39e999567f5e2fcdd033
   fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
   rm -rf build
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
@@ -180,16 +271,23 @@ time_section "🧪 Testing smart-pointers" '
 '
 
 time_section "🧪 Testing Formal" '
-  git clone https://github.com/certik/formal.git
+  git clone https://github.com/berkeleylab/formal.git
   cd formal
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  git checkout -t origin/lf1
-  git checkout 671ab24c3d639b1a2fedd27f727e96dadf404c5c
-  fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
+  git checkout 0.4.0
+  assert_git_commit d60710a33a0c2a3a0e4e9450000ad1a6782a394a
+  # disabled because it gets a SEGV on Linux:
+  #fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
   rm -rf build
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+  if [[ "$(uname)" == "Darwin" ]]; then
+    # Every do concurrent in Formal is offloaded to Metal. A loop the
+    # compiler cannot lower is a compile error, so this keeps it that way.
+    rm -rf build
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag --gpu=metal
+  fi
 
   print_success "Done with Formal"
   cd ..
@@ -198,10 +296,11 @@ time_section "🧪 Testing Formal" '
 time_section "🧪 Testing Julienne" '
   git clone https://github.com/BerkeleyLab/julienne.git
   cd julienne
-  export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  git checkout a75b5a831e303315304db52ec9dd70c9badc08cd
+  # Release 4.1.0
+  git checkout 4.1.0
+  assert_git_commit 632dbbe876fc2567f27a2c906429a3b596b6fd63
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
   print_success "Done with Julienne"
@@ -270,13 +369,27 @@ time_section "🧪 Testing M_CLI2" '
   export PATH="$(pwd)/../src/bin:$PATH"
   git checkout lf-9
   micromamba install -c conda-forge fpm
-  git checkout 108f0b5598df2bd8ec7a2dffe56017d58520fdfc
+  assert_git_commit 108f0b5598df2bd8ec7a2dffe56017d58520fdfc
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
 
   print_success "Done with M_CLI2"
   cd ..
 '
+
+time_section "🧪 Testing M_intrinsics" '
+  git clone https://github.com/urbanjost/M_intrinsics
+  cd M_intrinsics
+  export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout 6f7a80a2920b9f276069a7c31606f03482afd611
+  micromamba install -c conda-forge fpm
+  fpm --compiler=$FC build --flag "--realloc-lhs-arrays --cpp"
+
+  print_success "Done with M_intrinsics"
+  cd ..
+'
+
+if [[ "$(uname)" != "Darwin" ]]; then
 
 time_section "🧪 Testing fortran_mpi" '
   git clone https://github.com/lfortran/fortran_mpi.git
@@ -299,7 +412,7 @@ time_section "🧪 Compiling POT3D with fortran_mpi" '
   git clone https://github.com/parth121101/pot3d.git
   cd pot3d
   git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
-  git checkout 380669edd3a5947985674a51e0d65482d6fe68b3
+  assert_git_commit 380669edd3a5947985674a51e0d65482d6fe68b3
 
   git clone https://github.com/lfortran/fortran_mpi
   cd fortran_mpi
@@ -334,12 +447,12 @@ time_section "🧪 Compiling POT3D with fortran_mpi" '
 # Section 2: FPM
 ##########################
 time_section "🧪 Testing FPM" '
-  git clone https://github.com/fortran-lang/fpm.git
+  git clone -b v0.13.0 --depth 1 https://github.com/fortran-lang/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout main
   micromamba install -c conda-forge fpm
-  git checkout d0f89957541bdcc354da8e11422f5efcf9fedd0e
+  git checkout v0.13.0
+  assert_git_commit 90bb83a70e9bcf04d941fb43cca014ae1c0fc5ea
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
 
@@ -354,7 +467,7 @@ time_section "🧪 Testing Fortran-Primes" '
   git clone https://github.com/jinangshah21/fortran-primes.git
   cd fortran-primes
   git checkout -t origin/lf-3
-  git checkout 923b468f79eee1ff07b77d9def67249f4d2efa21
+  assert_git_commit 923b468f79eee1ff07b77d9def67249f4d2efa21
 
   print_subsection "Building and running Fortran-Primes"
   FC=$FC ./build_and_run.sh
@@ -371,7 +484,7 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
   cd numerical-methods-fortran
   git checkout -t origin/lf6
-  git checkout a252989e64b3f8d5d2f930dca18411c104ea85f8
+  assert_git_commit a252989e64b3f8d5d2f930dca18411c104ea85f8
 
   print_subsection "Building project"
   FC="$FC --no-array-bounds-checking --realloc-lhs-arrays" make
@@ -406,7 +519,9 @@ time_section "🧪 Compiling PRIMA" '
   git clone https://github.com/Pranavchiku/prima.git
   cd prima
   git checkout -t origin/lf-prima-12
+  # The `lf-prima-12` has different commit than what we need:
   git checkout e681eea9b3f27930c50cffd14dd566b39f01c642
+  assert_git_commit e681eea9b3f27930c50cffd14dd566b39f01c642
   git clean -dfx
 
   # OS-specific env
@@ -450,7 +565,7 @@ time_section "🧪 Testing Modern Minpack (Result Check)" '
   git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
   cd modern_minpack_02
   git checkout -t origin/w5
-  git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
+  assert_git_commit fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
 
   $FC ./src/minpack.f90 -c --legacy-array-sections
   $FC ./examples/example_hybrd.f90 --legacy-array-sections
@@ -471,6 +586,23 @@ time_section "🧪 Testing dftatom" '
   make -f Makefile.manual quicktest
 '
 
+##########################
+# Section 8.1: featom (build-only)
+##########################
+time_section "🧪 Building featom (build-only)" '
+  git clone https://github.com/atomic-solvers/featom
+  cd featom
+  git checkout 87872a3266ceeee61a7244e6ecd134dc3bda790f
+  micromamba install -c conda-forge fpm libblas liblapack
+  export LIBRARY_PATH="$CONDA_PREFIX/lib:${LIBRARY_PATH:-}"
+  # Build-only smoke test for now; runtime tests can be added later.
+  FPM_FFLAGS="--cpp --realloc-lhs-arrays --mangle-underscore-external" LFORTRAN_LINKER=gcc fpm build --compiler=lfortran
+
+  print_success "Done with featom (build-only)"
+  cd ..
+  rm -rf featom
+'
+
 
 ##########################
 # Section 9: fastGPT
@@ -481,7 +613,9 @@ time_section "🧪 Testing fastGPT" '
 
     git clean -dfx
     git checkout -t origin/namelist
+    # The `namelist` branch mismatches the commit we need:
     git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
+    assert_git_commit d3eef520c1be8e2db98a3c2189740af1ae7c3e06
     curl -f -L -o model.dat \
         https://github.com/certik/fastGPT/releases/download/v1.0.0/model_fastgpt_124M_v1.dat
     echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
@@ -508,7 +642,7 @@ time_section "🧪 Testing stdlib" '
     export PATH="$(pwd)/../../src/bin:$PATH"
 
     git checkout lf-21
-    git checkout 176c7a28bbc7a8a9b63441f7dfa980aeafbddd0f
+    assert_git_commit 176c7a28bbc7a8a9b63441f7dfa980aeafbddd0f
     micromamba install -c conda-forge fypp
 
     git clean -fdx
@@ -525,7 +659,7 @@ time_section "🧪 Testing SNAP" '
     cd SNAP
 
     git checkout lf11
-    git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
+    assert_git_commit 169a9216f2c922e94065a519efbb0a6c8b55149e
     cd ./src
     make -j8 FORTRAN=$FC FFLAGS= MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
@@ -540,7 +674,7 @@ time_section "🧪 Testing LAPACK" '
     cd lapack
     git fetch origin lf_07
     git checkout lf_07
-    git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
+    assert_git_commit 9d9e48987ca109d46b92d515b59cb591fab9859a
     cd build
     ./build_lf.sh
     micromamba install -y -n lf cmake=3.29.1 # Restore CMAKE
@@ -726,6 +860,8 @@ time_section "🧪 Testing Reference-LAPACK v3.12.1 Full Test Suite" '
 
     cd ..
 '
+
+fi
 
 ##################################
 # Final Summary and Cleanup

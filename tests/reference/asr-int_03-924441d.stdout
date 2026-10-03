@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -34,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             dp:
                                 (Variable
@@ -66,6 +68,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             i4:
                                 (Variable
@@ -89,6 +92,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             i8:
                                 (Variable
@@ -112,6 +116,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             w4:
                                 (Variable
@@ -135,6 +140,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             w8:
                                 (Variable
@@ -158,6 +164,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     int_03
@@ -444,7 +451,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

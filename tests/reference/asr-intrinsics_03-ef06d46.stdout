@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             dp:
                                 (ExternalSymbol
@@ -66,6 +67,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             r1:
                                 (Variable
@@ -89,6 +91,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             r2:
                                 (Variable
@@ -112,6 +115,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -135,6 +139,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     intrinsics_03
@@ -453,9 +458,11 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env)
         })
     []
+    ()
 )

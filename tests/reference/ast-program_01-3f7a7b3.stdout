@@ -2,12 +2,11 @@
     [(Program
         program_01
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -74,8 +73,8 @@
             None
             ())]
             ()
-        )]
-        [(Print
+        )
+        (Print
             0
             ()
             [(String "Normal random numbers:" ())]
@@ -136,9 +135,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -224,8 +220,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(If
+            )
+            (If
                 0
                 ()
                 first

@@ -1,78 +1,50 @@
 # ComplexConstant
 
-Complex literal constant, an `expr` node.
+A complex literal.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
-ComplexConstant(floar re, float im, ttype type)
+```text
+ComplexConstant(float re, float im, ttype type)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-| `re`           | value of real  part |
-| `im`          | value of imaginary part |
-| `type`        | tabel entry type |
+| Argument | Description |
+|----------|-------------|
+| `re` | the real part. |
+| `im` | the imaginary part. |
+| `type` | the complex type, which fixes the kind. |
 
 ### Return values
 
-The return value is the expression that the ComplexConstant represents.
+The value of the expression.
 
 ## Description
 
-**ComplexConstant** represents complex constant which consists of a optional
-imaginary part. Both real and imaginary part can have integer or floating point
-values, followed by a string of decimal digits, before or after
-decimal point. If no sign is present, the constant is assumed to be non negative.
-
-The value must be in the `Complex*8` range, uses 8 bytes of storage.
-The constants are separated by a comma, and the pair is enclosed in parentheses.
-The first constant is the real part, and the second is the imaginary part.
-
-## Types
-
-Only accepts complex contants.
+Both parts are stored as numbers. A complex literal whose parts are not both
+constants is a [ComplexConstructor](ComplexConstructor.md) instead.
 
 ## Examples
 
-
-```fortran
-(1.0, 2.1)
+```clojure
+(ComplexConstant
+  :re 1.0
+  :im 2.0
+  :type (Complex
+    :kind 4
+  )
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(ComplexConstructor
-        (RealConstant
-            1.000000
-            (Real 4 [])
-        )
-        (RealConstant
-            2.100000
-            (Real 4 [])
-        )
-        (Complex 4 [])
-        (ComplexConstant
-            1.000000
-            2.100000
-            (Complex 4 [])
-        )
-    )]
-)
-
+```{literalinclude} ../../examples/complex_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[IntegerConstant](IntegerConstant.md), [RealConstant](RealConstant.md).
+[ComplexConstructor](ComplexConstructor.md), [RealConstant](RealConstant.md), [Complex](../type_nodes/Complex.md)

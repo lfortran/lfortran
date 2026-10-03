@@ -9,6 +9,36 @@
 
 namespace LCompilers::LFortran {
 
+namespace {
+
+std::tm get_local_tm(std::time_t when) {
+    std::tm tm;
+#if defined(_WIN32)
+    localtime_s(&tm, &when);
+#else
+    localtime_r(&when, &tm);
+#endif
+    return tm;
+}
+
+std::string format_date(const std::tm &tm) {
+    static const char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    char buffer[16];
+    std::snprintf(buffer, sizeof(buffer), "%s %2d %04d",
+        months[tm.tm_mon], tm.tm_mday, tm.tm_year + 1900);
+    return std::string(buffer);
+}
+
+std::string format_time(const std::tm &tm) {
+    char buffer[16];
+    std::snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d",
+        tm.tm_hour, tm.tm_min, tm.tm_sec);
+    return std::string(buffer);
+}
+
+} // namespace
+
 // This exception is only used internally for the preprocessor, nowhere else.
 
 class PreprocessorError
@@ -104,6 +134,12 @@ CPreprocessor::CPreprocessor(CompilerOptions &compiler_options)
     macro_definitions["__FILE__"] = md;
     md.expansion = "0";
     macro_definitions["__LINE__"] = md;
+    std::time_t now = std::time(nullptr);
+    std::tm tm = get_local_tm(now);
+    md.expansion = "\"" + format_date(tm) + "\"";
+    macro_definitions["__DATE__"] = md;
+    md.expansion = "\"" + format_time(tm) + "\"";
+    macro_definitions["__TIME__"] = md;
 }
 std::string CPreprocessor::token(unsigned char *tok, unsigned char* cur) const
 {
@@ -364,6 +400,14 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 output.append(token(tok, cur));
                 continue;
             }
+            // Null preprocessing directive (C99 6.10.7 / C23 6.10.9):
+            // A line containing only "#" (with optional whitespace and/or
+            // C-style comments) has no effect.
+            "#" whitespace? (comment whitespace?)* newline {
+                if (!branch_enabled) continue;
+                output.append("\n");
+                continue;
+            }
             "#" whitespace? "define" whitespace @t1 name @t2 (whitespace? | whitespace @t3 [^\n\x00]* @t4 ) newline  {
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2), macro_subs;
@@ -379,10 +423,11 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "define" whitespace @t1 name @t2 '(' whitespace? ')' whitespace @t3 [^\n\x00]* @t4 newline  {
+            "#" whitespace? "define" whitespace @t1 name @t2 '(' whitespace? ')' whitespace? @t3 [^\n\x00]* @t4 newline  {
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2),
                         macro_subs = token(t3, t4);
+                handle_continuation_lines(macro_subs, cur);
                 CPPMacro fn;
                 fn.function_like = true;
                 fn.args = {};
@@ -391,7 +436,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "define" whitespace @t1 name @t2 '(' whitespace? name whitespace? (',' whitespace? name whitespace?)* ')' (whitespace @t3 [^\n\x00]* @t4)? newline  {
+            "#" whitespace? "define" whitespace @t1 name @t2 '(' whitespace? name whitespace? (',' whitespace? name whitespace?)* ')' whitespace? @t3 [^\n\x00]* @t4 newline  {
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2),
                         macro_subs = token(t3, t4);
@@ -469,7 +514,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "if" whitespace @t1 [^\n\x00]* @t2 newline {
+            "#" whitespace? "if" whitespace? @t1 [^\n\x00]* @t2 newline {
                 ConditionalDirective if_directive;
                 if_directive.active = branch_enabled;
                 if_directive.type = DirectiveType::If;
@@ -520,7 +565,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "elif" whitespace @t1 [^\n\x00]* @t2 newline  {
+            "#" whitespace? "elif" whitespace? @t1 [^\n\x00]* @t2 newline  {
                 if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;
@@ -567,6 +612,30 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
 
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
+            }
+            "#" whitespace? "warning" [ \t\v\r]* @t1 [^\n\x00]* @t2 newline {
+                if (!branch_enabled) continue;
+                std::string msg = token(t1, t2);
+                Location loc;
+                loc.first = tok - string_start;
+                loc.last = (cur > string_start ? cur - 1 : cur) - string_start;
+                diagnostics.add(diag::Diagnostic(
+                    "#warning " + msg, diag::Level::Warning,
+                    diag::Stage::CPreprocessor,
+                    { diag::Label("", {loc}) }));
+                interval_end_type_0(lm, output.size(), cur-string_start);
+                continue;
+            }
+            "#" whitespace? "error" [ \t\v\r]* @t1 [^\n\x00]* @t2 newline {
+                if (!branch_enabled) continue;
+                std::string msg = token(t1, t2);
+                Location loc;
+                loc.first = tok - string_start;
+                loc.last = (cur > string_start ? cur - 1 : cur) - string_start;
+                throw PreprocessorError(diag::Diagnostic(
+                    "#error " + msg, diag::Level::Error,
+                    diag::Stage::CPreprocessor,
+                    { diag::Label("", {loc}) }));
             }
             "#" whitespace? "include" whitespace ["<] @t1 [^">\x00]* @t2 [">] [^\n\x00]* newline {
                 if (!branch_enabled) continue;
@@ -624,6 +693,18 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 if (!branch_enabled) continue;
                 std::string t = token(tok, cur);
                 if (macro_definitions.find(t) != macro_definitions.end()) {
+                    // Per C standard §6.10.3: a function-like macro name
+                    // not followed by ( is not treated as a macro invocation
+                    if (macro_definitions[t].function_like) {
+                        unsigned char *saved_cur = cur;
+                        while (*cur == ' ' || *cur == '\t') cur++;
+                        if (*cur != '(') {
+                            cur = saved_cur;
+                            output.append(t);
+                            continue;
+                        }
+                    }
+
                     // Prepare the start of the interval
                     interval_end_type_0(lm, output.size(), tok-string_start);
 
@@ -631,12 +712,6 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                     std::string expansion;
                     if (macro_definitions[t].function_like) {
                         while (*cur == ' ' || *cur == '\t') cur++;
-                        if (*cur != '(') {
-                            Location loc;
-                            loc.first = cur - string_start;
-                            loc.last = loc.first;
-                            throw PreprocessorError("function-like macro invocation must have argument list", loc);
-                        }
                         std::vector<std::string> args;
                         args = parse_arguments(string_start, cur, false);
                         if (*cur != ')') {
@@ -946,6 +1021,8 @@ void get_next_token(unsigned char *string_start, unsigned char *&cur, CPPTokenTy
             end { type = CPPTokenType::TK_EOF; return; }
             newline { type = CPPTokenType::TK_EOF; return; }
             whitespace { continue; }
+            "//" [^\n\x00]* { continue; }
+            "/*" ([^*\x00] | "*"[^/\x00])* "*/" { continue; }
             "\\" whitespace? newline { continue; }
             "+" { type = CPPTokenType::TK_PLUS; return; }
             "-" { type = CPPTokenType::TK_MINUS; return; }
@@ -1154,12 +1231,11 @@ int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_sym
         if (macro_definitions.find(str) != macro_definitions.end()) {
             std::string v;
             if (macro_definitions.at(str).function_like) {
+                unsigned char *saved_cur = cur;
                 while (*cur == ' ' || *cur == '\t') cur++;
                 if (*cur != '(') {
-                    Location loc;
-                    loc.first = cur - string_start;
-                    loc.last = loc.first;
-                    throw PreprocessorError("function-like macro invocation must have argument list", loc);
+                    cur = saved_cur;
+                    return 0;
                 }
                 std::vector<std::string> args;
                 args = parse_arguments(string_start, cur, false);

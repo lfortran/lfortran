@@ -6,12 +6,11 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeReal
                 []
@@ -32,8 +31,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             subroutines_10_sub
             []
@@ -125,9 +124,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -167,8 +163,8 @@
             None
             ())]
             ()
-        )]
-        [(If
+        )
+        (If
             0
             ()
             (< i 0)

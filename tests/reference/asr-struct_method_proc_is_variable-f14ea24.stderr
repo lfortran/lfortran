@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.struct_method.proc_is_procedure]: StructMethodDeclaration::m_proc of 'meth' must be a procedure, not Variable
+  --> tests/asr/verify/struct_method_proc_is_variable.asr:13:27
+   |
+13 |                   "meth" (StructMethodDeclaration
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^ failed here

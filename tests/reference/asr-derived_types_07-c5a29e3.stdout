@@ -17,8 +17,8 @@
                                                     13
                                                     1_toml_node_val
                                                     10 val
-                                                    toml_node
-                                                    []
+                                                    tomlf_structure_vector
+                                                    [toml_node]
                                                     val
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     13
                                                     1_toml_value_match_key
                                                     3 match_key
-                                                    toml_value
-                                                    []
+                                                    tomlf_type_value
+                                                    [toml_value]
                                                     match_key
                                                     Public
                                                 ),
@@ -37,8 +37,8 @@
                                                     13
                                                     1_toml_vector_lst
                                                     11 lst
-                                                    toml_vector
-                                                    []
+                                                    tomlf_structure_vector
+                                                    [toml_vector]
                                                     lst
                                                     Public
                                                 ),
@@ -47,8 +47,8 @@
                                                     13
                                                     1_toml_vector_n
                                                     11 n
-                                                    toml_vector
-                                                    []
+                                                    tomlf_structure_vector
+                                                    [toml_vector]
                                                     n
                                                     Public
                                                 ),
@@ -74,6 +74,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             key:
                                                 (Variable
@@ -97,6 +98,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             ptr:
                                                 (Variable
@@ -129,6 +131,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -161,6 +164,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )]
                                                         []
@@ -179,6 +183,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     find
@@ -205,6 +210,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -233,6 +239,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 self)
@@ -281,6 +288,7 @@
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                             )
                                                             ()
@@ -353,6 +361,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
                                                                 ()
@@ -419,6 +428,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
                                                                 ()
@@ -485,6 +495,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
                                                                 ()
@@ -549,8 +560,8 @@
                                                     12
                                                     1_toml_vector_lst
                                                     11 lst
-                                                    toml_vector
-                                                    []
+                                                    tomlf_structure_vector
+                                                    [toml_vector]
                                                     lst
                                                     Public
                                                 ),
@@ -559,8 +570,8 @@
                                                     12
                                                     1_toml_vector_n
                                                     11 n
-                                                    toml_vector
-                                                    []
+                                                    tomlf_structure_vector
+                                                    [toml_vector]
                                                     n
                                                     Public
                                                 ),
@@ -586,6 +597,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -618,6 +630,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )]
                                                         []
@@ -636,6 +649,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     new_vector
@@ -662,6 +676,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -680,6 +695,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 12 self)
@@ -729,6 +745,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 ()
@@ -742,6 +759,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
+                                            []
                                             ()
                                             ()
                                             ())]
@@ -793,6 +811,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     toml_node
@@ -816,6 +835,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -867,6 +887,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     9 toml_node
@@ -881,6 +902,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             n:
                                                 (Variable
@@ -890,7 +912,7 @@
                                                     Local
                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -904,6 +926,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     toml_vector
@@ -929,6 +952,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         []
@@ -943,6 +967,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -955,6 +980,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_type_keyval:
                 (Module
@@ -971,8 +997,8 @@
                                                     8
                                                     1_toml_keyval_raw
                                                     7 raw
-                                                    toml_keyval
-                                                    []
+                                                    tomlf_type_keyval
+                                                    [toml_keyval]
                                                     raw
                                                     Public
                                                 ),
@@ -981,8 +1007,8 @@
                                                     8
                                                     1_toml_value_key
                                                     3 key
-                                                    toml_value
-                                                    []
+                                                    tomlf_type_value
+                                                    [toml_value]
                                                     key
                                                     Public
                                                 ),
@@ -1015,6 +1041,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     destroy
@@ -1038,6 +1065,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 8 self)]
@@ -1143,6 +1171,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     toml_keyval
@@ -1159,6 +1188,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -1183,6 +1213,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_type_value:
                 (Module
@@ -1223,6 +1254,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     destroy
@@ -1246,6 +1278,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 self)]
@@ -1266,8 +1299,8 @@
                                                     5
                                                     1_toml_value_key
                                                     3 key
-                                                    toml_value
-                                                    []
+                                                    tomlf_type_value
+                                                    [toml_value]
                                                     key
                                                     Public
                                                 ),
@@ -1293,6 +1326,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             match:
                                                 (Variable
@@ -1316,6 +1350,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -1346,6 +1381,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     match_key
@@ -1370,6 +1406,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 self)
@@ -1467,6 +1504,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             match_key:
                                                 (StructMethodDeclaration
@@ -1496,6 +1534,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -1508,7 +1547,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

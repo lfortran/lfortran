@@ -54,6 +54,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     base
@@ -68,6 +69,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -112,6 +114,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             bptr:
                                 (Variable
@@ -142,6 +145,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             child:
                                 (Struct
@@ -170,6 +174,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     child
@@ -184,6 +189,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -218,6 +224,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             perform_select_type:
                                 (Function
@@ -253,6 +260,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             ~select_type_block_:
                                                 (Block
@@ -503,6 +511,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 bptr)]
@@ -612,7 +621,9 @@
                         ()
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

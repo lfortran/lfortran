@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             out:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     case_02
@@ -384,7 +386,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )
