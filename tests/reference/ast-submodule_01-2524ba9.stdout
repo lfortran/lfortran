@@ -6,8 +6,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
         [(DerivedType
             Base
             []
@@ -55,9 +53,6 @@
                         )]
                         []
                     )
-                    []
-                    []
-                    []
                     [(Declaration
                         (AttrType
                             TypeInteger
@@ -100,11 +95,9 @@
                     )]
                     []
                     []
-                    []
                 )
             )]
         )]
-        []
         []
     )
     (Module
@@ -126,9 +119,8 @@
                 )
                 (EndOfLine)]
             )
-        )]
-        []
-        [(Interface
+        )
+        (Interface
             (InterfaceHeader)
             ()
             [(InterfaceProc
@@ -157,10 +149,6 @@
                     []
                     []
                     []
-                    []
-                    []
-                    []
-                    []
                 )
             )
             (InterfaceProc
@@ -178,9 +166,6 @@
                         )]
                         []
                     )
-                    []
-                    []
-                    []
                     [(Declaration
                         (AttrType
                             TypeType
@@ -219,11 +204,9 @@
                     )]
                     []
                     []
-                    []
                 )
             )]
         )]
-        []
         []
     )
     (Module
@@ -244,9 +227,8 @@
                     "! Use association of module m1"
                 )]
             )
-        )]
-        []
-        [(DerivedType
+        )
+        (DerivedType
             NewType
             []
             ()
@@ -274,7 +256,6 @@
             []
         )]
         []
-        []
     )
     (Submodule
         m1
@@ -298,9 +279,6 @@
                 (EndOfLine)]
             )
         )]
-        []
-        []
-        []
         [(Subroutine
             sub1
             [(i)
@@ -315,9 +293,6 @@
                 )]
                 []
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -357,8 +332,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Print
+            )
+            (Print
                 0
                 ()
                 [(String "sub1" ())
@@ -381,9 +356,6 @@
             (EndOfLine)]
         )
         []
-        []
-        []
-        []
         [(Function
             func1
             []
@@ -405,10 +377,6 @@
                 )]
                 []
             )
-            []
-            []
-            []
-            []
             [(Assignment
                 0
                 func1
@@ -430,9 +398,6 @@
             (EndOfLine)]
         )
         []
-        []
-        []
-        []
         [(Function
             func2
             [(b)]
@@ -447,9 +412,6 @@
                 )]
                 []
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeType
@@ -485,8 +447,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 func2
                 b
@@ -503,8 +465,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
         [(Interface
             (InterfaceHeader)
             (TriviaNode
@@ -530,10 +490,8 @@
                         []
                         .false.
                         ()
-                    )]
-                    []
-                    []
-                    [(Declaration
+                    )
+                    (Declaration
                         (AttrType
                             TypeInteger
                             []
@@ -575,7 +533,6 @@
                     )]
                     []
                     []
-                    []
                 )
             )
             (InterfaceProc
@@ -599,10 +556,6 @@
                     []
                     []
                     []
-                    []
-                    []
-                    []
-                    []
                 )
             )
             (InterfaceProc
@@ -619,10 +572,8 @@
                         []
                         .false.
                         ()
-                    )]
-                    []
-                    []
-                    [(Declaration
+                    )
+                    (Declaration
                         (AttrType
                             TypeType
                             []
@@ -658,7 +609,6 @@
                         ())]
                         ()
                     )]
-                    []
                     []
                     []
                 )
@@ -741,7 +691,6 @@
             []
         )]
         []
-        []
     )
     (Program
         example
@@ -766,9 +715,8 @@
             []
             .false.
             ()
-        )]
-        []
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeType
                 []
@@ -785,8 +733,8 @@
             None
             ())]
             ()
-        )]
-        [(Associate
+        )
+        (Associate
             0
             pp1 [(c1
             [])]

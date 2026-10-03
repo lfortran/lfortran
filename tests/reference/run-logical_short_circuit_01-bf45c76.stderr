@@ -1,0 +1,5 @@
+runtime error: Runtime error: Array 'a' index out of bounds. Tried to access index 0 of dimension 1, but valid range is 1 to 3.
+  --> tests/../integration_tests/logical_short_circuit_01.f90:20:22
+   |
+20 |     if (i >= 1 .and. a(i) == 10) then
+   |                      ^^^^

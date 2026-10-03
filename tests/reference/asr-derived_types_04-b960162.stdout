@@ -12,6 +12,7 @@
                     debug
                     []
                     []
+                    ()
                 ),
             derived_types_04_bitset:
                 (Module
@@ -96,6 +97,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 self)]
@@ -161,6 +163,7 @@
                                     Private
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -173,7 +176,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

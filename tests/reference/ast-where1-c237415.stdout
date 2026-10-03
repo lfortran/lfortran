@@ -2,12 +2,11 @@
     [(Program
         test
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -59,8 +58,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Where
+        )
+        (Where
             0
             ()
             (== x 1)

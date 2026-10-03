@@ -2,7 +2,6 @@
     [(Module
         interface1
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -10,8 +9,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Interface
+        )
+        (Interface
             (InterfaceHeaderName
                 randn
             )
@@ -49,7 +48,6 @@
                 ()
             )]
         )]
-        []
         []
     )]
 )

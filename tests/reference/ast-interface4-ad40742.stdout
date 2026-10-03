@@ -22,9 +22,8 @@
             []
             .false.
             ()
-        )]
-        []
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeLogical
                 []
@@ -63,7 +62,6 @@
                 ()
             )]
         )]
-        []
         [(Function
             MULT
             [(A)
@@ -78,9 +76,6 @@
             ()
             ()
             ()
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -151,8 +146,8 @@
                     [(EndOfLine)
                     (EndOfLine)]
                 )
-            )]
-            [(If
+            )
+            (If
                 0
                 ()
                 (/= (FuncCallOrArray

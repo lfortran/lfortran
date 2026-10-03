@@ -2,7 +2,6 @@
     [(Program
         print_01
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -10,8 +9,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeCharacter
                 [(len
@@ -34,8 +33,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Print
+        )
+        (Print
             0
             ()
             [(String "My name is " ())

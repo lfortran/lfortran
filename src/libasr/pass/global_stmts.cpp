@@ -107,6 +107,25 @@ void pass_wrap_global_stmts(Allocator &al,
                 fn_scope->add_symbol(std::string(var_name), down_cast<ASR::symbol_t>(return_var));
                 target = return_var_ref;
                 idx++;
+            } else if (ASRUtils::is_character(*ASRUtils::expr_type(value))) {
+                s.from_str(al, fn_name_s + std::to_string(idx));
+                var_name = s.c_str(al);
+                ASR::String_t *value_type = down_cast<ASR::String_t>(
+                    ASRUtils::extract_type(ASRUtils::expr_type(value)));
+                type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                    ASRUtils::TYPE(ASR::make_String_t(al, loc,
+                        value_type->m_kind, nullptr, ASR::DeferredLength,
+                        value_type->m_physical_type))));
+                return_var = ASRUtils::make_Variable_t_util(al, loc,
+                    fn_scope, var_name, nullptr, 0, ASRUtils::intent_local, nullptr, nullptr,
+                    ASR::storage_typeType::Default, type,
+                    nullptr, ASR::abiType::Source,
+                    ASR::Public, ASR::presenceType::Required, false);
+                return_var_ref = EXPR(ASR::make_Var_t(al, loc,
+                    down_cast<ASR::symbol_t>(return_var)));
+                fn_scope->add_symbol(std::string(var_name), down_cast<ASR::symbol_t>(return_var));
+                target = return_var_ref;
+                idx++;
             } else {
                 throw LCompilersException("Return type not supported in interactive mode");
             }

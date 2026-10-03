@@ -5,9 +5,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -178,7 +175,6 @@
             []
             ()
         )]
-        []
         []
         []
     )]

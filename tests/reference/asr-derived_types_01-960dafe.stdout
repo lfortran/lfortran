@@ -564,6 +564,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             derived_types_01_m_01:
                 (Module
@@ -646,6 +647,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 a)]
@@ -752,6 +754,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -839,6 +842,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -851,6 +855,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             derived_types_01_m_02:
                 (Module
@@ -961,6 +966,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -973,7 +979,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

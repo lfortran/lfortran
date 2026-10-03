@@ -17,7 +17,6 @@
                 "! comment, the program is conformant."
             )]
         )
-        []
         [(Implicit
             [(ImplicitSpec
                 (AttrType
@@ -33,8 +32,8 @@
                 )]
             )]
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -57,13 +56,10 @@
                     "! TODO: Fix this test case"
                 )]
             )
-        )]
-        [(Block
+        )
+        (Block
             0
             ()
-            []
-            []
-            []
             [(Assignment
                 0
                 B
