@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_callback_02:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_callback_02
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_callback_02:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_callback_02
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             cb:
                                 (Function
                                     (SymbolTable
@@ -535,16 +591,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_callback_02
+                    2 __lcompilers_global_init_state_callback_02
+                    .false.
                 ),
             main:
                 (Program
                     (SymbolTable
-                        7
+                        8
                         {
                             cb:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     cb
                                     2 cb
                                     callback_02
@@ -554,7 +612,7 @@
                                 ),
                             foo:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     foo
                                     2 foo
                                     callback_02
@@ -564,7 +622,7 @@
                                 ),
                             res:
                                 (Variable
-                                    7
+                                    8
                                     res
                                     []
                                     Local
@@ -602,9 +660,9 @@
                     main
                     [callback_02]
                     [(Assignment
-                        (Var 7 res)
+                        (Var 8 res)
                         (FunctionCall
-                            7 foo
+                            8 foo
                             ()
                             [((RealConstant
                                 1.500000
@@ -614,7 +672,7 @@
                                 2.000000
                                 (Real 4)
                             ))
-                            ((Var 7 res))]
+                            ((Var 8 res))]
                             (Real 4)
                             ()
                             ()
@@ -624,8 +682,12 @@
                         .false.
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

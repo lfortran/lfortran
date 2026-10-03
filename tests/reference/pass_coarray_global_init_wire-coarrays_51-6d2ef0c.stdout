@@ -2,6 +2,67 @@
     (SymbolTable
         1
         {
+            __lcompilers_collective_bootstrap:
+                (Function
+                    (SymbolTable
+                        20
+                        {
+                            stat:
+                                (Variable
+                                    20
+                                    stat
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    __lcompilers_collective_bootstrap
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    [__module_prif_prif_init]
+                    []
+                    [(SubroutineCall
+                        1 __module_prif_prif_init
+                        ()
+                        [((Var 20 stat))]
+                        ()
+                        .false.
+                    )]
+                    ()
+                    Private
+                    .false.
+                    .false.
+                    ()
+                ),
             __module_coarrays_51_a_ca__coarray_data:
                 (Variable
                     1
@@ -119,7 +180,7 @@
             __module_prif_prif_dummy_team_descriptor:
                 (Struct
                     (SymbolTable
-                        17
+                        16
                         {
                             
                         })
@@ -146,11 +207,11 @@
             __module_prif_prif_get:
                 (Function
                     (SymbolTable
-                        19
+                        18
                         {
                             coarray_handle:
                                 (Variable
-                                    19
+                                    18
                                     coarray_handle
                                     []
                                     In
@@ -181,7 +242,7 @@
                                 ),
                             current_image_buffer:
                                 (Variable
-                                    19
+                                    18
                                     current_image_buffer
                                     []
                                     In
@@ -207,7 +268,7 @@
                                 ),
                             errmsg:
                                 (Variable
-                                    19
+                                    18
                                     errmsg
                                     []
                                     InOut
@@ -231,7 +292,7 @@
                                 ),
                             errmsg_alloc:
                                 (Variable
-                                    19
+                                    18
                                     errmsg_alloc
                                     []
                                     InOut
@@ -257,7 +318,7 @@
                                 ),
                             image_num:
                                 (Variable
-                                    19
+                                    18
                                     image_num
                                     []
                                     In
@@ -281,7 +342,7 @@
                                 ),
                             offset:
                                 (Variable
-                                    19
+                                    18
                                     offset
                                     []
                                     In
@@ -305,7 +366,7 @@
                                 ),
                             size_in_bytes:
                                 (Variable
-                                    19
+                                    18
                                     size_in_bytes
                                     []
                                     In
@@ -329,7 +390,7 @@
                                 ),
                             stat:
                                 (Variable
-                                    19
+                                    18
                                     stat
                                     []
                                     Out
@@ -387,14 +448,14 @@
                         Host
                     )
                     []
-                    [(Var 19 image_num)
-                    (Var 19 coarray_handle)
-                    (Var 19 offset)
-                    (Var 19 current_image_buffer)
-                    (Var 19 size_in_bytes)
-                    (Var 19 stat)
-                    (Var 19 errmsg)
-                    (Var 19 errmsg_alloc)]
+                    [(Var 18 image_num)
+                    (Var 18 coarray_handle)
+                    (Var 18 offset)
+                    (Var 18 current_image_buffer)
+                    (Var 18 size_in_bytes)
+                    (Var 18 stat)
+                    (Var 18 errmsg)
+                    (Var 18 errmsg_alloc)]
                     []
                     ()
                     Public
@@ -405,11 +466,11 @@
             __module_prif_prif_init:
                 (Function
                     (SymbolTable
-                        9
+                        21
                         {
                             stat:
                                 (Variable
-                                    9
+                                    21
                                     stat
                                     []
                                     Out
@@ -449,7 +510,7 @@
                         Host
                     )
                     []
-                    [(Var 9 stat)]
+                    [(Var 21 stat)]
                     []
                     ()
                     Public
@@ -460,11 +521,11 @@
             __module_prif_prif_initial_team_index:
                 (Function
                     (SymbolTable
-                        20
+                        19
                         {
                             coarray_handle:
                                 (Variable
-                                    20
+                                    19
                                     coarray_handle
                                     []
                                     In
@@ -495,7 +556,7 @@
                                 ),
                             initial_team_index:
                                 (Variable
-                                    20
+                                    19
                                     initial_team_index
                                     []
                                     Out
@@ -519,7 +580,7 @@
                                 ),
                             stat:
                                 (Variable
-                                    20
+                                    19
                                     stat
                                     []
                                     Out
@@ -543,7 +604,7 @@
                                 ),
                             sub:
                                 (Variable
-                                    20
+                                    19
                                     sub
                                     []
                                     In
@@ -605,10 +666,10 @@
                         Host
                     )
                     []
-                    [(Var 20 coarray_handle)
-                    (Var 20 sub)
-                    (Var 20 initial_team_index)
-                    (Var 20 stat)]
+                    [(Var 19 coarray_handle)
+                    (Var 19 sub)
+                    (Var 19 initial_team_index)
+                    (Var 19 stat)]
                     []
                     ()
                     Public
@@ -726,11 +787,11 @@
             __module_prif_prif_sync_all:
                 (Function
                     (SymbolTable
-                        10
+                        12
                         {
                             errmsg:
                                 (Variable
-                                    10
+                                    12
                                     errmsg
                                     []
                                     InOut
@@ -754,7 +815,7 @@
                                 ),
                             errmsg_alloc:
                                 (Variable
-                                    10
+                                    12
                                     errmsg_alloc
                                     []
                                     InOut
@@ -780,7 +841,7 @@
                                 ),
                             stat:
                                 (Variable
-                                    10
+                                    12
                                     stat
                                     []
                                     Out
@@ -824,9 +885,9 @@
                         Host
                     )
                     []
-                    [(Var 10 stat)
-                    (Var 10 errmsg)
-                    (Var 10 errmsg_alloc)]
+                    [(Var 12 stat)
+                    (Var 12 errmsg)
+                    (Var 12 errmsg_alloc)]
                     []
                     ()
                     Public
@@ -837,11 +898,11 @@
             __module_prif_prif_team_type:
                 (Struct
                     (SymbolTable
-                        16
+                        15
                         {
                             info:
                                 (Variable
-                                    16
+                                    15
                                     info
                                     []
                                     Local
@@ -901,11 +962,11 @@
             __module_prif_prif_this_image_no_coarray:
                 (Function
                     (SymbolTable
-                        15
+                        14
                         {
                             team:
                                 (Variable
-                                    15
+                                    14
                                     team
                                     []
                                     In
@@ -941,7 +1002,7 @@
                                 ),
                             this_image:
                                 (Variable
-                                    15
+                                    14
                                     this_image
                                     []
                                     Out
@@ -994,8 +1055,8 @@
                         Host
                     )
                     []
-                    [(Var 15 team)
-                    (Var 15 this_image)]
+                    [(Var 14 team)
+                    (Var 14 this_image)]
                     []
                     ()
                     Public
@@ -1012,124 +1073,11 @@
                                 (ExternalSymbol
                                     2
                                     1_point_x
-                                    7 x
+                                    8 x
                                     coarrays_51_b
                                     [point]
                                     x
                                     Public
-                                ),
-                            __lfortran_global_init_coarrays_51:
-                                (Function
-                                    (SymbolTable
-                                        21
-                                        {
-                                            __lfortran_global_init_coarrays_51_a:
-                                                (ExternalSymbol
-                                                    21
-                                                    __lfortran_global_init_coarrays_51_a
-                                                    4 __lfortran_global_init_coarrays_51_a
-                                                    coarrays_51_a
-                                                    []
-                                                    __lfortran_global_init_coarrays_51_a
-                                                    Private
-                                                ),
-                                            __lfortran_global_init_coarrays_51_b:
-                                                (ExternalSymbol
-                                                    21
-                                                    __lfortran_global_init_coarrays_51_b
-                                                    6 __lfortran_global_init_coarrays_51_b
-                                                    coarrays_51_b
-                                                    []
-                                                    __lfortran_global_init_coarrays_51_b
-                                                    Private
-                                                ),
-                                            __lfortran_global_init_done:
-                                                (Variable
-                                                    21
-                                                    __lfortran_global_init_done
-                                                    []
-                                                    Local
-                                                    (LogicalConstant
-                                                        .false.
-                                                        (Logical 4)
-                                                    )
-                                                    (LogicalConstant
-                                                        .false.
-                                                        (Logical 4)
-                                                    )
-                                                    Save
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    __lfortran_global_init_coarrays_51
-                                    (FunctionType
-                                        []
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    []
-                                    [(If
-                                        ()
-                                        (LogicalNot
-                                            (Var 21 __lfortran_global_init_done)
-                                            (Logical 4)
-                                            ()
-                                        )
-                                        [(Assignment
-                                            (Var 21 __lfortran_global_init_done)
-                                            (LogicalConstant
-                                                .true.
-                                                (Logical 4)
-                                            )
-                                            ()
-                                            .false.
-                                            .false.
-                                        )
-                                        (SubroutineCall
-                                            21 __lfortran_global_init_coarrays_51_a
-                                            21 __lfortran_global_init_coarrays_51_a
-                                            []
-                                            ()
-                                            .false.
-                                        )
-                                        (SubroutineCall
-                                            21 __lfortran_global_init_coarrays_51_b
-                                            21 __lfortran_global_init_coarrays_51_b
-                                            []
-                                            ()
-                                            .false.
-                                        )]
-                                        []
-                                    )]
-                                    ()
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
                                 ),
                             ca:
                                 (ExternalSymbol
@@ -1145,7 +1093,7 @@
                                 (ExternalSymbol
                                     2
                                     cb
-                                    6 cb
+                                    7 cb
                                     coarrays_51_b
                                     []
                                     cb
@@ -1179,7 +1127,7 @@
                                 (ExternalSymbol
                                     2
                                     p
-                                    6 p
+                                    7 p
                                     coarrays_51_b
                                     []
                                     p
@@ -1189,7 +1137,7 @@
                                 (ExternalSymbol
                                     2
                                     point
-                                    6 point
+                                    7 point
                                     coarrays_51_b
                                     []
                                     point
@@ -1199,63 +1147,17 @@
                                 (ExternalSymbol
                                     2
                                     pts
-                                    6 pts
+                                    7 pts
                                     coarrays_51_b
                                     []
                                     pts
                                     Public
-                                ),
-                            stat:
-                                (Variable
-                                    2
-                                    stat
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
                                 )
                         })
                     coarrays_51
                     [coarrays_51_a
                     coarrays_51_b]
-                    [(SubroutineCall
-                        2 __lfortran_global_init_coarrays_51
-                        2 __lfortran_global_init_coarrays_51
-                        []
-                        ()
-                        .false.
-                    )
-                    (SubroutineCall
-                        1 __module_prif_prif_init
-                        ()
-                        [((Var 2 stat))]
-                        ()
-                        .false.
-                    )
-                    (SubroutineCall
-                        1 __module_prif_prif_sync_all
-                        ()
-                        [(())
-                        (())
-                        (())]
-                        ()
-                        .false.
-                    )
+                    [(GlobalInitDispatch)
                     (Assignment
                         (Var 2 me)
                         (FunctionCall
@@ -1538,59 +1440,31 @@
                         ()
                         .false.
                     )]
-                    __lfortran_global_init_coarrays_51
+                    ()
+                    ()
                 ),
             coarrays_51_a:
                 (Module
                     (SymbolTable
                         4
                         {
-                            __lfortran_global_init_coarrays_51_a:
+                            __lcompilers_global_init_coarrays_51_a:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        5
                                         {
-                                            __lfortran_global_init_done:
-                                                (Variable
-                                                    12
-                                                    __lfortran_global_init_done
-                                                    []
-                                                    Local
-                                                    (LogicalConstant
-                                                        .false.
-                                                        (Logical 4)
-                                                    )
-                                                    (LogicalConstant
-                                                        .false.
-                                                        (Logical 4)
-                                                    )
-                                                    Save
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
+                                            
                                         })
-                                    __lfortran_global_init_coarrays_51_a
+                                    __lcompilers_global_init_coarrays_51_a
                                     (FunctionType
                                         []
                                         ()
                                         ExternalUndefined
-                                        Interface
+                                        Implementation
                                         ()
                                         .false.
                                         .false.
-                                        .true.
+                                        .false.
                                         .false.
                                         .false.
                                         []
@@ -1601,10 +1475,34 @@
                                     []
                                     []
                                     ()
-                                    Public
+                                    Private
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            __lcompilers_global_init_state_coarrays_51_a:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_coarrays_51_a
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    ExternalUndefined
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             ca:
                                 (Variable
@@ -1641,59 +1539,32 @@
                     .true.
                     .false.
                     .false.
-                    __lfortran_global_init_coarrays_51_a
+                    4 __lcompilers_global_init_coarrays_51_a
+                    4 __lcompilers_global_init_state_coarrays_51_a
+                    .false.
                 ),
             coarrays_51_b:
                 (Module
                     (SymbolTable
-                        6
+                        7
                         {
-                            __lfortran_global_init_coarrays_51_b:
+                            __lcompilers_global_init_coarrays_51_b:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        9
                                         {
-                                            __lfortran_global_init_done:
-                                                (Variable
-                                                    13
-                                                    __lfortran_global_init_done
-                                                    []
-                                                    Local
-                                                    (LogicalConstant
-                                                        .false.
-                                                        (Logical 4)
-                                                    )
-                                                    (LogicalConstant
-                                                        .false.
-                                                        (Logical 4)
-                                                    )
-                                                    Save
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
+                                            
                                         })
-                                    __lfortran_global_init_coarrays_51_b
+                                    __lcompilers_global_init_coarrays_51_b
                                     (FunctionType
                                         []
                                         ()
                                         ExternalUndefined
-                                        Interface
+                                        Implementation
                                         ()
                                         .false.
                                         .false.
-                                        .true.
+                                        .false.
                                         .false.
                                         .false.
                                         []
@@ -1704,14 +1575,38 @@
                                     []
                                     []
                                     ()
-                                    Public
+                                    Private
                                     .false.
                                     .false.
                                     ()
                                 ),
+                            __lcompilers_global_init_state_coarrays_51_b:
+                                (Variable
+                                    7
+                                    __lcompilers_global_init_state_coarrays_51_b
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    ExternalUndefined
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             cb:
                                 (Variable
-                                    6
+                                    7
                                     cb
                                     []
                                     Local
@@ -1739,7 +1634,7 @@
                                 ),
                             p:
                                 (Variable
-                                    6
+                                    7
                                     p
                                     []
                                     Local
@@ -1776,11 +1671,11 @@
                             point:
                                 (Struct
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             x:
                                                 (Variable
-                                                    7
+                                                    8
                                                     x
                                                     []
                                                     Local
@@ -1825,13 +1720,13 @@
                                 ),
                             pts:
                                 (Variable
-                                    6
+                                    7
                                     pts
                                     []
                                     Local
                                     (ArrayBroadcast
                                         (StructConstant
-                                            6 point
+                                            7 point
                                             [((IntegerConstant 5 (Integer 4) Decimal))]
                                             (StructType
                                                 [(Integer 4)]
@@ -1880,7 +1775,7 @@
                                         FixedSizeArray
                                         Global
                                     )
-                                    6 point
+                                    7 point
                                     ExternalUndefined
                                     Public
                                     Required
@@ -1901,16 +1796,18 @@
                     .true.
                     .false.
                     .false.
-                    __lfortran_global_init_coarrays_51_b
+                    7 __lcompilers_global_init_coarrays_51_b
+                    7 __lcompilers_global_init_state_coarrays_51_b
+                    .false.
                 ),
             lcompilers_prif_get_integer(4):
                 (Function
                     (SymbolTable
-                        18
+                        17
                         {
                             coarray_handle:
                                 (Variable
-                                    18
+                                    17
                                     coarray_handle
                                     []
                                     In
@@ -1941,7 +1838,7 @@
                                 ),
                             image_num:
                                 (Variable
-                                    18
+                                    17
                                     image_num
                                     []
                                     Local
@@ -1965,7 +1862,7 @@
                                 ),
                             offset:
                                 (Variable
-                                    18
+                                    17
                                     offset
                                     []
                                     In
@@ -1989,7 +1886,7 @@
                                 ),
                             result:
                                 (Variable
-                                    18
+                                    17
                                     result
                                     []
                                     ReturnVar
@@ -2013,7 +1910,7 @@
                                 ),
                             sub:
                                 (Variable
-                                    18
+                                    17
                                     sub
                                     []
                                     In
@@ -2075,15 +1972,15 @@
                     )
                     [__module_prif_prif_initial_team_index
                     __module_prif_prif_get]
-                    [(Var 18 coarray_handle)
-                    (Var 18 sub)
-                    (Var 18 offset)]
+                    [(Var 17 coarray_handle)
+                    (Var 17 sub)
+                    (Var 17 offset)]
                     [(SubroutineCall
                         1 __module_prif_prif_initial_team_index
                         ()
-                        [((Var 18 coarray_handle))
-                        ((Var 18 sub))
-                        ((Var 18 image_num))
+                        [((Var 17 coarray_handle))
+                        ((Var 17 sub))
+                        ((Var 17 image_num))
                         (())]
                         ()
                         .false.
@@ -2091,12 +1988,12 @@
                     (SubroutineCall
                         1 __module_prif_prif_get
                         ()
-                        [((Var 18 image_num))
-                        ((Var 18 coarray_handle))
-                        ((Var 18 offset))
+                        [((Var 17 image_num))
+                        ((Var 17 coarray_handle))
+                        ((Var 17 offset))
                         ((PointerToCPtr
                             (GetPointer
-                                (Var 18 result)
+                                (Var 17 result)
                                 (Pointer
                                     (Integer 4)
                                 )
@@ -2111,7 +2008,7 @@
                         ()
                         .false.
                     )]
-                    (Var 18 result)
+                    (Var 17 result)
                     Public
                     .false.
                     .false.
@@ -2120,11 +2017,11 @@
             lcompilers_prif_this_image:
                 (Function
                     (SymbolTable
-                        14
+                        13
                         {
                             lcompilers_prif_this_image:
                                 (Variable
-                                    14
+                                    13
                                     lcompilers_prif_this_image
                                     []
                                     ReturnVar
@@ -2169,11 +2066,11 @@
                         1 __module_prif_prif_this_image_no_coarray
                         1 __module_prif_prif_this_image_no_coarray
                         [(())
-                        ((Var 14 lcompilers_prif_this_image))]
+                        ((Var 13 lcompilers_prif_this_image))]
                         ()
                         .false.
                     )]
-                    (Var 14 lcompilers_prif_this_image)
+                    (Var 13 lcompilers_prif_this_image)
                     Public
                     .false.
                     .false.
@@ -2182,11 +2079,11 @@
             prif_coarray_handle:
                 (Struct
                     (SymbolTable
-                        8
+                        10
                         {
                             info:
                                 (Variable
-                                    8
+                                    10
                                     info
                                     []
                                     Local
@@ -2236,4 +2133,7 @@
         })
     []
     ()
+    ()
+    .false.
+    1 __lcompilers_collective_bootstrap
 )

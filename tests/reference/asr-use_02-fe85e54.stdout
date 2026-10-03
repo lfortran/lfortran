@@ -7,11 +7,11 @@
             use_02:
                 (Program
                     (SymbolTable
-                        9
+                        11
                         {
                             dp:
                                 (ExternalSymbol
-                                    9
+                                    11
                                     dp
                                     4 real64
                                     lfortran_intrinsic_iso_fortran_env
@@ -21,7 +21,7 @@
                                 ),
                             i:
                                 (Variable
-                                    9
+                                    11
                                     i
                                     []
                                     Local
@@ -47,7 +47,7 @@
                     use_02
                     [use_02_module]
                     [(Assignment
-                        (Var 9 i)
+                        (Var 11 i)
                         (IntegerConstant 1234567890123456789 (Integer 8) Decimal)
                         ()
                         .false.
@@ -56,7 +56,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 9 i)
+                            (Var 11 i)
                             NotEq
                             (IntegerConstant 1234567890123456789 (Integer 8) Decimal)
                             (Logical 4)
@@ -68,12 +68,69 @@
                         []
                     )]
                     ()
+                    ()
                 ),
             use_02_module:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_use_02_module:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_use_02_module
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_use_02_module:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_use_02_module
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             dp:
                                 (ExternalSymbol
                                     2
@@ -91,9 +148,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_use_02_module
+                    2 __lcompilers_global_init_state_use_02_module
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

@@ -17,6 +17,62 @@
                                     backslash
                                     Public
                                 ),
+                            __lcompilers_global_init_derived_types_11:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_derived_types_11
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_derived_types_11:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_derived_types_11
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             type_y:
                                 (Variable
                                     2
@@ -181,16 +237,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_derived_types_11
+                    2 __lcompilers_global_init_state_derived_types_11
+                    .false.
                 ),
             main:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
                             1_y_backslash:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     1_y_backslash
                                     3 backslash
                                     derived_types_11
@@ -200,7 +258,7 @@
                                 ),
                             type_y:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     type_y
                                     2 type_y
                                     derived_types_11
@@ -210,7 +268,7 @@
                                 ),
                             x:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     x
                                     2 x
                                     derived_types_11
@@ -220,7 +278,7 @@
                                 ),
                             y:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     y
                                     2 y
                                     derived_types_11
@@ -235,8 +293,8 @@
                         ()
                         (StringCompare
                             (StructInstanceMember
-                                (Var 4 type_y)
-                                4 1_y_backslash
+                                (Var 5 type_y)
+                                5 1_y_backslash
                                 (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 (StringConstant
                                     "\\"
@@ -262,7 +320,7 @@
                     (If
                         ()
                         (StringCompare
-                            (Var 4 x)
+                            (Var 5 x)
                             NotEq
                             (StringConstant
                                 "lf\\"
@@ -277,8 +335,12 @@
                         []
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

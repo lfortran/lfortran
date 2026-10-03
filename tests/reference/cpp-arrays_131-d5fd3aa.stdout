@@ -63,6 +63,7 @@ void automatic_array(int32_t n)
 
 
 void main2() {
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     automatic_array(4);
 }
 

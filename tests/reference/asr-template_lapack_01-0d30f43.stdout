@@ -5,11 +5,11 @@
             template_lapack_01:
                 (Program
                     (SymbolTable
-                        23
+                        24
                         {
                             cast_r:
                                 (ExternalSymbol
-                                    23
+                                    24
                                     cast_r
                                     2 cast_r
                                     template_lapack_01_m
@@ -19,7 +19,7 @@
                                 ),
                             external_matmul_t:
                                 (ExternalSymbol
-                                    23
+                                    24
                                     external_matmul_t
                                     2 external_matmul_t
                                     template_lapack_01_m
@@ -29,7 +29,7 @@
                                 ),
                             gemm_r:
                                 (ExternalSymbol
-                                    23
+                                    24
                                     gemm_r
                                     2 gemm_r
                                     template_lapack_01_m
@@ -39,7 +39,7 @@
                                 ),
                             simple_external_matmul:
                                 (ExternalSymbol
-                                    23
+                                    24
                                     simple_external_matmul
                                     2 simple_external_matmul
                                     template_lapack_01_m
@@ -49,7 +49,7 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    23
+                                    24
                                     test_template
                                     2 test_template
                                     template_lapack_01_m
@@ -61,12 +61,13 @@
                     template_lapack_01
                     [template_lapack_01_m]
                     [(SubroutineCall
-                        23 test_template
+                        24 test_template
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             template_lapack_01_m:
@@ -74,6 +75,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_lapack_01_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_lapack_01_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_lapack_01_m:
+                                (Function
+                                    (SymbolTable
+                                        23
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_lapack_01_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             cast_r:
                                 (Requirement
                                     (SymbolTable
@@ -4416,409 +4473,6 @@
                                             __instantiated_simple_external_matmul:
                                                 (Function
                                                     (SymbolTable
-                                                        24
-                                                        {
-                                                            a:
-                                                                (Variable
-                                                                    24
-                                                                    a
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Array
-                                                                        (Real 4)
-                                                                        [(()
-                                                                        ())
-                                                                        (()
-                                                                        ())]
-                                                                        DescriptorArray
-                                                                        Global
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            b:
-                                                                (Variable
-                                                                    24
-                                                                    b
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Array
-                                                                        (Real 4)
-                                                                        [(()
-                                                                        ())
-                                                                        (()
-                                                                        ())]
-                                                                        DescriptorArray
-                                                                        Global
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            c:
-                                                                (Variable
-                                                                    24
-                                                                    c
-                                                                    [a
-                                                                    b]
-                                                                    ReturnVar
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Array
-                                                                        (Real 4)
-                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (ArraySize
-                                                                            (Var 24 a)
-                                                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                                                            (Integer 4)
-                                                                            ()
-                                                                        ))
-                                                                        ((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (ArraySize
-                                                                            (Var 24 b)
-                                                                            (IntegerConstant 2 (Integer 4) Decimal)
-                                                                            (Integer 4)
-                                                                            ()
-                                                                        ))]
-                                                                        PointerArray
-                                                                        Global
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            k:
-                                                                (Variable
-                                                                    24
-                                                                    k
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            m:
-                                                                (Variable
-                                                                    24
-                                                                    m
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            n:
-                                                                (Variable
-                                                                    24
-                                                                    n
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                )
-                                                        })
-                                                    __instantiated_simple_external_matmul
-                                                    (FunctionType
-                                                        [(Array
-                                                            (Real 4)
-                                                            [(()
-                                                            ())
-                                                            (()
-                                                            ())]
-                                                            DescriptorArray
-                                                            Global
-                                                        )
-                                                        (Array
-                                                            (Real 4)
-                                                            [(()
-                                                            ())
-                                                            (()
-                                                            ())]
-                                                            DescriptorArray
-                                                            Global
-                                                        )]
-                                                        (Array
-                                                            (Real 4)
-                                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (ArraySize
-                                                                (FunctionParam
-                                                                    0
-                                                                    (Array
-                                                                        (Real 4)
-                                                                        [(()
-                                                                        ())
-                                                                        (()
-                                                                        ())]
-                                                                        DescriptorArray
-                                                                        Global
-                                                                    )
-                                                                    ()
-                                                                )
-                                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                                (Integer 4)
-                                                                ()
-                                                            ))
-                                                            ((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (ArraySize
-                                                                (FunctionParam
-                                                                    1
-                                                                    (Array
-                                                                        (Real 4)
-                                                                        [(()
-                                                                        ())
-                                                                        (()
-                                                                        ())]
-                                                                        DescriptorArray
-                                                                        Global
-                                                                    )
-                                                                    ()
-                                                                )
-                                                                (IntegerConstant 2 (Integer 4) Decimal)
-                                                                (Integer 4)
-                                                                ()
-                                                            ))]
-                                                            PointerArray
-                                                            Global
-                                                        )
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .false.
-                                                        Host
-                                                    )
-                                                    [my_cast_to_real
-                                                    my_gemm_real]
-                                                    [(Var 24 a)
-                                                    (Var 24 b)]
-                                                    [(Assignment
-                                                        (Var 24 m)
-                                                        (ArraySize
-                                                            (Var 24 a)
-                                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                                            (Integer 4)
-                                                            ()
-                                                        )
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                    )
-                                                    (Assignment
-                                                        (Var 24 n)
-                                                        (ArraySize
-                                                            (Var 24 b)
-                                                            (IntegerConstant 2 (Integer 4) Decimal)
-                                                            (Integer 4)
-                                                            ()
-                                                        )
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                    )
-                                                    (Assignment
-                                                        (Var 24 k)
-                                                        (ArraySize
-                                                            (Var 24 a)
-                                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                                            (Integer 4)
-                                                            ()
-                                                        )
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                    )
-                                                    (SubroutineCall
-                                                        2 my_gemm_real
-                                                        ()
-                                                        [((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
-                                                        ((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
-                                                        ((Var 24 m))
-                                                        ((Var 24 n))
-                                                        ((Var 24 k))
-                                                        ((FunctionCall
-                                                            2 my_cast_to_real
-                                                            ()
-                                                            [((RealConstant
-                                                                1.000000
-                                                                (Real 4)
-                                                            ))]
-                                                            (Real 4)
-                                                            ()
-                                                            ()
-                                                        ))
-                                                        ((ArrayPhysicalCast
-                                                            (Var 24 a)
-                                                            DescriptorArray
-                                                            UnboundedPointerArray
-                                                            (Array
-                                                                (Real 4)
-                                                                [(()
-                                                                ())
-                                                                (()
-                                                                ())]
-                                                                UnboundedPointerArray
-                                                                Global
-                                                            )
-                                                            ()
-                                                        ))
-                                                        ((Var 24 m))
-                                                        ((ArrayPhysicalCast
-                                                            (Var 24 b)
-                                                            DescriptorArray
-                                                            UnboundedPointerArray
-                                                            (Array
-                                                                (Real 4)
-                                                                [(()
-                                                                ())
-                                                                (()
-                                                                ())]
-                                                                UnboundedPointerArray
-                                                                Global
-                                                            )
-                                                            ()
-                                                        ))
-                                                        ((Var 24 k))
-                                                        ((FunctionCall
-                                                            2 my_cast_to_real
-                                                            ()
-                                                            [((RealConstant
-                                                                0.000000
-                                                                (Real 4)
-                                                            ))]
-                                                            (Real 4)
-                                                            ()
-                                                            ()
-                                                        ))
-                                                        ((ArrayPhysicalCast
-                                                            (Var 24 c)
-                                                            PointerArray
-                                                            UnboundedPointerArray
-                                                            (Array
-                                                                (Real 4)
-                                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (ArraySize
-                                                                    (Var 24 a)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ))
-                                                                ((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (ArraySize
-                                                                    (Var 24 b)
-                                                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ))]
-                                                                UnboundedPointerArray
-                                                                Global
-                                                            )
-                                                            ()
-                                                        ))
-                                                        ((Var 24 m))]
-                                                        ()
-                                                        .false.
-                                                    )]
-                                                    (Var 24 c)
-                                                    Private
-                                                    .true.
-                                                    .true.
-                                                    ()
-                                                ),
-                                            __instantiated_simple_external_matmul1:
-                                                (Function
-                                                    (SymbolTable
                                                         25
                                                         {
                                                             a:
@@ -4831,7 +4485,7 @@
                                                                     ()
                                                                     Default
                                                                     (Array
-                                                                        (Real 8)
+                                                                        (Real 4)
                                                                         [(()
                                                                         ())
                                                                         (()
@@ -4863,7 +4517,7 @@
                                                                     ()
                                                                     Default
                                                                     (Array
-                                                                        (Real 8)
+                                                                        (Real 4)
                                                                         [(()
                                                                         ())
                                                                         (()
@@ -4896,7 +4550,7 @@
                                                                     ()
                                                                     Default
                                                                     (Array
-                                                                        (Real 8)
+                                                                        (Real 4)
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (ArraySize
                                                                             (Var 25 a)
@@ -5001,6 +4655,409 @@
                                                                     []
                                                                 )
                                                         })
+                                                    __instantiated_simple_external_matmul
+                                                    (FunctionType
+                                                        [(Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())
+                                                            (()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())
+                                                            (()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )]
+                                                        (Array
+                                                            (Real 4)
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (ArraySize
+                                                                (FunctionParam
+                                                                    0
+                                                                    (Array
+                                                                        (Real 4)
+                                                                        [(()
+                                                                        ())
+                                                                        (()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                        Global
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                (Integer 4)
+                                                                ()
+                                                            ))
+                                                            ((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (ArraySize
+                                                                (FunctionParam
+                                                                    1
+                                                                    (Array
+                                                                        (Real 4)
+                                                                        [(()
+                                                                        ())
+                                                                        (()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                        Global
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                (IntegerConstant 2 (Integer 4) Decimal)
+                                                                (Integer 4)
+                                                                ()
+                                                            ))]
+                                                            PointerArray
+                                                            Global
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    [my_cast_to_real
+                                                    my_gemm_real]
+                                                    [(Var 25 a)
+                                                    (Var 25 b)]
+                                                    [(Assignment
+                                                        (Var 25 m)
+                                                        (ArraySize
+                                                            (Var 25 a)
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 25 n)
+                                                        (ArraySize
+                                                            (Var 25 b)
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 25 k)
+                                                        (ArraySize
+                                                            (Var 25 a)
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (SubroutineCall
+                                                        2 my_gemm_real
+                                                        ()
+                                                        [((StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        ))
+                                                        ((StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        ))
+                                                        ((Var 25 m))
+                                                        ((Var 25 n))
+                                                        ((Var 25 k))
+                                                        ((FunctionCall
+                                                            2 my_cast_to_real
+                                                            ()
+                                                            [((RealConstant
+                                                                1.000000
+                                                                (Real 4)
+                                                            ))]
+                                                            (Real 4)
+                                                            ()
+                                                            ()
+                                                        ))
+                                                        ((ArrayPhysicalCast
+                                                            (Var 25 a)
+                                                            DescriptorArray
+                                                            UnboundedPointerArray
+                                                            (Array
+                                                                (Real 4)
+                                                                [(()
+                                                                ())
+                                                                (()
+                                                                ())]
+                                                                UnboundedPointerArray
+                                                                Global
+                                                            )
+                                                            ()
+                                                        ))
+                                                        ((Var 25 m))
+                                                        ((ArrayPhysicalCast
+                                                            (Var 25 b)
+                                                            DescriptorArray
+                                                            UnboundedPointerArray
+                                                            (Array
+                                                                (Real 4)
+                                                                [(()
+                                                                ())
+                                                                (()
+                                                                ())]
+                                                                UnboundedPointerArray
+                                                                Global
+                                                            )
+                                                            ()
+                                                        ))
+                                                        ((Var 25 k))
+                                                        ((FunctionCall
+                                                            2 my_cast_to_real
+                                                            ()
+                                                            [((RealConstant
+                                                                0.000000
+                                                                (Real 4)
+                                                            ))]
+                                                            (Real 4)
+                                                            ()
+                                                            ()
+                                                        ))
+                                                        ((ArrayPhysicalCast
+                                                            (Var 25 c)
+                                                            PointerArray
+                                                            UnboundedPointerArray
+                                                            (Array
+                                                                (Real 4)
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 25 a)
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))
+                                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 25 b)
+                                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))]
+                                                                UnboundedPointerArray
+                                                                Global
+                                                            )
+                                                            ()
+                                                        ))
+                                                        ((Var 25 m))]
+                                                        ()
+                                                        .false.
+                                                    )]
+                                                    (Var 25 c)
+                                                    Private
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            __instantiated_simple_external_matmul1:
+                                                (Function
+                                                    (SymbolTable
+                                                        26
+                                                        {
+                                                            a:
+                                                                (Variable
+                                                                    26
+                                                                    a
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Real 8)
+                                                                        [(()
+                                                                        ())
+                                                                        (()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                        Global
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            b:
+                                                                (Variable
+                                                                    26
+                                                                    b
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Real 8)
+                                                                        [(()
+                                                                        ())
+                                                                        (()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                        Global
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            c:
+                                                                (Variable
+                                                                    26
+                                                                    c
+                                                                    [a
+                                                                    b]
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Real 8)
+                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (ArraySize
+                                                                            (Var 26 a)
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        ))
+                                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (ArraySize
+                                                                            (Var 26 b)
+                                                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        ))]
+                                                                        PointerArray
+                                                                        Global
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            k:
+                                                                (Variable
+                                                                    26
+                                                                    k
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            m:
+                                                                (Variable
+                                                                    26
+                                                                    m
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            n:
+                                                                (Variable
+                                                                    26
+                                                                    n
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
                                                     __instantiated_simple_external_matmul1
                                                     (FunctionType
                                                         [(Array
@@ -5078,12 +5135,12 @@
                                                     )
                                                     [my_cast_to_double
                                                     my_gemm_double]
-                                                    [(Var 25 a)
-                                                    (Var 25 b)]
+                                                    [(Var 26 a)
+                                                    (Var 26 b)]
                                                     [(Assignment
-                                                        (Var 25 m)
+                                                        (Var 26 m)
                                                         (ArraySize
-                                                            (Var 25 a)
+                                                            (Var 26 a)
                                                             (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             ()
@@ -5093,9 +5150,9 @@
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 25 n)
+                                                        (Var 26 n)
                                                         (ArraySize
-                                                            (Var 25 b)
+                                                            (Var 26 b)
                                                             (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             ()
@@ -5105,9 +5162,9 @@
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 25 k)
+                                                        (Var 26 k)
                                                         (ArraySize
-                                                            (Var 25 a)
+                                                            (Var 26 a)
                                                             (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             ()
@@ -5127,9 +5184,9 @@
                                                             "n"
                                                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                         ))
-                                                        ((Var 25 m))
-                                                        ((Var 25 n))
-                                                        ((Var 25 k))
+                                                        ((Var 26 m))
+                                                        ((Var 26 n))
+                                                        ((Var 26 k))
                                                         ((FunctionCall
                                                             2 my_cast_to_double
                                                             ()
@@ -5142,7 +5199,7 @@
                                                             ()
                                                         ))
                                                         ((ArrayPhysicalCast
-                                                            (Var 25 a)
+                                                            (Var 26 a)
                                                             DescriptorArray
                                                             UnboundedPointerArray
                                                             (Array
@@ -5156,9 +5213,9 @@
                                                             )
                                                             ()
                                                         ))
-                                                        ((Var 25 m))
+                                                        ((Var 26 m))
                                                         ((ArrayPhysicalCast
-                                                            (Var 25 b)
+                                                            (Var 26 b)
                                                             DescriptorArray
                                                             UnboundedPointerArray
                                                             (Array
@@ -5172,7 +5229,7 @@
                                                             )
                                                             ()
                                                         ))
-                                                        ((Var 25 k))
+                                                        ((Var 26 k))
                                                         ((FunctionCall
                                                             2 my_cast_to_double
                                                             ()
@@ -5185,21 +5242,21 @@
                                                             ()
                                                         ))
                                                         ((ArrayPhysicalCast
-                                                            (Var 25 c)
+                                                            (Var 26 c)
                                                             PointerArray
                                                             UnboundedPointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (ArraySize
-                                                                    (Var 25 a)
+                                                                    (Var 26 a)
                                                                     (IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Integer 4)
                                                                     ()
                                                                 ))
                                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (ArraySize
-                                                                    (Var 25 b)
+                                                                    (Var 26 b)
                                                                     (IntegerConstant 2 (Integer 4) Decimal)
                                                                     (Integer 4)
                                                                     ()
@@ -5209,11 +5266,11 @@
                                                             )
                                                             ()
                                                         ))
-                                                        ((Var 25 m))]
+                                                        ((Var 26 m))]
                                                         ()
                                                         .false.
                                                     )]
-                                                    (Var 25 c)
+                                                    (Var 26 c)
                                                     Private
                                                     .true.
                                                     .true.
@@ -6384,9 +6441,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_template_lapack_01_m
+                    2 __lcompilers_global_init_state_template_lapack_01_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_array12:
+                                (Function
+                                    (SymbolTable
+                                        16
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_array12
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_array12:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_array12
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             c_associated:
                                 (ExternalSymbol
                                     2
@@ -50,11 +106,11 @@
                             get_current_directory:
                                 (Function
                                     (SymbolTable
-                                        14
+                                        15
                                         {
                                             buffersize:
                                                 (Variable
-                                                    14
+                                                    15
                                                     buffersize
                                                     []
                                                     Local
@@ -78,7 +134,7 @@
                                                 ),
                                             cpath:
                                                 (Variable
-                                                    14
+                                                    15
                                                     cpath
                                                     []
                                                     Local
@@ -110,7 +166,7 @@
                                                 ),
                                             path:
                                                 (Variable
-                                                    14
+                                                    15
                                                     path
                                                     []
                                                     Out
@@ -136,7 +192,7 @@
                                                 ),
                                             tmp:
                                                 (Variable
-                                                    14
+                                                    15
                                                     tmp
                                                     []
                                                     Local
@@ -180,9 +236,9 @@
                                         Host
                                     )
                                     [getcwd]
-                                    [(Var 14 path)]
+                                    [(Var 15 path)]
                                     [(Allocate
-                                        [((Var 14 cpath)
+                                        [((Var 15 cpath)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 1000 (Integer 4) Decimal))]
                                         []
@@ -194,12 +250,12 @@
                                         ()
                                     )
                                     (Assignment
-                                        (Var 14 tmp)
+                                        (Var 15 tmp)
                                         (FunctionCall
                                             2 getcwd
                                             ()
                                             [((ArrayPhysicalCast
-                                                (Var 14 cpath)
+                                                (Var 15 cpath)
                                                 DescriptorArray
                                                 StringArraySinglePointer
                                                 (Array
@@ -211,7 +267,7 @@
                                                 )
                                                 ()
                                             ))
-                                            ((Var 14 buffersize))]
+                                            ((Var 15 buffersize))]
                                             (CPtr
                                                 CPointer
                                             )
@@ -225,7 +281,7 @@
                                     (If
                                         ()
                                         (PointerAssociated
-                                            (Var 14 tmp)
+                                            (Var 15 tmp)
                                             ()
                                             (Logical 4)
                                             ()
@@ -237,7 +293,7 @@
                                                     "PWD: "
                                                     (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
-                                                (Var 14 tmp)]
+                                                (Var 15 tmp)]
                                                 FormatFortran
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
@@ -256,11 +312,11 @@
                             getcwd:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        14
                                         {
                                             buf:
                                                 (Variable
-                                                    13
+                                                    14
                                                     buf
                                                     []
                                                     In
@@ -290,7 +346,7 @@
                                                 ),
                                             bufsize:
                                                 (Variable
-                                                    13
+                                                    14
                                                     bufsize
                                                     []
                                                     In
@@ -314,7 +370,7 @@
                                                 ),
                                             path:
                                                 (Variable
-                                                    13
+                                                    14
                                                     path
                                                     []
                                                     ReturnVar
@@ -365,10 +421,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 13 buf)
-                                    (Var 13 bufsize)]
+                                    [(Var 14 buf)
+                                    (Var 14 bufsize)]
                                     []
-                                    (Var 13 path)
+                                    (Var 14 path)
                                     Public
                                     .false.
                                     .false.
@@ -382,11 +438,16 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_array12
+                    2 __lcompilers_global_init_state_array12
+                    .false.
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

@@ -5,11 +5,11 @@
             global_init_07:
                 (Program
                     (SymbolTable
-                        7
+                        8
                         {
                             1_extent_n:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     1_extent_n
                                     3 n
                                     global_init_07_m
@@ -19,7 +19,7 @@
                                 ),
                             1_extent_step:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     1_extent_step
                                     3 step
                                     global_init_07_m
@@ -29,7 +29,7 @@
                                 ),
                             counts:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     counts
                                     2 counts
                                     global_init_07_m
@@ -39,7 +39,7 @@
                                 ),
                             extent:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     extent
                                     2 extent
                                     global_init_07_m
@@ -50,11 +50,11 @@
                             host_bound:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             1_extent_n:
                                                 (ExternalSymbol
-                                                    9
+                                                    10
                                                     1_extent_n
                                                     3 n
                                                     global_init_07_m
@@ -64,7 +64,7 @@
                                                 ),
                                             1_extent_step:
                                                 (ExternalSymbol
-                                                    9
+                                                    10
                                                     1_extent_step
                                                     3 step
                                                     global_init_07_m
@@ -74,7 +74,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    9
+                                                    10
                                                     b
                                                     [owned]
                                                     Local
@@ -86,7 +86,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (StructInstanceMember
                                                             (ArrayItem
-                                                                (Var 7 owned)
+                                                                (Var 8 owned)
                                                                 [(()
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
@@ -100,7 +100,7 @@
                                                                 ColMajor
                                                                 ()
                                                             )
-                                                            9 1_extent_n
+                                                            10 1_extent_n
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -123,7 +123,7 @@
                                                 ),
                                             c:
                                                 (Variable
-                                                    9
+                                                    10
                                                     c
                                                     [owned]
                                                     Local
@@ -135,7 +135,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (StructInstanceMember
                                                             (ArrayItem
-                                                                (Var 7 owned)
+                                                                (Var 8 owned)
                                                                 [(()
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
@@ -149,7 +149,7 @@
                                                                 ColMajor
                                                                 ()
                                                             )
-                                                            9 1_extent_step
+                                                            10 1_extent_step
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -193,7 +193,7 @@
                                         ()
                                         (IntegerCompare
                                             (ArraySize
-                                                (Var 9 b)
+                                                (Var 10 b)
                                                 ()
                                                 (Integer 4)
                                                 ()
@@ -212,7 +212,7 @@
                                         ()
                                         (IntegerCompare
                                             (ArraySize
-                                                (Var 9 c)
+                                                (Var 10 c)
                                                 ()
                                                 (Integer 4)
                                                 ()
@@ -228,12 +228,12 @@
                                         []
                                     )
                                     (Assignment
-                                        (Var 9 b)
+                                        (Var 10 b)
                                         (ArrayBroadcast
                                             (IntegerConstant 3 (Integer 4) Decimal)
                                             (IntrinsicArrayFunction
                                                 Shape
-                                                [(Var 9 b)]
+                                                [(Var 10 b)]
                                                 0
                                                 (Array
                                                     (Integer 4)
@@ -249,7 +249,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (StructInstanceMember
                                                     (ArrayItem
-                                                        (Var 7 owned)
+                                                        (Var 8 owned)
                                                         [(()
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         ())]
@@ -263,7 +263,7 @@
                                                         ColMajor
                                                         ()
                                                     )
-                                                    9 1_extent_n
+                                                    10 1_extent_n
                                                     (Integer 4)
                                                     ()
                                                 ))]
@@ -277,12 +277,12 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 9 c)
+                                        (Var 10 c)
                                         (ArrayBroadcast
                                             (IntegerConstant 6 (Integer 4) Decimal)
                                             (IntrinsicArrayFunction
                                                 Shape
-                                                [(Var 9 c)]
+                                                [(Var 10 c)]
                                                 0
                                                 (Array
                                                     (Integer 4)
@@ -298,7 +298,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (StructInstanceMember
                                                     (ArrayItem
-                                                        (Var 7 owned)
+                                                        (Var 8 owned)
                                                         [(()
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         ())]
@@ -312,7 +312,7 @@
                                                         ColMajor
                                                         ()
                                                     )
-                                                    9 1_extent_step
+                                                    10 1_extent_step
                                                     (Integer 4)
                                                     ()
                                                 ))]
@@ -331,7 +331,7 @@
                                             (IntrinsicArrayFunction
                                                 Sum
                                                 [(ArrayPhysicalCast
-                                                    (Var 9 b)
+                                                    (Var 10 b)
                                                     PointerArray
                                                     DescriptorArray
                                                     (Array
@@ -339,7 +339,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (StructInstanceMember
                                                             (ArrayItem
-                                                                (Var 7 owned)
+                                                                (Var 8 owned)
                                                                 [(()
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
@@ -353,7 +353,7 @@
                                                                 ColMajor
                                                                 ()
                                                             )
-                                                            9 1_extent_n
+                                                            10 1_extent_n
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -382,7 +382,7 @@
                                             (IntrinsicArrayFunction
                                                 Sum
                                                 [(ArrayPhysicalCast
-                                                    (Var 9 c)
+                                                    (Var 10 c)
                                                     PointerArray
                                                     DescriptorArray
                                                     (Array
@@ -390,7 +390,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (StructInstanceMember
                                                             (ArrayItem
-                                                                (Var 7 owned)
+                                                                (Var 8 owned)
                                                                 [(()
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
@@ -404,7 +404,7 @@
                                                                 ColMajor
                                                                 ()
                                                             )
-                                                            9 1_extent_step
+                                                            10 1_extent_step
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -435,7 +435,7 @@
                                 ),
                             module_bound:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     module_bound
                                     2 module_bound
                                     global_init_07_m
@@ -445,13 +445,13 @@
                                 ),
                             owned:
                                 (Variable
-                                    7
+                                    8
                                     owned
                                     []
                                     Local
                                     (ArrayBroadcast
                                         (StructConstant
-                                            7 extent
+                                            8 extent
                                             [((IntegerConstant 5 (Integer 4) Decimal))
                                             ((IntegerConstant 2 (Integer 4) Decimal))]
                                             (StructType
@@ -504,7 +504,7 @@
                                         FixedSizeArray
                                         Global
                                     )
-                                    7 extent
+                                    8 extent
                                     Source
                                     Public
                                     Required
@@ -520,7 +520,7 @@
                                 ),
                             shared:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     shared
                                     2 shared
                                     global_init_07_m
@@ -531,7 +531,7 @@
                             use_bound:
                                 (Function
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             
                                         })
@@ -564,42 +564,42 @@
                     global_init_07
                     [global_init_07_m]
                     [(SubroutineCall
-                        7 module_bound
+                        8 module_bound
                         ()
                         []
                         ()
                         .false.
                     )
                     (SubroutineCall
-                        7 use_bound
+                        8 use_bound
                         ()
                         []
                         ()
                         .false.
                     )
                     (SubroutineCall
-                        7 host_bound
+                        8 host_bound
                         ()
                         []
                         ()
                         .false.
                     )
                     (SubroutineCall
-                        7 counts
+                        8 counts
                         ()
                         [((IntegerConstant 10 (Integer 4) Decimal))]
                         ()
                         .false.
                     )
                     (SubroutineCall
-                        7 counts
+                        8 counts
                         ()
                         [((IntegerConstant 11 (Integer 4) Decimal))]
                         ()
                         .false.
                     )
                     (SubroutineCall
-                        7 counts
+                        8 counts
                         ()
                         [((IntegerConstant 12 (Integer 4) Decimal))]
                         ()
@@ -610,7 +610,7 @@
                         (IntegerCompare
                             (StructInstanceMember
                                 (ArrayItem
-                                    (Var 7 shared)
+                                    (Var 8 shared)
                                     [(()
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     ())]
@@ -624,7 +624,7 @@
                                     ColMajor
                                     ()
                                 )
-                                7 1_extent_n
+                                8 1_extent_n
                                 (Integer 4)
                                 ()
                             )
@@ -643,7 +643,7 @@
                         (IntegerCompare
                             (StructInstanceMember
                                 (ArrayItem
-                                    (Var 7 shared)
+                                    (Var 8 shared)
                                     [(()
                                     (IntegerConstant 2 (Integer 4) Decimal)
                                     ())]
@@ -657,7 +657,7 @@
                                     ColMajor
                                     ()
                                 )
-                                7 1_extent_n
+                                8 1_extent_n
                                 (Integer 4)
                                 ()
                             )
@@ -676,7 +676,7 @@
                         (IntegerCompare
                             (StructInstanceMember
                                 (ArrayItem
-                                    (Var 7 shared)
+                                    (Var 8 shared)
                                     [(()
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     ())]
@@ -690,7 +690,7 @@
                                     ColMajor
                                     ()
                                 )
-                                7 1_extent_step
+                                8 1_extent_step
                                 (Integer 4)
                                 ()
                             )
@@ -707,7 +707,7 @@
                     (Assignment
                         (StructInstanceMember
                             (ArrayItem
-                                (Var 7 shared)
+                                (Var 8 shared)
                                 [(()
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
@@ -721,7 +721,7 @@
                                 ColMajor
                                 ()
                             )
-                            7 1_extent_n
+                            8 1_extent_n
                             (Integer 4)
                             ()
                         )
@@ -735,7 +735,7 @@
                         (IntegerCompare
                             (StructInstanceMember
                                 (ArrayItem
-                                    (Var 7 shared)
+                                    (Var 8 shared)
                                     [(()
                                     (IntegerConstant 2 (Integer 4) Decimal)
                                     ())]
@@ -749,7 +749,7 @@
                                     ColMajor
                                     ()
                                 )
-                                7 1_extent_n
+                                8 1_extent_n
                                 (Integer 4)
                                 ()
                             )
@@ -764,12 +764,69 @@
                         []
                     )]
                     ()
+                    ()
                 ),
             global_init_07_m:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_global_init_07_m:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_global_init_07_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_global_init_07_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_global_init_07_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             counts:
                                 (Function
                                     (SymbolTable
@@ -1359,16 +1416,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_global_init_07_m
+                    2 __lcompilers_global_init_state_global_init_07_m
+                    .false.
                 ),
             use_bound:
                 (Function
                     (SymbolTable
-                        6
+                        7
                         {
                             1_extent_n:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_extent_n
                                     3 n
                                     global_init_07_m
@@ -1378,7 +1437,7 @@
                                 ),
                             1_extent_step:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     1_extent_step
                                     3 step
                                     global_init_07_m
@@ -1388,7 +1447,7 @@
                                 ),
                             b:
                                 (Variable
-                                    6
+                                    7
                                     b
                                     [shared]
                                     Local
@@ -1400,7 +1459,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (StructInstanceMember
                                             (ArrayItem
-                                                (Var 6 shared)
+                                                (Var 7 shared)
                                                 [(()
                                                 (IntegerConstant 2 (Integer 4) Decimal)
                                                 ())]
@@ -1414,7 +1473,7 @@
                                                 ColMajor
                                                 ()
                                             )
-                                            6 1_extent_n
+                                            7 1_extent_n
                                             (Integer 4)
                                             ()
                                         ))]
@@ -1437,7 +1496,7 @@
                                 ),
                             c:
                                 (Variable
-                                    6
+                                    7
                                     c
                                     [shared]
                                     Local
@@ -1449,7 +1508,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (StructInstanceMember
                                             (ArrayItem
-                                                (Var 6 shared)
+                                                (Var 7 shared)
                                                 [(()
                                                 (IntegerConstant 2 (Integer 4) Decimal)
                                                 ())]
@@ -1463,7 +1522,7 @@
                                                 ColMajor
                                                 ()
                                             )
-                                            6 1_extent_step
+                                            7 1_extent_step
                                             (Integer 4)
                                             ()
                                         ))]
@@ -1486,7 +1545,7 @@
                                 ),
                             counts:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     counts
                                     2 counts
                                     global_init_07_m
@@ -1496,7 +1555,7 @@
                                 ),
                             extent:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     extent
                                     2 extent
                                     global_init_07_m
@@ -1506,7 +1565,7 @@
                                 ),
                             module_bound:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     module_bound
                                     2 module_bound
                                     global_init_07_m
@@ -1516,7 +1575,7 @@
                                 ),
                             shared:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     shared
                                     2 shared
                                     global_init_07_m
@@ -1547,7 +1606,7 @@
                         ()
                         (IntegerCompare
                             (ArraySize
-                                (Var 6 b)
+                                (Var 7 b)
                                 ()
                                 (Integer 4)
                                 ()
@@ -1566,7 +1625,7 @@
                         ()
                         (IntegerCompare
                             (ArraySize
-                                (Var 6 c)
+                                (Var 7 c)
                                 ()
                                 (Integer 4)
                                 ()
@@ -1582,12 +1641,12 @@
                         []
                     )
                     (Assignment
-                        (Var 6 b)
+                        (Var 7 b)
                         (ArrayBroadcast
                             (IntegerConstant 7 (Integer 4) Decimal)
                             (IntrinsicArrayFunction
                                 Shape
-                                [(Var 6 b)]
+                                [(Var 7 b)]
                                 0
                                 (Array
                                     (Integer 4)
@@ -1603,7 +1662,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (StructInstanceMember
                                     (ArrayItem
-                                        (Var 6 shared)
+                                        (Var 7 shared)
                                         [(()
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         ())]
@@ -1617,7 +1676,7 @@
                                         ColMajor
                                         ()
                                     )
-                                    6 1_extent_n
+                                    7 1_extent_n
                                     (Integer 4)
                                     ()
                                 ))]
@@ -1631,12 +1690,12 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 c)
+                        (Var 7 c)
                         (ArrayBroadcast
                             (IntegerConstant 9 (Integer 4) Decimal)
                             (IntrinsicArrayFunction
                                 Shape
-                                [(Var 6 c)]
+                                [(Var 7 c)]
                                 0
                                 (Array
                                     (Integer 4)
@@ -1652,7 +1711,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (StructInstanceMember
                                     (ArrayItem
-                                        (Var 6 shared)
+                                        (Var 7 shared)
                                         [(()
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         ())]
@@ -1666,7 +1725,7 @@
                                         ColMajor
                                         ()
                                     )
-                                    6 1_extent_step
+                                    7 1_extent_step
                                     (Integer 4)
                                     ()
                                 ))]
@@ -1685,7 +1744,7 @@
                             (IntrinsicArrayFunction
                                 Sum
                                 [(ArrayPhysicalCast
-                                    (Var 6 b)
+                                    (Var 7 b)
                                     PointerArray
                                     DescriptorArray
                                     (Array
@@ -1693,7 +1752,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (StructInstanceMember
                                             (ArrayItem
-                                                (Var 6 shared)
+                                                (Var 7 shared)
                                                 [(()
                                                 (IntegerConstant 2 (Integer 4) Decimal)
                                                 ())]
@@ -1707,7 +1766,7 @@
                                                 ColMajor
                                                 ()
                                             )
-                                            6 1_extent_n
+                                            7 1_extent_n
                                             (Integer 4)
                                             ()
                                         ))]
@@ -1736,7 +1795,7 @@
                             (IntrinsicArrayFunction
                                 Sum
                                 [(ArrayPhysicalCast
-                                    (Var 6 c)
+                                    (Var 7 c)
                                     PointerArray
                                     DescriptorArray
                                     (Array
@@ -1744,7 +1803,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (StructInstanceMember
                                             (ArrayItem
-                                                (Var 6 shared)
+                                                (Var 7 shared)
                                                 [(()
                                                 (IntegerConstant 2 (Integer 4) Decimal)
                                                 ())]
@@ -1758,7 +1817,7 @@
                                                 ColMajor
                                                 ()
                                             )
-                                            6 1_extent_step
+                                            7 1_extent_step
                                             (Integer 4)
                                             ()
                                         ))]
@@ -1789,5 +1848,8 @@
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

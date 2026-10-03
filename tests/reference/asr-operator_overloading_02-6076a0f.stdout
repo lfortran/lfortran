@@ -5,11 +5,11 @@
             main:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             logical_gets_integer@~assign:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     logical_gets_integer@~assign
                                     2 logical_gets_integer
                                     overload_assignment_m
@@ -19,7 +19,7 @@
                                 ),
                             tf:
                                 (Variable
-                                    5
+                                    6
                                     tf
                                     []
                                     Local
@@ -43,7 +43,7 @@
                                 ),
                             ~assign:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     ~assign
                                     2 ~assign
                                     overload_assignment_m
@@ -55,12 +55,12 @@
                     main
                     [overload_assignment_m]
                     [(Assignment
-                        (Var 5 tf)
+                        (Var 6 tf)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         (SubroutineCall
-                            5 logical_gets_integer@~assign
-                            5 logical_gets_integer@~assign
-                            [((Var 5 tf))
+                            6 logical_gets_integer@~assign
+                            6 logical_gets_integer@~assign
+                            [((Var 6 tf))
                             ((IntegerConstant 0 (Integer 4) Decimal))]
                             ()
                             .false.
@@ -75,7 +75,7 @@
                                 "tf=0:"
                                 (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 5 tf)]
+                            (Var 6 tf)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -84,12 +84,12 @@
                         )
                     )
                     (Assignment
-                        (Var 5 tf)
+                        (Var 6 tf)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (SubroutineCall
-                            5 logical_gets_integer@~assign
-                            5 logical_gets_integer@~assign
-                            [((Var 5 tf))
+                            6 logical_gets_integer@~assign
+                            6 logical_gets_integer@~assign
+                            [((Var 6 tf))
                             ((IntegerConstant 1 (Integer 4) Decimal))]
                             ()
                             .false.
@@ -104,7 +104,7 @@
                                 "tf=1:"
                                 (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 5 tf)]
+                            (Var 6 tf)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -113,12 +113,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             overload_assignment_m:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_overload_assignment_m:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_overload_assignment_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_overload_assignment_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_overload_assignment_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             logical_gets_integer:
                                 (Function
                                     (SymbolTable
@@ -330,9 +387,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_overload_assignment_m
+                    2 __lcompilers_global_init_state_overload_assignment_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

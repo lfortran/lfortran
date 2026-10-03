@@ -5,18 +5,74 @@
             tomlf_structure_vector:
                 (Module
                     (SymbolTable
-                        9
+                        11
                         {
+                            __lcompilers_global_init_state_tomlf_structure_vector:
+                                (Variable
+                                    11
+                                    __lcompilers_global_init_state_tomlf_structure_vector
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_structure_vector:
+                                (Function
+                                    (SymbolTable
+                                        16
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_structure_vector
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             find:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        15
                                         {
                                             1_toml_node_val:
                                                 (ExternalSymbol
-                                                    13
+                                                    15
                                                     1_toml_node_val
-                                                    10 val
+                                                    12 val
                                                     tomlf_structure_vector
                                                     [toml_node]
                                                     val
@@ -24,7 +80,7 @@
                                                 ),
                                             1_toml_value_match_key:
                                                 (ExternalSymbol
-                                                    13
+                                                    15
                                                     1_toml_value_match_key
                                                     3 match_key
                                                     tomlf_type_value
@@ -34,9 +90,9 @@
                                                 ),
                                             1_toml_vector_lst:
                                                 (ExternalSymbol
-                                                    13
+                                                    15
                                                     1_toml_vector_lst
-                                                    11 lst
+                                                    13 lst
                                                     tomlf_structure_vector
                                                     [toml_vector]
                                                     lst
@@ -44,9 +100,9 @@
                                                 ),
                                             1_toml_vector_n:
                                                 (ExternalSymbol
-                                                    13
+                                                    15
                                                     1_toml_vector_n
-                                                    11 n
+                                                    13 n
                                                     tomlf_structure_vector
                                                     [toml_vector]
                                                     n
@@ -54,7 +110,7 @@
                                                 ),
                                             i:
                                                 (Variable
-                                                    13
+                                                    15
                                                     i
                                                     []
                                                     Local
@@ -78,7 +134,7 @@
                                                 ),
                                             key:
                                                 (Variable
-                                                    13
+                                                    15
                                                     key
                                                     []
                                                     In
@@ -102,7 +158,7 @@
                                                 ),
                                             ptr:
                                                 (Variable
-                                                    13
+                                                    15
                                                     ptr
                                                     []
                                                     Out
@@ -119,7 +175,7 @@
                                                             .false.
                                                         )
                                                     )
-                                                    9 toml_value
+                                                    11 toml_value
                                                     Source
                                                     Public
                                                     Required
@@ -135,7 +191,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    13
+                                                    15
                                                     self
                                                     []
                                                     InOut
@@ -171,7 +227,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    9 toml_vector
+                                                    11 toml_vector
                                                     Source
                                                     Public
                                                     Required
@@ -242,19 +298,19 @@
                                         Host
                                     )
                                     []
-                                    [(Var 13 self)
-                                    (Var 13 key)
-                                    (Var 13 ptr)]
+                                    [(Var 15 self)
+                                    (Var 15 key)
+                                    (Var 15 ptr)]
                                     [(Nullify
-                                        [(Var 13 ptr)]
+                                        [(Var 15 ptr)]
                                     )
                                     (DoLoop
                                         ()
-                                        ((Var 13 i)
+                                        ((Var 15 i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (StructInstanceMember
-                                            (Var 13 self)
-                                            13 1_toml_vector_n
+                                            (Var 15 self)
+                                            15 1_toml_vector_n
                                             (Integer 4)
                                             ()
                                         )
@@ -266,8 +322,8 @@
                                                 [(StructInstanceMember
                                                     (ArrayItem
                                                         (StructInstanceMember
-                                                            (Var 13 self)
-                                                            13 1_toml_vector_lst
+                                                            (Var 15 self)
+                                                            15 1_toml_vector_lst
                                                             (Allocatable
                                                                 (Array
                                                                     (StructType
@@ -294,7 +350,7 @@
                                                             ()
                                                         )
                                                         [(()
-                                                        (Var 13 i)
+                                                        (Var 15 i)
                                                         ())]
                                                         (StructType
                                                             [(Allocatable
@@ -314,7 +370,7 @@
                                                         ColMajor
                                                         ()
                                                     )
-                                                    13 1_toml_node_val
+                                                    15 1_toml_node_val
                                                     (Allocatable
                                                         (StructType
                                                             [(Allocatable
@@ -334,13 +390,13 @@
                                             [(If
                                                 ()
                                                 (FunctionCall
-                                                    13 1_toml_value_match_key
+                                                    15 1_toml_value_match_key
                                                     ()
                                                     [((StructInstanceMember
                                                         (ArrayItem
                                                             (StructInstanceMember
-                                                                (Var 13 self)
-                                                                13 1_toml_vector_lst
+                                                                (Var 15 self)
+                                                                15 1_toml_vector_lst
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
@@ -367,7 +423,7 @@
                                                                 ()
                                                             )
                                                             [(()
-                                                            (Var 13 i)
+                                                            (Var 15 i)
                                                             ())]
                                                             (StructType
                                                                 [(Allocatable
@@ -387,7 +443,7 @@
                                                             ColMajor
                                                             ()
                                                         )
-                                                        13 1_toml_node_val
+                                                        15 1_toml_node_val
                                                         (Allocatable
                                                             (StructType
                                                                 [(Allocatable
@@ -400,14 +456,14 @@
                                                         )
                                                         ()
                                                     ))
-                                                    ((Var 13 key))]
+                                                    ((Var 15 key))]
                                                     (Logical 4)
                                                     ()
                                                     (StructInstanceMember
                                                         (ArrayItem
                                                             (StructInstanceMember
-                                                                (Var 13 self)
-                                                                13 1_toml_vector_lst
+                                                                (Var 15 self)
+                                                                15 1_toml_vector_lst
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
@@ -434,7 +490,7 @@
                                                                 ()
                                                             )
                                                             [(()
-                                                            (Var 13 i)
+                                                            (Var 15 i)
                                                             ())]
                                                             (StructType
                                                                 [(Allocatable
@@ -454,7 +510,7 @@
                                                             ColMajor
                                                             ()
                                                         )
-                                                        13 1_toml_node_val
+                                                        15 1_toml_node_val
                                                         (Allocatable
                                                             (StructType
                                                                 [(Allocatable
@@ -469,12 +525,12 @@
                                                     )
                                                 )
                                                 [(Associate
-                                                    (Var 13 ptr)
+                                                    (Var 15 ptr)
                                                     (StructInstanceMember
                                                         (ArrayItem
                                                             (StructInstanceMember
-                                                                (Var 13 self)
-                                                                13 1_toml_vector_lst
+                                                                (Var 15 self)
+                                                                15 1_toml_vector_lst
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
@@ -501,7 +557,7 @@
                                                                 ()
                                                             )
                                                             [(()
-                                                            (Var 13 i)
+                                                            (Var 15 i)
                                                             ())]
                                                             (StructType
                                                                 [(Allocatable
@@ -521,7 +577,7 @@
                                                             ColMajor
                                                             ()
                                                         )
-                                                        13 1_toml_node_val
+                                                        15 1_toml_node_val
                                                         (Allocatable
                                                             (StructType
                                                                 [(Allocatable
@@ -553,13 +609,13 @@
                             new_vector:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        14
                                         {
                                             1_toml_vector_lst:
                                                 (ExternalSymbol
-                                                    12
+                                                    14
                                                     1_toml_vector_lst
-                                                    11 lst
+                                                    13 lst
                                                     tomlf_structure_vector
                                                     [toml_vector]
                                                     lst
@@ -567,9 +623,9 @@
                                                 ),
                                             1_toml_vector_n:
                                                 (ExternalSymbol
-                                                    12
+                                                    14
                                                     1_toml_vector_n
-                                                    11 n
+                                                    13 n
                                                     tomlf_structure_vector
                                                     [toml_vector]
                                                     n
@@ -577,7 +633,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    12
+                                                    14
                                                     n
                                                     []
                                                     In
@@ -601,7 +657,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    12
+                                                    14
                                                     self
                                                     []
                                                     Out
@@ -637,7 +693,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    9 toml_vector
+                                                    11 toml_vector
                                                     Source
                                                     Public
                                                     Required
@@ -698,12 +754,12 @@
                                         Host
                                     )
                                     []
-                                    [(Var 12 self)
-                                    (Var 12 n)]
+                                    [(Var 14 self)
+                                    (Var 14 n)]
                                     [(Assignment
                                         (StructInstanceMember
-                                            (Var 12 self)
-                                            12 1_toml_vector_n
+                                            (Var 14 self)
+                                            14 1_toml_vector_n
                                             (Integer 4)
                                             ()
                                         )
@@ -716,15 +772,15 @@
                                         ()
                                         (IntrinsicElementalFunction
                                             Present
-                                            [(Var 12 n)]
+                                            [(Var 14 n)]
                                             0
                                             (Logical 4)
                                             ()
                                         )
                                         [(Allocate
                                             [((StructInstanceMember
-                                                (Var 12 self)
-                                                12 1_toml_vector_lst
+                                                (Var 14 self)
+                                                14 1_toml_vector_lst
                                                 (Allocatable
                                                     (Array
                                                         (StructType
@@ -754,7 +810,7 @@
                                             (IntrinsicElementalFunction
                                                 Min
                                                 [(IntegerConstant 1 (Integer 4) Decimal)
-                                                (Var 12 n)]
+                                                (Var 14 n)]
                                                 0
                                                 (Integer 4)
                                                 ()
@@ -778,11 +834,11 @@
                             toml_node:
                                 (Struct
                                     (SymbolTable
-                                        10
+                                        12
                                         {
                                             val:
                                                 (Variable
-                                                    10
+                                                    12
                                                     val
                                                     []
                                                     Local
@@ -799,7 +855,7 @@
                                                             .false.
                                                         )
                                                     )
-                                                    9 toml_value
+                                                    11 toml_value
                                                     Source
                                                     Public
                                                     Required
@@ -845,7 +901,7 @@
                                 ),
                             toml_value:
                                 (ExternalSymbol
-                                    9
+                                    11
                                     toml_value
                                     2 toml_value
                                     tomlf_type_value
@@ -856,11 +912,11 @@
                             toml_vector:
                                 (Struct
                                     (SymbolTable
-                                        11
+                                        13
                                         {
                                             lst:
                                                 (Variable
-                                                    11
+                                                    13
                                                     lst
                                                     []
                                                     Local
@@ -890,7 +946,7 @@
                                                             Global
                                                         )
                                                     )
-                                                    9 toml_node
+                                                    11 toml_node
                                                     Source
                                                     Public
                                                     Required
@@ -906,7 +962,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    11
+                                                    13
                                                     n
                                                     []
                                                     Local
@@ -980,23 +1036,81 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    11 __lcompilers_global_init_tomlf_structure_vector
+                    11 __lcompilers_global_init_state_tomlf_structure_vector
+                    .false.
                 ),
             tomlf_type_keyval:
                 (Module
                     (SymbolTable
-                        6
+                        7
                         {
+                            __lcompilers_global_init_state_tomlf_type_keyval:
+                                (Variable
+                                    7
+                                    __lcompilers_global_init_state_tomlf_type_keyval
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_type_keyval:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_type_keyval
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             destroy:
                                 (Function
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             1_toml_keyval_raw:
                                                 (ExternalSymbol
-                                                    8
+                                                    9
                                                     1_toml_keyval_raw
-                                                    7 raw
+                                                    8 raw
                                                     tomlf_type_keyval
                                                     [toml_keyval]
                                                     raw
@@ -1004,7 +1118,7 @@
                                                 ),
                                             1_toml_value_key:
                                                 (ExternalSymbol
-                                                    8
+                                                    9
                                                     1_toml_value_key
                                                     3 key
                                                     tomlf_type_value
@@ -1014,7 +1128,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    8
+                                                    9
                                                     self
                                                     []
                                                     InOut
@@ -1029,7 +1143,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    6 toml_keyval
+                                                    7 toml_keyval
                                                     Source
                                                     Public
                                                     Required
@@ -1068,14 +1182,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 8 self)]
+                                    [(Var 9 self)]
                                     [(If
                                         ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember
-                                                (Var 8 self)
-                                                8 1_toml_value_key
+                                                (Var 9 self)
+                                                9 1_toml_value_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1087,8 +1201,8 @@
                                         )
                                         [(ExplicitDeallocate
                                             [(StructInstanceMember
-                                                (Var 8 self)
-                                                8 1_toml_value_key
+                                                (Var 9 self)
+                                                9 1_toml_value_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1102,8 +1216,8 @@
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember
-                                                (Var 8 self)
-                                                8 1_toml_keyval_raw
+                                                (Var 9 self)
+                                                9 1_toml_keyval_raw
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1115,8 +1229,8 @@
                                         )
                                         [(ExplicitDeallocate
                                             [(StructInstanceMember
-                                                (Var 8 self)
-                                                8 1_toml_keyval_raw
+                                                (Var 9 self)
+                                                9 1_toml_keyval_raw
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1134,22 +1248,22 @@
                             toml_keyval:
                                 (Struct
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             destroy:
                                                 (StructMethodDeclaration
-                                                    7
+                                                    8
                                                     destroy
                                                     ()
                                                     destroy
-                                                    6 destroy
+                                                    7 destroy
                                                     Source
                                                     .false.
                                                     .false.
                                                 ),
                                             raw:
                                                 (Variable
-                                                    7
+                                                    8
                                                     raw
                                                     []
                                                     Local
@@ -1193,12 +1307,12 @@
                                     .false.
                                     []
                                     ()
-                                    6 toml_value
+                                    7 toml_value
                                     []
                                 ),
                             toml_value:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     toml_value
                                     2 toml_value
                                     tomlf_type_value
@@ -1213,13 +1327,71 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    7 __lcompilers_global_init_tomlf_type_keyval
+                    7 __lcompilers_global_init_state_tomlf_type_keyval
+                    .false.
                 ),
             tomlf_type_value:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_tomlf_type_value:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_tomlf_type_value
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_type_value:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_type_value
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             destroy:
                                 (Function
                                     (SymbolTable
@@ -1547,9 +1719,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_tomlf_type_value
+                    2 __lcompilers_global_init_state_tomlf_type_value
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

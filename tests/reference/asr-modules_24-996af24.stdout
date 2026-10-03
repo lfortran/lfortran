@@ -5,11 +5,11 @@
             modules_24:
                 (Program
                     (SymbolTable
-                        7
+                        8
                         {
                             parse_select:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     parse_select
                                     2 parse_select
                                     tomlf_de_tokenizer_24
@@ -19,7 +19,7 @@
                                 ),
                             tokenizer:
                                 (Variable
-                                    7
+                                    8
                                     tokenizer
                                     []
                                     Local
@@ -32,7 +32,7 @@
                                         .true.
                                         .false.
                                     )
-                                    7 toml_tokenizer_
+                                    8 toml_tokenizer_
                                     Source
                                     Public
                                     Required
@@ -48,7 +48,7 @@
                                 ),
                             tokenizer_ptr:
                                 (Variable
-                                    7
+                                    8
                                     tokenizer_ptr
                                     []
                                     Local
@@ -70,7 +70,7 @@
                                             .false.
                                         )
                                     )
-                                    7 toml_tokenizer
+                                    8 toml_tokenizer
                                     Source
                                     Public
                                     Required
@@ -86,7 +86,7 @@
                                 ),
                             toml_table:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     toml_table
                                     2 toml_table
                                     tomlf_de_tokenizer_24
@@ -96,7 +96,7 @@
                                 ),
                             toml_tokenizer:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     toml_tokenizer
                                     2 toml_tokenizer
                                     tomlf_de_tokenizer_24
@@ -106,7 +106,7 @@
                                 ),
                             toml_tokenizer_:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     toml_tokenizer_
                                     2 toml_tokenizer_
                                     tomlf_de_tokenizer_24
@@ -118,16 +118,17 @@
                     modules_24
                     [tomlf_de_tokenizer_24]
                     [(Associate
-                        (Var 7 tokenizer_ptr)
-                        (Var 7 tokenizer)
+                        (Var 8 tokenizer_ptr)
+                        (Var 8 tokenizer)
                     )
                     (SubroutineCall
-                        7 parse_select
+                        8 parse_select
                         ()
-                        [((Var 7 tokenizer))]
+                        [((Var 8 tokenizer))]
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             tomlf_de_tokenizer_24:
@@ -135,6 +136,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_tomlf_de_tokenizer_24:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_tomlf_de_tokenizer_24
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_de_tokenizer_24:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_de_tokenizer_24
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             parse_select:
                                 (Function
                                     (SymbolTable
@@ -447,9 +504,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_tomlf_de_tokenizer_24
+                    2 __lcompilers_global_init_state_tomlf_de_tokenizer_24
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

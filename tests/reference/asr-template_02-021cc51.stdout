@@ -5,16 +5,16 @@
             template_02:
                 (Program
                     (SymbolTable
-                        8
+                        9
                         {
                             change_positions_chr:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             i:
                                                 (Variable
-                                                    12
+                                                    13
                                                     i
                                                     []
                                                     Local
@@ -38,7 +38,7 @@
                                                 ),
                                             j:
                                                 (Variable
-                                                    12
+                                                    13
                                                     j
                                                     []
                                                     Local
@@ -62,7 +62,7 @@
                                                 ),
                                             mask:
                                                 (Variable
-                                                    12
+                                                    13
                                                     mask
                                                     []
                                                     ReturnVar
@@ -94,7 +94,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    12
+                                                    13
                                                     n
                                                     []
                                                     Local
@@ -118,7 +118,7 @@
                                                 ),
                                             pos:
                                                 (Variable
-                                                    12
+                                                    13
                                                     pos
                                                     []
                                                     Local
@@ -150,7 +150,7 @@
                                                 ),
                                             vec:
                                                 (Variable
-                                                    12
+                                                    13
                                                     vec
                                                     []
                                                     In
@@ -210,11 +210,11 @@
                                         Host
                                     )
                                     [~neq_intrinsic1]
-                                    [(Var 12 vec)]
+                                    [(Var 13 vec)]
                                     [(Assignment
-                                        (Var 12 n)
+                                        (Var 13 n)
                                         (ArraySize
-                                            (Var 12 vec)
+                                            (Var 13 vec)
                                             ()
                                             (Integer 4)
                                             ()
@@ -224,9 +224,9 @@
                                         .false.
                                     )
                                     (Allocate
-                                        [((Var 12 pos)
+                                        [((Var 13 pos)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (Var 12 n))]
+                                        (Var 13 n))]
                                         []
                                         ()
                                         ()
@@ -238,7 +238,7 @@
                                     (If
                                         ()
                                         (IntegerCompare
-                                            (Var 12 n)
+                                            (Var 13 n)
                                             Lt
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             (Logical 4)
@@ -248,12 +248,12 @@
                                         []
                                     )
                                     (Assignment
-                                        (Var 12 pos)
+                                        (Var 13 pos)
                                         (ArrayBroadcast
                                             (IntegerConstant 0 (Integer 4) Decimal)
                                             (IntrinsicArrayFunction
                                                 Shape
-                                                [(Var 12 pos)]
+                                                [(Var 13 pos)]
                                                 0
                                                 (Array
                                                     (Integer 4)
@@ -281,7 +281,7 @@
                                     )
                                     (Assignment
                                         (ArrayItem
-                                            (Var 12 pos)
+                                            (Var 13 pos)
                                             [(()
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
@@ -295,7 +295,7 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 12 j)
+                                        (Var 13 j)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                         .false.
@@ -303,29 +303,29 @@
                                     )
                                     (DoLoop
                                         ()
-                                        ((Var 12 i)
+                                        ((Var 13 i)
                                         (IntegerConstant 2 (Integer 4) Decimal)
-                                        (Var 12 n)
+                                        (Var 13 n)
                                         ())
                                         [(If
                                             ()
                                             (FunctionCall
-                                                8 ~neq_intrinsic1
+                                                9 ~neq_intrinsic1
                                                 ()
                                                 [((ArrayItem
-                                                    (Var 12 vec)
+                                                    (Var 13 vec)
                                                     [(()
-                                                    (Var 12 i)
+                                                    (Var 13 i)
                                                     ())]
                                                     (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     ColMajor
                                                     ()
                                                 ))
                                                 ((ArrayItem
-                                                    (Var 12 vec)
+                                                    (Var 13 vec)
                                                     [(()
                                                     (IntegerBinOp
-                                                        (Var 12 i)
+                                                        (Var 13 i)
                                                         Sub
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
@@ -341,9 +341,9 @@
                                                 ()
                                             )
                                             [(Assignment
-                                                (Var 12 j)
+                                                (Var 13 j)
                                                 (IntegerBinOp
-                                                    (Var 12 j)
+                                                    (Var 13 j)
                                                     Add
                                                     (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
@@ -355,15 +355,15 @@
                                             )
                                             (Assignment
                                                 (ArrayItem
-                                                    (Var 12 pos)
+                                                    (Var 13 pos)
                                                     [(()
-                                                    (Var 12 j)
+                                                    (Var 13 j)
                                                     ())]
                                                     (Integer 4)
                                                     ColMajor
                                                     ()
                                                 )
-                                                (Var 12 i)
+                                                (Var 13 i)
                                                 ()
                                                 .false.
                                                 .false.
@@ -373,9 +373,9 @@
                                         []
                                     )
                                     (Allocate
-                                        [((Var 12 mask)
+                                        [((Var 13 mask)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (Var 12 j))]
+                                        (Var 13 j))]
                                         []
                                         ()
                                         ()
@@ -386,24 +386,24 @@
                                     )
                                     (DoLoop
                                         ()
-                                        ((Var 12 i)
+                                        ((Var 13 i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Var 12 j)
+                                        (Var 13 j)
                                         ())
                                         [(Assignment
                                             (ArrayItem
-                                                (Var 12 mask)
+                                                (Var 13 mask)
                                                 [(()
-                                                (Var 12 i)
+                                                (Var 13 i)
                                                 ())]
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
                                             )
                                             (ArrayItem
-                                                (Var 12 pos)
+                                                (Var 13 pos)
                                                 [(()
-                                                (Var 12 i)
+                                                (Var 13 i)
                                                 ())]
                                                 (Integer 4)
                                                 ColMajor
@@ -415,7 +415,7 @@
                                         )]
                                         []
                                     )]
-                                    (Var 12 mask)
+                                    (Var 13 mask)
                                     Public
                                     .true.
                                     .true.
@@ -424,11 +424,11 @@
                             change_positions_int:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             i:
                                                 (Variable
-                                                    10
+                                                    11
                                                     i
                                                     []
                                                     Local
@@ -452,7 +452,7 @@
                                                 ),
                                             j:
                                                 (Variable
-                                                    10
+                                                    11
                                                     j
                                                     []
                                                     Local
@@ -476,7 +476,7 @@
                                                 ),
                                             mask:
                                                 (Variable
-                                                    10
+                                                    11
                                                     mask
                                                     []
                                                     ReturnVar
@@ -508,7 +508,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    10
+                                                    11
                                                     n
                                                     []
                                                     Local
@@ -532,7 +532,7 @@
                                                 ),
                                             pos:
                                                 (Variable
-                                                    10
+                                                    11
                                                     pos
                                                     []
                                                     Local
@@ -564,7 +564,7 @@
                                                 ),
                                             vec:
                                                 (Variable
-                                                    10
+                                                    11
                                                     vec
                                                     []
                                                     In
@@ -624,11 +624,11 @@
                                         Host
                                     )
                                     [~neq_intrinsic]
-                                    [(Var 10 vec)]
+                                    [(Var 11 vec)]
                                     [(Assignment
-                                        (Var 10 n)
+                                        (Var 11 n)
                                         (ArraySize
-                                            (Var 10 vec)
+                                            (Var 11 vec)
                                             ()
                                             (Integer 4)
                                             ()
@@ -638,9 +638,9 @@
                                         .false.
                                     )
                                     (Allocate
-                                        [((Var 10 pos)
+                                        [((Var 11 pos)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (Var 10 n))]
+                                        (Var 11 n))]
                                         []
                                         ()
                                         ()
@@ -652,7 +652,7 @@
                                     (If
                                         ()
                                         (IntegerCompare
-                                            (Var 10 n)
+                                            (Var 11 n)
                                             Lt
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             (Logical 4)
@@ -662,12 +662,12 @@
                                         []
                                     )
                                     (Assignment
-                                        (Var 10 pos)
+                                        (Var 11 pos)
                                         (ArrayBroadcast
                                             (IntegerConstant 0 (Integer 4) Decimal)
                                             (IntrinsicArrayFunction
                                                 Shape
-                                                [(Var 10 pos)]
+                                                [(Var 11 pos)]
                                                 0
                                                 (Array
                                                     (Integer 4)
@@ -695,7 +695,7 @@
                                     )
                                     (Assignment
                                         (ArrayItem
-                                            (Var 10 pos)
+                                            (Var 11 pos)
                                             [(()
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
@@ -709,7 +709,7 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 10 j)
+                                        (Var 11 j)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                         .false.
@@ -717,29 +717,29 @@
                                     )
                                     (DoLoop
                                         ()
-                                        ((Var 10 i)
+                                        ((Var 11 i)
                                         (IntegerConstant 2 (Integer 4) Decimal)
-                                        (Var 10 n)
+                                        (Var 11 n)
                                         ())
                                         [(If
                                             ()
                                             (FunctionCall
-                                                8 ~neq_intrinsic
+                                                9 ~neq_intrinsic
                                                 ()
                                                 [((ArrayItem
-                                                    (Var 10 vec)
+                                                    (Var 11 vec)
                                                     [(()
-                                                    (Var 10 i)
+                                                    (Var 11 i)
                                                     ())]
                                                     (Integer 4)
                                                     ColMajor
                                                     ()
                                                 ))
                                                 ((ArrayItem
-                                                    (Var 10 vec)
+                                                    (Var 11 vec)
                                                     [(()
                                                     (IntegerBinOp
-                                                        (Var 10 i)
+                                                        (Var 11 i)
                                                         Sub
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
@@ -755,9 +755,9 @@
                                                 ()
                                             )
                                             [(Assignment
-                                                (Var 10 j)
+                                                (Var 11 j)
                                                 (IntegerBinOp
-                                                    (Var 10 j)
+                                                    (Var 11 j)
                                                     Add
                                                     (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
@@ -769,15 +769,15 @@
                                             )
                                             (Assignment
                                                 (ArrayItem
-                                                    (Var 10 pos)
+                                                    (Var 11 pos)
                                                     [(()
-                                                    (Var 10 j)
+                                                    (Var 11 j)
                                                     ())]
                                                     (Integer 4)
                                                     ColMajor
                                                     ()
                                                 )
-                                                (Var 10 i)
+                                                (Var 11 i)
                                                 ()
                                                 .false.
                                                 .false.
@@ -787,9 +787,9 @@
                                         []
                                     )
                                     (Allocate
-                                        [((Var 10 mask)
+                                        [((Var 11 mask)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (Var 10 j))]
+                                        (Var 11 j))]
                                         []
                                         ()
                                         ()
@@ -800,24 +800,24 @@
                                     )
                                     (DoLoop
                                         ()
-                                        ((Var 10 i)
+                                        ((Var 11 i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Var 10 j)
+                                        (Var 11 j)
                                         ())
                                         [(Assignment
                                             (ArrayItem
-                                                (Var 10 mask)
+                                                (Var 11 mask)
                                                 [(()
-                                                (Var 10 i)
+                                                (Var 11 i)
                                                 ())]
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
                                             )
                                             (ArrayItem
-                                                (Var 10 pos)
+                                                (Var 11 pos)
                                                 [(()
-                                                (Var 10 i)
+                                                (Var 11 i)
                                                 ())]
                                                 (Integer 4)
                                                 ColMajor
@@ -829,7 +829,7 @@
                                         )]
                                         []
                                     )]
-                                    (Var 10 mask)
+                                    (Var 11 mask)
                                     Public
                                     .true.
                                     .true.
@@ -837,7 +837,7 @@
                                 ),
                             change_positions_tmpl:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     change_positions_tmpl
                                     2 change_positions_tmpl
                                     template_02_m
@@ -847,7 +847,7 @@
                                 ),
                             eq:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     eq
                                     2 eq
                                     template_02_m
@@ -858,11 +858,11 @@
                             ~neq_intrinsic:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             arg0:
                                                 (Variable
-                                                    9
+                                                    10
                                                     arg0
                                                     []
                                                     In
@@ -886,7 +886,7 @@
                                                 ),
                                             arg1:
                                                 (Variable
-                                                    9
+                                                    10
                                                     arg1
                                                     []
                                                     In
@@ -910,7 +910,7 @@
                                                 ),
                                             ret:
                                                 (Variable
-                                                    9
+                                                    10
                                                     ret
                                                     []
                                                     ReturnVar
@@ -951,14 +951,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 9 arg0)
-                                    (Var 9 arg1)]
+                                    [(Var 10 arg0)
+                                    (Var 10 arg1)]
                                     [(Assignment
-                                        (Var 9 ret)
+                                        (Var 10 ret)
                                         (IntegerCompare
-                                            (Var 9 arg0)
+                                            (Var 10 arg0)
                                             NotEq
-                                            (Var 9 arg1)
+                                            (Var 10 arg1)
                                             (Logical 4)
                                             ()
                                         )
@@ -966,7 +966,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 9 ret)
+                                    (Var 10 ret)
                                     Public
                                     .true.
                                     .true.
@@ -975,11 +975,11 @@
                             ~neq_intrinsic1:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             arg0:
                                                 (Variable
-                                                    11
+                                                    12
                                                     arg0
                                                     []
                                                     In
@@ -1003,7 +1003,7 @@
                                                 ),
                                             arg1:
                                                 (Variable
-                                                    11
+                                                    12
                                                     arg1
                                                     []
                                                     In
@@ -1027,7 +1027,7 @@
                                                 ),
                                             ret:
                                                 (Variable
-                                                    11
+                                                    12
                                                     ret
                                                     []
                                                     ReturnVar
@@ -1068,14 +1068,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 11 arg0)
-                                    (Var 11 arg1)]
+                                    [(Var 12 arg0)
+                                    (Var 12 arg1)]
                                     [(Assignment
-                                        (Var 11 ret)
+                                        (Var 12 ret)
                                         (StringCompare
-                                            (Var 11 arg0)
+                                            (Var 12 arg0)
                                             NotEq
-                                            (Var 11 arg1)
+                                            (Var 12 arg1)
                                             (Logical 4)
                                             ()
                                         )
@@ -1083,7 +1083,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 11 ret)
+                                    (Var 12 ret)
                                     Public
                                     .true.
                                     .true.
@@ -1096,7 +1096,7 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                8 change_positions_int
+                                9 change_positions_int
                                 ()
                                 [((ArrayPhysicalCast
                                     (ArrayConstant
@@ -1145,7 +1145,7 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                8 change_positions_chr
+                                9 change_positions_chr
                                 ()
                                 [((ArrayPhysicalCast
                                     (ArrayConstant
@@ -1191,12 +1191,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             template_02_m:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_02_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_02_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_02_m:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_02_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             change_positions_tmpl:
                                 (Template
                                     (SymbolTable
@@ -1958,9 +2015,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_template_02_m
+                    2 __lcompilers_global_init_state_template_02_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

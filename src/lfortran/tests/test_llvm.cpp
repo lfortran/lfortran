@@ -19,13 +19,18 @@
 #include <libasr/modfile.h>
 #include <libasr/utils.h>
 #include <lfortran/utils.h>
+#include <libasr/runtime/lcompilers_init_abi.h>
 
 #include <llvm/Config/llvm-config.h>
 #include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/GlobalVariable.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <llvm/Transforms/Utils/ModuleUtils.h>
 #if LLVM_VERSION_MAJOR >= 17
 #include <llvm/TargetParser/Triple.h>
 #else
@@ -157,6 +162,132 @@ TEST_CASE("LLVM target configuration") {
     CHECK_THROWS_AS(
         LCompilers::resolve_llvm_target_config(invalid_cpu_options),
         LCompilers::LCompilersException);
+}
+
+namespace {
+
+// A pointer to `t`: typed before LLVM 17, opaque from then on.
+llvm::Type *pointer_to(llvm::Type *t) {
+#if LLVM_VERSION_MAJOR >= 17
+    return llvm::PointerType::getUnqual(t->getContext());
+#else
+    return t->getPointerTo();
+#endif
+}
+
+// A module with `n` tables of startup records in the form `asr_to_llvm`
+// emits them, independent of the object format: each table passed to the
+// engine by a constructor of its own, as when several are linked into one.
+std::unique_ptr<llvm::Module> global_init_module(llvm::LLVMContext &context,
+        const std::string &triple, int n) {
+    std::unique_ptr<llvm::Module> module = std::make_unique<llvm::Module>(
+        "global_init", context);
+#if LLVM_VERSION_MAJOR >= 21
+    module->setTargetTriple(llvm::Triple(triple));
+#else
+    module->setTargetTriple(triple);
+#endif
+    llvm::Type *i8_ptr = pointer_to(llvm::Type::getInt8Ty(context));
+    llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+    llvm::FunctionType *void_fn = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(context), {}, false);
+    llvm::Function *ctor = llvm::Function::Create(llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context), {i8_ptr}, false),
+        llvm::Function::ExternalLinkage, "_lcompilers_init_ctor", module.get());
+    llvm::StructType *table_type = llvm::StructType::get(context,
+        {i32, i32, i8_ptr, pointer_to(i32)});
+    for (int i = 0; i < n; i++) {
+        llvm::GlobalVariable *table = new llvm::GlobalVariable(*module,
+            table_type, true, llvm::GlobalVariable::InternalLinkage,
+            llvm::Constant::getNullValue(table_type), "__lcompilers_init_table");
+        llvm::Function *trigger = llvm::Function::Create(void_fn,
+            llvm::Function::InternalLinkage, "__lcompilers_init_trigger",
+            module.get());
+        llvm::IRBuilder<> b(llvm::BasicBlock::Create(context, ".entry", trigger));
+        b.CreateCall(ctor, {llvm::ConstantExpr::getBitCast(table, i8_ptr)});
+        b.CreateRetVoid();
+        llvm::appendToGlobalCtors(*module, trigger, 65535);
+    }
+    return module;
+}
+
+// Whether constant `c` refers to `g`, however deep in its operands.
+bool refers_to(const llvm::Constant *c, const llvm::GlobalValue *g) {
+    if (c == g) return true;
+    if (llvm::isa<llvm::GlobalValue>(c)) return false;
+    for (const llvm::Value *op : c->operands()) {
+        const llvm::Constant *oc = llvm::dyn_cast<llvm::Constant>(op);
+        if (oc != nullptr && refers_to(oc, g)) return true;
+    }
+    return false;
+}
+
+// The tables the constructors of `module` pass to the engine.
+std::vector<llvm::GlobalVariable*> global_init_ctor_tables(llvm::Module &module) {
+    std::vector<llvm::GlobalVariable*> tables;
+    for (llvm::User *user : module.getFunction("_lcompilers_init_ctor")->users()) {
+        llvm::CallInst *call = llvm::dyn_cast<llvm::CallInst>(user);
+        REQUIRE(call != nullptr);
+        tables.push_back(llvm::dyn_cast<llvm::GlobalVariable>(
+            call->getArgOperand(0)->stripPointerCasts()));
+    }
+    return tables;
+}
+
+} // namespace
+
+// The records `asr_to_llvm` emits are complete on their own, which is what
+// `--show-llvm` prints; lowering them for an object format only adds what
+// makes them known before their constructors run, once, whatever it is
+// applied to.
+TEST_CASE("global initialization records lowered per object format") {
+    for (const char *triple : {"x86_64-unknown-linux-gnu", "x86_64-apple-macosx10.15.0",
+            "x86_64-pc-windows-msvc", "wasm32-unknown-wasi"}) {
+        CAPTURE(triple);
+        llvm::Triple t(triple);
+        llvm::LLVMContext context;
+        std::unique_ptr<llvm::Module> module = global_init_module(context, triple, 2);
+        LCompilers::lower_global_init_records(*module);
+        LCompilers::lower_global_init_records(*module);
+        std::vector<llvm::GlobalVariable*> tables = global_init_ctor_tables(*module);
+        // The constructors still pass their own tables, and nothing else.
+        REQUIRE(tables.size() == 2);
+        CHECK(tables[0] != nullptr);
+        CHECK(tables[1] != nullptr);
+        CHECK(tables[0] != tables[1]);
+        for (llvm::GlobalVariable *table : tables) {
+            if (t.isOSBinFormatMachO()) {
+                CHECK(table->getSection() == std::string(lcompilers_init_macho_segment)
+                    + "," + lcompilers_init_macho_section + ",regular,no_dead_strip");
+            } else if (t.isOSBinFormatCOFF()) {
+                CHECK(table->getSection() == lcompilers_init_coff_section);
+            } else {
+                CHECK(!table->hasSection());
+            }
+            int notes = 0;
+            for (llvm::GlobalVariable &g : module->globals()) {
+                if (g.hasSection() && g.getSection() == lcompilers_init_elf_note_section
+                        && refers_to(g.getInitializer(), table)) {
+                    // Read-only: its descriptor is resolved by the linker.
+                    CHECK(g.isConstant());
+                    notes++;
+                }
+            }
+            CHECK(notes == (t.isOSBinFormatELF() ? 1 : 0));
+            int publishes = 0;
+            llvm::Function *add = module->getFunction("_lcompilers_init_add_records");
+            if (add != nullptr) {
+                for (llvm::User *user : add->users()) {
+                    llvm::CallInst *call = llvm::dyn_cast<llvm::CallInst>(user);
+                    if (call != nullptr
+                            && call->getArgOperand(0)->stripPointerCasts() == table) {
+                        publishes++;
+                    }
+                }
+            }
+            CHECK(publishes == (t.isOSBinFormatWasm() ? 1 : 0));
+        }
+    }
 }
 
 TEST_CASE("llvm 1") {
@@ -517,7 +648,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] ())");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] () () .false. ())");
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
@@ -559,7 +690,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] ())");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] () () .false. ())");
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;
@@ -2590,3 +2721,308 @@ TEST_CASE("FortranEvaluator the calls the kernel makes") {
         CHECK(lm.files.back().in_filename == "some_file.f90");
     }
 }
+
+// Module initialization in the JIT, observed only through the values later
+// cells compute. The checks are integer functions that return 0, or the
+// number of the first thing that is wrong, so that a failure shows up as a
+// value instead of an ERROR STOP that would end the test process.
+
+namespace {
+
+const char *jit_init_module = R"(module mjinit
+implicit none
+type :: t
+    integer, pointer :: p(:) => null()
+    character(len=2) :: tag = "ab"
+end type
+type(t) :: v
+integer :: n = 7
+integer :: runs = 0
+integer :: last_k = 0
+integer, allocatable :: a(:)
+character(len=3), target :: s = "abc"
+character(len=:), pointer :: q => s
+end module
+)";
+
+const char *jit_init_check_initial = R"(integer function check_initial()
+use mjinit
+implicit none
+check_initial = 1
+if (n /= 7) return
+check_initial = 2
+if (allocated(a)) return
+check_initial = 3
+if (associated(v%p) .or. v%tag /= "ab") return
+check_initial = 4
+if (.not. associated(q)) return
+check_initial = 5
+if (len(q) /= 3 .or. q /= "abc") return
+check_initial = 0
+end function
+)";
+
+const char *jit_init_mutate = R"(subroutine mutate()
+use mjinit
+implicit none
+n = 9
+allocate(a(3))
+a = 4
+v%tag = "zz"
+q = "xyz"
+end subroutine
+)";
+
+const char *jit_init_check_mutated = R"(integer function check_mutated()
+use mjinit
+implicit none
+check_mutated = 1
+if (n /= 9) return
+check_mutated = 2
+if (.not. allocated(a)) return
+check_mutated = 3
+if (sum(a) /= 12) return
+check_mutated = 4
+if (v%tag /= "zz") return
+check_mutated = 5
+if (s /= "xyz" .or. q /= "xyz") return
+check_mutated = 0
+end function
+)";
+
+int jit_int(FortranEvaluator &e, const std::string &expr) {
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(expr);
+    REQUIRE(r.ok);
+    REQUIRE(r.result.type == FortranEvaluator::EvalResult::integer4);
+    return r.result.i32;
+}
+
+CompilerOptions jit_init_options() {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    return cu;
+}
+
+}
+
+TEST_CASE("FortranEvaluator module initialized by a module-only cell") {
+    CompilerOptions cu_e = jit_init_options();
+    FortranEvaluator e(cu_e);
+    // The module's cell has nothing else in it to run the initializer.
+    REQUIRE(e.evaluate2(jit_init_module).ok);
+    REQUIRE(e.evaluate2(jit_init_check_initial).ok);
+    CHECK(jit_int(e, "check_initial()") == 0);
+}
+
+TEST_CASE("FortranEvaluator module state across later cells") {
+    CompilerOptions cu_e = jit_init_options();
+    FortranEvaluator e(cu_e);
+    REQUIRE(e.evaluate2(jit_init_module).ok);
+    REQUIRE(e.evaluate2(jit_init_check_initial).ok);
+    REQUIRE(e.evaluate2(jit_init_mutate).ok);
+    REQUIRE(e.evaluate2(jit_init_check_mutated).ok);
+    CHECK(jit_int(e, "check_initial()") == 0);
+    REQUIRE(e.evaluate2("call mutate()").ok);
+    // Neither a later cell nor a procedure compiled after the change
+    // initializes the module again.
+    CHECK(jit_int(e, "check_mutated()") == 0);
+    REQUIRE(e.evaluate2(R"(integer function late_n()
+use mjinit, only: n
+late_n = n
+end function
+)").ok);
+    CHECK(jit_int(e, "late_n()") == 9);
+    CHECK(jit_int(e, "check_mutated()") == 0);
+}
+
+TEST_CASE("FortranEvaluator redefined module gets storage of its own") {
+    CompilerOptions cu_e = jit_init_options();
+    FortranEvaluator e(cu_e);
+    REQUIRE(e.evaluate2(jit_init_module).ok);
+    REQUIRE(e.evaluate2(jit_init_mutate).ok);
+    REQUIRE(e.evaluate2(jit_init_check_mutated).ok);
+    REQUIRE(e.evaluate2("call mutate()").ok);
+    CHECK(jit_int(e, "check_mutated()") == 0);
+    // A new module of the same name is a new module: initialized, and not
+    // sharing the storage the procedures compiled against the old one use.
+    REQUIRE(e.evaluate2(jit_init_module).ok);
+    REQUIRE(e.evaluate2(jit_init_check_initial).ok);
+    CHECK(jit_int(e, "check_initial()") == 0);
+    CHECK(jit_int(e, "check_mutated()") == 0);
+}
+
+TEST_CASE("FortranEvaluator repeated program cells") {
+    CompilerOptions cu_e = jit_init_options();
+    FortranEvaluator e(cu_e);
+    REQUIRE(e.evaluate2(jit_init_module).ok);
+    const char *program = R"(program prun
+use mjinit, only: runs, last_k
+implicit none
+integer :: k = 5
+runs = runs + 1
+last_k = k
+k = k + 10
+end program
+)";
+    REQUIRE(e.evaluate2(R"(integer function get_runs()
+use mjinit, only: runs
+get_runs = runs
+end function
+)").ok);
+    REQUIRE(e.evaluate2(R"(integer function get_last_k()
+use mjinit, only: last_k
+get_last_k = last_k
+end function
+)").ok);
+    // Each program cell is a program of its own, with its own variables, and
+    // none of them initializes the module it uses again.
+    for (int i = 1; i <= 3; i++) {
+        REQUIRE(e.evaluate2(program).ok);
+        CHECK(jit_int(e, "get_runs()") == i);
+        CHECK(jit_int(e, "get_last_k()") == 5);
+    }
+}
+
+TEST_CASE("FortranEvaluator module initialization after another evaluator is gone") {
+    {
+        CompilerOptions cu_e = jit_init_options();
+        FortranEvaluator e(cu_e);
+        REQUIRE(e.evaluate2(jit_init_module).ok);
+        REQUIRE(e.evaluate2(jit_init_mutate).ok);
+        REQUIRE(e.evaluate2(jit_init_check_mutated).ok);
+        REQUIRE(e.evaluate2("call mutate()").ok);
+        CHECK(jit_int(e, "check_mutated()") == 0);
+    }
+    // The code and storage of the first evaluator are gone. Initializing
+    // modules in a second one must neither reach them nor find the state of
+    // the first one's modules.
+    CompilerOptions cu_e = jit_init_options();
+    FortranEvaluator e(cu_e);
+    REQUIRE(e.evaluate2(jit_init_module).ok);
+    REQUIRE(e.evaluate2(jit_init_check_initial).ok);
+    CHECK(jit_int(e, "check_initial()") == 0);
+    REQUIRE(e.evaluate2(R"(module mjinit_other
+implicit none
+integer, allocatable :: b(:)
+integer :: m = 3
+end module
+)").ok);
+    REQUIRE(e.evaluate2(R"(integer function check_other()
+use mjinit_other
+check_other = 1
+if (m /= 3 .or. allocated(b)) return
+check_other = 0
+end function
+)").ok);
+    CHECK(jit_int(e, "check_other()") == 0);
+}
+
+TEST_CASE("FortranEvaluator two evaluators with modules of the same name") {
+    CompilerOptions cu_e1 = jit_init_options();
+    FortranEvaluator e1(cu_e1);
+    CompilerOptions cu_e2 = jit_init_options();
+    FortranEvaluator e2(cu_e2);
+    REQUIRE(e1.evaluate2(jit_init_module).ok);
+    REQUIRE(e1.evaluate2(jit_init_mutate).ok);
+    REQUIRE(e1.evaluate2(jit_init_check_mutated).ok);
+    REQUIRE(e1.evaluate2("call mutate()").ok);
+    REQUIRE(e2.evaluate2(jit_init_module).ok);
+    REQUIRE(e2.evaluate2(jit_init_check_initial).ok);
+    REQUIRE(e2.evaluate2(jit_init_mutate).ok);
+    REQUIRE(e2.evaluate2(jit_init_check_mutated).ok);
+    // Each evaluator has its own module, initialized once.
+    CHECK(jit_int(e2, "check_initial()") == 0);
+    CHECK(jit_int(e1, "check_mutated()") == 0);
+    REQUIRE(e2.evaluate2("call mutate()").ok);
+    CHECK(jit_int(e2, "check_mutated()") == 0);
+    CHECK(jit_int(e1, "check_mutated()") == 0);
+}
+
+// Destroying an evaluator ends the lifetime of its modules' storage: under
+// --detect-leaks, what the storage owns has to be freed when the evaluator's
+// records are withdrawn, even though no record is left for the leak report
+// to tear down. Each scenario runs in a child process of its own, since the
+// leak report counts every allocation of the process and ends it when it
+// finds one; the child's exit status is the report's.
+#if !defined(_WIN32) && !defined(__EMSCRIPTEN__)
+
+#include <sys/wait.h>
+#include <unistd.h>
+
+extern "C" void dbg_report();
+
+namespace {
+
+// 0 when the report finds no leak, 1 when it finds one, 100 when the child
+// did not finish.
+int jit_leak_report(void (*scenario)()) {
+    fflush(stdout);
+    fflush(stderr);
+    pid_t child = fork();
+    if (child == 0) {
+        scenario();
+        dbg_report();
+        fflush(stdout);
+        fflush(stderr);
+        _exit(0);
+    }
+    int status = 0;
+    waitpid(child, &status, 0);
+    return WIFEXITED(status) ? WEXITSTATUS(status) : 100;
+}
+
+CompilerOptions jit_leak_options() {
+    CompilerOptions cu = jit_init_options();
+    cu.detect_leaks = true;
+    return cu;
+}
+
+void jit_leak_module_only_cell() {
+    CompilerOptions cu = jit_leak_options();
+    FortranEvaluator e(cu);
+    if (!e.evaluate2(R"(module mjleak
+implicit none
+type :: t
+    character(len=5) :: s = "abcde"
+    character(len=:), allocatable :: d
+    integer, allocatable :: a(:)
+end type
+type(t) :: v
+type(t) :: vs(2)
+character(len=3) :: w = "xyz"
+end module
+)").ok) _exit(90);
+}
+
+void jit_leak_allocated_module_storage() {
+    CompilerOptions cu = jit_leak_options();
+    FortranEvaluator e(cu);
+    if (!e.evaluate2("module mjleak2\ninteger, allocatable :: b(:)\nend module\n").ok) _exit(90);
+    if (!e.evaluate2("subroutine grab()\nuse mjleak2\nallocate(b(10))\nend subroutine\n").ok) _exit(91);
+    if (!e.evaluate2("call grab()").ok) _exit(92);
+}
+
+void jit_leak_local_pointer() {
+    CompilerOptions cu = jit_leak_options();
+    FortranEvaluator e(cu);
+    if (!e.evaluate2("subroutine lose()\ninteger, pointer :: p(:)\nallocate(p(10))\nend subroutine\n").ok) _exit(90);
+    if (!e.evaluate2("call lose()").ok) _exit(91);
+}
+
+}
+
+TEST_CASE("FortranEvaluator frees a module-only cell's storage with the evaluator") {
+    CHECK(jit_leak_report([] { jit_leak_module_only_cell(); }) == 0);
+}
+
+TEST_CASE("FortranEvaluator frees allocated module storage with the evaluator") {
+    CHECK(jit_leak_report([] { jit_leak_allocated_module_storage(); }) == 0);
+}
+
+// What the two above rely on: the report does see what JIT code allocates.
+TEST_CASE("FortranEvaluator leak report sees a leak of JIT code") {
+    CHECK(jit_leak_report([] { jit_leak_local_pointer(); }) == 1);
+}
+
+#endif

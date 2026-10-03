@@ -5,7 +5,7 @@
             modules_27:
                 (Program
                     (SymbolTable
-                        12
+                        15
                         {
                             
                         })
@@ -18,12 +18,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             tomlf_build:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_tomlf_build:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_tomlf_build
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_build:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_build
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             get_elem_array@get_value:
                                 (ExternalSymbol
                                     2
@@ -69,7 +126,7 @@
                                 (ExternalSymbol
                                     2
                                     get_value_float_dp@get_value
-                                    9 get_value_float_dp
+                                    10 get_value_float_dp
                                     tomlf_build_keyval
                                     []
                                     get_value_float_dp
@@ -79,7 +136,7 @@
                                 (ExternalSymbol
                                     2
                                     get_value_float_sp@get_value
-                                    9 get_value_float_sp
+                                    10 get_value_float_sp
                                     tomlf_build_keyval
                                     []
                                     get_value_float_sp
@@ -93,21 +150,79 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_tomlf_build
+                    2 __lcompilers_global_init_state_tomlf_build
+                    .false.
                 ),
             tomlf_build_array:
                 (Module
                     (SymbolTable
                         4
                         {
-                            get_elem_array:
+                            __lcompilers_global_init_state_tomlf_build_array:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_tomlf_build_array
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_build_array:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_build_array
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            get_elem_array:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
                                             array:
                                                 (Variable
-                                                    5
+                                                    6
                                                     array
                                                     []
                                                     InOut
@@ -131,7 +246,7 @@
                                                 ),
                                             pos:
                                                 (Variable
-                                                    5
+                                                    6
                                                     pos
                                                     []
                                                     In
@@ -155,7 +270,7 @@
                                                 ),
                                             ptr:
                                                 (Variable
-                                                    5
+                                                    6
                                                     ptr
                                                     []
                                                     Out
@@ -181,7 +296,7 @@
                                                 ),
                                             stat:
                                                 (Variable
-                                                    5
+                                                    6
                                                     stat
                                                     []
                                                     Out
@@ -226,143 +341,6 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 array)
-                                    (Var 5 pos)
-                                    (Var 5 ptr)
-                                    (Var 5 stat)]
-                                    []
-                                    ()
-                                    Public
-                                    .true.
-                                    .true.
-                                    ()
-                                ),
-                            get_elem_keyval:
-                                (Function
-                                    (SymbolTable
-                                        6
-                                        {
-                                            array:
-                                                (Variable
-                                                    6
-                                                    array
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            pos:
-                                                (Variable
-                                                    6
-                                                    pos
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            ptr:
-                                                (Variable
-                                                    6
-                                                    ptr
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Pointer
-                                                        (Complex 4)
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            stat:
-                                                (Variable
-                                                    6
-                                                    stat
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Optional
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    get_elem_keyval
-                                    (FunctionType
-                                        [(Integer 4)
-                                        (Integer 4)
-                                        (Pointer
-                                            (Complex 4)
-                                        )
-                                        (Integer 4)]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
                                     [(Var 6 array)
                                     (Var 6 pos)
                                     (Var 6 ptr)
@@ -374,7 +352,7 @@
                                     .true.
                                     ()
                                 ),
-                            get_elem_table:
+                            get_elem_keyval:
                                 (Function
                                     (SymbolTable
                                         7
@@ -437,7 +415,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Real 4)
+                                                        (Complex 4)
                                                     )
                                                     ()
                                                     Source
@@ -456,6 +434,143 @@
                                             stat:
                                                 (Variable
                                                     7
+                                                    stat
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    get_elem_keyval
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Pointer
+                                            (Complex 4)
+                                        )
+                                        (Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 7 array)
+                                    (Var 7 pos)
+                                    (Var 7 ptr)
+                                    (Var 7 stat)]
+                                    []
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            get_elem_table:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            array:
+                                                (Variable
+                                                    8
+                                                    array
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            pos:
+                                                (Variable
+                                                    8
+                                                    pos
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            ptr:
+                                                (Variable
+                                                    8
+                                                    ptr
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Real 4)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            stat:
+                                                (Variable
+                                                    8
                                                     stat
                                                     []
                                                     Out
@@ -500,10 +615,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 7 array)
-                                    (Var 7 pos)
-                                    (Var 7 ptr)
-                                    (Var 7 stat)]
+                                    [(Var 8 array)
+                                    (Var 8 pos)
+                                    (Var 8 ptr)
+                                    (Var 8 stat)]
                                     [(Assignment
                                         (Var 4 global_var)
                                         (RealConstant
@@ -535,7 +650,7 @@
                                 (ExternalSymbol
                                     4
                                     get_value_float_dp
-                                    9 get_value_float_dp
+                                    10 get_value_float_dp
                                     tomlf_build_keyval
                                     []
                                     get_value_float_dp
@@ -545,7 +660,7 @@
                                 (ExternalSymbol
                                     4
                                     get_value_float_dp@get_value
-                                    9 get_value_float_dp
+                                    10 get_value_float_dp
                                     tomlf_build_keyval
                                     []
                                     get_value_float_dp
@@ -555,7 +670,7 @@
                                 (ExternalSymbol
                                     4
                                     get_value_float_sp
-                                    9 get_value_float_sp
+                                    10 get_value_float_sp
                                     tomlf_build_keyval
                                     []
                                     get_value_float_sp
@@ -565,7 +680,7 @@
                                 (ExternalSymbol
                                     4
                                     get_value_float_sp@get_value
-                                    9 get_value_float_sp
+                                    10 get_value_float_sp
                                     tomlf_build_keyval
                                     []
                                     get_value_float_sp
@@ -575,7 +690,7 @@
                                 (ExternalSymbol
                                     4
                                     global_var
-                                    9 global_var
+                                    10 global_var
                                     tomlf_build_keyval
                                     []
                                     global_var
@@ -588,29 +703,87 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    4 __lcompilers_global_init_tomlf_build_array
+                    4 __lcompilers_global_init_state_tomlf_build_array
+                    .false.
                 ),
             tomlf_build_keyval:
                 (Module
                     (SymbolTable
-                        9
+                        10
                         {
+                            __lcompilers_global_init_state_tomlf_build_keyval:
+                                (Variable
+                                    10
+                                    __lcompilers_global_init_state_tomlf_build_keyval
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_build_keyval:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_build_keyval
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             get_value:
                                 (GenericProcedure
-                                    9
+                                    10
                                     get_value
-                                    [9 get_value_float_sp
-                                    9 get_value_float_dp]
+                                    [10 get_value_float_sp
+                                    10 get_value_float_dp]
                                     Public
                                 ),
                             get_value_float_dp:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        12
                                         {
                                             self:
                                                 (Variable
-                                                    10
+                                                    12
                                                     self
                                                     []
                                                     In
@@ -634,7 +807,7 @@
                                                 ),
                                             stat:
                                                 (Variable
-                                                    10
+                                                    12
                                                     stat
                                                     []
                                                     Out
@@ -658,7 +831,7 @@
                                                 ),
                                             val:
                                                 (Variable
-                                                    10
+                                                    12
                                                     val
                                                     []
                                                     Out
@@ -700,9 +873,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 10 self)
-                                    (Var 10 val)
-                                    (Var 10 stat)]
+                                    [(Var 12 self)
+                                    (Var 12 val)
+                                    (Var 12 stat)]
                                     []
                                     ()
                                     Public
@@ -713,11 +886,11 @@
                             get_value_float_sp:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        13
                                         {
                                             self:
                                                 (Variable
-                                                    11
+                                                    13
                                                     self
                                                     []
                                                     In
@@ -741,7 +914,7 @@
                                                 ),
                                             stat:
                                                 (Variable
-                                                    11
+                                                    13
                                                     stat
                                                     []
                                                     Out
@@ -765,7 +938,7 @@
                                                 ),
                                             val:
                                                 (Variable
-                                                    11
+                                                    13
                                                     val
                                                     []
                                                     Out
@@ -807,9 +980,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 11 self)
-                                    (Var 11 val)
-                                    (Var 11 stat)]
+                                    [(Var 13 self)
+                                    (Var 13 val)
+                                    (Var 13 stat)]
                                     []
                                     ()
                                     Public
@@ -819,7 +992,7 @@
                                 ),
                             global_var:
                                 (Variable
-                                    9
+                                    10
                                     global_var
                                     []
                                     Local
@@ -848,9 +1021,14 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    10 __lcompilers_global_init_tomlf_build_keyval
+                    10 __lcompilers_global_init_state_tomlf_build_keyval
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_operator_overloading_04_stdlib_string_type:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_operator_overloading_04_stdlib_string_type
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_operator_overloading_04_stdlib_string_type:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_operator_overloading_04_stdlib_string_type
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             assign_string_char:
                                 (Function
                                     (SymbolTable
@@ -347,21 +403,79 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_operator_overloading_04_stdlib_string_type
+                    2 __lcompilers_global_init_state_operator_overloading_04_stdlib_string_type
+                    .false.
                 ),
             operator_overloading_stdlib_string_use:
                 (Module
                     (SymbolTable
-                        6
+                        7
                         {
+                            __lcompilers_global_init_operator_overloading_stdlib_string_use:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_operator_overloading_stdlib_string_use
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_operator_overloading_stdlib_string_use:
+                                (Variable
+                                    7
+                                    __lcompilers_global_init_state_operator_overloading_stdlib_string_use
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             chomp_string:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             assign_string_char@~assign:
                                                 (ExternalSymbol
-                                                    7
+                                                    8
                                                     assign_string_char@~assign
                                                     2 assign_string_char
                                                     operator_overloading_04_stdlib_string_type
@@ -371,7 +485,7 @@
                                                 ),
                                             chomped_string:
                                                 (Variable
-                                                    7
+                                                    8
                                                     chomped_string
                                                     []
                                                     ReturnVar
@@ -386,7 +500,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    6 string_type
+                                                    7 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -402,7 +516,7 @@
                                                 ),
                                             last:
                                                 (Variable
-                                                    7
+                                                    8
                                                     last
                                                     []
                                                     Local
@@ -426,7 +540,7 @@
                                                 ),
                                             string:
                                                 (Variable
-                                                    7
+                                                    8
                                                     string
                                                     []
                                                     In
@@ -441,7 +555,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    6 string_type
+                                                    7 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -457,7 +571,7 @@
                                                 ),
                                             ~assign:
                                                 (ExternalSymbol
-                                                    7
+                                                    8
                                                     ~assign
                                                     2 ~assign
                                                     operator_overloading_04_stdlib_string_type
@@ -497,9 +611,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 7 string)]
+                                    [(Var 8 string)]
                                     []
-                                    (Var 7 chomped_string)
+                                    (Var 8 chomped_string)
                                     Public
                                     .true.
                                     .true.
@@ -507,7 +621,7 @@
                                 ),
                             string_type:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     string_type
                                     2 string_type
                                     operator_overloading_04_stdlib_string_type
@@ -522,12 +636,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    7 __lcompilers_global_init_operator_overloading_stdlib_string_use
+                    7 __lcompilers_global_init_state_operator_overloading_stdlib_string_use
+                    .false.
                 ),
             stdlib_string:
                 (Program
                     (SymbolTable
-                        8
+                        10
                         {
                             
                         })
@@ -535,8 +651,12 @@
                     []
                     []
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

@@ -5,11 +5,11 @@
             stdlib_strings_use:
                 (Program
                     (SymbolTable
-                        14
+                        16
                         {
                             char:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     char
                                     2 char
                                     string_19_stdlib_string_type
@@ -19,7 +19,7 @@
                                 ),
                             char_string:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     char_string
                                     2 char_string
                                     string_19_stdlib_string_type
@@ -29,9 +29,9 @@
                                 ),
                             compute_lps:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     compute_lps
-                                    6 compute_lps
+                                    7 compute_lps
                                     string_19_stdlib_strings
                                     []
                                     compute_lps
@@ -39,9 +39,9 @@
                                 ),
                             compute_lps_use:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     compute_lps_use
-                                    6 compute_lps_use
+                                    7 compute_lps_use
                                     string_19_stdlib_strings
                                     []
                                     compute_lps_use
@@ -49,9 +49,9 @@
                                 ),
                             compute_lps_use1:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     compute_lps_use1
-                                    6 compute_lps_use1
+                                    7 compute_lps_use1
                                     string_19_stdlib_strings
                                     []
                                     compute_lps_use1
@@ -59,7 +59,7 @@
                                 ),
                             len:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     len
                                     2 len
                                     string_19_stdlib_string_type
@@ -69,7 +69,7 @@
                                 ),
                             len_string:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     len_string
                                     2 len_string
                                     string_19_stdlib_string_type
@@ -79,9 +79,9 @@
                                 ),
                             padl:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     padl
-                                    6 padl
+                                    7 padl
                                     string_19_stdlib_strings
                                     []
                                     padl
@@ -89,9 +89,9 @@
                                 ),
                             padl_char_default:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     padl_char_default
-                                    6 padl_char_default
+                                    7 padl_char_default
                                     string_19_stdlib_strings
                                     []
                                     padl_char_default
@@ -99,9 +99,9 @@
                                 ),
                             padl_char_pad_with:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     padl_char_pad_with
-                                    6 padl_char_pad_with
+                                    7 padl_char_pad_with
                                     string_19_stdlib_strings
                                     []
                                     padl_char_pad_with
@@ -109,9 +109,9 @@
                                 ),
                             padl_string_default:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     padl_string_default
-                                    6 padl_string_default
+                                    7 padl_string_default
                                     string_19_stdlib_strings
                                     []
                                     padl_string_default
@@ -119,9 +119,9 @@
                                 ),
                             padl_string_pad_with:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     padl_string_pad_with
-                                    6 padl_string_pad_with
+                                    7 padl_string_pad_with
                                     string_19_stdlib_strings
                                     []
                                     padl_string_pad_with
@@ -129,7 +129,7 @@
                                 ),
                             string_type:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     string_type
                                     2 string_type
                                     string_19_stdlib_string_type
@@ -143,12 +143,69 @@
                     string_19_stdlib_string_type]
                     []
                     ()
+                    ()
                 ),
             string_19_stdlib_string_type:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_string_19_stdlib_string_type:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_string_19_stdlib_string_type
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_string_19_stdlib_string_type:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_string_19_stdlib_string_type
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             char:
                                 (GenericProcedure
                                     2
@@ -436,16 +493,74 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_string_19_stdlib_string_type
+                    2 __lcompilers_global_init_state_string_19_stdlib_string_type
+                    .false.
                 ),
             string_19_stdlib_strings:
                 (Module
                     (SymbolTable
-                        6
+                        7
                         {
+                            __lcompilers_global_init_state_string_19_stdlib_strings:
+                                (Variable
+                                    7
+                                    __lcompilers_global_init_state_string_19_stdlib_strings
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_string_19_stdlib_strings:
+                                (Function
+                                    (SymbolTable
+                                        15
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_string_19_stdlib_strings
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             char:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     char
                                     2 char
                                     string_19_stdlib_string_type
@@ -455,7 +570,7 @@
                                 ),
                             char_string:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     char_string
                                     2 char_string
                                     string_19_stdlib_string_type
@@ -466,11 +581,11 @@
                             compute_lps:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             lps_array:
                                                 (Variable
-                                                    7
+                                                    8
                                                     lps_array
                                                     [string]
                                                     ReturnVar
@@ -481,7 +596,7 @@
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (StringLen
-                                                            (Var 7 string)
+                                                            (Var 8 string)
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -504,7 +619,7 @@
                                                 ),
                                             string:
                                                 (Variable
-                                                    7
+                                                    8
                                                     string
                                                     []
                                                     In
@@ -558,9 +673,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 7 string)]
+                                    [(Var 8 string)]
                                     []
-                                    (Var 7 lps_array)
+                                    (Var 8 lps_array)
                                     Public
                                     .true.
                                     .true.
@@ -569,11 +684,11 @@
                             compute_lps_use:
                                 (Function
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             l:
                                                 (Variable
-                                                    8
+                                                    9
                                                     l
                                                     []
                                                     ReturnVar
@@ -597,7 +712,7 @@
                                                 ),
                                             string:
                                                 (Variable
-                                                    8
+                                                    9
                                                     string
                                                     []
                                                     In
@@ -637,19 +752,19 @@
                                         Host
                                     )
                                     [compute_lps]
-                                    [(Var 8 string)]
+                                    [(Var 9 string)]
                                     [(Print
                                         (StringFormat
                                             ()
                                             [(FunctionCall
-                                                6 compute_lps
+                                                7 compute_lps
                                                 ()
-                                                [((Var 8 string))]
+                                                [((Var 9 string))]
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (StringLen
-                                                        (Var 8 string)
+                                                        (Var 9 string)
                                                         (Integer 4)
                                                         ()
                                                     ))]
@@ -666,7 +781,7 @@
                                             ()
                                         )
                                     )]
-                                    (Var 8 l)
+                                    (Var 9 l)
                                     Public
                                     .false.
                                     .false.
@@ -675,11 +790,11 @@
                             compute_lps_use1:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             char@char_string:
                                                 (ExternalSymbol
-                                                    9
+                                                    10
                                                     char@char_string
                                                     2 char_string
                                                     string_19_stdlib_string_type
@@ -689,7 +804,7 @@
                                                 ),
                                             l:
                                                 (Variable
-                                                    9
+                                                    10
                                                     l
                                                     []
                                                     ReturnVar
@@ -713,7 +828,7 @@
                                                 ),
                                             len_string:
                                                 (ExternalSymbol
-                                                    9
+                                                    10
                                                     len_string
                                                     2 len_string
                                                     string_19_stdlib_string_type
@@ -723,7 +838,7 @@
                                                 ),
                                             string:
                                                 (Variable
-                                                    9
+                                                    10
                                                     string
                                                     []
                                                     In
@@ -738,7 +853,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    6 string_type
+                                                    7 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -777,16 +892,16 @@
                                         Host
                                     )
                                     []
-                                    [(Var 9 string)]
+                                    [(Var 10 string)]
                                     [(Print
                                         (FunctionCall
-                                            9 char@char_string
-                                            6 char
-                                            [((Var 9 string))]
+                                            10 char@char_string
+                                            7 char
+                                            [((Var 10 string))]
                                             (String 1 (FunctionCall
-                                                9 len_string
-                                                6 len
-                                                [((Var 9 string))]
+                                                10 len_string
+                                                7 len
+                                                [((Var 10 string))]
                                                 (Integer 4)
                                                 ()
                                                 ()
@@ -795,7 +910,7 @@
                                             ()
                                         )
                                     )]
-                                    (Var 9 l)
+                                    (Var 10 l)
                                     Public
                                     .false.
                                     .false.
@@ -803,7 +918,7 @@
                                 ),
                             len:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     len
                                     2 len
                                     string_19_stdlib_string_type
@@ -813,7 +928,7 @@
                                 ),
                             len_string:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     len_string
                                     2 len_string
                                     string_19_stdlib_string_type
@@ -823,20 +938,20 @@
                                 ),
                             padl:
                                 (GenericProcedure
-                                    6
+                                    7
                                     padl
-                                    [6 padl_char_default
-                                    6 padl_char_pad_with]
+                                    [7 padl_char_default
+                                    7 padl_char_pad_with]
                                     Public
                                 ),
                             padl_char_default:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             output_length:
                                                 (Variable
-                                                    12
+                                                    13
                                                     output_length
                                                     []
                                                     In
@@ -860,7 +975,7 @@
                                                 ),
                                             res:
                                                 (Variable
-                                                    12
+                                                    13
                                                     res
                                                     [string]
                                                     ReturnVar
@@ -868,7 +983,7 @@
                                                     ()
                                                     Default
                                                     (String 1 (StringLen
-                                                        (Var 12 string)
+                                                        (Var 13 string)
                                                         (Integer 4)
                                                         ()
                                                     ) ExpressionLength DescriptorString)
@@ -888,7 +1003,7 @@
                                                 ),
                                             string:
                                                 (Variable
-                                                    12
+                                                    13
                                                     string
                                                     []
                                                     In
@@ -937,15 +1052,15 @@
                                         Host
                                     )
                                     [padl_char_pad_with]
-                                    [(Var 12 string)
-                                    (Var 12 output_length)]
+                                    [(Var 13 string)
+                                    (Var 13 output_length)]
                                     [(Assignment
-                                        (Var 12 res)
+                                        (Var 13 res)
                                         (FunctionCall
-                                            6 padl_char_pad_with
-                                            6 padl
-                                            [((Var 12 string))
-                                            ((Var 12 output_length))
+                                            7 padl_char_pad_with
+                                            7 padl
+                                            [((Var 13 string))
+                                            ((Var 13 output_length))
                                             ((StringConstant
                                                 " "
                                                 (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -953,11 +1068,11 @@
                                             (String 1 (IntrinsicElementalFunction
                                                 Max
                                                 [(StringLen
-                                                    (Var 12 string)
+                                                    (Var 13 string)
                                                     (Integer 4)
                                                     ()
                                                 )
-                                                (Var 12 output_length)]
+                                                (Var 13 output_length)]
                                                 0
                                                 (Integer 4)
                                                 ()
@@ -969,7 +1084,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 12 res)
+                                    (Var 13 res)
                                     Public
                                     .true.
                                     .true.
@@ -978,11 +1093,11 @@
                             padl_char_pad_with:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        14
                                         {
                                             output_length:
                                                 (Variable
-                                                    13
+                                                    14
                                                     output_length
                                                     []
                                                     In
@@ -1006,7 +1121,7 @@
                                                 ),
                                             pad_with:
                                                 (Variable
-                                                    13
+                                                    14
                                                     pad_with
                                                     []
                                                     In
@@ -1030,7 +1145,7 @@
                                                 ),
                                             res:
                                                 (Variable
-                                                    13
+                                                    14
                                                     res
                                                     [string
                                                     output_length]
@@ -1041,11 +1156,11 @@
                                                     (String 1 (IntrinsicElementalFunction
                                                         Max
                                                         [(StringLen
-                                                            (Var 13 string)
+                                                            (Var 14 string)
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        (Var 13 output_length)]
+                                                        (Var 14 output_length)]
                                                         0
                                                         (Integer 4)
                                                         ()
@@ -1066,7 +1181,7 @@
                                                 ),
                                             string:
                                                 (Variable
-                                                    13
+                                                    14
                                                     string
                                                     []
                                                     In
@@ -1090,7 +1205,7 @@
                                                 ),
                                             string_length:
                                                 (Variable
-                                                    13
+                                                    14
                                                     string_length
                                                     []
                                                     Local
@@ -1151,239 +1266,17 @@
                                         Host
                                     )
                                     []
-                                    [(Var 13 string)
-                                    (Var 13 output_length)
-                                    (Var 13 pad_with)]
+                                    [(Var 14 string)
+                                    (Var 14 output_length)
+                                    (Var 14 pad_with)]
                                     []
-                                    (Var 13 res)
+                                    (Var 14 res)
                                     Public
                                     .true.
                                     .true.
                                     ()
                                 ),
                             padl_string_default:
-                                (Function
-                                    (SymbolTable
-                                        10
-                                        {
-                                            char@char_string:
-                                                (ExternalSymbol
-                                                    10
-                                                    char@char_string
-                                                    2 char_string
-                                                    string_19_stdlib_string_type
-                                                    []
-                                                    char_string
-                                                    Private
-                                                ),
-                                            len_string:
-                                                (ExternalSymbol
-                                                    10
-                                                    len_string
-                                                    2 len_string
-                                                    string_19_stdlib_string_type
-                                                    []
-                                                    len_string
-                                                    Private
-                                                ),
-                                            output_length:
-                                                (Variable
-                                                    10
-                                                    output_length
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            res:
-                                                (Variable
-                                                    10
-                                                    res
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    6 string_type
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            string:
-                                                (Variable
-                                                    10
-                                                    string
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    6 string_type
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    padl_string_default
-                                    (FunctionType
-                                        [(StructType
-                                            [(Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
-                                            )]
-                                            []
-                                            .true.
-                                            .false.
-                                        )
-                                        (Integer 4)]
-                                        (StructType
-                                            [(Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
-                                            )]
-                                            []
-                                            .true.
-                                            .false.
-                                        )
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    [padl_char_pad_with]
-                                    [(Var 10 string)
-                                    (Var 10 output_length)]
-                                    [(Assignment
-                                        (Var 10 res)
-                                        (StructConstructor
-                                            6 string_type
-                                            [((FunctionCall
-                                                6 padl_char_pad_with
-                                                6 padl
-                                                [((FunctionCall
-                                                    10 char@char_string
-                                                    6 char
-                                                    [((Var 10 string))]
-                                                    (String 1 (FunctionCall
-                                                        10 len_string
-                                                        6 len
-                                                        [((Var 10 string))]
-                                                        (Integer 4)
-                                                        ()
-                                                        ()
-                                                    ) ExpressionLength DescriptorString)
-                                                    ()
-                                                    ()
-                                                ))
-                                                ((Var 10 output_length))
-                                                ((StringConstant
-                                                    " "
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                ))]
-                                                (String 1 (IntrinsicElementalFunction
-                                                    Max
-                                                    [(StringLen
-                                                        (FunctionCall
-                                                            10 char@char_string
-                                                            6 char
-                                                            [((Var 10 string))]
-                                                            (String 1 (FunctionCall
-                                                                10 len_string
-                                                                6 len
-                                                                [((Var 10 string))]
-                                                                (Integer 4)
-                                                                ()
-                                                                ()
-                                                            ) ExpressionLength DescriptorString)
-                                                            ()
-                                                            ()
-                                                        )
-                                                        (Integer 4)
-                                                        ()
-                                                    )
-                                                    (Var 10 output_length)]
-                                                    0
-                                                    (Integer 4)
-                                                    ()
-                                                ) ExpressionLength DescriptorString)
-                                                ()
-                                                ()
-                                            ))]
-                                            (StructType
-                                                [(Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )]
-                                                []
-                                                .true.
-                                                .false.
-                                            )
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )]
-                                    (Var 10 res)
-                                    Public
-                                    .true.
-                                    .true.
-                                    ()
-                                ),
-                            padl_string_pad_with:
                                 (Function
                                     (SymbolTable
                                         11
@@ -1432,30 +1325,6 @@
                                                     ()
                                                     []
                                                 ),
-                                            pad_with:
-                                                (Variable
-                                                    11
-                                                    pad_with
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
                                             res:
                                                 (Variable
                                                     11
@@ -1473,7 +1342,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    6 string_type
+                                                    7 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -1504,7 +1373,253 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    6 string_type
+                                                    7 string_type
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    padl_string_default
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        (Integer 4)]
+                                        (StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    [padl_char_pad_with]
+                                    [(Var 11 string)
+                                    (Var 11 output_length)]
+                                    [(Assignment
+                                        (Var 11 res)
+                                        (StructConstructor
+                                            7 string_type
+                                            [((FunctionCall
+                                                7 padl_char_pad_with
+                                                7 padl
+                                                [((FunctionCall
+                                                    11 char@char_string
+                                                    7 char
+                                                    [((Var 11 string))]
+                                                    (String 1 (FunctionCall
+                                                        11 len_string
+                                                        7 len
+                                                        [((Var 11 string))]
+                                                        (Integer 4)
+                                                        ()
+                                                        ()
+                                                    ) ExpressionLength DescriptorString)
+                                                    ()
+                                                    ()
+                                                ))
+                                                ((Var 11 output_length))
+                                                ((StringConstant
+                                                    " "
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                ))]
+                                                (String 1 (IntrinsicElementalFunction
+                                                    Max
+                                                    [(StringLen
+                                                        (FunctionCall
+                                                            11 char@char_string
+                                                            7 char
+                                                            [((Var 11 string))]
+                                                            (String 1 (FunctionCall
+                                                                11 len_string
+                                                                7 len
+                                                                [((Var 11 string))]
+                                                                (Integer 4)
+                                                                ()
+                                                                ()
+                                                            ) ExpressionLength DescriptorString)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    (Var 11 output_length)]
+                                                    0
+                                                    (Integer 4)
+                                                    ()
+                                                ) ExpressionLength DescriptorString)
+                                                ()
+                                                ()
+                                            ))]
+                                            (StructType
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 11 res)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            padl_string_pad_with:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            char@char_string:
+                                                (ExternalSymbol
+                                                    12
+                                                    char@char_string
+                                                    2 char_string
+                                                    string_19_stdlib_string_type
+                                                    []
+                                                    char_string
+                                                    Private
+                                                ),
+                                            len_string:
+                                                (ExternalSymbol
+                                                    12
+                                                    len_string
+                                                    2 len_string
+                                                    string_19_stdlib_string_type
+                                                    []
+                                                    len_string
+                                                    Private
+                                                ),
+                                            output_length:
+                                                (Variable
+                                                    12
+                                                    output_length
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            pad_with:
+                                                (Variable
+                                                    12
+                                                    pad_with
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            res:
+                                                (Variable
+                                                    12
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    7 string_type
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            string:
+                                                (Variable
+                                                    12
+                                                    string
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    7 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -1552,24 +1667,24 @@
                                         Host
                                     )
                                     [padl_char_pad_with]
-                                    [(Var 11 string)
-                                    (Var 11 output_length)
-                                    (Var 11 pad_with)]
+                                    [(Var 12 string)
+                                    (Var 12 output_length)
+                                    (Var 12 pad_with)]
                                     [(Assignment
-                                        (Var 11 res)
+                                        (Var 12 res)
                                         (StructConstructor
-                                            6 string_type
+                                            7 string_type
                                             [((FunctionCall
-                                                6 padl_char_pad_with
-                                                6 padl
+                                                7 padl_char_pad_with
+                                                7 padl
                                                 [((FunctionCall
-                                                    11 char@char_string
-                                                    6 char
-                                                    [((Var 11 string))]
+                                                    12 char@char_string
+                                                    7 char
+                                                    [((Var 12 string))]
                                                     (String 1 (FunctionCall
-                                                        11 len_string
-                                                        6 len
-                                                        [((Var 11 string))]
+                                                        12 len_string
+                                                        7 len
+                                                        [((Var 12 string))]
                                                         (Integer 4)
                                                         ()
                                                         ()
@@ -1577,19 +1692,19 @@
                                                     ()
                                                     ()
                                                 ))
-                                                ((Var 11 output_length))
-                                                ((Var 11 pad_with))]
+                                                ((Var 12 output_length))
+                                                ((Var 12 pad_with))]
                                                 (String 1 (IntrinsicElementalFunction
                                                     Max
                                                     [(StringLen
                                                         (FunctionCall
-                                                            11 char@char_string
-                                                            6 char
-                                                            [((Var 11 string))]
+                                                            12 char@char_string
+                                                            7 char
+                                                            [((Var 12 string))]
                                                             (String 1 (FunctionCall
-                                                                11 len_string
-                                                                6 len
-                                                                [((Var 11 string))]
+                                                                12 len_string
+                                                                7 len
+                                                                [((Var 12 string))]
                                                                 (Integer 4)
                                                                 ()
                                                                 ()
@@ -1600,7 +1715,7 @@
                                                         (Integer 4)
                                                         ()
                                                     )
-                                                    (Var 11 output_length)]
+                                                    (Var 12 output_length)]
                                                     0
                                                     (Integer 4)
                                                     ()
@@ -1622,7 +1737,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 11 res)
+                                    (Var 12 res)
                                     Public
                                     .true.
                                     .true.
@@ -1630,7 +1745,7 @@
                                 ),
                             string_type:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     string_type
                                     2 string_type
                                     string_19_stdlib_string_type
@@ -1646,9 +1761,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    7 __lcompilers_global_init_string_19_stdlib_strings
+                    7 __lcompilers_global_init_state_string_19_stdlib_strings
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

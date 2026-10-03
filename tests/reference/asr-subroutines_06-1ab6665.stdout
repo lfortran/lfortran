@@ -5,11 +5,11 @@
             subroutines_06:
                 (Program
                     (SymbolTable
-                        7
+                        8
                         {
                             assign_large:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     assign_large
                                     2 assign_large
                                     subroutines_06_bitset
@@ -19,7 +19,7 @@
                                 ),
                             assign_logint8_large:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     assign_logint8_large
                                     2 assign_logint8_large
                                     subroutines_06_bitset
@@ -29,7 +29,7 @@
                                 ),
                             error_handler:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     error_handler
                                     2 error_handler
                                     subroutines_06_bitset
@@ -39,7 +39,7 @@
                                 ),
                             error_handler~genericprocedure:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     error_handler~genericprocedure
                                     2 error_handler~genericprocedure
                                     subroutines_06_bitset
@@ -49,7 +49,7 @@
                                 ),
                             ~assign:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     ~assign
                                     2 ~assign
                                     subroutines_06_bitset
@@ -62,12 +62,69 @@
                     [subroutines_06_bitset]
                     []
                     ()
+                    ()
                 ),
             subroutines_06_bitset:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_subroutines_06_bitset:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_subroutines_06_bitset
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_subroutines_06_bitset:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_subroutines_06_bitset
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             assign_large:
                                 (Function
                                     (SymbolTable
@@ -434,9 +491,14 @@
                     .false.
                     .false.
                     .true.
-                    ()
+                    2 __lcompilers_global_init_subroutines_06_bitset
+                    2 __lcompilers_global_init_state_subroutines_06_bitset
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

@@ -140,6 +140,7 @@ void main2() {
     i->dims[2].lower_bound = 1;
     i->dims[2].length = 3;
     Kokkos::View<bool[5][2][2]>& j;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
 }
 
 }

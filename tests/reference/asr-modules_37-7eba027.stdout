@@ -5,7 +5,7 @@
             modules_37:
                 (Program
                     (SymbolTable
-                        11
+                        12
                         {
                             
                         })
@@ -18,12 +18,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             modules_37_fpm_backend:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_modules_37_fpm_backend:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_37_fpm_backend
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_37_fpm_backend:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_modules_37_fpm_backend
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             build_package:
                                 (Function
                                     (SymbolTable
@@ -42,11 +99,11 @@
                                             associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
-                                                        12
+                                                        13
                                                         {
                                                             1_build_target_t_output_dir:
                                                                 (ExternalSymbol
-                                                                    12
+                                                                    13
                                                                     1_build_target_t_output_dir
                                                                     7 output_dir
                                                                     modules_37_fpm_backend
@@ -56,7 +113,7 @@
                                                                 ),
                                                             1_string_t_s:
                                                                 (ExternalSymbol
-                                                                    12
+                                                                    13
                                                                     1_string_t_s
                                                                     5 s
                                                                     modules_37_fpm_backend
@@ -66,7 +123,7 @@
                                                                 ),
                                                             target:
                                                                 (Variable
-                                                                    12
+                                                                    13
                                                                     target
                                                                     []
                                                                     Local
@@ -100,7 +157,7 @@
                                                         })
                                                     associate_block
                                                     [(Associate
-                                                        (Var 12 target)
+                                                        (Var 13 target)
                                                         (StructInstanceMember
                                                             (ArrayItem
                                                                 (Var 9 targets)
@@ -140,15 +197,15 @@
                                                     (Assignment
                                                         (StructInstanceMember
                                                             (Var 9 temp)
-                                                            12 1_string_t_s
+                                                            13 1_string_t_s
                                                             (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             ()
                                                         )
                                                         (StructInstanceMember
-                                                            (Var 12 target)
-                                                            12 1_build_target_t_output_dir
+                                                            (Var 13 target)
+                                                            13 1_build_target_t_output_dir
                                                             (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
                                                             )
@@ -955,9 +1012,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_modules_37_fpm_backend
+                    2 __lcompilers_global_init_state_modules_37_fpm_backend
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

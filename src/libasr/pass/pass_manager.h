@@ -314,6 +314,11 @@ namespace LCompilers {
                 "transform_optional_argument_functions",
                 "select_case",
                 "nested_vars",
+                // The module `nested_vars` creates for the host variables of
+                // contained procedures has no initializer of its own, so the
+                // translation unit's owns its storage, and may only now be
+                // needed. What is wired already stays as it is.
+                "global_init_wire",
                 "forall",
                 "class_constructor",
                 "pass_list_expr",

@@ -1057,9 +1057,14 @@ class ASRToLLVMVisitor;
             }
         }
 
+        /// Whether `finalize_variable` emits anything for `v`.
+        bool is_finalizable_variable(ASR::Variable_t* const v){
+            return !not_finalizable_variable(v)
+                && is_finalizable_type(v->m_type, get_struct_sym(v), false);
+        }
+
         void finalize_variable(ASR::Variable_t* const v){
-            if(not_finalizable_variable(v)) return;
-            if(!is_finalizable_type(v->m_type, get_struct_sym(v), false)) return;
+            if(!is_finalizable_variable(v)) return;
             LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
 
             insert_BB_for_readability((std::string("Finalize_Variable_") + v->m_name).c_str());
@@ -2227,6 +2232,14 @@ class ASRToLLVMVisitor;
             return llvm_utils_->get_type_from_ttype_t_util(dummy_var_symbol, type, llvm_utils_->module);
         }
 
+        /// The symbol whose scope declares `v`, or nullptr when that is the
+        /// translation unit.
+        static ASR::symbol_t* variable_owner(const ASR::Variable_t* const v){
+            ASR::asr_t* const owner = v->m_parent_symtab->asr_owner;
+            return owner->type == ASR::asrType::symbol
+                ? ASR::down_cast<ASR::symbol_t>(owner) : nullptr;
+        }
+
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
             /* TODO :: Handle non local + `Value` attribute. */
@@ -2237,9 +2250,8 @@ class ASRToLLVMVisitor;
                 // We should finalize those, but still skip the actual function
                 // return variable, which is owned by the caller.
                 if (v->m_intent == ASR::intentType::ReturnVar) {
-                    ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
-                        v->m_parent_symtab->asr_owner);
-                    if (!ASR::is_a<ASR::Function_t>(*owner)) {
+                    ASR::symbol_t* owner = variable_owner(v);
+                    if (owner == nullptr || !ASR::is_a<ASR::Function_t>(*owner)) {
                         return true;
                     }
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(owner);
@@ -2260,9 +2272,8 @@ class ASRToLLVMVisitor;
                 // construction can allocate member storage (for example,
                 // fixed-length character members initialized from constructors).
                 // Those need scope-exit finalization to avoid leaks.
-                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
-                    v->m_parent_symtab->asr_owner);
-                if (ASR::is_a<ASR::Program_t>(*owner)) {
+                ASR::symbol_t* owner = variable_owner(v);
+                if (owner != nullptr && ASR::is_a<ASR::Program_t>(*owner)) {
                     ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
                     if (ASR::is_a<ASR::StructType_t>(*t)) {
                         return false;
@@ -2277,9 +2288,8 @@ class ASRToLLVMVisitor;
                 // heap-allocated during struct initialization.  These must be
                 // finalized at program exit to avoid leaking that memory.
                 // (Plain save strings have static data and must NOT be freed.)
-                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
-                    v->m_parent_symtab->asr_owner);
-                if (ASR::is_a<ASR::Program_t>(*owner)) {
+                ASR::symbol_t* owner = variable_owner(v);
+                if (owner != nullptr && ASR::is_a<ASR::Program_t>(*owner)) {
                     ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
                     if (ASR::is_a<ASR::StructType_t>(*t)) {
                         return false;
@@ -2294,10 +2304,11 @@ class ASRToLLVMVisitor;
             // statically initialized at compile time (e.g. COMMON block
             // struct instances populated via BLOCK DATA): their character
             // members point at constant string globals, not heap memory.
+            // Variables of the translation unit are static globals just the
+            // same.
             {
-                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
-                    v->m_parent_symtab->asr_owner);
-                if (ASR::is_a<ASR::Module_t>(*owner)
+                ASR::symbol_t* owner = variable_owner(v);
+                if ((owner == nullptr || ASR::is_a<ASR::Module_t>(*owner))
                         && !ASRUtils::is_allocatable(v->m_type)
                         && !ASRUtils::is_pointer(v->m_type)) {
                     ASR::ttype_t* base_t = ASRUtils::type_get_past_array(v->m_type);
@@ -2323,8 +2334,7 @@ class ASRToLLVMVisitor;
                                           ASRUtils::get_FunctionType(sym)->m_deftype);
             const bool is_external_abi = sym && ASR::is_a<ASR::Function_t>(*sym)
                                       && ASRUtils::get_FunctionType(sym)->m_abi == ASR::ExternalUndefined;
-            const bool is_TU = !sym && ASR::is_a<ASR::unit_t>(*s) && ASR::is_a<ASR::TranslationUnit_t>(*(ASR::unit_t*)s);
-            return is_TU || is_interface || is_external_abi ;
+            return is_interface || is_external_abi;
         }
 
         static bool is_variable(ASR::symbol_t* const s){
@@ -2663,10 +2673,27 @@ class ASRToLLVMVisitor;
         }
 
 
+        /// Whether `finalize_symtab(symtab)` frees anything at all, decided
+        /// from the variables of `symtab` rather than from what it emits.
+        bool has_finalizable_variable(SymbolTable* symtab){
+            for(auto &str_sym_pair : symtab->get_scope()){
+                ASR::symbol_t* const sym = str_sym_pair.second;
+                if (is_variable(sym) && is_finalizable_variable(
+                        ASR::down_cast<ASR::Variable_t>(sym))){
+                    return true;
+                }
+            }
+            return false;
+        }
+
         void finalize_symtab(SymbolTable* symtab){
             LCOMPILERS_ASSERT(!non_deallocatable_construct(symtab->asr_owner))
-            auto const finalize_str = std::string("FINALIZE_SYMTABLE_") + 
-                                      std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(symtab->asr_owner)));
+            // The translation unit's own variables are finalized by the
+            // teardown of its startup record.
+            auto const finalize_str = std::string("FINALIZE_SYMTABLE_") +
+                (symtab->asr_owner->type == ASR::asrType::symbol
+                    ? std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(symtab->asr_owner)))
+                    : std::string("translation_unit"));
             insert_BB_for_readability(finalize_str.c_str());
 
 

@@ -5,18 +5,74 @@
             fpm_git:
                 (Module
                     (SymbolTable
-                        11
+                        12
                         {
+                            __lcompilers_global_init_fpm_git:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_git
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_git:
+                                (Variable
+                                    12
+                                    __lcompilers_global_init_state_fpm_git
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             git_target_branch:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        15
                                         {
                                             1_git_target_t_object:
                                                 (ExternalSymbol
-                                                    13
+                                                    15
                                                     1_git_target_t_object
-                                                    12 object
+                                                    13 object
                                                     fpm_git
                                                     [git_target_t]
                                                     object
@@ -24,9 +80,9 @@
                                                 ),
                                             1_git_target_t_url:
                                                 (ExternalSymbol
-                                                    13
+                                                    15
                                                     1_git_target_t_url
-                                                    12 url
+                                                    13 url
                                                     fpm_git
                                                     [git_target_t]
                                                     url
@@ -34,7 +90,7 @@
                                                 ),
                                             branch:
                                                 (Variable
-                                                    13
+                                                    15
                                                     branch
                                                     []
                                                     In
@@ -58,7 +114,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    13
+                                                    15
                                                     self
                                                     []
                                                     ReturnVar
@@ -76,7 +132,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    11 git_target_t
+                                                    12 git_target_t
                                                     Source
                                                     Public
                                                     Required
@@ -92,7 +148,7 @@
                                                 ),
                                             url:
                                                 (Variable
-                                                    13
+                                                    15
                                                     url
                                                     []
                                                     In
@@ -143,37 +199,37 @@
                                         Host
                                     )
                                     []
-                                    [(Var 13 url)
-                                    (Var 13 branch)]
+                                    [(Var 15 url)
+                                    (Var 15 branch)]
                                     [(Assignment
                                         (StructInstanceMember
-                                            (Var 13 self)
-                                            13 1_git_target_t_url
+                                            (Var 15 self)
+                                            15 1_git_target_t_url
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 13 url)
+                                        (Var 15 url)
                                         ()
                                         .false.
                                         .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
-                                            (Var 13 self)
-                                            13 1_git_target_t_object
+                                            (Var 15 self)
+                                            15 1_git_target_t_object
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 13 branch)
+                                        (Var 15 branch)
                                         ()
                                         .false.
                                         .false.
                                     )]
-                                    (Var 13 self)
+                                    (Var 15 self)
                                     Public
                                     .true.
                                     .true.
@@ -182,11 +238,11 @@
                             git_target_t:
                                 (Struct
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             object:
                                                 (Variable
-                                                    12
+                                                    13
                                                     object
                                                     []
                                                     Local
@@ -212,7 +268,7 @@
                                                 ),
                                             url:
                                                 (Variable
-                                                    12
+                                                    13
                                                     url
                                                     []
                                                     Local
@@ -270,13 +326,71 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    12 __lcompilers_global_init_fpm_git
+                    12 __lcompilers_global_init_state_fpm_git
+                    .false.
                 ),
             fpm_manifest_dependency:
                 (Module
                     (SymbolTable
                         4
                         {
+                            __lcompilers_global_init_fpm_manifest_dependency:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_manifest_dependency
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_manifest_dependency:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_fpm_manifest_dependency
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             dependency_config_t:
                                 (Struct
                                     (SymbolTable
@@ -469,7 +583,7 @@
                                 (ExternalSymbol
                                     4
                                     git_target_branch
-                                    11 git_target_branch
+                                    12 git_target_branch
                                     fpm_git
                                     []
                                     git_target_branch
@@ -479,7 +593,7 @@
                                 (ExternalSymbol
                                     4
                                     git_target_t
-                                    11 git_target_t
+                                    12 git_target_t
                                     fpm_git
                                     []
                                     git_target_t
@@ -488,11 +602,11 @@
                             new_dependencies:
                                 (Function
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             deps:
                                                 (Variable
-                                                    8
+                                                    9
                                                     deps
                                                     []
                                                     Out
@@ -547,7 +661,7 @@
                                                 ),
                                             error:
                                                 (Variable
-                                                    8
+                                                    9
                                                     error
                                                     []
                                                     Out
@@ -580,7 +694,7 @@
                                                 ),
                                             root:
                                                 (Variable
-                                                    8
+                                                    9
                                                     root
                                                     []
                                                     In
@@ -604,7 +718,7 @@
                                                 ),
                                             table:
                                                 (Variable
-                                                    8
+                                                    9
                                                     table
                                                     []
                                                     InOut
@@ -697,10 +811,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 8 deps)
-                                    (Var 8 table)
-                                    (Var 8 root)
-                                    (Var 8 error)]
+                                    [(Var 9 deps)
+                                    (Var 9 table)
+                                    (Var 9 root)
+                                    (Var 9 error)]
                                     []
                                     ()
                                     Public
@@ -711,11 +825,11 @@
                             new_dependency:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             1_dependency_config_t_git:
                                                 (ExternalSymbol
-                                                    9
+                                                    10
                                                     1_dependency_config_t_git
                                                     5 git
                                                     fpm_manifest_dependency
@@ -725,7 +839,7 @@
                                                 ),
                                             obj:
                                                 (Variable
-                                                    9
+                                                    10
                                                     obj
                                                     []
                                                     Local
@@ -751,7 +865,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    9
+                                                    10
                                                     self
                                                     []
                                                     Out
@@ -798,7 +912,7 @@
                                                 ),
                                             url:
                                                 (Variable
-                                                    9
+                                                    10
                                                     url
                                                     []
                                                     Local
@@ -863,15 +977,15 @@
                                         Host
                                     )
                                     []
-                                    [(Var 9 self)]
+                                    [(Var 10 self)]
                                     [(If
                                         ()
                                         (LogicalNot
                                             (IntrinsicImpureFunction
                                                 Allocated
                                                 [(StructInstanceMember
-                                                    (Var 9 self)
-                                                    9 1_dependency_config_t_git
+                                                    (Var 10 self)
+                                                    10 1_dependency_config_t_git
                                                     (Allocatable
                                                         (StructType
                                                             [(Allocatable
@@ -896,8 +1010,8 @@
                                         )
                                         [(Allocate
                                             [((StructInstanceMember
-                                                (Var 9 self)
-                                                9 1_dependency_config_t_git
+                                                (Var 10 self)
+                                                10 1_dependency_config_t_git
                                                 (Allocatable
                                                     (StructType
                                                         [(Allocatable
@@ -926,8 +1040,8 @@
                                     )
                                     (Assignment
                                         (StructInstanceMember
-                                            (Var 9 self)
-                                            9 1_dependency_config_t_git
+                                            (Var 10 self)
+                                            10 1_dependency_config_t_git
                                             (Allocatable
                                                 (StructType
                                                     [(Allocatable
@@ -946,8 +1060,8 @@
                                         (FunctionCall
                                             4 git_target_branch
                                             ()
-                                            [((Var 9 url))
-                                            ((Var 9 obj))]
+                                            [((Var 10 url))
+                                            ((Var 10 obj))]
                                             (StructType
                                                 [(Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
@@ -1035,7 +1149,9 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    4 __lcompilers_global_init_fpm_manifest_dependency
+                    4 __lcompilers_global_init_state_fpm_manifest_dependency
+                    .false.
                 ),
             modules_28:
                 (Program
@@ -1066,7 +1182,7 @@
                                 (ExternalSymbol
                                     2
                                     git_target_branch
-                                    11 git_target_branch
+                                    12 git_target_branch
                                     fpm_git
                                     []
                                     git_target_branch
@@ -1076,7 +1192,7 @@
                                 (ExternalSymbol
                                     2
                                     git_target_t
-                                    11 git_target_t
+                                    12 git_target_t
                                     fpm_git
                                     []
                                     git_target_t
@@ -1123,8 +1239,12 @@
                         )
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

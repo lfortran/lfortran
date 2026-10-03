@@ -5,11 +5,11 @@
             __lcompilers_created__nested_context__nested_call_filter_01__outer_:
                 (Module
                     (SymbolTable
-                        7
+                        8
                         {
                             a:
                                 (Variable
-                                    7
+                                    8
                                     a
                                     []
                                     Local
@@ -39,15 +39,17 @@
                     .false.
                     .false.
                     ()
+                    ()
+                    .false.
                 ),
             nested_call_filter_01:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
                             modproc:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     modproc
                                     2 modproc
                                     nested_call_filter_mod
@@ -58,11 +60,11 @@
                             outer:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        6
                                         {
                                             a:
                                                 (Variable
-                                                    5
+                                                    6
                                                     a
                                                     []
                                                     Local
@@ -86,9 +88,9 @@
                                                 ),
                                             a1:
                                                 (ExternalSymbol
-                                                    5
+                                                    6
                                                     a1
-                                                    7 a
+                                                    8 a
                                                     __lcompilers_created__nested_context__nested_call_filter_01__outer_
                                                     []
                                                     a
@@ -96,9 +98,9 @@
                                                 ),
                                             a2:
                                                 (ExternalSymbol
-                                                    5
+                                                    6
                                                     a2
-                                                    7 a
+                                                    8 a
                                                     __lcompilers_created__nested_context__nested_call_filter_01__outer_
                                                     []
                                                     a
@@ -106,9 +108,9 @@
                                                 ),
                                             a_nested_ctx:
                                                 (ExternalSymbol
-                                                    5
+                                                    6
                                                     a_nested_ctx
-                                                    7 a
+                                                    8 a
                                                     __lcompilers_created__nested_context__nested_call_filter_01__outer_
                                                     []
                                                     a
@@ -117,13 +119,13 @@
                                             inner:
                                                 (Function
                                                     (SymbolTable
-                                                        6
+                                                        7
                                                         {
                                                             a:
                                                                 (ExternalSymbol
-                                                                    6
+                                                                    7
                                                                     a
-                                                                    7 a
+                                                                    8 a
                                                                     __lcompilers_created__nested_context__nested_call_filter_01__outer_
                                                                     []
                                                                     a
@@ -149,9 +151,9 @@
                                                     []
                                                     []
                                                     [(Assignment
-                                                        (Var 6 a)
+                                                        (Var 7 a)
                                                         (IntegerBinOp
-                                                            (Var 6 a)
+                                                            (Var 7 a)
                                                             Add
                                                             (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
@@ -187,37 +189,37 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 5 a1)
+                                        (Var 6 a1)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                         .false.
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 5 a_nested_ctx)
-                                        (Var 5 a)
+                                        (Var 6 a_nested_ctx)
+                                        (Var 6 a)
                                         ()
                                         .false.
                                         .false.
                                     )
                                     (SubroutineCall
-                                        5 inner
+                                        6 inner
                                         ()
                                         []
                                         ()
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 5 a)
-                                        (Var 5 a_nested_ctx)
+                                        (Var 6 a)
+                                        (Var 6 a_nested_ctx)
                                         ()
                                         .false.
                                         .false.
                                     )
                                     (SubroutineCall
-                                        4 modproc
+                                        5 modproc
                                         ()
-                                        [((Var 5 a2))]
+                                        [((Var 6 a2))]
                                         ()
                                         .false.
                                     )]
@@ -231,12 +233,13 @@
                     nested_call_filter_01
                     [nested_call_filter_mod]
                     [(SubroutineCall
-                        4 outer
+                        5 outer
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             nested_call_filter_mod:
@@ -244,6 +247,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_nested_call_filter_mod:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_nested_call_filter_mod
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_nested_call_filter_mod:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_nested_call_filter_mod
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             modproc:
                                 (Function
                                     (SymbolTable
@@ -318,9 +377,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_nested_call_filter_mod
+                    2 __lcompilers_global_init_state_nested_call_filter_mod
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

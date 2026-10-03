@@ -5,7 +5,7 @@
             string_14:
                 (Program
                     (SymbolTable
-                        6
+                        7
                         {
                             
                         })
@@ -13,12 +13,69 @@
                     []
                     []
                     ()
+                    ()
                 ),
             string_14_stdlib_string_type:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_string_14_stdlib_string_type:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_string_14_stdlib_string_type
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_string_14_stdlib_string_type:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_string_14_stdlib_string_type
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             read_formatted:
                                 (Function
                                     (SymbolTable
@@ -542,9 +599,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_string_14_stdlib_string_type
+                    2 __lcompilers_global_init_state_string_14_stdlib_string_type
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

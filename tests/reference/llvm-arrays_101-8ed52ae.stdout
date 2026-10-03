@@ -76,6 +76,7 @@ define i32 @main(i32 %0, i8** %1) {
   %5 = bitcast i8* %4 to [2000 x float]*
   %small_arr = alloca [100 x float], align 4
   %sum = alloca float, align 4
+  call void @_lcompilers_init_dispatch(i32 1)
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %.entry
@@ -545,6 +546,8 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 declare i8* @_lfortran_get_default_allocator()
+
+declare void @_lcompilers_init_dispatch(i32)
 
 declare i8* @_lcompilers_snprintf_alloc(i8*, i8*, ...)
 

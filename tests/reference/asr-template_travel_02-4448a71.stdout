@@ -5,11 +5,11 @@
             template_travel_02:
                 (Program
                     (SymbolTable
-                        26
+                        29
                         {
                             add_real:
                                 (ExternalSymbol
-                                    26
+                                    29
                                     add_real
                                     2 add_real
                                     template_travel_02_math
@@ -19,9 +19,9 @@
                                 ),
                             operations:
                                 (ExternalSymbol
-                                    26
+                                    29
                                     operations
-                                    5 operations
+                                    6 operations
                                     template_travel_02_travel
                                     []
                                     operations
@@ -29,7 +29,7 @@
                                 ),
                             slash_real:
                                 (ExternalSymbol
-                                    26
+                                    29
                                     slash_real
                                     2 slash_real
                                     template_travel_02_math
@@ -39,9 +39,9 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    26
+                                    29
                                     test_template
-                                    23 test_template
+                                    25 test_template
                                     template_travel_02_m
                                     []
                                     test_template
@@ -49,9 +49,9 @@
                                 ),
                             travel_tmpl:
                                 (ExternalSymbol
-                                    26
+                                    29
                                     travel_tmpl
-                                    5 travel_tmpl
+                                    6 travel_tmpl
                                     template_travel_02_travel
                                     []
                                     travel_tmpl
@@ -59,9 +59,9 @@
                                 ),
                             travel_tmpl2:
                                 (ExternalSymbol
-                                    26
+                                    29
                                     travel_tmpl2
-                                    5 travel_tmpl2
+                                    6 travel_tmpl2
                                     template_travel_02_travel
                                     []
                                     travel_tmpl2
@@ -73,22 +73,79 @@
                     template_travel_02_math
                     template_travel_02_travel]
                     [(SubroutineCall
-                        26 test_template
+                        29 test_template
                         ()
                         []
                         ()
                         .false.
                     )]
                     ()
+                    ()
                 ),
             template_travel_02_m:
                 (Module
                     (SymbolTable
-                        23
+                        25
                         {
+                            __lcompilers_global_init_state_template_travel_02_m:
+                                (Variable
+                                    25
+                                    __lcompilers_global_init_state_template_travel_02_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_travel_02_m:
+                                (Function
+                                    (SymbolTable
+                                        28
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_travel_02_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             add_real:
                                 (ExternalSymbol
-                                    23
+                                    25
                                     add_real
                                     2 add_real
                                     template_travel_02_math
@@ -98,9 +155,9 @@
                                 ),
                             operations:
                                 (ExternalSymbol
-                                    23
+                                    25
                                     operations
-                                    5 operations
+                                    6 operations
                                     template_travel_02_travel
                                     []
                                     operations
@@ -108,7 +165,7 @@
                                 ),
                             slash_real:
                                 (ExternalSymbol
-                                    23
+                                    25
                                     slash_real
                                     2 slash_real
                                     template_travel_02_math
@@ -119,9 +176,196 @@
                             test_template:
                                 (Function
                                     (SymbolTable
-                                        24
+                                        26
                                         {
                                             __asr_avg_s_from_t:
+                                                (Function
+                                                    (SymbolTable
+                                                        30
+                                                        {
+                                                            avg:
+                                                                (Variable
+                                                                    30
+                                                                    avg
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            d1:
+                                                                (Variable
+                                                                    30
+                                                                    d1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            d2:
+                                                                (Variable
+                                                                    30
+                                                                    d2
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            t1:
+                                                                (Variable
+                                                                    30
+                                                                    t1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            t2:
+                                                                (Variable
+                                                                    30
+                                                                    t2
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __asr_avg_s_from_t
+                                                    (FunctionType
+                                                        [(Real 4)
+                                                        (Real 4)
+                                                        (Real 4)
+                                                        (Real 4)]
+                                                        (Real 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 30 d1)
+                                                    (Var 30 t1)
+                                                    (Var 30 d2)
+                                                    (Var 30 t2)]
+                                                    [(Assignment
+                                                        (Var 30 avg)
+                                                        (FunctionCall
+                                                            25 slash_real
+                                                            ()
+                                                            [((FunctionCall
+                                                                25 add_real
+                                                                ()
+                                                                [((Var 30 d1))
+                                                                ((Var 30 d2))]
+                                                                (Real 4)
+                                                                ()
+                                                                ()
+                                                            ))
+                                                            ((FunctionCall
+                                                                25 add_real
+                                                                ()
+                                                                [((Var 30 t1))
+                                                                ((Var 30 t2))]
+                                                                (Real 4)
+                                                                ()
+                                                                ()
+                                                            ))]
+                                                            (Real 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 30 avg)
+                                                    Public
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            avg_real_s_from_s:
                                                 (Function
                                                     (SymbolTable
                                                         27
@@ -198,196 +442,9 @@
                                                                     ()
                                                                     []
                                                                 ),
-                                                            t1:
-                                                                (Variable
-                                                                    27
-                                                                    t1
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            t2:
-                                                                (Variable
-                                                                    27
-                                                                    t2
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                )
-                                                        })
-                                                    __asr_avg_s_from_t
-                                                    (FunctionType
-                                                        [(Real 4)
-                                                        (Real 4)
-                                                        (Real 4)
-                                                        (Real 4)]
-                                                        (Real 4)
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .true.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .false.
-                                                        Host
-                                                    )
-                                                    []
-                                                    [(Var 27 d1)
-                                                    (Var 27 t1)
-                                                    (Var 27 d2)
-                                                    (Var 27 t2)]
-                                                    [(Assignment
-                                                        (Var 27 avg)
-                                                        (FunctionCall
-                                                            23 slash_real
-                                                            ()
-                                                            [((FunctionCall
-                                                                23 add_real
-                                                                ()
-                                                                [((Var 27 d1))
-                                                                ((Var 27 d2))]
-                                                                (Real 4)
-                                                                ()
-                                                                ()
-                                                            ))
-                                                            ((FunctionCall
-                                                                23 add_real
-                                                                ()
-                                                                [((Var 27 t1))
-                                                                ((Var 27 t2))]
-                                                                (Real 4)
-                                                                ()
-                                                                ()
-                                                            ))]
-                                                            (Real 4)
-                                                            ()
-                                                            ()
-                                                        )
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                    )]
-                                                    (Var 27 avg)
-                                                    Public
-                                                    .true.
-                                                    .true.
-                                                    ()
-                                                ),
-                                            avg_real_s_from_s:
-                                                (Function
-                                                    (SymbolTable
-                                                        25
-                                                        {
-                                                            avg:
-                                                                (Variable
-                                                                    25
-                                                                    avg
-                                                                    []
-                                                                    ReturnVar
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            d1:
-                                                                (Variable
-                                                                    25
-                                                                    d1
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            d2:
-                                                                (Variable
-                                                                    25
-                                                                    d2
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
                                                             s1:
                                                                 (Variable
-                                                                    25
+                                                                    27
                                                                     s1
                                                                     []
                                                                     In
@@ -411,7 +468,7 @@
                                                                 ),
                                                             s2:
                                                                 (Variable
-                                                                    25
+                                                                    27
                                                                     s2
                                                                     []
                                                                     In
@@ -454,31 +511,31 @@
                                                         Host
                                                     )
                                                     [__asr_avg_s_from_t]
-                                                    [(Var 25 d1)
-                                                    (Var 25 s1)
-                                                    (Var 25 d2)
-                                                    (Var 25 s2)]
+                                                    [(Var 27 d1)
+                                                    (Var 27 s1)
+                                                    (Var 27 d2)
+                                                    (Var 27 s2)]
                                                     [(Assignment
-                                                        (Var 25 avg)
+                                                        (Var 27 avg)
                                                         (FunctionCall
-                                                            24 __asr_avg_s_from_t
+                                                            26 __asr_avg_s_from_t
                                                             ()
-                                                            [((Var 25 d1))
+                                                            [((Var 27 d1))
                                                             ((FunctionCall
-                                                                23 slash_real
+                                                                25 slash_real
                                                                 ()
-                                                                [((Var 25 d1))
-                                                                ((Var 25 s1))]
+                                                                [((Var 27 d1))
+                                                                ((Var 27 s1))]
                                                                 (Real 4)
                                                                 ()
                                                                 ()
                                                             ))
-                                                            ((Var 25 d2))
+                                                            ((Var 27 d2))
                                                             ((FunctionCall
-                                                                23 slash_real
+                                                                25 slash_real
                                                                 ()
-                                                                [((Var 25 d2))
-                                                                ((Var 25 s2))]
+                                                                [((Var 27 d2))
+                                                                ((Var 27 s2))]
                                                                 (Real 4)
                                                                 ()
                                                                 ()
@@ -491,7 +548,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 25 avg)
+                                                    (Var 27 avg)
                                                     Private
                                                     .true.
                                                     .true.
@@ -499,7 +556,7 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    24
+                                                    26
                                                     s
                                                     []
                                                     Local
@@ -541,9 +598,9 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 24 s)
+                                        (Var 26 s)
                                         (FunctionCall
-                                            24 avg_real_s_from_s
+                                            26 avg_real_s_from_s
                                             ()
                                             [((RealConstant
                                                 1.100000
@@ -576,7 +633,7 @@
                                                 "s="
                                                 (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
-                                            (Var 24 s)]
+                                            (Var 26 s)]
                                             FormatFortran
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
@@ -592,9 +649,9 @@
                                 ),
                             travel_tmpl:
                                 (ExternalSymbol
-                                    23
+                                    25
                                     travel_tmpl
-                                    5 travel_tmpl
+                                    6 travel_tmpl
                                     template_travel_02_travel
                                     []
                                     travel_tmpl
@@ -602,9 +659,9 @@
                                 ),
                             travel_tmpl2:
                                 (ExternalSymbol
-                                    23
+                                    25
                                     travel_tmpl2
-                                    5 travel_tmpl2
+                                    6 travel_tmpl2
                                     template_travel_02_travel
                                     []
                                     travel_tmpl2
@@ -619,13 +676,71 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    25 __lcompilers_global_init_template_travel_02_m
+                    25 __lcompilers_global_init_state_template_travel_02_m
+                    .false.
                 ),
             template_travel_02_math:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_travel_02_math:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_travel_02_math
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_travel_02_math:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_travel_02_math
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             add_real:
                                 (Function
                                     (SymbolTable
@@ -867,16 +982,74 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_template_travel_02_math
+                    2 __lcompilers_global_init_state_template_travel_02_math
+                    .false.
                 ),
             template_travel_02_travel:
                 (Module
                     (SymbolTable
-                        5
+                        6
                         {
+                            __lcompilers_global_init_state_template_travel_02_travel:
+                                (Variable
+                                    6
+                                    __lcompilers_global_init_state_template_travel_02_travel
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_travel_02_travel:
+                                (Function
+                                    (SymbolTable
+                                        24
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_travel_02_travel
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             add_real:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     add_real
                                     2 add_real
                                     template_travel_02_math
@@ -887,11 +1060,11 @@
                             operations:
                                 (Requirement
                                     (SymbolTable
-                                        6
+                                        7
                                         {
                                             d:
                                                 (Variable
-                                                    6
+                                                    7
                                                     d
                                                     []
                                                     In
@@ -920,11 +1093,11 @@
                                             d_divided_by_s:
                                                 (Function
                                                     (SymbolTable
-                                                        10
+                                                        11
                                                         {
                                                             d:
                                                                 (Variable
-                                                                    10
+                                                                    11
                                                                     d
                                                                     []
                                                                     In
@@ -952,7 +1125,7 @@
                                                                 ),
                                                             n:
                                                                 (Variable
-                                                                    10
+                                                                    11
                                                                     n
                                                                     []
                                                                     In
@@ -980,7 +1153,7 @@
                                                                 ),
                                                             quotient:
                                                                 (Variable
-                                                                    10
+                                                                    11
                                                                     quotient
                                                                     []
                                                                     ReturnVar
@@ -1037,10 +1210,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 10 n)
-                                                    (Var 10 d)]
+                                                    [(Var 11 n)
+                                                    (Var 11 d)]
                                                     []
-                                                    (Var 10 quotient)
+                                                    (Var 11 quotient)
                                                     Private
                                                     .true.
                                                     .true.
@@ -1049,11 +1222,11 @@
                                             d_divided_by_t:
                                                 (Function
                                                     (SymbolTable
-                                                        9
+                                                        10
                                                         {
                                                             d:
                                                                 (Variable
-                                                                    9
+                                                                    10
                                                                     d
                                                                     []
                                                                     In
@@ -1081,7 +1254,7 @@
                                                                 ),
                                                             n:
                                                                 (Variable
-                                                                    9
+                                                                    10
                                                                     n
                                                                     []
                                                                     In
@@ -1109,7 +1282,7 @@
                                                                 ),
                                                             quotient:
                                                                 (Variable
-                                                                    9
+                                                                    10
                                                                     quotient
                                                                     []
                                                                     ReturnVar
@@ -1166,10 +1339,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 9 n)
-                                                    (Var 9 d)]
+                                                    [(Var 10 n)
+                                                    (Var 10 d)]
                                                     []
-                                                    (Var 9 quotient)
+                                                    (Var 10 quotient)
                                                     Private
                                                     .true.
                                                     .true.
@@ -1178,11 +1351,11 @@
                                             plus_d:
                                                 (Function
                                                     (SymbolTable
-                                                        7
+                                                        8
                                                         {
                                                             l:
                                                                 (Variable
-                                                                    7
+                                                                    8
                                                                     l
                                                                     []
                                                                     In
@@ -1210,7 +1383,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    7
+                                                                    8
                                                                     r
                                                                     []
                                                                     In
@@ -1238,7 +1411,7 @@
                                                                 ),
                                                             total:
                                                                 (Variable
-                                                                    7
+                                                                    8
                                                                     total
                                                                     []
                                                                     ReturnVar
@@ -1295,10 +1468,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 7 l)
-                                                    (Var 7 r)]
+                                                    [(Var 8 l)
+                                                    (Var 8 r)]
                                                     []
-                                                    (Var 7 total)
+                                                    (Var 8 total)
                                                     Private
                                                     .true.
                                                     .true.
@@ -1307,11 +1480,11 @@
                                             plus_t:
                                                 (Function
                                                     (SymbolTable
-                                                        8
+                                                        9
                                                         {
                                                             l:
                                                                 (Variable
-                                                                    8
+                                                                    9
                                                                     l
                                                                     []
                                                                     In
@@ -1339,7 +1512,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    8
+                                                                    9
                                                                     r
                                                                     []
                                                                     In
@@ -1367,7 +1540,7 @@
                                                                 ),
                                                             total:
                                                                 (Variable
-                                                                    8
+                                                                    9
                                                                     total
                                                                     []
                                                                     ReturnVar
@@ -1424,10 +1597,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 8 l)
-                                                    (Var 8 r)]
+                                                    [(Var 9 l)
+                                                    (Var 9 r)]
                                                     []
-                                                    (Var 8 total)
+                                                    (Var 9 total)
                                                     Private
                                                     .true.
                                                     .true.
@@ -1435,7 +1608,7 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    6
+                                                    7
                                                     s
                                                     []
                                                     In
@@ -1463,7 +1636,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    6
+                                                    7
                                                     t
                                                     []
                                                     In
@@ -1502,7 +1675,7 @@
                                 ),
                             slash_real:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     slash_real
                                     2 slash_real
                                     template_travel_02_math
@@ -1513,9 +1686,251 @@
                             travel_tmpl:
                                 (Template
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             avg_s_from_s:
+                                                (Function
+                                                    (SymbolTable
+                                                        18
+                                                        {
+                                                            avg:
+                                                                (Variable
+                                                                    18
+                                                                    avg
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        s
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            d1:
+                                                                (Variable
+                                                                    18
+                                                                    d1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        d
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            d2:
+                                                                (Variable
+                                                                    18
+                                                                    d2
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        d
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            s1:
+                                                                (Variable
+                                                                    18
+                                                                    s1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        s
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            s2:
+                                                                (Variable
+                                                                    18
+                                                                    s2
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        s
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    avg_s_from_s
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            d
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (TypeParameter
+                                                            s
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (TypeParameter
+                                                            d
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (TypeParameter
+                                                            s
+                                                            NonExtensible
+                                                            .false.
+                                                        )]
+                                                        (TypeParameter
+                                                            s
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    [d_divided_by_s
+                                                    avg_s_from_t]
+                                                    [(Var 18 d1)
+                                                    (Var 18 s1)
+                                                    (Var 18 d2)
+                                                    (Var 18 s2)]
+                                                    [(Assignment
+                                                        (Var 18 avg)
+                                                        (FunctionCall
+                                                            12 avg_s_from_t
+                                                            ()
+                                                            [((Var 18 d1))
+                                                            ((FunctionCall
+                                                                12 d_divided_by_s
+                                                                ()
+                                                                [((Var 18 d1))
+                                                                ((Var 18 s1))]
+                                                                (TypeParameter
+                                                                    t
+                                                                    NonExtensible
+                                                                    .false.
+                                                                )
+                                                                ()
+                                                                ()
+                                                            ))
+                                                            ((Var 18 d2))
+                                                            ((FunctionCall
+                                                                12 d_divided_by_s
+                                                                ()
+                                                                [((Var 18 d2))
+                                                                ((Var 18 s2))]
+                                                                (TypeParameter
+                                                                    t
+                                                                    NonExtensible
+                                                                    .false.
+                                                                )
+                                                                ()
+                                                                ()
+                                                            ))]
+                                                            (TypeParameter
+                                                                s
+                                                                NonExtensible
+                                                                .false.
+                                                            )
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 18 avg)
+                                                    Private
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            avg_s_from_t:
                                                 (Function
                                                     (SymbolTable
                                                         17
@@ -1604,251 +2019,9 @@
                                                                     ()
                                                                     []
                                                                 ),
-                                                            s1:
-                                                                (Variable
-                                                                    17
-                                                                    s1
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        s
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            s2:
-                                                                (Variable
-                                                                    17
-                                                                    s2
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        s
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                )
-                                                        })
-                                                    avg_s_from_s
-                                                    (FunctionType
-                                                        [(TypeParameter
-                                                            d
-                                                            NonExtensible
-                                                            .false.
-                                                        )
-                                                        (TypeParameter
-                                                            s
-                                                            NonExtensible
-                                                            .false.
-                                                        )
-                                                        (TypeParameter
-                                                            d
-                                                            NonExtensible
-                                                            .false.
-                                                        )
-                                                        (TypeParameter
-                                                            s
-                                                            NonExtensible
-                                                            .false.
-                                                        )]
-                                                        (TypeParameter
-                                                            s
-                                                            NonExtensible
-                                                            .false.
-                                                        )
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .true.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .false.
-                                                        Host
-                                                    )
-                                                    [d_divided_by_s
-                                                    avg_s_from_t]
-                                                    [(Var 17 d1)
-                                                    (Var 17 s1)
-                                                    (Var 17 d2)
-                                                    (Var 17 s2)]
-                                                    [(Assignment
-                                                        (Var 17 avg)
-                                                        (FunctionCall
-                                                            11 avg_s_from_t
-                                                            ()
-                                                            [((Var 17 d1))
-                                                            ((FunctionCall
-                                                                11 d_divided_by_s
-                                                                ()
-                                                                [((Var 17 d1))
-                                                                ((Var 17 s1))]
-                                                                (TypeParameter
-                                                                    t
-                                                                    NonExtensible
-                                                                    .false.
-                                                                )
-                                                                ()
-                                                                ()
-                                                            ))
-                                                            ((Var 17 d2))
-                                                            ((FunctionCall
-                                                                11 d_divided_by_s
-                                                                ()
-                                                                [((Var 17 d2))
-                                                                ((Var 17 s2))]
-                                                                (TypeParameter
-                                                                    t
-                                                                    NonExtensible
-                                                                    .false.
-                                                                )
-                                                                ()
-                                                                ()
-                                                            ))]
-                                                            (TypeParameter
-                                                                s
-                                                                NonExtensible
-                                                                .false.
-                                                            )
-                                                            ()
-                                                            ()
-                                                        )
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                    )]
-                                                    (Var 17 avg)
-                                                    Private
-                                                    .true.
-                                                    .true.
-                                                    ()
-                                                ),
-                                            avg_s_from_t:
-                                                (Function
-                                                    (SymbolTable
-                                                        16
-                                                        {
-                                                            avg:
-                                                                (Variable
-                                                                    16
-                                                                    avg
-                                                                    []
-                                                                    ReturnVar
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        s
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            d1:
-                                                                (Variable
-                                                                    16
-                                                                    d1
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        d
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            d2:
-                                                                (Variable
-                                                                    16
-                                                                    d2
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        d
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
                                                             t1:
                                                                 (Variable
-                                                                    16
+                                                                    17
                                                                     t1
                                                                     []
                                                                     In
@@ -1876,7 +2049,7 @@
                                                                 ),
                                                             t2:
                                                                 (Variable
-                                                                    16
+                                                                    17
                                                                     t2
                                                                     []
                                                                     In
@@ -1945,20 +2118,20 @@
                                                     [plus_d
                                                     plus_t
                                                     d_divided_by_t]
-                                                    [(Var 16 d1)
-                                                    (Var 16 t1)
-                                                    (Var 16 d2)
-                                                    (Var 16 t2)]
+                                                    [(Var 17 d1)
+                                                    (Var 17 t1)
+                                                    (Var 17 d2)
+                                                    (Var 17 t2)]
                                                     [(Assignment
-                                                        (Var 16 avg)
+                                                        (Var 17 avg)
                                                         (FunctionCall
-                                                            11 d_divided_by_t
+                                                            12 d_divided_by_t
                                                             ()
                                                             [((FunctionCall
-                                                                11 plus_d
+                                                                12 plus_d
                                                                 ()
-                                                                [((Var 16 d1))
-                                                                ((Var 16 d2))]
+                                                                [((Var 17 d1))
+                                                                ((Var 17 d2))]
                                                                 (TypeParameter
                                                                     d
                                                                     NonExtensible
@@ -1968,10 +2141,10 @@
                                                                 ()
                                                             ))
                                                             ((FunctionCall
-                                                                11 plus_t
+                                                                12 plus_t
                                                                 ()
-                                                                [((Var 16 t1))
-                                                                ((Var 16 t2))]
+                                                                [((Var 17 t1))
+                                                                ((Var 17 t2))]
                                                                 (TypeParameter
                                                                     t
                                                                     NonExtensible
@@ -1992,7 +2165,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 16 avg)
+                                                    (Var 17 avg)
                                                     Public
                                                     .true.
                                                     .true.
@@ -2000,7 +2173,7 @@
                                                 ),
                                             d:
                                                 (Variable
-                                                    11
+                                                    12
                                                     d
                                                     []
                                                     In
@@ -2029,11 +2202,11 @@
                                             d_divided_by_s:
                                                 (Function
                                                     (SymbolTable
-                                                        15
+                                                        16
                                                         {
                                                             d:
                                                                 (Variable
-                                                                    15
+                                                                    16
                                                                     d
                                                                     []
                                                                     In
@@ -2061,7 +2234,7 @@
                                                                 ),
                                                             n:
                                                                 (Variable
-                                                                    15
+                                                                    16
                                                                     n
                                                                     []
                                                                     In
@@ -2089,7 +2262,7 @@
                                                                 ),
                                                             quotient:
                                                                 (Variable
-                                                                    15
+                                                                    16
                                                                     quotient
                                                                     []
                                                                     ReturnVar
@@ -2146,10 +2319,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 15 n)
-                                                    (Var 15 d)]
+                                                    [(Var 16 n)
+                                                    (Var 16 d)]
                                                     []
-                                                    (Var 15 quotient)
+                                                    (Var 16 quotient)
                                                     Private
                                                     .true.
                                                     .true.
@@ -2158,11 +2331,11 @@
                                             d_divided_by_t:
                                                 (Function
                                                     (SymbolTable
-                                                        14
+                                                        15
                                                         {
                                                             d:
                                                                 (Variable
-                                                                    14
+                                                                    15
                                                                     d
                                                                     []
                                                                     In
@@ -2190,7 +2363,7 @@
                                                                 ),
                                                             n:
                                                                 (Variable
-                                                                    14
+                                                                    15
                                                                     n
                                                                     []
                                                                     In
@@ -2218,7 +2391,7 @@
                                                                 ),
                                                             quotient:
                                                                 (Variable
-                                                                    14
+                                                                    15
                                                                     quotient
                                                                     []
                                                                     ReturnVar
@@ -2275,10 +2448,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 14 n)
-                                                    (Var 14 d)]
+                                                    [(Var 15 n)
+                                                    (Var 15 d)]
                                                     []
-                                                    (Var 14 quotient)
+                                                    (Var 15 quotient)
                                                     Private
                                                     .true.
                                                     .true.
@@ -2287,11 +2460,11 @@
                                             plus_d:
                                                 (Function
                                                     (SymbolTable
-                                                        12
+                                                        13
                                                         {
                                                             l:
                                                                 (Variable
-                                                                    12
+                                                                    13
                                                                     l
                                                                     []
                                                                     In
@@ -2319,7 +2492,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    12
+                                                                    13
                                                                     r
                                                                     []
                                                                     In
@@ -2347,7 +2520,7 @@
                                                                 ),
                                                             total:
                                                                 (Variable
-                                                                    12
+                                                                    13
                                                                     total
                                                                     []
                                                                     ReturnVar
@@ -2404,10 +2577,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 12 l)
-                                                    (Var 12 r)]
+                                                    [(Var 13 l)
+                                                    (Var 13 r)]
                                                     []
-                                                    (Var 12 total)
+                                                    (Var 13 total)
                                                     Private
                                                     .true.
                                                     .true.
@@ -2416,11 +2589,11 @@
                                             plus_t:
                                                 (Function
                                                     (SymbolTable
-                                                        13
+                                                        14
                                                         {
                                                             l:
                                                                 (Variable
-                                                                    13
+                                                                    14
                                                                     l
                                                                     []
                                                                     In
@@ -2448,7 +2621,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    13
+                                                                    14
                                                                     r
                                                                     []
                                                                     In
@@ -2476,7 +2649,7 @@
                                                                 ),
                                                             total:
                                                                 (Variable
-                                                                    13
+                                                                    14
                                                                     total
                                                                     []
                                                                     ReturnVar
@@ -2533,10 +2706,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 13 l)
-                                                    (Var 13 r)]
+                                                    [(Var 14 l)
+                                                    (Var 14 r)]
                                                     []
-                                                    (Var 13 total)
+                                                    (Var 14 total)
                                                     Private
                                                     .true.
                                                     .true.
@@ -2544,7 +2717,7 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    11
+                                                    12
                                                     s
                                                     []
                                                     In
@@ -2572,7 +2745,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    11
+                                                    12
                                                     t
                                                     []
                                                     In
@@ -2621,251 +2794,9 @@
                             travel_tmpl2:
                                 (Template
                                     (SymbolTable
-                                        18
+                                        19
                                         {
                                             avg_s_from_s:
-                                                (Function
-                                                    (SymbolTable
-                                                        21
-                                                        {
-                                                            avg:
-                                                                (Variable
-                                                                    21
-                                                                    avg
-                                                                    []
-                                                                    ReturnVar
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            d1:
-                                                                (Variable
-                                                                    21
-                                                                    d1
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            d2:
-                                                                (Variable
-                                                                    21
-                                                                    d2
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            s1:
-                                                                (Variable
-                                                                    21
-                                                                    s1
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                ),
-                                                            s2:
-                                                                (Variable
-                                                                    21
-                                                                    s2
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                )
-                                                        })
-                                                    avg_s_from_s
-                                                    (FunctionType
-                                                        [(TypeParameter
-                                                            t
-                                                            NonExtensible
-                                                            .false.
-                                                        )
-                                                        (TypeParameter
-                                                            t
-                                                            NonExtensible
-                                                            .false.
-                                                        )
-                                                        (TypeParameter
-                                                            t
-                                                            NonExtensible
-                                                            .false.
-                                                        )
-                                                        (TypeParameter
-                                                            t
-                                                            NonExtensible
-                                                            .false.
-                                                        )]
-                                                        (TypeParameter
-                                                            t
-                                                            NonExtensible
-                                                            .false.
-                                                        )
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .true.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .false.
-                                                        Host
-                                                    )
-                                                    [div
-                                                    avg_s_from_t]
-                                                    [(Var 21 d1)
-                                                    (Var 21 s1)
-                                                    (Var 21 d2)
-                                                    (Var 21 s2)]
-                                                    [(Assignment
-                                                        (Var 21 avg)
-                                                        (FunctionCall
-                                                            18 avg_s_from_t
-                                                            ()
-                                                            [((Var 21 d1))
-                                                            ((FunctionCall
-                                                                18 div
-                                                                ()
-                                                                [((Var 21 d1))
-                                                                ((Var 21 s1))]
-                                                                (TypeParameter
-                                                                    t
-                                                                    NonExtensible
-                                                                    .false.
-                                                                )
-                                                                ()
-                                                                ()
-                                                            ))
-                                                            ((Var 21 d2))
-                                                            ((FunctionCall
-                                                                18 div
-                                                                ()
-                                                                [((Var 21 d2))
-                                                                ((Var 21 s2))]
-                                                                (TypeParameter
-                                                                    t
-                                                                    NonExtensible
-                                                                    .false.
-                                                                )
-                                                                ()
-                                                                ()
-                                                            ))]
-                                                            (TypeParameter
-                                                                t
-                                                                NonExtensible
-                                                                .false.
-                                                            )
-                                                            ()
-                                                            ()
-                                                        )
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                    )]
-                                                    (Var 21 avg)
-                                                    Private
-                                                    .true.
-                                                    .true.
-                                                    ()
-                                                ),
-                                            avg_s_from_t:
                                                 (Function
                                                     (SymbolTable
                                                         22
@@ -2954,9 +2885,251 @@
                                                                     ()
                                                                     []
                                                                 ),
-                                                            t1:
+                                                            s1:
                                                                 (Variable
                                                                     22
+                                                                    s1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            s2:
+                                                                (Variable
+                                                                    22
+                                                                    s2
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    avg_s_from_s
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    [div
+                                                    avg_s_from_t]
+                                                    [(Var 22 d1)
+                                                    (Var 22 s1)
+                                                    (Var 22 d2)
+                                                    (Var 22 s2)]
+                                                    [(Assignment
+                                                        (Var 22 avg)
+                                                        (FunctionCall
+                                                            19 avg_s_from_t
+                                                            ()
+                                                            [((Var 22 d1))
+                                                            ((FunctionCall
+                                                                19 div
+                                                                ()
+                                                                [((Var 22 d1))
+                                                                ((Var 22 s1))]
+                                                                (TypeParameter
+                                                                    t
+                                                                    NonExtensible
+                                                                    .false.
+                                                                )
+                                                                ()
+                                                                ()
+                                                            ))
+                                                            ((Var 22 d2))
+                                                            ((FunctionCall
+                                                                19 div
+                                                                ()
+                                                                [((Var 22 d2))
+                                                                ((Var 22 s2))]
+                                                                (TypeParameter
+                                                                    t
+                                                                    NonExtensible
+                                                                    .false.
+                                                                )
+                                                                ()
+                                                                ()
+                                                            ))]
+                                                            (TypeParameter
+                                                                t
+                                                                NonExtensible
+                                                                .false.
+                                                            )
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 22 avg)
+                                                    Private
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            avg_s_from_t:
+                                                (Function
+                                                    (SymbolTable
+                                                        23
+                                                        {
+                                                            avg:
+                                                                (Variable
+                                                                    23
+                                                                    avg
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            d1:
+                                                                (Variable
+                                                                    23
+                                                                    d1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            d2:
+                                                                (Variable
+                                                                    23
+                                                                    d2
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            t1:
+                                                                (Variable
+                                                                    23
                                                                     t1
                                                                     []
                                                                     In
@@ -2984,7 +3157,7 @@
                                                                 ),
                                                             t2:
                                                                 (Variable
-                                                                    22
+                                                                    23
                                                                     t2
                                                                     []
                                                                     In
@@ -3052,20 +3225,20 @@
                                                     )
                                                     [plus
                                                     div]
-                                                    [(Var 22 d1)
-                                                    (Var 22 t1)
-                                                    (Var 22 d2)
-                                                    (Var 22 t2)]
+                                                    [(Var 23 d1)
+                                                    (Var 23 t1)
+                                                    (Var 23 d2)
+                                                    (Var 23 t2)]
                                                     [(Assignment
-                                                        (Var 22 avg)
+                                                        (Var 23 avg)
                                                         (FunctionCall
-                                                            18 div
+                                                            19 div
                                                             ()
                                                             [((FunctionCall
-                                                                18 plus
+                                                                19 plus
                                                                 ()
-                                                                [((Var 22 d1))
-                                                                ((Var 22 d2))]
+                                                                [((Var 23 d1))
+                                                                ((Var 23 d2))]
                                                                 (TypeParameter
                                                                     t
                                                                     NonExtensible
@@ -3075,10 +3248,10 @@
                                                                 ()
                                                             ))
                                                             ((FunctionCall
-                                                                18 plus
+                                                                19 plus
                                                                 ()
-                                                                [((Var 22 t1))
-                                                                ((Var 22 t2))]
+                                                                [((Var 23 t1))
+                                                                ((Var 23 t2))]
                                                                 (TypeParameter
                                                                     t
                                                                     NonExtensible
@@ -3099,7 +3272,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 22 avg)
+                                                    (Var 23 avg)
                                                     Public
                                                     .true.
                                                     .true.
@@ -3108,11 +3281,11 @@
                                             div:
                                                 (Function
                                                     (SymbolTable
-                                                        20
+                                                        21
                                                         {
                                                             d:
                                                                 (Variable
-                                                                    20
+                                                                    21
                                                                     d
                                                                     []
                                                                     In
@@ -3140,7 +3313,7 @@
                                                                 ),
                                                             n:
                                                                 (Variable
-                                                                    20
+                                                                    21
                                                                     n
                                                                     []
                                                                     In
@@ -3168,7 +3341,7 @@
                                                                 ),
                                                             quotient:
                                                                 (Variable
-                                                                    20
+                                                                    21
                                                                     quotient
                                                                     []
                                                                     ReturnVar
@@ -3225,10 +3398,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 20 n)
-                                                    (Var 20 d)]
+                                                    [(Var 21 n)
+                                                    (Var 21 d)]
                                                     []
-                                                    (Var 20 quotient)
+                                                    (Var 21 quotient)
                                                     Private
                                                     .true.
                                                     .true.
@@ -3237,11 +3410,11 @@
                                             plus:
                                                 (Function
                                                     (SymbolTable
-                                                        19
+                                                        20
                                                         {
                                                             l:
                                                                 (Variable
-                                                                    19
+                                                                    20
                                                                     l
                                                                     []
                                                                     In
@@ -3269,7 +3442,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    19
+                                                                    20
                                                                     r
                                                                     []
                                                                     In
@@ -3297,7 +3470,7 @@
                                                                 ),
                                                             total:
                                                                 (Variable
-                                                                    19
+                                                                    20
                                                                     total
                                                                     []
                                                                     ReturnVar
@@ -3354,10 +3527,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 19 l)
-                                                    (Var 19 r)]
+                                                    [(Var 20 l)
+                                                    (Var 20 r)]
                                                     []
-                                                    (Var 19 total)
+                                                    (Var 20 total)
                                                     Private
                                                     .true.
                                                     .true.
@@ -3365,7 +3538,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    18
+                                                    19
                                                     t
                                                     []
                                                     In
@@ -3411,9 +3584,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    6 __lcompilers_global_init_template_travel_02_travel
+                    6 __lcompilers_global_init_state_template_travel_02_travel
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

@@ -1524,6 +1524,7 @@ filename = "../integration_tests/modules_01.f90"
 ast = true
 asr = true
 llvm = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/modules_02.f90"
@@ -6174,6 +6175,17 @@ llvm = true
 options = "--coarray=true"
 
 [[test]]
+filename = "../integration_tests/coarrays_33.f90"
+# A cobound given by a named constant of the program. The program's startup
+# initializer allocates the coarray with that cobound, and the nested_vars
+# pass then rewrites the initializer's reference to the constant; the
+# declaration's codimension must be left referring to the program's own.
+# Compiled here, where a Debug build verifies the ASR after every pass,
+# because running it needs the coarray runtime only the Caffeine CI jobs have.
+obj = true
+options = "--coarray=true"
+
+[[test]]
 filename = "../integration_tests/coarrays_51.f90"
 # Separate compilation, so `coarrays_51_m` is read from a modfile: the pass
 # has to name the initializer its own object file defines rather than define
@@ -6197,6 +6209,16 @@ filename = "../integration_tests/global_init_07.f90"
 # from the initializer it knows while the storage is sized from the value the
 # generated code has at that point.
 pass = "global_init"
+
+[[test]]
+filename = "../integration_tests/module_teardown_02.f90"
+# Under --detect-leaks only a module whose storage owns something registers a
+# teardown with the runtime: `module_teardown_02_b` does, `module_teardown_02_a`
+# does not. That is not observable at run time, where a teardown with nothing
+# to free changes nothing, so this reference is what catches a module that
+# owns nothing registering one again.
+llvm = true
+options = "--detect-leaks"
 
 # A pass that rejects the program: `--show-asr` reports its error and prints
 # no ASR.

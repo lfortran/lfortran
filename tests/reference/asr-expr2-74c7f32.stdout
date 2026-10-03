@@ -12,4 +12,7 @@
         (IntegerConstant 8 (Integer 4) Decimal)
     )]
     ()
+    ()
+    .false.
+    ()
 )

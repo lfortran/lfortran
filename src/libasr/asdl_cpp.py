@@ -470,7 +470,8 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         have_symbol = False
         sym_field_name = ""
         for field in fields:
-            if ( not have_symbol and field.type == "symbol" and field.seq == False):
+            if ( not have_symbol and field.type == "symbol" and field.seq == False
+                    and not field.opt):
                 have_symbol = True
                 sym_field_name = field.name
             self.visitField(field)

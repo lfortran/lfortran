@@ -435,6 +435,8 @@
         :intrinsic false
         :has_submodules false
         :global_init nil
+        :global_init_state nil
+        :global_init_collective false
       )
       "main" (Program
         :symtab (SymbolTable
@@ -445,9 +447,13 @@
         :dependencies []
         :body []
         :global_init nil
+        :global_init_state nil
       )
     }
   )
   :items []
   :global_init nil
+  :global_init_state nil
+  :global_init_collective false
+  :global_init_bootstrap nil
 )

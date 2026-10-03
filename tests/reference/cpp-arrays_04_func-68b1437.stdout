@@ -76,6 +76,7 @@ void main2() {
     a->dims[0].lower_bound = 1;
     a->dims[0].length = 3;
     float b;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     a->data->operator[](1 - a->dims[0].lower_bound) = (float)(3);
     a->data->operator[](2 - a->dims[0].lower_bound) = (float)(2);
     a->data->operator[](3 - a->dims[0].lower_bound) = (float)(1);

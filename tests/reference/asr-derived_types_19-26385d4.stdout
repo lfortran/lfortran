@@ -7,14 +7,70 @@
                     (SymbolTable
                         4
                         {
-                            check_proc:
+                            __lcompilers_global_init_derived_types_module_19:
                                 (Function
                                     (SymbolTable
                                         7
                                         {
+                                            
+                                        })
+                                    __lcompilers_global_init_derived_types_module_19
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_derived_types_module_19:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_derived_types_module_19
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            check_proc:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
                                             array:
                                                 (Variable
-                                                    7
+                                                    8
                                                     array
                                                     []
                                                     Local
@@ -45,7 +101,7 @@
                                                 ),
                                             ptr:
                                                 (Variable
-                                                    7
+                                                    8
                                                     ptr
                                                     []
                                                     Local
@@ -79,11 +135,11 @@
                                             ~select_type_block_:
                                                 (Block
                                                     (SymbolTable
-                                                        8
+                                                        9
                                                         {
                                                             1_child_value_ok:
                                                                 (ExternalSymbol
-                                                                    8
+                                                                    9
                                                                     1_child_value_ok
                                                                     5 ok
                                                                     derived_types_module_19
@@ -97,7 +153,7 @@
                                                         ()
                                                         (StructInstanceMember
                                                             (Cast
-                                                                (Var 7 ptr)
+                                                                (Var 8 ptr)
                                                                 ClassToStruct
                                                                 (Pointer
                                                                     (StructType
@@ -110,14 +166,14 @@
                                                                 ()
                                                                 (Var 4 child_value)
                                                             )
-                                                            8 1_child_value_ok
+                                                            9 1_child_value_ok
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(Associate
-                                                            (Var 7 array)
+                                                            (Var 8 array)
                                                             (Cast
-                                                                (Var 7 ptr)
+                                                                (Var 8 ptr)
                                                                 ClassToStruct
                                                                 (Pointer
                                                                     (StructType
@@ -144,7 +200,7 @@
                                             ~select_type_block_1:
                                                 (Block
                                                     (SymbolTable
-                                                        9
+                                                        10
                                                         {
                                                             
                                                         })
@@ -181,24 +237,24 @@
                                     [(If
                                         ()
                                         (PointerAssociated
-                                            (Var 7 ptr)
+                                            (Var 8 ptr)
                                             ()
                                             (Logical 4)
                                             ()
                                         )
                                         [(SelectType
-                                            (Var 7 ptr)
+                                            (Var 8 ptr)
                                             ()
                                             [(TypeStmtName
                                                 4 child_value
                                                 [(BlockCall
                                                     -1
-                                                    7 ~select_type_block_
+                                                    8 ~select_type_block_
                                                 )]
                                             )]
                                             [(BlockCall
                                                 -1
-                                                7 ~select_type_block_1
+                                                8 ~select_type_block_1
                                             )]
                                         )]
                                         []
@@ -262,7 +318,7 @@
                             default_class:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             
                                         })
@@ -306,7 +362,7 @@
                             not_ok:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             
                                         })
@@ -401,17 +457,75 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    4 __lcompilers_global_init_derived_types_module_19
+                    4 __lcompilers_global_init_state_derived_types_module_19
+                    .false.
                 ),
             derived_types_module_19_1:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_derived_types_module_19_1:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_derived_types_module_19_1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_derived_types_module_19_1:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_derived_types_module_19_1
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             check_here:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             
                                         })
@@ -463,12 +577,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_derived_types_module_19_1
+                    2 __lcompilers_global_init_state_derived_types_module_19_1
+                    .false.
                 ),
             main:
                 (Program
                     (SymbolTable
-                        13
+                        15
                         {
                             
                         })
@@ -481,8 +597,12 @@
                         )
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

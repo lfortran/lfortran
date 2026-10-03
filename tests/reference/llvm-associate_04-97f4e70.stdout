@@ -43,6 +43,7 @@ define i32 @main(i32 %0, i8** %1) {
   %theta = alloca float, align 4
   %x = alloca float, align 4
   %y = alloca float, align 4
+  call void @_lcompilers_init_dispatch(i32 1)
   store float 0x3FDAE147A0000000, float* %x, align 4
   store float 0x3FD6666660000000, float* %y, align 4
   store float 0x4022333340000000, float* %myreal, align 4
@@ -160,6 +161,8 @@ FINALIZE_SYMTABLE_associate_04:                   ; preds = %return
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lcompilers_init_dispatch(i32)
 
 ; Function Attrs: nounwind
 declare i8* @llvm.stacksave() #0

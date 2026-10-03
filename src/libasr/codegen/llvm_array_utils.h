@@ -314,6 +314,17 @@ namespace LCompilers {
                 virtual
                 void reset_is_allocated_flag(llvm::Type* tmp_typ, llvm::Value* array, llvm::Type* llvm_data_type) = 0;
 
+                /*
+                * The descriptor of type `type` of an array of rank `n_dims`
+                * that is not allocated or not associated, as a constant: what
+                * setting one up at run time stores, so static storage can
+                * hold it with no code. `base_addr` is the data pointer, null
+                * unless the element type needs storage of its own.
+                */
+                virtual
+                llvm::Constant* get_unallocated_descriptor(llvm::StructType* type,
+                    int n_dims, llvm::Constant* base_addr) = 0;
+
 
                 virtual
                 llvm::Value* reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,
@@ -618,6 +629,10 @@ namespace LCompilers {
 
                 virtual
                 void reset_is_allocated_flag(llvm::Type* typ_tmp, llvm::Value* array, llvm::Type* llvm_data_type);
+
+                virtual
+                llvm::Constant* get_unallocated_descriptor(llvm::StructType* type,
+                    int n_dims, llvm::Constant* base_addr);
 
                 virtual
                 llvm::Value* reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,

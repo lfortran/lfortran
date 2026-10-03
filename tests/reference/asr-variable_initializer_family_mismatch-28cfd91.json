@@ -2,7 +2,7 @@
     "basename": "asr-variable_initializer_family_mismatch-28cfd91",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/variable_initializer_family_mismatch.asr",
-    "infile_hash": "6e7ebec30168cc7324176349a748c3dc5d2c81df2b85c174047d9bee",
+    "infile_hash": "6ecfd74f2952fd521a9b83ca6033fc62cdd1c9b29e1fdb041c710660",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_module_52_fpm_cmd_new:
+                                (Function
+                                    (SymbolTable
+                                        17
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_module_52_fpm_cmd_new
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_module_52_fpm_cmd_new:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_module_52_fpm_cmd_new
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             validate_toml_data:
                                 (Function
                                     (SymbolTable
@@ -120,7 +176,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     toml_table
-                                                    12 toml_table
+                                                    14 toml_table
                                                     module_52_tomlf_type
                                                     []
                                                     toml_table
@@ -190,18 +246,76 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_module_52_fpm_cmd_new
+                    2 __lcompilers_global_init_state_module_52_fpm_cmd_new
+                    .false.
                 ),
             module_52_tomlf_de:
                 (Module
                     (SymbolTable
                         5
                         {
+                            __lcompilers_global_init_module_52_tomlf_de:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_module_52_tomlf_de
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_module_52_tomlf_de:
+                                (Variable
+                                    5
+                                    __lcompilers_global_init_state_module_52_tomlf_de
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             toml_error:
                                 (ExternalSymbol
                                     5
                                     toml_error
-                                    9 toml_error
+                                    10 toml_error
                                     module_52_tomlf_error
                                     []
                                     toml_error
@@ -218,11 +332,11 @@
                             toml_parse_string:
                                 (Function
                                     (SymbolTable
-                                        6
+                                        7
                                         {
                                             conf:
                                                 (Variable
-                                                    6
+                                                    7
                                                     conf
                                                     []
                                                     In
@@ -252,7 +366,7 @@
                                                 ),
                                             error:
                                                 (Variable
-                                                    6
+                                                    7
                                                     error
                                                     []
                                                     Out
@@ -286,7 +400,7 @@
                                                 ),
                                             table:
                                                 (Variable
-                                                    6
+                                                    7
                                                     table
                                                     []
                                                     Out
@@ -360,9 +474,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 6 table)
-                                    (Var 6 conf)
-                                    (Var 6 error)]
+                                    [(Var 7 table)
+                                    (Var 7 conf)
+                                    (Var 7 error)]
                                     []
                                     ()
                                     Public
@@ -373,11 +487,11 @@
                             toml_parse_unit:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             error:
                                                 (Variable
-                                                    7
+                                                    8
                                                     error
                                                     []
                                                     Out
@@ -411,7 +525,7 @@
                                                 ),
                                             table:
                                                 (Variable
-                                                    7
+                                                    8
                                                     table
                                                     []
                                                     Out
@@ -443,7 +557,7 @@
                                                 ),
                                             unit:
                                                 (Variable
-                                                    7
+                                                    8
                                                     unit
                                                     []
                                                     In
@@ -503,9 +617,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 7 table)
-                                    (Var 7 unit)
-                                    (Var 7 error)]
+                                    [(Var 8 table)
+                                    (Var 8 unit)
+                                    (Var 8 error)]
                                     []
                                     ()
                                     Public
@@ -517,7 +631,7 @@
                                 (ExternalSymbol
                                     5
                                     toml_table
-                                    12 toml_table
+                                    14 toml_table
                                     module_52_tomlf_type
                                     []
                                     toml_table
@@ -531,21 +645,79 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    5 __lcompilers_global_init_module_52_tomlf_de
+                    5 __lcompilers_global_init_state_module_52_tomlf_de
+                    .false.
                 ),
             module_52_tomlf_error:
                 (Module
                     (SymbolTable
-                        9
+                        10
                         {
+                            __lcompilers_global_init_module_52_tomlf_error:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_module_52_tomlf_error
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_module_52_tomlf_error:
+                                (Variable
+                                    10
+                                    __lcompilers_global_init_state_module_52_tomlf_error
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             toml_error:
                                 (Struct
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             message:
                                                 (Variable
-                                                    10
+                                                    11
                                                     message
                                                     []
                                                     Local
@@ -571,7 +743,7 @@
                                                 ),
                                             stat:
                                                 (Variable
-                                                    10
+                                                    11
                                                     stat
                                                     []
                                                     Local
@@ -625,21 +797,79 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    10 __lcompilers_global_init_module_52_tomlf_error
+                    10 __lcompilers_global_init_state_module_52_tomlf_error
+                    .false.
                 ),
             module_52_tomlf_type:
                 (Module
                     (SymbolTable
-                        12
+                        14
                         {
+                            __lcompilers_global_init_module_52_tomlf_type:
+                                (Function
+                                    (SymbolTable
+                                        16
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_module_52_tomlf_type
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_module_52_tomlf_type:
+                                (Variable
+                                    14
+                                    __lcompilers_global_init_state_module_52_tomlf_type
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             toml_table:
                                 (Struct
                                     (SymbolTable
-                                        13
+                                        15
                                         {
                                             implicit:
                                                 (Variable
-                                                    13
+                                                    15
                                                     implicit
                                                     []
                                                     Local
@@ -669,7 +899,7 @@
                                                 ),
                                             inline:
                                                 (Variable
-                                                    13
+                                                    15
                                                     inline
                                                     []
                                                     Local
@@ -727,9 +957,14 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    14 __lcompilers_global_init_module_52_tomlf_type
+                    14 __lcompilers_global_init_state_module_52_tomlf_type
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

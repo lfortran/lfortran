@@ -166,6 +166,9 @@ void  *dbg_realloc(void *context, void *ptr, int64_t size){
 void dbg_report() {
     size_t leaks = 0;
     size_t total_bytes = 0;
+    // Free what every initialized module and translation unit owns, so the
+    // count below sees only what the program itself leaked.
+    _lcompilers_init_teardown_all();
     fprintf(stdout, "\n---------------- Memory Leak Report ----------------\n");
     for (size_t i = 0; i < mem_dbg_hashTable.num_buckets; i++) {
         if (mem_dbg_hashTable.buckets[i].state != OCCUPIED_BKT) continue;
@@ -5340,7 +5343,7 @@ LFORTRAN_API void _lfortran_strcpy_alloc(
 
 
 
-int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len){
+LFORTRAN_API int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len){
     /* If the operands are of different lengths, the shorter one is treated
        as if it were blank padded on the right to the length of the longer
        one before the comparison takes place. Characters are ordered by their
@@ -14251,8 +14254,7 @@ LFORTRAN_API void _lfortran_enable_fpe_traps(int32_t trap_mask) {
 
 // Initial setup
 LFORTRAN_API void _lpython_call_initial_functions(int32_t argc_1, char *argv_1[]) {
-    _lpython_set_argv(argc_1, argv_1);
-    _lfortran_init_random_clock();
+    _lcompilers_init_program_start(argc_1, argv_1);
 }
 
 LFORTRAN_API int32_t _lfortran_command_argument_count() {

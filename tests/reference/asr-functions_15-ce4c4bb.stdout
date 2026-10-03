@@ -5,11 +5,11 @@
             functions_15:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
                             a:
                                 (Variable
-                                    4
+                                    5
                                     a
                                     []
                                     Local
@@ -33,7 +33,7 @@
                                 ),
                             b:
                                 (Variable
-                                    4
+                                    5
                                     b
                                     []
                                     Local
@@ -58,11 +58,11 @@
                             f:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        6
                                         {
                                             f:
                                                 (Variable
-                                                    5
+                                                    6
                                                     f
                                                     []
                                                     ReturnVar
@@ -86,7 +86,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    5
+                                                    6
                                                     x
                                                     []
                                                     In
@@ -126,12 +126,12 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 x)]
+                                    [(Var 6 x)]
                                     [(Assignment
-                                        (Var 5 f)
+                                        (Var 6 f)
                                         (IntrinsicElementalFunction
                                             Present
-                                            [(Var 5 x)]
+                                            [(Var 6 x)]
                                             0
                                             (Logical 4)
                                             ()
@@ -140,7 +140,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 5 f)
+                                    (Var 6 f)
                                     Public
                                     .true.
                                     .true.
@@ -148,7 +148,7 @@
                                 ),
                             sub_1:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     sub_1
                                     2 sub_1
                                     functions_15_module_1
@@ -160,14 +160,14 @@
                     functions_15
                     [functions_15_module_1]
                     [(Assignment
-                        (Var 4 a)
+                        (Var 5 a)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 4 b)
+                        (Var 5 b)
                         (Cast
                             (IntegerConstant 2 (Integer 4) Decimal)
                             IntegerToReal
@@ -183,10 +183,10 @@
                         .false.
                     )
                     (SubroutineCall
-                        4 sub_1
+                        5 sub_1
                         ()
-                        [((Var 4 a))
-                        ((Var 4 b))
+                        [((Var 5 a))
+                        ((Var 5 b))
                         ((LogicalConstant
                             .true.
                             (Logical 4)
@@ -204,10 +204,10 @@
                         .false.
                     )
                     (SubroutineCall
-                        4 sub_1
+                        5 sub_1
                         ()
-                        [((Var 4 a))
-                        ((Var 4 b))
+                        [((Var 5 a))
+                        ((Var 5 b))
                         ((LogicalConstant
                             .false.
                             (Logical 4)
@@ -222,10 +222,10 @@
                         .false.
                     )
                     (SubroutineCall
-                        4 sub_1
+                        5 sub_1
                         ()
-                        [((Var 4 a))
-                        ((Var 4 b))
+                        [((Var 5 a))
+                        ((Var 5 b))
                         ((LogicalConstant
                             .true.
                             (Logical 4)
@@ -240,10 +240,10 @@
                         .false.
                     )
                     (SubroutineCall
-                        4 sub_1
+                        5 sub_1
                         ()
-                        [((Var 4 a))
-                        ((Var 4 b))
+                        [((Var 5 a))
+                        ((Var 5 b))
                         ((LogicalConstant
                             .false.
                             (Logical 4)
@@ -263,8 +263,8 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 4 a)
-                            (Var 4 b)]
+                            [(Var 5 a)
+                            (Var 5 b)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -275,7 +275,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 4 a)
+                            (Var 5 a)
                             NotEq
                             (IntegerConstant 144288208 (Integer 4) Decimal)
                             (Logical 4)
@@ -289,7 +289,7 @@
                     (If
                         ()
                         (RealCompare
-                            (Var 4 b)
+                            (Var 5 b)
                             NotEq
                             (RealConstant
                                 1477476.000000
@@ -307,7 +307,7 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                4 f
+                                5 f
                                 ()
                                 [(())]
                                 (Logical 4)
@@ -315,7 +315,7 @@
                                 ()
                             )
                             (FunctionCall
-                                4 f
+                                5 f
                                 ()
                                 [((IntegerConstant 42 (Integer 4) Decimal))]
                                 (Logical 4)
@@ -330,12 +330,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             functions_15_module_1:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_functions_15_module_1:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_functions_15_module_1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_functions_15_module_1:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_functions_15_module_1
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             sub_1:
                                 (Function
                                     (SymbolTable
@@ -677,9 +734,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_functions_15_module_1
+                    2 __lcompilers_global_init_state_functions_15_module_1
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

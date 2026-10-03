@@ -1049,9 +1049,54 @@ RUN(NAME global_init_01 LABELS gfortran llvm)
 RUN(NAME global_init_02 LABELS gfortran llvm)
 RUN(NAME global_init_03 LABELS gfortran llvm)
 RUN(NAME global_init_04 LABELS llvm)
-RUN(NAME global_init_05 LABELS gfortran llvm)
+RUN(NAME global_init_05 LABELS gfortran llvm llvm_wasm)
 RUN(NAME global_init_06 LABELS gfortran llvm EXTRAFILES global_init_06_m.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME global_init_07 LABELS gfortran llvm)
+RUN(NAME global_init_08 LABELS gfortran llvm EXTRAFILES global_init_08c.c EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_09 LABELS gfortran llvm EXTRAFILES global_init_09_m.f90 global_init_09_s.f90 EXTRA_ARGS --separate-compilation)
+# The C file has to come before the module on the link line; see global_init_10c.c.
+RUN(NAME global_init_10 LABELS gfortran llvm EXTRAFILES global_init_10c.c global_init_10_m.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_11 LABELS gfortran llvm EXTRAFILES global_init_11c.c global_init_11_m.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_12 LABELS gfortran llvm llvm_wasm)
+RUN(NAME global_init_13 LABELS gfortran llvm EXTRAFILES global_init_13_c.f90 global_init_13_a.f90 global_init_13_b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_14 LABELS gfortran llvm llvm_wasm EXTRAFILES global_init_14_m.f90 global_init_14_s.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_15 LABELS gfortran llvm EXTRAFILES global_init_15c.c EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_16 LABELS gfortran llvm llvm_wasm EXTRAFILES global_init_16_a.f90 global_init_16_b.f90 global_init_16_s.f90 EXTRA_ARGS --separate-compilation)
+# The pointers' module has to come before their targets' module on the link line; see global_init_17.f90.
+RUN(NAME global_init_17 LABELS gfortran llvm EXTRAFILES global_init_17c.c global_init_17_b.f90 global_init_17_a.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_18 LABELS gfortran llvm llvm_wasm EXTRAFILES global_init_18_m.f90 global_init_18_s.f90 EXTRA_ARGS --separate-compilation)
+# GFortran drops the initial targets of these array pointers; see global_init_19.f90.
+RUN(NAME global_init_19 LABELS flang llvm EXTRAFILES global_init_19_m.f90 global_init_19_s.f90 EXTRA_ARGS --separate-compilation)
+# The C file has to come before the module on the link line; see global_init_24c.c.
+RUN(NAME global_init_24 LABELS gfortran llvm EXTRAFILES global_init_24c.c global_init_24_m.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_25 LABELS gfortran llvm llvm_wasm)
+# The Fortran the `fortran` backend prints for the lowered initializers; see
+# global_init_25.f90.
+RUN(NAME global_init_25_fortran FILE global_init_25 LABELS fortran EXTRA_ARGS --pass=global_init,global_init_wire)
+# GFortran drops the initial targets of these array pointers; see global_init_26.f90.
+RUN(NAME global_init_26 LABELS flang llvm llvm_wasm)
+RUN(NAME global_init_28 LABELS gfortran llvm)
+RUN(NAME global_init_29 LABELS gfortran llvm EXTRAFILES global_init_29c.c EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_30 LABELS gfortran llvm)
+# The Fortran the `fortran` backend prints for it; see global_init_30.f90.
+RUN(NAME global_init_30_fortran FILE global_init_30 LABELS fortran EXTRA_ARGS --pass=global_init,global_init_wire)
+RUN(NAME global_init_31 LABELS gfortran llvm EXTRAFILES global_init_31_m.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_32 LABELS gfortran llvm)
+# The Fortran the `fortran` backend prints for it; see global_init_32.f90.
+RUN(NAME global_init_32_fortran FILE global_init_32 LABELS fortran EXTRA_ARGS --pass=global_init,global_init_wire)
+RUN(NAME global_init_33 LABELS gfortran llvm EXTRAFILES global_init_33_m.f90 global_init_33_e.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME global_init_34 LABELS gfortran llvm EXTRAFILES global_init_34c.c)
+# Calls the LFortran runtime's own entry point, which GFortran does not have.
+RUN(NAME module_teardown_01 LABELS llvm EXTRAFILES module_teardown_01c.c EXTRA_ARGS --detect-leaks)
+RUN(NAME module_teardown_02 LABELS gfortran llvm EXTRA_ARGS --detect-leaks)
+
+# Native link and load variants of module initialization; see
+# global_init_native/CMakeLists.txt. A directory of their own keeps the
+# rules they set for LFortran from applying to any other target.
+if ((NOT LFORTRAN_BACKEND OR LFORTRAN_BACKEND STREQUAL "llvm") AND NOT WIN32)
+    add_subdirectory(global_init_native)
+endif()
+
 RUN(NAME pointer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME pointer_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME pointer_03 LABELS gfortran llvm fortran)
@@ -5057,6 +5102,7 @@ RUN(NAME separate_compilation_51 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_52 LABELS gfortran llvm EXTRAFILES separate_compilation_52a.f90 separate_compilation_52b.f90 EXTRA_ARGS --implicit-interface --separate-compilation)
 RUN(NAME separate_compilation_53 LABELS gfortran llvm EXTRAFILES separate_compilation_53a.f90 separate_compilation_53b.f90 EXTRA_ARGS --implicit-interface --separate-compilation)
 RUN(NAME separate_compilation_54 LABELS gfortran llvm EXTRAFILES separate_compilation_54a.f90 separate_compilation_54b.f90 EXTRA_ARGS --implicit-interface --separate-compilation)
+RUN(NAME separate_compilation_55 LABELS gfortran llvm EXTRAFILES separate_compilation_55a.f90 EXTRA_ARGS --separate-compilation)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)
@@ -5286,6 +5332,17 @@ RUN(NAME coarrays_49 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_50 EXTRA_ARGS --coarray=true NUM_IMAGES=4)
 RUN(NAME coarrays_51 EXTRA_ARGS --coarray=true --separate-compilation EXTRAFILES coarrays_51_m.f90 NUM_IMAGES=4)
 RUN(NAME coarrays_52 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_53 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_54 EXTRA_ARGS --coarray=true --separate-compilation EXTRAFILES coarrays_54_a.f90 coarrays_54_b.f90 coarrays_54_s.f90)
+RUN(NAME coarrays_55 EXTRA_ARGS --coarray=true --separate-compilation EXTRAFILES coarrays_55_p.f90 NUM_IMAGES=2)
+RUN(NAME coarrays_56 EXTRA_ARGS --coarray=true)
+# Driven from C with no Fortran main program; see coarrays_57.f90 and coarrays_58.f90.
+RUN(NAME coarrays_57 EXTRA_ARGS --coarray=true --separate-compilation EXTRAFILES coarrays_57c.c)
+RUN(NAME coarrays_58 EXTRA_ARGS --coarray=true --separate-compilation EXTRAFILES coarrays_58c.c)
+RUN(NAME coarrays_59 EXTRA_ARGS --coarray=true --separate-compilation EXTRAFILES coarrays_59c.c)
+RUN(NAME coarrays_60 EXTRA_ARGS --coarray=true --separate-compilation EXTRAFILES coarrays_60c.c)
+# Built and run by its own block in ci/test_caffeine.sh: a C host loads it as a plugin.
+RUN(NAME coarrays_61 FILE coarrays_61_p EXTRA_ARGS --coarray=true --separate-compilation EXTRAFILES coarrays_61c.c)
 
 # A GPU backend offloads every `do concurrent` (see doc/src/gpu_offloading.md).
 # A loop that uses a construct on the unsupported list of the device -- a

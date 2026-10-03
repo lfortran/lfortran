@@ -34,6 +34,7 @@ define i32 @main(i32 %0, i8** %1) {
   %i = alloca i32, align 4
   %j = alloca i32, align 4
   %k = alloca i32, align 4
+  call void @_lcompilers_init_dispatch(i32 1)
   store i32 0, i32* %j, align 4
   store i32 2, i32* %k, align 4
   %3 = load i32, i32* %k, align 4
@@ -374,6 +375,8 @@ FINALIZE_SYMTABLE_doloop_04:                      ; preds = %return
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lcompilers_init_dispatch(i32)
 
 declare void @_lcompilers_print_error(i8*, ...)
 

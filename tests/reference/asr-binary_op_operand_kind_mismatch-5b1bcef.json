@@ -2,7 +2,7 @@
     "basename": "asr-binary_op_operand_kind_mismatch-5b1bcef",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/binary_op_operand_kind_mismatch.asr",
-    "infile_hash": "9411677acec74ae83d5dc553de28afe6ba5594d7c58e7ad96b8d02de",
+    "infile_hash": "3d6674d04249053df654bd6d5e89431ffb45930066c57e227705f28e",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

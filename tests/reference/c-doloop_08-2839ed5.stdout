@@ -12,8 +12,9 @@
 // Implementations
 int main(int argc, char* argv[])
 {
-    _lpython_set_argv(argc, argv);
+    _lpython_call_initial_functions(argc, argv);
     int32_t i;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     i = 1;
     while (true) {
         i = i + 1;

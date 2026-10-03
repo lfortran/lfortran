@@ -157,10 +157,10 @@
         :name "p"
         :dependencies []
         :body []
-        :global_init nil
+        :global_init nil :global_init_state nil
       )
     }
   )
   :items []
-  :global_init nil
+  :global_init nil :global_init_state nil :global_init_collective false :global_init_bootstrap nil
 )

@@ -7,6 +7,7 @@ target datalayout = "..."
 %defs.point2d.5_class = type <{ i32 (...)**, %defs.point2d.5* }>
 %defs.point2d.5 = type { %defs.point.3, float, float }
 
+@__module_defs___lcompilers_global_init_state_defs = global i32 0
 @_Name_point = private unnamed_addr constant [6 x i8] c"point\00", align 1
 @_Type_Info_point = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_point, i32 0, i32 0), i8* null, i8* null }, align 8
 @_VTable_point = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_point to i8*), i8* bitcast (void (i8*, i8*)* @_copy_defs_point to i8*), i8* bitcast (void (i8**)* @_allocate_struct_defs_point to i8*), i8* bitcast (void (i8*)* @finalize_StructType__point_3_of_defs_for_UPoly to i8*), i8* null] }, align 8
@@ -16,6 +17,40 @@ target datalayout = "..."
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@__lcompilers_init_id = private constant [7 x i8] c"m:defs\00"
+@__lcompilers_init_records = internal constant [1 x { i8*, void ()*, void ()*, i32*, i32, i32 }] [{ i8*, void ()*, void ()*, i32*, i32, i32 } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @__lcompilers_init_id, i32 0, i32 0), void ()* @__module_defs___lcompilers_global_init_defs, void ()* null, i32* @__module_defs___lcompilers_global_init_state_defs, i32 0, i32 0 }]
+@__lcompilers_init_instance = internal global i32 0
+@__lcompilers_init_table = internal constant { i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* } { i32 3, i32 1, { i8*, void ()*, void ()*, i32*, i32, i32 }* getelementptr inbounds ([1 x { i8*, void ()*, void ()*, i32*, i32, i32 }], [1 x { i8*, void ()*, void ()*, i32*, i32, i32 }]* @__lcompilers_init_records, i32 0, i32 0), i32* @__lcompilers_init_instance }, align 8
+@llvm.used = appending global [1 x i8*] [i8* bitcast ({ i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* }* @__lcompilers_init_table to i8*)], section "llvm.metadata"
+@llvm.global_ctors = appending global [1 x { i32, void ()*, i8* }] [{ i32, void ()*, i8* } { i32 65535, void ()* @__lcompilers_init_trigger, i8* null }]
+@llvm.global_dtors = appending global [1 x { i32, void ()*, i8* }] [{ i32, void ()*, i8* } { i32 65535, void ()* @__lcompilers_init_unload, i8* null }]
+
+declare i32 @_lcompilers_init_begin(i32*)
+
+declare void @_lcompilers_init_end(i32*)
+
+define void @__module_defs___lcompilers_global_init_defs() {
+.entry:
+  %0 = call i32 @_lcompilers_init_begin(i32* @__module_defs___lcompilers_global_init_state_defs)
+  %1 = icmp ne i32 %0, 0
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %.entry
+  call void @_lcompilers_init_end(i32* @__module_defs___lcompilers_global_init_state_defs)
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE___lcompilers_global_init_defs
+
+FINALIZE_SYMTABLE___lcompilers_global_init_defs:  ; preds = %return
+  ret void
+}
 
 define float @__module_defs_r2d(%defs.point2d.5_class* %this) {
 .entry:
@@ -57,6 +92,7 @@ define i32 @main(i32 %0, i8** %1) {
   %ptr = alloca %defs.point.3_class*, align 8
   store %defs.point.3_class* null, %defs.point.3_class** %ptr, align 8
   %res = alloca float, align 4
+  call void @_lcompilers_init_dispatch(i32 1)
   %6 = getelementptr %defs.point2d.5, %defs.point2d.5* %p2d, i32 0, i32 1
   store float 3.000000e+00, float* %6, align 4
   %7 = getelementptr %defs.point2d.5, %defs.point2d.5* %p2d, i32 0, i32 2
@@ -131,6 +167,8 @@ is_allocated.ifcont:                              ; preds = %is_allocated.else, 
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lcompilers_init_dispatch(i32)
 
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
@@ -241,6 +279,22 @@ declare void @_lfortran_internal_alloc_finalize()
 declare void @exit(i32)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
+
+declare void @_lcompilers_init_ctor(i8*)
+
+define internal void @__lcompilers_init_trigger() {
+.entry:
+  call void @_lcompilers_init_ctor(i8* bitcast ({ i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* }* @__lcompilers_init_table to i8*))
+  ret void
+}
+
+declare void @_lcompilers_init_unload(i8*)
+
+define internal void @__lcompilers_init_unload() {
+.entry:
+  call void @_lcompilers_init_unload(i8* bitcast ({ i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* }* @__lcompilers_init_table to i8*))
+  ret void
+}
 
 attributes #0 = { nounwind readnone speculatable willreturn }
 attributes #1 = { argmemonly nounwind willreturn writeonly }

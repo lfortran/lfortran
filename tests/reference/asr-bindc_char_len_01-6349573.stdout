@@ -11,7 +11,7 @@
                                 (ExternalSymbol
                                     2
                                     1_t_i
-                                    13 i
+                                    14 i
                                     t
                                     []
                                     i
@@ -21,7 +21,7 @@
                                 (ExternalSymbol
                                     2
                                     1_t_s
-                                    13 s
+                                    14 s
                                     t
                                     []
                                     s
@@ -50,11 +50,11 @@
                             t:
                                 (Struct
                                     (SymbolTable
-                                        13
+                                        14
                                         {
                                             i:
                                                 (Variable
-                                                    13
+                                                    14
                                                     i
                                                     []
                                                     Local
@@ -78,7 +78,7 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    13
+                                                    14
                                                     s
                                                     []
                                                     Local
@@ -206,10 +206,14 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

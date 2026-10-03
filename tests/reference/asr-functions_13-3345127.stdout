@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_test_scan_module:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_test_scan_module
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_test_scan_module:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_test_scan_module
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             test_scan_intrinsic:
                                 (Function
                                     (SymbolTable
@@ -150,16 +206,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_test_scan_module
+                    2 __lcompilers_global_init_state_test_scan_module
+                    .false.
                 ),
             test_scan_verify:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
                             test_scan_intrinsic:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     test_scan_intrinsic
                                     2 test_scan_intrinsic
                                     test_scan_module
@@ -170,11 +228,11 @@
                             test_verify_intrinsic:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        6
                                         {
                                             r:
                                                 (Variable
-                                                    5
+                                                    6
                                                     r
                                                     []
                                                     ReturnVar
@@ -391,7 +449,7 @@
                                         []
                                     )
                                     (Assignment
-                                        (Var 5 r)
+                                        (Var 6 r)
                                         (LogicalConstant
                                             .true.
                                             (Logical 4)
@@ -400,7 +458,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 5 r)
+                                    (Var 6 r)
                                     Public
                                     .true.
                                     .true.
@@ -410,7 +468,7 @@
                     test_scan_verify
                     [test_scan_module]
                     [(SubroutineCall
-                        4 test_scan_intrinsic
+                        5 test_scan_intrinsic
                         ()
                         []
                         ()
@@ -420,7 +478,7 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                4 test_verify_intrinsic
+                                5 test_verify_intrinsic
                                 ()
                                 []
                                 (Logical 4)
@@ -435,8 +493,12 @@
                         )
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

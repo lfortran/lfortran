@@ -5,11 +5,11 @@
             modules_39:
                 (Program
                     (SymbolTable
-                        8
+                        10
                         {
                             build_model:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     build_model
                                     2 build_model
                                     modules_39_fpm_39
@@ -19,7 +19,7 @@
                                 ),
                             filewrite:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     filewrite
                                     4 filewrite
                                     modules_39_module_fpm_filesystem_39
@@ -29,7 +29,7 @@
                                 ),
                             join_path:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     join_path
                                     4 join_path
                                     modules_39_module_fpm_filesystem_39
@@ -42,7 +42,7 @@
                     [modules_39_fpm_39
                     modules_39_module_fpm_filesystem_39]
                     [(SubroutineCall
-                        8 build_model
+                        10 build_model
                         ()
                         []
                         ()
@@ -55,16 +55,73 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             modules_39_fpm_39:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_modules_39_fpm_39:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_39_fpm_39
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_39_fpm_39:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_modules_39_fpm_39
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             build_model:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             
                                         })
@@ -169,21 +226,79 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_modules_39_fpm_39
+                    2 __lcompilers_global_init_state_modules_39_fpm_39
+                    .false.
                 ),
             modules_39_module_fpm_filesystem_39:
                 (Module
                     (SymbolTable
                         4
                         {
-                            filewrite:
+                            __lcompilers_global_init_modules_39_module_fpm_filesystem_39:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_39_module_fpm_filesystem_39
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_39_module_fpm_filesystem_39:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_modules_39_module_fpm_filesystem_39
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            filewrite:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
                                             filedata:
                                                 (Variable
-                                                    5
+                                                    6
                                                     filedata
                                                     []
                                                     In
@@ -213,7 +328,7 @@
                                                 ),
                                             filename:
                                                 (Variable
-                                                    5
+                                                    6
                                                     filename
                                                     []
                                                     In
@@ -260,8 +375,8 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 filename)
-                                    (Var 5 filedata)]
+                                    [(Var 6 filename)
+                                    (Var 6 filedata)]
                                     []
                                     ()
                                     Public
@@ -272,11 +387,11 @@
                             join_path:
                                 (Function
                                     (SymbolTable
-                                        6
+                                        7
                                         {
                                             a1:
                                                 (Variable
-                                                    6
+                                                    7
                                                     a1
                                                     []
                                                     In
@@ -300,7 +415,7 @@
                                                 ),
                                             a2:
                                                 (Variable
-                                                    6
+                                                    7
                                                     a2
                                                     []
                                                     In
@@ -324,7 +439,7 @@
                                                 ),
                                             a3:
                                                 (Variable
-                                                    6
+                                                    7
                                                     a3
                                                     []
                                                     In
@@ -348,7 +463,7 @@
                                                 ),
                                             a4:
                                                 (Variable
-                                                    6
+                                                    7
                                                     a4
                                                     []
                                                     In
@@ -372,7 +487,7 @@
                                                 ),
                                             a5:
                                                 (Variable
-                                                    6
+                                                    7
                                                     a5
                                                     []
                                                     In
@@ -396,7 +511,7 @@
                                                 ),
                                             path:
                                                 (Variable
-                                                    6
+                                                    7
                                                     path
                                                     []
                                                     ReturnVar
@@ -444,13 +559,13 @@
                                         Host
                                     )
                                     []
-                                    [(Var 6 a1)
-                                    (Var 6 a2)
-                                    (Var 6 a3)
-                                    (Var 6 a4)
-                                    (Var 6 a5)]
+                                    [(Var 7 a1)
+                                    (Var 7 a2)
+                                    (Var 7 a3)
+                                    (Var 7 a4)
+                                    (Var 7 a5)]
                                     []
-                                    (Var 6 path)
+                                    (Var 7 path)
                                     Public
                                     .true.
                                     .true.
@@ -463,9 +578,14 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    4 __lcompilers_global_init_modules_39_module_fpm_filesystem_39
+                    4 __lcompilers_global_init_state_modules_39_module_fpm_filesystem_39
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )
