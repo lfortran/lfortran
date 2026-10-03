@@ -150,6 +150,17 @@ images loaded since the previous one define, so a call after `dlopen` or
 `LoadLibrary` initializes that library's module variables and allocates its
 coarrays.
 
+A library that uses coarrays has to be loaded on every image, and the next
+`lfortran_initialize` has to be called on every image too, since it allocates
+the library's saved coarrays collectively. Unloading such a library is
+supported only when it declares no saved coarrays and has deallocated every
+allocatable coarray it allocated before the images unload it, as
+`integration_tests/coarrays_61_p.f90` does. Nothing deallocates a saved
+coarray: deallocating a coarray is collective, so it cannot happen in the
+destructor that the loader runs on one image, and unloading the library would
+leave its allocation behind in the coarray runtime. Loading it again then
+allocates its saved coarrays anew.
+
 Calling a Fortran procedure before `lfortran_initialize`, from a C
 constructor for instance, is outside the contract: nothing is initialized on
 the way into a Fortran procedure. On ELF and Mach-O platforms the
