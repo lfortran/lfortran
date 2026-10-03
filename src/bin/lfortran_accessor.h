@@ -60,29 +60,24 @@ namespace LCompilers::LLanguageServer {
                 if (LCompilers::LFortran::is_generated_symbol_name(a.first)) {
                     continue;
                 }
+                // A reference to a member (`a%x`) makes the compiler add an
+                // ExternalSymbol for that member to the referencing scope. It
+                // is not a symbol the user declared or imported there, and
+                // the member itself is listed under its derived type.
+                if ( LCompilers::ASR::is_a<LCompilers::ASR::ExternalSymbol_t>(*a.second) ) {
+                    LCompilers::ASR::symbol_t *owner = LCompilers::ASRUtils::get_asr_owner(
+                        LCompilers::ASRUtils::symbol_get_past_external(a.second));
+                    if ( owner != nullptr
+                            && ( LCompilers::ASR::is_a<LCompilers::ASR::Struct_t>(*owner)
+                                || LCompilers::ASR::is_a<LCompilers::ASR::Union_t>(*owner) ) ) {
+                        continue;
+                    }
+                }
                 std::size_t index = symbol_lists.size();
                 LCompilers::document_symbols &loc = symbol_lists.emplace_back();
                 loc.parent_index = parent_index;
                 loc.symbol_name = a.first;
                 loc.symbol_type = a.second->type;
-                // Mark ExternalSymbols whose target is owned by a Struct/Enum/
-                // Union as synthetic member-access artifacts. Outline consumers
-                // skip these; completion still surfaces them. See
-                // lfortran-vscode-client#39.
-                if ( LCompilers::ASR::is_a<LCompilers::ASR::ExternalSymbol_t>(*a.second) ) {
-                    LCompilers::ASR::symbol_t *target =
-                        LCompilers::ASRUtils::symbol_get_past_external(a.second);
-                    if ( target != nullptr ) {
-                        LCompilers::ASR::symbol_t *owner =
-                            LCompilers::ASRUtils::get_asr_owner(target);
-                        if ( owner != nullptr
-                                && ( LCompilers::ASR::is_a<LCompilers::ASR::Struct_t>(*owner)
-                                    || LCompilers::ASR::is_a<LCompilers::ASR::Enum_t>(*owner)
-                                    || LCompilers::ASR::is_a<LCompilers::ASR::Union_t>(*owner) ) ) {
-                            loc.is_synthetic_member = true;
-                        }
-                    }
-                }
                 lm.pos_to_linecol(
                     a.second->base.loc.first,
                     loc.first_line,
@@ -107,9 +102,6 @@ namespace LCompilers::LLanguageServer {
                 } else if ( LCompilers::ASR::is_a<LCompilers::ASR::Struct_t>(*a.second) ) {
                     LCompilers::ASR::Struct_t *s = LCompilers::ASR::down_cast<LCompilers::ASR::Struct_t>(a.second);
                     populateSymbolLists(s, lm, symbol_lists, index);
-                } else if ( LCompilers::ASR::is_a<LCompilers::ASR::Enum_t>(*a.second) ) {
-                    LCompilers::ASR::Enum_t *e = LCompilers::ASR::down_cast<LCompilers::ASR::Enum_t>(a.second);
-                    populateSymbolLists(e, lm, symbol_lists, index);
                 } else if ( LCompilers::ASR::is_a<LCompilers::ASR::Union_t>(*a.second) ) {
                     LCompilers::ASR::Union_t *u = LCompilers::ASR::down_cast<LCompilers::ASR::Union_t>(a.second);
                     populateSymbolLists(u, lm, symbol_lists, index);
