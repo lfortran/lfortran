@@ -6967,6 +6967,11 @@ public:
         } else {
             throw CodeGenError("Variable type not supported " + ASRUtils::type_to_str_python_symbol(x.m_type, x.m_type_declaration), x.base.base.loc);
         }
+        if (x.m_storage == ASR::storage_typeType::Threadprivate) {
+            if (llvm::GlobalVariable *gv = module->getNamedGlobal(llvm_var_name)) {
+                gv->setThreadLocalMode(llvm::GlobalValue::GeneralDynamicTLSModel);
+            }
+        }
         if (!external && is_translation_unit_private(x.m_parent_symtab, x.m_access)) {
             if (llvm::GlobalVariable *gv = module->getNamedGlobal(llvm_var_name)) {
                 gv->setLinkage(llvm::GlobalValue::InternalLinkage);
