@@ -2,9 +2,82 @@
 
 All the instructions below work on Linux, macOS and Windows.
 
+## Pixi (recommended)
+
+Use [Pixi](https://pixi.sh/) to install the repository's build dependencies and
+build LFortran. Install Pixi following its platform instructions, and install
+Git. On macOS, install Xcode Command Line Tools (`xcode-select --install`).
+On Windows, initialize the MSVC developer environment as described
+[below](#build-from-git-on-windows-with-visual-studio), with Git Bash available.
+Pixi supplies the Linux C/C++ compilers, Clang for native LLVM executable
+linking, and LLVM's OpenMP runtime (`libomp`), so host Clang is not required.
+On macOS, the environment selects the Xcode C/C++ compilers; the C backend
+honors this selection for both compilation and linking (see
+[Selecting the C Compiler](usage.md#selecting-the-c-compiler)).
+
+```bash
+git clone https://github.com/lfortran/lfortran.git
+cd lfortran
+pixi run build
+pixi run start --version
+```
+
+There is no separate dependency-install or source-generation step:
+`pixi run build` installs the environment and invokes the repository's build
+scripts. The default native environment is `llvm11`, which matches the reference
+test suite. Its executable is `build/llvm11/src/bin/lfortran`; run it through
+`pixi run start`, or use `pixi shell -e llvm11` to put it on your `PATH`.
+On Windows the executable has the `.exe` extension. The native Windows task
+uses Release mode with compiler and runtime stacktraces disabled.
+
+Select another environment explicitly to keep multiple configurations:
+
+```bash
+pixi run -e llvm22 build
+pixi run -e llvm22 start --version
+```
+
+Dependencies live in `.pixi/envs/<environment>` and CMake builds in
+`build/<environment>`. Configuration names, not just LLVM versions, determine
+the directory, so feature combinations using the same LLVM can coexist too.
+Build configurations one at a time within a checkout because source generation
+is shared; use separate Git worktrees for parallel development.
+
+Run tests from the repository root and inspect the saved logs:
+
+```bash
+pixi run ctest -j8 > unit.log 2>&1
+pixi run tests -j8 > reference.log 2>&1
+pixi run integration_tests -j8 > integration.log 2>&1
+pixi run integration_tests -b gfortran -j8 > gfortran.log 2>&1
+```
+
+The `gfortran` backend honors `FC` when set, otherwise it uses `gfortran`.
+On macOS ARM, the `llvm11` environment sets `FC="gfortran -B/usr/bin/"` to
+select Xcode's assembler and linker. Recent GFortran emits M1/LSE instructions
+that the LLVM 11 environment's bundled Clang assembler rejects by default.
+This tool selection does not pass GFortran-specific flags to LFortran or
+change the LLVM version used for reference outputs.
+
+The integration task uses Make from the selected environment. The runner is
+currently intended for Unix-like shells; use WSL
+for that suite on Windows. CTest uses the selected native build. Append `-t
+<pattern>` to `tests` or `integration_tests` for a focused run. Reference tests
+require a compiler built with LLVM 11; they run in an isolated scratch directory
+but update the original `tests/reference` only when explicitly given `-u`.
+Review every reference update.
+
+Use `pixi run -e <environment> clean` to clean that configuration's CMake build
+targets without deleting other builds, local changes, or installed dependencies.
+Set `CMAKE_BUILD_PARALLEL_LEVEL` to limit build parallelism. Keep the same Pixi
+entry points as dependencies/build details evolve in `pixi.toml` and the scripts,
+rather than maintaining a separate list of packages or CMake flags.
+
+The installation methods below remain supported.
+
 ## Binaries
 
-The recommended way to install LFortran is using Conda.
+Prebuilt LFortran binaries are also available using Conda.
 Install Conda for example by installing the
 [Miniconda](https://conda.io/en/latest/miniconda.html) installation by following instructions there for your platform.
 Then create a new environment (you can choose any name, here we chose `lf`) and
@@ -48,7 +121,9 @@ and selecting `New->Fortran`.
 
 ## Build From a Source Tarball
 
-This method is the recommended method if you just want to install LFortran, either yourself or in a package manager (Spack, Conda, Debian, etc.). The source tarball has all the generated files included and has minimal dependencies.
+Source tarballs remain a supported alternative, especially for packaging
+(Spack, Conda, Debian, etc.) or builds with minimal dependencies. They include
+all generated sources.
 
 The source tarball of LFortran depends on:
 

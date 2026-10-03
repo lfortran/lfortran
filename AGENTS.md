@@ -35,7 +35,7 @@ Available skills:
 | `create-mre` | Reduce an RE or third-party failure to a Minimal Reproducible Example (MRE) |
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
 | `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
-| `fix-issue` | Orchestrate the whole loop for one issue in subagents: reproduce, reduce, fix, open a PR from a fork, review, and iterate until CI is green |
+| `fix-issue` | Fix one issue or a filtered batch in isolated worktrees and subagents, publish dependency-aware PRs from a fork, and iterate on review and CI |
 
 `classify-issue` distinguishes invalid-code diagnostics from valid-code bugs,
 enhancements, new features, and maintenance or internal-correctness work. It
@@ -58,33 +58,178 @@ then rebuild and repeat until the package compiles and its tests pass. Each
 iteration should produce one focused PR — `AGENTS.md`'s "one bug = one MRE =
 one PR" rule applies to every pass through the loop.
 
-Reproducers are written to the repository root by convention (`run.sh`,
-`mre_*.f90`, `re_*.f90`) and are gitignored — they are scratch inputs to
-`fix-mre`. The committed deliverable is always the integration test.
+Reproducers are written to the **assigned worktree's root** by convention
+(`run.sh`, `mre_*.f90`, `re_*.f90`) and are gitignored — they are scratch inputs
+to `fix-mre`. The committed deliverable is always the integration test.
 
-`fix-issue` automates this loop for a single issue: its top-level agent
-only orchestrates, and fresh subagents run `repro-issue`, then `create-mre`
-and `fix-mre` repeatedly (one commit with its own integration test per bug)
-until the original issue is fixed. It then opens a draft PR from the user's
-fork and iterates on CI failures and `pr-review` findings until the PR is
-ready for review.
+### Defaults for end-to-end issue fixing
 
-The reproduction and fix skills assume `build/src/bin` is first on `PATH`
-(so `lfortran` is the in-tree build) and that a reference compiler — `gfortran`,
-matching the `gfortran` integration-test label — is available for differential
-testing. Issue classification requires authenticated `gh`, not a compiler build.
+A request such as "Fix all these issues using the fix-issue skill: <GitHub
+search URL>" is sufficient. Do not require the user to repeat these defaults:
+
+- Resolve the complete issue selection, preserving all query filters and
+  fetching every page. Record the selected issue numbers once; do not silently
+  truncate the batch or keep expanding it as new issues appear.
+- Use a fresh issue-worker subagent and a separate Git worktree/branch per
+  issue, starting from the same fetched upstream `main`. Within each job,
+  delegate reproduction, reduction, fixing, and review to fresh phase
+  subagents as specified by `fix-issue`. Keep the caller's checkout untouched,
+  including any uncommitted work.
+- Run independent jobs concurrently within available CPU, memory, and disk
+  capacity. Allow only one writer/build/test process per worktree; never share
+  build directories, runtime module files, or scratch reproducers between jobs.
+  Serialize operations on shared Git state, including worktree creation and
+  fetches. Do not use `git stash` across workers; its stack is repository-wide.
+- Send separate PRs for independent fixes. When issues share a root cause or
+  genuinely depend on one another, consolidate them into **one PR with ordered,
+  focused commits**, rather than a stack of PRs, unless the user requests a
+  stack. Similar labels or edits to the same file alone are not dependencies.
+  Each distinct bug still needs its own MRE, commit, and integration test;
+  verify every included issue's original reproducer.
+- Use Pixi and LLVM 11 for fresh fixing worktrees, as described below. Pass
+  each subagent the exact worktree, build directory, compiler path, environment
+  invocation, and resource budget; shell activation is not inherited.
+- Publish drafts from the user's fork, then iterate on `pr-review`, human
+  feedback, and CI, including exhaustive CI, before marking ready. Follow the
+  commit-authorship policy below in every subagent, including CI fixers.
+- Record every additional compiler bug discovered in any phase. Fix regressions
+  introduced by the current changes in the same PR. For unrelated pre-existing
+  bugs, verify against upstream `main`, search open and closed GitHub issues,
+  and file only genuinely new reports. Deduplicate across the whole batch;
+  link existing or newly filed issues from the affected PRs and final report.
+  Do this even if the original fixing job is blocked or produces no PR.
+- Continue independent jobs when one is blocked. Report every selected issue
+  and its PR or explicit disposition; never present a partially processed batch
+  as complete.
+
+`fix-issue` owns orchestration and publication; `fix-mre` owns each compiler fix,
+its regression test, and commit preparation. The detailed batch procedure lives
+in `.agents/skills/fix-issue/references/batch.md`. These defaults apply to actual
+fix requests, not to triage, plan-only requests, or quoted example prompts.
+
+The reproduction and fix skills use the compiler from the assigned build:
+`build/<pixi-environment>/src/bin/lfortran` by default. Pixi activation selects
+that directory on `PATH`. Existing manual builds may instead use
+`src/bin/lfortran` or `build/src/bin/lfortran`; honor an explicitly supplied
+build rather than silently substituting one. Use `gfortran`, matching the
+integration-test label, for differential testing.
+Issue classification requires authenticated `gh`, not a compiler build.
 
 ## Prerequisites
+- **Recommended:** Git and [Pixi](https://pixi.sh/). The repository manifest
+  supplies build/test dependencies and Linux C/C++ compilers. On macOS, install
+  Xcode Command Line Tools; on Windows, use an initialized MSVC developer shell
+  with Git Bash available. The existing WSL and manual installation paths remain
+  supported.
+- For manual builds, the dependencies include:
 - Tools: CMake (>=3.10), Ninja, Git, Python (>=3.8), GCC/Clang/MSVC.
 - Generators: re2c, bison (needed for build0/codegen).
 - Libraries: zlib; optional: LLVM dev, libunwind, RapidJSON, fmt, xeus/xeus-zmq, Pandoc.
 
 ## Build, Test, and Development Commands
-- Typical dev config (Ninja + LLVM) is specified in `./build1.sh`:
-  - `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_STACKTRACE=yes`
-  - `cmake --build build -j`
-- Release build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_LLVM=ON`
-- Tests: `./run_tests.py &> log` (reference tests); `cd integration_tests && ./run_tests.py -j16 &> log` (integration tests)
+
+**Start with Pixi** for installation, building, and testing. Keep dependency
+versions and build details in `pixi.toml` and the scripts it invokes, rather
+than duplicating setup recipes in prompts or skills. These entry points stay
+the same when the build system or dependencies change:
+
+```bash
+pixi run build
+pixi run start --version
+pixi run ctest -j8 > unit.log 2>&1
+pixi run tests -j8 > reference.log 2>&1
+pixi run integration_tests -j8 > integration.log 2>&1
+```
+
+`pixi run` installs the selected environment automatically. Native tasks default
+to `llvm11`. Use `-e <environment>` consistently to select another configuration:
+
+```bash
+pixi run -e llvm22 build
+pixi run -e llvm22 start --version
+pixi run -e llvm22 integration_tests -j8 > integration-llvm22.log 2>&1
+```
+
+Each named environment has its own `.pixi/envs/<environment>` dependencies and
+`build/<environment>` CMake cache, objects, executable, and runtime modules.
+Reference-test scratch files live under `build/<environment>/reference-tests`;
+integration-test builds live under `build/<environment>/integration_tests`.
+Tasks select that environment's compiler explicitly, even if an older in-source
+binary exists. Do not run the legacy test entry points instead of these tasks
+and assume `PATH` alone overrides their in-source defaults.
+
+Configurations can coexist, including multiple configurations using the same
+LLVM version. Shared source generation still runs during configuration, so
+serialize builds/configuration in one worktree; use separate worktrees for
+parallel fixing jobs. `pixi run -e llvm11 clean` cleans the selected CMake build
+targets, not other configurations, source files, or Pixi environments. It does
+not run `git clean`.
+
+### Pixi toolchain for fixing worktrees
+
+Use the repository's `pixi.toml` environment `llvm11`, which pins
+`llvmdev ==11.1.0`. Reference outputs are LLVM-version-sensitive; `ci/test.sh`
+runs the reference suite only with LLVM 11. Do not regenerate references with
+a different LLVM version to make a test pass.
+
+In a fresh worktree, create its ignored state directory and set
+`CMAKE_BUILD_PARALLEL_LEVEL` to its allocated job budget. Then run from that
+worktree's root (substitute the assigned `<id>`):
+
+```bash
+pixi run -e llvm11 build > .fix-issue/<id>/build.log 2>&1
+pixi run -e llvm11 llvm-config --version
+pixi run -e llvm11 start --version
+```
+
+Use the same tasks for rebuilds and tests, and inspect their saved logs.
+Budget `<jobs>` across active workers instead of giving each worker all cores:
+
+```bash
+pixi run -e llvm11 ctest -j<jobs> > .fix-issue/<id>/unit.log 2>&1
+pixi run -e llvm11 tests -j<jobs> > .fix-issue/<id>/reference.log 2>&1
+pixi run -e llvm11 integration_tests -j<jobs> > .fix-issue/<id>/integration.log 2>&1
+pixi run -e llvm11 bash run.sh > .fix-issue/<id>/mre.log 2>&1
+```
+
+Pixi sets `LFORTRAN_BUILD_DIR` to the absolute `build/<environment>` path and
+prepends its `src/bin` to `PATH`. Pass the worktree, environment, build directory,
+compiler path, and exact invocation to every fresh subagent; activation is not
+inherited across tool calls. The `tests` task checks the built compiler's LLVM
+version before running or updating references; committed references remain in
+the source checkout, not in the scratch workspace.
+
+Verify `command -v lfortran`, `lfortran --version`, `llvm-config --version`,
+and `gfortran --version` in that same environment before testing. Checking only
+`llvm-config` is insufficient: a stale binary may still link another LLVM.
+Check the platform prerequisites above. Provision missing project dependencies
+through Pixi, not global package installs. Do not silently substitute another
+LLVM version, disable failing checks, or commit machine-specific workarounds.
+Report unavailable toolchains or SDKs explicitly.
+
+Honor an explicitly supplied environment or existing build for standalone work;
+inspect its `CMakeCache.txt` and reuse its actual build directory rather than
+creating a second one by assumption. Reference updates still require LLVM 11.
+Do not copy CMake caches, generated sources, `.mod` files, or `.pixi` environments
+between worktrees. Do not use `git clean -dfx` as automatic setup or recovery.
+
+### Other supported build methods
+
+Conda/micromamba, source tarballs, and direct CMake builds remain supported;
+see `doc/src/installation.md`. For manual Git builds:
+
+- `./build0.sh` generates sources. `./build1.sh` without arguments preserves
+  the existing in-source workflow, with `CMakeCache.txt` at the root and
+  `src/bin/lfortran` as the executable.
+- `./build1.sh build/manual` configures an out-of-source Debug build. Additional
+  arguments are passed to CMake, for example
+  `./build1.sh build/release -DCMAKE_BUILD_TYPE=Release`.
+- Direct CMake remains available:
+  `cmake -S . -B build/manual -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_STACKTRACE=yes`,
+  followed by `cmake --build build/manual -j`.
+- Legacy test entry points remain available: `./run_tests.py` and
+  `integration_tests/run_tests.py`. Both accept `--compiler-dir` for an explicit
+  compiler; integration tests also accept `--build-dir` for isolated outputs.
 
 **IMPORTANT**: always redirect test output to a log file and then examine the
 log file. Do NOT run tests using the style like `./run_tests.py | tail` because
@@ -93,9 +238,10 @@ that is very expensive, the tests can run several minutes. Instead, run tests
 only once, redirect to a log file and then examine the log file.
 
 ## Quick Smoke Test
-- We usually build with LLVM enabled (`-DWITH_LLVM=ON`).
-- AST/ASR (no LLVM): `build/src/bin/lfortran --show-ast examples/expr2.f90`
-- Run program (LLVM): `build/src/bin/lfortran examples/expr2.f90 && ./a.out`
+- Default build: `pixi run build` (LLVM enabled).
+- AST/ASR: `pixi run start --show-ast examples/expr2.f90`
+- Compile and run: `pixi run start examples/expr2.f90`.
+- Keep an executable: `pixi run start examples/expr2.f90 -o expr2`.
 
 ## Architecture & Scope
 - AST (syntax) ↔ ASR (semantic, valid-only). See `doc/src/design.md`.
@@ -148,7 +294,7 @@ only once, redirect to a log file and then examine the log file.
   - Avoid custom generation; place real sources in the tree and check them in.
   - Search for similar tests and use similar name convention (e.g., `intrinsic_name_NN.f90`, `derived_type_feature_NN.f90`)
 - Prefer integration tests; all new tests should be integration tests.
-- Ensure integration tests pass locally: `cd integration_tests && ./run_tests.py -j16 &> log`.
+- Ensure integration tests pass locally: `pixi run integration_tests -j16 > integration.log 2>&1`.
 - Add checks for correct results inside the `.f90` file using `if (i /= 4) error stop`-style idioms.
 - Always label new tests with at least `gfortran` (to ensure the code compiles with GFortran and does not rely on any LFortran-specific behavior) and `llvm` (to test with LFortran's default LLVM backend).
 - When fixing a bug, add an integration test that reproduces the failure and now compiles/runs successfully.
@@ -183,19 +329,25 @@ only once, redirect to a log file and then examine the log file.
 - If possible, still add a test under `integration_tests/`, but only register `gfortran` (not `llvm`), then register this test in `tests/tests.toml` with the needed outputs (`ast`, `asr`, `llvm`, `run`, etc.). Use `.f90` or `.f` (fixed-form auto-handled). Only if that cannot be done, add a new test into `tests/`.
   - See `tests/tests.toml` for examples; reference outputs live under `tests/reference/`.
 - Multi-file modules: set `extrafiles = "mod1.f90,mod2.f90"`.
-- Run locally: `./run_tests.py -j16 &> log` (use `-s` to debug).
-- Update references only when outputs intentionally change: `./run_tests.py -t path/to/test -u -s`.
+- Run locally: `pixi run tests -j16 > reference.log 2>&1` (use `-s` to debug).
+- Update references only when outputs intentionally change, with LLVM 11:
+  `pixi run tests -t path/to/test -u -s > reference-update.log 2>&1`.
 - Error messages: add to `tests/errors/continue_compilation_1.f90` and update references.
 - If your integration test does not compile yet, temporarily validate the change by adding a reference test that checks AST/ASR construction (enable `asr = true` and/or `ast = true` in `tests/tests.toml`). Promote it to an integration test once end‑to‑end compilation succeeds.
 
 ### Local Troubleshooting
 - Modfile version mismatch: if you see "Incompatible format: LFortran Modfile...",
-  clean and recompile (`ninja clean && ninja`)
-  Ensure the current `build/src/bin` is first on `PATH` when running tests.
+  clean and recompile the selected configuration
+  (`pixi run -e llvm11 clean && pixi run -e llvm11 build`).
+  Clean only the assigned build directory and ensure its `src/bin` directory
+  is first on `PATH` when running tests.
 
 ### Common Commands
-- Run all tests: `ctest` and `./run_tests.py -j16 &> log`
-- Run a specific test: `./run_tests.py -t pattern -s &> log`
+- Run unit/reference/integration suites: `pixi run ctest`, `pixi run tests`,
+  and `pixi run integration_tests`, each redirected to its own log.
+- Run a specific reference test: `pixi run tests -t pattern -s > reference.log 2>&1`.
+- Run a specific integration test:
+  `pixi run integration_tests -t pattern > integration.log 2>&1`.
 
 ## References
 - Developer docs: `doc/src/installation.md` (Tests) and `doc/src/progress.md` (workflow).
@@ -204,11 +356,26 @@ only once, redirect to a log file and then examine the log file.
 
 ## Commit & Pull Request Guidelines
 - Commits: small, single-topic, imperative (e.g., "fix: handle BOZ constants").
+- Do not add `Co-authored-by:` or `Co-author:` lines to any agent-created
+  commit, including bug fixes, CI follow-ups, and merges. Do not substitute
+  `Generated-By:`, `Assisted-By:`, other AI-credit trailers, or free-form AI
+  attribution. Preserve the user's configured human Git identity; never
+  invent an identity or set an AI as author or committer.
+- **Why:** AI tools may help write code, but every commit and PR must be
+  submitted by a human who has read, understood, and guarantees the change.
+  An AI co-author stamp misrepresents that responsibility; automated review
+  is not human sign-off. `check_ai_commit_authorship.py`, run by Quick Checks
+  CI, enforces this by inspecting author, committer, and commit messages across
+  the PR history. It rejects AI identities/attribution (not legitimate human
+  co-authorship); omitting co-author lines entirely is the agent workflow rule.
+  Inspect all new commits before pushing, not just the tip. The script's local
+  comparison range is `origin/main..HEAD`; ensure that reflects the intended
+  upstream base before relying on its result, without repointing user remotes.
 - One bug = one MRE = one PR. Do not bundle unrelated fixes.
-  - Exception: when fixing one issue requires several MREs (fixing one bug
-    exposes the next failure in the same reported code), all of them may go
-    in a single PR for that issue. Each bug still gets its own MRE, its own
-    commit, and its own integration test. This is what the `fix-issue` skill does.
+  - Exception: one issue may expose several bugs, or several selected issues
+    may share a root cause or require dependent fixes. Use one comprehensive PR
+    for that connected group, with one MRE, focused commit, and integration
+    test per distinct bug. Verify and reference every issue it fixes.
 - Never mix refactoring or formatting with bug fixes. Send those separately.
 - Every fix PR must demonstrate: test fails on main, test passes on branch.
   If you cannot find such a test, the fix is not understood well enough.
