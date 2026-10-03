@@ -27,22 +27,11 @@ The cases that this `String` type covers are:
 * String declared with ISO C binding `c_char` kind:
   - `character(len=n, kind=c_char) :: x` → `String(1, n, ExpressionLength, DescriptorString)`
 
-### Physical Type Correspondence
+### Physical Representation
 
-The String physical types mirror arrays:
+The current [`string_physical_type`](../string_physical_type.md) values are `DescriptorString` and `CChar`. Ordinary Fortran strings use `DescriptorString`. A `bind(C)` argument or return variable declared with `kind=c_char` uses `CChar`; choosing that kind without `bind(C)` keeps the descriptor representation.
 
-| Array Physical Type | String Physical Type |
-|---------------------|---------------------|
-| `FixedSizeArray` | `FixedSizeString` |
-| `PointerToDataArray` | `PointerString` |
-| `UnboundedPointerToDataArray` | `CString` |
-| `DescriptorArray` | `DescriptorString` |
-
-### Constraints
-
-* Allocatable strings must be `DescriptorString`
-* `PointerString` or `FixedSizeString` cannot be allocatable
-* `PointerString` must have a length (non-null `len`), except when casting a descriptor string to a pointer string
+Deferred-length string variables must be allocatable or pointers. `CChar` cannot be used for local variables. The generated Verify section below records the string length constraints.
 
 ### Ownership
 
