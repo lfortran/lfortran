@@ -5507,9 +5507,9 @@ document_symbols = true
 options = "--implicit-interface"
 
 [[test]]
-filename = "document_symbols2.f90"
+filename = "document_symbols3.f90"
 document_symbols = true
-extrafiles = "document_symbols2_module.f90"
+extrafiles = "document_symbols3_module.f90"
 
 [[test]]
 filename = "../integration_tests/loop_var_use_after_loop.f90"
