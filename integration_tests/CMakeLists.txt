@@ -4558,6 +4558,7 @@ RUN(NAME optional_17 LABELS gfortran llvm)
 RUN(NAME optional_string_arg_01 LABELS gfortran llvm)
 
 RUN(NAME end_name_match LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME construct_name_01 LABELS gfortran llvm)
 
 RUN(NAME mangle_underscore_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --mangle-underscore --all-mangling NO_FAST_MATH)
 
