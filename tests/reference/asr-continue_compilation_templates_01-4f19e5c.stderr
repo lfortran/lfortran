@@ -1475,3 +1475,9 @@ semantic error: no specific procedure of the defined operator '.minus.' matches 
      |
 2451 |         print *, defop_applyr{operator(.minus.)}(9.0, 2.0)  ! {Error} no specific procedure of the defined operator '.minus.' matches the interface of 'op'
      |                               ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_templates_01.f90:2482:13
+     |
+2482 |             copy = original  ! {Error} Type mismatch in assignment, the types must be compatible
+     |             ^^^^   ^^^^^^^^ type mismatch (original_t and copy_t)

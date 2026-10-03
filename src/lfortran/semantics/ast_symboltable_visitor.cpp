@@ -6140,6 +6140,9 @@ public:
             ext_overloaded_op_procs[proc.first] = proc.second;
         }
         overloaded_op_procs.clear();
+        std::vector<std::pair<std::string, Location>> ext_assgn_proc_names_locations
+            = assgn_proc_names_locations;
+        assgn_proc_names_locations.clear();
 
         Vec<ASR::require_instantiation_t*> reqs;
         reqs.reserve(al, x.n_items);
@@ -6199,10 +6202,16 @@ public:
 
         add_overloaded_procedures();
         add_class_procedures();
+        try {
+            add_assignment_procedures();
+        } catch (SemanticAbort &e) {
+            if (!compiler_options.continue_compilation) throw;
+        }
 
         for (auto &proc: ext_overloaded_op_procs) {
             overloaded_op_procs[proc.first] = proc.second;
         }
+        assgn_proc_names_locations = ext_assgn_proc_names_locations;
 
         ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
             current_scope, s2c(al, template_name), args.p, args.size(), reqs.p, reqs.size());
