@@ -3967,7 +3967,7 @@ RUN(NAME deallocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME deallocate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME finalization_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME finalization_02 LABELS gfortran llvm)
+RUN(NAME finalization_02 LABELS gfortran llvm EXTRA_ARGS -g GFORTRAN_ARGS -g)
 RUN(NAME finalization_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME finalization_04 LABELS gfortran llvm)
 RUN(NAME finalization_05 LABELS gfortran llvm)
@@ -3980,6 +3980,7 @@ RUN(NAME finalization_11 LABELS gfortran llvm EXTRAFILES finalization_11_module.
 RUN(NAME finalization_12 LABELS gfortran llvm)
 RUN(NAME finalization_13 LABELS gfortran llvm)
 RUN(NAME finalization_14 LABELS gfortran llvm)
+RUN(NAME finalization_15 LABELS gfortran llvm EXTRA_ARGS -g GFORTRAN_ARGS -g)
 
 RUN(NAME read_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN read_02_data.txt)
