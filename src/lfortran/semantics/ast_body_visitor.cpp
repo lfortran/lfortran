@@ -3049,6 +3049,25 @@ public:
             }
         } else {
             for (size_t i = 0; i < x.n_symbols; i++){
+                std::string remote_sym, local_sym, spec;
+                if (instantiation_generic_spec(x.m_symbols[i], remote_sym,
+                        local_sym, spec)) {
+                    // The specific procedures of a generic spec are recorded
+                    // in the substitutions by their names in the template.
+                    // A deferred procedure is replaced by its actual argument,
+                    // which has no body to instantiate.
+                    ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(
+                        temp->m_symtab->get_symbol(remote_sym));
+                    for (size_t j = 0; j < op->n_procs; j++) {
+                        ASR::symbol_t *s = op->m_procs[j];
+                        std::string s_name = ASRUtils::symbol_name(s);
+                        if (ASRUtils::is_template_arg(template_sym, s_name)) {
+                            continue;
+                        }
+                        symbols.push_back({symbol_subs[s_name], s});
+                    }
+                    continue;
+                }
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(to_lower(use_symbol->m_remote_sym));
                 std::string new_s_name = to_lower(use_symbol->m_remote_sym);
@@ -8712,8 +8731,11 @@ public:
                         args_with_mdt.push_back(al, args[i]);
                     }
                 }
+                // A generic interface of a template block is only visible
+                // inside the template and cannot be imported.
                 if( !ASR::is_a<ASR::Module_t>(*original_sym_owner) &&
-                    !ASR::is_a<ASR::Program_t>(*original_sym_owner) ) {
+                    !ASR::is_a<ASR::Program_t>(*original_sym_owner) &&
+                    !ASR::is_a<ASR::Template_t>(*original_sym_owner) ) {
                     std::string s_name = "1_" + std::string(p->m_name);
                     std::string original_sym_owner_name = ASRUtils::symbol_name(original_sym_owner);
                     if( current_scope->resolve_symbol(original_sym_owner_name) == nullptr ) {

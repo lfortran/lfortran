@@ -874,10 +874,28 @@ semantic error: Variable `x` cannot have both the OPTIONAL and VALUE attribute b
 2069 | subroutine bindc_optional_value_contains(x) bind(c)  ! {Error} Variable `x` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value_contains` is BIND(C)
      |                                          ^ 
 
-semantic error: 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
-    --> tests/errors/continue_compilation_1.f90:2080:5
+semantic error: Explicit shaped array with nonconstant bounds
+    --> tests/errors/continue_compilation_1.f90:2082:22
      |
-2080 |     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+2082 |         integer :: b(dtncb_m*2)  ! {Error} Explicit shaped array with nonconstant bounds
+     |                      ^^^^^^^^^ 
+
+semantic error: Initialization of `pnc_y1` must reduce to a compile time constant.
+    --> tests/errors/continue_compilation_1.f90:2089:5
+     |
+2089 |     integer, parameter :: pnc_y1 = abs(pnc_bla)  ! {Error} Initialization of `pnc_y1` must reduce to a compile time constant.
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Initialization of `pnc_y2` must reduce to a compile time constant.
+    --> tests/errors/continue_compilation_1.f90:2090:5
+     |
+2090 |     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+    --> tests/errors/continue_compilation_1.f90:2097:5
+     |
+2097 |     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
      |     ^^^^^^^^^^ 'y' is not a dummy argument
 
 semantic error: Restriction type mismatch with provided function argument
