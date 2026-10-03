@@ -1,0 +1,5 @@
+warning: Routine `exit` is a non-standard function
+ --> tests/errors/exit_nonstandard_call_01.f90:3:5
+  |
+3 |     call exit(1)
+  |     ^^^^^^^^^^^^ 
