@@ -1,0 +1,24 @@
+program doloop_23
+! A comment after the terminal statement of labelled DO loops
+implicit none
+integer :: i, j, n
+n = 0
+do i = 1, 3
+    do j = 1, 3
+        n = n + 1
+    10 end do
+10 end do
+n = n + 100
+if (n /= 109) then
+    error stop
+end if
+n = 0
+do i = 1, 4
+    20 n = n + i ! the loop ends here
+20 end do
+n = n + 100
+if (n /= 110) then
+    error stop
+end if
+print *, n
+end program doloop_23

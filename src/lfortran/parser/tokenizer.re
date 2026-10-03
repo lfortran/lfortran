@@ -722,13 +722,22 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             pragma_decl / newline { TK_TRIVIA(TK_PRAGMA_DECL) }
 
             comment newline {
-                line_num++; cur_line=cur;
                 token(yylval.string);
                 yylval.string.n--;
                 token_loc(loc);
                 if (last_token == yytokentype::TK_NEWLINE) {
+                    line_num++; cur_line=cur;
                     return yytokentype::TK_COMMENT;
+                } else if (enddo_newline_process) {
+                    // The comment ends the terminal statement of labelled
+                    // DO loops: insert their `end do`s after it, as for a
+                    // plain newline (the line is counted after them)
+                    enddo_newline_process = false;
+                    enddo_state = 1;
+                    last_token=yytokentype::TK_NEWLINE;
+                    return yytokentype::TK_EOLCOMMENT;
                 } else {
+                    line_num++; cur_line=cur;
                     last_token=yytokentype::TK_NEWLINE;
                     return yytokentype::TK_EOLCOMMENT;
                 }
