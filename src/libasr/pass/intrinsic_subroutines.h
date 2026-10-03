@@ -37,6 +37,10 @@ enum class IntrinsicImpureSubroutines : int64_t {
     System,
     Sleep,
     CoSum,
+    CoMax,
+    CoMin,
+    CoBroadcast,
+    Exit,
     // ...
 };
 
@@ -908,12 +912,17 @@ namespace DateAndTime {
             ASR::symbol_t *s_4 = b.create_c_func_subroutines(c_func_name_4, fn_symtab, 1, int32);
             fn_symtab->add_symbol(c_func_name_4, s_4);
             dep.push_back(al, s2c(al, c_func_name_4));
+            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(extract_type(arg_types[3]));
             for (int i = 0; i < 8; i++) {
                 Vec<ASR::expr_t*> call_args2; call_args2.reserve(al, 1);
                 call_args2.push_back(al, b.i32(i+1));
                 auto xx = declare("i_" + std::to_string(i), int32, Local);
                 body.push_back(al, b.Assignment(xx, b.Call(s_4, call_args2, int32)));
-                vals.push_back(xx);
+                ASR::expr_t* xx_casted = xx;
+                if (!ASRUtils::check_equal_type(ASRUtils::expr_type(xx), element_type, nullptr, nullptr, false)) {
+                    xx_casted = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, xx, ASR::cast_kindType::IntegerToInteger, element_type, nullptr, nullptr));
+                }
+                vals.push_back(xx_casted);
             }
             body.push_back(al, b.Assignment(args[3], b.ArrayConstant(vals, extract_type(arg_types[3]), false)));
         } else {
@@ -968,7 +977,21 @@ namespace GetEnvironmentVariable {
         std::string c_func_name = "_lfortran_get_environment_variable";
         std::string new_name = "_lcompilers_get_environment_variable_";
         declare_basic_variables(new_name);
-        fill_func_arg_sub("name", arg_types[0], In);
+
+        auto get_assumed_len_string = [&](ASR::ttype_t* type) -> ASR::ttype_t* {
+            if (ASR::is_a<ASR::String_t>(*type)) {
+                ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(type);
+                if (str_t->m_len) {
+                    return ASRUtils::TYPE(ASR::make_String_t(
+                        al, str_t->base.base.loc, str_t->m_kind, nullptr,
+                        ASR::string_length_kindType::AssumedLength,
+                        str_t->m_physical_type));
+                }
+            }
+            return type;
+        };
+
+        fill_func_arg_sub("name", get_assumed_len_string(arg_types[0]), In);
         if ( arg_types.size() >= 2 && ASRUtils::is_character(*arg_types[1]) ) {// this is the case where args[1] is `value`
             /*
             interface 
@@ -1040,7 +1063,7 @@ namespace GetEnvironmentVariable {
             body.push_back(al, b.SubroutineCall(_lfortran_get_environment_variable, call_to_lfortran_get_environment_variable));
 
             // Declare `value` +  Assign `envVar_string_holder` into func arg `value`
-            fill_func_arg_sub("value", arg_types[1], Out);
+            fill_func_arg_sub("value", get_assumed_len_string(arg_types[1]), Out);
             body.push_back(al, b.Assignment(args[1], envVar_string_holder));
             // Deallocate `envVar_string_holder`
             body.push_back(al, b.Deallocate(envVar_string_holder));
@@ -1054,19 +1077,18 @@ namespace GetEnvironmentVariable {
             }
             if (has_status) {
                 fill_func_arg_sub("status", arg_types[arg_idx], Out);
-                // Declare interface `_lfortran_get_environment_variable_status`
-                std::string status_func_name = "_lfortran_get_environment_variable_status";
+                std::string status_func_name = "_lfortran_get_environment_variable_status_value";
                 ASR::symbol_t *_lfortran_get_environment_variable_status = b.create_c_func_subroutines_with_return_type(
-                    status_func_name, fn_symtab, 2,
+                    status_func_name, fn_symtab, 3,
                     {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
-                     int32},
+                     int32, int32},
                     arg_types[arg_idx]);
                 fn_symtab->add_symbol(status_func_name, _lfortran_get_environment_variable_status);
                 dep.push_back(al, s2c(al, status_func_name));
-                // Call the status function and assign result
-                Vec<ASR::expr_t*> status_call_args; status_call_args.reserve(al, 2);
+                Vec<ASR::expr_t*> status_call_args; status_call_args.reserve(al, 3);
                 status_call_args.push_back(al, ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
                 status_call_args.push_back(al, b.StringLen(args[0] /* name */));
+                status_call_args.push_back(al, b.StringLen(args[1] /* value */));
                 body.push_back(al, b.Assignment(args[arg_idx], b.Call(_lfortran_get_environment_variable_status, status_call_args, arg_types[arg_idx])));
                 arg_idx++;
             }
@@ -1299,7 +1321,29 @@ namespace MoveAlloc {
         ASRUtils::require_impl(ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[1])), "Second argument must be an allocatable type", x.base.base.loc, diagnostics);
     }
 
-    static inline ASR::asr_t* create_MoveAlloc(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+    static inline ASR::asr_t* create_MoveAlloc(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        for (size_t i = 0; i < 2; i++) {
+            ASR::symbol_t *sym = nullptr;
+            ASR::expr_t* expr = args[i];
+            
+            if (expr->type == ASR::exprType::ArrayPhysicalCast) {
+                expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;
+            }
+            
+            if (expr->type == ASR::exprType::Var) {
+                sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
+            } else if (expr->type == ASR::exprType::StructInstanceMember) {
+                sym = ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m;
+            }
+
+            if (sym && ASRUtils::is_coarray(sym)) {
+                diag.add(diag::Diagnostic(
+                    "move_alloc is not yet supported for coarrays",
+                    diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("", { loc })}));
+                return nullptr;
+            }
+        }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 2);
         m_args.push_back(al, args[0]); m_args.push_back(al, args[1]);
         return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::MoveAlloc), m_args.p, m_args.n, 0);
@@ -1330,7 +1374,7 @@ namespace MoveAlloc {
                                 str_t->m_physical_type));
                             ASR::ttype_t* new_array = ASRUtils::TYPE(ASR::make_Array_t(
                                 al, arr->base.base.loc, deferred_str, arr->m_dims, arr->n_dims,
-                                arr->m_physical_type));
+                                arr->m_physical_type, arr->m_memory_space));
                             return ASRUtils::TYPE(ASR::make_Allocatable_t(al, type->base.loc, new_array));
                         }
                     }
@@ -1437,6 +1481,8 @@ namespace MoveAlloc {
                 ASRUtils::symbol_type(from_struct)) : nullptr;
             alloc_arg.m_len_expr = len_expr;
             alloc_arg.m_sym_subclass = from_struct;
+            alloc_arg.m_codims = nullptr;
+            alloc_arg.n_codims = 0;
             alloc_args.push_back(al, alloc_arg);
             if_body.push_back(ASRUtils::STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
                 nullptr, nullptr, nullptr)));
@@ -1735,6 +1781,93 @@ namespace Sleep {
 
 } // namespace Sleep
 
+namespace Exit {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1, "Unexpected number of args, exit takes 1 argument, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])), "Argument to exit must be of integer type", x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_Exit(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        diag.semantic_warning_label(
+                "Routine `exit` is a non-standard function", { loc }, "");
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        if (args.size() >= 1 && args[0] != nullptr) {
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);
+            if (!ASRUtils::is_integer(*arg_type)) {
+                diag.add(diag::Diagnostic(
+                    "`status` argument of `exit` must be of integer type, but got " +
+                        ASRUtils::type_to_str_fortran_expr(arg_type, args[0]),
+                    diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("must be of integer type", { args[0]->base.loc })}));
+                return nullptr;
+            }
+            m_args.push_back(al, args[0]);
+        } else {
+            // `call exit` / `call exit()` exits with status 0
+            m_args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))));
+        }
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::Exit), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_Exit(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+
+        const std::string c_func_name = "_lfortran_exit";
+        const std::string new_name = "_lcompilers_exit_";
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("status", arg_types[0], In);
+
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
+        ASR::expr_t *arg = b.Variable(fn_symtab_1, "n",
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+            ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
+        args_1.push_back(al, arg);
+
+        SetChar dep_1; dep_1.reserve(al, 0);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 0);
+        ASR::symbol_t *c_sym = make_ASR_Function_t(
+            s2c(al, c_func_name),
+            fn_symtab_1,
+            dep_1,
+            args_1,
+            body_1,
+            nullptr,
+            ASR::abiType::BindC,
+            ASR::deftypeType::Interface,
+            s2c(al, c_func_name)
+        );
+        fn_symtab->add_symbol(c_func_name, c_sym);
+        dep.push_back(al, s2c(al, c_func_name));
+
+        Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 1);
+        {
+            ASR::call_arg_t arg0; arg0.loc = loc; arg0.m_value = CastingUtil::perform_casting(args[0],
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), al, loc);
+            call_args.push_back(al, arg0);
+        }
+        body.push_back(al, b.SubroutineCall(c_sym, call_args));
+
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(
+            s2c(al, fn_name),
+            fn_symtab,
+            dep,
+            args,
+            body,
+            nullptr,
+            ASR::abiType::Source,
+            ASR::deftypeType::Implementation,
+            nullptr
+        );
+        scope->add_symbol(fn_name, fn_sym);
+        return b.SubroutineCall(fn_sym, new_args);
+    }
+
+} // namespace Exit
+
 namespace CoSum {
 
     static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
@@ -1749,7 +1882,17 @@ namespace CoSum {
     }
 
     static inline ASR::asr_t* create_CoSum(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);
+        if (!ASRUtils::is_integer(*arg_type) && !ASRUtils::is_real(*arg_type)
+                && !ASRUtils::is_complex(*arg_type)) {
+            diag.add(diag::Diagnostic(
+                "`a` argument of `co_sum` must be of integer, real or complex type, but got " +
+                    ASRUtils::type_to_str_fortran_expr(arg_type, args[0]),
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label("must be integer, real or complex type", { args[0]->base.loc })}));
+            return nullptr;
+        }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
         for (size_t i = 1; i < args.size(); i++) {
@@ -1796,6 +1939,276 @@ namespace CoSum {
     }
 
 } // namespace CoSum
+namespace CoMax {
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x,
+             diag::Diagnostics& diagnostics) {
+
+        ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 4,
+            "Unexpected number of args, co_max takes 1 to 4 arguments, found "
+             + std::to_string(x.n_args),
+            x.base.base.loc, diagnostics);
+            
+        ASRUtils::require_impl(
+            ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])) ||
+            ASRUtils::is_real(*ASRUtils::expr_type(x.m_args[0])) ||
+            ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[0])) ,
+            "First argument must be of integer, real or character type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_CoMax(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);
+        if (!ASRUtils::is_integer(*arg_type) && !ASRUtils::is_real(*arg_type) && !ASRUtils::is_character(*arg_type)) {
+            diag.add(diag::Diagnostic(
+                "`a` argument of `co_max` must be of integer, real or character type, but got " +
+                    ASRUtils::type_to_str_fortran_expr(arg_type, args[0]),
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label("must be integer, real or character type", { args[0]->base.loc })}));
+            return nullptr;
+        }
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        for (size_t i = 1; i < args.size(); i++) {
+            if (args[i]) {
+                m_args.push_back(al, args[i]);
+            }
+        }
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc,
+            static_cast<int64_t>(IntrinsicImpureSubroutines::CoMax),
+            m_args.p, m_args.n, 0);
+    }
+
+     static inline ASR::stmt_t* instantiate_CoMax(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        const std::string new_name = "_lcompilers_co_max_"
+            + std::to_string(arg_types.n);
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("a", arg_types[0], InOut);
+        if (arg_types.n >= 2) {
+            fill_func_arg_sub("result_image", arg_types[1], In);
+        }
+        if (arg_types.n >= 3) {
+            fill_func_arg_sub("stat", arg_types[2], In);
+        }
+        if (arg_types.n >= 4) {
+            fill_func_arg_sub("errmsg", arg_types[3], In);
+        }
+
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(
+            s2c(al, fn_name),
+            fn_symtab,
+            dep,
+            args,
+            body,
+            nullptr,
+            ASR::abiType::Source,
+            ASR::deftypeType::Implementation,
+            nullptr
+        );
+        scope->add_symbol(fn_name, fn_sym);
+        return b.SubroutineCall(fn_sym, new_args);
+    }
+
+}
+
+namespace CoMin {
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x,
+             diag::Diagnostics& diagnostics) {
+
+        ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 4,
+            "Unexpected number of args, co_min takes 1 to 4 arguments, found "
+             + std::to_string(x.n_args),
+            x.base.base.loc, diagnostics);
+            
+        ASRUtils::require_impl(
+            ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])) ||
+            ASRUtils::is_real(*ASRUtils::expr_type(x.m_args[0])) ||
+            ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[0])) ,
+            "First argument must be of integer, real or character type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_CoMin(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);
+        if (!ASRUtils::is_integer(*arg_type) && !ASRUtils::is_real(*arg_type) && !ASRUtils::is_character(*arg_type)) {
+            diag.add(diag::Diagnostic(
+                "`a` argument of `co_min` must be of integer, real or character type, but got " +
+                    ASRUtils::type_to_str_fortran_expr(arg_type, args[0]),
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label("must be integer, real or character type", { args[0]->base.loc })}));
+            return nullptr;
+        }
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        for (size_t i = 1; i < args.size(); i++) {
+            if (args[i]) {
+                m_args.push_back(al, args[i]);
+            }
+        }
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc,
+            static_cast<int64_t>(IntrinsicImpureSubroutines::CoMin),
+            m_args.p, m_args.n, 0);
+    }
+
+     static inline ASR::stmt_t* instantiate_CoMin(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        const std::string new_name = "_lcompilers_co_min_"
+            + std::to_string(arg_types.n);
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("a", arg_types[0], InOut);
+        if (arg_types.n >= 2) {
+            fill_func_arg_sub("result_image", arg_types[1], In);
+        }
+        if (arg_types.n >= 3) {
+            fill_func_arg_sub("stat", arg_types[2], In);
+        }
+        if (arg_types.n >= 4) {
+            fill_func_arg_sub("errmsg", arg_types[3], In);
+        }
+
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(
+            s2c(al, fn_name),
+            fn_symtab,
+            dep,
+            args,
+            body,
+            nullptr,
+            ASR::abiType::Source,
+            ASR::deftypeType::Implementation,
+            nullptr
+        );
+        scope->add_symbol(fn_name, fn_sym);
+        return b.SubroutineCall(fn_sym, new_args);
+    }
+
+}
+
+namespace CoBroadcast {
+   static inline bool is_static_pod_type(ASR::ttype_t* t, bool is_component = false) {
+        if (!t) return false;
+
+        switch (t->type) {
+            case ASR::ttypeType::Integer:
+            case ASR::ttypeType::Real:
+            case ASR::ttypeType::Complex:
+            case ASR::ttypeType::Logical:
+                return true;
+
+            case ASR::ttypeType::Array: {
+                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(t);
+                if (is_component && arr->m_physical_type != ASR::array_physical_typeType::FixedSizeArray) {
+                    return false;
+                }
+                return is_static_pod_type(arr->m_type, is_component);
+            }
+
+            case ASR::ttypeType::Allocatable: {
+                if (is_component) {
+                    return false;
+                }
+                ASR::Allocatable_t* allo = ASR::down_cast<ASR::Allocatable_t>(t);
+                return is_static_pod_type(allo->m_type, is_component);
+            }
+
+            case ASR::ttypeType::StructType: {
+                ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(t);
+                for (size_t i = 0; i < st->n_data_member_types; i++) {
+                    if (!is_static_pod_type(st->m_data_member_types[i], true)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            default:
+                return false;
+        }
+    }
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x,
+             diag::Diagnostics& diagnostics) {
+
+        ASRUtils::require_impl(x.n_args >= 2 && x.n_args <= 4,
+            "Unexpected number of args, co_broadcast takes 2 to 4 arguments, found "
+             + std::to_string(x.n_args),
+            x.base.base.loc, diagnostics);
+
+        ASRUtils::require_impl(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[0])) ||
+            is_static_pod_type(ASRUtils::expr_type(x.m_args[0])),
+            "First argument must be of integer, real, complex, character, logical or static derived type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_CoBroadcast(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);
+        if (!ASRUtils::is_character(*arg_type) && !is_static_pod_type(arg_type)) {
+            diag.add(diag::Diagnostic(
+                "`a` argument of `co_broadcast` must currently be of integer, real, complex, character, logical or static derived type, but got " +
+                    ASRUtils::type_to_str_fortran_expr(arg_type, args[0]) +
+                    " which is not yet supported",
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label("must currently be integer, real, complex, character, logical or static derived type; other types are not yet supported", { args[0]->base.loc })}));
+            return nullptr;
+        }
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        for (size_t i = 1; i < args.size(); i++) {
+            if (args[i]) {
+                m_args.push_back(al, args[i]);
+            }
+        }
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc,
+            static_cast<int64_t>(IntrinsicImpureSubroutines::CoBroadcast),
+            m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_CoBroadcast(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        const std::string new_name = "_lcompilers_co_broadcast_"
+            + std::to_string(arg_types.n);
+        declare_basic_variables(new_name);
+        ASR::symbol_t *type_decl = nullptr;
+        ASR::expr_t *target_expr = new_args[0].m_value;
+        if (ASR::is_a<ASR::ArrayItem_t>(*target_expr)) {
+            target_expr = ASR::down_cast<ASR::ArrayItem_t>(target_expr)->m_v;
+        }
+        if (ASR::is_a<ASR::Var_t>(*target_expr)) {
+            ASR::Variable_t *orig_var = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(target_expr)->m_v);
+            type_decl = orig_var->m_type_declaration;
+        }
+        auto arg_a = b.Variable(fn_symtab, "a", arg_types[0], ASR::intentType::InOut, type_decl);
+        args.push_back(al, arg_a);
+        LCOMPILERS_ASSERT(arg_types.n >= 2);
+        fill_func_arg_sub("source_image", arg_types[1], In);
+        if (arg_types.n >= 3) {
+            fill_func_arg_sub("stat", arg_types[2], In);
+        }
+        if (arg_types.n >= 4) {
+            fill_func_arg_sub("errmsg", arg_types[3], In);
+        }
+
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(
+            s2c(al, fn_name),
+            fn_symtab,
+            dep,
+            args,
+            body,
+            nullptr,
+            ASR::abiType::Source,
+            ASR::deftypeType::Implementation,
+            nullptr
+        );
+        scope->add_symbol(fn_name, fn_sym);
+        return b.SubroutineCall(fn_sym, new_args);
+    }
+
+}
 
 } // namespace LCompilers::ASRUtils
 

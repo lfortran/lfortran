@@ -38,5 +38,5 @@ program test_autodiff_square
     call square__enzyme_autodiff(square, x, dx)
 
     print *, "d/dx [x*x] at x=3 =", dx
-    if (abs(dx - 6.0) > tol) error stop "wrong derivative"
+    if (.not. (abs(dx - 6.0) <= tol)) error stop "wrong derivative"
 end program

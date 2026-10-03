@@ -2,7 +2,6 @@
     [(Program
         case_02
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -13,8 +12,8 @@
                     "! local variable declaration"
                 )]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -38,8 +37,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             marks
             81

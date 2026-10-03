@@ -2,9 +2,6 @@
     [(Program
         print_it
         ()
-        []
-        []
-        []
         [(SubroutineCall
             0
             print_int
@@ -20,9 +17,6 @@
             []
             ()
             ()
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -40,8 +34,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 a
                 5

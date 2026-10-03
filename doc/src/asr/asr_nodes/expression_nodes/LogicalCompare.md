@@ -1,77 +1,60 @@
 # LogicalCompare
 
-Logical comparison `expr` ASR node.
+A comparison of two logical values.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
-LogicalCompare(expr left, cmpop op, expr right, ttype type, expr? value)
+```text
+LogicalCompare(expr left, cmpop op, expr right, ttype type,
+    expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`left`      | left side of the comparison operand |
-|`right` | right side of the comparison operand |
-|`op` | comparison operator |
-|`type` | table entry type |
-|`value`| expression value|
+| Argument | Description |
+|----------|-------------|
+| `left` | the left operand. |
+| `op` | the comparison; see [cmpop](../enum_nodes/cmpop.md). |
+| `right` | the right operand. |
+| `type` | the logical type of the result. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the LogicalCompare represents.
+The value of the expression.
 
 ## Description
 
-**LogicalCompare** represents logical comparison operation.
-
-Comparison operation can be:
-
-1. Equal to or not equal to `.TRUE.`
-2. Equal to or not equal to `.FALSE.`
-
-## Types
-
-Only accepts `.TRUE`, `.FALSE`.
+Only `Eq` and `NotEq` are meaningful. `p == q` on logicals is the same
+operation as `p .eqv. q`; the two spellings produce different nodes so that
+unparsing can reproduce what was written.
 
 ## Examples
 
-```fortran
-.FALSE. == .TRUE.
+```clojure
+(LogicalCompare
+  :left (Var
+    :v (SymbolRef 1 "p")
+  )
+  :op :Eq
+  :right (Var
+    :v (SymbolRef 1 "q")
+  )
+  :type (Logical
+    :kind 4
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(LogicalCompare
-        (LogicalConstant
-            .false.
-            (Logical 4 [])
-        )
-        Eq
-        (LogicalConstant
-            .true.
-            (Logical 4 [])
-        )
-        (Logical 4 [])
-        (LogicalConstant
-            .false.
-            (Logical 4 [])
-        )
-    )]
-)
-
+```{literalinclude} ../../examples/logical_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[IntegerCompare](IntegerCompare.md)
+[cmpop](../enum_nodes/cmpop.md), [LogicalBinOp](LogicalBinOp.md)
