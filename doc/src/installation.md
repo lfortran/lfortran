@@ -239,7 +239,7 @@ including `git`.
   Note: producing executables with the built `lfortran` requires a C
   compiler driver (`clang`, `cc` or `gcc`) in `$PATH`, which the
   `build-essential` package above provides; see the user guide section
-  "Selecting the C Compiler (Link Driver)".
+  "Selecting the C Compiler".
 
 * If everything compiles, you can use LFortran as follows
 

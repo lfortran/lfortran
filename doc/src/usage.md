@@ -296,7 +296,7 @@ lfortran hw.f90 --linker=gcc # use gcc
 ```
 
 The Metal GPU backend (`--gpu=metal`) requires clang for its
-Objective-C runtime.
+Objective-C runtime. `--target` is passed through only with a clang driver.
 
 ## Differences from other compilers
 

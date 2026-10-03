@@ -2137,17 +2137,26 @@ int link_executable(const std::vector<std::string> &infiles,
             }
             CC += driver;
 
-            // Basename of the driver program for clang-only behavior below.
-            std::string prog = driver.substr(0, driver.find(' '));
-            size_t slash = prog.find_last_of("/\\");
-            if (slash != std::string::npos) {
-                prog = prog.substr(slash + 1);
-            }
-            bool driver_is_clang = LCompilers::startswith(prog, "clang")
+            // True when any whitespace-separated token of the driver is a
+            // clang program (covers wrappers like "ccache clang"); only the
+            // basename is checked so a "clang" inside a --linker-path
+            // directory does not count. On macOS `cc` is the clang driver.
+            bool driver_is_clang = false;
+            std::istringstream driver_tokens(driver);
+            for (std::string token; driver_tokens >> token;) {
+                size_t slash = token.find_last_of("/\\");
+                if (slash != std::string::npos) {
+                    token = token.substr(slash + 1);
+                }
+                if (LCompilers::startswith(token, "clang")
 #ifdef __APPLE__
-                || prog == "cc"
+                    || token == "cc"
 #endif
-                ;
+                    ) {
+                    driver_is_clang = true;
+                    break;
+                }
+            }
 
             if (compiler_options.gpu_backend == "metal" && !driver_is_clang) {
                 std::cerr << "The Metal backend requires the clang driver, "
@@ -2156,8 +2165,14 @@ int link_executable(const std::vector<std::string> &infiles,
                 return 10;
             }
 
-            if (compiler_options.target != "" && driver_is_clang) {
-                options = " -target " + compiler_options.target;
+            if (compiler_options.target != "") {
+                if (driver_is_clang) {
+                    options = " -target " + compiler_options.target;
+                } else {
+                    std::cerr << "warning: --target is only supported with "
+                        "the clang driver and will be ignored for '" << CC
+                        << "'." << std::endl;
+                }
             }
 
             if (static_executable) {
