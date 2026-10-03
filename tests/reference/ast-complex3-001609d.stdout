@@ -2,8 +2,6 @@
     [(Program
         complex3
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeComplex
@@ -83,8 +81,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             x
             (Complex (Real "3.0_8") (Real "4.0_8"))

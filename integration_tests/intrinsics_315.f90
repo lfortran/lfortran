@@ -1,6 +1,7 @@
 program intrinsics_315
     integer (kind = 4):: a1 = 2147483647
     integer (kind = 8):: a2 = 2147483648_8
+    integer (kind = 1):: i1 = 0_1
     integer (kind = 4):: b1 = 0_4
     integer (kind = 8) :: b2 = 2147483648_8
     logical :: c = .TRUE.
@@ -66,5 +67,11 @@ program intrinsics_315
 
     print *, OUT_OF_RANGE(r2, p2, c)
     if (OUT_OF_RANGE(r2, p2, c) .neqv. .false.) error stop
+
+    if (OUT_OF_RANGE(126_4, i1) .neqv. .false.) error stop
+    if (OUT_OF_RANGE(128_4, i1) .neqv. .true.) error stop
+    if (OUT_OF_RANGE(-129_4, i1) .neqv. .true.) error stop
+    if (OUT_OF_RANGE(-128.5_4, i1) .neqv. .false.) error stop
+    if (OUT_OF_RANGE(-128.5_4, i1, .true.) .neqv. .true.) error stop
 
 end program

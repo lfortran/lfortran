@@ -76,6 +76,7 @@
                         (Var 5 test_type_instance)
                         .false.
                     )]
+                    ()
                 ),
             test_module:
                 (Module
@@ -126,6 +127,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 x)]
@@ -196,6 +198,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -208,7 +211,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

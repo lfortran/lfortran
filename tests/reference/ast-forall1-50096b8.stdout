@@ -2,7 +2,6 @@
     [(Program
         forall1
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -16,9 +15,8 @@
                     "!>>>>>>>>>>>>> Single line statments <<<<<<<<<<<<<<"
                 )]
             )
-        )]
-        []
-        [(ForAllSingle
+        )
+        (ForAllSingle
             0
             ()
             [(ConcurrentControl

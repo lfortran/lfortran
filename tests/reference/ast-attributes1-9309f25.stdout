@@ -8,8 +8,6 @@
             )]
             []
         )
-        []
-        []
         [(Declaration
             (AttrType
                 TypeCharacter
@@ -459,7 +457,6 @@
             ())]
             ()
         )]
-        []
         []
     )]
 )

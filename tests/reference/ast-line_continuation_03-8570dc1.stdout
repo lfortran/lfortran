@@ -8,7 +8,6 @@
             )]
             []
         )
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -31,8 +30,8 @@
                 )
                 (EndOfLine)]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -83,8 +82,8 @@
                 (EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             i
             5

@@ -6,8 +6,12 @@
 
 namespace LCompilers {
 
+    // emit_registrar controls the trailing kernel-registration shim, which is
+    // only meaningful to the CUDA runtime's lookup-by-function-pointer launch
+    // path. Consumers that resolve kernels by name want the kernels alone.
     Result<std::string> asr_to_cuda(Allocator &al, ASR::TranslationUnit_t &asr,
-        diag::Diagnostics &diagnostics, CompilerOptions &co);
+        diag::Diagnostics &diagnostics, CompilerOptions &co,
+        bool emit_registrar = true);
 
 } // namespace LCompilers
 

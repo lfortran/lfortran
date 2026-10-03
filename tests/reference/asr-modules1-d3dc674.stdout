@@ -85,6 +85,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 10 self)]
@@ -126,6 +127,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -138,6 +140,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             x:
                 (Program
@@ -158,6 +161,7 @@
                     x
                     [y]
                     []
+                    ()
                 ),
             y:
                 (Module
@@ -252,6 +256,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 self)]
@@ -376,6 +381,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -388,7 +394,9 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )
