@@ -2639,6 +2639,10 @@ julia = true
 fortran = true
 
 [[test]]
+filename = "../integration_tests/expr_22.f90"
+ast_f90 = true
+
+[[test]]
 filename = "../integration_tests/expr_06.f90"
 asr = true
 julia = true
