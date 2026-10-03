@@ -416,6 +416,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'event' { KW(EVENT) }
             'exit' { KW(EXIT) }
             'extends' { KW(EXTENDS) }
+            'extensible' { KW(EXTENSIBLE) }
             'external' { KW(EXTERNAL) }
             'file' { KW(FILE) }
             'final' { KW(FINAL) }

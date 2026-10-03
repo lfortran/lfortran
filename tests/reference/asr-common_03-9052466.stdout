@@ -7,6 +7,16 @@
                     (SymbolTable
                         5
                         {
+                            1_b:
+                                (ExternalSymbol
+                                    5
+                                    1_b
+                                    6 b
+                                    file_common_block_b
+                                    []
+                                    b
+                                    Public
+                                ),
                             1_b_e:
                                 (ExternalSymbol
                                     5
@@ -133,6 +143,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             file_common_block_b:
                 (Module
@@ -275,6 +286,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             file_common_block_blank#block:
                 (Module
@@ -392,6 +404,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             file_common_block_c:
                 (Module
@@ -559,6 +572,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             file_common_block_sample:
                 (Module
@@ -713,6 +727,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             pass:
                 (Function
@@ -927,4 +942,5 @@
                 )
         })
     []
+    ()
 )

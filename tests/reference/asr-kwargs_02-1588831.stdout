@@ -12,6 +12,7 @@
                     kwargs_02
                     []
                     []
+                    ()
                 ),
             kwargs_02_stdlib_logger:
                 (Module
@@ -352,7 +353,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

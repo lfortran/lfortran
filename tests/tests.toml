@@ -59,6 +59,10 @@ filename = "../integration_tests/template_add_04.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_access_01.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_nested.f90"
 ast = true
 asr = true
@@ -132,6 +136,7 @@ asr = true
 filename = "../integration_tests/template_struct_01.f90"
 asr = true
 ast = true
+ast_f90 = true
 
 # TODO: StructType - Uncomment after fixing symbol outside scope error for ttype
 # [[test]]
@@ -149,6 +154,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/template_simple_02.f90"
 asr = true
+ast_f90 = true
 
 [[test]]
 filename = "../integration_tests/template_simple_03.f90"
@@ -165,6 +171,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/template_sort_02.f90"
 asr = true
+ast_f90 = true
 
 [[test]]
 filename = "../integration_tests/template_lapack_01.f90"
@@ -464,59 +471,6 @@ filename = "warnings/cpp_warn1.f90"
 asr_preprocess = true
 
 [[test]]
-filename = "errors/template_error_01a.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_01b.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_02.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_03.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_04.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_05.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_06.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_07a.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_07b.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_07c.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_08.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_07.f90"
-asr = true
-
-[[test]]
-filename = "errors/template_error_09.f90"
-asr = true
-
-
-[[test]]
 filename = "errors/maskl_incorrect_bit_size.f90"
 asr = true
 
@@ -802,6 +756,10 @@ run = true
 
 [[test]]
 filename = "../integration_tests/write_22.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/derived_types_177.f90"
 run = true
 
 [[test]]
@@ -3600,6 +3558,10 @@ filename = "external_04.f90"
 asr_implicit_interface_and_typing_with_llvm = true
 
 [[test]]
+filename = "../integration_tests/external_24.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "dimension_attr2.f90"
 asr_implicit_typing = true
 
@@ -3980,6 +3942,11 @@ asr = true
 filename = "save4.f90"
 asr_disable_warnings = true
 asr_disable_style_suggestion_and_warnings = true
+
+[[test]]
+filename = "save5.f90"
+asr = true
+
 
 [[test]]
 filename = "style1.f90"
@@ -4663,6 +4630,14 @@ filename = "errors/array_bounds_check_15.f90"
 run = true
 
 [[test]]
+filename = "errors/array_bounds_check_16.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_17.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/statement_01.f90"
 asr_implicit_interface_and_typing = true
 
@@ -5113,6 +5088,21 @@ options = "--implicit-interface"
 extrafiles = "errors/implicit_interface_explicit_zero_arg_mod.f90"
 
 [[test]]
+filename = "errors/implicit_interface_specification_function.f90"
+semantics_only_cc = true
+options = "--implicit-interface"
+
+[[test]]
+filename = "errors/implicit_interface_pure.f90"
+semantics_only_cc = true
+options = "--implicit-interface"
+
+[[test]]
+filename = "errors/implicit_interface_procedure_kind.f90"
+semantics_only_cc = true
+options = "--implicit-interface"
+
+[[test]]
 filename = "optional_argument_subroutine_in_type.f90"
 asr = true
 
@@ -5130,6 +5120,14 @@ asr = true
 
 [[test]]
 filename = "warnings/sizeof_01.f90"
+asr = true
+
+[[test]]
+filename = "warnings/structure_constructor_parent_01.f90"
+asr = true
+
+[[test]]
+filename = "warnings/structure_constructor_parent_02.f90"
 asr = true
 
 [[test]]
@@ -5206,6 +5204,26 @@ asr = true
 
 [[test]]
 filename = "openmp1.f90"
+asr_openmp = true
+
+[[test]]
+filename = "errors/openmp_default_01.f90"
+asr_openmp = true
+
+[[test]]
+filename = "errors/openmp_default_02.f90"
+asr_openmp = true
+
+[[test]]
+filename = "errors/openmp_default_03.f90"
+asr_openmp = true
+
+[[test]]
+filename = "errors/openmp_default_04.f90"
+asr_openmp = true
+
+[[test]]
+filename = "errors/openmp_default_05.f90"
 asr_openmp = true
 
 [[test]]
@@ -5458,10 +5476,6 @@ filename = "errors/data_implied_do3.f90"
 asr = true
 
 [[test]]
-filename = "errors/decl_order_01.f90"
-asr = true
-
-[[test]]
 filename = "../integration_tests/decl_order_02.f90"
 ast = true
 ast_f90 = true
@@ -5486,6 +5500,11 @@ show_errors = true
 filename = "document_symbols1.f90"
 document_symbols = true
 extrafiles = "document_symbols1_module.f90"
+
+[[test]]
+filename = "document_symbols_implicit_interface.f90"
+document_symbols = true
+options = "--implicit-interface"
 
 [[test]]
 filename = "../integration_tests/loop_var_use_after_loop.f90"
@@ -5651,6 +5670,11 @@ run = true
 options = "< tests/stdin_read_list_then_format_01.in"
 
 [[test]]
+filename = "stdin_read_advance_01.f90"
+run = true
+options = "< tests/stdin_read_advance_01.in"
+
+[[test]]
 filename = "mangle_underscore_external_01.f90"
 llvm = true
 options = "--mangle-underscore-external"
@@ -5775,13 +5799,18 @@ options = "--coarray=true"
 [[test]]
 filename = "coarray_saved_01.f90"
 fortran = true
-pass = "coarray"
+# Through the wiring pass, so the reference shows who calls each saved
+# coarray's allocation as well as where it ended up.
+pass = "coarray,global_init_wire"
 options = "--coarray=true"
 
 [[test]]
 filename = "coarray_initialization_01.f90"
 fortran = true
-pass = "coarray"
+# Through the wiring pass as well, as coarray_saved_01 is: this test is
+# about initializers too, so the reference is easier to follow when it
+# shows who calls them.
+pass = "coarray,global_init_wire"
 options = "--coarray=true"
 
 [[test]]
@@ -5883,11 +5912,23 @@ filename = "asr/verify/array_item_element_kind_mismatch.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/struct_member_element_of_array_base.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/variable_initializer_kind_mismatch.asr"
 asr = true
 
 [[test]]
 filename = "asr/verify/variable_initializer_family_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/struct_array_scalar_initializer.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/struct_array_scalar_constructor_initializer.asr"
 asr = true
 
 [[test]]
@@ -6057,3 +6098,108 @@ asr = true
 [[test]]
 filename = "asr/verify/gpu_kernel_launch_polymorphic_array_argument.asr"
 asr = true
+
+[[test]]
+filename = "../integration_tests/derived_types_188.f90"
+run = true
+
+[[test]]
+filename = "errors/realloc_lhs_fn_result_01.f90"
+run = true
+
+[[test]]
+filename = "errors/realloc_lhs_fn_result_02.f90"
+run = true
+
+[[test]]
+filename = "errors/realloc_lhs_fn_result_03.f90"
+run = true
+
+[[test]]
+filename = "errors/realloc_lhs_fn_result_04.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/global_init_01.f90"
+# Both halves, so the reference output documents the whole shape in one
+# place: the run-once guard, the dependency call, the initialization and the
+# program's single call into the chain.
+pass = "global_init,global_init_wire"
+
+[[test]]
+filename = "../integration_tests/coarrays_50.f90"
+fortran = true
+# Saved coarrays declared by procedures -- one a module procedure, one an
+# internal procedure of the program. Neither is somewhere its unit's
+# initializer could reach, so the pass hoists each pointer to the translation
+# unit's scope under a derived name; the reference pins that the initializer
+# then binds it once, and that the procedure bodies are left with no bind of
+# their own. Through the wiring pass, as coarray_saved_01 is, so the reference
+# shows who calls each initializer too. Every coarray is named `i`, so the
+# derived names collide, and the reference pins that each procedure is left
+# referring to its own. The runtime side of this is the integration test,
+# which needs the coarray runtime the Caffeine CI jobs have.
+pass = "coarray,global_init_wire"
+options = "--coarray=true"
+
+[[test]]
+filename = "../integration_tests/coarrays_26.f90"
+fortran = true
+# Coarrays that share one name across a module, a module procedure and its
+# internal procedure, an external procedure and its internal procedure, and the
+# program and its internal procedure, next to user variables named like the
+# unprefixed companions. The reference pins that every scope is left referring
+# to its own coarray and that the reserved __cac_ prefix prevents user variables
+# from shadowing companions. Through the wiring pass, as coarrays_50 is.
+pass = "coarray,global_init_wire"
+options = "--coarray=true"
+
+[[test]]
+filename = "../integration_tests/coarrays_52.f90"
+# The linkage of what the coarray pass declares in the translation unit's
+# scope: the companions of a coarray a module owns -- a module variable or a
+# module procedure's -- are exported, since a translation unit that uses the
+# module refers to them; those of an external procedure's or the program's,
+# with the reserved __cac_ prefix, and the translation unit's own initializer,
+# are internal.
+llvm = true
+options = "--coarray=true"
+
+[[test]]
+filename = "../integration_tests/coarrays_51.f90"
+# Separate compilation, so `coarrays_51_m` is read from a modfile: the pass
+# has to name the initializer its own object file defines rather than define
+# a second one here, and must leave the module's coarrays bound to the
+# companions that object file allocated. Checked as ASR because running it
+# needs the coarray runtime, which only the Caffeine CI jobs have -- and
+# `ci/test_caffeine.sh` cannot run a multi-file or separately compiled coarray
+# test today, which is issue #11941.
+extrafiles = "../integration_tests/coarrays_51_m.f90"
+options = "--coarray=true --separate-compilation"
+pass = "coarray,global_init_wire"
+
+[[test]]
+filename = "../integration_tests/global_init_07.f90"
+# The declaration initializer of an array of a derived type whose elements are
+# static data stays on the declaration, so a backend lays it out while it lays
+# the variable out and a specification expression in another scope can read it.
+# Only an element needing executable code of its own becomes a statement.
+# The reference is what catches a regression: turning these back into
+# statements is not observable at run time, because the compiler folds `size`
+# from the initializer it knows while the storage is sized from the value the
+# generated code has at that point.
+pass = "global_init"
+
+# A pass that rejects the program: `--show-asr` reports its error and prints
+# no ASR.
+[[test]]
+filename = "show_pass_error_01.f90"
+pass = "parallel_canonicalize,parallel_dispatch"
+options = "--gpu=metal"
+
+# The same with `--show-fortran`, which prints no Fortran.
+[[test]]
+filename = "show_pass_error_02.f90"
+fortran = true
+pass = "parallel_canonicalize,parallel_dispatch"
+options = "--gpu=metal"
