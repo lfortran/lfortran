@@ -1,80 +1,49 @@
 # RealConstant
 
-Real literal constant, an `expr` node.
+A real literal.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
-RealConstant(floar r, ttype type)
+```text
+RealConstant(float r, ttype type)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-| `r`           | value of real |
-| `type`        | tabel entry type |
+| Argument | Description |
+|----------|-------------|
+| `r` | the value. |
+| `type` | the real type, which fixes the kind and therefore the precision. |
 
 ### Return values
 
-The return value is the expression that the RealConstant represents.
+The value of the expression.
 
 ## Description
 
-**RealConstant** represents real constant which consists of a optional
-plus or minus sign, followed by a string of decimal digits, before or after
-decimal point. If no sign is present, the constant is assumed to be non negative.
-
-The value must be in the `REAL*4` range, uses 4 bytes of storage. It can have a
-decimal point or an exponent.
-
-## Types
-
-Only accepts real constant, real exponent, floating point values.
+The value is stored as a number. ASR text prints it with enough digits to
+round-trip exactly, and uses the `#asr/float64` and `#asr/real128` tags for
+values a decimal literal cannot represent, such as infinities and NaNs.
 
 ## Examples
 
-
-```fortran
-+199.
--1.2
-1.6E12
+```clojure
+(RealConstant
+  :r 2.5
+  :type (Real
+    :kind 8
+  )
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(RealConstant
-        199.000000
-        (Real 4 [])
-    )
-    (RealUnaryMinus
-        (RealConstant
-            1.200000
-            (Real 4 [])
-        )
-        (Real 4 [])
-        (RealConstant
-            -1.200000
-            (Real 4 [])
-        )
-    )
-    (RealConstant
-        1600000000000.000000
-        (Real 4 [])
-    )]
-)
-
+```{literalinclude} ../../examples/real_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[IntegerConstant](IntegerConstant.md), [ComplexConstant](ComplexConstant.md).
+[IntegerConstant](IntegerConstant.md), [ComplexConstant](ComplexConstant.md), [Real](../type_nodes/Real.md)

@@ -11,6 +11,8 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pickle.h>
 
+#include <set>
+
 namespace LCompilers {
 
 using ASR::down_cast;
@@ -112,6 +114,15 @@ public:
     Vec<ASR::stmt_t*>* body_after_curr_stmt;
     const LCompilers::PassOptions& pass_options;
 
+    // Variables that were associated (by pass_array_by_data) with an
+    // ArraySection whose source array is UnboundedPointerArray (assumed-size)
+    // or FixedSizeArray (sequence association via --legacy-array-sections).
+    // Copy-in/copy-out must be skipped for these because:
+    // - UnboundedPointerArray: section bounds reference undefined UBound
+    // - FixedSizeArray: sequence association requires the callee to index the
+    //   original contiguous memory with its own leading dimension
+    std::set<ASR::symbol_t*> vars_from_assumed_size_sections;
+
     CallVisitor(Allocator &al_, const LCompilers::PassOptions& pass_options_) : al(al_), pass_options(pass_options_) {}
 
     int get_index_kind() const {
@@ -134,8 +145,34 @@ public:
         if ( ASRUtils::is_array(ASRUtils::expr_type(expr) ) &&
              ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) ) {
             ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
-            return cast->m_new == ASR::array_physical_typeType::PointerArray &&
-                   cast->m_old == ASR::array_physical_typeType::DescriptorArray;
+            if ( !((cast->m_new == ASR::array_physical_typeType::PointerArray ||
+                     cast->m_new == ASR::array_physical_typeType::UnboundedPointerArray) &&
+                    cast->m_old == ASR::array_physical_typeType::DescriptorArray) ) {
+                return false;
+            }
+            // Skip copy-in/copy-out when the inner expression is an ArraySection
+            // whose source array is UnboundedPointerArray (assumed-size) and has
+            // an undefined upper bound on the assumed-size dimension.
+            ASR::expr_t* inner = cast->m_arg;
+            if ( ASR::is_a<ASR::ArraySection_t>(*inner) ) {
+                ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(inner);
+                ASR::ttype_t* source_type = ASRUtils::expr_type(section->m_v);
+                if ( ASRUtils::is_array(source_type) &&
+                     ASRUtils::extract_physical_type(source_type) ==
+                         ASR::array_physical_typeType::UnboundedPointerArray &&
+                     has_undefined_assumed_size_bound(section) ) {
+                    return false;
+                }
+            }
+            // Also skip when the inner Var was created by an earlier pass
+            // (pass_array_by_data) from an ArraySection of an assumed-size array.
+            if ( ASR::is_a<ASR::Var_t>(*inner) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(inner)->m_v;
+                if ( vars_from_assumed_size_sections.count(sym) ) {
+                    return false;
+                }
+            }
+            return true;
         }
         return false;
     }
@@ -226,10 +263,10 @@ public:
                 value_n_dims = left_n_dims;
     
                 if (left_array_type->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                     value_type = logical_array_type;
                 } else {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::PointerArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                     value_type = logical_array_type;
                 }
             } else if (ASR::is_a<ASR::Array_t>(*right_type)) {
@@ -240,10 +277,10 @@ public:
                 value_n_dims = right_n_dims;
     
                 if (right_array_type->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                     value_type = logical_array_type;
                 } else {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::PointerArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                     value_type = logical_array_type;
                 }
             }
@@ -444,6 +481,29 @@ public:
                         ASR::expr_t* dim = get_index_constant(loc, i + 1);
                         allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
                             al, loc, ASRUtils::get_past_array_physical_cast(selected_array),
+                            dim, index_type, nullptr));
+                        allocate_dims.push_back(al, allocate_dim);
+                    }
+                }
+                break;
+            }
+            case ASR::exprType::ComplexRe:
+            case ASR::exprType::ComplexIm: {
+                ASR::expr_t* complex_arg = ASR::is_a<ASR::ComplexRe_t>(*value) ?
+                    ASR::down_cast<ASR::ComplexRe_t>(value)->m_arg :
+                    ASR::down_cast<ASR::ComplexIm_t>(value)->m_arg;
+                if ( ASRUtils::is_array(ASRUtils::expr_type(complex_arg)) ) {
+                    size_t rank = ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::expr_type(complex_arg));
+                    allocate_dims.reserve(al, rank);
+                    for( size_t i = 0; i < rank; i++ ) {
+                        ASR::dimension_t allocate_dim;
+                        allocate_dim.loc = loc;
+                        // Assume 1 for Fortran.
+                        allocate_dim.m_start = index_one;
+                        ASR::expr_t* dim = get_index_constant(loc, i + 1);
+                        allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                            al, loc, ASRUtils::get_past_array_physical_cast(complex_arg),
                             dim, index_type, nullptr));
                         allocate_dims.push_back(al, allocate_dim);
                     }
@@ -793,7 +853,7 @@ public:
         for( size_t i = 0; i < x_n_args; i++ ) {
             ASR::expr_t* arg_expr = x_m_args[i].m_value;
             if ( x_m_args[i].m_value && is_descriptor_array_casted_to_pointer_to_data(x_m_args[i].m_value) &&
-                 !is_func_bind_c && !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value)) &&
+                 !is_func_bind_c &&
                  !ASR::is_a<ASR::FunctionParam_t>(*ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) 
                  && !ASRUtils::is_stringToArray_cast(ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg)) {
                 ASR::ArrayPhysicalCast_t* array_physical_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
@@ -809,7 +869,7 @@ public:
                             ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg))); // TODO : remove -- Look `class_95.f90`  
                 if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) && !unhandled_case ) {
                     ASR::expr_t* casted_array_var_temporary_arg = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, loc,
-                        array_var_temporary, ASR::array_physical_typeType::DescriptorArray, ASR::array_physical_typeType::PointerArray,
+                        array_var_temporary, ASR::array_physical_typeType::DescriptorArray, array_physical_cast->m_new,
                         array_physical_cast->m_type, nullptr));
                     array_var_temporary_arg.m_value = casted_array_var_temporary_arg;
                     x_m_args_vec.push_back(al, array_var_temporary_arg);
@@ -833,6 +893,8 @@ public:
                     alloc_arg.m_len_expr = len_expr;
                     alloc_arg.m_type = nullptr;
                     alloc_arg.m_sym_subclass = nullptr;
+                    alloc_arg.m_codims = nullptr;
+                    alloc_arg.n_codims = 0;
                     alloc_args.push_back(al, alloc_arg);
                 
                     Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
@@ -876,9 +938,13 @@ public:
                     // This prevents double-free on the next loop iteration: without nullification,
                     // the ExplicitDeallocate at the start of the loop would try to free memory
                     // that belongs to the source array (was aliased via Associate).
+                    // In the non-contiguous case, deallocate the heap-allocated temporary
+                    // that was used for copy-in (and copy-out).
                     body_after_curr_stmt->push_back(al, b.If(is_contiguous, {
                         ASRUtils::STMT(ASR::make_Nullify_t(al, loc, dealloc_args.p, dealloc_args.size()))
-                    }, {}));
+                    }, {
+                        ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, dealloc_args.p, dealloc_args.size()))
+                    }));
                 } else {
                     x_m_args_vec.push_back(al, x_m_args[i]);
                 }
@@ -892,25 +958,21 @@ public:
     void add_class_to_struct_casts(Vec<ASR::call_arg_t>& call_args, const T& x) {
         ASR::symbol_t* call_sym = ASRUtils::symbol_get_past_external(x.m_name);
         ASR::Function_t* func = nullptr;
-        size_t arg_offset = 0;
         if (ASR::is_a<ASR::Function_t>(*call_sym)) {
             func = ASR::down_cast<ASR::Function_t>(call_sym);
         } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*call_sym)) {
             ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(call_sym);
             func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(method->m_proc));
-            if (x.m_dt && !method->m_is_nopass) {
-                arg_offset = 1;
-            }
         } else {
             return;
         }
 
         for (size_t i = 0; i < call_args.size(); i++) {
-            if (call_args.p[i].m_value == nullptr || i + arg_offset >= func->n_args) {
+            if (call_args.p[i].m_value == nullptr || i >= func->n_args) {
                 continue;
             }
             ASR::expr_t* actual_arg = call_args.p[i].m_value;
-            ASR::expr_t* formal_arg = func->m_args[i + arg_offset];
+            ASR::expr_t* formal_arg = func->m_args[i];
             ASR::ttype_t* formal_arg_full_type = ASRUtils::expr_type(formal_arg);
             if (ASRUtils::is_allocatable(formal_arg_full_type) ||
                 ASRUtils::is_pointer(formal_arg_full_type)) {
@@ -954,27 +1016,24 @@ public:
     template <typename T>
     void visit_Call(const T& x, const std::string& name_hint) {
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
-        std::vector<bool> is_arg_intent_out;
-        if ( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_name)) ) {
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
-            ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
-            bool is_func_bind_c = func_type->m_abi == ASR::abiType::BindC || func_type->m_deftype == ASR::deftypeType::Interface;
-            for (size_t i = 0; i < func->n_args; i++ ) {
-                if ( ASR::is_a<ASR::Var_t>(*func->m_args[i]) ) {
-                    ASR::Var_t* var_ = ASR::down_cast<ASR::Var_t>(func->m_args[i]);
-                    if ( ASR::is_a<ASR::Variable_t>(*var_->m_v) ) {
-                        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_->m_v);
-                        is_arg_intent_out.push_back(
-                            var->m_intent == ASR::intentType::Out ||
-                            var->m_intent == ASR::intentType::InOut ||
-                            var->m_intent == ASR::intentType::Unspecified
-                        );
-                    } else {
-                        is_arg_intent_out.push_back(false);
-                    }
-                } else {
-                    is_arg_intent_out.push_back(false);
-                }
+        ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(x.m_name);
+        bool is_procedure_variable = ASR::is_a<ASR::Variable_t>(*callee) &&
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
+                ASR::down_cast<ASR::Variable_t>(callee)->m_type));
+        if ( ASR::is_a<ASR::Function_t>(*callee) || is_procedure_variable ) {
+            // The dummies come from the interface the call goes through: the
+            // procedure itself, or the interface of a procedure variable (for
+            // example the call-site interface of an implicit-interface call).
+            // Without an interface every argument may be modified.
+            ASR::Function_t* func = ASRUtils::get_function(callee);
+            bool is_func_bind_c = ASRUtils::get_FunctionType(callee)->m_abi == ASR::abiType::BindC;
+            std::vector<bool> is_arg_intent_out(x.n_args, func == nullptr);
+            for (size_t i = 0; func && i < func->n_args && i < x.n_args; i++ ) {
+                ASR::Variable_t* var = ASRUtils::expr_to_variable_or_null(func->m_args[i]);
+                is_arg_intent_out[i] = var && (
+                    var->m_intent == ASR::intentType::Out ||
+                    var->m_intent == ASR::intentType::InOut ||
+                    var->m_intent == ASR::intentType::Unspecified);
             }
             traverse_call_args(x_m_args, x.m_args, x.n_args,
                 name_hint + ASRUtils::symbol_name(x.m_name), is_arg_intent_out, is_func_bind_c);
@@ -999,6 +1058,62 @@ public:
             visit_Call(x, "_function_call_");
         }
         ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_FunctionCall(x);
+    }
+
+    void visit_Function(const ASR::Function_t& x) {
+        vars_from_assumed_size_sections.clear();
+        ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_Function(x);
+    }
+
+    // Track Associate statements created by pass_array_by_data where the
+    // source is an ArraySection of an assumed-size (UnboundedPointerArray)
+    // array or a FixedSizeArray (sequence association via --legacy-array-sections).
+    // For UnboundedPointerArray: allocation size cannot be determined (undefined UBound).
+    // For FixedSizeArray: sequence association requires the callee to index the
+    // original contiguous memory with its own leading dimension; copy-in would
+    // create a packed temporary with wrong memory layout.
+    void visit_Associate(const ASR::Associate_t& x) {
+        if ( ASR::is_a<ASR::ArraySection_t>(*x.m_value) &&
+             ASR::is_a<ASR::Var_t>(*x.m_target) ) {
+            ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+            ASR::ttype_t* source_type = ASRUtils::expr_type(section->m_v);
+            if ( ASRUtils::is_array(source_type) ) {
+                ASR::array_physical_typeType phys = ASRUtils::extract_physical_type(source_type);
+                bool track = false;
+                if ( phys == ASR::array_physical_typeType::UnboundedPointerArray &&
+                     has_undefined_assumed_size_bound(section) ) {
+                    track = true;
+                } else if ( phys == ASR::array_physical_typeType::FixedSizeArray ) {
+                    track = true;
+                }
+                if ( track ) {
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_target)->m_v;
+                    vars_from_assumed_size_sections.insert(sym);
+                }
+            }
+        }
+        ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_Associate(x);
+    }
+
+    // Check if an ArraySection has a right bound that is an ArrayBound UBound
+    // on an assumed-size dimension (a dimension with no declared upper bound).
+    static bool has_undefined_assumed_size_bound(ASR::ArraySection_t* section) {
+        ASR::ttype_t* source_type = ASRUtils::expr_type(section->m_v);
+        ASR::dimension_t* dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(source_type, dims);
+        for ( size_t i = 0; i < section->n_args && i < n_dims; i++ ) {
+            // Check if this dimension is assumed-size (no declared upper bound)
+            if ( dims[i].m_length != nullptr ) continue;
+            // Check if the section's right bound is ArrayBound UBound on this dim
+            ASR::expr_t* right = section->m_args[i].m_right;
+            if ( right && ASR::is_a<ASR::ArrayBound_t>(*right) ) {
+                ASR::ArrayBound_t* bound = ASR::down_cast<ASR::ArrayBound_t>(right);
+                if ( bound->m_bound == ASR::arrayboundType::UBound ) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // Don't visit DebugCheckArrayBounds, m_dt in FunctionCall might be an array

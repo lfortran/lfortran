@@ -22,9 +22,8 @@
             []
             .false.
             ()
-        )]
-        []
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeLogical
                 []
@@ -37,7 +36,7 @@
             []
             []
             ()
-            (Logical .false.)
+            (Logical .false. ())
             Equal
             ())]
             (TriviaNode
@@ -63,7 +62,6 @@
                 ()
             )]
         )]
-        []
         [(Function
             MULT
             [(A)
@@ -78,9 +76,6 @@
             ()
             ()
             ()
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -151,8 +146,8 @@
                     [(EndOfLine)
                     (EndOfLine)]
                 )
-            )]
-            [(If
+            )
+            (If
                 0
                 ()
                 (/= (FuncCallOrArray
@@ -179,7 +174,7 @@
                 [(Assignment
                     0
                     MATRIX_ERROR
-                    (Logical .true.)
+                    (Logical .true. ())
                     ()
                 )
                 (Return
@@ -275,7 +270,7 @@
                 [(Assignment
                     0
                     MATRIX_ERROR
-                    (Logical .true.)
+                    (Logical .true. ())
                     ()
                 )]
                 []

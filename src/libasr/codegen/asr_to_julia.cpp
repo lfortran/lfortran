@@ -674,7 +674,8 @@ public:
         }
         std::string sub = get_function_declaration(x);
         if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
-            ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
+            ASRUtils::is_declaration_deftype(
+                ASRUtils::get_FunctionType(x)->m_deftype)) {
         } else {
             indentation_level += 1;
             std::string indent(indentation_level * indentation_spaces, ' ');
@@ -1568,6 +1569,10 @@ public:
             case (ASR::cast_kindType::LogicalToInteger): {
                 src = "Int32" + broadcast + "(" + src + ")";
                 last_expr_precedence = julia_prec::Base;
+                break;
+            }
+            case (ASR::cast_kindType::LogicalToLogical): {
+                // No conversion needed for logical-to-logical in Julia
                 break;
             }
             case (ASR::cast_kindType::IntegerToLogical): {

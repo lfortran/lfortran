@@ -5,7 +5,7 @@
             f:
                 (Function
                     (SymbolTable
-                        2
+                        3
                         {
                             
                         })
@@ -23,6 +23,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -59,7 +60,11 @@
                     ()
                     .false.
                     .false.
+                    NotMethod
+                    ()
+                    []
                 )
         })
     []
+    ()
 )

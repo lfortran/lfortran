@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.assignment.realloc_lhs_requires_allocatable]: Reallocation of non allocatable variable is not allowed
+  --> tests/asr/verify/assignment_realloc_nonallocatable.asr:39:12
+   |
+39 |           (Assignment
+   |            ^^^^^^^^^^ failed here

@@ -1,21 +1,28 @@
-! Test for https://github.com/lfortran/lfortran/issues/4749
-! Assumed rank with pure function returning logical
-program assumed_rank_02
+module assumed_rank_02_mod
     implicit none
-    real :: x(2,2,2)
-    x = 1.0
-    if (.not. assumed(x)) error stop
-    if (.not. all(elementl(x))) error stop
-    print *, 'assumed rank:', assumed(x)
-    print *, 'elemental   :', elementl(x)
+    type :: t
+        integer :: v = 0
+    end type
+    interface t
+        module procedure new_t
+    end interface
 contains
-    pure logical function assumed(x)
-        real, intent(in) :: x(..)
-        assumed = .true.
-    end function assumed
+    type(t) function new_t(flag, a1)
+        integer, intent(in) :: flag
+        integer, intent(in), dimension(..) :: a1
+        new_t%v = flag
+    end function
+end module
 
-    elemental logical function elementl(x)
-        real, intent(in) :: x
-        elementl = .true.
-    end function elementl
+program assumed_rank_02
+    use assumed_rank_02_mod
+    implicit none
+    integer :: arr(3)
+    type(t) :: x, y
+    arr = [10, 20, 30]
+    x = t(1, 2)
+    if (x%v /= 1) error stop
+    y = t(42, arr)
+    if (y%v /= 42) error stop
+    print *, x%v, y%v
 end program

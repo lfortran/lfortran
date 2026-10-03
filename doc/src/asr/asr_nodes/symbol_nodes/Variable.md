@@ -1,52 +1,47 @@
 # Variable
 
-Variable is a **symbol** node representing a variable declaration.
+A variable, a dummy argument, a named constant or a result variable.
 
 ## Declaration
 
 ### Syntax
 
-```
-Variable(symbol_table parent_symtab, identifier name, identifier* dependencies,
-    intent intent, expr? symbolic_value, expr? value, storage_type storage,
-    ttype type, symbol type_declaration,
-    abi abi, access access, presence presence, bool value_attr)
+```text
+Variable(symbol_table parent_symtab, identifier name,
+    identifier* dependencies, intent intent, expr? symbolic_value,
+    expr? value, storage_type storage, ttype type,
+    symbol? type_declaration, abi abi, access access,
+    presence presence, bool value_attr, bool target_attr,
+    bool contiguous_attr, string? bindc_name, bool is_volatile,
+    bool is_protected, pass_attr pass_attr, identifier? self_argument,
+    codimension* codims)
 ```
 
 ### Arguments
 
-`parent_symtab` integer id of the parent symbol table that contains the variable
-
-`name` the name of the variable
-
-`dependencies` other symbols that this variable depends on; must all be defined
-in the `parent_symtab`
-
-`intent` specifies intent (Local, `intent(in)`, `intent(inout)`, etc.)
-
-`symbolic_value` the optional symbolic expression to initialize the variable
-(e.g. `2+3+4+x`), this value must be compile time, but it is not necessarily a
-constant (e.g., can contain binary operations, other variables, etc.)
-
-`value` the optional constant expression holding the compile time value
-(e.g. `5`, or `5.5`), it is a compile time constant.
-
-`storage` whether `Save`, `Parameter`, `Allocatable`
-
-`type` the ttype of the variable
-
-`type_declaration` null for primitive types; for composite types that are
-declared elsewhere in the program (struct, function, enum) it points to the
-symbol that declares the type
-
-`abi` abi such as: `Source`, `Interface`, `BindC`
-
-`access` visibility: `Public`, `Private`
-
-`presence` for parameters: `Required` or `Optional`
-
-`value_attr` if true, this parameter has a `value` attribute set
-
+| Argument | Description |
+|----------|-------------|
+| `parent_symtab` | the symbol table this variable is stored in. |
+| `name` | the name of the variable. |
+| `dependencies` | the names of the symbols its type or initializer refers to. |
+| `intent` | `Local` for a local variable, `In`, `Out`, `InOut` or `Unspecified` for a dummy argument, `ReturnVar` for the result variable of a function. |
+| `symbolic_value` | the initializer as written, before folding. |
+| `value` | the folded compile time value, when there is one. A `Parameter` always has one. |
+| `storage` | `Default`, `Save` for a variable that keeps its value between calls, or `Parameter` for a named constant. |
+| `type` | the type of the variable. |
+| `type_declaration` | for a variable of a derived type, an enumeration or a union, the symbol that defines it; `nil` otherwise. |
+| `abi` | `Source` when this ASR allocates the variable, otherwise the ABI of the definition it is shared with. |
+| `access` | `Public` or `Private`. |
+| `presence` | `Required`, or `Optional` for an optional dummy argument. |
+| `value_attr` | `true` when a `bind(c)` dummy argument is passed by value. |
+| `target_attr` | `true` for the `target` attribute, so a pointer may be associated with this variable. |
+| `contiguous_attr` | `true` for the `contiguous` attribute. |
+| `bindc_name` | the linker name given by `bind(c, name=...)`. |
+| `is_volatile` | `true` for the `volatile` attribute: the value may change outside this code, so it must not be cached. |
+| `is_protected` | `true` for the `protected` attribute: the variable is readable but not writable outside its module. |
+| `pass_attr` | for a component holding a procedure pointer, whether the object is passed as an argument; `NotMethod` otherwise. |
+| `self_argument` | the name of the passed-object dummy argument, when `pass_attr` is `Pass`. |
+| `codims` | the codimensions of a coarray; empty for anything else. |
 
 ### Return values
 
@@ -54,94 +49,67 @@ None.
 
 ## Description
 
-A `Variable` node represents a declaration of any variable in the
-program. It contais information about the type, visibility, compile-time value,
-etc.
+Everything a Fortran declaration says about a variable is stored here, so that
+a backend never has to look at anything but the **Variable** and its `type` to
+allocate it.
 
-The type of the variable can be any of the primitive types like integer,
-real, complex, pointers, arrays. In such cases, the `type_declaration` member of
-the `Variable` is null.
+A variable is referenced from an expression by [Var](../expression_nodes/Var.md),
+which holds nothing but a reference to this symbol; every property is read from
+the symbol itself.
 
-`Variable` might also have a non-primitive type like `StructType`, or types for
-classes, enums, and function pointers. Such types are not declared inline to the
-`Variable` node itself. In such cases, the `type_declaration` member of
-`Variable` points to the symbol containing the declaration of the type.
-
-`Variable` represents declarations of variables. `Var` nodes represent instances
-of variables in code. To represent the use of a variable in an expression,
-employ the ASR `expr Var` node.
+`symbolic_value` and `value` are different things. `symbolic_value` is the
+initializer as the user wrote it, and `value` is what it folds to.
+`storage=Parameter` requires `value`, since a named constant is substituted
+wherever it is used.
 
 ## Examples
 
-```fortran
-program expr2
-integer :: x
-x = (2+3)*5
-print *, x
-end program
-```
-
-ASR:
-
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            expr2:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            x:
-                                (Variable
-                                    2
-                                    x
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    ()
-                                )
-
-                        })
-                    expr2
-                    []
-                    [(=
-                        (Var 2 x)
-                        (IntegerBinOp
-                            (IntegerBinOp
-                                (IntegerConstant 2 (Integer 4 []))
-                                Add
-                                (IntegerConstant 3 (Integer 4 []))
-                                (Integer 4 [])
-                                (IntegerConstant 5 (Integer 4 []))
-                            )
-                            Mul
-                            (IntegerConstant 5 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant 25 (Integer 4 []))
-                        )
-                        ()
-                    )
-                    (Print
-                        ()
-                        [(Var 2 x)]
-                        ()
-                        ()
-                    )]
-                )
-
-        })
-    []
+```clojure
+(Variable
+  :parent_symtab 1
+  :name "n"
+  :dependencies []
+  :intent :Local
+  :symbolic_value (IntegerConstant
+    :n 10
+    :type (Integer
+      :kind 4
+    )
+    :intboz_type :Decimal
+  )
+  :value (IntegerConstant
+    :n 10
+    :type (Integer
+      :kind 4
+    )
+    :intboz_type :Decimal
+  )
+  :storage :Parameter
+  :type (Integer
+    :kind 4
+  )
+  :type_declaration nil
+  :abi :Source
+  :access :Public
+  :presence :Required
+  :value_attr false
+  :target_attr false
+  :contiguous_attr false
+  :bindc_name nil
+  :is_volatile false
+  :is_protected false
+  :pass_attr :NotMethod
+  :self_argument nil
+  :codims []
 )
-
 ```
+
+It comes from this complete ASR text document:
+
+```{literalinclude} ../../examples/variable.asr
+:language: clojure
+```
+
 ## See Also
 
-[Var](../expression_nodes/Var.md)
+[Var](../expression_nodes/Var.md), [Program](Program.md), [Function](Function.md), ttype

@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             lfortran_iomsg:
                                 (Variable
@@ -48,6 +51,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             lfortran_iomsg1:
                                 (Variable
@@ -69,48 +75,9 @@
                                     ()
                                     .false.
                                     .false.
-                                ),
-                            lfortran_tmp_iostat:
-                                (Variable
-                                    2
-                                    lfortran_tmp_iostat
+                                    NotMethod
+                                    ()
                                     []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            lfortran_tmp_iostat1:
-                                (Variable
-                                    2
-                                    lfortran_tmp_iostat1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
                                 ),
                             msg:
                                 (Variable
@@ -138,6 +105,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             p:
                                 (Variable
@@ -153,6 +123,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 100 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -164,6 +135,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             q:
                                 (Variable
@@ -179,6 +153,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 100 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -190,6 +165,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             u:
                                 (Variable
@@ -211,6 +189,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             u_ptr:
                                 (Variable
@@ -234,6 +215,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -249,6 +233,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 100 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -260,6 +245,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -275,6 +263,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 100 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -286,6 +275,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     open_close_read_write
@@ -427,6 +419,10 @@
                         ()
                         ()
                         ()
+                        ()
+                        ()
+                        ()
+                        ()
                     )
                     (DoLoop
                         ()
@@ -475,6 +471,9 @@
                             .true.
                             ()
                             ()
+                            ()
+                            ()
+                            ()
                         )]
                         []
                     )
@@ -501,6 +500,10 @@
                             "old"
                             (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
+                        ()
+                        ()
+                        ()
+                        ()
                         ()
                         ()
                         ()
@@ -549,6 +552,8 @@
                             )]
                             ()
                             .true.
+                            ()
+                            ()
                             ()
                             ()
                         )]
@@ -606,10 +611,15 @@
                             .true.
                             ()
                             ()
+                            ()
+                            ()
+                            ()
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

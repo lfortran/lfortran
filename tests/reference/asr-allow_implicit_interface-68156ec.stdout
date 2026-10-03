@@ -12,10 +12,42 @@
                                     (SymbolTable
                                         4
                                         {
-                                            alnorm_arg_0:
+                                            
+                                        })
+                                    alnorm
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            alnorm~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            alnorm~arg_0:
                                                 (Variable
-                                                    4
-                                                    alnorm_arg_0
+                                                    5
+                                                    alnorm~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -32,11 +64,14 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
-                                            alnorm_arg_1:
+                                            alnorm~arg_1:
                                                 (Variable
-                                                    4
-                                                    alnorm_arg_1
+                                                    5
+                                                    alnorm~arg_1
                                                     []
                                                     Unspecified
                                                     ()
@@ -53,17 +88,20 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
-                                            alnorm_return_var_name:
+                                            alnorm~result:
                                                 (Variable
-                                                    4
-                                                    alnorm_return_var_name
+                                                    5
+                                                    alnorm~result
                                                     []
                                                     ReturnVar
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8)
+                                                    (Real 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -74,13 +112,16 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
-                                    alnorm
+                                    alnorm~fpcast
                                     (FunctionType
                                         [(Real 8)
                                         (Logical 4)]
-                                        (Real 8)
+                                        (Real 4)
                                         BindC
                                         Interface
                                         ()
@@ -91,16 +132,58 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
-                                    [(Var 4 alnorm_arg_0)
-                                    (Var 4 alnorm_arg_1)]
+                                    [(Var 5 alnorm~arg_0)
+                                    (Var 5 alnorm~arg_1)]
                                     []
-                                    (Var 4 alnorm_return_var_name)
+                                    (Var 5 alnorm~result)
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            alnorm~fpcast_ptr:
+                                (Variable
+                                    2
+                                    alnorm~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Real 8)
+                                            (Logical 4)]
+                                            (Real 4)
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 alnorm~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             b:
                                 (Variable
@@ -122,77 +205,121 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             dgetrf:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        3
                                         {
-                                            dgetrf_arg_0:
-                                                (Variable
-                                                    5
-                                                    dgetrf_arg_0
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            dgetrf_arg_1:
-                                                (Variable
-                                                    5
-                                                    dgetrf_arg_1
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            dgetrf_arg_2:
-                                                (Variable
-                                                    5
-                                                    dgetrf_arg_2
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                )
+                                            
                                         })
                                     dgetrf
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            dgetrf~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            dgetrf~arg_0:
+                                                (Variable
+                                                    6
+                                                    dgetrf~arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            dgetrf~arg_1:
+                                                (Variable
+                                                    6
+                                                    dgetrf~arg_1
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            dgetrf~arg_2:
+                                                (Variable
+                                                    6
+                                                    dgetrf~arg_2
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    dgetrf~fpcast
                                     (FunctionType
                                         [(Real 8)
                                         (Real 8)
@@ -208,17 +335,60 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
-                                    [(Var 5 dgetrf_arg_0)
-                                    (Var 5 dgetrf_arg_1)
-                                    (Var 5 dgetrf_arg_2)]
+                                    [(Var 6 dgetrf~arg_0)
+                                    (Var 6 dgetrf~arg_1)
+                                    (Var 6 dgetrf~arg_2)]
                                     []
                                     ()
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            dgetrf~fpcast_ptr:
+                                (Variable
+                                    2
+                                    dgetrf~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Real 8)
+                                            (Real 8)
+                                            (Real 8)]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 dgetrf~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             one:
                                 (Variable
@@ -246,6 +416,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             prho:
                                 (Variable
@@ -267,6 +440,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             six:
                                 (Variable
@@ -294,6 +470,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             two:
                                 (Variable
@@ -321,6 +500,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             u:
                                 (Variable
@@ -342,6 +524,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -363,6 +548,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -384,6 +572,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             zero:
                                 (Variable
@@ -411,6 +602,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     prho
@@ -427,6 +621,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -470,6 +665,30 @@
                         .false.
                         .false.
                     )
+                    (Associate
+                        (Var 2 alnorm~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 alnorm)
+                            2 alnorm~fpcast
+                            (FunctionType
+                                [(Real 8)
+                                (Logical 4)]
+                                (Real 4)
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
                     (Assignment
                         (Var 2 prho)
                         (RealBinOp
@@ -493,14 +712,20 @@
                                 ()
                             )
                             Add
-                            (FunctionCall
-                                2 alnorm
-                                ()
-                                [((Var 2 x))
-                                ((LogicalConstant
-                                    .true.
-                                    (Logical 4)
-                                ))]
+                            (Cast
+                                (FunctionCall
+                                    2 alnorm~fpcast_ptr
+                                    ()
+                                    [((Var 2 x))
+                                    ((LogicalConstant
+                                        .true.
+                                        (Logical 4)
+                                    ))]
+                                    (Real 4)
+                                    ()
+                                    ()
+                                )
+                                RealToReal
                                 (Real 8)
                                 ()
                                 ()
@@ -512,9 +737,34 @@
                         .false.
                         .false.
                     )
+                    (Associate
+                        (Var 2 dgetrf~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 dgetrf)
+                            2 dgetrf~fpcast
+                            (FunctionType
+                                [(Real 8)
+                                (Real 8)
+                                (Real 8)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
                     (SubroutineCall
+                        2 dgetrf~fpcast_ptr
                         2 dgetrf
-                        ()
                         [((Var 2 x))
                         ((Var 2 y))
                         ((Var 2 u))]
@@ -566,4 +816,5 @@
                 )
         })
     []
+    ()
 )

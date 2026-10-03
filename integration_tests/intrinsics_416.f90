@@ -1,24 +1,40 @@
-! Test for https://github.com/lfortran/lfortran/issues/6124
-! Subnormal floating point values (epsilon*tiny, nearest, transfer)
+! This file check string concat functionality for arrays
 program intrinsics_416
-    implicit none
-    integer, parameter :: i4 = kind(1), i8 = selected_int_kind(15)
-    real :: r32_subnorm, r32_nearest, r32_transfer
-    real(8) :: r64_subnorm, r64_nearest, r64_transfer
+  implicit none
+  character(:),allocatable:: str1(:), str2
+  character(4):: str3(2)
+  character(4),parameter :: str4(2) = ['abc ','de  ']
 
-    r32_subnorm = epsilon(1.0) * tiny(1.0)
-    r32_nearest = nearest(0.0, 1.0)
-    r32_transfer = transfer(1_i4, 1.0)
+  character(2):: str5
+  character(16):: str6 
 
-    r64_subnorm = epsilon(1d0) * tiny(1d0)
-    r64_nearest = nearest(0d0, 1d0)
-    r64_transfer = transfer(1_i8, 1d0)
+  str5 = 'xy'
+  str1 = ['abc ', 'de  ']
+  str2 = 'abc '
+  str3 = ['abc ', 'de  ']
 
-    print "(ES15.7)", r32_subnorm, r32_nearest, r32_transfer
-    print "(ES24.16)", r64_subnorm, r64_nearest, r64_transfer
+  ! 1. Check str1 (Array)
+  str6 = ''
+  print "(*(A))", '"'//str1(:)//str5//'"'
+  write(str6, "(*(A))") '"'//str1(:)//str5//'"'
+  if ((str6) /= ('"abc xy""de  xy"')) error stop
 
-    if (r32_subnorm /= r32_nearest) error stop
-    if (r32_subnorm /= r32_transfer) error stop
-    if (r64_subnorm /= r64_nearest) error stop
-    if (r64_subnorm /= r64_transfer) error stop
-end program
+  ! 2. Check str2 (Scalar)
+  str6 = ''
+  print "(*(A))", '"'//str2//str5//'"'
+  write(str6, "(*(A))") '"'//str2//str5//'"'
+  if (str6 /= '"abc xy"') error stop
+
+  ! 3. Check str3 (Fixed Array)
+  str6 = ''
+  print "(*(A))", '"'//str3//str5//'"'
+  write(str6, "(*(A))") '"'//str3(:)//str5//'"'
+  if (str6 /= '"abc xy""de  xy"') error stop
+  
+  ! Check str4 (Parameter Arrays)
+  str6 = ''
+  print "(A)",'"'//str4//str5//'"'
+  write(str6, "(*(A))") '"'//str4(:)//str5//'"'
+  if (str6 /= '"abc xy""de  xy"') error stop
+
+end program intrinsics_416

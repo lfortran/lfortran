@@ -69,6 +69,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             q:
                                 (Variable
@@ -90,132 +93,9 @@
                                     ()
                                     .false.
                                     .false.
-                                ),
-                            u:
-                                (Variable
-                                    8
-                                    u
+                                    NotMethod
+                                    ()
                                     []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            v:
-                                (Variable
-                                    8
-                                    v
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            w:
-                                (Variable
-                                    8
-                                    w
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            x:
-                                (Variable
-                                    8
-                                    x
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            y:
-                                (Variable
-                                    8
-                                    y
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            z:
-                                (Variable
-                                    8
-                                    z
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
                                 )
                         })
                     functions_07
@@ -223,77 +103,15 @@
                     functions_07_a
                     functions_07_b]
                     [(Assignment
-                        (Var 8 w)
-                        (Var 8 p)
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 8 x)
-                        (Var 8 w)
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 8 u)
-                        (Var 8 x)
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 8 v)
-                        (RealBinOp
-                            (Var 8 u)
-                            Add
-                            (RealConstant
-                                1.000000
-                                (Real 4)
-                            )
-                            (Real 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 8 y)
-                        (RealBinOp
-                            (Var 8 v)
-                            Add
-                            (RealConstant
-                                1.000000
-                                (Real 4)
-                            )
-                            (Real 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 8 z)
-                        (RealBinOp
-                            (Var 8 y)
-                            Add
-                            (RealConstant
-                                1.000000
-                                (Real 4)
-                            )
-                            (Real 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
                         (Var 8 q)
-                        (Var 8 z)
+                        (FunctionCall
+                            8 f_c
+                            ()
+                            [((Var 8 p))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
                         ()
                         .false.
                         .false.
@@ -309,6 +127,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             functions_07_a:
                 (Module
@@ -340,6 +159,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             v:
                                                 (Variable
@@ -361,6 +183,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f_a
@@ -377,6 +202,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 u)]
@@ -398,8 +224,8 @@
                                     )]
                                     (Var 3 v)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -409,6 +235,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             functions_07_b:
                 (Module
@@ -430,31 +257,96 @@
                                     (SymbolTable
                                         5
                                         {
-                                            u:
-                                                (Variable
-                                                    5
-                                                    u
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
+                                            __inlined_f_a:
+                                                (Block
+                                                    (SymbolTable
+                                                        9
+                                                        {
+                                                            u:
+                                                                (Variable
+                                                                    9
+                                                                    u
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            v:
+                                                                (Variable
+                                                                    9
+                                                                    v
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __inlined_f_a
+                                                    [(Assignment
+                                                        (Var 9 u)
+                                                        (Var 5 x)
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 9 v)
+                                                        (RealBinOp
+                                                            (Var 9 u)
+                                                            Add
+                                                            (RealConstant
+                                                                1.000000
+                                                                (Real 4)
+                                                            )
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 5 f_a_result)
+                                                        (Var 9 v)
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
                                                 ),
-                                            v:
+                                            f_a_result:
                                                 (Variable
                                                     5
-                                                    v
+                                                    f_a_result
                                                     []
                                                     Local
                                                     ()
@@ -471,6 +363,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -492,6 +387,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -513,6 +411,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f_b
@@ -529,36 +430,18 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 x)]
-                                    [(Assignment
-                                        (Var 5 u)
-                                        (Var 5 x)
-                                        ()
-                                        .false.
-                                        .false.
-                                    )
-                                    (Assignment
-                                        (Var 5 v)
-                                        (RealBinOp
-                                            (Var 5 u)
-                                            Add
-                                            (RealConstant
-                                                1.000000
-                                                (Real 4)
-                                            )
-                                            (Real 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
+                                    [(BlockCall
+                                        -1
+                                        5 __inlined_f_a
                                     )
                                     (Assignment
                                         (Var 5 y)
                                         (RealBinOp
-                                            (Var 5 v)
+                                            (Var 5 f_a_result)
                                             Add
                                             (RealConstant
                                                 1.000000
@@ -573,8 +456,8 @@
                                     )]
                                     (Var 5 y)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -584,6 +467,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             functions_07_c:
                 (Module
@@ -615,48 +499,6 @@
                                     (SymbolTable
                                         7
                                         {
-                                            u:
-                                                (Variable
-                                                    7
-                                                    u
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            v:
-                                                (Variable
-                                                    7
-                                                    v
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
                                             w:
                                                 (Variable
                                                     7
@@ -677,48 +519,9 @@
                                                     ()
                                                     .false.
                                                     .false.
-                                                ),
-                                            x:
-                                                (Variable
-                                                    7
-                                                    x
+                                                    NotMethod
+                                                    ()
                                                     []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            y:
-                                                (Variable
-                                                    7
-                                                    y
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
                                                 ),
                                             z:
                                                 (Variable
@@ -740,6 +543,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f_c
@@ -756,59 +562,21 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 w)]
                                     [(Assignment
-                                        (Var 7 x)
-                                        (Var 7 w)
-                                        ()
-                                        .false.
-                                        .false.
-                                    )
-                                    (Assignment
-                                        (Var 7 u)
-                                        (Var 7 x)
-                                        ()
-                                        .false.
-                                        .false.
-                                    )
-                                    (Assignment
-                                        (Var 7 v)
-                                        (RealBinOp
-                                            (Var 7 u)
-                                            Add
-                                            (RealConstant
-                                                1.000000
-                                                (Real 4)
-                                            )
-                                            (Real 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )
-                                    (Assignment
-                                        (Var 7 y)
-                                        (RealBinOp
-                                            (Var 7 v)
-                                            Add
-                                            (RealConstant
-                                                1.000000
-                                                (Real 4)
-                                            )
-                                            (Real 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )
-                                    (Assignment
                                         (Var 7 z)
                                         (RealBinOp
-                                            (Var 7 y)
+                                            (FunctionCall
+                                                6 f_b
+                                                ()
+                                                [((Var 7 w))]
+                                                (Real 4)
+                                                ()
+                                                ()
+                                            )
                                             Add
                                             (RealConstant
                                                 1.000000
@@ -823,8 +591,8 @@
                                     )]
                                     (Var 7 z)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -835,7 +603,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -3,12 +3,13 @@
 ! Exact MRE from issue body
 program file_49
     implicit none
+    integer :: unit_no
     character :: q*12
-    open(42, status='scratch', form='unformatted')
-    write(42) 'Hello world!'
-    rewind 42
-    read(42) q
-    close(42)
+    open(newunit=unit_no, status='scratch', form='unformatted')
+    write(unit_no) 'Hello world!'
+    rewind unit_no
+    read(unit_no) q
+    close(unit_no)
     print *, q
     if (q /= 'Hello world!') error stop
 end program file_49

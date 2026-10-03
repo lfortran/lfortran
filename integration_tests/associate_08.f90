@@ -36,6 +36,7 @@ program associate2
     call sub_1(type_1, 123)
     if (type_1%type_2(1)%i /= 123) error stop
     print *, type_1%type_2(1)%i
+    deallocate(type_1%type_2)
 
     ! TODO: Fix when implementing class arrays
     ! call sub_2(t_2_array)

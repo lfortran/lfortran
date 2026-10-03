@@ -6,9 +6,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -75,8 +72,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             N
             (FuncCallOrArray
@@ -102,6 +99,7 @@
             0
             ()
             [(ConcurrentControl
+                ()
                 i
                 1
                 N

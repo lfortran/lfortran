@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             lfortran_iomsg1:
                                 (Variable
@@ -48,6 +51,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             lfortran_iomsg2:
                                 (Variable
@@ -69,69 +75,9 @@
                                     ()
                                     .false.
                                     .false.
-                                ),
-                            lfortran_tmp_iostat:
-                                (Variable
-                                    2
-                                    lfortran_tmp_iostat
+                                    NotMethod
+                                    ()
                                     []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            lfortran_tmp_iostat1:
-                                (Variable
-                                    2
-                                    lfortran_tmp_iostat1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            lfortran_tmp_iostat2:
-                                (Variable
-                                    2
-                                    lfortran_tmp_iostat2
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
                                 ),
                             line:
                                 (Variable
@@ -153,6 +99,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             u:
                                 (Variable
@@ -174,6 +123,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     test_backspace_01
@@ -203,6 +155,10 @@
                         ()
                         ()
                         ()
+                        ()
+                        ()
+                        ()
+                        ()
                     )
                     (FileRead
                         0
@@ -220,6 +176,8 @@
                         [(Var 2 line)]
                         ()
                         .true.
+                        ()
+                        ()
                         ()
                         ()
                     )
@@ -247,10 +205,14 @@
                         .true.
                         ()
                         ()
+                        ()
+                        ()
+                        ()
                     )
                     (FileBackspace
                         0
                         (Var 2 u)
+                        ()
                         ()
                         ()
                     )
@@ -270,6 +232,8 @@
                         [(Var 2 line)]
                         ()
                         .true.
+                        ()
+                        ()
                         ()
                         ()
                     )
@@ -300,6 +264,9 @@
                         .true.
                         ()
                         ()
+                        ()
+                        ()
+                        ()
                     )
                     (FileWrite
                         0
@@ -323,6 +290,9 @@
                         ()
                         ()
                         .true.
+                        ()
+                        ()
+                        ()
                         ()
                         ()
                     )
@@ -351,7 +321,9 @@
                         ()
                         ()
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

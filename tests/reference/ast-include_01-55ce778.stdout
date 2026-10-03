@@ -10,10 +10,6 @@
             (EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
-        []
-        []
         [(Print
             0
             ()
@@ -43,9 +39,6 @@
     (Program
         include_01
         ()
-        []
-        []
-        []
         [(SubroutineCall
             0
             a

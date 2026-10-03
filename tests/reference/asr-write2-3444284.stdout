@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             lfortran_iomsg:
                                 (Variable
@@ -48,27 +51,9 @@
                                     ()
                                     .false.
                                     .false.
-                                ),
-                            lfortran_tmp_iostat:
-                                (Variable
-                                    2
-                                    lfortran_tmp_iostat
+                                    NotMethod
+                                    ()
                                     []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
                                 )
                         })
                     write2
@@ -103,6 +88,9 @@
                         .true.
                         ()
                         ()
+                        ()
+                        ()
+                        ()
                     )
                     (FileRead
                         0
@@ -117,6 +105,8 @@
                         [(Var 2 i)]
                         ()
                         .false.
+                        ()
+                        ()
                         ()
                         ()
                     )
@@ -135,7 +125,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

@@ -7,7 +7,7 @@ integer :: i, j
         cycle I_loop
     end if
     4 j = j + i
-end do I_LOOP
+5 end do I_LOOP
 6 if (j /= 53) then
     error stop
 end if

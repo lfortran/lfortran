@@ -5,10 +5,6 @@
         []
         ()
         ()
-        []
-        []
-        []
-        []
         [(If
             0
             ()
@@ -59,14 +55,10 @@
         []
         ()
         ()
-        []
-        []
-        []
-        []
         [(If
             0
             ()
-            (Logical .true.)
+            (Logical .true. ())
             [(Assignment
                 0
                 x
@@ -128,14 +120,10 @@
         []
         ()
         ()
-        []
-        []
-        []
-        []
         [(If
             0
             ()
-            (Logical .true.)
+            (Logical .true. ())
             [(Assignment
                 0
                 x

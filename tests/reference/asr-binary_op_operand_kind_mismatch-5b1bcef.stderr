@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.binary_op.operand_types_match]: RealBinOp operand types r64 and r32 do not match
+  --> tests/asr/verify/binary_op_operand_kind_mismatch.asr:68:14
+   |
+68 |             (RealBinOp
+   |              ^^^^^^^^^ failed here

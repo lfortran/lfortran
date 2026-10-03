@@ -64,6 +64,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     modules_44
@@ -76,6 +79,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             modules_44_fpm_cmd_new:
                 (Module
@@ -92,8 +96,8 @@
                                                     8
                                                     1_fpm_new_settings_name
                                                     7 name
-                                                    fpm_new_settings
-                                                    []
+                                                    modules_44_fpm_cmd_new
+                                                    [fpm_new_settings]
                                                     name
                                                     Public
                                                 ),
@@ -112,6 +116,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -124,6 +129,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             settings:
                                                 (Variable
@@ -152,6 +160,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     cmd_new
@@ -175,6 +186,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 8 settings)]
@@ -188,6 +200,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 PointerArray
+                                                Global
                                             )
                                             ColMajor
                                         )
@@ -216,6 +229,7 @@
                                                     [(()
                                                     ())]
                                                     PointerArray
+                                                    Global
                                                 )
                                             )
                                             ()
@@ -231,8 +245,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             fpm_cmd_settings:
@@ -262,6 +276,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     fpm_cmd_settings
@@ -280,9 +297,11 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             fpm_new_settings:
                                 (Struct
@@ -311,6 +330,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     fpm_new_settings
@@ -329,9 +351,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     2 fpm_cmd_settings
+                                    []
                                 ),
                             warnwrite_string____1:
                                 (ExternalSymbol
@@ -350,6 +374,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             modules_44_module_fpm_filesystem:
                 (Module
@@ -381,6 +406,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             data:
                                                 (Variable
@@ -396,6 +424,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 10 __1data))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -407,6 +436,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             fname:
                                                 (Variable
@@ -428,6 +460,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     warnwrite_string____1
@@ -442,6 +477,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         (Integer 4)]
                                         ()
@@ -455,6 +491,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 10 fname)
@@ -474,7 +511,9 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

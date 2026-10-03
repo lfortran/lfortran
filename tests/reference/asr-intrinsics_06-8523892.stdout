@@ -36,6 +36,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -57,6 +60,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     intrinsics_06
@@ -280,7 +286,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

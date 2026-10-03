@@ -1,24 +1,40 @@
-! Test function result with specification expression using size() (issue #4656)
-program functions_54
+module mod_functions_54
     implicit none
-    integer, parameter :: k = 100
-    integer :: nsize
-    real :: y(k) = 1.0
 
-    nsize = size(outprod(y(1:50), y(1:50)))
-    if (nsize /= 2500) error stop
+    type,public :: string
+        character(len=:),allocatable :: str
+    end type string
 
-contains
-    function outprod(y, z) result(x)
+    contains 
+    elemental function string_to_int(me) result(i)
+        class(string),intent(in) :: me
+        integer :: i
+        i = len(me%str)
+    end function string_to_int
+
+    function split(str,token) result(vals)
         implicit none
-        real, intent(in) :: y(:), z(:)
-        real :: x(size(y), size(z))
-        integer :: i, j
+        character(len=*),intent(in)  :: str
+        character(len=*),intent(in)  :: token
+        type(string),dimension(:),allocatable :: vals
+        allocate(vals(1)) 
+        vals(1)%str = str
+    end function split
 
-        do i = 1, size(y)
-            do j = 1, size(z)
-                x(i, j) = y(i) * z(j)
-            end do
-        end do
-    end function outprod
+    function parse_nums64(line) result(ints)
+        character(len=*),intent(in) :: line
+        integer(4),dimension(:), allocatable :: ints 
+        type(string),dimension(:),allocatable :: vals
+        ints = string_to_int(split(line, ' '))
+    end function parse_nums64
+end module mod_functions_54
+
+program functions_54 
+  use mod_functions_54
+  character(len=100) :: single_line
+  integer(4), allocatable :: results(:)
+  single_line = "10 20 30"
+  results = parse_nums64(single_line)
+  print *, results
+  if (results(1) /= 100) error stop
 end program functions_54

@@ -4,6 +4,9 @@ implicit none
 integer, allocatable :: array_const_1(:, :)
 integer :: i23_shape(2) = [4, 2]
 integer :: i23_shape_e(2)
+real, allocatable :: w(:, :)
+real :: p(2)
+
 allocate(array_const_1(2, 4))
 array_const_1 = reshape([-14, 3, 0, -2, 19, 1, 20, 21], [2, 4])
 
@@ -38,4 +41,9 @@ if( array_const_1(3, 1) /= 0 ) error stop
 if( array_const_1(3, 2) /= 20 ) error stop
 if( array_const_1(4, 1) /= -2 ) error stop
 if( array_const_1(4, 2) /= 21 ) error stop
+
+allocate(w(2, 1))
+w = reshape([1.0, 2.0], [2, 1])
+p(1:2) = reshape(w, [2])
+if (p(1) /= 1.0 .or. p(2) /= 2.0) error stop
 end program

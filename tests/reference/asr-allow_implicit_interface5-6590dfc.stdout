@@ -27,16 +27,51 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             klvna:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            klvna_arg_0:
+                                            
+                                        })
+                                    klvna
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            klvna~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            klvna~arg_0:
                                                 (Variable
-                                                    4
-                                                    klvna_arg_0
+                                                    5
+                                                    klvna~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -53,30 +88,12 @@
                                                     ()
                                                     .false.
                                                     .false.
-                                                ),
-                                            rt:
-                                                (Variable
-                                                    4
-                                                    rt
+                                                    NotMethod
+                                                    ()
                                                     []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
                                                 )
                                         })
-                                    klvna
+                                    klvna~fpcast
                                     (FunctionType
                                         [(Real 8)]
                                         ()
@@ -90,15 +107,56 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
-                                    [(Var 4 klvna_arg_0)]
+                                    [(Var 5 klvna~arg_0)]
                                     []
                                     ()
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            klvna~fpcast_ptr:
+                                (Variable
+                                    2
+                                    klvna~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Real 8)]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 klvna~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             nt:
                                 (Variable
@@ -120,6 +178,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             rt:
                                 (Variable
@@ -141,6 +202,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             rt0:
                                 (Variable
@@ -156,6 +220,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -167,6 +232,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             zo:
                                 (Variable
@@ -182,6 +250,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 nt))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -193,6 +262,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     klvnzo_
@@ -210,13 +282,37 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 nt)
                     (Var 2 kd)]
-                    [(SubroutineCall
+                    [(Associate
+                        (Var 2 klvna~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 klvna)
+                            2 klvna~fpcast
+                            (FunctionType
+                                [(Real 8)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        2 klvna~fpcast_ptr
                         2 klvna
-                        ()
                         [((Var 2 rt))]
                         ()
                         .false.
@@ -245,7 +341,9 @@
                         ()
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

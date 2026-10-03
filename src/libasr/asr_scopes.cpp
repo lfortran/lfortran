@@ -26,6 +26,14 @@ SymbolTable::SymbolTable(SymbolTable *parent) : parent{parent} {
     counter = symbol_table_counter;
 }
 
+SymbolTable* SymbolTable::get_tu_scope() {
+    SymbolTable* s = this;
+    while (s->parent && !ASRUtils::is_tu_scope(s)) {
+        s = s->parent;
+    }
+    return s;
+}
+
 void SymbolTable::reset_global_counter() {
     symbol_table_counter = 0;
 }
@@ -36,7 +44,7 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
             case (ASR::symbolType::Variable) : {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(a.second);
                 if ( v->m_abi == ASR::abiType::BindC ) {
-                    return;
+                    break;
                 }
                 v->m_abi = ASR::abiType::ExternalUndefined;
                 break;
@@ -52,7 +60,12 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                 ASR::FunctionType_t* v_func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
                 if (v_func_type->m_abi != ASR::abiType::ExternalUndefined && v_func_type->m_abi != ASR::abiType::BindC) {
                     v_func_type->m_abi = ASR::abiType::ExternalUndefined;
-                } else if (v_func_type->m_abi == ASR::abiType::BindC) {
+                } else if (v_func_type->m_abi == ASR::abiType::BindC
+                        && !ASRUtils::is_bare_implicit_interface(*v_func_type)) {
+                    // Do not overwrite ImplicitInterface: that is an
+                    // interface-less external whose argument list is unknown.
+                    // Forcing Interface would make it look like a genuine
+                    // zero-argument bind(c) interface after a .mod round-trip.
                     v_func_type->m_deftype = ASR::deftypeType::Interface;
                 }
                 v->m_symtab->mark_all_variables_external(al);

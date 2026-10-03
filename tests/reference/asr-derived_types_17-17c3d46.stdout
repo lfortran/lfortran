@@ -27,6 +27,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             derived_types_17_module_1:
                 (Module
@@ -43,8 +44,8 @@
                                                     4
                                                     1_t_1_num
                                                     3 num
-                                                    t_1
-                                                    []
+                                                    derived_types_17_module_1
+                                                    [t_1]
                                                     num
                                                     Public
                                                 ),
@@ -73,6 +74,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     add
@@ -94,6 +98,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -127,8 +132,8 @@
                                     )]
                                     (Var 4 self)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             subtract:
@@ -141,8 +146,8 @@
                                                     5
                                                     1_t_1_num
                                                     3 num
-                                                    t_1
-                                                    []
+                                                    derived_types_17_module_1
+                                                    [t_1]
                                                     num
                                                     Public
                                                 ),
@@ -171,6 +176,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     subtract
@@ -192,6 +200,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -225,8 +234,8 @@
                                     )]
                                     (Var 5 self)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             t_1:
@@ -242,7 +251,7 @@
                                                     Local
                                                     (IntegerConstant 100 (Integer 4) Decimal)
                                                     (IntegerConstant 100 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -254,6 +263,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     t_1
@@ -270,9 +282,11 @@
                                     Private
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     derived_types_17_module_1
@@ -281,6 +295,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             derived_types_17_module_2:
                 (Module
@@ -318,6 +333,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -390,7 +406,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

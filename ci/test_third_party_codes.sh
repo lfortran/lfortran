@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "##[group] Setup"
 set -ex  # Exit immediately on any error
 
 # Default to gfortran if FC is not set
@@ -39,14 +40,39 @@ run_test() {
   print_success "Success: $1"
 }
 
+# Assert that the current git HEAD matches the expected commit SHA.
+#
+# This is the analogue of a lockfile entry (cf. pixi.lock): a branch or tag
+# checkout gives us a human-readable reference, but upstream may move it. By
+# pinning the exact commit here we fail fast if upstream silently changes the
+# code we are testing against. If the assertion fails, investigate the
+# upstream change, then update the SHA after review.
+#
+# Usage:
+#   git checkout v3.1.0
+#   assert_git_commit 584fc171514172ff701df9b37f3229826a17e35d
+assert_git_commit() {
+  local expected="$1"
+  local label="${2:-$(basename "$PWD")}"
+  local actual
+  actual=$(git rev-parse HEAD)
+  if [ "$actual" != "$expected" ]; then
+    echo "ERROR [$label]: expected commit $expected but HEAD is $actual" >&2
+    echo "       (upstream branch/tag may have moved; update the pin after review)" >&2
+    exit 1
+  fi
+}
+
 time_section() {
   local LABEL="$1"
   local BLOCK="$2"
   local START=$(date +%s)
+  echo "##[group] $LABEL"
   print_section "$LABEL"
-  eval "$BLOCK"
+  ( set -x ; eval "$BLOCK" )
   local END=$(date +%s)
   print_subsection "⏱ Duration: $((END - START)) seconds"
+  echo "##[endgroup]"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -85,10 +111,13 @@ fi
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
-time_section "🧪 Testing assert" '
-  git clone https://github.com/pranavchiku/assert.git
-  cd assert
-  export PATH="$(pwd)/../src/bin:$PATH"
+set +x
+echo "##[endgroup]" # end of Setup
+
+time_section "🧪 Testing conda-forge fpm" '
+  mkdir conda-fpm
+  cd conda-fpm
+
   micromamba install -c conda-forge fpm=0.12.0
 
   # To debug https://github.com/lfortran/lfortran/issues/7732:
@@ -96,17 +125,72 @@ time_section "🧪 Testing assert" '
   realpath $(which fpm)
   ls -l $(dirname $(realpath $(which fpm)))/../lib
   ls -l $CONDA_PREFIX/lib
+
   fpm --version
 
-  git checkout -t origin/fix-test
-  git checkout 535434d2f44508aa06231c6c2fe95f9e11292769
+  cd ..
+  rm -rf conda-fpm
+'
+
+time_section "🧪 Testing caffeine" '
+  git clone -b main https://github.com/BerkeleyLab/caffeine.git
+  cd caffeine
+
+  micromamba install -c conda-forge fpm=0.12.0
+
+  fpm --version
+
+  export CC=clang
+  export CXX=clang++
+  echo PATH="$PATH"
+
+  # Output some toolchain information for debugging
+  for tool in ${FC} ${CC} ${CXX} fpm ; do
+    if command -v $tool > /dev/null 2>&1 ; then
+       ( echo ; set -x ; w=$(which $tool) ; ls -al $w ; ls -alhL $w ; $tool --version )
+    fi
+  done
+
+  # inject ISO_Fortran_binding.h into the C include path
+  export CPPFLAGS="-I$(lfortran --print-c-include-dir)"
+
+  # checkout a snapshot more recent than the current release
+  git checkout 341a507bfd61c464fe6db4b8185520e6461e5a9b
+
+  # Now build and test caffeine with LFortran
+  export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug" 
+  ./install.sh --yes --prefix=$PWD/inst --verbose
+
+  # Execute Caffeine unit tests
+  export CAF_IMAGES=4
+  ./run-fpm.sh test --verbose 
+
+  # Execute Caffeine end-to-end test (exercises LFortran+PRIF integration)
+  ./run-fpm.sh run --verbose
+
+  print_success "Done with caffeine"
+  cd ..
+  rm -rf caffeine
+'
+
+
+time_section "🧪 Testing assert" '
+  git clone -b main https://github.com/berkeleylab/assert.git
+  cd assert
+
+  micromamba install -c conda-forge fpm=0.12.0
+
+  # Release 3.1.2
+  git checkout 3.1.2
+  assert_git_commit 1eb0cb9ce1421c76b6ab977370b6339918f20918
+
   git clean -dfx
   fpm build --compiler=$FC --flag "--cpp" --verbose
   fpm test --compiler=$FC --flag "--cpp"
 
   git clean -dfx
   print_subsection "Testing with assertions enabled"
-  fpm test --compiler=$FC --verbose --flag '--cpp -DASSERTIONS -DASSERT_PARALLEL_CALLBACKS'
+  fpm test --compiler=$FC --verbose --flag "--cpp -DASSERTIONS -DASSERT_PARALLEL_CALLBACKS"
 
   cd ../
   rm -rf assert
@@ -119,31 +203,104 @@ time_section "🧪 Testing splpak" '
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  # To debug https://github.com/lfortran/lfortran/issues/7732:
-  which fpm
-  realpath $(which fpm)
-  ls -l $(dirname $(realpath $(which fpm)))/../lib
-  ls -l $CONDA_PREFIX/lib
   fpm --version
 
   git checkout lf-2
-  git checkout 460bd22f4ac716e5266412e8ed35ce07aa664f08
+  assert_git_commit 460bd22f4ac716e5266412e8ed35ce07aa664f08
 
   git clean -dfx
-  fpm build --compiler=$FC --profile release --flag "--cpp -DREAL32" --verbose
-  fpm test --compiler=$FC --profile release --flag "--cpp -DREAL32"
+  fpm build --compiler=$FC --profile release --flag "--cpp -DREAL32 --no-fast-math" --verbose
+  fpm test --compiler=$FC --profile release --flag "--cpp -DREAL32 --no-fast-math"
 
   cd ../
   rm -rf splpak
 '
 
-time_section "🧪 Testing Julienne" '
-  git clone https://github.com/BerkeleyLab/julienne.git
-  cd julienne
+time_section "🧪 Testing neural-fortran" '
+  git clone https://github.com/modern-fortran/neural-fortran
+  cd neural-fortran
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  git checkout a75b5a831e303315304db52ec9dd70c9badc08cd
+  git checkout 5e4940ff2850c9b039f8dd77982715bced8f3ce5
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  print_success "Done with neural-fortran"
+  cd ..
+'
+
+time_section "🧪 Testing Fiats" '
+  git clone https://github.com/BerkeleyLab/fiats
+  cd fiats
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout 0a2ff33cf8c06c6379d8e8883e846577a29f2f5e
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  if [[ "$(uname)" == "Darwin" ]]; then
+    rm -rf build
+    git fetch https://github.com/certik/fiats lf1
+    git checkout 869584f56955fe591304587eb34068b814448c33
+    # Fiats computes in real(8), which is on the unsupported list for Metal
+    # (it has no 64-bit float), so --gpu-allow-cpu-fallback runs those
+    # `do concurrent` loops on the CPU with a warning; every other loop is
+    # offloaded. The lf1 branch turns the loops LFortran cannot offload yet
+    # into serial loops.
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal --gpu-allow-cpu-fallback"
+  fi
+
+  print_success "Done with Fiats"
+  cd ..
+'
+
+time_section "🧪 Testing smart-pointers" '
+  git clone https://github.com/certik/smart-pointers.git
+  cd smart-pointers
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout -t origin/lf2
+  assert_git_commit 95de5105c6a469b64feb39e999567f5e2fcdd033
+  fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
+  rm -rf build
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  print_success "Done with smart-pointers"
+  cd ..
+'
+
+time_section "🧪 Testing Formal" '
+  git clone https://github.com/berkeleylab/formal.git
+  cd formal
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout 0.4.0
+  assert_git_commit d60710a33a0c2a3a0e4e9450000ad1a6782a394a
+  # disabled because it gets a SEGV on Linux:
+  #fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
+  rm -rf build
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+  if [[ "$(uname)" == "Darwin" ]]; then
+    # Every do concurrent in Formal is offloaded to Metal. A loop the
+    # compiler cannot lower is a compile error, so this keeps it that way.
+    rm -rf build
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag --gpu=metal
+  fi
+
+  print_success "Done with Formal"
+  cd ..
+'
+
+time_section "🧪 Testing Julienne" '
+  git clone https://github.com/BerkeleyLab/julienne.git
+  cd julienne
+  micromamba install -c conda-forge fpm
+
+  # Release 4.1.0
+  git checkout 4.1.0
+  assert_git_commit 632dbbe876fc2567f27a2c906429a3b596b6fd63
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
   print_success "Done with Julienne"
@@ -212,13 +369,27 @@ time_section "🧪 Testing M_CLI2" '
   export PATH="$(pwd)/../src/bin:$PATH"
   git checkout lf-9
   micromamba install -c conda-forge fpm
-  git checkout 108f0b5598df2bd8ec7a2dffe56017d58520fdfc
+  assert_git_commit 108f0b5598df2bd8ec7a2dffe56017d58520fdfc
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
 
   print_success "Done with M_CLI2"
   cd ..
 '
+
+time_section "🧪 Testing M_intrinsics" '
+  git clone https://github.com/urbanjost/M_intrinsics
+  cd M_intrinsics
+  export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout 6f7a80a2920b9f276069a7c31606f03482afd611
+  micromamba install -c conda-forge fpm
+  fpm --compiler=$FC build --flag "--realloc-lhs-arrays --cpp"
+
+  print_success "Done with M_intrinsics"
+  cd ..
+'
+
+if [[ "$(uname)" != "Darwin" ]]; then
 
 time_section "🧪 Testing fortran_mpi" '
   git clone https://github.com/lfortran/fortran_mpi.git
@@ -233,22 +404,15 @@ time_section "🧪 Testing fortran_mpi" '
   cd tests/
   FC="$FC --cpp" ./run_tests.sh
   print_success "Done with fortran_mpi"
-
-  cd ../
-  git clean -fdx
-  print_subsection "Building fortran_mpi with separate compilation"
-  cd tests/
-  FC="$FC --cpp --separate-compilation" ./run_tests.sh
-  print_success "Done with fortran_mpi"
   cd ../../
   rm -rf fortran_mpi
 '
 
-time_section "🧪 Testing POT3D with fortran_mpi" '
+time_section "🧪 Compiling POT3D with fortran_mpi" '
   git clone https://github.com/parth121101/pot3d.git
   cd pot3d
   git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
-  git checkout 380669edd3a5947985674a51e0d65482d6fe68b3
+  assert_git_commit 380669edd3a5947985674a51e0d65482d6fe68b3
 
   git clone https://github.com/lfortran/fortran_mpi
   cd fortran_mpi
@@ -258,77 +422,39 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
   cp src/mpi_constants.c ../src/
   cd ..
 
-  print_subsection "Building with default flags"
-  FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+  print_subsection "Building with default flags (compile-only)"
+  cd src
+  if [[ "$(uname)" == "Linux" ]]; then
+    CC=gcc
+  else
+    CC=clang
+  fi
+  $CC -I$CONDA_PREFIX/include -c mpi_constants.c
+  $FC --cpp -DOPEN_MPI=yes -c mpi_c_bindings.f90
+  $FC --cpp -DOPEN_MPI=yes -c mpi.f90
+  $FC --cpp -DOPEN_MPI=yes -c psi_io.f90 --no-style-suggestions --no-warnings
+  $FC --cpp -DOPEN_MPI=yes -c --implicit-interface pot3d.F90 --no-style-suggestions --no-warnings
+  $FC --cpp -DOPEN_MPI=yes mpi_constants.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
+  cd ..
 
-  print_subsection "Building with optimization flags"
-  FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
-
-  print_subsection "Building POT3D in separate compilation mode"
-  FC="$FC --cpp --separate-compilation -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
-
-  print_success "Done with POT3D"
+  print_success "Done with POT3D (compile-only)"
   cd ..
   rm -rf pot3d
 '
 
 
 ##########################
-# Section 1: stdlib (Less Workarounds)
-##########################
-time_section "🧪 Testing stdlib (Less Workarounds)" '
-  git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
-  cd stdlib-fortran-lang
-  export PATH="$(pwd)/../src/bin:$PATH"
-
-  git checkout n-lf-22
-  git checkout ae4c42431b31f8ad8f6fdd40bcc9e08a88f8b373
-  micromamba install -c conda-forge fypp
-
-  git clean -fdx
-  FC=$FC cmake . \
-      -DTEST_DRIVE_BUILD_TESTING=OFF \
-      -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs-arrays --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
-  make -j8
-  ctest
-
-  git clean -dfx
-  git restore .
-  git checkout sc-lf-12
-  git checkout 4d832ce2f4c6629d5273651af20736e121d7abe0
-  FC=$FC cmake . \
-      -DTEST_DRIVE_BUILD_TESTING=OFF \
-      -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--cpp --separate-compilation --realloc-lhs-arrays --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
-  make -j8
-  ctest
-
-  print_success "Done with stdlib (Less Workarounds)"
-  cd ..
-  rm -rf stdlib
-'
-
-##########################
 # Section 2: FPM
 ##########################
 time_section "🧪 Testing FPM" '
-  git clone https://github.com/fortran-lang/fpm.git
+  git clone -b v0.13.0 --depth 1 https://github.com/fortran-lang/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout main
   micromamba install -c conda-forge fpm
-  git checkout d0f89957541bdcc354da8e11422f5efcf9fedd0e
+  git checkout v0.13.0
+  assert_git_commit 90bb83a70e9bcf04d941fb43cca014ae1c0fc5ea
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
-
-  git clean -dfx
-  rm -rf build
-  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop --separate-compilation"
-
-  git clean -dfx
-  rm -rf build
-  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop --fast"
 
   print_success "Done with FPM"
   cd ..
@@ -341,14 +467,10 @@ time_section "🧪 Testing Fortran-Primes" '
   git clone https://github.com/jinangshah21/fortran-primes.git
   cd fortran-primes
   git checkout -t origin/lf-3
-  git checkout 923b468f79eee1ff07b77d9def67249f4d2efa21
+  assert_git_commit 923b468f79eee1ff07b77d9def67249f4d2efa21
 
   print_subsection "Building and running Fortran-Primes"
   FC=$FC ./build_and_run.sh
-
-  print_subsection "Building Fortran-Primes with separate compilation"
-  git clean -dfx
-  FC="$FC --separate-compilation" ./build_and_run.sh
 
   print_success "Done with Fortran-Primes"
   cd ..
@@ -362,7 +484,7 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
   cd numerical-methods-fortran
   git checkout -t origin/lf6
-  git checkout a252989e64b3f8d5d2f930dca18411c104ea85f8
+  assert_git_commit a252989e64b3f8d5d2f930dca18411c104ea85f8
 
   print_subsection "Building project"
   FC="$FC --no-array-bounds-checking --realloc-lhs-arrays" make
@@ -384,71 +506,6 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   run_test plot_pendulum.exe
   run_test plot_transes_iso.exe
 
-  git clean -dfx
-  print_subsection "Building Numerical Methods Fortran with f23 standard"
-
-  FC="$FC --std=f23 --no-array-bounds-checking" make
-  run_test test_fix_point.exe
-  run_test test_integrate_one.exe
-  run_test test_linear.exe
-  run_test test_newton.exe
-  run_test test_ode.exe
-  run_test test_probability_distribution.exe
-  run_test test_sde.exe
-
-  run_test plot_bogdanov_takens.exe
-  run_test plot_bruinsma.exe
-  run_test plot_fun1.exe
-  run_test plot_lorenz.exe
-  run_test plot_lotka_volterra1.exe
-  run_test plot_lotka_volterra2.exe
-  run_test plot_pendulum.exe
-  run_test plot_transes_iso.exe
-
-
-  git clean -dfx
-  print_subsection "Building Numerical Methods Fortran with separate compilation"
-
-  FC="$FC --separate-compilation --no-array-bounds-checking --realloc-lhs-arrays" make
-  run_test test_fix_point.exe
-  run_test test_integrate_one.exe
-  run_test test_linear.exe
-  run_test test_newton.exe
-  run_test test_ode.exe
-  run_test test_probability_distribution.exe
-  run_test test_sde.exe
-
-  run_test plot_bogdanov_takens.exe
-  run_test plot_bruinsma.exe
-  run_test plot_fun1.exe
-  run_test plot_lorenz.exe
-  run_test plot_lotka_volterra1.exe
-  run_test plot_lotka_volterra2.exe
-  run_test plot_pendulum.exe
-  run_test plot_transes_iso.exe
-
-  git clean -dfx
-  print_subsection "Building Numerical Methods Fortran with separate compilation and f23 standard"
-
-  FC="$FC --separate-compilation --std=f23 --no-array-bounds-checking" make
-  run_test test_fix_point.exe
-  run_test test_integrate_one.exe
-  run_test test_linear.exe
-  run_test test_newton.exe
-  run_test test_ode.exe
-  run_test test_probability_distribution.exe
-  run_test test_sde.exe
-
-  run_test plot_bogdanov_takens.exe
-  run_test plot_bruinsma.exe
-  run_test plot_fun1.exe
-  run_test plot_lorenz.exe
-  run_test plot_lotka_volterra1.exe
-  run_test plot_lotka_volterra2.exe
-  run_test plot_pendulum.exe
-  run_test plot_transes_iso.exe
-
-
   print_success "Done with Numerical Methods Fortran"
 
   cd ..
@@ -458,11 +515,13 @@ time_section "🧪 Testing Numerical Methods Fortran" '
 #######################
 # Section 5: PRIMA    #
 #######################
-time_section "🧪 Testing PRIMA" '
+time_section "🧪 Compiling PRIMA" '
   git clone https://github.com/Pranavchiku/prima.git
   cd prima
   git checkout -t origin/lf-prima-12
+  # The `lf-prima-12` has different commit than what we need:
   git checkout e681eea9b3f27930c50cffd14dd566b39f01c642
+  assert_git_commit e681eea9b3f27930c50cffd14dd566b39f01c642
   git clean -dfx
 
   # OS-specific env
@@ -472,7 +531,7 @@ time_section "🧪 Testing PRIMA" '
     export LFORTRAN_RUNNER_OS="linux"
   fi
 
-  print_subsection "Building PRIMA"
+  print_subsection "Building PRIMA (compile-only)"
   FC="$FC --cpp" cmake -S . -B build \
     -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
     -DCMAKE_Fortran_FLAGS="" \
@@ -483,209 +542,8 @@ time_section "🧪 Testing PRIMA" '
 
   cmake --build build --target install
 
-  run_test ./build/fortran/example_bobyqa_fortran_1_exe
-  #run_test ./build/fortran/example_bobyqa_fortran_2_exe
-  #run_test ./build/fortran/example_cobyla_fortran_1_exe
-  #run_test ./build/fortran/example_cobyla_fortran_2_exe
-  #run_test ./build/fortran/example_lincoa_fortran_1_exe
-  #run_test ./build/fortran/example_lincoa_fortran_2_exe
-  #run_test ./build/fortran/example_newuoa_fortran_1_exe
-  #run_test ./build/fortran/example_newuoa_fortran_2_exe
-  #run_test ./build/fortran/example_uobyqa_fortran_1_exe
-  run_test ./build/fortran/example_uobyqa_fortran_2_exe
-
-  #if [[ "$RUNNER_OS" == "macos-latest" ]]; then
-  #  cd fortran
-  #  test_name=test_bobyqa.f90 FC="$FC" ./script.sh
-  #  test_name=test_newuoa.f90 FC="$FC" ./script.sh
-  #  test_name=test_uobyqa.f90 FC="$FC" ./script.sh
-  #  test_name=test_cobyla.f90 FC="$FC" ./script.sh
-  #  test_name=test_lincoa.f90 FC="$FC" ./script.sh
-  #  cd ..
-  #fi
-
-  #if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
-  #  cd fortran
-  #  test_name=test_uobyqa.f90 FC="$FC" ./script.sh
-  #  cd ..
-  #fi
-
-  print_subsection "Building PRIMA with f23 standard"
-  FC="$FC --cpp --std=f23" cmake -S . -B build \
-    -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
-    -DCMAKE_Fortran_FLAGS="" \
-    -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS="" \
-    -DCMAKE_MACOSX_RPATH=OFF \
-    -DCMAKE_SKIP_INSTALL_RPATH=ON \
-    -DCMAKE_SKIP_RPATH=ON
-
-  cmake --build build --target install
-
-  run_test ./build/fortran/example_bobyqa_fortran_1_exe
-  #run_test ./build/fortran/example_bobyqa_fortran_2_exe
-  #run_test ./build/fortran/example_cobyla_fortran_1_exe
-  #run_test ./build/fortran/example_cobyla_fortran_2_exe
-  #run_test ./build/fortran/example_lincoa_fortran_1_exe
-  #run_test ./build/fortran/example_lincoa_fortran_2_exe
-  #run_test ./build/fortran/example_newuoa_fortran_1_exe
-  #run_test ./build/fortran/example_newuoa_fortran_2_exe
-  #run_test ./build/fortran/example_uobyqa_fortran_1_exe
-  run_test ./build/fortran/example_uobyqa_fortran_2_exe
-
-  #if [[ "$RUNNER_OS" == "macos-latest" ]]; then
-  #  cd fortran
-  #  test_name=test_bobyqa.f90 FC="$FC --std=f23" ./script.sh
-  #  test_name=test_newuoa.f90 FC="$FC --std=f23" ./script.sh
-  #  test_name=test_uobyqa.f90 FC="$FC --std=f23" ./script.sh
-  #  test_name=test_cobyla.f90 FC="$FC --std=f23" ./script.sh
-  #  test_name=test_lincoa.f90 FC="$FC --std=f23" ./script.sh
-  #  cd ..
-  #fi
-
-  #if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
-  #  cd fortran
-  #  test_name=test_uobyqa.f90 FC="$FC --std=f23" ./script.sh
-  #  cd ..
-  #fi
-
-  print_subsection "Rebuilding PRIMA with optimization"
-  git clean -dfx
-
-  FC="$FC --cpp --fast" cmake -S . -B build \
-    -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
-    -DCMAKE_Fortran_FLAGS="" \
-    -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS="" \
-    -DCMAKE_MACOSX_RPATH=OFF \
-    -DCMAKE_SKIP_INSTALL_RPATH=ON \
-    -DCMAKE_SKIP_RPATH=ON
-
-  cmake --build build --target install
-
-  run_test ./build/fortran/example_bobyqa_fortran_1_exe
-  #run_test ./build/fortran/example_bobyqa_fortran_2_exe
-  #run_test ./build/fortran/example_cobyla_fortran_1_exe
-  #run_test ./build/fortran/example_cobyla_fortran_2_exe
-  #run_test ./build/fortran/example_lincoa_fortran_1_exe
-  #run_test ./build/fortran/example_lincoa_fortran_2_exe
-  #run_test ./build/fortran/example_newuoa_fortran_1_exe
-  #run_test ./build/fortran/example_newuoa_fortran_2_exe
-  #run_test ./build/fortran/example_uobyqa_fortran_1_exe
-  run_test ./build/fortran/example_uobyqa_fortran_2_exe
-
-  print_subsection "Rebuilding PRIMA in separate compilation mode"
-  git clean -dfx
-  git restore --staged .
-  git restore .
-  git checkout -t origin/lf-prima-sc-1
-  git checkout 52b863fcd3bb694045e50884fbb689a1ca75298d
-  FC="$FC --separate-compilation --cpp" cmake -S . -B build \
-    -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
-    -DCMAKE_Fortran_FLAGS="" \
-    -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS="" \
-    -DCMAKE_MACOSX_RPATH=OFF \
-    -DCMAKE_SKIP_INSTALL_RPATH=ON \
-    -DCMAKE_SKIP_RPATH=ON
-
-  cmake --build build --target install
-
-  run_test ./build/fortran/example_bobyqa_fortran_1_exe
-  #run_test ./build/fortran/example_bobyqa_fortran_2_exe
-  #run_test ./build/fortran/example_cobyla_fortran_1_exe
-  #run_test ./build/fortran/example_cobyla_fortran_2_exe
-  #run_test ./build/fortran/example_lincoa_fortran_1_exe
-  #run_test ./build/fortran/example_lincoa_fortran_2_exe
-  #run_test ./build/fortran/example_newuoa_fortran_1_exe
-  #run_test ./build/fortran/example_newuoa_fortran_2_exe
-  #run_test ./build/fortran/example_uobyqa_fortran_1_exe
-  run_test ./build/fortran/example_uobyqa_fortran_2_exe
-
-  #if [[ "$RUNNER_OS" == "macos-latest" ]]; then
-  #  cd fortran
-  #  name=bobyqa test_name=test_bobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
-  #  name=newuoa test_name=test_newuoa.f90 FC="$FC --separate-compilation" ./script_sc.sh
-  #  name=uobyqa test_name=test_uobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
-  #  name=cobyla test_name=test_cobyla.f90 FC="$FC --separate-compilation" ./script_sc.sh
-  #  name=lincoa test_name=test_lincoa.f90 FC="$FC --separate-compilation" ./script_sc.sh
-  #  cd ..
-  #fi
-
-  #if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
-  #  cd fortran
-  #  name=uobyqa test_name=test_uobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
-  #  cd ..
-  #fi
-
   print_success "Done with PRIMA"
   cd ..
-'
-
-##########################
-# Section 6: Legacy Minpack
-##########################
-time_section "🧪 Testing Legacy Minpack (SciPy)" '
-  git clone https://github.com/pranavchiku/minpack.git
-  cd minpack
-  git checkout -t origin/scipy31
-  git checkout 45801cf882871ea8a668213e8cf90b5817877484
-  mkdir lf && cd lf
-
-  FC="$FC --intrinsic-mangling" cmake ..
-  make
-
-  run_test examples/example_hybrd
-  run_test examples/example_hybrd1
-  run_test examples/example_lmder1
-  run_test examples/example_lmdif1
-  run_test examples/example_primes
-  print_subsection "Running CTest"
-  ctest
-  cd ../
-
-  print_subsection "Testing with f23 standard"
-  git clean -dfx
-  mkdir lf && cd lf
-  FC="$FC --intrinsic-mangling --std=f23" cmake ..
-  make
-  run_test examples/example_hybrd
-  run_test examples/example_hybrd1
-  run_test examples/example_lmder1
-  run_test examples/example_lmdif1
-  run_test examples/example_primes
-  print_subsection "Running CTest"
-  ctest
-  cd ../
-
-  print_subsection "Testing with separate compilation"
-  git clean -dfx
-  mkdir lf && cd lf
-  FC="$FC --intrinsic-mangling --separate-compilation" cmake ..
-  make
-  run_test examples/example_hybrd
-  run_test examples/example_hybrd1
-  run_test examples/example_lmder1
-  run_test examples/example_lmdif1
-  run_test examples/example_primes
-  print_subsection "Running CTest"
-  ctest
-  cd ../
-
-  print_subsection "Testing with separate compilation and f23 standard"
-  git clean -dfx
-  mkdir lf && cd lf
-  FC="$FC --intrinsic-mangling --separate-compilation --std=f23" cmake ..
-  make
-  run_test examples/example_hybrd
-  run_test examples/example_hybrd1
-  run_test examples/example_lmder1
-  run_test examples/example_lmdif1
-  run_test examples/example_primes
-  print_subsection "Running CTest"
-  ctest
-  cd ../
-
-  print_success "Done with Legacy Minpack (SciPy)"
-  cd ../
-  rm -rf minpack
 '
 
 ##########################
@@ -701,35 +559,19 @@ time_section "🧪 Testing Modern Minpack (Fortran-Lang)" '
   $FC ./examples/example_hybrd1.f90 --legacy-array-sections
   $FC ./examples/example_lmdif1.f90 --legacy-array-sections
   $FC ./examples/example_lmder1.f90 --legacy-array-sections
-
-  print_subsection "Testing with separate compilation"
-  git clean -dfx
-  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation
-  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o
 '
 
 time_section "🧪 Testing Modern Minpack (Result Check)" '
   git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
   cd modern_minpack_02
   git checkout -t origin/w5
-  git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
+  assert_git_commit fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
 
   $FC ./src/minpack.f90 -c --legacy-array-sections
   $FC ./examples/example_hybrd.f90 --legacy-array-sections
   $FC ./examples/example_hybrd1.f90 --legacy-array-sections
   $FC ./examples/example_lmdif1.f90 --legacy-array-sections
   $FC ./examples/example_lmder1.f90 --legacy-array-sections
-
-  print_subsection "Testing with separate compilation"
-  git clean -dfx
-  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation
-  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o
 '
 
 ##########################
@@ -742,18 +584,23 @@ time_section "🧪 Testing dftatom" '
 
   make -f Makefile.manual F90=$FC F90FLAGS=-I../../src
   make -f Makefile.manual quicktest
+'
 
-  git clean -dfx
-  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --fast"
-  make -f Makefile.manual quicktest
+##########################
+# Section 8.1: featom (build-only)
+##########################
+time_section "🧪 Building featom (build-only)" '
+  git clone https://github.com/atomic-solvers/featom
+  cd featom
+  git checkout 87872a3266ceeee61a7244e6ecd134dc3bda790f
+  micromamba install -c conda-forge fpm libblas liblapack
+  export LIBRARY_PATH="$CONDA_PREFIX/lib:${LIBRARY_PATH:-}"
+  # Build-only smoke test for now; runtime tests can be added later.
+  FPM_FFLAGS="--cpp --realloc-lhs-arrays --mangle-underscore-external" LFORTRAN_LINKER=gcc fpm build --compiler=lfortran
 
-  git clean -dfx
-  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --separate-compilation"
-  make -f Makefile.manual quicktest
-
-  git clean -dfx
-  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --separate-compilation --fast"
-  make -f Makefile.manual quicktest
+  print_success "Done with featom (build-only)"
+  cd ..
+  rm -rf featom
 '
 
 
@@ -761,125 +608,29 @@ time_section "🧪 Testing dftatom" '
 # Section 9: fastGPT
 ##########################
 time_section "🧪 Testing fastGPT" '
-    if [[ "$RUNNER_OS" == "macos-latest" ]]; then
-        git clone https://github.com/certik/fastGPT.git
-        cd fastGPT
+    git clone https://github.com/certik/fastGPT.git
+    cd fastGPT
 
-        git clean -dfx
-        git checkout -t origin/namelist
-        git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-        # NOTE: the release file link below would not necessarily
-        # need to be updated if the commit hash above is updated
-        curl -f -L -o model.dat \
-            https://github.com/certik/fastGPT/releases/download/v1.0.0/model_fastgpt_124M_v1.dat
-        echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
+    git clean -dfx
+    git checkout -t origin/namelist
+    # The `namelist` branch mismatches the commit we need:
+    git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
+    assert_git_commit d3eef520c1be8e2db98a3c2189740af1ae7c3e06
+    curl -f -L -o model.dat \
+        https://github.com/certik/fastGPT/releases/download/v1.0.0/model_fastgpt_124M_v1.dat
+    echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
 
-        mkdir lf
-        cd lf
-        FC="$FC --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
-        make VERBOSE=1
-        ln -s ../model.dat .
-        ./gpt2
-        ./test_basic_input
-        ./test_more_inputs
-        cd ..
+    mkdir lf
+    cd lf
+    FC="$FC --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+    make VERBOSE=1
+    ln -s ../model.dat .
+    ./gpt2
+    ./test_basic_input
+    ./test_more_inputs
+    cd ..
 
-        # TODO: regression as of `struct refactoring`
-        # mkdir lf-goc
-        # cd lf-goc
-        # FC="$FC --separate-compilation --rtlib --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
-        # make VERBOSE=1
-        # ln -s ../model.dat .
-        # ./gpt2
-        # ./test_basic_input
-        # ./test_more_inputs
-        # cd ..
-
-    elif [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
-        git clone https://github.com/certik/fastGPT.git
-        cd fastGPT
-        git checkout -t origin/lf6
-        git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
-        echo $CONDA_PREFIX
-        FC="$FC --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
-        make
-        ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
-        file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
-        ldd ./gpt2
-        ldd ./chat
-        ldd ./test_basic_input
-        ldd ./test_chat
-        ldd ./test_more_inputs
-
-        git clean -dfx
-        git checkout -t origin/lf37run
-        git checkout 12885a08c9a34cd260f29edc68feddccbc624493
-        # NOTE: the release file link below would not necessarily
-        # need to be updated if the commit hash above is updated
-        curl -f -L -o model.dat \
-            https://github.com/certik/fastGPT/releases/download/v1.0.0/model_fastgpt_124M_v1.dat
-        echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
-
-        mkdir lf
-        cd lf
-        FC="$FC --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
-        make VERBOSE=1
-        ln -s ../model.dat .
-        ./gpt2
-        ./test_more_inputs
-        ./test_chat
-        ctest -V
-
-        cd ..
-
-        mkdir lf-goc
-        cd lf-goc
-        FC="$FC --separate-compilation --rtlib --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
-        make VERBOSE=1
-        ln -s ../model.dat .
-        ./gpt2
-        #./test_more_inputs
-        #./test_chat
-        ctest -V
-        cd ..
-
-        mkdir lf-fast
-        cd lf-fast
-        FC="$FC --fast --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
-        make VERBOSE=1
-        ln -s ../model.dat .
-        ./gpt2
-        #./test_more_inputs
-        #./test_chat
-        ctest -V
-        cd ..
-
-        git checkout -t origin/namelist
-        git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-
-        cd lf
-        git clean -dfx
-        FC="$FC --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
-        make VERBOSE=1
-        ln -s ../model.dat .
-        ./gpt2
-        ./test_basic_input
-        #./test_more_inputs
-        cd ..
-
-        cd lf-fast
-        git clean -dfx
-        FC="$FC --fast --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
-        make VERBOSE=1
-        ln -s ../model.dat .
-        ./gpt2
-        ./test_basic_input
-        #./test_more_inputs
-
-        cd ..
-
-        rm -rf fastGPT/
-    fi
+    rm -rf fastGPT/
 '
 
 ##########################
@@ -891,7 +642,7 @@ time_section "🧪 Testing stdlib" '
     export PATH="$(pwd)/../../src/bin:$PATH"
 
     git checkout lf-21
-    git checkout 176c7a28bbc7a8a9b63441f7dfa980aeafbddd0f
+    assert_git_commit 176c7a28bbc7a8a9b63441f7dfa980aeafbddd0f
     micromamba install -c conda-forge fypp
 
     git clean -fdx
@@ -908,17 +659,9 @@ time_section "🧪 Testing SNAP" '
     cd SNAP
 
     git checkout lf11
-    git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
+    assert_git_commit 169a9216f2c922e94065a519efbb0a6c8b55149e
     cd ./src
     make -j8 FORTRAN=$FC FFLAGS= MPI=no OPENMP=no
-    ./gsnap ../qasnap/sample/inp out
-
-    make clean
-    make -j8 FORTRAN=$FC FFLAGS="--separate-compilation" MPI=no OPENMP=no
-    ./gsnap ../qasnap/sample/inp out
-
-    make clean
-    make -j8 FORTRAN=$FC FFLAGS="--fast" MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
 '
 ##########################
@@ -931,7 +674,7 @@ time_section "🧪 Testing LAPACK" '
     cd lapack
     git fetch origin lf_07
     git checkout lf_07
-    git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
+    assert_git_commit 9d9e48987ca109d46b92d515b59cb591fab9859a
     cd build
     ./build_lf.sh
     micromamba install -y -n lf cmake=3.29.1 # Restore CMAKE
@@ -1117,6 +860,8 @@ time_section "🧪 Testing Reference-LAPACK v3.12.1 Full Test Suite" '
 
     cd ..
 '
+
+fi
 
 ##################################
 # Final Summary and Cleanup

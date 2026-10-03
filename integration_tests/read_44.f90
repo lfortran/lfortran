@@ -1,18 +1,18 @@
-! Test for https://github.com/lfortran/lfortran/issues/3811 and #7775
-! Read into character substring
 program read_44
-   implicit none
-   character(10) :: string
-   integer :: u
+      use iso_fortran_env, only: int64
+      implicit none
 
-   string = 'ABCDEFGHIJ'
-   open(newunit=u, status='scratch')
-   write(u, '(A)') 'hello world'
-   rewind(u)
-   read(u, '(A)') string(1:6)
-   close(u)
+      type :: string_t
+          character(len=:), allocatable :: str
+      end type
 
-   if (string(1:6) /= 'hello ') error stop
-   if (string(7:10) /= 'GHIJ') error stop
-   print *, "PASS"
-end program read_44
+      type(string_t) :: val
+      integer(int64) :: i1, istat
+
+      val%str = "111"
+      read(val%str, *, iostat=istat) i1  
+      print*, i1, istat
+      if (i1 /= 111) error stop
+      if (istat /= 0) error stop
+
+  end program read_44

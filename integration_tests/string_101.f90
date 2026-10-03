@@ -1,13 +1,15 @@
-! Test allocatable character return from function
-! Related to issue #6725
 program string_101
-  implicit none
-  character(:), allocatable :: result
-  result = get_string()
-  if (result /= 'hello') error stop
-contains
-  function get_string() result(s)
-    character(:), allocatable :: s
-    s = 'hello'
-  end function
+    use iso_c_binding, only: c_int, c_ptr, c_f_pointer
+    implicit none
+    integer(c_int), pointer :: n
+    integer(c_int), target :: val
+    val = 5
+    n => val
+    block
+        character(len=n) :: s
+        s = "hello"
+        if (len(s) /= 5) error stop
+        if (s /= "hello") error stop
+    end block
+    print *, "ok"
 end program

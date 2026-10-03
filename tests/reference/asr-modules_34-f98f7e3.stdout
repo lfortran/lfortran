@@ -24,6 +24,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_manifest_modules_34:
                 (Module
@@ -47,6 +48,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_manifest_package_modules_34:
                 (Module
@@ -80,6 +82,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             version:
                                                 (Variable
@@ -97,6 +102,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )]
                                                         []
@@ -113,6 +119,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     package_config_t
@@ -127,6 +136,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -145,9 +155,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             version_t:
                                 (ExternalSymbol
@@ -166,6 +178,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_modules_34:
                 (Module
@@ -187,8 +200,8 @@
                                                                     6
                                                                     1_package_config_t_version
                                                                     11 version
-                                                                    package_config_t
-                                                                    []
+                                                                    fpm_manifest_package_modules_34
+                                                                    [package_config_t]
                                                                     version
                                                                     Public
                                                                 ),
@@ -207,8 +220,8 @@
                                                                     6
                                                                     1_version_t_to_string
                                                                     14 to_string
-                                                                    1_version_t
-                                                                    []
+                                                                    fpm_versioning_modules_34
+                                                                    [version_t]
                                                                     to_string
                                                                     Public
                                                                 ),
@@ -234,6 +247,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     associate_block
@@ -255,7 +271,26 @@
                                                     (SubroutineCall
                                                         6 1_version_t_to_string
                                                         ()
-                                                        [((Var 5 version))]
+                                                        [((StructInstanceMember
+                                                            (Var 5 package)
+                                                            6 1_package_config_t_version
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                        Global
+                                                                    )
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            ()
+                                                        ))
+                                                        ((Var 5 version))]
                                                         (StructInstanceMember
                                                             (Var 5 package)
                                                             6 1_package_config_t_version
@@ -266,6 +301,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )]
                                                                 []
@@ -297,6 +333,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             package:
                                                 (Variable
@@ -318,6 +357,7 @@
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                             )]
                                                             []
@@ -338,6 +378,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             version:
                                                 (Variable
@@ -361,6 +404,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     build_model
@@ -376,6 +422,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )]
                                                 []
@@ -397,6 +444,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 package)]
@@ -428,6 +476,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_versioning_modules_34:
                 (Module
@@ -444,8 +493,8 @@
                                                     15
                                                     1_version_t_to_string
                                                     14 to_string
-                                                    version_t
-                                                    []
+                                                    fpm_versioning_modules_34
+                                                    [version_t]
                                                     to_string
                                                     Public
                                                 ),
@@ -465,6 +514,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )]
                                                         []
@@ -481,6 +531,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -504,6 +557,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     as_string
@@ -515,6 +571,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -534,20 +591,22 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 15 self)]
                                     [(SubroutineCall
                                         15 1_version_t_to_string
                                         ()
-                                        [((Var 15 string))]
+                                        [((Var 15 self))
+                                        ((Var 15 string))]
                                         (Var 15 self)
                                         .false.
                                     )]
                                     (Var 15 string)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             char:
@@ -578,6 +637,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )]
                                                         []
@@ -594,6 +654,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -617,6 +680,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     to_string
@@ -628,6 +694,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -648,6 +715,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 16 self)
@@ -655,8 +723,8 @@
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             version_t:
@@ -679,6 +747,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -691,6 +760,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
@@ -712,6 +784,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         []
@@ -725,9 +798,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     fpm_versioning_modules_34
@@ -736,6 +811,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             modules_34:
                 (Program
@@ -752,7 +828,9 @@
                             (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

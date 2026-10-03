@@ -49,6 +49,14 @@ module lfortran_intrinsic_ieee_arithmetic
         module procedure spieee_class, dpieee_class
     end interface
 
+    interface operator(==)
+        module procedure ieee_class_type_eq, ieee_round_type_eq
+    end interface
+
+    interface operator(/=)
+        module procedure ieee_class_type_ne, ieee_round_type_ne
+    end interface
+
     interface ieee_value
         module procedure spieee_value, dpieee_value
     end interface
@@ -153,16 +161,114 @@ module lfortran_intrinsic_ieee_arithmetic
 
     contains
 
+    elemental function ieee_class_type_eq(lhs, rhs) result(r)
+        type(ieee_class_type), intent(in) :: lhs, rhs
+        logical :: r
+        r = lhs%value == rhs%value
+    end function
+
+    elemental function ieee_class_type_ne(lhs, rhs) result(r)
+        type(ieee_class_type), intent(in) :: lhs, rhs
+        logical :: r
+        r = lhs%value /= rhs%value
+    end function
+
+    elemental function ieee_round_type_eq(lhs, rhs) result(r)
+        type(ieee_round_type), intent(in) :: lhs, rhs
+        logical :: r
+        r = lhs%value == rhs%value
+    end function
+
+    elemental function ieee_round_type_ne(lhs, rhs) result(r)
+        type(ieee_round_type), intent(in) :: lhs, rhs
+        logical :: r
+        r = lhs%value /= rhs%value
+    end function
+
     elemental function spieee_class(x) result(y)
         use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         type(ieee_class_type) :: y
+        integer(4) :: bits, expo, frac
+        bits = transfer(x, 0_4)
+        expo = iand(ishft(bits, -23), int(z'FF', kind=4))
+        frac = iand(bits, int(z'007FFFFF', kind=4))
+        if (expo == int(z'FF', kind=4)) then
+            if (frac == 0) then
+                if (bits < 0) then
+                    y = ieee_negative_inf
+                else
+                    y = ieee_positive_inf
+                end if
+            else if (iand(frac, int(z'00400000', kind=4)) /= 0) then
+                y = ieee_quiet_nan
+            else
+                y = ieee_signaling_nan
+            end if
+        else if (expo == 0) then
+            if (frac == 0) then
+                if (bits < 0) then
+                    y = ieee_negative_zero
+                else
+                    y = ieee_positive_zero
+                end if
+            else
+                if (bits < 0) then
+                    y = ieee_negative_denormal
+                else
+                    y = ieee_positive_denormal
+                end if
+            end if
+        else
+            if (bits < 0) then
+                y = ieee_negative_normal
+            else
+                y = ieee_positive_normal
+            end if
+        end if
     end function
 
     elemental function dpieee_class(x) result(y)
-        use iso_fortran_env, only: real64
+        use iso_fortran_env, only: real64, int64
         real(real64), intent(in) :: x
         type(ieee_class_type) :: y
+        integer(int64) :: bits, expo, frac
+        bits = transfer(x, 0_int64)
+        expo = iand(ishft(bits, -52), int(z'7FF', kind=8))
+        frac = iand(bits, int(z'000FFFFFFFFFFFFF', kind=8))
+        if (expo == int(z'7FF', kind=8)) then
+            if (frac == 0_int64) then
+                if (bits < 0_int64) then
+                    y = ieee_negative_inf
+                else
+                    y = ieee_positive_inf
+                end if
+            else if (iand(frac, int(z'0008000000000000', kind=8)) /= 0_int64) then
+                y = ieee_quiet_nan
+            else
+                y = ieee_signaling_nan
+            end if
+        else if (expo == 0_int64) then
+            if (frac == 0_int64) then
+                if (bits < 0_int64) then
+                    y = ieee_negative_zero
+                else
+                    y = ieee_positive_zero
+                end if
+            else
+                if (bits < 0_int64) then
+                    y = ieee_negative_denormal
+                else
+                    y = ieee_positive_denormal
+                end if
+            end if
+        else
+            if (bits < 0_int64) then
+                y = ieee_negative_normal
+            else
+                y = ieee_positive_normal
+            end if
+        end if
     end function
 
     elemental function spieee_value(x, cls) result(y)
@@ -173,7 +279,7 @@ module lfortran_intrinsic_ieee_arithmetic
         ! Generate special IEEE values based on class type
         select case (cls%value)
         case (1)  ! ieee_signaling_nan
-            y = transfer(int(z'7F800001', kind=4), 1.0_real32)
+            y = transfer(int(z'7FA00000', kind=4), 1.0_real32)
         case (2)  ! ieee_quiet_nan
             y = transfer(int(z'7FC00000', kind=4), 1.0_real32)
         case (3)  ! ieee_negative_inf
@@ -207,7 +313,7 @@ module lfortran_intrinsic_ieee_arithmetic
         ! Generate special IEEE values based on class type
         select case (cls%value)
         case (1)  ! ieee_signaling_nan
-            y = transfer(int(z'7FF0000000000001', kind=8), 1.0_real64)
+            y = transfer(int(z'7FF4000000000000', kind=8), 1.0_real64)
         case (2)  ! ieee_quiet_nan
             y = transfer(int(z'7FF8000000000000', kind=8), 1.0_real64)
         case (3)  ! ieee_negative_inf
@@ -238,7 +344,7 @@ module lfortran_intrinsic_ieee_arithmetic
         real(real32), intent(in) :: x
         logical :: r
         interface
-        pure logical function c_rsp_is_nan(x) bind(c, name="_lfortran_sis_nan")
+        pure integer(4) function c_rsp_is_nan(x) bind(c, name="_lfortran_sis_nan")
             import :: real32
             real(real32), intent(in), value :: x
             end function
@@ -251,7 +357,7 @@ module lfortran_intrinsic_ieee_arithmetic
         real(real64), intent(in) :: x
         logical :: r
         interface
-        pure logical function c_rdp_is_nan(x) bind(c, name="_lfortran_dis_nan")
+        pure integer(4) function c_rdp_is_nan(x) bind(c, name="_lfortran_dis_nan")
             import :: real64
             real(real64), intent(in), value :: x
             end function
@@ -790,6 +896,19 @@ module lfortran_intrinsic_ieee_arithmetic
         type(ieee_flag_type), intent(in) :: flag
         logical, intent(in) :: halting
         ! TODO: Implement halting mode setting
+    end subroutine
+
+    ! IEEE_GET_UNDERFLOW_MODE
+    subroutine ieee_get_underflow_mode(gradual)
+        logical, intent(out) :: gradual
+        ! TODO: Implement using C binding to query FTZ/DAZ mode
+        gradual = .true.
+    end subroutine
+
+    ! IEEE_SET_UNDERFLOW_MODE
+    subroutine ieee_set_underflow_mode(gradual)
+        logical, intent(in) :: gradual
+        ! TODO: Implement using C binding to set FTZ/DAZ mode
     end subroutine
 
     ! IEEE_GET_STATUS

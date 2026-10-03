@@ -6,8 +6,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -25,8 +23,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             dummy
             10
@@ -64,9 +62,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -84,8 +79,8 @@
             None
             ())]
             ()
-        )]
-        [(Print
+        )
+        (Print
             0
             ()
             [(String "Printed using subroutine call: " ())

@@ -1,27 +1,34 @@
-! Test for https://github.com/lfortran/lfortran/issues/8857
-! Submodule function with a result clause where result name differs from function name
-module submodule_24_interface
+module submodule_24_mod
     implicit none
-    integer, parameter :: dp = selected_real_kind(15)
-    interface
-        real(dp) module function pi() result(p)
-        end function pi
-    end interface
-end module submodule_24_interface
 
-submodule (submodule_24_interface) submodule_24_impl
+    interface
+        integer function i()
+        end function
+    end interface
+
+    interface
+        module function f(p) result(r)
+            procedure(i) :: p
+            integer :: r
+        end function
+    end interface
+end module
+
+submodule(submodule_24_mod) submodule_24_sub
     implicit none
 contains
-    real(dp) module function pi() result(p)
-        p = acos(-1.0_dp)
-    end function pi
-end submodule submodule_24_impl
+    module procedure f
+        r = p()
+    end procedure
+end submodule
 
 program submodule_24
-    use submodule_24_interface
+    use submodule_24_mod, only: f
     implicit none
-    real(dp) :: val
-    val = pi()
-    if (abs(val - 3.14159265358979323846_dp) > 1.0e-10_dp) error stop
-    print *, "pi is", val
-end program submodule_24
+    if (f(get_four) /= 4) error stop
+    print *, "ok"
+contains
+    integer function get_four()
+        get_four = 4
+    end function
+end program

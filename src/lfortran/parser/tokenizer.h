@@ -14,6 +14,11 @@ public:
     unsigned char *cur_line;
     unsigned int line_num;
     unsigned char *string_start;
+    // Added to every location this tokenizer produces. Interactive mode
+    // compiles one cell at a time and gives each cell a range of its own, so
+    // that a location still says which cell it is from once the cell has been
+    // compiled and a later one refers to its symbols.
+    uint32_t loc_offset=0;
     bool fixed_form=false;
     bool openmp_enabled=false;
 
@@ -44,6 +49,20 @@ public:
     {
         s.p = (char*) tok;
         s.n = cur-tok;
+    }
+
+    // Extract kind suffix from a logical literal (.true._kind or .false._kind)
+    // base_len is the length of the base part (7 for .true., 8 for .false.)
+    void token_logical_kind(Str &s, size_t base_len) const
+    {
+        size_t total = cur - tok;
+        if (total > base_len + 1 && tok[base_len] == '_') {
+            s.p = (char*)(tok + base_len + 1);
+            s.n = total - base_len - 1;
+        } else {
+            s.p = nullptr;
+            s.n = 0;
+        }
     }
 
     // Return the current token as YYSTYPE::Str, strips first and last character
@@ -96,8 +115,8 @@ public:
     // Return the current token's location
     void token_loc(Location &loc) const
     {
-        loc.first = tok-string_start;
-        loc.last = cur-string_start-1;
+        loc.first = tok-string_start+loc_offset;
+        loc.last = cur-string_start-1+loc_offset;
     }
     void add_rel_warning(diag::Diagnostics &diagnostics, bool fixed_form, int rel_token) const;
 };
@@ -107,7 +126,8 @@ bool lex_int(const unsigned char *s, const unsigned char *e, uint64_t &u,
 void lex_int_large(Allocator &al, const unsigned char *s,
     const unsigned char *e, BigInt::BigInt &u, Str &suffix);
 void lex_format(unsigned char *&cur, Location &loc,
-        unsigned char *&start, diag::Diagnostics &diagnostics, bool continue_compilation, unsigned char *&string_start);
+        unsigned char *&start, diag::Diagnostics &diagnostics, bool continue_compilation,
+        unsigned char *&string_start, uint32_t loc_offset=0);
 
 
 } // namespace LCompilers::LFortran

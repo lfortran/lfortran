@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     f
@@ -43,6 +46,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -55,8 +59,8 @@
                     )]
                     (Var 2 f)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             g:
@@ -84,6 +88,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     g
@@ -100,6 +107,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -112,8 +120,8 @@
                     )]
                     (Var 3 g)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             h:
@@ -141,6 +149,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     h
@@ -157,6 +168,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -169,10 +181,11 @@
                     )]
                     (Var 4 h)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 )
         })
     []
+    ()
 )

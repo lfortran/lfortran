@@ -4,7 +4,7 @@ program read_fmt5_test
   integer :: ia(5)
   integer :: i
 
-  open (10, file='fort.10', status='replace', form='formatted')
+  open (10, file='read_36_fort.10', status='replace', form='formatted')
 
   ! Format is repeated for each value on a new record
   write (10, '(i4)') (i, i=1,5)

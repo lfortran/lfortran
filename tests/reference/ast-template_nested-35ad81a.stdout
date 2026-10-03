@@ -6,12 +6,11 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             ()
             [(SimpleAttribute
                 AttrPrivate
@@ -46,8 +45,8 @@
         )
         (Requirement
             R
-            [T
-            F]
+            [(T)
+            (F)]
             [(DerivedType
                 T
                 []
@@ -57,67 +56,70 @@
                 )]
                 []
                 []
-            )]
-            [(Function
-                F
-                [(x)
-                (y)]
-                []
-                z
+            )
+            (Interface
+                (DeferredInterfaceHeader)
                 ()
-                ()
-                []
-                []
-                []
-                [(Declaration
-                    (AttrType
-                        TypeType
+                [(InterfaceProc
+                    (Function
+                        F
+                        [(x)
+                        (y)]
                         []
+                        z
                         ()
-                        T
-                        None
-                    )
-                    [(AttrIntent
-                        In
-                    )]
-                    [(x
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())
-                    (y
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Declaration
-                    (AttrType
-                        TypeType
+                        ()
+                        [(Declaration
+                            (AttrType
+                                TypeType
+                                []
+                                ()
+                                T
+                                None
+                            )
+                            [(AttrIntent
+                                In
+                            )]
+                            [(x
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())
+                            (y
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())]
+                            ()
+                        )
+                        (Declaration
+                            (AttrType
+                                TypeType
+                                []
+                                ()
+                                T
+                                None
+                            )
+                            []
+                            [(z
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())]
+                            ()
+                        )]
                         []
-                        ()
-                        T
-                        None
+                        []
                     )
-                    []
-                    [(z
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
                 )]
-                []
-                []
-                []
             )]
+            []
         )
         (Template
             add_t
@@ -126,10 +128,10 @@
             [(Require
                 [(UnitRequire
                     R
-                    [(AttrNamelist
+                    [(AttrName
                         T
                     )
-                    (AttrNamelist
+                    (AttrName
                         F
                     )]
                 )]
@@ -164,9 +166,6 @@
                 z
                 ()
                 ()
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -211,8 +210,8 @@
                     None
                     ())]
                     ()
-                )]
-                [(Assignment
+                )
+                (Assignment
                     0
                     z
                     (FuncCallOrArray
@@ -243,9 +242,6 @@
                 z
                 ()
                 ()
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -290,8 +286,8 @@
                     None
                     ())]
                     ()
-                )]
-                [(Assignment
+                )
+                (Assignment
                     0
                     z
                     (FuncCallOrArray
@@ -315,7 +311,6 @@
                 []
             )]
         )]
-        []
         [(Function
             func_arg_real
             [(x)
@@ -334,9 +329,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -363,8 +355,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 z
                 (+ x y)
@@ -379,9 +371,6 @@
             []
             ()
             ()
-            []
-            []
-            []
             [(Instantiate
                 add_t
                 [(AttrType
@@ -391,7 +380,7 @@
                     ()
                     None
                 )
-                (AttrNamelist
+                (AttrName
                     func_arg_real
                 )]
                 [(UseSymbol
@@ -448,8 +437,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 x
                 (Real "5.1")
@@ -534,17 +523,16 @@
             []
             .false.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        []
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             test_template
             []

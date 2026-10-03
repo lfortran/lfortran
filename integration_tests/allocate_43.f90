@@ -1,16 +1,22 @@
-! Test for https://github.com/lfortran/lfortran/issues/4768
-! Allocate array with scalar source from intent(in) argument
 program allocate_43
-    implicit none
-    call test(n=100)
-    call test(n=200)
+use iso_c_binding, only: c_ptr, c_null_ptr, c_associated
+implicit none
+
+type :: my_type
+    type(c_ptr) :: ptr
+end type
+
+type(my_type) :: obj
+obj%ptr = c_null_ptr
+
+call use_ptr(obj%ptr)
+if (c_associated(obj%ptr)) error stop
+
 contains
-    subroutine test(n)
-        integer, intent(in) :: n
-        integer, allocatable :: arr(:)
-        allocate(arr(2), source=n)
-        if (arr(1) /= n) error stop
-        if (arr(2) /= n) error stop
-        print *, 'subroutine result', arr(1), arr(2)
-    end subroutine test
+
+subroutine use_ptr(p)
+    type(c_ptr), intent(inout) :: p
+    p = c_null_ptr
+end subroutine
+
 end program allocate_43

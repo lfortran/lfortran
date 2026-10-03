@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             z:
                                 (Variable
@@ -48,6 +51,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     clqmn
@@ -64,6 +70,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -105,8 +112,8 @@
                     )]
                     ()
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             dnan:
@@ -134,6 +141,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     dnan
@@ -150,6 +160,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -174,10 +185,11 @@
                     )]
                     (Var 2 dnan)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 )
         })
     []
+    ()
 )

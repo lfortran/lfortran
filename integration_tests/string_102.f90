@@ -1,13 +1,20 @@
-! Test allocatable character array with max len allocation
-! Related to issue #6877
 program string_102
-  implicit none
-  character(:),allocatable::a,b,words(:)
-  a = 'first'
-  b = 'second'
-  allocate(character(max(len(a),len(b))) :: words(2))
-  words(1) = a
-  words(2) = b
-  if (len(words(1)) /= 6) error stop
-  if (len(words(2)) /= 6) error stop
+! Test character array slice assignment where the second array has
+! character(len=len(first_array)) type and first array is assumed-length.
+implicit none
+character(len=5) :: a(4), b(4)
+a = "hello"
+b = "world"
+call test(a, b)
+if (a(1) /= "world") error stop
+if (a(2) /= "world") error stop
+if (a(3) /= "hello") error stop
+if (a(4) /= "hello") error stop
+print *, "ok"
+contains
+    subroutine test(a, b)
+        character(len=*), intent(inout) :: a(:)
+        character(len=len(a)), intent(inout) :: b(:)
+        a(1:2) = b(1:2)
+    end subroutine
 end program

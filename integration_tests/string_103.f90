@@ -1,33 +1,41 @@
-! Test allocatable character return with array implied-do (issue #6725)
 program string_103
-    implicit none
-    call notstring_test()
+! Test that a temporary variable created for a function call result
+! whose type depends on another variable (e.g., character(len=len(x)))
+! has the correct dependency list in ASR.
+implicit none
+character(len=:), allocatable :: temp
+character(len=:), allocatable :: rev
+integer :: i
+temp = "hello/world"
+rev = reverse(temp)
+i = find_char(rev, "/")
+if (i /= 6) error stop
+! The following nested call triggered an ASR verify error before the fix:
+! "Variable lfortran_tmp depends on temp but isn't found in its dependency list"
+i = find_char(reverse(temp), "/")
+print *, "ok"
 contains
-    subroutine notstring_test()
-        character(7), parameter :: notstring_dataa(7) = &
-            ["candy  ", 'x      ', "not bad", 'bad    ', 'not    ', &
-             'is not ', 'no     ']
-        character(10), parameter :: notstring_expected(7) = &
-            ['not candy ', 'not x     ', 'not bad   ', 'not bad   ', 'not       ', &
-             'not is not', 'not no    ']
-        character(len(notstring_expected)) :: notstring_results(size(notstring_dataa))
-        integer :: i
-
-        notstring_results = [(notstring(notstring_dataa(i)), i=1, size(notstring_dataa))]
-        if (.not. all(notstring_results == notstring_expected)) error stop
-        print *, 'passed'
-    end subroutine
-
-    function notstring(str)
-        character(*), intent(in) :: str
-        character(:), allocatable :: notstring
-
-        if (len(str) < 3) then
-            notstring = 'not ' // str
-        else if (str(1:3) /= 'not') then
-            notstring = 'not ' // str
-        else
-            notstring = str
-        end if
+    function reverse(string) result(reverse_string)
+        character(len=*), intent(in) :: string
+        character(len=len(string)) :: reverse_string
+        integer :: i, n
+        n = len(string)
+        do i = 1, n
+            reverse_string(n-i+1:n-i+1) = string(i:i)
+        end do
     end function
-end program string_103
+
+    function find_char(string, pattern) result(res)
+        character(len=*), intent(in) :: string
+        character(len=*), intent(in) :: pattern
+        integer :: res
+        integer :: i
+        res = 0
+        do i = 1, len(string)
+            if (string(i:i) == pattern(1:1)) then
+                res = i
+                return
+            end if
+        end do
+    end function
+end program

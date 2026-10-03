@@ -12,8 +12,8 @@
                                     5
                                     1_custom_int_value
                                     3 value
-                                    custom_int
-                                    []
+                                    operator_overloading_08_mod1
+                                    [custom_int]
                                     value
                                     Public
                                 ),
@@ -42,6 +42,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             custom_div:
                                 (ExternalSymbol
@@ -119,6 +122,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             operator_overloading_08_mod1:
                 (Module
@@ -135,8 +139,8 @@
                                                     4
                                                     1_custom_int_value
                                                     3 value
-                                                    custom_int
-                                                    []
+                                                    operator_overloading_08_mod1
+                                                    [custom_int]
                                                     value
                                                     Public
                                                 ),
@@ -165,6 +169,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             b:
                                                 (Variable
@@ -186,6 +193,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -212,6 +222,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     custom_div
@@ -239,6 +252,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 a)
@@ -274,8 +288,8 @@
                                     )]
                                     (Var 4 res)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             custom_int:
@@ -303,6 +317,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     custom_int
@@ -319,9 +336,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             ~div:
                                 (CustomOperator
@@ -337,7 +356,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

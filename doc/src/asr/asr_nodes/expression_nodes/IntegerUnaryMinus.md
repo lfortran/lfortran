@@ -1,62 +1,52 @@
 # IntegerUnaryMinus
 
-Uniry minus operator as the second operand of binary arithmetic operators, a
-`expr` node.
+Negation of an integer.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 IntegerUnaryMinus(expr arg, ttype type, expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`arg` |  expression arguments |
-|`type`| table entry type |
-|`value`| expression value|
+| Argument | Description |
+|----------|-------------|
+| `arg` | the operand. |
+| `type` | the type of the expression. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the IntegerUnaryMinus represents.
+The value of the expression.
 
 ## Description
 
-**IntegerUnaryMinus** represents integer unary minus operand of binary
-arithmetic operators, to be used without parantheses.
-
-Example : `a = b * -c`
-
-## Types
-
-Only accepts integers.
+The result has the type of the operand. Negating the most negative value of a
+kind overflows, and ASR does not diagnose it.
 
 ## Examples
 
-```fortran
--1
+```clojure
+(IntegerUnaryMinus
+  :arg (Var
+    :v (SymbolRef 1 "i")
+  )
+  :type (Integer
+    :kind 4
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(IntegerUnaryMinus
-        (IntegerConstant 1 (Integer 4 []))
-        (Integer 4 [])
-        (IntegerConstant -1 (Integer 4 []))
-    )]
-)
-
+```{literalinclude} ../../examples/integer_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
+[IntegerBinOp](IntegerBinOp.md), [RealUnaryMinus](RealUnaryMinus.md)

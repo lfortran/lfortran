@@ -1,14 +1,14 @@
-20000000000000000    22    33    F
-1    1    1    1    1    1    1    1    1    1
+20000000000000000 22 33 F
+1 1 1 1 1 1 1 1 1 1
 (2.00000000,3.00000000)
-1    1    1    1    1    1    1    1    1    1
+1 1 1 1 1 1 1 1 1 1
 HelloLFortran  HelloLFortran   HelloLFortran
-HelloLComp  
+HelloLComp
 20000000000000000
 20000000000000000
 20000000000000000
 HelloLFortran
-HelloLFortran    HelloLFortran
+HelloLFortranHelloLFortran
 med
 med
 med
@@ -21,18 +21,18 @@ med
 med
 22
 10.300000000000001
-T    T    T    T    T    T    T    T    T    F
+T T T T T T T T T F
 10.3000002
 F
 232
-string    string
+stringstring
 1  1
 1  1
 1  1
 1  1
 1  1
-1    1    1    1    1    1    1    1    1    1
-33    1    1    1    1    1    1    1    1    1
+1 1 1 1 1 1 1 1 1 1
+33 1 1 1 1 1 1 1 1 1
 here
-HelloLFortran    HelloLFortran
+HelloLFortranHelloLFortran
 F

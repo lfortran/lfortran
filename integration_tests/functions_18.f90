@@ -7,6 +7,7 @@ program functions_18
     integer, target :: x_global(3)
     x_global = 124
     allocate(type_1%x(3))
+    deallocate(type_1%x)
     type_1%x => x_global
     print*, sub(type_1%x)
 contains

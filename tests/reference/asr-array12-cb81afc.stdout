@@ -50,11 +50,11 @@
                             get_current_directory:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        14
                                         {
                                             buffersize:
                                                 (Variable
-                                                    13
+                                                    14
                                                     buffersize
                                                     []
                                                     Local
@@ -72,10 +72,13 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             cpath:
                                                 (Variable
-                                                    13
+                                                    14
                                                     cpath
                                                     []
                                                     Local
@@ -88,6 +91,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -100,10 +104,13 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             path:
                                                 (Variable
-                                                    13
+                                                    14
                                                     path
                                                     []
                                                     Out
@@ -123,18 +130,23 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             tmp:
                                                 (Variable
-                                                    13
+                                                    14
                                                     tmp
                                                     []
                                                     Local
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -144,6 +156,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     get_current_directory
@@ -162,13 +177,15 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [getcwd]
-                                    [(Var 13 path)]
+                                    [(Var 14 path)]
                                     [(Allocate
-                                        [((Var 13 cpath)
+                                        [((Var 14 cpath)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 1000 (Integer 4) Decimal))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -177,24 +194,27 @@
                                         ()
                                     )
                                     (Assignment
-                                        (Var 13 tmp)
+                                        (Var 14 tmp)
                                         (FunctionCall
                                             2 getcwd
                                             ()
                                             [((ArrayPhysicalCast
-                                                (Var 13 cpath)
+                                                (Var 14 cpath)
                                                 DescriptorArray
                                                 StringArraySinglePointer
                                                 (Array
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength CChar)
                                                     [(()
                                                     ())]
                                                     StringArraySinglePointer
+                                                    Global
                                                 )
                                                 ()
                                             ))
-                                            ((Var 13 buffersize))]
-                                            (CPtr)
+                                            ((Var 14 buffersize))]
+                                            (CPtr
+                                                CPointer
+                                            )
                                             ()
                                             ()
                                         )
@@ -205,7 +225,7 @@
                                     (If
                                         ()
                                         (PointerAssociated
-                                            (Var 13 tmp)
+                                            (Var 14 tmp)
                                             ()
                                             (Logical 4)
                                             ()
@@ -217,7 +237,7 @@
                                                     "PWD: "
                                                     (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
-                                                (Var 13 tmp)]
+                                                (Var 14 tmp)]
                                                 FormatFortran
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
@@ -236,11 +256,11 @@
                             getcwd:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             buf:
                                                 (Variable
-                                                    12
+                                                    13
                                                     buf
                                                     []
                                                     In
@@ -252,6 +272,7 @@
                                                         [(()
                                                         ())]
                                                         StringArraySinglePointer
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -263,10 +284,13 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             bufsize:
                                                 (Variable
-                                                    12
+                                                    13
                                                     bufsize
                                                     []
                                                     In
@@ -284,18 +308,23 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             path:
                                                 (Variable
-                                                    12
+                                                    13
                                                     path
                                                     []
                                                     ReturnVar
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -305,6 +334,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     getcwd
@@ -314,9 +346,12 @@
                                             [(()
                                             ())]
                                             StringArraySinglePointer
+                                            Global
                                         )
                                         (Integer 4)]
-                                        (CPtr)
+                                        (CPtr
+                                            CPointer
+                                        )
                                         BindC
                                         Interface
                                         "getcwd"
@@ -327,12 +362,13 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
-                                    [(Var 12 buf)
-                                    (Var 12 bufsize)]
+                                    [(Var 13 buf)
+                                    (Var 13 bufsize)]
                                     []
-                                    (Var 12 path)
+                                    (Var 13 path)
                                     Public
                                     .false.
                                     .false.
@@ -346,9 +382,11 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
 )

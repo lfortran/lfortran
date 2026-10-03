@@ -1,5 +1,12 @@
-! Test execute_command_line with --std=f23 (issue #4676)
 program cmd_03
-    implicit none
-    call execute_command_line('echo passed')
+  implicit none
+  integer :: i
+  character(len=32) :: arg
+  i = 0
+  do
+    call get_command_argument(i, arg)
+    if (len_trim(arg) == 0) exit
+    write (*,*) trim(arg)
+    i = i + 1
+  end do
 end program cmd_03

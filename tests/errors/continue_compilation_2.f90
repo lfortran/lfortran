@@ -82,9 +82,44 @@ module continue_compilation_2_mod
         integer :: x(.., 5)
     end subroutine arank
 
-
     
 end module continue_compilation_2_mod
+
+module intent_out_array_bounds_mod
+    type :: bar
+        integer :: n
+    end type
+contains
+    subroutine init_bar(this, n)
+        type(bar), intent(out) :: this
+        integer, intent(in) :: n
+        this%n = n
+        block
+            real :: array(this%n)
+            integer :: i
+            array = [ (i,i = 1,this%n) ]
+            print *, array
+        end block
+    end subroutine
+
+    subroutine optional_bound(n)
+        integer, optional, intent(in) :: n
+        real :: arr(n)
+        arr = 0.0
+        print *, arr
+    end subroutine
+end module intent_out_array_bounds_mod
+
+module pure_io_mod
+contains
+    pure subroutine pure_print_sub(b)
+        integer, intent(in) :: b
+        print "(A,I0)", 'b = ', b
+    end subroutine pure_print_sub
+end module pure_io_mod
+
+
+
 
 
 
@@ -195,7 +230,7 @@ program continue_compilation_2
     ! invalid keyword argument specified
     type(Circle) :: myCircle3 = Circle(mykeyword=10)
     !tokenizer error
-    integer  :: ? tokenizer_error
+    integer  :: ` tokenizer_error
     integer, dimension(3,2) :: m = [ 1, 0, 0, 2, 4, 6 ]
     real :: idint_kind_mismatch = 4.23
     character(5):: ichar_runtime = "Hello"
@@ -218,6 +253,9 @@ program continue_compilation_2
     character(*), parameter :: badfmt_p = '(a i0)'
     character(8) :: badfmt_s = '(a i0)'
     character(:), allocatable :: ax
+    integer :: a_deferred(:)
+    type(c_ptr) :: queries_3
+    integer, pointer :: cfp_y_3(:)
 
 
 
@@ -227,6 +265,31 @@ program continue_compilation_2
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    ! Use the space above to insert new declarations, and remove the line, so
+    ! that the lines below do not shift, to keep the diff minimal.
+    !
+    ! Only put statements below. If you need to call a function, put it into a
+    ! module above.
 
 
     allocate(str1(i))
@@ -246,7 +309,7 @@ program continue_compilation_2
     ! close_invalid_kwarg1
     CLOSE(end=200)
     ! cmplx_01
-    print *, cmplx(y = 2) ! a = cmplx(y = 2) ! does not work with continue compilation
+    print *, cmplx(y = 2)
     ! cmplx_02
     print*, cmplx((real(1, kind=4), 0.00000000), kind=8)
     ! cmplx_03
@@ -472,6 +535,36 @@ program continue_compilation_2
     write (*, add_parens (badfmt_s)) "hi", 3
     ax = "xx"
     print "(aai6)", a,"hi",15
+    call sleep(1)
+    a = cmplx(y = 2)
+    ! c_f_pointer_03
+    call c_f_pointer(queries_3, cfp_y_3)    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     contains
     logical function f(x)
         integer, intent(in), optional :: x
@@ -485,3 +578,12 @@ program second_program_test
     implicit none
     print *, "This is a second program - should cause error"
 end program second_program_test
+! Test for pure function without INTENT(IN)
+module pure_intent_check_mod
+contains
+    pure function add(x, y) result(res)
+        integer :: x, y
+        integer :: res
+        res = x + y
+    end function
+end module pure_intent_check_mod

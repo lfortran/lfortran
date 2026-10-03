@@ -1,20 +1,12 @@
-! Test external real function passed as argument
-! Related to issue #6783
-module external_16_mod
-  implicit none
-  integer, parameter:: dp=kind(1d0)
-contains
-  subroutine root2sqdp(sqrt)
-    real(dp),external::sqrt
-    real(dp) :: result
-    result = sqrt(2.0_dp)**2
-    if (abs(result - 2.0_dp) > 1.0d-14) error stop
-  end subroutine root2sqdp
-end module external_16_mod
+character(8) function sin()
+  sin = 'Peccavi!'
+end function sin
 
 program external_16
-  use external_16_mod
   implicit none
-  intrinsic dsqrt
-  call root2sqdp(dsqrt)
+  character(8), external :: sin
+  character(8) :: res
+  res = sin()
+  if (res /= 'Peccavi!') error stop
+  print '(A)', res
 end program external_16

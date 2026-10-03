@@ -32,6 +32,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             line:
                                                 (Variable
@@ -53,6 +56,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             pattern:
                                                 (Variable
@@ -74,6 +80,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             strout:
                                                 (Variable
@@ -88,16 +97,10 @@
                                                     (String 1 (IntrinsicElementalFunction
                                                         Max
                                                         [(Var 3 length)
-                                                        (StringLen
-                                                            (IntrinsicElementalFunction
-                                                                StringTrim
-                                                                [(Var 3 line)]
-                                                                0
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
-                                                                ()
-                                                            )
+                                                        (IntrinsicElementalFunction
+                                                            StringLenTrim
+                                                            [(Var 3 line)]
+                                                            0
                                                             (Integer 4)
                                                             ()
                                                         )]
@@ -115,6 +118,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     atleast
@@ -129,20 +135,14 @@
                                                 (Integer 4)
                                                 ()
                                             )
-                                            (StringLen
-                                                (IntrinsicElementalFunction
-                                                    StringTrim
-                                                    [(FunctionParam
-                                                        0
-                                                        (String 1 () AssumedLength DescriptorString)
-                                                        ()
-                                                    )]
+                                            (IntrinsicElementalFunction
+                                                StringLenTrim
+                                                [(FunctionParam
                                                     0
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
-                                                )
+                                                )]
+                                                0
                                                 (Integer 4)
                                                 ()
                                             )]
@@ -160,6 +160,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 line)
@@ -227,8 +228,8 @@
                                     )]
                                     (Var 3 strout)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             print_dictionary:
@@ -256,6 +257,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -277,6 +281,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             keywords:
                                                 (Variable
@@ -293,6 +300,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -305,6 +313,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             lfortran_iomsg:
                                                 (Variable
@@ -326,6 +337,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             lfortran_iomsg1:
                                                 (Variable
@@ -347,48 +361,9 @@
                                                     ()
                                                     .false.
                                                     .false.
-                                                ),
-                                            lfortran_tmp_iostat:
-                                                (Variable
-                                                    4
-                                                    lfortran_tmp_iostat
+                                                    NotMethod
+                                                    ()
                                                     []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            lfortran_tmp_iostat1:
-                                                (Variable
-                                                    4
-                                                    lfortran_tmp_iostat1
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
                                                 ),
                                             present_in:
                                                 (Variable
@@ -405,6 +380,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -417,6 +393,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             shorts:
                                                 (Variable
@@ -433,6 +412,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -445,6 +425,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             stop:
                                                 (Variable
@@ -466,6 +449,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             values:
                                                 (Variable
@@ -482,6 +468,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -494,6 +481,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     print_dictionary
@@ -511,6 +501,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [atleast]
                                     [(Var 4 header)
@@ -588,19 +579,13 @@
                                                         (Integer 4)
                                                         ()
                                                     )
-                                                    (StringLen
-                                                        (IntrinsicElementalFunction
-                                                            StringTrim
-                                                            [(StringConstant
-                                                                "KEYWORD"
-                                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                            )]
-                                                            0
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            ()
-                                                        )
+                                                    (IntrinsicElementalFunction
+                                                        StringLenTrim
+                                                        [(StringConstant
+                                                            "KEYWORD"
+                                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )]
+                                                        0
                                                         (Integer 4)
                                                         ()
                                                     )]
@@ -633,6 +618,9 @@
                                         ()
                                         ()
                                         .true.
+                                        ()
+                                        ()
+                                        ()
                                         ()
                                         ()
                                     )
@@ -715,24 +703,18 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        (StringLen
-                                                            (IntrinsicElementalFunction
-                                                                StringTrim
-                                                                [(ArrayItem
-                                                                    (Var 4 keywords)
-                                                                    [(()
-                                                                    (Var 4 i)
-                                                                    ())]
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                    ColMajor
-                                                                    ()
-                                                                )]
-                                                                0
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
+                                                        (IntrinsicElementalFunction
+                                                            StringLenTrim
+                                                            [(ArrayItem
+                                                                (Var 4 keywords)
+                                                                [(()
+                                                                (Var 4 i)
+                                                                ())]
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                                ColMajor
                                                                 ()
-                                                            )
+                                                            )]
+                                                            0
                                                             (Integer 4)
                                                             ()
                                                         )]
@@ -835,24 +817,18 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        (StringLen
-                                                            (IntrinsicElementalFunction
-                                                                StringTrim
-                                                                [(ArrayItem
-                                                                    (Var 4 keywords)
-                                                                    [(()
-                                                                    (Var 4 i)
-                                                                    ())]
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                    ColMajor
-                                                                    ()
-                                                                )]
-                                                                0
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
+                                                        (IntrinsicElementalFunction
+                                                            StringLenTrim
+                                                            [(ArrayItem
+                                                                (Var 4 keywords)
+                                                                [(()
+                                                                (Var 4 i)
+                                                                ())]
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                                ColMajor
                                                                 ()
-                                                            )
+                                                            )]
+                                                            0
                                                             (Integer 4)
                                                             ()
                                                         )]
@@ -894,11 +870,14 @@
                                         .true.
                                         ()
                                         ()
+                                        ()
+                                        ()
+                                        ()
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -908,7 +887,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

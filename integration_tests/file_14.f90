@@ -11,4 +11,5 @@ program file_14
     if (line(2) /= 2.) error stop
     if (line(3) /= 3.) error stop
     if (line(4) /= 4.) error stop
+    deallocate(line)
 end program file_14

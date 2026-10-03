@@ -1,7 +1,9 @@
 (TranslationUnit
     [(Function
         a
-        []
+        [(d1)
+        (e1)
+        (f1)]
         [(AttrType
             TypeInteger
             []
@@ -12,13 +14,11 @@
         ()
         ()
         ()
-        []
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -283,8 +283,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             (FuncCallOrArray
                 Y

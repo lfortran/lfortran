@@ -31,5 +31,6 @@ program hashmap_nested_dealloc_derived_pointer
     do while(associated(map % cache))
         deallocate( map_entry_pool_head % more_map_entries )
     end do
+    deallocate(map_entry_pool_head)
 
 end program hashmap_nested_dealloc_derived_pointer
