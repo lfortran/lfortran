@@ -90,8 +90,8 @@
                                     associate_block
                                     [(Assignment
                                         (Var 3 z)
-                                        (RealBinOp
-                                            (RealUnaryMinus
+                                        (RealUnaryMinus
+                                            (RealBinOp
                                                 (RealBinOp
                                                     (RealBinOp
                                                         (Var 2 x)
@@ -129,14 +129,14 @@
                                                     (Real 4)
                                                     ()
                                                 )
-                                                (Real 4)
-                                                ()
-                                            )
-                                            Mul
-                                            (IntrinsicElementalFunction
-                                                Cos
-                                                [(Var 2 theta)]
-                                                0
+                                                Mul
+                                                (IntrinsicElementalFunction
+                                                    Cos
+                                                    [(Var 2 theta)]
+                                                    0
+                                                    (Real 4)
+                                                    ()
+                                                )
                                                 (Real 4)
                                                 ()
                                             )

@@ -100,7 +100,7 @@
         (Assignment
             0
             x
-            (* (u- 2) 3)
+            (u- (* 2 3))
             ()
         )
         (Assignment
@@ -112,7 +112,7 @@
         (Assignment
             0
             x
-            (* (u- 2) (u- 3))
+            (u- (* 2 (u- 3)))
             ()
         )
         (Assignment
@@ -172,7 +172,7 @@
         (Assignment
             0
             x
-            (* (u- a) b)
+            (u- (* a b))
             ()
         )
         (Assignment
@@ -206,7 +206,7 @@
         (Assignment
             0
             x
-            (* (* (u- a) b) c)
+            (u- (* (* a b) c))
             ()
         )
         (Assignment
@@ -258,25 +258,25 @@
         (Assignment
             0
             x
-            (* (+ (* (* (u- 2) a) b) 3) 5)
+            (* (+ (u- (* (* 2 a) b)) 3) 5)
             ()
         )
         (Assignment
             0
             x
-            (* (+ (* (* (u- 2) a) b) (* (* 3 b) a)) 5)
+            (* (+ (u- (* (* 2 a) b)) (* (* 3 b) a)) 5)
             ()
         )
         (Assignment
             0
             x
-            (* (+ (* (u- 2) (/ a b)) (** (+ a (u- b)) 2)) 5)
+            (* (+ (u- (* 2 (/ a b))) (** (+ a (u- b)) 2)) 5)
             ()
         )
         (Assignment
             0
             x
-            (* (+ (* (* (u+ 2) a) b) 3) 5)
+            (* (+ (u+ (* (* 2 a) b)) 3) 5)
             ()
         )
         (Assignment
@@ -372,13 +372,13 @@
         (Assignment
             0
             x
-            (- a (* (u- 2) b))
+            (- a (u- (* 2 b)))
             ()
         )
         (Assignment
             0
             x
-            (- c (/ (u- 2) b))
+            (- c (u- (/ 2 b)))
             ()
         )
         (Assignment
@@ -436,7 +436,7 @@
         (Assignment
             0
             x
-            (u- (- a (+ (u- b) (- (u- b) (* (u- b) b)))))
+            (u- (- a (+ (u- b) (- (u- b) (u- (* b b))))))
             ()
         )
         (Assignment
