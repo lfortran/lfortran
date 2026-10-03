@@ -110,7 +110,7 @@ end program runtime_headers
                 if run([str(program)], scratch, environment).strip() != '25':
                     raise RuntimeError(label + ': C executable returned the wrong result')
                 object_file = scratch / (label + '-cpp.o')
-                compile_with(compiler, ['--backend=cpp', '-c', fixture, '-o', object_file])
+                compile_with(compiler, ['--backend=cpp', '--openmp', '-c', fixture, '-o', object_file])
                 if not object_file.is_file() or object_file.stat().st_size == 0:
                     raise RuntimeError(label + ': C++ compilation did not produce an object')
                 include_dir = Path(compile_with(compiler, ['--print-c-include-dir']).strip())
