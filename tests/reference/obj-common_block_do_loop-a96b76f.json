@@ -1,0 +1,13 @@
+{
+    "basename": "obj-common_block_do_loop-a96b76f",
+    "cmd": "lfortran --no-color -c {infile} -o output.o",
+    "infile": "tests/warnings/common_block_do_loop.f",
+    "infile_hash": "282a6b811724fb942cb5d0b74a8d5d8b5d1dd52198ff2cec691122b3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

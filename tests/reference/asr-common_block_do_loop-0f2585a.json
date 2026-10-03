@@ -1,0 +1,13 @@
+{
+    "basename": "asr-common_block_do_loop-0f2585a",
+    "cmd": "lfortran --show-asr --implicit-typing --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/common_block_do_loop.f",
+    "infile_hash": "282a6b811724fb942cb5d0b74a8d5d8b5d1dd52198ff2cec691122b3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-common_block_do_loop-0f2585a.stdout",
+    "stdout_hash": "019a438175af6abdc62bf2e2ef5a7475e1fd3a5577f7a3063a0271c2",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
