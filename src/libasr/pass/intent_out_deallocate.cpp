@@ -136,16 +136,22 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         expanded.reserve(al, sc->n_args);
         for (size_t i = 0; i < sc->n_args; i++) {
             ASR::expr_t* arg = sc->m_args[i].m_value;
-            // Refuse the whole constant rather than placing the rest of it:
-            // a partial expansion is what this is built to avoid.
-            if (arg == nullptr) {
-                return false;
-            }
             if (members[i] == nullptr ||
                     !ASR::is_a<ASR::Variable_t>(*members[i])) {
                 return false;
             }
             ASR::ttype_t* member_type = ASRUtils::symbol_type(members[i]);
+            if (arg == nullptr) {
+                // A constructor may leave out an allocatable component, or
+                // give it `null()`; either way it is unallocated, which the
+                // deallocation emit_struct_cleanup_stmts emits for every
+                // allocatable component already ensures, so nothing is
+                // assigned to it.  Any other component left without a value
+                // refuses the whole constant rather than placing the rest of
+                // it: a partial expansion is what this is built to avoid.
+                if (ASRUtils::is_allocatable(member_type)) continue;
+                return false;
+            }
             // `check_equal_type` compares the element types, so the ranks are
             // compared here: an array component given a scalar would otherwise
             // be assigned element-wise after the array passes have run.
@@ -171,6 +177,167 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             out_stmts.push_back(al, expanded[i]);
         }
         return true;
+    }
+
+    // The derived type of the elements of an array component, or nullptr
+    // when the component is not an array of a (non-polymorphic) derived type.
+    // An allocatable or pointer component is not one either: it has no
+    // elements to initialize until it is allocated or associated.
+    static ASR::Struct_t* array_component_struct_type(ASR::Variable_t* m_var) {
+        if (ASRUtils::is_allocatable(m_var->m_type) ||
+                ASRUtils::is_pointer(m_var->m_type)) return nullptr;
+        if (!ASRUtils::is_array(m_var->m_type)) return nullptr;
+        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
+            m_var->m_type);
+        if (!ASR::is_a<ASR::StructType_t>(*elem_type) ||
+                ASRUtils::is_class_type(elem_type)) return nullptr;
+        if (m_var->m_type_declaration == nullptr) return nullptr;
+        ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(
+            m_var->m_type_declaration);
+        if (!ASR::is_a<ASR::Struct_t>(*decl_sym)) return nullptr;
+        return ASR::down_cast<ASR::Struct_t>(decl_sym);
+    }
+
+    // Whether `value` is a structure constant all of whose arguments are
+    // constants, so that it can be assigned wherever the type is visible.
+    static bool is_constant_struct_value(ASR::expr_t* value) {
+        if (value == nullptr || !ASR::is_a<ASR::StructConstant_t>(*value)) {
+            return false;
+        }
+        ASR::StructConstant_t* sc = ASR::down_cast<ASR::StructConstant_t>(
+            value);
+        for (size_t i = 0; i < sc->n_args; i++) {
+            ASR::expr_t* arg = sc->m_args[i].m_value;
+            // An allocatable component left out of the constructor, or given
+            // `null()`, has no argument; emit_value_assignment refuses one
+            // for any other component.
+            if (arg == nullptr) continue;
+            if (ASR::is_a<ASR::StructConstant_t>(*arg)) {
+                if (!is_constant_struct_value(arg)) return false;
+            } else if (!ASRUtils::is_value_constant(arg)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // The structure constant that the default `default_value` of an array
+    // component gives every one of its elements, or nullptr when it is not a
+    // broadcast of a single constant structure constructor.
+    static ASR::expr_t* broadcast_struct_value(ASR::expr_t* default_value) {
+        if (default_value == nullptr ||
+                !ASR::is_a<ASR::ArrayBroadcast_t>(*default_value)) {
+            return nullptr;
+        }
+        ASR::expr_t* elem = ASR::down_cast<ASR::ArrayBroadcast_t>(
+            default_value)->m_array;
+        if (!ASR::is_a<ASR::StructConstant_t>(*elem)) {
+            elem = ASRUtils::expr_value(elem);
+        }
+        if (!is_constant_struct_value(elem)) return nullptr;
+        return elem;
+    }
+
+    // Default-initialize every element of the array component `arr_expr`,
+    // whose elements are of type `elem_struct`: assign `elem_value` to each
+    // one when it is given, and apply the type's own default initialization
+    // otherwise.  Nothing is emitted when there is nothing to apply.
+    void emit_array_component_default_init_stmts(
+            ASR::expr_t* arr_expr,
+            ASR::Struct_t* elem_struct,
+            ASR::expr_t* elem_value,
+            SymbolTable* current_scope,
+            const Location& loc,
+            Vec<ASR::stmt_t*>& out_stmts) {
+        emit_per_element_stmts(arr_expr, "_intent_out_init_idx_",
+            current_scope, loc, out_stmts,
+            [&](ASR::expr_t* elem_ref, Vec<ASR::stmt_t*>& body) {
+                if (elem_value != nullptr) {
+                    // Nothing is pushed when this returns false.
+                    (void)emit_value_assignment(elem_ref, elem_value,
+                        current_scope, loc, body);
+                } else {
+                    emit_struct_default_init_stmts(elem_ref, elem_struct,
+                        current_scope, loc, body);
+                }
+            });
+    }
+
+    // Run the statements that `emit_body` emits for one element of
+    // `arr_expr` (given a reference to it) once for every element.  Nothing
+    // is emitted, and no index variable is left behind, when it emits
+    // nothing.
+    template <typename F>
+    void emit_per_element_stmts(
+            ASR::expr_t* arr_expr,
+            const std::string& idx_prefix,
+            SymbolTable* current_scope,
+            const Location& loc,
+            Vec<ASR::stmt_t*>& out_stmts,
+            F emit_body) {
+        int n_dims = ASRUtils::extract_n_dims_from_ttype(
+            ASRUtils::expr_type(arr_expr));
+        Vec<ASR::expr_t*> idx_vars;
+        PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope,
+            idx_prefix);
+        ASR::expr_t* elem_ref = PassUtils::create_array_ref(arr_expr,
+            idx_vars, al, current_scope);
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        emit_body(elem_ref, body);
+        if (body.size() == 0) {
+            // The index variables are not used after all.
+            for (size_t d = 0; d < idx_vars.size(); d++) {
+                current_scope->erase_symbol(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(idx_vars[d])->m_v));
+            }
+            return;
+        }
+        emit_array_loops(arr_expr, idx_vars, body, current_scope, loc,
+            out_stmts);
+    }
+
+    // Run `body` once for every element of `arr_expr`, with `idx_vars` (one
+    // per dimension, first dimension innermost) running over its bounds.
+    // The loops are emitted already lowered, because this pass runs after the
+    // one that lowers `DoLoop`.  Nothing is emitted for an empty body.
+    void emit_array_loops(
+            ASR::expr_t* arr_expr,
+            Vec<ASR::expr_t*>& idx_vars,
+            Vec<ASR::stmt_t*>& body,
+            SymbolTable* current_scope,
+            const Location& loc,
+            Vec<ASR::stmt_t*>& out_stmts) {
+        if (body.size() == 0) return;
+
+        Vec<ASR::stmt_t*> current_body = body;
+        for (size_t d = 0; d < idx_vars.size(); d++) {
+            ASR::do_loop_head_t head;
+            head.m_v = idx_vars[d];
+            head.m_start = PassUtils::get_bound(arr_expr, d + 1, "lbound",
+                al, 4);
+            head.m_end = PassUtils::get_bound(arr_expr, d + 1, "ubound",
+                al, 4);
+            head.m_increment = nullptr;
+            head.loc = loc;
+
+            ASR::stmt_t* doloop = ASRUtils::STMT(
+                ASR::make_DoLoop_t(al, loc, nullptr, head, current_body.p,
+                    current_body.size(), nullptr, 0));
+            Vec<ASR::stmt_t*> init_and_while = PassUtils::replace_doloop(al,
+                *ASR::down_cast<ASR::DoLoop_t>(doloop), -1, false,
+                current_scope);
+
+            current_body.reserve(al, init_and_while.size());
+            current_body.n = 0;
+            for (size_t k = 0; k < init_and_while.size(); k++) {
+                current_body.push_back(al, init_and_while[k]);
+            }
+        }
+
+        for (size_t i = 0; i < current_body.size(); i++) {
+            out_stmts.push_back(al, current_body[i]);
+        }
     }
 
     void emit_struct_default_init_stmts(
@@ -200,6 +367,20 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                                 m.second, current_scope));
                         emit_struct_default_init_stmts(nested_expr, m_struct,
                             current_scope, loc, out_stmts);
+                        continue;
+                    }
+                    // The same holds for every element of an array
+                    // component of a derived type.
+                    ASR::Struct_t* elem_struct =
+                        array_component_struct_type(m_var);
+                    if (elem_struct != nullptr) {
+                        ASR::expr_t* arr_expr = ASRUtils::EXPR(
+                            ASRUtils::getStructInstanceMember_t(al, loc,
+                                (ASR::asr_t*)struct_expr, m.second,
+                                m.second, current_scope));
+                        emit_array_component_default_init_stmts(arr_expr,
+                            elem_struct, nullptr, current_scope, loc,
+                            out_stmts);
                     }
                     continue;
                 }
@@ -231,11 +412,25 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                     // Use the folded value, not `m_symbolic_value`: the
                     // symbolic form may name a constant declared in the type's
                     // own module, which is not in scope where these statements
-                    // are emitted. A default that does not fold to a value —
-                    // an array of a derived type, say — is left for #13306;
-                    // emitting the unfolded form here produces a node the
-                    // backends cannot lower.
-                    if (m_var->m_value == nullptr) continue;
+                    // are emitted.
+                    if (m_var->m_value == nullptr) {
+                        // An array of a derived type whose default is one
+                        // structure constructor, `parts(2) = t(4, 2.5)`, does
+                        // not fold: the default is an `ArrayBroadcast` of
+                        // that constructor.  Assigning the broadcast itself
+                        // produces a node the backends cannot lower, so the
+                        // constructor is assigned to every element instead.
+                        ASR::Struct_t* elem_struct =
+                            array_component_struct_type(m_var);
+                        ASR::expr_t* elem_value = broadcast_struct_value(
+                            m_var->m_symbolic_value);
+                        if (elem_struct != nullptr && elem_value != nullptr) {
+                            emit_array_component_default_init_stmts(
+                                member_expr, elem_struct, elem_value,
+                                current_scope, loc, out_stmts);
+                        }
+                        continue;
+                    }
                     // Nothing is pushed when this returns false, so there is
                     // nothing for the caller to undo.
                     (void)emit_value_assignment(member_expr, m_var->m_value,
@@ -451,10 +646,24 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 }
 
                 ASR::Struct_t* m_struct = component_struct_type(m_var);
-                if (m_struct == nullptr) continue;
+                if (m_struct != nullptr) {
+                    emit_struct_cleanup_stmts(member_expr, m_struct,
+                        current_scope, loc, logical_type, out_stmts);
+                    continue;
+                }
 
-                emit_struct_cleanup_stmts(member_expr, m_struct,
-                    current_scope, loc, logical_type, out_stmts);
+                // Every element of an array component of a derived type has
+                // its allocatable components deallocated as well.
+                ASR::Struct_t* elem_struct =
+                    array_component_struct_type(m_var);
+                if (elem_struct == nullptr) continue;
+                emit_per_element_stmts(member_expr,
+                    "_intent_out_dealloc_idx_", current_scope, loc,
+                    out_stmts,
+                    [&](ASR::expr_t* elem_ref, Vec<ASR::stmt_t*>& body) {
+                        emit_struct_cleanup_stmts(elem_ref, elem_struct,
+                            current_scope, loc, logical_type, body);
+                    });
             }
             if (st->m_parent != nullptr) {
                 st = ASR::down_cast<ASR::Struct_t>(
@@ -492,36 +701,8 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         emit_struct_default_init_stmts(arr_ref, struct_type,
             current_scope, loc, innermost_body);
 
-        if (innermost_body.size() == 0) return;
-
-        Vec<ASR::stmt_t*> current_body = innermost_body;
-        for (int d = 0; d < n_dims; d++) {
-            ASR::do_loop_head_t head;
-            head.m_v = idx_vars[d];
-            head.m_start = PassUtils::get_bound(arr_expr, d + 1, "lbound",
-                al, 4);
-            head.m_end = PassUtils::get_bound(arr_expr, d + 1, "ubound",
-                al, 4);
-            head.m_increment = nullptr;
-            head.loc = loc;
-
-            ASR::stmt_t* doloop = ASRUtils::STMT(
-                ASR::make_DoLoop_t(al, loc, nullptr, head, current_body.p,
-                    current_body.size(), nullptr, 0));
-            Vec<ASR::stmt_t*> init_and_while = PassUtils::replace_doloop(al,
-                *ASR::down_cast<ASR::DoLoop_t>(doloop), -1, false,
-                current_scope);
-
-            current_body.reserve(al, init_and_while.size());
-            current_body.n = 0;
-            for (size_t k = 0; k < init_and_while.size(); k++) {
-                current_body.push_back(al, init_and_while[k]);
-            }
-        }
-
-        for (size_t i = 0; i < current_body.size(); i++) {
-            out_stmts.push_back(al, current_body[i]);
-        }
+        emit_array_loops(arr_expr, idx_vars, innermost_body, current_scope,
+            loc, out_stmts);
     }
 
     // Helper: Wrap statement in optional presence check if needed
@@ -553,6 +734,41 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
 
 public:
     IntentOutDeallocateVisitor(Allocator& al_) : al(al_) {}
+
+    // What an intent(out) dummy of derived type gets on entry, less the
+    // finalization; see initialize_function_result_on_entry.
+    void emit_function_result_entry_stmts(ASR::Function_t &fn,
+            ASR::expr_t *result, Vec<ASR::stmt_t*> &out_stmts) {
+        ASR::Variable_t* result_var = ASRUtils::EXPR2VAR(result);
+        ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(
+            result_var->m_type_declaration);
+        LCOMPILERS_ASSERT(decl_sym != nullptr &&
+            ASR::is_a<ASR::Struct_t>(*decl_sym));
+        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(decl_sym);
+        Location loc = result_var->base.base.loc;
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(
+            ASR::make_Logical_t(al, loc, 4));
+        emit_struct_default_init_stmts(result, struct_type, fn.m_symtab, loc,
+            out_stmts);
+        emit_struct_cleanup_stmts(result, struct_type, fn.m_symtab, loc,
+            logical_type, out_stmts);
+    }
+
+    // See finalize_entity.
+    void emit_entity_finalization(ASR::expr_t *entity, SymbolTable *scope,
+            Vec<ASR::stmt_t*> &out_stmts) {
+        ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(entity));
+        LCOMPILERS_ASSERT(decl_sym != nullptr &&
+            ASR::is_a<ASR::Struct_t>(*decl_sym));
+        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(decl_sym);
+        const Location &loc = entity->base.loc;
+        if (struct_hierarchy_has_finalizer(struct_type)) {
+            emit_final_calls(entity, struct_type, scope, loc, out_stmts);
+        }
+        emit_struct_component_finalize_stmts(entity, struct_type, scope, loc,
+            out_stmts);
+    }
 
     void visit_Function(const ASR::Function_t &x) {
         ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(&x);
@@ -792,6 +1008,28 @@ void pass_intent_out_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
 
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
+}
+
+void finalize_entity(Allocator &al, ASR::expr_t *entity, SymbolTable *scope,
+                     Vec<ASR::stmt_t*> &out) {
+    IntentOutDeallocateVisitor iod(al);
+    iod.emit_entity_finalization(entity, scope, out);
+}
+
+void initialize_function_result_on_entry(Allocator &al, ASR::Function_t &fn,
+                                         ASR::expr_t *result) {
+    IntentOutDeallocateVisitor iod(al);
+    Vec<ASR::stmt_t*> body;
+    body.reserve(al, fn.n_body + 1);
+    iod.emit_function_result_entry_stmts(fn, result, body);
+    if (body.size() == 0) {
+        return;
+    }
+    for (size_t i = 0; i < fn.n_body; i++) {
+        body.push_back(al, fn.m_body[i]);
+    }
+    fn.m_body = body.p;
+    fn.n_body = body.size();
 }
 
 
