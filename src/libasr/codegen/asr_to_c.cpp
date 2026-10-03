@@ -1198,6 +1198,10 @@ R"(    // Initialise Numpy
         if(ASR::is_a<ASR::StringFormat_t>(*x.m_text)){
             str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
             n_values = str_fmt->n_args;
+            if (str_fmt->m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank
+                    && n_values > 0) {
+                tmp_gen += " ";
+            }
         } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))) {
             this->visit_expr(*x.m_text);
             src = indent + "printf(\"%s\\n\"," + src + ");\n";
