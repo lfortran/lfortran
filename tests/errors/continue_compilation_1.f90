@@ -1715,6 +1715,7 @@ subroutine associated_null_target_in_continue_compilation_1()
     if (associated(a, null())) print *, "bad"  ! {Error} NULL() is not permitted as the TARGET= argument to 'associated'
 end subroutine
 
+
 ! Fortran 2023 10.1.11: a specification expression is a restricted expression.
 ! An object designator is a permitted primary only when its base object is a
 ! dummy argument, is in a common block, or is made accessible by use or host
@@ -2089,3 +2090,9 @@ subroutine parameter_nonconstant_init()
     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
     print *, pnc_y1, pnc_y2
 end subroutine
+
+subroutine non_dummy_intent_statement(x)
+    implicit none
+    integer :: x, y
+    intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+end subroutine non_dummy_intent_statement

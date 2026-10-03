@@ -1046,11 +1046,11 @@ semantic error: a deferred type can only be declared in a requirement, a templat
 1865 |         deferred type :: t
      |                          ^ 
 
-semantic error: Intent attribute can only be applied to procedure arguments
+semantic error: 'x' has an intent attribute but is not a dummy argument
     --> tests/errors/continue_compilation_templates_01.f90:1866:18
      |
 1866 |         type(t), intent(inout) :: x, y
-     |                  ^^^^^^^^^^^^^ 
+     |                  ^^^^^^^^^^^^^ 'x' is not a dummy argument
 
 semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
     --> tests/errors/continue_compilation_templates_01.f90:1876:26
@@ -1058,17 +1058,17 @@ semantic error: a deferred type can only be declared in a requirement, a templat
 1876 |         deferred type :: t
      |                          ^ 
 
-semantic error: Intent attribute can only be applied to procedure arguments
+semantic error: 'x' has an intent attribute but is not a dummy argument
     --> tests/errors/continue_compilation_templates_01.f90:1877:18
      |
 1877 |         type(t), intent(in) :: x
-     |                  ^^^^^^^^^^ 
+     |                  ^^^^^^^^^^ 'x' is not a dummy argument
 
-semantic error: Intent attribute can only be applied to procedure arguments
+semantic error: 'y' has an intent attribute but is not a dummy argument
     --> tests/errors/continue_compilation_templates_01.f90:1878:18
      |
 1878 |         type(t), intent(out) :: y
-     |                  ^^^^^^^^^^^ 
+     |                  ^^^^^^^^^^^ 'y' is not a dummy argument
 
 semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
     --> tests/errors/continue_compilation_templates_01.f90:1886:26
@@ -1076,11 +1076,11 @@ semantic error: a deferred type can only be declared in a requirement, a templat
 1886 |         deferred type :: t
      |                          ^ 
 
-semantic error: Intent attribute can only be applied to procedure arguments
+semantic error: 'x' has an intent attribute but is not a dummy argument
     --> tests/errors/continue_compilation_templates_01.f90:1887:18
      |
 1887 |         type(t), intent(in) :: x, y
-     |                  ^^^^^^^^^^ 
+     |                  ^^^^^^^^^^ 'x' is not a dummy argument
 
 semantic error: Type parameter 't' is not specified in any requirements
     --> tests/errors/continue_compilation_templates_01.f90:1888:9
@@ -1094,11 +1094,11 @@ semantic error: a deferred type can only be declared in a requirement, a templat
 1896 |         deferred type :: t
      |                          ^ 
 
-semantic error: Intent attribute can only be applied to procedure arguments
+semantic error: 'x' has an intent attribute but is not a dummy argument
     --> tests/errors/continue_compilation_templates_01.f90:1897:18
      |
 1897 |         type(t), intent(in) :: x, y
-     |                  ^^^^^^^^^^ 
+     |                  ^^^^^^^^^^ 'x' is not a dummy argument
 
 semantic error: Type parameter 't' is not specified in any requirements
     --> tests/errors/continue_compilation_templates_01.f90:1898:9
