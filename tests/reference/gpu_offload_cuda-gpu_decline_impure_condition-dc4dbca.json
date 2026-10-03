@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_offload_cuda-gpu_decline_impure_condition-dc4dbca",
+    "cmd": "lfortran --no-color --gpu=cuda -c {infile} -o {outfile}",
+    "infile": "tests/gpu_decline_impure_condition.f90",
+    "infile_hash": "838f8a916b6d50079c0e570e5622443d342a2155b5f3213f290a024e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "gpu_offload_cuda-gpu_decline_impure_condition-dc4dbca.stderr",
+    "stderr_hash": "2cc863581589c53e25fe3a7b69dfff5a143f6274ccbb9a8edcad420d",
+    "returncode": 5
+}

@@ -10,7 +10,7 @@ Transfers data from a unit into variables.
 FileRead(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat,
     expr? advance, expr? size, expr? id, expr? pos, expr* values,
     stmt? overloaded, bool is_formatted, symbol? nml, expr? rec,
-    expr? pad)
+    expr? pad, expr? decimal)
 ```
 
 ### Arguments
@@ -32,6 +32,7 @@ FileRead(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat,
 | `nml` | the [Namelist](../symbol_nodes/Namelist.md) group for a namelist read. |
 | `rec` | the record number for a direct access read. |
 | `pad` | `yes` or `no`: whether a short record is padded with blanks. |
+| `decimal` | the decimal edit mode of the transfer: `comma` reads a comma as the decimal symbol and a semicolon as the list-directed value separator, `point` reads a point. It overrides the mode the unit was connected with, and is unset when the statement names none. |
 
 ### Return values
 
@@ -74,6 +75,7 @@ group, matching them by name in the file.
   :nml nil
   :rec nil
   :pad nil
+  :decimal nil
 )
 ```
 

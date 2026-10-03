@@ -76,6 +76,12 @@ struct CudaDialect {
         return (kind == 8) ? literal : literal + "f";
     }
 
+    // A kernel thread halts the launch with a trap: the device raises it,
+    // the launch fails, and nothing after it in the thread runs.
+    std::string abort_stmt() const {
+        return "__trap();";
+    }
+
     std::string thread_index() const { return "threadIdx.x"; }
     std::string block_index() const { return "blockIdx.x"; }
     std::string block_size() const { return "blockDim.x"; }

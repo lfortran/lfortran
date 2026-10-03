@@ -160,8 +160,10 @@
             :end_errmsg nil
           )
         ]
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

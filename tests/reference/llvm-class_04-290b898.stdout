@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 %foo_c.8 = type { %foo_b.7, %bar_c.6 }
 %foo_b.7 = type { %foo_a.4, %bar_b.5 }
 %foo_a.4 = type { %bar_a.3 }

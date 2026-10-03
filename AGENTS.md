@@ -30,10 +30,18 @@ Available skills:
 
 | Skill | Purpose |
 | --- | --- |
+| `classify-issue` | Triage issues with evidence-based, additive labels and optional frequency-first prioritization |
 | `repro-issue` | Turn a GitHub issue into a faithful Reproducible Example (RE) |
 | `create-mre` | Reduce an RE or third-party failure to a Minimal Reproducible Example (MRE) |
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
 | `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
+| `fix-issue` | Orchestrate the whole loop for one issue in subagents: reproduce, reduce, fix, open a PR from a fork, review, and iterate until CI is green |
+
+`classify-issue` distinguishes invalid-code diagnostics from valid-code bugs,
+enhancements, new features, and maintenance or internal-correctness work. It
+uses the live label catalog, preserves existing labels, and asks about
+uncertain cases. GitHub changes require a labeling request; recommendation
+and local-priority requests stay read-only.
 
 ### The reproduce → reduce → fix loop
 
@@ -54,9 +62,17 @@ Reproducers are written to the repository root by convention (`run.sh`,
 `mre_*.f90`, `re_*.f90`) and are gitignored — they are scratch inputs to
 `fix-mre`. The committed deliverable is always the integration test.
 
-Skills assume `build/src/bin` is first on `PATH` (so `lfortran` is the in-tree
-build) and that a reference compiler — `gfortran`, matching the `gfortran`
-integration-test label — is available for differential testing.
+`fix-issue` automates this loop for a single issue: its top-level agent
+only orchestrates, and fresh subagents run `repro-issue`, then `create-mre`
+and `fix-mre` repeatedly (one commit with its own integration test per bug)
+until the original issue is fixed. It then opens a draft PR from the user's
+fork and iterates on CI failures and `pr-review` findings until the PR is
+ready for review.
+
+The reproduction and fix skills assume `build/src/bin` is first on `PATH`
+(so `lfortran` is the in-tree build) and that a reference compiler — `gfortran`,
+matching the `gfortran` integration-test label — is available for differential
+testing. Issue classification requires authenticated `gh`, not a compiler build.
 
 ## Prerequisites
 - Tools: CMake (>=3.10), Ninja, Git, Python (>=3.8), GCC/Clang/MSVC.
@@ -144,7 +160,7 @@ only once, redirect to a log file and then examine the log file.
     - Build: `bash ci/build.sh`
     - Quick integration run (LLVM):
       - `bash ci/test.sh` (runs a CMake+CTest LLVM pass and runner passes)
-      - or: `cd integration_tests && ./run_tests.py -b llvm && ./run_tests.py -b llvm -f -nf16 &> log`
+      - or: `cd integration_tests && ./run_tests.py -b llvm && ./run_tests.py -b llvm -f &> log`
   - GFortran pass: `cd integration_tests && ./run_tests.py -b gfortran &> log`
   - Other backends as in CI:
     - `./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma &> log && ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma -f &> log`
@@ -154,7 +170,7 @@ only once, redirect to a log file and then examine the log file.
 
 - Minimal local (without micromamba):
   - Build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_RUNTIME_STACKTRACE=yes`
-  - Run: `cd integration_tests && ./run_tests.py -b llvm &> log && ./run_tests.py -b llvm -f -nf16 &> log`
+  - Run: `cd integration_tests && ./run_tests.py -b llvm &> log && ./run_tests.py -b llvm -f &> log`
 - If builds fail with messages about missing debug info:
   - Install LLVM tools so `llvm-dwarfdump` is available (e.g., `sudo pacman -S llvm`,
     `apt install llvm`, or `conda install -c conda-forge llvm-tools`).
@@ -189,6 +205,10 @@ only once, redirect to a log file and then examine the log file.
 ## Commit & Pull Request Guidelines
 - Commits: small, single-topic, imperative (e.g., "fix: handle BOZ constants").
 - One bug = one MRE = one PR. Do not bundle unrelated fixes.
+  - Exception: when fixing one issue requires several MREs (fixing one bug
+    exposes the next failure in the same reported code), all of them may go
+    in a single PR for that issue. Each bug still gets its own MRE, its own
+    commit, and its own integration test. This is what the `fix-issue` skill does.
 - Never mix refactoring or formatting with bug fixes. Send those separately.
 - Every fix PR must demonstrate: test fails on main, test passes on branch.
   If you cannot find such a test, the fix is not understood well enough.

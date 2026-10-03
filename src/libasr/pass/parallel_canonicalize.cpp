@@ -2,6 +2,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
 #include <libasr/diagnostics.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/stmt_walk_visitor.h>
@@ -149,6 +150,16 @@ static bool descend_loop_nest(ASR::stmt_t *loop, int64_t collapse,
     return true;
 }
 
+bool parallel_loop_nest_of(ASR::stmt_t *loop, int64_t collapse,
+        ParallelLoopNest &nest) {
+    const char *why = nullptr;
+    return descend_loop_nest(loop, collapse, nest, why);
+}
+
+int64_t parallel_collapse_count(const ASR::OMPRegion_t &x) {
+    return collapse_count(x.m_clauses, x.n_clauses);
+}
+
 bool parallel_loop_nest(const ASR::OMPRegion_t &x, ParallelLoopNest &nest) {
     if (x.m_region != ASR::omp_region_typeType::ParallelDo) return false;
     if (x.n_body != 1) return false;
@@ -279,14 +290,19 @@ class ParallelCanonicalizeVisitor :
 {
 public:
     const PassOptions &pass_options;
+    // What the selected device can do. Only whether one was selected at all
+    // matters here: this pass says every parallel loop the same way, whichever
+    // device is going to be asked to run it.
+    const GpuDeviceCapabilities device_caps;
     // Whether a loop construct that does not name a device may be
     // canonicalized as well.
     bool offload_omp_loops;
 
     ParallelCanonicalizeVisitor(Allocator &al, const PassOptions &pass_options_) :
-        StatementWalkVisitor(al), pass_options(pass_options_) {
-        bool gpu = pass_options.gpu_offload_metal || pass_options.gpu_offload_cuda;
-        offload_omp_loops = gpu && pass_options.gpu_offload_omp_loops;
+        StatementWalkVisitor(al), pass_options(pass_options_),
+        device_caps(gpu_device_capabilities(pass_options_)) {
+        offload_omp_loops = device_caps.device_selected() &&
+            pass_options.gpu_offload_omp_loops;
     }
 
     // A region that cannot be canonicalized still has to run, so it is left
@@ -294,7 +310,7 @@ public:
     // compilation that asked for a device wanted to hear this.
     void report_not_offloaded(const Location &loc, const std::string &why) {
         if (pass_options.diagnostics == nullptr) return;
-        if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
+        if (!device_caps.device_selected()) return;
         pass_options.diagnostics->message_label(
             "omp parallel loop not offloaded to the GPU, "
             "it runs on the CPU instead",

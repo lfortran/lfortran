@@ -37,6 +37,15 @@ namespace LCompilers {
     // canonical regions has to ask about a region's shape.
     bool parallel_loop_nest(const ASR::OMPRegion_t &x, ParallelLoopNest &nest);
 
+    // The same descent, over a loop the caller holds rather than the region
+    // that owns it. A lowering that rewrites the loop on its way to
+    // something else works on a copy, and reads the copy through this.
+    bool parallel_loop_nest_of(ASR::stmt_t *loop, int64_t collapse,
+        ParallelLoopNest &nest);
+
+    // How many loops of the nest the region's iteration space spans.
+    int64_t parallel_collapse_count(const ASR::OMPRegion_t &x);
+
     // Whether a region carries the given clause.
     bool omp_region_has_clause(const ASR::OMPRegion_t &x,
         ASR::omp_clauseType clause);

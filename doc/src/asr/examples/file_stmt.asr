@@ -188,6 +188,7 @@
             :nml nil
             :rec nil
             :pad nil
+            :decimal nil
           )
           (FileWrite
             :label -1
@@ -210,6 +211,7 @@
             :rec nil
             :pos nil
             :asynchronous nil
+            :decimal nil
           )
           (FileBackspace
             :label -1
@@ -306,8 +308,10 @@
             :status nil
           )
         ]
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

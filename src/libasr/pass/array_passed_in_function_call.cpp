@@ -1016,27 +1016,24 @@ public:
     template <typename T>
     void visit_Call(const T& x, const std::string& name_hint) {
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
-        std::vector<bool> is_arg_intent_out;
-        if ( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_name)) ) {
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
-            ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
-            bool is_func_bind_c = func_type->m_abi == ASR::abiType::BindC;
-            for (size_t i = 0; i < func->n_args; i++ ) {
-                if ( ASR::is_a<ASR::Var_t>(*func->m_args[i]) ) {
-                    ASR::Var_t* var_ = ASR::down_cast<ASR::Var_t>(func->m_args[i]);
-                    if ( ASR::is_a<ASR::Variable_t>(*var_->m_v) ) {
-                        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_->m_v);
-                        is_arg_intent_out.push_back(
-                            var->m_intent == ASR::intentType::Out ||
-                            var->m_intent == ASR::intentType::InOut ||
-                            var->m_intent == ASR::intentType::Unspecified
-                        );
-                    } else {
-                        is_arg_intent_out.push_back(false);
-                    }
-                } else {
-                    is_arg_intent_out.push_back(false);
-                }
+        ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(x.m_name);
+        bool is_procedure_variable = ASR::is_a<ASR::Variable_t>(*callee) &&
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
+                ASR::down_cast<ASR::Variable_t>(callee)->m_type));
+        if ( ASR::is_a<ASR::Function_t>(*callee) || is_procedure_variable ) {
+            // The dummies come from the interface the call goes through: the
+            // procedure itself, or the interface of a procedure variable (for
+            // example the call-site interface of an implicit-interface call).
+            // Without an interface every argument may be modified.
+            ASR::Function_t* func = ASRUtils::get_function(callee);
+            bool is_func_bind_c = ASRUtils::get_FunctionType(callee)->m_abi == ASR::abiType::BindC;
+            std::vector<bool> is_arg_intent_out(x.n_args, func == nullptr);
+            for (size_t i = 0; func && i < func->n_args && i < x.n_args; i++ ) {
+                ASR::Variable_t* var = ASRUtils::expr_to_variable_or_null(func->m_args[i]);
+                is_arg_intent_out[i] = var && (
+                    var->m_intent == ASR::intentType::Out ||
+                    var->m_intent == ASR::intentType::InOut ||
+                    var->m_intent == ASR::intentType::Unspecified);
             }
             traverse_call_args(x_m_args, x.m_args, x.n_args,
                 name_hint + ASRUtils::symbol_name(x.m_name), is_arg_intent_out, is_func_bind_c);

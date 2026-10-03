@@ -199,6 +199,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             derived_types_41_mod:
                 (Module
@@ -475,7 +476,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )
