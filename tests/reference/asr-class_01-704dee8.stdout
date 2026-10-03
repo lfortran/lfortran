@@ -54,9 +54,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             circle:
                                 (ExternalSymbol
@@ -120,6 +118,7 @@
                         (Var 6 c)
                         .false.
                     )]
+                    ()
                 ),
             class_circle1:
                 (Module
@@ -175,9 +174,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     circle
@@ -192,6 +189,7 @@
                                     []
                                     Source
                                     Private
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -236,9 +234,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -267,9 +263,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     circle_area
@@ -291,6 +285,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 this)]
@@ -371,9 +366,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -402,9 +395,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     circle_print
@@ -426,6 +417,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 this)]
@@ -511,9 +503,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     class_circle1
@@ -522,7 +512,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -22,6 +22,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -36,9 +37,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             str:
                                 (Variable
@@ -64,9 +63,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             user_data:
                                 (Variable
@@ -83,6 +80,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -97,9 +95,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     string_04
@@ -108,6 +104,7 @@
                         [((Var 2 user_data)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 3 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -173,6 +170,7 @@
                         [((Var 2 greetings)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 5 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -325,6 +323,7 @@
                     (Allocate
                         [((Var 2 str)
                         []
+                        []
                         (IntegerConstant 8 (Integer 4) Decimal)
                         ()
                         (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString))]
@@ -387,7 +386,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

@@ -2,8 +2,6 @@
     [(Program
         main
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -35,8 +33,8 @@
             None
             ())]
             ()
-        )]
-        [(Assign
+        )
+        (Assign
             10
             30
             next

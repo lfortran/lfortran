@@ -13,6 +13,8 @@ do i = 1, 10
     read(23,'(1x)', end=12)
 end do
 
+error stop
+
 12 continue
 if (i /= 4) error stop
 

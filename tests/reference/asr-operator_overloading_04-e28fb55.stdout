@@ -51,9 +51,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -77,9 +75,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     assign_string_char
@@ -104,6 +100,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 lhs)
@@ -157,9 +154,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     string_type
@@ -178,6 +173,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
@@ -237,9 +233,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             trimmed_string:
                                                 (Variable
@@ -270,9 +264,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     trim_string
@@ -303,6 +295,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 string)]
@@ -354,6 +347,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             operator_overloading_stdlib_string_use:
                 (Module
@@ -404,9 +398,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             last:
                                                 (Variable
@@ -430,9 +422,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -463,9 +453,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             ~assign:
                                                 (ExternalSymbol
@@ -506,6 +494,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 string)]
@@ -533,6 +522,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             stdlib_string:
                 (Program
@@ -544,7 +534,9 @@
                     stdlib_string
                     []
                     []
+                    ()
                 )
         })
     []
+    ()
 )

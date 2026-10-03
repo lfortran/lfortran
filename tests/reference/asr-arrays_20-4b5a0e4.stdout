@@ -22,6 +22,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -36,9 +37,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             list_integer:
                                 (Variable
@@ -55,6 +54,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -69,9 +69,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             list_logical:
                                 (Variable
@@ -88,6 +86,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -102,9 +101,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     arrays_20
@@ -118,8 +115,20 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 0 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
-                            ()
+                            (ArrayConstant
+                                0
+                                []
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
                             ColMajor
                             ()
                         )
@@ -136,8 +145,20 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 0 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
-                            ()
+                            (ArrayConstant
+                                0
+                                []
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
                             ColMajor
                             ()
                         )
@@ -150,30 +171,24 @@
                         (ArrayConstructor
                             []
                             (Array
-                                (String 1 (StringLen
-                                    (ArrayItem
-                                        (Var 2 list_character)
-                                        [(()
-                                        (ArrayBound
-                                            (Var 2 list_character)
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            (Integer 4)
-                                            LBound
-                                            ()
-                                        )
-                                        ())]
-                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                        ColMajor
-                                        ()
-                                    )
-                                    (Integer 4)
-                                    (IntegerConstant 5 (Integer 4) Decimal)
-                                ) ExpressionLength DescriptorString)
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 0 (Integer 4) Decimal))]
                                 PointerArray
+                                Global
                             )
-                            ()
+                            (ArrayConstant
+                                0
+                                []
+                                (Array
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal))]
+                                    PointerArray
+                                    Global
+                                )
+                                ColMajor
+                            )
                             ColMajor
                             ()
                         )
@@ -181,7 +196,9 @@
                         .false.
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

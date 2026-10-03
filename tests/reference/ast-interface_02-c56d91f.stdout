@@ -6,7 +6,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -14,8 +13,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Interface
+        )
+        (Interface
             (InterfaceHeader)
             (TriviaNode
                 []
@@ -29,9 +28,6 @@
                     []
                     ()
                     ()
-                    []
-                    []
-                    []
                     [(Declaration
                         (AttrType
                             TypeInteger
@@ -52,7 +48,6 @@
                         ())]
                         ()
                     )]
-                    []
                     []
                     []
                 )
@@ -76,9 +71,6 @@
                         [(EndOfLine)
                         (EndOfLine)]
                     )
-                    []
-                    []
-                    []
                     [(Declaration
                         (AttrType
                             TypeInteger
@@ -101,7 +93,6 @@
                     )]
                     []
                     []
-                    []
                 )
             )
             (InterfaceProc
@@ -111,9 +102,6 @@
                     []
                     ()
                     ()
-                    []
-                    []
-                    []
                     [(Declaration
                         (AttrType
                             TypeReal
@@ -136,11 +124,9 @@
                     )]
                     []
                     []
-                    []
                 )
             )]
         )]
-        []
         []
     )
     (Program
@@ -163,8 +149,8 @@
             )]
             .true.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
@@ -172,8 +158,6 @@
                 (EndOfLine)]
             )
         )]
-        []
-        []
         []
     )]
 )

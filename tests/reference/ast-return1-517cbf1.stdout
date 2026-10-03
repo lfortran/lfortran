@@ -11,9 +11,6 @@
                 "! Syntax check only"
             )]
         )
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeCharacter
@@ -31,8 +28,8 @@
             Asterisk
             ())]
             ()
-        )]
-        [(Write
+        )
+        (Write
             0
             [(())
             (())]
@@ -57,10 +54,6 @@
         []
         ()
         ()
-        []
-        []
-        []
-        []
         [(If
             0
             ()

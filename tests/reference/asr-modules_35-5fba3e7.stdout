@@ -34,9 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             strings:
                                                 (Variable
@@ -53,6 +51,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -67,9 +66,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             strings_a:
                                                 (Variable
@@ -86,6 +83,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -100,9 +98,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     get_args_fixed_length_a_array
@@ -113,6 +109,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         ()
@@ -126,6 +123,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 strings)]
@@ -133,6 +131,7 @@
                                         [((Var 3 strings_a)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
+                                        []
                                         (IntegerConstant 5 (Integer 4) Decimal)
                                         ()
                                         (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString))]
@@ -228,6 +227,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 0 (Integer 4) Decimal))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     ColMajor
@@ -276,6 +276,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal))]
                                                     PointerArray
+                                                    Global
                                                 )
                                                 ()
                                                 ColMajor
@@ -300,6 +301,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             modules_35:
                 (Program
@@ -331,6 +333,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -345,9 +348,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     modules_35
@@ -356,6 +357,7 @@
                         [((Var 4 string)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 2 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -376,7 +378,9 @@
                         ()
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

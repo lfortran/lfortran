@@ -6,7 +6,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -15,8 +14,6 @@
                 (EndOfLine)]
             )
         )]
-        []
-        []
         [(Function
             b
             []
@@ -34,9 +31,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -54,8 +48,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Print
+            )
+            (Print
                 0
                 ()
                 [(String "b()" ())]
@@ -93,10 +87,6 @@
                 ()
                 ()
                 ()
-                []
-                []
-                []
-                []
                 [(Print
                     0
                     ()
@@ -127,12 +117,12 @@
             )]
             .true.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -149,8 +139,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             c
             (FuncCallOrArray

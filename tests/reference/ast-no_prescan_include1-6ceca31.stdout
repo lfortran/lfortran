@@ -6,8 +6,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -25,8 +23,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             i
             5

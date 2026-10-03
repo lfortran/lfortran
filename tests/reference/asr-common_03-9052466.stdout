@@ -7,6 +7,16 @@
                     (SymbolTable
                         5
                         {
+                            1_b:
+                                (ExternalSymbol
+                                    5
+                                    1_b
+                                    6 b
+                                    file_common_block_b
+                                    []
+                                    b
+                                    Public
+                                ),
                             1_b_e:
                                 (ExternalSymbol
                                     5
@@ -79,6 +89,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ()
                         )
@@ -90,6 +101,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ColMajor
                         )
@@ -131,6 +143,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             file_common_block_b:
                 (Module
@@ -164,9 +177,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             e:
                                                 (Variable
@@ -190,9 +201,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             f:
                                                 (Variable
@@ -216,9 +225,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     b
@@ -237,6 +244,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
@@ -269,9 +277,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     file_common_block_b
@@ -280,6 +286,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             file_common_block_blank#block:
                 (Module
@@ -313,9 +320,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             z2:
                                                 (Variable
@@ -339,9 +344,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     blank#block
@@ -359,6 +362,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
@@ -391,9 +395,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     file_common_block_blank#block
@@ -402,6 +404,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             file_common_block_c:
                 (Module
@@ -435,9 +438,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             g:
                                                 (Variable
@@ -461,9 +462,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             h:
                                                 (Variable
@@ -487,9 +486,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -513,9 +510,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     c
@@ -535,6 +530,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
@@ -567,9 +563,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     file_common_block_c
@@ -578,6 +572,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             file_common_block_sample:
                 (Module
@@ -603,6 +598,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -616,9 +612,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -642,9 +636,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -660,6 +652,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -673,9 +666,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sample
@@ -694,6 +685,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
@@ -726,9 +718,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     file_common_block_sample
@@ -737,6 +727,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             pass:
                 (Function
@@ -785,9 +776,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             sample:
                                 (ExternalSymbol
@@ -824,6 +813,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -842,6 +832,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 FixedSizeArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -925,6 +916,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ()
                             )
@@ -950,4 +942,5 @@
                 )
         })
     []
+    ()
 )

@@ -62,7 +62,9 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
                 arg_types.push_back(al, ASRUtils::expr_type(x.m_args[i]));
             }
             ASR::stmt_t* subroutine_call = instantiate_subroutine(al, x.base.base.loc,
-                global_scope, arg_types, new_args, x.m_overload_id);
+                PassUtils::instantiation_scope(global_scope, current_scope,
+                    new_args),
+                arg_types, new_args, x.m_overload_id);
             remove_original_statement = true;
             pass_result.push_back(al, subroutine_call);
         }
@@ -105,10 +107,7 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
             SymbolTable* current_scope_copy = current_scope;
             current_scope = x.m_symtab;
 
-            global_scope = x.m_symtab;
-            while( global_scope->parent ) {
-                global_scope = global_scope->parent;
-            }
+            global_scope = x.m_symtab->get_tu_scope();
 
             std::vector<std::string> build_order
                 = ASRUtils::determine_module_dependencies(x);
@@ -133,10 +132,7 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
             SymbolTable* current_scope_copy = current_scope;
             current_scope = x.m_symtab;
 
-            global_scope = x.m_symtab;
-            while( global_scope->parent ) {
-                global_scope = global_scope->parent;
-            }
+            global_scope = x.m_symtab->get_tu_scope();
 
             // Now visit everything else
             for (auto &item : x.m_symtab->get_scope()) {
@@ -151,11 +147,7 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
             ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
             current_scope = xx.m_symtab;
-            global_scope = xx.m_symtab;
-
-            while( global_scope->parent ) {
-                global_scope = global_scope->parent;
-            }
+            global_scope = xx.m_symtab->get_tu_scope();
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {

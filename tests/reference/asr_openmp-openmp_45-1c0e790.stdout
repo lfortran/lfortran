@@ -80,6 +80,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -111,6 +112,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -142,6 +144,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -173,6 +176,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -204,6 +208,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -241,9 +246,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             iend:
                                                 (Variable
@@ -267,9 +270,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             istart:
                                                 (Variable
@@ -293,9 +294,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_loop_auto_next
@@ -313,6 +312,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 14 istart)
@@ -351,9 +351,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             gomp_loop_auto_start:
                                                 (Variable
@@ -377,9 +375,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             iend:
                                                 (Variable
@@ -403,9 +399,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             incr:
                                                 (Variable
@@ -429,9 +423,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             istart:
                                                 (Variable
@@ -455,9 +447,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             start:
                                                 (Variable
@@ -481,9 +471,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_loop_auto_start
@@ -504,6 +492,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 15 start)
@@ -545,9 +534,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             iend:
                                                 (Variable
@@ -571,9 +558,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             istart:
                                                 (Variable
@@ -597,9 +582,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_loop_dynamic_next
@@ -617,6 +600,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 16 istart)
@@ -655,9 +639,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             end:
                                                 (Variable
@@ -681,9 +663,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             gomp_loop_dynamic_start:
                                                 (Variable
@@ -707,9 +687,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             iend:
                                                 (Variable
@@ -733,9 +711,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             incr:
                                                 (Variable
@@ -759,9 +735,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             istart:
                                                 (Variable
@@ -785,9 +759,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             start:
                                                 (Variable
@@ -811,9 +783,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_loop_dynamic_start
@@ -835,6 +805,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 17 start)
@@ -871,6 +842,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -902,6 +874,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -939,9 +912,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             iend:
                                                 (Variable
@@ -965,9 +936,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             istart:
                                                 (Variable
@@ -991,9 +960,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_loop_guided_next
@@ -1011,6 +978,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 20 istart)
@@ -1049,9 +1017,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             end:
                                                 (Variable
@@ -1075,9 +1041,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             gomp_loop_guided_start:
                                                 (Variable
@@ -1101,9 +1065,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             iend:
                                                 (Variable
@@ -1127,9 +1089,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             incr:
                                                 (Variable
@@ -1153,9 +1113,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             istart:
                                                 (Variable
@@ -1179,9 +1137,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             start:
                                                 (Variable
@@ -1205,9 +1161,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_loop_guided_start
@@ -1229,6 +1183,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 21 start)
@@ -1271,9 +1226,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             iend:
                                                 (Variable
@@ -1297,9 +1250,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             istart:
                                                 (Variable
@@ -1323,9 +1274,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_loop_runtime_next
@@ -1343,6 +1292,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 22 istart)
@@ -1381,9 +1331,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             gomp_loop_runtime_start:
                                                 (Variable
@@ -1407,9 +1355,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             iend:
                                                 (Variable
@@ -1433,9 +1379,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             incr:
                                                 (Variable
@@ -1459,9 +1403,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             istart:
                                                 (Variable
@@ -1485,9 +1427,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             start:
                                                 (Variable
@@ -1511,9 +1451,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_loop_runtime_start
@@ -1534,6 +1472,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 23 start)
@@ -1575,9 +1514,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             iend:
                                                 (Variable
@@ -1601,9 +1538,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             istart:
                                                 (Variable
@@ -1627,9 +1562,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_loop_static_next
@@ -1647,6 +1580,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 24 istart)
@@ -1685,9 +1619,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             end:
                                                 (Variable
@@ -1711,9 +1643,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             gomp_loop_static_start:
                                                 (Variable
@@ -1737,9 +1667,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             iend:
                                                 (Variable
@@ -1763,9 +1691,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             incr:
                                                 (Variable
@@ -1789,9 +1715,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             istart:
                                                 (Variable
@@ -1815,9 +1739,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             start:
                                                 (Variable
@@ -1841,9 +1763,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_loop_static_start
@@ -1865,6 +1785,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 25 start)
@@ -1894,8 +1815,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    8 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -1907,9 +1830,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -1933,9 +1854,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             fn:
                                                 (Variable
@@ -1946,8 +1865,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CFunPointer
+                                                    )
+                                                    8 c_funptr
                                                     BindC
                                                     Public
                                                     Required
@@ -1959,9 +1880,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             num_threads:
                                                 (Variable
@@ -1985,15 +1904,17 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_parallel
                                     (FunctionType
-                                        [(CPtr)
-                                        (CPtr)
+                                        [(CPtr
+                                            CFunPointer
+                                        )
+                                        (CPtr
+                                            CPointer
+                                        )
                                         (Integer 4)
                                         (Integer 4)]
                                         ()
@@ -2007,6 +1928,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 26 fn)
@@ -2041,6 +1963,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -2078,9 +2001,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_sections_next
@@ -2097,6 +2018,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -2134,9 +2056,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             gomp_sections_start:
                                                 (Variable
@@ -2160,9 +2080,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_sections_start
@@ -2179,6 +2097,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 29 count)]
@@ -2216,9 +2135,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             arg_size:
                                                 (Variable
@@ -2242,9 +2159,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             cpyfn:
                                                 (Variable
@@ -2255,8 +2170,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    8 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2268,9 +2185,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             data:
                                                 (Variable
@@ -2281,8 +2196,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    8 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2294,9 +2211,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             depend:
                                                 (Variable
@@ -2307,8 +2222,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    8 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2320,9 +2237,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -2346,9 +2261,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             fn:
                                                 (Variable
@@ -2359,8 +2272,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    8 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2372,9 +2287,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             if_clause:
                                                 (Variable
@@ -2398,21 +2311,27 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_task
                                     (FunctionType
-                                        [(CPtr)
-                                        (CPtr)
-                                        (CPtr)
+                                        [(CPtr
+                                            CPointer
+                                        )
+                                        (CPtr
+                                            CPointer
+                                        )
+                                        (CPtr
+                                            CPointer
+                                        )
                                         (Integer 8)
                                         (Integer 8)
                                         (Logical 1)
                                         (Integer 4)
-                                        (CPtr)]
+                                        (CPtr
+                                            CPointer
+                                        )]
                                         ()
                                         BindC
                                         Interface
@@ -2424,6 +2343,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 30 fn)
@@ -2462,6 +2382,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -2486,8 +2407,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    8 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2499,9 +2422,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             fn:
                                                 (Variable
@@ -2512,8 +2433,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CFunPointer
+                                                    )
+                                                    8 c_funptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2525,9 +2448,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             num_teams:
                                                 (Variable
@@ -2551,9 +2472,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             thread_limit:
                                                 (Variable
@@ -2577,15 +2496,17 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     gomp_teams
                                     (FunctionType
-                                        [(CPtr)
-                                        (CPtr)
+                                        [(CPtr
+                                            CFunPointer
+                                        )
+                                        (CPtr
+                                            CPointer
+                                        )
                                         (Integer 4)
                                         (Integer 4)]
                                         ()
@@ -2599,6 +2520,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 32 fn)
@@ -2639,9 +2561,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     omp_get_max_threads
@@ -2658,6 +2578,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -2695,9 +2616,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     omp_get_num_procs
@@ -2714,6 +2633,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -2751,9 +2671,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     omp_get_num_teams
@@ -2770,6 +2688,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -2807,9 +2726,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     omp_get_num_threads
@@ -2826,6 +2743,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -2863,9 +2781,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     omp_get_team_num
@@ -2882,6 +2798,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -2919,9 +2836,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             omp_get_team_size:
                                                 (Variable
@@ -2945,9 +2860,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     omp_get_team_size
@@ -2964,6 +2877,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 38 level)]
@@ -3001,9 +2915,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     omp_get_thread_num
@@ -3020,6 +2932,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -3057,9 +2970,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     omp_get_wtime
@@ -3076,6 +2987,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -3113,9 +3025,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     omp_set_num_threads
@@ -3132,6 +3042,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 41 n)]
@@ -3149,6 +3060,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             openmp_45:
                 (Program
@@ -3587,9 +3499,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     openmp_45
@@ -3608,6 +3518,7 @@
                                 ()
                                 .false.
                             )]
+                            ExecAuto
                         )
                         (OMPRegion
                             Section
@@ -3619,6 +3530,7 @@
                                 ()
                                 .false.
                             )]
+                            ExecAuto
                         )
                         (OMPRegion
                             Section
@@ -3630,8 +3542,11 @@
                                 ()
                                 .false.
                             )]
+                            ExecAuto
                         )]
+                        ExecAuto
                     )]
+                    ()
                 ),
             openmp_45_parallel_sections:
                 (Module
@@ -3659,6 +3574,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -3695,6 +3611,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -3731,6 +3648,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -3753,7 +3671,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

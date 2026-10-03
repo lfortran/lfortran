@@ -18,6 +18,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             file_common_block_ls0001:
                 (Module
@@ -43,6 +44,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 209 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -56,9 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     ls0001
@@ -75,6 +75,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
@@ -107,9 +108,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     file_common_block_ls0001
@@ -118,6 +117,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             solsy:
                 (Function
@@ -140,6 +140,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -152,4 +153,5 @@
                 )
         })
     []
+    ()
 )

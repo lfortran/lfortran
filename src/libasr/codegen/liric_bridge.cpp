@@ -1,8 +1,6 @@
-// Liric backend bridge.
-// Compiled with -DLCompilers=LCompilers_Liric and liric compat headers.
-// Types from the main binary (LCompilers::*) are passed as void* and
-// reinterpret_cast to the liric-namespace equivalents (LCompilers_Liric::*).
-// This is safe because the types are layout-identical (same headers, same ABI).
+// Liric backend bridge, compiled against the LLVM-compatible liric headers.
+// The frontend and this backend use the same ASR and compiler option types;
+// the C entry points keep liric's LLVM-compatible types out of the driver.
 
 #include <libasr/codegen/asr_to_llvm.h>
 #include <libasr/codegen/evaluator.h>
@@ -13,16 +11,15 @@
 #include <vector>
 #include <iostream>
 
-#define LIRIC_EXPORT __attribute__((visibility("default")))
-
 extern "C" {
 
-LIRIC_EXPORT int liric_compile_to_object(
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((visibility("default")))
+#endif
+int liric_compile_to_object(
     void *asr_ptr, void *diag_ptr, void *al_ptr, void *lpm_ptr,
     void *co_ptr, const char *infile, void *lm_ptr, const char *outfile)
 {
-    // reinterpret_cast: types are ABI-identical between LCompilers and
-    // LCompilers_Liric namespaces (same headers, only namespace differs).
     auto &asr = *reinterpret_cast<LCompilers::ASR::TranslationUnit_t*>(asr_ptr);
     auto &diag = *reinterpret_cast<LCompilers::diag::Diagnostics*>(diag_ptr);
     auto &al = *reinterpret_cast<Allocator*>(al_ptr);
@@ -30,7 +27,7 @@ LIRIC_EXPORT int liric_compile_to_object(
     auto &co = *reinterpret_cast<LCompilers::CompilerOptions*>(co_ptr);
     auto &lm = *reinterpret_cast<LCompilers::LocationManager*>(lm_ptr);
 
-    LCompilers::LLVMEvaluator e(co.target);
+    LCompilers::LLVMEvaluator e(co);
 
     if (!LCompilers::ASRUtils::main_program_present(asr)
         && !LCompilers::ASRUtils::global_function_present(asr)
@@ -42,7 +39,7 @@ LIRIC_EXPORT int liric_compile_to_object(
     }
 
     auto res = LCompilers::asr_to_llvm(asr, diag, e.get_context(),
-        al, lpm, co, "", "", infile ? infile : "", lm);
+        e.get_target_config(), al, lpm, co, "", "", infile ? infile : "", lm);
     if (!res.ok) return 1;
 
     try {
@@ -55,7 +52,10 @@ LIRIC_EXPORT int liric_compile_to_object(
     return 0;
 }
 
-LIRIC_EXPORT int liric_link_executable(const char *const *object_files, int nobjects,
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((visibility("default")))
+#endif
+int liric_link_executable(const char *const *object_files, int nobjects,
     const char *outfile)
 {
     std::vector<std::string> objects;
@@ -72,13 +72,19 @@ LIRIC_EXPORT int liric_link_executable(const char *const *object_files, int nobj
     return 0;
 }
 
-LIRIC_EXPORT const char *liric_get_version()
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((visibility("default")))
+#endif
+const char *liric_get_version()
 {
     static std::string v = LCompilers::LLVMEvaluator::llvm_version();
     return v.c_str();
 }
 
-LIRIC_EXPORT const char *liric_get_default_target()
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((visibility("default")))
+#endif
+const char *liric_get_default_target()
 {
     static std::string t = LCompilers::LLVMEvaluator::get_default_target_triple();
     return t.c_str();

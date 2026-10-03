@@ -2,15 +2,13 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 %array.1.1 = type { %string_descriptor*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %dimension_descriptor = type { i64, i64, i64 }
 %array.1.0 = type { i32*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %array.1 = type { %tt.4*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %tt.4 = type { float, %t.3 }
 %t.3 = type { i32 }
-
-@deep_0 = internal global i32 0
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -41,110 +39,111 @@ define void @ss(i32* %nang) {
   %arr_desc2 = alloca %array.1.1, align 8
   %arr_desc1 = alloca %array.1.0, align 8
   %arr_desc = alloca %array.1, align 8
+  %__lcompilers_arr_09_extent_1 = alloca i32, align 4
+  %2 = load i32, i32* %nang, align 4
+  store i32 %2, i32* %__lcompilers_arr_09_extent_1, align 4
   %arr_01 = alloca %array.1*, align 8
   store %array.1* null, %array.1** %arr_01, align 8
-  %2 = getelementptr %array.1, %array.1* %arr_desc, i32 0, i32 8
-  %3 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %2, i32 0, i32 0
-  %4 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %3, i32 0
-  %5 = getelementptr %dimension_descriptor, %dimension_descriptor* %4, i32 0, i32 0
-  store i64 1, i64* %5, align 8
-  %6 = getelementptr %dimension_descriptor, %dimension_descriptor* %4, i32 0, i32 1
+  %3 = getelementptr %array.1, %array.1* %arr_desc, i32 0, i32 8
+  %4 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %3, i32 0, i32 0
+  %5 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %4, i32 0
+  %6 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 0
   store i64 1, i64* %6, align 8
-  %7 = getelementptr %dimension_descriptor, %dimension_descriptor* %4, i32 0, i32 2
-  store i64 0, i64* %7, align 8
-  %8 = getelementptr %array.1, %array.1* %arr_desc, i32 0, i32 3
-  store i8 1, i8* %8, align 1
-  %9 = getelementptr %array.1, %array.1* %arr_desc, i32 0, i32 0
-  store %tt.4* null, %tt.4** %9, align 8
+  %7 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 1
+  store i64 1, i64* %7, align 8
+  %8 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 2
+  store i64 0, i64* %8, align 8
+  %9 = getelementptr %array.1, %array.1* %arr_desc, i32 0, i32 3
+  store i8 1, i8* %9, align 1
+  %10 = getelementptr %array.1, %array.1* %arr_desc, i32 0, i32 0
+  store %tt.4* null, %tt.4** %10, align 8
   store %array.1* %arr_desc, %array.1** %arr_01, align 8
   %arr_02 = alloca %array.1.0*, align 8
   store %array.1.0* null, %array.1.0** %arr_02, align 8
-  %10 = getelementptr %array.1.0, %array.1.0* %arr_desc1, i32 0, i32 8
-  %11 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %10, i32 0, i32 0
-  %12 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %11, i32 0
-  %13 = getelementptr %dimension_descriptor, %dimension_descriptor* %12, i32 0, i32 0
-  store i64 1, i64* %13, align 8
-  %14 = getelementptr %dimension_descriptor, %dimension_descriptor* %12, i32 0, i32 1
+  %11 = getelementptr %array.1.0, %array.1.0* %arr_desc1, i32 0, i32 8
+  %12 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %11, i32 0, i32 0
+  %13 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %12, i32 0
+  %14 = getelementptr %dimension_descriptor, %dimension_descriptor* %13, i32 0, i32 0
   store i64 1, i64* %14, align 8
-  %15 = getelementptr %dimension_descriptor, %dimension_descriptor* %12, i32 0, i32 2
-  store i64 0, i64* %15, align 8
-  %16 = getelementptr %array.1.0, %array.1.0* %arr_desc1, i32 0, i32 3
-  store i8 1, i8* %16, align 1
-  %17 = getelementptr %array.1.0, %array.1.0* %arr_desc1, i32 0, i32 0
-  store i32* null, i32** %17, align 8
+  %15 = getelementptr %dimension_descriptor, %dimension_descriptor* %13, i32 0, i32 1
+  store i64 1, i64* %15, align 8
+  %16 = getelementptr %dimension_descriptor, %dimension_descriptor* %13, i32 0, i32 2
+  store i64 0, i64* %16, align 8
+  %17 = getelementptr %array.1.0, %array.1.0* %arr_desc1, i32 0, i32 3
+  store i8 1, i8* %17, align 1
+  %18 = getelementptr %array.1.0, %array.1.0* %arr_desc1, i32 0, i32 0
+  store i32* null, i32** %18, align 8
   store %array.1.0* %arr_desc1, %array.1.0** %arr_02, align 8
   %arr_03 = alloca i32*, align 8
   store i32* null, i32** %arr_03, align 8
   %arr_04 = alloca %array.1.1*, align 8
   store %array.1.1* null, %array.1.1** %arr_04, align 8
-  %18 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 0
-  store i8* null, i8** %18, align 8
-  %19 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 1
-  store i64 0, i64* %19, align 8
-  %20 = getelementptr %array.1.1, %array.1.1* %arr_desc2, i32 0, i32 0
-  store %string_descriptor* %arr_desc_str_desc, %string_descriptor** %20, align 8
-  %21 = getelementptr %array.1.1, %array.1.1* %arr_desc2, i32 0, i32 8
-  %22 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %21, i32 0, i32 0
-  %23 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %22, i32 0
-  %24 = getelementptr %dimension_descriptor, %dimension_descriptor* %23, i32 0, i32 0
-  store i64 1, i64* %24, align 8
-  %25 = getelementptr %dimension_descriptor, %dimension_descriptor* %23, i32 0, i32 1
+  %19 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 0
+  store i8* null, i8** %19, align 8
+  %20 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 1
+  store i64 0, i64* %20, align 8
+  %21 = getelementptr %array.1.1, %array.1.1* %arr_desc2, i32 0, i32 0
+  store %string_descriptor* %arr_desc_str_desc, %string_descriptor** %21, align 8
+  %22 = getelementptr %array.1.1, %array.1.1* %arr_desc2, i32 0, i32 8
+  %23 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %22, i32 0, i32 0
+  %24 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %23, i32 0
+  %25 = getelementptr %dimension_descriptor, %dimension_descriptor* %24, i32 0, i32 0
   store i64 1, i64* %25, align 8
-  %26 = getelementptr %dimension_descriptor, %dimension_descriptor* %23, i32 0, i32 2
-  store i64 0, i64* %26, align 8
-  %27 = getelementptr %array.1.1, %array.1.1* %arr_desc2, i32 0, i32 3
-  store i8 1, i8* %27, align 1
+  %26 = getelementptr %dimension_descriptor, %dimension_descriptor* %24, i32 0, i32 1
+  store i64 1, i64* %26, align 8
+  %27 = getelementptr %dimension_descriptor, %dimension_descriptor* %24, i32 0, i32 2
+  store i64 0, i64* %27, align 8
+  %28 = getelementptr %array.1.1, %array.1.1* %arr_desc2, i32 0, i32 3
+  store i8 1, i8* %28, align 1
   store %array.1.1* %arr_desc2, %array.1.1** %arr_04, align 8
-  %28 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 0
-  store i8* null, i8** %28, align 8
-  %29 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 1
-  store i64 0, i64* %29, align 8
+  %29 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 0
+  store i8* null, i8** %29, align 8
   %30 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 1
-  store i64 20, i64* %30, align 8
-  %31 = call i8* @_lfortran_get_default_allocator()
-  %32 = call i8* @_lfortran_malloc_alloc(i8* %31, i64 100)
-  %33 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 0
-  store i8* %32, i8** %33, align 8
+  store i64 0, i64* %30, align 8
+  %31 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 1
+  store i64 20, i64* %31, align 8
+  %32 = call i8* @_lfortran_get_default_allocator()
+  %33 = call i8* @_lfortran_malloc_alloc(i8* %32, i64 100)
+  %34 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 0
+  store i8* %33, i8** %34, align 8
   %arr_06 = alloca %array.1.0*, align 8
   store %array.1.0* null, %array.1.0** %arr_06, align 8
-  %34 = getelementptr %array.1.0, %array.1.0* %arr_desc3, i32 0, i32 8
-  %35 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %34, i32 0, i32 0
-  %36 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %35, i32 0
-  %37 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 0
-  store i64 1, i64* %37, align 8
-  %38 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 1
+  %35 = getelementptr %array.1.0, %array.1.0* %arr_desc3, i32 0, i32 8
+  %36 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %35, i32 0, i32 0
+  %37 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %36, i32 0
+  %38 = getelementptr %dimension_descriptor, %dimension_descriptor* %37, i32 0, i32 0
   store i64 1, i64* %38, align 8
-  %39 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 2
-  store i64 0, i64* %39, align 8
-  %40 = getelementptr %array.1.0, %array.1.0* %arr_desc3, i32 0, i32 3
-  store i8 1, i8* %40, align 1
-  %41 = getelementptr %array.1.0, %array.1.0* %arr_desc3, i32 0, i32 0
-  store i32* null, i32** %41, align 8
+  %39 = getelementptr %dimension_descriptor, %dimension_descriptor* %37, i32 0, i32 1
+  store i64 1, i64* %39, align 8
+  %40 = getelementptr %dimension_descriptor, %dimension_descriptor* %37, i32 0, i32 2
+  store i64 0, i64* %40, align 8
+  %41 = getelementptr %array.1.0, %array.1.0* %arr_desc3, i32 0, i32 3
+  store i8 1, i8* %41, align 1
+  %42 = getelementptr %array.1.0, %array.1.0* %arr_desc3, i32 0, i32 0
+  store i32* null, i32** %42, align 8
   store %array.1.0* %arr_desc3, %array.1.0** %arr_06, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %arr_07, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %arr_07, align 8
   %arr_08 = alloca %array.1.1*, align 8
   store %array.1.1* null, %array.1.1** %arr_08, align 8
-  %42 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 0
-  store i8* null, i8** %42, align 8
-  %43 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 1
-  store i64 0, i64* %43, align 8
-  %44 = getelementptr %array.1.1, %array.1.1* %arr_desc4, i32 0, i32 0
-  store %string_descriptor* %arr_desc_str_desc5, %string_descriptor** %44, align 8
-  %45 = getelementptr %array.1.1, %array.1.1* %arr_desc4, i32 0, i32 8
-  %46 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %45, i32 0, i32 0
-  %47 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %46, i32 0
-  %48 = getelementptr %dimension_descriptor, %dimension_descriptor* %47, i32 0, i32 0
-  store i64 1, i64* %48, align 8
-  %49 = getelementptr %dimension_descriptor, %dimension_descriptor* %47, i32 0, i32 1
+  %43 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 0
+  store i8* null, i8** %43, align 8
+  %44 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 1
+  store i64 0, i64* %44, align 8
+  %45 = getelementptr %array.1.1, %array.1.1* %arr_desc4, i32 0, i32 0
+  store %string_descriptor* %arr_desc_str_desc5, %string_descriptor** %45, align 8
+  %46 = getelementptr %array.1.1, %array.1.1* %arr_desc4, i32 0, i32 8
+  %47 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %46, i32 0, i32 0
+  %48 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %47, i32 0
+  %49 = getelementptr %dimension_descriptor, %dimension_descriptor* %48, i32 0, i32 0
   store i64 1, i64* %49, align 8
-  %50 = getelementptr %dimension_descriptor, %dimension_descriptor* %47, i32 0, i32 2
-  store i64 0, i64* %50, align 8
-  %51 = getelementptr %array.1.1, %array.1.1* %arr_desc4, i32 0, i32 3
-  store i8 1, i8* %51, align 1
+  %50 = getelementptr %dimension_descriptor, %dimension_descriptor* %48, i32 0, i32 1
+  store i64 1, i64* %50, align 8
+  %51 = getelementptr %dimension_descriptor, %dimension_descriptor* %48, i32 0, i32 2
+  store i64 0, i64* %51, align 8
+  %52 = getelementptr %array.1.1, %array.1.1* %arr_desc4, i32 0, i32 3
+  store i8 1, i8* %52, align 1
   store %array.1.1* %arr_desc4, %array.1.1** %arr_08, align 8
-  %52 = load i32, i32* %nang, align 4
-  store i32 %52, i32* @deep_0, align 4
-  %53 = load i32, i32* @deep_0, align 4
+  %53 = load i32, i32* %__lcompilers_arr_09_extent_1, align 4
   %54 = mul i32 1, %53
   %55 = mul i32 %54, 4
   %56 = sext i32 %55 to i64

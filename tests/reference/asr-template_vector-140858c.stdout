@@ -37,6 +37,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             template_vector_m:
                 (Module
@@ -125,9 +126,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -151,9 +150,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -182,9 +179,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     __asr_push_back
@@ -207,6 +202,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 9 this)
@@ -248,6 +244,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
                                                                 ()
@@ -287,16 +284,6 @@
                                                     (SymbolTable
                                                         10
                                                         {
-                                                            1_intvector_elements:
-                                                                (ExternalSymbol
-                                                                    10
-                                                                    1_intvector_elements
-                                                                    8 elements
-                                                                    intvector
-                                                                    []
-                                                                    elements
-                                                                    Public
-                                                                ),
                                                             1_intvector_sz:
                                                                 (ExternalSymbol
                                                                     10
@@ -329,9 +316,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -355,9 +340,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -386,9 +369,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -405,6 +386,7 @@
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     ()
@@ -419,9 +401,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     __asr_resize
@@ -444,6 +424,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 10 this)
@@ -455,13 +436,14 @@
                                                                 Allocated
                                                                 [(StructInstanceMember
                                                                     (Var 10 this)
-                                                                    10 1_intvector_elements
+                                                                    7 1_intvector_elements
                                                                     (Allocatable
                                                                         (Array
                                                                             (Integer 4)
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     ()
@@ -476,19 +458,21 @@
                                                         [(Allocate
                                                             [((StructInstanceMember
                                                                 (Var 10 this)
-                                                                10 1_intvector_elements
+                                                                7 1_intvector_elements
                                                                 (Allocatable
                                                                     (Array
                                                                         (Integer 4)
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
                                                                 ()
                                                             )
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (Var 10 n))]
+                                                            []
                                                             ()
                                                             ()
                                                             ())]
@@ -525,6 +509,7 @@
                                                             (Integer 4)
                                                             ()
                                                         ))]
+                                                        []
                                                         ()
                                                         ()
                                                         ())]
@@ -556,13 +541,14 @@
                                                             (ArrayItem
                                                                 (StructInstanceMember
                                                                     (Var 10 this)
-                                                                    10 1_intvector_elements
+                                                                    7 1_intvector_elements
                                                                     (Allocatable
                                                                         (Array
                                                                             (Integer 4)
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     ()
@@ -583,19 +569,21 @@
                                                     (Allocate
                                                         [((StructInstanceMember
                                                             (Var 10 this)
-                                                            10 1_intvector_elements
+                                                            7 1_intvector_elements
                                                             (Allocatable
                                                                 (Array
                                                                     (Integer 4)
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                             )
                                                             ()
                                                         )
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 10 n))]
+                                                        []
                                                         ()
                                                         ()
                                                         ())]
@@ -607,13 +595,14 @@
                                                         (ArraySection
                                                             (StructInstanceMember
                                                                 (Var 10 this)
-                                                                10 1_intvector_elements
+                                                                7 1_intvector_elements
                                                                 (Allocatable
                                                                     (Array
                                                                         (Integer 4)
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
                                                                 ()
@@ -631,6 +620,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                             ()
                                                         )
@@ -665,6 +655,7 @@
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     ()
@@ -679,9 +670,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             push_back:
                                                                 (StructMethodDeclaration
@@ -713,7 +702,7 @@
                                                                     Local
                                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                                    Save
+                                                                    Default
                                                                     (Integer 4)
                                                                     ()
                                                                     Source
@@ -727,9 +716,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     intvector
@@ -745,6 +732,7 @@
                                                     []
                                                     Source
                                                     Private
+                                                    .false.
                                                     .false.
                                                     .false.
                                                     []
@@ -779,9 +767,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     main
@@ -798,6 +784,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -822,6 +809,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -900,6 +888,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -913,9 +903,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -939,9 +927,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -957,10 +943,13 @@
                                                                             (Array
                                                                                 (TypeParameter
                                                                                     t
+                                                                                    NonExtensible
+                                                                                    .false.
                                                                                 )
                                                                                 [(()
                                                                                 ())]
                                                                                 DescriptorArray
+                                                                                Global
                                                                             )
                                                                         )
                                                                         (Integer 4)]
@@ -980,9 +969,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     push_back
@@ -992,10 +979,13 @@
                                                                 (Array
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                             )
                                                             (Integer 4)]
@@ -1005,6 +995,8 @@
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         ()
                                                         Source
@@ -1017,6 +1009,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 5 this)
@@ -1056,10 +1049,13 @@
                                                                     (Array
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
                                                                 ()
@@ -1069,6 +1065,8 @@
                                                             ())]
                                                             (TypeParameter
                                                                 t
+                                                                NonExtensible
+                                                                .false.
                                                             )
                                                             ColMajor
                                                             ()
@@ -1143,9 +1141,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1169,9 +1165,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -1187,10 +1181,13 @@
                                                                             (Array
                                                                                 (TypeParameter
                                                                                     t
+                                                                                    NonExtensible
+                                                                                    .false.
                                                                                 )
                                                                                 [(()
                                                                                 ())]
                                                                                 DescriptorArray
+                                                                                Global
                                                                             )
                                                                         )
                                                                         (Integer 4)]
@@ -1210,9 +1207,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1227,10 +1222,13 @@
                                                                         (Array
                                                                             (TypeParameter
                                                                                 t
+                                                                                NonExtensible
+                                                                                .false.
                                                                             )
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     ()
@@ -1245,9 +1243,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     resize
@@ -1257,10 +1253,13 @@
                                                                 (Array
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                             )
                                                             (Integer 4)]
@@ -1280,6 +1279,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 6 this)
@@ -1296,10 +1296,13 @@
                                                                         (Array
                                                                             (TypeParameter
                                                                                 t
+                                                                                NonExtensible
+                                                                                .false.
                                                                             )
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     ()
@@ -1319,16 +1322,20 @@
                                                                     (Array
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
                                                                 ()
                                                             )
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (Var 6 n))]
+                                                            []
                                                             ()
                                                             ()
                                                             ())]
@@ -1365,6 +1372,7 @@
                                                             (Integer 4)
                                                             ()
                                                         ))]
+                                                        []
                                                         ()
                                                         ()
                                                         ())]
@@ -1391,6 +1399,8 @@
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -1403,10 +1413,13 @@
                                                                         (Array
                                                                             (TypeParameter
                                                                                 t
+                                                                                NonExtensible
+                                                                                .false.
                                                                             )
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     ()
@@ -1416,6 +1429,8 @@
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -1434,16 +1449,20 @@
                                                                 (Array
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                             )
                                                             ()
                                                         )
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 6 n))]
+                                                        []
                                                         ()
                                                         ()
                                                         ())]
@@ -1460,10 +1479,13 @@
                                                                     (Array
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
                                                                 ()
@@ -1479,10 +1501,13 @@
                                                             (Array
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                             ()
                                                         )
@@ -1508,6 +1533,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -1521,9 +1548,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             vector:
                                                 (Struct
@@ -1543,10 +1568,13 @@
                                                                         (Array
                                                                             (TypeParameter
                                                                                 t
+                                                                                NonExtensible
+                                                                                .false.
                                                                             )
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     ()
@@ -1561,9 +1589,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             push_back:
                                                                 (StructMethodDeclaration
@@ -1595,7 +1621,7 @@
                                                                     Local
                                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                                    Save
+                                                                    Default
                                                                     (Integer 4)
                                                                     ()
                                                                     Source
@@ -1609,9 +1635,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     vector
@@ -1620,10 +1644,13 @@
                                                             (Array
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )
                                                         (Integer 4)]
@@ -1637,6 +1664,7 @@
                                                     []
                                                     Source
                                                     Private
+                                                    .false.
                                                     .false.
                                                     .false.
                                                     []
@@ -1656,7 +1684,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     test_exec
@@ -76,7 +74,9 @@
                         )]
                         0
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

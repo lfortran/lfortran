@@ -50,10 +50,10 @@ syntax error: kind 16 is not supported yet.
 227 |     real*16 :: unsupported_kind
     |     ^^^^^^^ 
 
-tokenizer error: Token '?' is not recognized
+tokenizer error: Token '`' is not recognized
    --> tests/errors/continue_compilation_2.f90:233:17
     |
-233 |     integer  :: ? tokenizer_error
+233 |     integer  :: ` tokenizer_error
     |                 ^ token not recognized
 
 tokenizer error: Token '@' is not recognized in `format` statement
@@ -251,12 +251,6 @@ semantic error: Parameter attribute cannot be used with Target attribute
     |
 224 |     integer, parameter, target :: foo=4
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Kind 16 is not supported for Real
-   --> tests/errors/continue_compilation_2.f90:227:5
-    |
-227 |     real*16 :: unsupported_kind
-    |     ^^^^^^^ 
 
 semantic error: Argument was not specified
    --> tests/errors/continue_compilation_2.f90:229:33
@@ -722,49 +716,49 @@ semantic error: `pos` argument of `ibclr` intrinsic must be non-negative
 448 |     print *, ibclr(1, -2)
     |              ^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Dshiftl must be the same
+semantic error: Type and kind of the relevant arguments of Dshiftl must be the same
    --> tests/errors/continue_compilation_2.f90:450:14
     |
 450 |     print *, dshiftl(1, 1_8, 1)
     |              ^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Ior must be the same
+semantic error: Type and kind of the relevant arguments of Ior must be the same
    --> tests/errors/continue_compilation_2.f90:452:14
     |
 452 |     print *, ior(1, 1_8)
     |              ^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Ieor must be the same
+semantic error: Type and kind of the relevant arguments of Ieor must be the same
    --> tests/errors/continue_compilation_2.f90:454:14
     |
 454 |     print *, ieor(1, 1_8)
     |              ^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Hypot must be the same
+semantic error: Type and kind of the relevant arguments of Hypot must be the same
    --> tests/errors/continue_compilation_2.f90:456:14
     |
 456 |     print *, hypot(1.0, 2.7_8)
     |              ^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Ior must be the same
+semantic error: Type and kind of the relevant arguments of Ior must be the same
    --> tests/errors/continue_compilation_2.f90:458:14
     |
 458 |     print *, ior(intr8_x, intr8_y)
     |              ^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Iand must be the same
+semantic error: Type and kind of the relevant arguments of Iand must be the same
    --> tests/errors/continue_compilation_2.f90:460:14
     |
 460 |     print *, iand(intr9_x, intr9_y)
     |              ^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Ieor must be the same
+semantic error: Type and kind of the relevant arguments of Ieor must be the same
    --> tests/errors/continue_compilation_2.f90:462:14
     |
 462 |     print *, ieor(intr10_x, intr10_y)
     |              ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Hypot must be the same
+semantic error: Type and kind of the relevant arguments of Hypot must be the same
    --> tests/errors/continue_compilation_2.f90:466:14
     |
 466 |     print *, hypot(intr11_x, intr11_y)
@@ -920,13 +914,13 @@ semantic error: Arguments to min0 must be of real, integer or character type
 518 |     print *, min(min_max, min_max)
     |              ^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Arguments to min0 must be of real, integer or character type
+semantic error: Arguments to max0 must be of real, integer or character type
    --> tests/errors/continue_compilation_2.f90:520:14
     |
 520 |     print *, max(.true., .false.)
     |              ^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Arguments to min0 must be of real, integer or character type
+semantic error: Arguments to max0 must be of real, integer or character type
    --> tests/errors/continue_compilation_2.f90:521:14
     |
 521 |     print *, max(min_max, min_max)
@@ -974,12 +968,6 @@ warning: Format string missing comma between descriptors (F2023 constraint C1302
 533 |     write (*,badfmt_p) "hi", 3
     |              ^^^^^^^^ 
 
-warning: Format string missing comma between descriptors (F2023 constraint C1302)
-   --> tests/errors/continue_compilation_2.f90:534:14
-    |
-534 |     write (*,badfmt_s) "hi", 3
-    |              ^^^^^^^^ 
-
 semantic error: Function 'add_parens' not found (not user defined nor intrinsic)
    --> tests/errors/continue_compilation_2.f90:535:15
     |
@@ -1009,3 +997,21 @@ semantic error: Missing actual argument 'x' in call to 'cmplx'
     |
 539 |     a = cmplx(y = 2)
     |         ^^^^^^^^^^^^ 
+
+semantic error: shape argument not specified in c_f_pointer even though fptr is an array.
+   --> tests/errors/continue_compilation_2.f90:541:33
+    |
+541 |     call c_f_pointer(queries_3, cfp_y_3)    
+    |                                 ^^^^^^^ 
+
+semantic error: Dummy argument 'x' of pure function must have INTENT(IN) or VALUE attribute
+   --> tests/errors/continue_compilation_2.f90:585:20
+    |
+585 |         integer :: x, y
+    |                    ^ 
+
+semantic error: Dummy argument 'y' of pure function must have INTENT(IN) or VALUE attribute
+   --> tests/errors/continue_compilation_2.f90:585:23
+    |
+585 |         integer :: x, y
+    |                       ^ 
