@@ -82,29 +82,32 @@ bool gpu_function_result_allocation_is_supported(const ASR::Function_t &fn);
 // the parent chain has to be walked as well. `visited` guards against
 // self-referential types such as `type(node), pointer :: next`, whose
 // member graph is cyclic.
+//
+// A type turned down is turned down for one member's scalar type, found at
+// any depth, and `unsupported_type` (which the caller starts at nullptr) is
+// set to it. When some member is a real wider than any the device has, that
+// member is the one reported: the type the decline is classified on has to
+// be the one with no device equivalent, not whichever member came first.
 bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
         std::set<ASR::Struct_t*> &visited,
         const GpuDeviceCapabilities &caps, ASR::ttype_t **unsupported_type = nullptr);
 
-// Answers whether the selected device can represent the type of `e` with
-// the same in-memory width the host uses. A device whose type set is
-// narrower than the host's -- no 64-bit floating point type, no 64-bit
-// boolean, no complex type -- lowers such data to a narrower (or bogus)
-// type. Offloading a `do concurrent` that touches it would make the kernel
-// reinterpret the host buffers and the by-value scalar-argument struct at
-// the wrong element size, silently producing wrong results, so such a loop
-// has to stay on the CPU.
+// The scalar type, of a width the shared width table permits, that the
+// selected device narrows in the type of `e`: its element type, or for a
+// derived type a member's at any depth (a real wider than any the device
+// has is preferred). A device with no 64-bit floating point type lowers
+// such data to a narrower type, and a kernel reading it would reinterpret
+// the host buffers and the by-value scalar-argument struct at the wrong
+// element size, silently producing wrong results. Returns nullptr when the
+// device narrows nothing in the type.
 //
-// The rule itself is the capability descriptor's, so that the decline this
-// raises and the class that decline is given cannot disagree about what the
-// device has a type for.
-bool gpu_device_can_represent_type(const GpuDeviceCapabilities &caps,
-        ASR::ttype_t *t, ASR::expr_t *e, ASR::ttype_t **unsupported_type = nullptr);
-
-// The scalar element type behind `t`, for a decline that has to be
-// classified against what the device has a type for. A derived type has no
-// single element type -- the width that offends is one member's -- so it
-// answers with nothing, and the decline is classified on its reason alone.
+// Only width is asked here. What else a type needs of the device -- a
+// character or complex member, a kind no device has -- is asked by the
+// kernel-argument checks every device runs, and only of what the kernel is
+// actually handed: the component buffers of a derived type it reads, say,
+// not the members it never touches.
+ASR::ttype_t* gpu_device_narrowed_type(const GpuDeviceCapabilities &caps,
+        ASR::ttype_t *t, ASR::expr_t *e);
 
 // A variable declared inside the `do concurrent` body by a BLOCK or an
 // ASSOCIATE construct is carried into the generated kernel as a
@@ -209,9 +212,8 @@ class GpuLocalWidthChecker :
 public:
     bool unsupported = false;
     std::string bad_name;
-    // The element type that was turned down, when it is a scalar one. A
-    // derived type leaves this null: the width that offends is a member's,
-    // and the message names the local rather than a type.
+    // The scalar type that was turned down: the local's element type, or
+    // for a derived type the member's that offends.
     ASR::ttype_t *bad_type = nullptr;
     // What the selected device has a scalar type of.
     GpuDeviceCapabilities caps;
@@ -221,13 +223,13 @@ public:
         if (ASR::is_a<ASR::StructType_t>(*base)) {
             // A BLOCK-local is not a kernel argument, so the symbol
             // collector never hands this type to
-            // gpu_device_can_represent_type. Walk the members here: a
+            // the representability sweep. Walk the members here: a
             // real(8) or complex component is the same silent-wrong-width
             // hole the scalar path already closed.
             if (!var->m_type_declaration) return false;
             std::set<ASR::Struct_t*> visited;
             return gpu_struct_members_ok(var->m_type_declaration, visited,
-                caps);
+                caps, &offending);
         }
         offending = base;
         return caps.has_scalar_type(base);
@@ -341,8 +343,8 @@ public:
 // from an assumed-shape or deferred-shape dummy argument, or from a
 // local allocatable whose ALLOCATE bounds are themselves only known at
 // run time, would have to be a VLA inside the device function -- which
-// Metal cannot express. Detect that shape here so the loop can be
-// declined and run on the host instead. Elements sized from a local
+// Metal cannot express. Detect that shape here so the loop is reported
+// as an error instead. Elements sized from a local
 // allocatable with constant ALLOCATE bounds are fine: the Metal backend
 // resolves those extents from the ALLOCATE statement.
 class GpuDeviceFunctionArrayTempChecker :

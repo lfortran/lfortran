@@ -1,6 +1,5 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
-#include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/containers.h>
 #include <libasr/diagnostics.h>
 #include <libasr/pass/gpu_decline.h>
@@ -566,7 +565,6 @@ void pass_parallel_canonicalize(Allocator &al,
 
 void pass_flatten_omp_regions(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &pass_options) {
-    if (has_pending_gpu_offload(unit)) return;
     OMPRegionFlattener v(al, pass_options);
     v.visit_TranslationUnit(unit);
 }

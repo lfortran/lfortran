@@ -78,6 +78,7 @@
         false
         false
         true
+        nil
       )
       "s" (Module
         (SymbolTable
@@ -186,6 +187,7 @@
         false
         false
         false
+        nil
       )
       "generated" (Program
         (SymbolTable
@@ -195,8 +197,10 @@
         "generated"
         []
         []
+        nil
       )
     }
   )
   []
+  nil
 )
