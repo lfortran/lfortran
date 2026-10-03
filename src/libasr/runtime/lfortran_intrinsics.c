@@ -2200,7 +2200,7 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
             break;
         default:
             fprintf(stderr,"Compiler Error : Unidentified Type %d\n", primitive_enum);
-            exit(0);
+            exit(1);
     }
 
 }
