@@ -2072,3 +2072,12 @@ contains
     subroutine inner()
     end subroutine
 end subroutine
+
+subroutine check_unary_array_error()
+    implicit none
+    type :: v
+        real :: x
+    end type
+    type(v) :: q(3), qq(3)
+    qq = -q  ! {Error} No matching `operator(-)` found for this operand type
+end subroutine
