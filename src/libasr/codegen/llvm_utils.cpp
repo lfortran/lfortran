@@ -334,7 +334,7 @@ namespace LCompilers {
         return allocator_instance;
     }
 
-    llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode, llvm::Value* sign_mode, llvm::Value* round_mode)
+    llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode, llvm::Value* sign_mode, llvm::Value* round_mode, bool leading_blank)
     {
         llvm::Function *fn_printf = module->getFunction("_lcompilers_string_format_fortran");
         if (!fn_printf) {
@@ -344,6 +344,7 @@ namespace LCompilers {
                     llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt64Ty(context),
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
                     llvm::Type::getInt64Ty(context)->getPointerTo(),
+                    llvm::Type::getInt32Ty(context),
                     llvm::Type::getInt32Ty(context),
                     llvm::Type::getInt32Ty(context),
                     llvm::Type::getInt32Ty(context),
@@ -374,6 +375,7 @@ namespace LCompilers {
         } else {
             full_args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
         }
+        full_args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), leading_blank));
         for (size_t i = 6; i < args.size(); i++) {
             full_args.push_back(args[i]);
         }
