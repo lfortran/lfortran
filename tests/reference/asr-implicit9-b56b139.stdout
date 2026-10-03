@@ -29,7 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             b:
                                 (Variable
@@ -53,7 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             d:
                                 (Variable
@@ -77,7 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             e:
                                 (Variable
@@ -101,7 +101,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             f:
                                 (Variable
@@ -125,7 +125,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             h:
                                 (Variable
@@ -149,7 +149,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             i:
                                 (Variable
@@ -173,7 +173,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             l:
                                 (Variable
@@ -197,7 +197,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             m:
                                 (Variable
@@ -221,7 +221,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             o:
                                 (Variable
@@ -245,7 +245,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             p:
                                 (Variable
@@ -269,7 +269,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             q:
                                 (Variable
@@ -293,7 +293,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             r:
                                 (Variable
@@ -317,7 +317,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -338,6 +338,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 e))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -351,7 +352,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -367,6 +368,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 e))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -380,7 +382,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     a
@@ -398,6 +400,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 d)
@@ -629,4 +632,5 @@
                 )
         })
     []
+    ()
 )

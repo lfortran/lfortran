@@ -5,11 +5,11 @@
             f:
                 (Function
                     (SymbolTable
-                        2
+                        3
                         {
                             f1:
                                 (Variable
-                                    2
+                                    3
                                     f1
                                     []
                                     Local
@@ -29,11 +29,11 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             f2:
                                 (Variable
-                                    2
+                                    3
                                     f2
                                     []
                                     ReturnVar
@@ -53,7 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     f
@@ -70,6 +70,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -81,7 +82,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f1)
+                        (Var 3 f1)
                         (IntegerBinOp
                             (IntegerConstant 2 (Integer 4) Decimal)
                             Mul
@@ -107,7 +108,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f2)
+                        (Var 3 f2)
                         (IntegerBinOp
                             (IntegerConstant 3 (Integer 4) Decimal)
                             Mul
@@ -119,7 +120,7 @@
                         .false.
                         .false.
                     )]
-                    (Var 2 f2)
+                    (Var 3 f2)
                     Public
                     .false.
                     .false.
@@ -147,8 +148,9 @@
                     .false.
                     NotMethod
                     ()
-                    0
+                    []
                 )
         })
     []
+    ()
 )

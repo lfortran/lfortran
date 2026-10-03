@@ -71,7 +71,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             q:
                                 (Variable
@@ -95,7 +95,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     functions_07
@@ -127,6 +127,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             functions_07_a:
                 (Module
@@ -160,7 +161,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             v:
                                                 (Variable
@@ -184,7 +185,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     f_a
@@ -201,6 +202,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 u)]
@@ -233,6 +235,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             functions_07_b:
                 (Module
@@ -276,7 +279,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -300,7 +303,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     f_b
@@ -317,6 +320,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 x)]
@@ -356,6 +360,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             functions_07_c:
                 (Module
@@ -409,7 +414,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             z:
                                                 (Variable
@@ -433,7 +438,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     f_c
@@ -450,6 +455,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 w)]
@@ -490,7 +496,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

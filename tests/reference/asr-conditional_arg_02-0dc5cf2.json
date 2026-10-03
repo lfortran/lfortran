@@ -1,0 +1,13 @@
+{
+    "basename": "asr-conditional_arg_02-0dc5cf2",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/conditional_arg_02.f90",
+    "infile_hash": "70dcd0b3a95c8e08ba45c1c06c16bd7dedbaa592375f5e47e074c80e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-conditional_arg_02-0dc5cf2.stdout",
+    "stdout_hash": "07ee3d04d008e75e7f4df04ab87fbf4124ac10e9a709526faab4304a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

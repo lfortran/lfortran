@@ -29,7 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             intro:
                                 (ExternalSymbol
@@ -63,7 +63,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             posit:
                                 (Variable
@@ -87,7 +87,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             title:
                                 (Variable
@@ -111,7 +111,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             verb:
                                 (Variable
@@ -135,7 +135,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     string_03
@@ -228,6 +228,7 @@
                     (Print
                         (Var 3 combined)
                     )]
+                    ()
                 ),
             string_03_mod:
                 (Module
@@ -262,7 +263,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     string_03_mod
@@ -271,7 +272,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

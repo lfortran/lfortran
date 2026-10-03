@@ -2,8 +2,6 @@
     [(Program
         main
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -21,8 +19,8 @@
             None
             ())]
             ()
-        )]
-        [(DoLoop
+        )
+        (DoLoop
             0
             ()
             0
@@ -52,10 +50,6 @@
                 ()
                 [k]
                 ()
-            )
-            (Continue
-                80
-                ()
             )]
             ()
             ()
@@ -73,10 +67,6 @@
                 ()
                 [k]
                 ()
-            )
-            (Continue
-                800
-                ()
             )]
             ()
             ()
@@ -93,10 +83,6 @@
                 0
                 ()
                 [k]
-                ()
-            )
-            (Continue
-                8000
                 ()
             )]
             ()

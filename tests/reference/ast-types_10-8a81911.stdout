@@ -2,7 +2,6 @@
     [(Program
         types_10
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -10,8 +9,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -72,7 +71,6 @@
                 (EndOfLine)]
             )
         )]
-        []
         [(Subroutine
             f
             [(i)]
@@ -83,9 +81,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -125,8 +120,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 j
                 i
@@ -145,9 +140,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -199,8 +191,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 j
                 i
@@ -219,9 +211,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -267,8 +256,8 @@
                 )]
                 []
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 j
                 i

@@ -21,6 +21,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             PointerArray
+                                            Global
                                         )
                                         ColMajor
                                     )
@@ -32,6 +33,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             PointerArray
+                                            Global
                                         )
                                         ColMajor
                                     )
@@ -41,6 +43,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -54,7 +57,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             p_trim:
                                 (Variable
@@ -70,6 +73,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             PointerArray
+                                            Global
                                         )
                                         ColMajor
                                     )
@@ -81,6 +85,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             PointerArray
+                                            Global
                                         )
                                         ColMajor
                                     )
@@ -90,6 +95,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -103,7 +109,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             x_pad:
                                 (Variable
@@ -133,7 +139,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             x_trim:
                                 (Variable
@@ -163,7 +169,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             y_pad:
                                 (Variable
@@ -193,7 +199,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             y_trim:
                                 (Variable
@@ -223,7 +229,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             z_pad:
                                 (Variable
@@ -271,7 +277,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             z_trim:
                                 (Variable
@@ -319,7 +325,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     character_parameter_padding_trimming
@@ -387,7 +393,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

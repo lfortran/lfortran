@@ -29,7 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     entry1
@@ -64,6 +64,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             x:
                 (Function
@@ -92,7 +93,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     x
@@ -109,6 +110,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [x_main__lcompilers]
                     [(Var 3 dummy)]
@@ -153,7 +155,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             entry__lcompilers:
                                 (Variable
@@ -177,7 +179,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     x_main__lcompilers
@@ -195,6 +197,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 5 entry__lcompilers)
@@ -312,7 +315,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     y
@@ -329,6 +332,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [x_main__lcompilers]
                     [(Var 4 dummy)]
@@ -348,4 +352,5 @@
                 )
         })
     []
+    ()
 )

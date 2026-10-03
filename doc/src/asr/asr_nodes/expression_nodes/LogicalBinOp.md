@@ -1,98 +1,63 @@
 # LogicalBinOp
 
-Logical Binary Operation expression type. An **expr** node.
+A logical operation on two logical values.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
-LogicalBinOp(expr left, binop op, expr right, ttype type, expr? value)
+```text
+LogicalBinOp(expr left, logicalbinop op, expr right, ttype type,
+    expr? value)
 ```
 
 ### Arguments
 
-`left` and `right` represent expression on the left and right side of operator
-`op`. `type` represents table entry type and `value` represents expression.
+| Argument | Description |
+|----------|-------------|
+| `left` | the left operand. |
+| `op` | the operator; see [logicalbinop](../enum_nodes/logicalbinop.md). |
+| `right` | the right operand. |
+| `type` | the type of the expression. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the LogicalBinOp represents.
+The value of the expression.
 
 ## Description
 
-**LogicalBinOp** represents logical binary operation expression type. It is an
-ASR expr node. ASR has multiple binary expression types, for example: for Integer,
-real, complex, and logical.
-
-The binary operations accept two arguments of the same type.
-
-## Types
-
-Only accepts `.TRUE.` and `.FALSE.`
+`And`, `Or`, `Xor`, `Eqv` and `NEqv` are the operators; see
+[logicalbinop](../enum_nodes/logicalbinop.md). ASR does not promise short
+circuit evaluation: `.and.` in Fortran may evaluate both operands.
 
 ## Examples
 
-```fortran
-bgt(10, 4) .neqv. .true.
+```clojure
+(LogicalBinOp
+  :left (Var
+    :v (SymbolRef 1 "p")
+  )
+  :op :Or
+  :right (LogicalConstant
+    :value false
+    :type (Logical
+      :kind 4
+    )
+  )
+  :type (Logical
+    :kind 4
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            bgt:
-                (ExternalSymbol
-                    1
-                    bgt
-                    3 bgt
-                    lfortran_intrinsic_bit
-                    []
-                    bgt
-                    Private
-                ),
-            bgt@bgt32:
-                (ExternalSymbol
-                    1
-                    bgt@bgt32
-                    3 bgt32
-                    lfortran_intrinsic_bit
-                    []
-                    bgt32
-                    Private
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_bit:
-                (IntrinsicModule lfortran_intrinsic_bit)
-
-        })
-    [(LogicalBinOp
-        (FunctionCall
-            1 bgt@bgt32
-            1 bgt
-            [((IntegerConstant 10 (Integer 4 [])))
-            ((IntegerConstant 4 (Integer 4 [])))]
-            (Logical 4 [])
-            ()
-            ()
-        )
-        NEqv
-        (LogicalConstant
-            .true.
-            (Logical 4 [])
-        )
-        (Logical 4 [])
-        ()
-    )]
-)
-
+```{literalinclude} ../../examples/logical_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[IntegerBinOp](IntegerBinOp.md), [ComplexBinOp](ComplexBinOp.md),
-[RealBinOp](RealBinOp.md)
+[logicalbinop](../enum_nodes/logicalbinop.md), [LogicalNot](LogicalNot.md), [LogicalCompare](LogicalCompare.md)

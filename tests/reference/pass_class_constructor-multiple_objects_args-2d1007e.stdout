@@ -36,7 +36,7 @@
                                                         1.000000
                                                         (Real 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Real 4)
                                                     ()
                                                     Source
@@ -50,7 +50,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     circle
@@ -65,6 +65,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -114,7 +115,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             n:
                                                 (Variable
@@ -143,7 +144,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     print_radius
@@ -171,6 +172,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 m)
@@ -240,7 +242,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             temp_struct_var__1:
                                 (Variable
@@ -269,7 +271,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             was_called:
                                 (Variable
@@ -299,7 +301,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     main
@@ -354,7 +356,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

@@ -435,10 +435,6 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("node_to_return = ( ASR::asr_t* ) ((Variable_t*)sym);", 4)
         self.emit("return;", 4)
         self.emit("}", 3)
-        self.emit("case ASR::symbolType::GpuKernelFunction: {", 3)
-        self.emit("node_to_return = ( ASR::asr_t* ) ((GpuKernelFunction_t*)sym);", 4)
-        self.emit("return;", 4)
-        self.emit("}", 3)
         self.emit("}", 2)
         self.emit("}", 1)
         self.emit("static inline const ASR::symbol_t *symbol_get_past_external_(ASR::symbol_t *f) {", 1)
@@ -481,7 +477,7 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
         if name in products:
             self.emit("if (test_loc_and_set_span(x.loc)) {", 2)
         else:
@@ -567,7 +563,7 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
         self.emit("}", 1)
 
     def visitField(self, field):
@@ -671,7 +667,7 @@ class ASRPassWalkVisitorVisitor(ASDLVisitor):
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
 
         if is_symtab_present:
             self.emit("current_scope = current_scope_copy;", 2)
@@ -789,7 +785,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
 
         if is_symtab_present:
             self.emit("current_scope = current_scope_copy;", 2)
@@ -943,12 +939,16 @@ class TreeVisitorVisitor(ASDLVisitor):
             self.emit(    '}', 2)
         self.used = False
         for n, field in enumerate(fields):
+            if field.opt and field.type in products:
+                self.emit("if (x.m_%s) {" % field.name, 2)
             self.visitField(field, cons, n == len(fields)-1)
+            if field.opt and field.type in products:
+                self.emit("}", 2)
         self.emit(    'dec_indent();', 2)
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
         self.emit("}", 1)
 
     def make_simple_sum_visitor(self, name, types):
@@ -1128,11 +1128,15 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_ttype = []
         self.duplicate_case_stmt = []
         self.duplicate_type_stmt = []
+        self.duplicate_rank_stmt = []
+        self.duplicate_omp_clause = []
         self.is_stmt = False
         self.is_expr = False
         self.is_ttype = False
         self.is_case_stmt = False
         self.is_type_stmt = False
+        self.is_rank_stmt = False
+        self.is_omp_clause = False
         self.is_product = False
         super(ExprStmtDuplicatorVisitor, self).__init__(stream, data)
 
@@ -1187,6 +1191,20 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_type_stmt.append(("", 0))
         self.duplicate_type_stmt.append(("    switch(x->type) {", 1))
 
+        self.duplicate_rank_stmt.append(("    ASR::rank_stmt_t* duplicate_rank_stmt(ASR::rank_stmt_t* x) {", 0))
+        self.duplicate_rank_stmt.append(("    if( !x ) {", 1))
+        self.duplicate_rank_stmt.append(("    return nullptr;", 2))
+        self.duplicate_rank_stmt.append(("    }", 1))
+        self.duplicate_rank_stmt.append(("", 0))
+        self.duplicate_rank_stmt.append(("    switch(x->type) {", 1))
+
+        self.duplicate_omp_clause.append(("    ASR::omp_clause_t* duplicate_omp_clause(ASR::omp_clause_t* x) {", 0))
+        self.duplicate_omp_clause.append(("    if( !x ) {", 1))
+        self.duplicate_omp_clause.append(("    return nullptr;", 2))
+        self.duplicate_omp_clause.append(("    }", 1))
+        self.duplicate_omp_clause.append(("", 0))
+        self.duplicate_omp_clause.append(("    switch(x->type) {", 1))
+
         super(ExprStmtDuplicatorVisitor, self).visitModule(mod)
         self.duplicate_stmt.append(("    default: {", 2))
         self.duplicate_stmt.append(('    LCOMPILERS_ASSERT_MSG(false, "Duplication of " + std::to_string(x->type) + " statement is not supported yet.");', 3))
@@ -1228,6 +1246,14 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_type_stmt.append(("    return nullptr;", 1))
         self.duplicate_type_stmt.append(("    }", 0))
 
+        self.duplicate_rank_stmt.append(("    default: {", 2))
+        self.duplicate_rank_stmt.append(('    LCOMPILERS_ASSERT_MSG(false, "Duplication of " + std::to_string(x->type) + " rank statement is not supported yet.");', 3))
+        self.duplicate_rank_stmt.append(("    }", 2))
+        self.duplicate_rank_stmt.append(("    }", 1))
+        self.duplicate_rank_stmt.append(("", 0))
+        self.duplicate_rank_stmt.append(("    return nullptr;", 1))
+        self.duplicate_rank_stmt.append(("    }", 0))
+
         for line, level in self.duplicate_stmt:
             self.emit(line, level=level)
         self.emit("")
@@ -1240,6 +1266,18 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         for line, level in self.duplicate_case_stmt:
             self.emit(line, level=level)
         for line, level in self.duplicate_type_stmt:
+            self.emit(line, level=level)
+        self.duplicate_omp_clause.append(("    default: {", 2))
+        self.duplicate_omp_clause.append(('    LCOMPILERS_ASSERT_MSG(false, "Duplication of " + std::to_string(x->type) + " OpenMP clause is not supported yet.");', 3))
+        self.duplicate_omp_clause.append(("    }", 2))
+        self.duplicate_omp_clause.append(("    }", 1))
+        self.duplicate_omp_clause.append(("", 0))
+        self.duplicate_omp_clause.append(("    return nullptr;", 1))
+        self.duplicate_omp_clause.append(("    }", 0))
+
+        for line, level in self.duplicate_rank_stmt:
+            self.emit(line, level=level)
+        for line, level in self.duplicate_omp_clause:
             self.emit(line, level=level)
         self.emit("")
         self.emit("};")
@@ -1255,7 +1293,11 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.is_ttype = args[0] == "ttype"
         self.is_case_stmt = args[0] == 'case_stmt'
         self.is_type_stmt = args[0] == 'type_stmt'
-        if self.is_stmt or self.is_expr or self.is_case_stmt or self.is_type_stmt or self.is_ttype:
+        self.is_rank_stmt = args[0] == 'rank_stmt'
+        self.is_omp_clause = args[0] == 'omp_clause'
+        if (self.is_stmt or self.is_expr or self.is_case_stmt or
+                self.is_type_stmt or self.is_rank_stmt or self.is_ttype or
+                self.is_omp_clause):
             for tp in sum.types:
                 self.visit(tp, *args)
 
@@ -1310,6 +1352,14 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             self.duplicate_type_stmt.append(("    case ASR::type_stmtType::%s: {" % name, 2))
             self.duplicate_type_stmt.append(("    return down_cast<ASR::type_stmt_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
             self.duplicate_type_stmt.append(("    }", 2))
+        elif self.is_rank_stmt:
+            self.duplicate_rank_stmt.append(("    case ASR::rank_stmtType::%s: {" % name, 2))
+            self.duplicate_rank_stmt.append(("    return down_cast<ASR::rank_stmt_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
+            self.duplicate_rank_stmt.append(("    }", 2))
+        elif self.is_omp_clause:
+            self.duplicate_omp_clause.append(("    case ASR::omp_clauseType::%s: {" % name, 2))
+            self.duplicate_omp_clause.append(("    return down_cast<ASR::omp_clause_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
+            self.duplicate_omp_clause.append(("    }", 2))
         self.emit("}", 1)
         self.emit("")
 
@@ -1324,6 +1374,8 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             field.type == "alloc_arg" or
             field.type == "case_stmt" or
             field.type == "type_stmt" or
+            field.type == "rank_stmt" or
+            field.type == "omp_clause" or
             field.type == "ttype" or
             field.type == "dimension"):
             level = 2
@@ -1363,6 +1415,18 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                     self.emit("    dims_copy.push_back(al, dim_copy);", level + 1)
                     self.emit("    }", level)
                     self.emit("    alloc_arg_copy.m_dims = dims_copy.p;", level)
+                    self.emit("    alloc_arg_copy.n_codims = x->m_%s[i].n_codims;"%(field.name), level)
+                    self.emit("    Vec<ASR::codimension_t> codims_copy;", level)
+                    self.emit("    codims_copy.reserve(al, alloc_arg_copy.n_codims);", level)
+                    self.emit("    for (size_t j = 0; j < alloc_arg_copy.n_codims; j++) {", level)
+                    self.emit("    ASR::codimension_t codim_copy;", level + 1)
+                    self.emit("    codim_copy.loc = x->m_%s[i].m_codims[j].loc;"%(field.name), level + 1)
+                    self.emit("    codim_copy.m_start = self().duplicate_expr(x->m_%s[i].m_codims[j].m_start);"%(field.name), level + 1)
+                    self.emit("    codim_copy.m_end = self().duplicate_expr(x->m_%s[i].m_codims[j].m_end);"%(field.name), level + 1)
+                    self.emit("    codim_copy.m_end_star = x->m_%s[i].m_codims[j].m_end_star;"%(field.name), level + 1)
+                    self.emit("    codims_copy.push_back(al, codim_copy);", level + 1)
+                    self.emit("    }", level)
+                    self.emit("    alloc_arg_copy.m_codims = codims_copy.p;", level)
                     self.emit("    m_%s.push_back(al, alloc_arg_copy);"%(field.name), level)
                 elif field.type == "array_index":
                     self.emit("    ASR::array_index_t array_index_copy;", level)
@@ -1777,16 +1841,33 @@ class PickleVisitorVisitor(ASDLVisitor):
                 else:
                     self.emit(    's.append(" ");', 2)
         self.used = False
-        for n, field in enumerate(fields):
-            if field.type == "location":
-                continue
-            self.visitField(field, cons)
-            if n < len(fields) - 1 and field.type != "void" and fields[n+1].type != "location":
-                if name not in symbol:
-                    self.emit(    'if(indent) s.append("\\n" + indented);', 2)
-                    self.emit(    'else s.append(" ");', 2)
-                else:
-                    self.emit(    's.append(" ");', 2)
+        if any(f.opt and f.type in products for f in fields):
+            self.emit("bool first_field = true;", 2)
+            for field in fields:
+                if field.type == "location":
+                    continue
+                optional = field.opt and field.type in products
+                if optional:
+                    self.emit("if (x.m_%s) {" % field.name, 2)
+                self.emit("if (!first_field) {", 2)
+                self.emit('if (indent) s.append("\\n" + indented);', 3)
+                self.emit('else s.append(" ");', 3)
+                self.emit("}", 2)
+                self.visitField(field, cons)
+                self.emit("first_field = false;", 2)
+                if optional:
+                    self.emit("}", 2)
+        else:
+            for n, field in enumerate(fields):
+                if field.type == "location":
+                    continue
+                self.visitField(field, cons)
+                if n < len(fields) - 1 and field.type != "void" and fields[n+1].type != "location":
+                    if name not in symbol:
+                        self.emit(    'if(indent) s.append("\\n" + indented);', 2)
+                        self.emit(    'else s.append(" ");', 2)
+                    else:
+                        self.emit(    's.append(" ");', 2)
         if name not in symbol and cons and len(fields) > 0:
             self.emit(    'if(indent) {', 2)
             self.emit(        'dec_indent();', 3)
@@ -1796,7 +1877,7 @@ class PickleVisitorVisitor(ASDLVisitor):
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
         self.emit("}", 1)
 
     def make_simple_sum_visitor(self, name, types):
@@ -2107,12 +2188,26 @@ class JsonVisitorVisitor(ASDLVisitor):
         self.emit(    's.append("\\"fields\\": {");', 2)
         if len(fields) > 0:
             self.emit('inc_indent(); s.append("\\n" + indtd);', 2)
-            for n, field in enumerate(fields):
-                if field.type == "location":
-                    continue
-                self.visitField(field, cons)
-                if n < len(fields) - 1 and fields[n+1].type!="location":
-                    self.emit('s.append(",\\n" + indtd);', 2)
+            if any(f.opt and f.type in products for f in fields):
+                self.emit("bool first_field = true;", 2)
+                for field in fields:
+                    if field.type == "location":
+                        continue
+                    optional = field.opt and field.type in products
+                    if optional:
+                        self.emit("if (x.m_%s) {" % field.name, 2)
+                    self.emit('if (!first_field) s.append(",\\n" + indtd);', 2)
+                    self.visitField(field, cons)
+                    self.emit("first_field = false;", 2)
+                    if optional:
+                        self.emit("}", 2)
+            else:
+                for n, field in enumerate(fields):
+                    if field.type == "location":
+                        continue
+                    self.visitField(field, cons)
+                    if n < len(fields) - 1 and fields[n+1].type!="location":
+                        self.emit('s.append(",\\n" + indtd);', 2)
             self.emit('dec_indent(); s.append("\\n" + indtd);', 2)
         self.emit(    's.append("}");', 2)
         if name in products:
@@ -2122,7 +2217,7 @@ class JsonVisitorVisitor(ASDLVisitor):
 
         self.emit(    'dec_indent(); s.append("\\n" + indtd);', 2)
         self.emit(    's.append("}");', 2)
-        self.emit(    'if ((bool&)x) { } // Suppress unused warning', 2)
+        self.emit(    '(void)x; // Suppress unused warning', 2)
         self.emit("}", 1)
 
     def make_simple_sum_visitor(self, name, types):
@@ -2280,6 +2375,704 @@ class JsonVisitorVisitor(ASDLVisitor):
                 self.emit('s.append("\\"Unimplemented%s\\"");' % field.type, 2)
 
 
+class ASRTextSymbolTableCollectorVisitor(ASDLVisitor):
+
+    def visitModule(self, mod):
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// ASR text symbol table collector")
+        self.emit("")
+        self.emit("template <class StructType>")
+        self.emit("class TextSymbolTableCollectorBaseVisitor : public BaseVisitor<StructType>")
+        self.emit("{")
+        self.emit("private:")
+        self.emit(  "StructType& self() { return static_cast<StructType&>(*this); }", 1)
+        self.emit("public:")
+        super(ASRTextSymbolTableCollectorVisitor, self).visitModule(mod)
+        self.emit("};")
+
+    def visitType(self, tp):
+        if tp.name in ["unit", "symbol"]:
+            self.visit(tp.value, tp.name)
+
+    def visitSum(self, sum, base):
+        if is_simple_sum(sum):
+            return
+        for tp in sum.types:
+            self.visit(tp, base)
+
+    def visitConstructor(self, cons, _):
+        self.emit("void visit_%s(const %s_t &x) {" % (cons.name, cons.name), 1)
+        owning_symtabs = [
+            field for field in cons.fields
+            if field.type == "symbol_table" and field.name != "parent_symtab"
+        ]
+        if owning_symtabs:
+            for field in owning_symtabs:
+                self.emit("self().register_symbol_table(x.m_%s);" % field.name, 2)
+                self.emit("for (auto &item : x.m_%s->get_scope()) {" % field.name, 2)
+                self.emit("this->visit_symbol(*item.second);", 3)
+                self.emit("}", 2)
+        else:
+            self.emit("(void)x;", 2)
+        self.emit("}", 1)
+
+
+class ASRTextSerializationVisitorVisitor(ASDLVisitor):
+
+    def visitModule(self, mod):
+        ASRTextSymbolTableCollectorVisitor(self.stream, self.data).visit(mod)
+        self.emit("")
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Lossless ASR text serialization visitor")
+        self.emit("")
+        self.emit("template <class StructType>")
+        self.emit("class TextSerializationBaseVisitor : public BaseVisitor<StructType>")
+        self.emit("{")
+        self.emit("private:")
+        self.emit(  "StructType& self() { return static_cast<StructType&>(*this); }", 1)
+        self.emit("public:")
+        self.mod = mod
+        super(ASRTextSerializationVisitorVisitor, self).visitModule(mod)
+        self.emit("};")
+
+    def visitType(self, tp):
+        super(ASRTextSerializationVisitorVisitor, self).visitType(tp, tp.name)
+
+    def visitSum(self, sum, *args):
+        assert isinstance(sum, asdl.Sum)
+        if is_simple_sum(sum):
+            name = args[0] + "Type"
+            self.make_simple_sum_visitor(name, sum.types)
+        else:
+            for tp in sum.types:
+                self.visit(tp, *args)
+
+    def visitProduct(self, prod, name):
+        self.make_visitor(name, prod.fields)
+
+    def visitConstructor(self, cons, _):
+        self.make_visitor(cons.name, cons.fields)
+
+    def make_visitor(self, name, fields):
+        serialized_fields = [field for field in fields if field.type != "location"]
+        optional = [f for f in serialized_fields if f.opt and f.type in products]
+        field_count = str(len(serialized_fields) - len(optional))
+        for field in optional:
+            field_count += " + (x.m_%s != nullptr)" % field.name
+        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.emit('self().begin_form("%s", %s);' % (name, field_count), 2)
+        for field in serialized_fields:
+            if field in optional:
+                self.emit("if (x.m_%s) {" % field.name, 2)
+            self.emit('self().begin_field("%s");' % field.name, 2)
+            self.visitField(field, name)
+            if field in optional:
+                self.emit("}", 2)
+        self.emit("self().end_form();", 2)
+        if len(serialized_fields) == 0:
+            self.emit("(void)x;", 2)
+        self.emit("}", 1)
+
+    def make_simple_sum_visitor(self, name, types):
+        self.emit("void visit_%s(const %s &x) {" % (name, name), 1)
+        self.emit("switch (x) {", 2)
+        for tp in types:
+            self.emit("case (%s::%s):" % (name, tp.name), 3)
+            self.emit('self().write_keyword("%s");' % tp.name, 4)
+            self.emit("break;", 4)
+        self.emit("}", 2)
+        self.emit("}", 1)
+
+    def emit_sequence(self, field, element):
+        self.emit("self().begin_vector(x.n_%s);" % field.name, 2)
+        self.emit("for (size_t i = 0; i < x.n_%s; i++) {" % field.name, 2)
+        self.emit("self().begin_element(i);", 3)
+        self.emit(element, 3)
+        self.emit("}", 2)
+        self.emit("self().end_vector();", 2)
+
+    def visitField(self, field, cons_name):
+        if (field.type not in asdl.builtin_types and
+                field.type not in self.data.simple_types):
+            if field.type in products:
+                value = "x.m_%s[i]" % field.name if field.seq else "x.m_%s" % field.name
+                if field.opt:
+                    value = "*" + value
+                statement = "self().visit_%s(%s);" % (field.type, value)
+            elif field.type == "symbol":
+                value = "*x.m_%s[i]" % field.name if field.seq else "*x.m_%s" % field.name
+                statement = "self().write_symbol_ref(%s);" % value
+            else:
+                value = "*x.m_%s[i]" % field.name if field.seq else "*x.m_%s" % field.name
+                statement = "self().visit_%s(%s);" % (field.type, value)
+
+            if field.seq:
+                self.emit_sequence(field, statement)
+            elif field.opt:
+                self.emit("if (x.m_%s) {" % field.name, 2)
+                self.emit(statement, 3)
+                self.emit("} else {", 2)
+                self.emit("self().write_nil();", 3)
+                self.emit("}", 2)
+            else:
+                self.emit(statement, 2)
+            return
+
+        if field.type == "identifier":
+            if field.seq:
+                self.emit_sequence(
+                    field, "self().write_string(x.m_%s[i]);" % field.name)
+            elif field.opt:
+                self.emit("if (x.m_%s) {" % field.name, 2)
+                self.emit("self().write_string(x.m_%s);" % field.name, 3)
+                self.emit("} else {", 2)
+                self.emit("self().write_nil();", 3)
+                self.emit("}", 2)
+            else:
+                self.emit("self().write_string(x.m_%s);" % field.name, 2)
+        elif field.type == "string":
+            assert not field.seq
+            if field.opt:
+                self.emit("if (x.m_%s) {" % field.name, 2)
+                self.emit("self().write_string(x.m_%s);" % field.name, 3)
+                self.emit("} else {", 2)
+                self.emit("self().write_nil();", 3)
+                self.emit("}", 2)
+            elif cons_name == "StringConstant" and field.name == "s":
+                self.emit("self().write_string_constant(x);", 2)
+            else:
+                self.emit("self().write_string(x.m_%s);" % field.name, 2)
+        elif field.type == "node":
+            assert field.seq and not field.opt
+            self.emit_sequence(field, "this->visit_asr(*x.m_%s[i]);" % field.name)
+        elif field.type == "symbol_table":
+            assert not field.seq and not field.opt
+            if field.name == "parent_symtab":
+                self.emit("self().write_symbol_table_ref(*x.m_%s);" % field.name, 2)
+            else:
+                self.emit('self().begin_form("SymbolTable", 2);', 2)
+                self.emit('self().begin_field("id");', 2)
+                self.emit("self().write_symbol_table_ref(*x.m_%s);" % field.name, 2)
+                self.emit('self().begin_field("symbols");', 2)
+                self.emit("self().begin_map(x.m_%s->get_scope().size());" % field.name, 2)
+                self.emit("size_t item_index = 0;", 2)
+                self.emit("for (auto &item : x.m_%s->get_scope()) {" % field.name, 2)
+                self.emit("self().begin_map_entry(item.first, item_index++);", 3)
+                self.emit("this->visit_symbol(*item.second);", 3)
+                self.emit("}", 2)
+                self.emit("self().end_map();", 2)
+                self.emit("self().end_form();", 2)
+        elif field.type == "int":
+            assert not field.seq
+            if field.opt:
+                self.emit("if (x.m_%s) {" % field.name, 2)
+                self.emit("self().write_int(x.m_%s);" % field.name, 3)
+                self.emit("} else {", 2)
+                self.emit("self().write_nil();", 3)
+                self.emit("}", 2)
+            else:
+                self.emit("self().write_int(x.m_%s);" % field.name, 2)
+        elif field.type == "float":
+            assert not field.seq and not field.opt
+            if cons_name == "RealConstant" and field.name == "r":
+                self.emit("self().write_real_constant(x);", 2)
+            else:
+                self.emit("self().write_float(x.m_%s);" % field.name, 2)
+        elif field.type == "bool":
+            assert not field.seq and not field.opt
+            self.emit("self().write_bool(x.m_%s);" % field.name, 2)
+        elif field.type == "void":
+            assert not field.seq and not field.opt
+            self.emit("self().write_bytes(x.m_%s, x.m_n_data);" % field.name, 2)
+        elif field.type in self.data.simple_types:
+            assert not field.seq and not field.opt
+            self.emit("self().visit_%sType(x.m_%s);" % (field.type, field.name), 2)
+        else:
+            raise Exception("Unimplemented ASR text field type: " + field.type)
+
+
+class ASRTextDeserializationVisitorVisitor(ASDLVisitor):
+
+    def visitModule(self, mod):
+        self.sum_constructors = {}
+        for definition in mod.dfns:
+            if isinstance(definition.value, asdl.Sum) and \
+                    not is_simple_sum(definition.value):
+                self.sum_constructors[definition.name] = [
+                    constructor.name for constructor in definition.value.types
+                ]
+
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Lossless ASR text deserialization visitor")
+        self.emit("")
+        self.emit("template <class StructType, class ValueType>")
+        self.emit("class TextDeserializationBaseVisitor")
+        self.emit("{")
+        self.emit("private:")
+        self.emit("StructType& self() {", 1)
+        self.emit("return static_cast<StructType&>(*this);", 2)
+        self.emit("}", 1)
+        self.emit("public:")
+        self.emit("using TextValue = ValueType;", 1)
+        self.emit("bool deserialize_node(const TextValue &value,", 1)
+        self.emit("        asr_t *&result) {", 2)
+        self.emit("std::string name;", 2)
+        self.emit("if (!self().decode_form_name(value, name)) return false;", 2)
+        for sum_name, constructors in self.sum_constructors.items():
+            for constructor in constructors:
+                self.emit('if (name == "%s") {' % constructor, 2)
+                self.emit("%s_t *node;" % constructor, 3)
+                self.emit("if (!deserialize_%s(value, node)) return false;"
+                    % constructor, 3)
+                self.emit("result = (asr_t *)node;", 3)
+                self.emit("return true;", 3)
+                self.emit("}", 2)
+        self.emit('self().schema_error(value, "unknown ASR constructor \'" +')
+        self.emit("    name + \"'\");", 3)
+        self.emit("return false;", 2)
+        self.emit("}", 1)
+        self.mod = mod
+        super(ASRTextDeserializationVisitorVisitor, self).visitModule(mod)
+        self.emit("};")
+
+    def visitType(self, tp):
+        self.visit(tp.value, tp.name)
+
+    def visitSum(self, sum, base):
+        if is_simple_sum(sum):
+            self.make_simple_sum_deserializer(base, sum.types)
+            return
+        self.emit("bool deserialize_%s(const TextValue &value," % base, 1)
+        self.emit("        %s_t *&result) {" % base, 2)
+        self.emit("std::string name;", 2)
+        self.emit("if (!self().decode_form_name(value, name)) return false;", 2)
+        for constructor in sum.types:
+            self.emit('if (name == "%s") {' % constructor.name, 2)
+            self.emit("%s_t *node;" % constructor.name, 3)
+            self.emit("if (!deserialize_%s(value, node)) return false;"
+                % constructor.name, 3)
+            self.emit("result = (%s_t *)node;" % base, 3)
+            self.emit("return true;", 3)
+            self.emit("}", 2)
+        self.emit('self().schema_error(value, "expected %s constructor, found \'" +'
+            % base, 2)
+        self.emit("    name + \"'\");", 3)
+        self.emit("return false;", 2)
+        self.emit("}", 1)
+        for constructor in sum.types:
+            self.visit(constructor, base)
+
+    def visitProduct(self, product, name):
+        self.make_product_deserializer(name, product.fields)
+
+    def visitConstructor(self, constructor, _):
+        self.make_constructor_deserializer(
+            constructor.name, constructor.fields)
+
+    def make_simple_sum_deserializer(self, name, constructors):
+        self.emit("bool deserialize_%s(const TextValue &value," % name, 1)
+        self.emit("        %sType &result) {" % name, 2)
+        self.emit("std::string keyword;", 2)
+        self.emit("if (!self().decode_keyword(value, keyword)) return false;", 2)
+        for constructor in constructors:
+            self.emit('if (keyword == "%s") {' % constructor.name, 2)
+            self.emit("result = %sType::%s;" % (name, constructor.name), 3)
+            self.emit("return true;", 3)
+            self.emit("}", 2)
+        self.emit('self().schema_error(value, "unknown %s value \'" +' % name, 2)
+        self.emit("    keyword + \"'\");", 3)
+        self.emit("return false;", 2)
+        self.emit("}", 1)
+
+    def field_names(self, fields):
+        return [field.name for field in fields if field.type != "location"]
+
+    def emit_form_decode(self, name, fields):
+        names = self.field_names(fields)
+        quoted = ", ".join(['"%s"' % field_name for field_name in names])
+        self.emit("std::vector<const TextValue *> fields;", 2)
+        optional = [f.name for f in fields if f.opt and f.type in products]
+        defaults = ', {%s}' % ', '.join('"%s"' % f for f in optional) if optional else ''
+        self.emit('if (!self().decode_form(value, "%s", {%s}, fields%s)) {'
+            % (name, quoted, defaults), 2)
+        self.emit("return false;", 3)
+        self.emit("}", 2)
+        return {field_name: index for index, field_name in enumerate(names)}
+
+    def emit_sequence_decode(self, field, value, local):
+        self.emit("std::vector<const TextValue *> values_%s;" % local, 2)
+        self.emit("if (!self().decode_vector(%s, values_%s)) return false;"
+            % (value, local), 2)
+        if field.type in products:
+            cpp_type = "%s_t" % field.type
+        else:
+            if field.type == "identifier":
+                cpp_type = "char *"
+            elif field.type == "node":
+                cpp_type = "asr_t *"
+            else:
+                cpp_type = "%s_t *" % field.type
+        self.emit("Vec<%s> v_%s;" % (cpp_type, local), 2)
+        self.emit("v_%s.reserve(self().allocator(), values_%s.size());"
+            % (local, local), 2)
+        self.emit("for (const TextValue *item : values_%s) {" % local, 2)
+        if field.type in products:
+            self.emit("%s_t decoded{};" % field.type, 3)
+            self.emit("if (!deserialize_%s(*item, decoded)) return false;"
+                % field.type, 3)
+        elif field.type == "identifier":
+            self.emit("char *decoded;", 3)
+            self.emit("if (!self().decode_string(*item, decoded)) return false;", 3)
+        elif field.type == "node":
+            self.emit("asr_t *decoded;", 3)
+            self.emit("if (!deserialize_node(*item, decoded)) return false;", 3)
+        elif field.type == "symbol":
+            self.emit("symbol_t *decoded;", 3)
+            self.emit("if (!self().decode_symbol_ref(*item, decoded)) return false;", 3)
+        else:
+            self.emit("%s_t *decoded;" % field.type, 3)
+            self.emit("if (!deserialize_%s(*item, decoded)) return false;"
+                % field.type, 3)
+        self.emit("v_%s.push_back(self().allocator(), decoded);" % local, 3)
+        self.emit("}", 2)
+
+    def emit_scalar_decode(self, field, value, local, form_value):
+        if field.type == "location":
+            self.emit("Location *m_%s = self().make_location(" % local, 2)
+            self.emit("    self().node_location(%s));" % form_value, 3)
+            return
+
+        if field.opt:
+            if field.type in products:
+                cpp_type = "%s_t *" % field.type
+            elif field.type in ["identifier", "string"]:
+                cpp_type = "char *"
+            else:
+                cpp_type = "%s_t *" % field.type
+            self.emit("%s m_%s = nullptr;" % (cpp_type, local), 2)
+            self.emit("if (!self().is_nil(%s)) {" % value, 2)
+            indent = 3
+        else:
+            indent = 2
+
+        target = "m_%s" % local
+        if not field.opt:
+            if field.type in products:
+                self.emit("%s_t %s{};" % (field.type, target), indent)
+            elif field.type in ["identifier", "string"]:
+                self.emit("char *%s;" % target, indent)
+            elif field.type == "int":
+                self.emit("int64_t %s;" % target, indent)
+            elif field.type == "float":
+                self.emit("double %s;" % target, indent)
+            elif field.type == "bool":
+                self.emit("bool %s;" % target, indent)
+            elif field.type == "symbol_table":
+                self.emit("SymbolTable *%s;" % target, indent)
+            elif field.type == "void":
+                self.emit("void *%s;" % target, indent)
+            elif field.type in self.data.simple_types:
+                self.emit("%sType %s;" % (field.type, target), indent)
+            else:
+                self.emit("%s_t *%s;" % (field.type, target), indent)
+
+        if field.opt and field.type in products:
+            self.emit("%s = self().allocator().template make_new<%s_t>();"
+                % (target, field.type), indent)
+
+        if field.type in products:
+            expression = "*%s" % target if field.opt else target
+            self.emit("if (!deserialize_%s(%s, %s)) return false;"
+                % (field.type, value, expression), indent)
+        elif field.type in ["identifier", "string"]:
+            self.emit("if (!self().decode_string(%s, %s)) return false;"
+                % (value, target), indent)
+        elif field.type == "int":
+            self.emit("if (!self().decode_int(%s, %s)) return false;"
+                % (value, target), indent)
+        elif field.type == "float":
+            self.emit("if (!self().decode_float(%s, %s)) return false;"
+                % (value, target), indent)
+        elif field.type == "bool":
+            self.emit("if (!self().decode_bool(%s, %s)) return false;"
+                % (value, target), indent)
+        elif field.type == "symbol_table":
+            helper = "decode_symbol_table_ref" \
+                if field.name == "parent_symtab" else "decode_symbol_table"
+            self.emit("if (!self().%s(%s, %s)) return false;"
+                % (helper, value, target), indent)
+        elif field.type == "symbol":
+            self.emit("if (!self().decode_symbol_ref(%s, %s)) return false;"
+                % (value, target), indent)
+        elif field.type == "void":
+            self.emit("if (!self().decode_bytes(%s, %s, m_n_data)) return false;"
+                % (value, target), indent)
+        elif field.type in self.data.simple_types:
+            self.emit("if (!deserialize_%s(%s, %s)) return false;"
+                % (field.type, value, target), indent)
+        else:
+            self.emit("if (!deserialize_%s(%s, %s)) return false;"
+                % (field.type, value, target), indent)
+
+        if field.opt:
+            self.emit("}", 2)
+
+    def emit_fields(self, name, fields, field_indexes):
+        args = []
+        for field in fields:
+            local = field.name
+            if field.type == "location":
+                value = "value"
+                self.emit_scalar_decode(field, value, local, "value")
+                args.append("m_%s" % local)
+                continue
+            value = "*fields[%d]" % field_indexes[field.name]
+            if field.seq:
+                self.emit_sequence_decode(field, value, local)
+                args.extend(["v_%s.p" % local, "v_%s.n" % local])
+            else:
+                self.emit_scalar_decode(field, value, local, "value")
+                args.append("m_%s" % local)
+        return args
+
+    def make_constructor_deserializer(self, name, fields):
+        self.emit("bool deserialize_%s(const TextValue &value," % name, 1)
+        self.emit("        %s_t *&result) {" % name, 2)
+        indexes = self.emit_form_decode(name, fields)
+        self.emit("Location loc = self().node_location(value);", 2)
+        args = self.emit_fields(name, fields, indexes)
+        make_args = ["self().allocator()", "loc"] + args
+        self.emit("result = down_cast2<%s_t>(make_%s_t(%s));"
+            % (name, name, ", ".join(make_args)), 2)
+        self.emit("return true;", 2)
+        self.emit("}", 1)
+
+    def make_product_deserializer(self, name, fields):
+        self.emit("bool deserialize_%s(const TextValue &value," % name, 1)
+        self.emit("        %s_t &result) {" % name, 2)
+        indexes = self.emit_form_decode(name, fields)
+        args = self.emit_fields(name, fields, indexes)
+        arg_index = 0
+        for field in fields:
+            if field.seq:
+                self.emit("result.m_%s = %s;" % (field.name, args[arg_index]), 2)
+                self.emit("result.n_%s = %s;" % (
+                    field.name, args[arg_index + 1]), 2)
+                arg_index += 2
+            else:
+                self.emit("result.m_%s = %s;" % (field.name, args[arg_index]), 2)
+                arg_index += 1
+        self.emit("return true;", 2)
+        self.emit("}", 1)
+
+
+class ASRSymbolHelperVisitor(ASDLVisitor):
+
+    def visitModule(self, mod):
+        self.symbol_constructors = []
+        self.ownership_constructors = {}
+        super(ASRSymbolHelperVisitor, self).visitModule(mod)
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Exhaustive symbol allocation and fill helpers")
+        self.emit("")
+        self.emit("static inline symbol_t *make_symbol_stub(Allocator &al,")
+        self.emit("        symbolType type, const Location &loc) {")
+        self.emit("switch (type) {", 1)
+        for name in self.symbol_constructors:
+            self.emit("case symbolType::%s: {" % name, 2)
+            self.emit("symbol_t *symbol = "
+                "(symbol_t *)al.make_new<%s_t>();" % name, 3)
+            self.emit("symbol->type = symbolType::%s;" % name, 3)
+            self.emit("symbol->base.type = asrType::symbol;", 3)
+            self.emit("symbol->base.loc = loc;", 3)
+            self.emit("return symbol;", 3)
+            self.emit("}", 2)
+        self.emit("}", 1)
+        self.emit('throw LCompilersException("Unknown ASR symbol type");', 1)
+        self.emit("}")
+        self.emit("")
+        self.emit("static inline void fill_symbol_stub(symbol_t *destination,")
+        self.emit("        const symbol_t *source) {")
+        self.emit("LCOMPILERS_ASSERT(destination != nullptr);", 1)
+        self.emit("LCOMPILERS_ASSERT(source != nullptr);", 1)
+        self.emit("LCOMPILERS_ASSERT(destination->type == source->type);", 1)
+        self.emit("switch (source->type) {", 1)
+        for name in self.symbol_constructors:
+            self.emit("case symbolType::%s:" % name, 2)
+            self.emit("std::memcpy(destination, source, sizeof(%s_t));" % name, 3)
+            self.emit("return;", 3)
+        self.emit("}", 1)
+        self.emit('throw LCompilersException("Unknown ASR symbol type");', 1)
+        self.emit("}")
+        self.emit("")
+        self.emit("static inline bool symbol_type_from_name(")
+        self.emit("        const std::string &name, symbolType &type) {")
+        for name in self.symbol_constructors:
+            self.emit('if (name == "%s") {' % name, 1)
+            self.emit("type = symbolType::%s;" % name, 2)
+            self.emit("return true;", 2)
+            self.emit("}", 1)
+        self.emit("return false;", 1)
+        self.emit("}")
+        self.emit("")
+        self.emit("class SymbolTableParentFixer")
+        self.emit("    : public BaseVisitor<SymbolTableParentFixer> {")
+        self.emit("SymbolTable *current_symtab = nullptr;", 1)
+        self.emit("public:")
+        unit_field = self.ownership_constructors["TranslationUnit"]
+        self.emit("void visit_TranslationUnit(const TranslationUnit_t &x) {", 1)
+        self.emit("current_symtab = x.m_%s;" % unit_field, 2)
+        self.emit("current_symtab->parent = nullptr;", 2)
+        self.emit("current_symtab->asr_owner = (asr_t *)&x;", 2)
+        self.emit("for (auto &item : current_symtab->get_scope()) {", 2)
+        self.emit("this->visit_symbol(*item.second);", 3)
+        self.emit("}", 2)
+        self.emit("}", 1)
+        for name in self.symbol_constructors:
+            self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+            if name in self.ownership_constructors:
+                field = self.ownership_constructors[name]
+                self.emit("SymbolTable *parent = current_symtab;", 2)
+                self.emit("current_symtab = x.m_%s;" % field, 2)
+                self.emit("current_symtab->parent = parent;", 2)
+                self.emit("current_symtab->asr_owner = (asr_t *)&x;", 2)
+                self.emit("for (auto &item : current_symtab->get_scope()) {", 2)
+                self.emit("this->visit_symbol(*item.second);", 3)
+                self.emit("}", 2)
+                self.emit("current_symtab = parent;", 2)
+            else:
+                self.emit("(void)x;", 2)
+            self.emit("}", 1)
+        self.emit("};")
+        self.emit("")
+        self.emit("static inline void fix_symbol_table_parents(")
+        self.emit("        TranslationUnit_t &unit) {")
+        self.emit("SymbolTableParentFixer fixer;", 1)
+        self.emit("fixer.visit_TranslationUnit(unit);", 1)
+        self.emit("}")
+
+    def visitType(self, tp):
+        if tp.name in ["unit", "symbol"]:
+            self.visit(tp.value, tp.name)
+
+    def visitSum(self, sum, base):
+        assert not is_simple_sum(sum)
+        for constructor in sum.types:
+            if base == "symbol":
+                self.symbol_constructors.append(constructor.name)
+            owning = [
+                field.name for field in constructor.fields
+                if field.type == "symbol_table"
+                and field.name != "parent_symtab"
+            ]
+            if owning:
+                assert len(owning) == 1
+                self.ownership_constructors[constructor.name] = owning[0]
+
+
+# Constructors whose serialized (wire) format cannot be derived from their ASDL
+# declaration alone. Every deviation from the generic scheme belongs here, so
+# that SerializationVisitorVisitor and DeserializationVisitorVisitor stay free
+# of node specific knowledge. Recognized keys:
+#
+#   "order":  field order on the wire. It defaults to the ASDL declaration
+#             order, which is also the argument order of `make_<Node>_t()`;
+#             list a constructor here only when the two have to differ.
+#   "fields": maps a field name to the C++ statement emitted for it instead of
+#             the generic one, under the keys "write" and "read".
+#
+# RealConstant: a `real(16)` value does not fit into `double m_r`; m_r instead
+# packs a pointer to 16 separately allocated bytes holding the binary128
+# payload (see real_constant_pack_r16() in asr_utils.h). Writing that pointer
+# into a module file would leave a dangling pointer once the file is read back,
+# so the payload itself is serialized, and how wide it is depends on the kind
+# stored in `type`. `type` therefore has to precede `r` on the wire. The kind
+# dependent transfer itself lives in write_real()/read_real() in
+# serialization.cpp.
+serialization_overrides = {
+    "RealConstant": {
+        "order": ["type", "r"],
+        "fields": {
+            "r": {
+                "write": "self().write_real(x.m_r, x.m_type);",
+                "read": "double m_r = self().read_real(m_type);",
+            },
+        },
+    },
+    "ArrayConstant": {
+        "order": ["n_data", "type", "data", "storage_format"],
+        "fields": {
+            "data": {
+                "write": """ASR::ttype_t* element_type = x.m_type;
+        while (ASR::is_a<ASR::Allocatable_t>(*element_type) ||
+                ASR::is_a<ASR::Array_t>(*element_type)) {
+            if (ASR::is_a<ASR::Allocatable_t>(*element_type)) {
+                element_type = ASR::down_cast<ASR::Allocatable_t>(element_type)->m_type;
+            } else {
+                element_type = ASR::down_cast<ASR::Array_t>(element_type)->m_type;
+            }
+        }
+        bool pointer_backed_constant =
+            ASR::is_a<ASR::StructType_t>(*element_type) ||
+            ASR::is_a<ASR::CPtr_t>(*element_type);
+        self().write_bool(pointer_backed_constant);
+        if (pointer_backed_constant) {
+            int64_t n_exprs = x.m_n_data / sizeof(ASR::expr_t*);
+            self().write_int64(n_exprs);
+            ASR::expr_t** data = (ASR::expr_t**)x.m_data;
+            for (int64_t i = 0; i < n_exprs; i++) {
+                self().write_bool(data[i] != nullptr);
+                if (data[i] != nullptr) {
+                    self().visit_expr(*data[i]);
+                }
+            }
+        } else {
+            self().write_void(x.m_data, x.m_n_data);
+        }""",
+                "read": """void *m_data = nullptr;
+        bool pointer_backed_constant = self().read_bool();
+        if (pointer_backed_constant) {
+            int64_t n_exprs = self().read_int64();
+            Vec<ASR::expr_t*> data;
+            data.reserve(al, n_exprs);
+            for (int64_t i = 0; i < n_exprs; i++) {
+                ASR::expr_t* value = nullptr;
+                if (self().read_bool()) {
+                    value = ASR::down_cast<ASR::expr_t>(self().deserialize_expr());
+                }
+                data.push_back(al, value);
+            }
+            m_data = data.p;
+            m_n_data = n_exprs * sizeof(ASR::expr_t*);
+        } else {
+            m_data = self().read_void(m_n_data);
+        }""",
+            },
+        },
+    },
+}
+
+
+def serialization_fields(name, fields):
+    """Return `fields` in the order they appear on the wire."""
+    order = serialization_overrides.get(name, {}).get("order")
+    if order is None:
+        return fields
+    by_name = {f.name: f for f in fields}
+    assert sorted(order) == sorted(by_name), \
+        "serialization_overrides['%s']['order'] must list every field" % name
+    return [by_name[field_name] for field_name in order]
+
+
+def serialization_override(name, field_name, direction):
+    """C++ statement for a field, or None to emit the generic one.
+
+    `direction` is "write" for serialization and "read" for deserialization.
+    """
+    return serialization_overrides.get(name, {}) \
+        .get("fields", {}).get(field_name, {}).get(direction)
+
+
 class SerializationVisitorVisitor(ASDLVisitor):
 
     def visitModule(self, mod):
@@ -2321,12 +3114,12 @@ class SerializationVisitorVisitor(ASDLVisitor):
             self.emit(    'self().write_int64(x.base.base.loc.first);', 2)
             self.emit(    'self().write_int64(x.base.base.loc.last);', 2)
         self.used = False
-        for n, field in enumerate(fields):
+        for n, field in enumerate(serialization_fields(name, fields)):
             self.visitField(field, cons, name)
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
         self.emit("}", 1)
 
     def make_simple_sum_visitor(self, name, types):
@@ -2335,6 +3128,11 @@ class SerializationVisitorVisitor(ASDLVisitor):
         self.emit("}", 1)
 
     def visitField(self, field, cons, cons_name):
+        custom = serialization_override(cons_name, field.name, "write")
+        if custom is not None:
+            self.used = True
+            self.emit(custom, 2)
+            return
         if (field.type not in asdl.builtin_types and
             field.type not in self.data.simple_types):
             self.used = True
@@ -2543,7 +3341,7 @@ class DeserializationVisitorVisitor(ASDLVisitor):
     def visitProduct(self, prod, name):
         self.emit("%s_t deserialize_%s() {" % (name, name), 1)
         self.emit(  '%s_t x;' % (name), 2)
-        for field in prod.fields:
+        for field in serialization_fields(name, prod.fields):
             if field.seq:
                 assert not field.opt
                 assert field.type not in simple_sums
@@ -2573,6 +3371,8 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                     if field.type in products:
                         self.emit("v.push_back(al, self().deserialize_%s());" \
                              % (field.type), 4)
+                    elif field.type == "symbol":
+                        self.emit("v.push_back(al, self().read_symbol());", 4)
                     else:
                         self.emit("v.push_back(al, down_cast<%s_t>(self().deserialize_%s()));" % (field.type, field.type), 4)
                     self.emit('}', 3)
@@ -2590,6 +3390,8 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                         rhs = "self().read_cstring()"
                     elif field.type == "int":
                         rhs = "self().read_int64()"
+                    elif field.type == "bool":
+                        rhs = "self().read_bool()"
                     else:
                         print(field.type)
                         assert False
@@ -2617,9 +3419,17 @@ class DeserializationVisitorVisitor(ASDLVisitor):
         name = cons.name
         self.emit("%s_t* deserialize_%s() {" % (subs["mod"], name), 1)
         lines = []
-        args = ["al", "loc"]
-        for f in cons.fields:
+        # Maps a field name to the `make_<Node>_t()` arguments it contributes.
+        # Fields are read in wire order but passed in ASDL order, which are not
+        # necessarily the same (see serialization_overrides).
+        field_args = {}
+        for f in serialization_fields(name, cons.fields):
             #type_ = convert_type(f.type, f.seq, f.opt, self.mod.name.lower())
+            custom = serialization_override(name, f.name, "read")
+            if custom is not None:
+                lines.append(custom)
+                field_args[f.name] = ["m_%s" % f.name]
+                continue
             if f.seq:
                 seq = "size_t n_%s; // Sequence" % f.name
                 self.emit("%s" % seq, 2)
@@ -2662,8 +3472,7 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                     else:
                         print(f.type)
                         assert False
-                args.append("v_%s.p" % (f.name))
-                args.append("v_%s.n" % (f.name))
+                field_args[f.name] = ["v_%s.p" % (f.name), "v_%s.n" % (f.name)]
             else:
                 # if builtin or simple types, handle appropriately
                 if f.type in asdl.builtin_types:
@@ -2678,7 +3487,7 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("} else {")
                             lines.append("m_%s = nullptr;" % (f.name))
                             lines.append("}")
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     elif f.type == "string":
                         lines.append("char *m_%s;" % (f.name))
                         if f.opt:
@@ -2690,23 +3499,23 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("} else {")
                             lines.append("m_%s = nullptr;" % (f.name))
                             lines.append("}")
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     elif f.type == "int":
                         assert not f.opt
                         lines.append("int64_t m_%s = self().read_int64();" % (f.name))
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     elif f.type == "float":
                         assert not f.opt
                         lines.append("double m_%s = self().read_float64();" % (f.name))
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     elif f.type == "bool":
                         assert not f.opt
                         lines.append("bool m_%s = self().read_bool();" % (f.name))
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     elif f.type == "symbol_table":
                         assert not f.opt
                         # TODO: read the symbol table:
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                         lines.append("uint64_t m_%s_counter = self().read_int64();" % (f.name))
                         if f.name == "parent_symtab":
                             # If this fails, it means we are referencing a
@@ -2732,20 +3541,29 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("}")
                     elif f.type == "void":
                         lines.append("void *m_%s = self().read_void(m_n_data);" % (f.name))
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     elif f.type == "location":
                         lines.append("Location* m_%s;"% f.name)
                         lines.append("m_%s = al.make_new<Location>();"% f.name)
                         lines.append("m_%s->first = self().read_int64();"% f.name)
                         lines.append("m_%s->last = self().read_int64();"% f.name)
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     else:
                         print(f.type)
                         assert False
                 else:
                     if f.type in products:
-                        assert not f.opt
-                        lines.append("%s::%s_t m_%s = self().deserialize_%s();" % (subs["MOD"], f.type, f.name, f.type))
+                        if f.opt:
+                            lines.append("%s::%s_t *m_%s = nullptr;" %
+                                (subs["MOD"], f.type, f.name))
+                            lines.append("if (self().read_bool()) {")
+                            lines.append("    m_%s = al.make_new<%s::%s_t>();" %
+                                (f.name, subs["MOD"], f.type))
+                            lines.append("    *m_%s = self().deserialize_%s();" %
+                                (f.name, f.type))
+                            lines.append("}")
+                        else:
+                            lines.append("%s::%s_t m_%s = self().deserialize_%s();" % (subs["MOD"], f.type, f.name, f.type))
                     else:
                         if f.type in simple_sums:
                             assert not f.opt
@@ -2769,13 +3587,16 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                                 lines.append("} else {")
                                 lines.append("m_%s = nullptr;" % f.name)
                                 lines.append("}")
-                    args.append("m_%s" % (f.name))
+                    field_args[f.name] = ["m_%s" % (f.name)]
 
         self.emit(    'Location loc;', 2)
         self.emit(    'loc.first = self().read_int64() + offset;', 2)
         self.emit(    'loc.last = self().read_int64() + offset;', 2)
         for line in lines:
             self.emit(line, 2)
+        args = ["al", "loc"]
+        for f in cons.fields:
+            args.extend(field_args[f.name])
         self.emit(    'return %s::make_%s_t(%s);' % (subs["MOD"], name, ", ".join(args)), 2)
         self.emit("}", 1)
 
@@ -3048,6 +3869,8 @@ HEAD_VISITOR = r"""#pragma once
 
 // Generated by grammar/asdl_cpp.py
 
+#include <cstring>
+
 #include <libasr/alloc.h>
 #include <libasr/location.h>
 #include <libasr/colors.h>
@@ -3094,6 +3917,9 @@ asr_visitor_files = [
         ("serialization", SerializationVisitorVisitor),
         ("deserialization", DeserializationVisitorVisitor),
         ("pickle", PickleVisitorVisitor),
+        ("text", ASRTextSerializationVisitorVisitor),
+        ("text_deserialization", ASRTextDeserializationVisitorVisitor),
+        ("symbol", ASRSymbolHelperVisitor),
         ("json", JsonVisitorVisitor),
         ("lookup_name", DefaultLookupNameVisitor),
         ("tree", TreeVisitorVisitor),
@@ -3139,6 +3965,7 @@ def main(argv):
     else:
         subs["lcompiler"] = "lfortran"
     is_asr = (mod.name.upper() == "ASR")
+    generated_files = [Path(out_file)]
     fp = open(out_file, "w", encoding="utf-8")
     try:
         fp.write(HEAD % subs)
@@ -3156,6 +3983,7 @@ def main(argv):
             filename = "base"
             full_filename = asr_path.with_name(
                     f"{asr_path.stem}_{filename}_visitor{asr_path.suffix}")
+            generated_files.append(full_filename)
             with open(full_filename, "w", encoding="utf-8") as f:
                 f.write(HEAD_BASE_VISITOR % subs)
                 for Visitor in asr_base_visitor:
@@ -3167,6 +3995,7 @@ def main(argv):
             for filename, Visitor in asr_visitor_files:
                 full_filename = asr_path.with_name(
                         f"{asr_path.stem}_{filename}_visitor{asr_path.suffix}")
+                generated_files.append(full_filename)
                 with open(full_filename, "w", encoding="utf-8") as f:
                     f.write(HEAD_VISITOR % subs)
                     Visitor(f, data).visit(mod)

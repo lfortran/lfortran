@@ -2,12 +2,11 @@
     [(Program
         do4
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -38,8 +37,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             j
             0
@@ -57,10 +56,6 @@
                 0
                 j
                 (+ j i)
-                ()
-            )
-            (Continue
-                15
                 ()
             )]
             ()
@@ -88,10 +83,6 @@
                 0
                 j
                 (+ j i)
-                ()
-            )
-            (Continue
-                20
                 ()
             )]
             ()
@@ -132,20 +123,12 @@
                 (Continue
                     31
                     ()
-                )
-                (Continue
-                    35
-                    ()
                 )]
                 ()
                 ()
             )
             (Continue
                 33
-                ()
-            )
-            (Continue
-                30
                 ()
             )]
             ()

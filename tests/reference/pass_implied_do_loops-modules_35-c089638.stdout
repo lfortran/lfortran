@@ -34,7 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             __1__libasr_index_1:
                                                 (Variable
@@ -58,7 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             __libasr__created__var__0__array_constructor_:
                                                 (Variable
@@ -75,6 +75,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -89,7 +90,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             __libasr__created__var__1__array_constructor_:
                                                 (Variable
@@ -106,6 +107,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -120,7 +122,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             place:
                                                 (Variable
@@ -144,7 +146,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             strings:
                                                 (Variable
@@ -161,6 +163,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -175,7 +178,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             strings_a:
                                                 (Variable
@@ -192,6 +195,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -206,7 +210,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     get_args_fixed_length_a_array
@@ -217,6 +221,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         ()
@@ -230,6 +235,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 strings)]
@@ -237,6 +243,7 @@
                                         [((Var 3 strings_a)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
+                                        []
                                         (IntegerConstant 5 (Integer 4) Decimal)
                                         ()
                                         (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString))]
@@ -312,6 +319,7 @@
                                                 [((Var 3 __libasr__created__var__0__array_constructor_)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 0 (Integer 4) Decimal))]
+                                                []
                                                 (StringLen
                                                     (ArrayItem
                                                         (Var 3 strings)
@@ -376,6 +384,7 @@
                                             [((Var 3 __libasr__created__var__1__array_constructor_)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 0 (Integer 4) Decimal))]
+                                            []
                                             (StringLen
                                                 (ArrayItem
                                                     (Var 3 strings)
@@ -436,6 +445,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             modules_35:
                 (Program
@@ -467,6 +477,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -481,7 +492,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     modules_35
@@ -490,6 +501,7 @@
                         [((Var 4 string)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 2 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -510,7 +522,9 @@
                         ()
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

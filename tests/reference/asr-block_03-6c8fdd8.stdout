@@ -29,7 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             loop:
                                 (Block
@@ -58,7 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     loop
@@ -129,6 +129,7 @@
                         -1
                         2 loop
                     )]
+                    ()
                 ),
             square:
                 (Function
@@ -157,7 +158,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             result:
                                 (Variable
@@ -181,7 +182,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     square
@@ -198,6 +199,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 3 b)]
@@ -247,4 +249,5 @@
                 )
         })
     []
+    ()
 )

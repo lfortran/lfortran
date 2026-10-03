@@ -142,6 +142,7 @@
                     [string_19_stdlib_strings
                     string_19_stdlib_string_type]
                     []
+                    ()
                 ),
             string_19_stdlib_string_type:
                 (Module
@@ -190,7 +191,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -221,7 +222,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     char_string
@@ -263,6 +264,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [len_string]
                                     [(Var 5 string)]
@@ -307,7 +309,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -338,7 +340,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     len_string
@@ -362,6 +364,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 string)]
@@ -401,7 +404,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     string_type
@@ -420,6 +423,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
@@ -432,6 +436,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             string_19_stdlib_strings:
                 (Module
@@ -481,6 +486,7 @@
                                                             ()
                                                         ))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -494,7 +500,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -518,7 +524,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     compute_lps
@@ -537,6 +543,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         Source
                                         Implementation
@@ -548,6 +555,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 string)]
@@ -585,7 +593,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -609,7 +617,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     compute_lps_use
@@ -626,6 +634,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [compute_lps]
                                     [(Var 8 string)]
@@ -645,6 +654,7 @@
                                                         ()
                                                     ))]
                                                     PointerArray
+                                                    Global
                                                 )
                                                 ()
                                                 ()
@@ -699,7 +709,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             len_string:
                                                 (ExternalSymbol
@@ -740,7 +750,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     compute_lps_use1
@@ -764,6 +774,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 9 string)]
@@ -845,7 +856,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -873,7 +884,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -897,7 +908,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     padl_char_default
@@ -923,6 +934,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [padl_char_pad_with]
                                     [(Var 12 string)
@@ -990,7 +1002,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             pad_with:
                                                 (Variable
@@ -1014,7 +1026,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -1050,7 +1062,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -1074,7 +1086,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             string_length:
                                                 (Variable
@@ -1098,7 +1110,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     padl_char_pad_with
@@ -1136,6 +1148,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 string)
@@ -1195,7 +1208,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -1226,7 +1239,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -1257,7 +1270,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     padl_string_default
@@ -1289,6 +1302,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [padl_char_pad_with]
                                     [(Var 10 string)
@@ -1416,7 +1430,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             pad_with:
                                                 (Variable
@@ -1440,7 +1454,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -1471,7 +1485,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -1502,7 +1516,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     padl_string_pad_with
@@ -1535,6 +1549,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [padl_char_pad_with]
                                     [(Var 11 string)
@@ -1631,7 +1646,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

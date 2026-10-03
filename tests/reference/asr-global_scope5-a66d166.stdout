@@ -24,7 +24,7 @@
                     .false.
                     NotMethod
                     ()
-                    0
+                    []
                 )
         })
     [(Assignment
@@ -61,4 +61,5 @@
         (Integer 4)
         ()
     )]
+    ()
 )

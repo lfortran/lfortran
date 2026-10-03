@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            __lcompilers_created__nested_context__outer_:
+            __lcompilers_created__nested_context__nested_call_filter_01__outer_:
                 (Module
                     (SymbolTable
                         7
@@ -29,15 +29,16 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
-                    __lcompilers_created__nested_context__outer_
+                    __lcompilers_created__nested_context__nested_call_filter_01__outer_
                     ()
                     []
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             nested_call_filter_01:
                 (Program
@@ -81,14 +82,14 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             a1:
                                                 (ExternalSymbol
                                                     5
                                                     a1
                                                     7 a
-                                                    __lcompilers_created__nested_context__outer_
+                                                    __lcompilers_created__nested_context__nested_call_filter_01__outer_
                                                     []
                                                     a
                                                     Public
@@ -98,7 +99,7 @@
                                                     5
                                                     a2
                                                     7 a
-                                                    __lcompilers_created__nested_context__outer_
+                                                    __lcompilers_created__nested_context__nested_call_filter_01__outer_
                                                     []
                                                     a
                                                     Public
@@ -108,7 +109,7 @@
                                                     5
                                                     a_nested_ctx
                                                     7 a
-                                                    __lcompilers_created__nested_context__outer_
+                                                    __lcompilers_created__nested_context__nested_call_filter_01__outer_
                                                     []
                                                     a
                                                     Public
@@ -123,7 +124,7 @@
                                                                     6
                                                                     a
                                                                     7 a
-                                                                    __lcompilers_created__nested_context__outer_
+                                                                    __lcompilers_created__nested_context__nested_call_filter_01__outer_
                                                                     []
                                                                     a
                                                                     Public
@@ -143,6 +144,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     []
@@ -180,6 +182,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -234,6 +237,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             nested_call_filter_mod:
                 (Module
@@ -267,7 +271,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     modproc
@@ -284,6 +288,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 y)]
@@ -313,7 +318,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

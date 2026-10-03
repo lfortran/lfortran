@@ -12,8 +12,8 @@
                                     5
                                     1_fpm_run_settings_bool
                                     3 bool
-                                    fpm_run_settings
-                                    []
+                                    fpm_command_line
+                                    [fpm_run_settings]
                                     bool
                                     Public
                                 ),
@@ -22,8 +22,8 @@
                                     5
                                     1_fpm_run_settings_float
                                     3 float
-                                    fpm_run_settings
-                                    []
+                                    fpm_command_line
+                                    [fpm_run_settings]
                                     float
                                     Public
                                 ),
@@ -32,8 +32,8 @@
                                     5
                                     1_fpm_run_settings_int
                                     3 int
-                                    fpm_run_settings
-                                    []
+                                    fpm_command_line
+                                    [fpm_run_settings]
                                     int
                                     Public
                                 ),
@@ -88,13 +88,14 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     derived_types_16
                     [fpm_command_line]
                     [(Allocate
                         [((Var 5 settings)
+                        []
                         []
                         ()
                         ()
@@ -188,6 +189,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             fpm_command_line:
                 (Module
@@ -221,7 +223,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             float:
                                                 (Variable
@@ -245,7 +247,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             int:
                                                 (Variable
@@ -269,7 +271,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     fpm_run_settings
@@ -288,6 +290,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -331,7 +334,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     get_command_line_settings
@@ -357,6 +360,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 cmd_settings)]
@@ -400,7 +404,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

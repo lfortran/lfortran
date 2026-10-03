@@ -26,6 +26,7 @@
                             (String 1 (IntegerConstant 25 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 ),
             tomlf_de_character:
                 (Module
@@ -66,7 +67,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -90,7 +91,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     next_token
@@ -115,6 +116,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 de)
@@ -155,7 +157,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             next_token:
                                                 (StructMethodDeclaration
@@ -183,6 +185,7 @@
                                     []
                                     Source
                                     Private
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -227,6 +230,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_de_tokenizer_25:
                 (Module
@@ -272,7 +276,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -296,7 +300,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     next_token
@@ -326,6 +330,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 12 de)
@@ -347,8 +352,8 @@
                                                     13
                                                     1_toml_tokenizer_current
                                                     10 current
-                                                    toml_tokenizer
-                                                    []
+                                                    tomlf_de_tokenizer_25
+                                                    [toml_tokenizer]
                                                     current
                                                     Public
                                                 ),
@@ -386,7 +391,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             table:
                                                 (Variable
@@ -417,7 +422,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     parse_select
@@ -446,6 +451,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 de)]
@@ -493,7 +499,7 @@
                                                         .false.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -507,7 +513,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_table
@@ -522,6 +528,7 @@
                                     []
                                     Source
                                     Private
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -583,7 +590,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             next_token:
                                                 (StructMethodDeclaration
@@ -618,6 +625,7 @@
                                     Private
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -644,6 +652,7 @@
                                     Private
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     8 toml_tokenizer
@@ -656,7 +665,9 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

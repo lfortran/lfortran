@@ -1,0 +1,24 @@
+program backspace_iomsg_01
+    implicit none
+    integer :: ios
+    integer, parameter :: u = 10
+    character(len=128) :: msg = ""
+
+    open(unit=u, file="backspace_iomsg_01.txt", status="replace", iostat=ios)
+    if (ios /= 0) error stop
+
+    write(u, *) 1
+
+    backspace(unit=u, iostat=ios, iomsg=msg)
+    
+    if (ios /= 0) error stop
+    if (len_trim(msg) /= 0) error stop
+
+    close(unit=u, status="delete")
+
+    backspace(unit=99, iostat=ios, iomsg=msg)
+
+    if (ios == 0) error stop
+    if (len_trim(msg) == 0) error stop
+
+end program

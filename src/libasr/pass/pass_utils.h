@@ -12,6 +12,119 @@ namespace LCompilers {
 
     namespace PassUtils {
 
+    // True when `sym` is a derived type or procedure that only a scope
+    // inside a program or a procedure can name.
+    static inline bool only_locally_visible(ASR::symbol_t* sym) {
+        if( sym == nullptr ) return false;
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if( sym == nullptr ) return false;
+        if( !ASR::is_a<ASR::Struct_t>(*sym) &&
+            !ASR::is_a<ASR::Function_t>(*sym) ) {
+            return false;
+        }
+        if( ASR::is_a<ASR::Struct_t>(*sym) ) {
+            ASR::ttype_t* signature = ASR::down_cast<ASR::Struct_t>(
+                sym)->m_struct_signature;
+            if( signature != nullptr &&
+                ASR::is_a<ASR::StructType_t>(*signature) &&
+                ASR::down_cast<ASR::StructType_t>(
+                    signature)->m_is_unlimited_polymorphic ) {
+                return false;
+            }
+        }
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(sym);
+        return owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner);
+    }
+
+    // The same decision for a hoisted expression: if anything it names is
+    // only visible locally, the helper cannot live in the global scope.
+    class LocalSymbolFinder: public ASR::BaseWalkVisitor<LocalSymbolFinder> {
+        public:
+            bool found = false;
+            void visit_Var(const ASR::Var_t& x) {
+                if( only_locally_visible(x.m_v) ) found = true;
+                ASR::symbol_t* v = ASRUtils::symbol_get_past_external(x.m_v);
+                if( v != nullptr && ASR::is_a<ASR::Variable_t>(*v) &&
+                    only_locally_visible(ASR::down_cast<ASR::Variable_t>(
+                        v)->m_type_declaration) ) {
+                    found = true;
+                }
+            }
+    };
+
+    static inline SymbolTable* instantiation_scope_for_expr(
+            SymbolTable* global_scope, SymbolTable* caller_scope,
+            ASR::expr_t* expr) {
+        if( caller_scope == nullptr || expr == nullptr ) return global_scope;
+        LocalSymbolFinder finder;
+        finder.visit_expr(*expr);
+        return finder.found ? caller_scope : global_scope;
+    }
+
+    // An instantiated intrinsic helper is shared, so it belongs in the global
+    // scope -- but only if everything it will name is visible from there. An
+    // argument whose derived type or procedure is contained in a program or a
+    // procedure is not, and no ExternalSymbol can reach it either, so the
+    // helper has to be built where the caller stands instead.
+    static inline SymbolTable* instantiation_scope(SymbolTable* global_scope,
+            SymbolTable* caller_scope, Vec<ASR::call_arg_t>& args) {
+        if( caller_scope == nullptr ) return global_scope;
+        for( size_t i = 0; i < args.size(); i++ ) {
+            if( args[i].m_value == nullptr ) continue;
+            std::vector<ASR::symbol_t*> named;
+            // `get_struct_sym_from_struct_expr` only answers for an expression
+            // of derived type, and raises otherwise, so ask it nothing else.
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(args[i].m_value);
+            if( arg_type != nullptr &&
+                (ASRUtils::is_struct(*arg_type) || ASRUtils::is_class_type(
+                    ASRUtils::extract_type(arg_type))) ) {
+                named.push_back(ASRUtils::get_struct_sym_from_struct_expr(
+                    args[i].m_value));
+            }
+            if( ASR::is_a<ASR::Var_t>(*args[i].m_value) ) {
+                ASR::symbol_t* v = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(args[i].m_value)->m_v);
+                if( v != nullptr && ASR::is_a<ASR::Function_t>(*v) ) {
+                    named.push_back(v);
+                } else if( v != nullptr && ASR::is_a<ASR::Variable_t>(*v) ) {
+                    named.push_back(ASR::down_cast<ASR::Variable_t>(
+                        v)->m_type_declaration);
+                }
+            }
+            for( ASR::symbol_t* sym: named ) {
+                if( sym == nullptr ) continue;
+                sym = ASRUtils::symbol_get_past_external(sym);
+                if( sym == nullptr ) continue;
+                // Only a derived type or a procedure is named by the helper
+                // it builds. `get_struct_sym_from_struct_expr` answers for
+                // any expression, so anything else it hands back says
+                // nothing about where the helper can live.
+                if( !ASR::is_a<ASR::Struct_t>(*sym) &&
+                    !ASR::is_a<ASR::Function_t>(*sym) ) {
+                    continue;
+                }
+                // An unlimited polymorphic type is synthesised per scope, so
+                // wherever the helper goes it can have its own.
+                if( ASR::is_a<ASR::Struct_t>(*sym) ) {
+                    ASR::ttype_t* signature = ASR::down_cast<ASR::Struct_t>(
+                        sym)->m_struct_signature;
+                    if( signature != nullptr &&
+                        ASR::is_a<ASR::StructType_t>(*signature) &&
+                        ASR::down_cast<ASR::StructType_t>(
+                            signature)->m_is_unlimited_polymorphic ) {
+                        continue;
+                    }
+                }
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(sym);
+                if( owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner) ) {
+                    return caller_scope;
+                }
+            }
+        }
+        return global_scope;
+    }
+
+
         ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
             ASR::expr_t* a_target, ASR::expr_t* a_value,
             ASR::stmt_t* a_overloaded, bool a_realloc_lhs);
@@ -125,6 +238,11 @@ namespace LCompilers {
         ASR::stmt_t* create_do_loop_helper_cshift(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array_var,
             ASR::expr_t* res_var, ASR::expr_t* array, ASR::expr_t* res, int curr_idx,
+            int shifting_dim = 0);
+
+        ASR::stmt_t* create_do_loop_helper_eoshift_fill(Allocator &al, const Location &loc,
+            std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* res_var,
+            ASR::expr_t* boundary, ASR::expr_t* array, ASR::expr_t* res, int curr_idx,
             int shifting_dim = 0);
 
         ASR::stmt_t* create_do_loop_helper_count(Allocator &al, const Location &loc,
@@ -255,6 +373,7 @@ namespace LCompilers {
                     alloc_arg.m_a = result_var_; alloc_arg.m_len_expr = nullptr;
                     alloc_arg.m_type = nullptr; alloc_arg.m_dims = res_arr->m_dims;
                     alloc_arg.n_dims = res_arr->n_dims; alloc_arg.m_sym_subclass = nullptr;
+                    alloc_arg.m_codims = nullptr; alloc_arg.n_codims = 0;
                     alloc_args.push_back(al, alloc_arg);
 
                     ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al,
@@ -676,6 +795,24 @@ namespace LCompilers {
         };
 
     namespace ReplacerUtils {
+        /*
+        F2018 7.5.10: if the data source `source` of an allocatable
+        component is an unallocated allocatable object, the component
+        of the constructed value is unallocated. When `source` is an
+        allocatable variable or component, returns
+
+            if (allocated(source)) then
+                assign ! component = source
+            else
+                deallocate(component) ! only if allocated
+            end if
+
+        otherwise returns `assign` unchanged.
+        */
+        ASR::stmt_t* guard_allocatable_component_assignment(Allocator& al,
+            const Location& loc, ASR::expr_t* source, ASR::expr_t* component,
+            ASR::stmt_t* assign);
+
         template <typename T>
         void replace_StructConstructor(ASR::StructConstructor_t* x,
             T* replacer, bool inside_symtab, bool& remove_original_statement,
@@ -721,33 +858,62 @@ namespace LCompilers {
             }
             LCOMPILERS_ASSERT(constructor_arg_syms.size() == x->n_args);
 
+            // A reference to `member` of `base`. `base` is the object this
+            // constructor writes into, or, for a nested constructor argument,
+            // the object that encloses it.
+            auto member_ref = [&](ASR::expr_t* base, ASR::symbol_t* member) {
+                ASR::symbol_t* base_sym = nullptr;
+                if (ASR::is_a<ASR::Var_t>(*base)) {
+                    base_sym = ASR::down_cast<ASR::Var_t>(base)->m_v;
+                }
+                return ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(
+                    replacer->al, x->base.base.loc, (ASR::asr_t*) base,
+                    base_sym, member, replacer->current_scope));
+            };
+
+            // F2018 7.5.10: a component with no corresponding
+            // component-data-source has, in the value the constructor builds,
+            // the status of an unallocated allocatable. The target of an
+            // assignment takes that value, so such a component must not keep
+            // whatever the target held before. The components are collected
+            // here and released after the ones this constructor gives a value
+            // to, so an argument can still read the target's previous value.
+            // That holds within one constructor; an argument that is itself a
+            // constructor releases its own omitted components when it is
+            // lowered, which is before the arguments after it are assigned.
+            Vec<ASR::expr_t*> omitted_components;
+            omitted_components.reserve(replacer->al, x->n_args);
+
             for( size_t i = 0; i < x->n_args; i++ ) {
+                ASR::symbol_t* member = constructor_arg_syms[i];
                 if( x->m_args[i].m_value == nullptr ) {
+                    // A variable's initializer is stored, not assigned, so
+                    // there is no previous value to reset there. A component
+                    // that is not allocatable reaches this lowering with a
+                    // value: the frontend requires a data source or a default
+                    // for it (a pointer component's `=> null()` counts) and
+                    // fills the default in. See #13304 — a derived-type
+                    // component whose own components are all allocatable would
+                    // need this guard revisited.
+                    if( inside_symtab || !ASRUtils::is_allocatable(
+                            ASRUtils::symbol_type(member)) ) {
+                        continue ;
+                    }
+                    omitted_components.push_back(replacer->al,
+                        member_ref(replacer->result_var, member));
                     continue ;
                 }
-                ASR::symbol_t* member = constructor_arg_syms[i];
                 if( ASR::is_a<ASR::StructConstructor_t>(*x->m_args[i].m_value) ) {
                     ASR::expr_t* result_var_copy = replacer->result_var;
-                    ASR::symbol_t *v = nullptr;
-                    if (ASR::is_a<ASR::Var_t>(*result_var_copy)) {
-                        v = ASR::down_cast<ASR::Var_t>(result_var_copy)->m_v;
-                    }
-                    replacer->result_var = ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(replacer->al,
-                                                x->base.base.loc, (ASR::asr_t*) result_var_copy, v,
-                                                member, replacer->current_scope));
+                    replacer->result_var = member_ref(result_var_copy, member);
                     ASR::expr_t** current_expr_copy = replacer->current_expr;
                     replacer->current_expr = &(x->m_args[i].m_value);
                     replacer->replace_expr(x->m_args[i].m_value);
                     replacer->current_expr = current_expr_copy;
                     replacer->result_var = result_var_copy;
                 } else {
-                    ASR::symbol_t *v = nullptr;
-                    if (ASR::is_a<ASR::Var_t>(*replacer->result_var)) {
-                        v = ASR::down_cast<ASR::Var_t>(replacer->result_var)->m_v;
-                    }
-                    ASR::expr_t* derived_ref = ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(replacer->al,
-                                                    x->base.base.loc, (ASR::asr_t*) replacer->result_var, v,
-                                                    member, replacer->current_scope));
+                    ASR::expr_t* derived_ref = member_ref(
+                        replacer->result_var, member);
                     ASR::expr_t* x_m_args_i = x->m_args[i].m_value;
                     if( perform_cast ) {
                         LCOMPILERS_ASSERT(casted_type != nullptr);
@@ -759,14 +925,26 @@ namespace LCompilers {
                         assign = ASRUtils::STMT(ASRUtils::make_Associate_t_util(replacer->al,
                                                     x->base.base.loc, derived_ref, x_m_args_i));
                     } else {
-                        bool member_realloc = realloc_lhs ||
+                        bool member_is_allocatable =
                             ASRUtils::is_allocatable(ASRUtils::expr_type(derived_ref));
+                        bool member_realloc = realloc_lhs || member_is_allocatable;
                         assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
                                                     x->base.base.loc, derived_ref,
                                                     x_m_args_i, nullptr, member_realloc, false));
+                        if( member_is_allocatable ) {
+                            assign = guard_allocatable_component_assignment(
+                                replacer->al, x->base.base.loc,
+                                x->m_args[i].m_value, derived_ref, assign);
+                        }
                     }
                     result_vec->push_back(replacer->al, assign);
                 }
+            }
+            if( omitted_components.size() > 0 ) {
+                result_vec->push_back(replacer->al, ASRUtils::STMT(
+                    ASR::make_ImplicitDeallocate_t(replacer->al,
+                        x->base.base.loc, omitted_components.p,
+                        omitted_components.size())));
             }
             replacer->result_var = nullptr;
         }

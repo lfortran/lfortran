@@ -27,6 +27,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -41,7 +42,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     scaled_data_structure
@@ -52,6 +53,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         []
@@ -63,6 +65,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -77,6 +80,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             nullify_04:
                 (Program
@@ -88,8 +92,8 @@
                                     4
                                     1_scaled_data_structure_one_d_real_pointer
                                     3 one_d_real_pointer
-                                    scaled_data_structure
-                                    []
+                                    module_nullify_04
+                                    [scaled_data_structure]
                                     one_d_real_pointer
                                     Public
                                 ),
@@ -109,6 +113,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         []
@@ -127,7 +132,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             s2:
                                 (Variable
@@ -145,6 +150,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         []
@@ -163,7 +169,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             scaled_data_structure:
                                 (ExternalSymbol
@@ -188,6 +194,7 @@
                                     [(()
                                     ())]
                                     DescriptorArray
+                                    Global
                                 )
                             )
                             ()
@@ -203,12 +210,15 @@
                                     [(()
                                     ())]
                                     DescriptorArray
+                                    Global
                                 )
                             )
                             ()
                         )]
                     )]
+                    ()
                 )
         })
     []
+    ()
 )
