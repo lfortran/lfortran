@@ -427,7 +427,7 @@ jobs:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment.yml
           create-args: >-
-            bison=3.4 clang=21
+            bison=3.4 clang=21 llvm-tools=21
       - name: Build the compatibility backend and runtime archive tool
         shell: bash -e -l {0}
         run: |
