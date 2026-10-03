@@ -2089,3 +2089,16 @@ subroutine parameter_nonconstant_init()
     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
     print *, pnc_y1, pnc_y2
 end subroutine
+
+subroutine intent_list_assignment_error(x, y)
+    implicit none
+    integer :: x, y
+    intent(in) :: x, y
+    y = 5  ! {Error} Cannot assign to an intent(in) variable `y`
+end subroutine intent_list_assignment_error
+
+subroutine intent_list_non_dummy_error(x)
+    implicit none
+    integer :: x, y
+    intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
+end subroutine intent_list_non_dummy_error
