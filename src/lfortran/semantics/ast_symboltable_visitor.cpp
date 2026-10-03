@@ -933,6 +933,7 @@ public:
         
         simd_variables.clear();
         bool is_global_save_enabled_copy = is_global_save_enabled;
+        std::set<std::string> explicit_save_symbols_copy = explicit_save_symbols;
         check_if_global_save_is_enabled( x );
         in_program = true;
         for (size_t i=0; i<x.n_items; i++) {
@@ -1107,6 +1108,7 @@ public:
 
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
+        explicit_save_symbols = explicit_save_symbols_copy;
     }
 
     bool subroutine_contains_entry_function(std::string subroutine_name, AST::decl_stmt_t** body, size_t n_body) {
@@ -1920,12 +1922,16 @@ public:
         if (subroutine_has_alternate_returns) {
             current_procedure_args.push_back("__lfortran_alt_ret");
         }
+        // Restored on exit: the enclosing procedure (the host of an internal
+        // procedure or of an interface body) keeps its own ABI.
+        ASR::abiType current_procedure_abi_type_copy = current_procedure_abi_type;
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
         extract_bind(x, current_procedure_abi_type, bindc_name, diag);
 
         // iterate over declarations and check if global save is present
         bool is_global_save_enabled_copy = is_global_save_enabled;
+        std::set<std::string> explicit_save_symbols_copy = explicit_save_symbols;
         check_if_global_save_is_enabled( x );
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
@@ -2210,7 +2216,7 @@ public:
         if (existing_sym_check) {
             existing_sym_check = ASRUtils::symbol_get_past_external(existing_sym_check);
         }
-        if ( interface_name == sym_name || generic_procedures.find(sym_name) != generic_procedures.end() ||
+        if ( interface_name == sym_name || is_pending_generic_procedure(sym_name, parent_scope, false) ||
              (existing_sym_check && ASR::is_a<ASR::GenericProcedure_t>(*existing_sym_check)) ) {
             sym_name = sym_name + "~genericprocedure";
         }
@@ -2315,7 +2321,7 @@ public:
            in nested functions, and also in callback.f90 test, but it may not
            matter since we would have already checked the intent */
         current_procedure_args.clear();
-        current_procedure_abi_type = ASR::abiType::Source;
+        current_procedure_abi_type = current_procedure_abi_type_copy;
 
         // print_implicit_dictionary(implicit_dictionary);
         // get hash of the function and add it to the implicit_mapping
@@ -2332,6 +2338,7 @@ public:
         is_template = is_template_copy;
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
+        explicit_save_symbols = explicit_save_symbols_copy;
         // A templated subroutine is complete; `parent_scope` is the Template
         // built for it. Checked last, once the enclosing context has been
         // restored, so that an abort here leaves the visitor in the same state
@@ -2528,13 +2535,17 @@ public:
             current_procedure_args.push_back(to_lower(arg));
         }
 
-        // Determine the ABI (Source or BindC for now)
+        // Determine the ABI (Source or BindC for now). Restored on exit: the
+        // enclosing procedure (the host of an internal procedure or of an
+        // interface body) keeps its own ABI.
+        ASR::abiType current_procedure_abi_type_copy = current_procedure_abi_type;
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
         extract_bind(x, current_procedure_abi_type, bindc_name, diag);
 
         // iterate over declarations and check if global save is present
         bool is_global_save_enabled_copy = is_global_save_enabled;
+        std::set<std::string> explicit_save_symbols_copy = explicit_save_symbols;
         check_if_global_save_is_enabled( x );
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
@@ -2980,7 +2991,7 @@ public:
         if (existing_sym_check) {
             existing_sym_check = ASRUtils::symbol_get_past_external(existing_sym_check);
         }
-        if (generic_procedures.find(sym_name) != generic_procedures.end()
+        if (is_pending_generic_procedure(sym_name, parent_scope, false)
             || interface_name == to_lower(sym_name) ||
             (existing_sym_check && ASR::is_a<ASR::GenericProcedure_t>(*existing_sym_check))) {
             // This specific procedure shares its generic interface's name, so
@@ -3176,7 +3187,7 @@ public:
             current_scope = parent_scope;
         }
         current_procedure_args.clear();
-        current_procedure_abi_type = ASR::abiType::Source;
+        current_procedure_abi_type = current_procedure_abi_type_copy;
         current_symbol = -1;
         // print_implicit_dictionary(implicit_dictionary);
         // get hash of the function and add it to the implicit_mapping
@@ -3191,6 +3202,7 @@ public:
         in_Subroutine = false;
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
+        explicit_save_symbols = explicit_save_symbols_copy;
         // A templated function is complete; `parent_scope` is the Template
         // built for it. Checked last, once the enclosing context has been
         // restored, so that an abort here leaves the visitor in the same state
@@ -4099,11 +4111,9 @@ public:
             interface_name = generic_name;
             std::vector<std::pair<std::string, Location>> proc_names;
             fill_interface_proc_names_with_loc(x, proc_names);
-            if( generic_procedures.find(generic_name) != generic_procedures.end() ) {
-                generic_procedures[generic_name].insert(generic_procedures[generic_name].end(),
-                    proc_names.begin(), proc_names.end());
-            } else {
-                generic_procedures[generic_name] = proc_names;
+            std::vector<GenericSpecific> &specifics = generic_procedures[generic_name];
+            for (auto &proc_name : proc_names) {
+                specifics.push_back({proc_name.first, proc_name.second, current_scope});
             }
             interface_name.clear();
         } else if (AST::is_a<AST::InterfaceHeader_t>(*x.m_header) ||
@@ -4516,36 +4526,42 @@ public:
             symbols.push_back(al, x);
         }
         LCOMPILERS_ASSERT(strlen(generic_name) > 0);
-        // Check if the operator is already imported into the scope. If yes, include it's procedures
-        // into the current `CustomOperator` symbol that we overwrite with.
-        if (current_scope->get_symbol(generic_name) != nullptr) {
-            ASR::symbol_t* existing = current_scope->get_symbol(generic_name);
-            ASR::CustomOperator_t* cop = nullptr;
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*existing)) {
-                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(existing);
-                if (ASR::is_a<ASR::CustomOperator_t>(*sym)) {
-                    cop = ASR::down_cast<ASR::CustomOperator_t>(sym);
-                }
-            } else if (ASR::is_a<ASR::CustomOperator_t>(*existing)) {
-                cop = ASR::down_cast<ASR::CustomOperator_t>(existing);
-            }
-            if (cop != nullptr) {
-                for (size_t i = 0; i < cop->n_procs; i++) {
-                    std::string proc_name = std::string(ASRUtils::symbol_name(cop->m_procs[i])) + "@" + generic_name;
-                    ASR::symbol_t* proc_sym = current_scope->resolve_symbol(proc_name);
-                    if (proc_sym == nullptr) {
-                        proc_sym = current_scope->resolve_symbol(
-                            ASRUtils::symbol_name(cop->m_procs[i]));
-                    }
-                    if (proc_sym != nullptr) {
-                        symbols.push_back(al, proc_sym);
-                    }
-                }
-            }
-        }
+        append_accessible_custom_operator_procs(
+            current_scope->get_symbol(generic_name), generic_name, symbols);
         ASR::asr_t *v = ASR::make_CustomOperator_t(al, op_loc, current_scope,
                             generic_name, symbols.p, symbols.size(), access);
         current_scope->add_or_overwrite_symbol(new_operator_name, ASR::down_cast<ASR::symbol_t>(v));
+    }
+
+    // If the operator `existing` is already accessible in the scope, include its procedures
+    // into the `CustomOperator` symbol that we overwrite it with.
+    void append_accessible_custom_operator_procs(ASR::symbol_t *existing,
+            const std::string &generic_name, Vec<ASR::symbol_t*> &symbols) {
+        if (existing == nullptr) {
+            return;
+        }
+        ASR::CustomOperator_t* cop = nullptr;
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*existing)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(existing);
+            if (ASR::is_a<ASR::CustomOperator_t>(*sym)) {
+                cop = ASR::down_cast<ASR::CustomOperator_t>(sym);
+            }
+        } else if (ASR::is_a<ASR::CustomOperator_t>(*existing)) {
+            cop = ASR::down_cast<ASR::CustomOperator_t>(existing);
+        }
+        if (cop != nullptr) {
+            for (size_t i = 0; i < cop->n_procs; i++) {
+                std::string proc_name = std::string(ASRUtils::symbol_name(cop->m_procs[i])) + "@" + generic_name;
+                ASR::symbol_t* proc_sym = current_scope->resolve_symbol(proc_name);
+                if (proc_sym == nullptr) {
+                    proc_sym = current_scope->resolve_symbol(
+                        ASRUtils::symbol_name(cop->m_procs[i]));
+                }
+                if (proc_sym != nullptr) {
+                    symbols.push_back(al, proc_sym);
+                }
+            }
+        }
     }
 
     void add_overloaded_procedures() {
@@ -4657,8 +4673,35 @@ public:
         assgn_proc_names_locations.clear();
     }
 
+    // Whether `outer` is `scope` or one of its enclosing scopes.
+    static bool is_enclosing_scope(SymbolTable *outer, SymbolTable *scope) {
+        for (SymbolTable *t = scope; t != nullptr; t = t->parent) {
+            if (t == outer) return true;
+        }
+        return false;
+    }
+
     void add_generic_procedures() {
+        // Interface blocks of the same name in different scopes declare
+        // different generic interfaces: build one in each of those scopes.
+        std::vector<std::pair<std::string, std::vector<GenericSpecific>>> generics;
         for (auto &proc : generic_procedures) {
+            for (auto &specific : proc.second) {
+                auto it = std::find_if(generics.begin(), generics.end(),
+                    [&](const std::pair<std::string, std::vector<GenericSpecific>> &g) {
+                        return g.first == proc.first
+                            && g.second[0].scope == specific.scope;
+                    });
+                if (it == generics.end()) {
+                    generics.push_back({proc.first, {specific}});
+                } else {
+                    it->second.push_back(specific);
+                }
+            }
+        }
+        SymbolTable *current_scope_copy = current_scope;
+        for (auto &proc : generics) {
+            current_scope = proc.second[0].scope;
             Location loc;
             loc.first = 1;
             loc.last = 1;
@@ -4666,7 +4709,7 @@ public:
             symbols.reserve(al, proc.second.size());
             bool any_error = false;
             for (auto &pname : proc.second) {
-                std::string name = to_lower(pname.first);
+                std::string name = to_lower(pname.name);
                 // A specific procedure declared in this scope under the name
                 // of a generic interface is stored with the genericprocedure
                 // suffix, see the comment where the suffix is added. That
@@ -4687,9 +4730,9 @@ public:
                 }
                 if (!x) {
                     diag.add(Diagnostic(
-                        "Symbol '" + std::string(pname.first) + "' not declared",
+                        "Symbol '" + pname.name + "' not declared",
                         Level::Error, Stage::Semantic, {
-                            Label("", {pname.second})
+                            Label("", {pname.loc})
                         }));
                     if (!compiler_options.continue_compilation) throw SemanticAbort();
                     any_error = true;
@@ -4717,29 +4760,65 @@ public:
                     ASR::GenericProcedure_t *gp
                         = ASR::down_cast<ASR::GenericProcedure_t>(sym);
                     for (size_t i=0; i < gp->n_procs; i++) {
-                        ASR::symbol_t *s = current_scope->get_symbol(
-                            ASRUtils::symbol_name(gp->m_procs[i]));
-                        if (s != nullptr) {
-                            // Append all the module procedure's in the scope
+                        ASR::symbol_t *host_specific = gp->m_procs[i];
+                        ASR::symbol_t *target
+                            = ASRUtils::symbol_get_past_external(host_specific);
+                        std::string specific_name
+                            = ASRUtils::symbol_name(host_specific);
+                        // The extended generic keeps exactly the specifics of
+                        // the host generic: a name visible from this scope is
+                        // used only if it is the same procedure, since a
+                        // local entity may shadow the host specific.
+                        ASR::symbol_t *s = current_scope->resolve_symbol(
+                            specific_name);
+                        if (s != nullptr &&
+                                ASRUtils::symbol_get_past_external(s) == target) {
                             symbols.push_back(al, s);
-                        } else {
-                            // If not available, import it from the module
-                            // Create an ExternalSymbol using it
-                            ASR::Module_t *m = ASRUtils::get_sym_module(sym);
-                            s = m->m_symtab->get_symbol(
-                                ASRUtils::symbol_name(gp->m_procs[i]));
-                            if (ASR::is_a<ASR::Function_t>(*s)) {
-                                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
-                                ASR::symbol_t *ep_s = (ASR::symbol_t *)
-                                    ASR::make_ExternalSymbol_t(
-                                        al, fn->base.base.loc, current_scope,
-                                        fn->m_name, s, m->m_name, nullptr, 0,
-                                        fn->m_name, dflt_access);
-                                current_scope->add_symbol(fn->m_name, ep_s);
-                                // Append the ExternalSymbol
-                                symbols.push_back(al, ep_s);
-                            }
+                            continue;
                         }
+                        // A specific declared in an enclosing scope (the host
+                        // of a procedure-local generic) whose name is shadowed
+                        // here is referenced directly.
+                        if (is_enclosing_scope(
+                                ASRUtils::symbol_parent_symtab(host_specific),
+                                current_scope)) {
+                            symbols.push_back(al, host_specific);
+                            continue;
+                        }
+                        // Otherwise import it from its module, under a
+                        // unique name if its own name is visible here, so
+                        // that the import does not hide another entity.
+                        ASR::Module_t *m = ASRUtils::get_sym_module(target);
+                        if (m == nullptr) {
+                            diag.add(Diagnostic(
+                                "specific procedure '" + specific_name
+                                + "' of generic interface '"
+                                + proc.first + "' is not accessible",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {sym->base.loc})
+                                }));
+                            if (!compiler_options.continue_compilation) {
+                                throw SemanticAbort();
+                            }
+                            continue;
+                        }
+                        std::string target_name = ASRUtils::symbol_name(target);
+                        std::string local_name = target_name;
+                        if (current_scope->resolve_symbol(local_name) != nullptr) {
+                            local_name = current_scope->get_unique_name(
+                                "1_" + std::string(m->m_name) + "_"
+                                + target_name, false);
+                        }
+                        Str local_str;
+                        local_str.from_str_view(local_name);
+                        ASR::symbol_t *ep_s = ASR::down_cast<ASR::symbol_t>(
+                            ASR::make_ExternalSymbol_t(
+                                al, target->base.loc, current_scope,
+                                local_str.c_str(al), target, m->m_name,
+                                nullptr, 0, s2c(al, target_name),
+                                dflt_access));
+                        current_scope->add_symbol(local_name, ep_s);
+                        symbols.push_back(al, ep_s);
                     }
                 }
             }
@@ -4748,6 +4827,7 @@ public:
                 symbols.p, symbols.size(), ASR::Public);
             current_scope->add_or_overwrite_symbol(sym_name_str, ASR::down_cast<ASR::symbol_t>(v));
         }
+        current_scope = current_scope_copy;
         generic_procedures.clear();
     }
 
@@ -5701,12 +5781,28 @@ public:
 
         Vec<ASR::require_instantiation_t*> reqs;
         reqs.reserve(al, x.n_items);
+        // A REQUIRE statement whose actual argument is not one of this
+        // requirement's parameters (an intrinsic or derived type, or a
+        // constant expression) binds that actual into the requirement's
+        // scope under its own name. Such a symbol is part of the requirement
+        // reference, not a declaration of the requirement, so remember it
+        // for the parameter check below.
+        std::set<std::string> require_actuals;
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
                 AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_items[i]);
                 for (size_t i=0; i<r->n_reqs; i++) {
+                    std::set<std::string> before;
+                    for (auto &item: current_scope->get_scope()) {
+                        before.insert(item.first);
+                    }
                     visit_unit_require(*r->m_reqs[i]);
+                    for (auto &item: current_scope->get_scope()) {
+                        if (before.find(item.first) == before.end()) {
+                            require_actuals.insert(item.first);
+                        }
+                    }
                     reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                     tmp = nullptr;
                 }
@@ -5740,8 +5836,18 @@ public:
         }
 
         for (auto &item: current_scope->get_scope()) {
-            bool defined = false;
+            // An abstract interface (NOTE 2 of 16.6.1, J3/26-007r1) is a
+            // local entity of the requirement, not a deferred argument, so
+            // its name does not have to be one of the requirement's
+            // parameters.
+            if (ASR::is_a<ASR::Function_t>(*item.second)
+                    && ASRUtils::get_FunctionType(
+                        ASR::down_cast<ASR::Function_t>(item.second))->m_deftype
+                        == ASR::deftypeType::Interface) {
+                continue;
+            }
             std::string sym = item.first;
+            bool defined = require_actuals.find(sym) != require_actuals.end();
             for (size_t i=0; i<x.n_namelist; i++) {
                 std::string arg = to_lower(x.m_namelist[i].m_arg);
                 if (sym.compare(arg) == 0) {
@@ -6163,6 +6269,105 @@ public:
         }
     }
 
+    // The only-list of an INSTANTIATE statement may name a generic spec
+    // (operator, assignment or defined input/output) as well as a name. The
+    // template must define a generic spec that is named, as an interface
+    // block of its own procedures.
+    void check_instantiation_generic_specs(const AST::Instantiate_t &x,
+            ASR::Template_t *temp) {
+        std::string template_name = to_lower(x.m_name);
+        for (size_t i = 0; i < x.n_symbols; i++) {
+            AST::use_symbol_t *item = x.m_symbols[i];
+            std::string remote_sym, local_sym, spec;
+            if (!instantiation_generic_spec(item, remote_sym, local_sym, spec)) {
+                continue;
+            }
+            if (AST::is_a<AST::UseWrite_t>(*item)
+                    || AST::is_a<AST::UseRead_t>(*item)) {
+                if (remote_sym != "~write_formatted"
+                        && remote_sym != "~write_unformatted"
+                        && remote_sym != "~read_formatted"
+                        && remote_sym != "~read_unformatted") {
+                    diag.add(diag::Diagnostic(
+                        "Can only be `formatted` or `unformatted`",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {item->base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+            ASR::symbol_t *generic = temp->m_symtab->get_symbol(remote_sym);
+            if (generic == nullptr) {
+                diag.add(diag::Diagnostic(
+                    spec + " is not defined in template '" + template_name + "'",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("'" + template_name + "' has no "
+                            + spec + " to instantiate", {item->base.loc})}));
+                throw SemanticAbort();
+            }
+            bool supported = ASR::is_a<ASR::CustomOperator_t>(*generic);
+            if (supported) {
+                ASR::CustomOperator_t *op =
+                    ASR::down_cast<ASR::CustomOperator_t>(generic);
+                for (size_t j = 0; j < op->n_procs && supported; j++) {
+                    supported = ASR::is_a<ASR::Function_t>(*op->m_procs[j])
+                        && ASRUtils::symbol_parent_symtab(op->m_procs[j])
+                            == temp->m_symtab;
+                }
+            }
+            if (!supported) {
+                diag.add(diag::Diagnostic(
+                    "importing " + spec + " from an instantiation of template '"
+                    + template_name + "' is not supported yet",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {item->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
+    // Instantiate a generic spec named in the only-list of an INSTANTIATE
+    // statement. Its specific procedures are instantiated, reusing the
+    // instances of those the only-list also names, and the generic is added
+    // to the instantiating scope, extending a generic of the same name
+    // already accessible there, including by host association.
+    void instantiate_generic_spec(ASR::Template_t *temp,
+            const std::string &remote_sym, const std::string &local_sym,
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs,
+            std::map<std::string, ASR::symbol_t*> &symbol_subs,
+            const Location &loc) {
+        ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(
+            temp->m_symtab->get_symbol(remote_sym));
+        Vec<ASR::symbol_t*> procs;
+        procs.reserve(al, op->n_procs);
+        for (size_t i = 0; i < op->n_procs; i++) {
+            ASR::symbol_t *proc = op->m_procs[i];
+            std::string proc_name = ASRUtils::symbol_name(proc);
+            ASR::symbol_t *new_proc;
+            if (symbol_subs.find(proc_name) != symbol_subs.end()) {
+                // A deferred procedure, replaced by its actual argument, or
+                // a procedure the only-list also names, already instantiated.
+                new_proc = symbol_subs[proc_name];
+            } else {
+                // Not hiding a host entity, which the generic may extend.
+                std::string base_name = "__asr_" + proc_name;
+                std::string new_name = base_name;
+                for (int k = 1; current_scope->resolve_symbol(new_name); k++) {
+                    new_name = base_name + std::to_string(k);
+                }
+                new_proc = instantiate_symbol(al, current_scope, type_subs,
+                    symbol_subs, new_name, proc, diag);
+                symbol_subs[proc_name] = new_proc;
+            }
+            procs.push_back(al, new_proc);
+        }
+        append_accessible_custom_operator_procs(
+            current_scope->resolve_symbol(local_sym), local_sym, procs);
+        ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
+            s2c(al, local_sym), procs.p, procs.size(), op->m_access);
+        current_scope->add_or_overwrite_symbol(local_sym,
+            ASR::down_cast<ASR::symbol_t>(v));
+    }
+
     // An instantiated procedure is a new entity, so its local name must differ
     // from the name of the template it instantiates, which is already a local
     // identifier of this scope (F2028 20.3.1 p3). For a templated subprogram
@@ -6196,6 +6401,9 @@ public:
             }
         } else {
             for (size_t i = 0; i < x.n_symbols; i++) {
+                if (!AST::is_a<AST::UseSymbol_t>(*x.m_symbols[i])) {
+                    continue;
+                }
                 AST::UseSymbol_t *use_symbol =
                     AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string name = to_lower(use_symbol->m_local_rename
@@ -6230,6 +6438,32 @@ public:
         throw SemanticAbort();
     }
 
+    // Instantiating a derived type of an only-list also instantiates, under a
+    // generated name, each type of the template its components use. When the
+    // only-list names such a type after the type that uses it, e.g.
+    // `only: o => outer, i => inner`, that instance must become the listed
+    // local entity `i`, so that `type(i)` and the component of `o` are the
+    // same type.
+    void rename_dependency_instance(const std::string &generic_name,
+            const std::string &new_sym_name,
+            std::map<std::string, ASR::symbol_t*> &symbol_subs,
+            const std::set<ASR::symbol_t*> &listed_instances) {
+        auto dep = symbol_subs.find(generic_name);
+        if (dep == symbol_subs.end() || !ASR::is_a<ASR::Struct_t>(*dep->second)
+                || listed_instances.find(dep->second) != listed_instances.end()
+                || current_scope->get_symbol(new_sym_name) != nullptr) {
+            return;
+        }
+        ASR::Struct_t *dep_struct = ASR::down_cast<ASR::Struct_t>(dep->second);
+        std::string dep_name = dep_struct->m_name;
+        if (current_scope->get_symbol(dep_name) != dep->second) {
+            return;
+        }
+        current_scope->erase_symbol(dep_name);
+        dep_struct->m_name = s2c(al, new_sym_name);
+        current_scope->add_symbol(new_sym_name, dep->second);
+    }
+
     void visit_Instantiate(const AST::Instantiate_t &x) {
         std::string template_name = to_lower(x.m_name);
 
@@ -6255,6 +6489,7 @@ public:
         }
 
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
+        check_instantiation_generic_specs(x, temp);
         check_instantiation_local_names(x, temp);
 
         // R1630: the arguments may be given by keyword, so match them against
@@ -6577,6 +6812,10 @@ public:
                     current_scope = parent_scope;
                     symbol_subs[f->m_name] = op_sym;
                 }
+            } else if (AST::is_a<AST::AttrDefinedOperator_t>(*arg_attr)) {
+                bind_defined_operator_arg(
+                    *AST::down_cast<AST::AttrDefinedOperator_t>(arg_attr),
+                    param, param_sym, type_subs, symbol_subs, current_scope);
             } else if (AST::is_a<AST::AttrExpr_t>(*arg_attr)) {
                 // Handling a constant expression passed for a deferred constant
                 symbol_subs[param] = make_instantiation_const_arg(
@@ -6605,7 +6844,11 @@ public:
                 }
             }
         } else {
+            std::set<ASR::symbol_t*> listed_instances;
             for (size_t i = 0; i < x.n_symbols; i++){
+                if (!AST::is_a<AST::UseSymbol_t>(*x.m_symbols[i])) {
+                    continue;
+                }
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string generic_name = to_lower(use_symbol->m_remote_sym);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(generic_name);
@@ -6620,9 +6863,22 @@ public:
                 if (use_symbol->m_local_rename) {
                     new_sym_name = to_lower(use_symbol->m_local_rename);
                 }
+                rename_dependency_instance(generic_name, new_sym_name,
+                    symbol_subs, listed_instances);
                 ASR::symbol_t* new_sym = instantiate_symbol(al, current_scope, type_subs, symbol_subs, new_sym_name, s,
                     diag);
                 symbol_subs[generic_name] = new_sym;
+                listed_instances.insert(new_sym);
+            }
+            // Generic specs last, so that they reuse the instances of their
+            // specific procedures that the only-list names.
+            for (size_t i = 0; i < x.n_symbols; i++) {
+                std::string remote_sym, local_sym, spec;
+                if (instantiation_generic_spec(x.m_symbols[i], remote_sym,
+                        local_sym, spec)) {
+                    instantiate_generic_spec(temp, remote_sym, local_sym,
+                        type_subs, symbol_subs, x.m_symbols[i]->base.loc);
+                }
             }
         }
 
