@@ -4956,6 +4956,27 @@ public:
                     builder->CreateMemSet(target_,
                         llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
                         llvm_total_bytes, llvm::MaybeAlign());
+                    // Give each element the member storage a struct owns
+                    // (e.g. fixed-size character array buffers), which
+                    // deepcopy copies into.
+                    ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(x.m_array)));
+                    llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+                    llvm::Value* elem_idx = llvm_utils->CreateAlloca(*builder, i64_ty);
+                    builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), elem_idx);
+                    llvm_utils->create_loop("reshape_allocate_members", [&]() {
+                        return builder->CreateICmpSLT(
+                            llvm_utils->CreateLoad2(i64_ty, elem_idx),
+                            llvm::ConstantInt::get(i64_ty, target_size));
+                    }, [&]() {
+                        llvm::Value* idx_val = llvm_utils->CreateLoad2(i64_ty, elem_idx);
+                        allocate_array_members_of_struct(struct_sym,
+                            builder->CreateInBoundsGEP(llvm_data_type, target_, idx_val),
+                            element_type);
+                        builder->CreateStore(builder->CreateAdd(idx_val,
+                            llvm::ConstantInt::get(i64_ty, 1)), elem_idx);
+                    });
                     for (int64_t i = 0; i < copy_size; i++) {
                         llvm::Value* src_elem = llvm_utils->create_gep2(
                             src_target_type, array, i);
@@ -16904,6 +16925,73 @@ public:
         }
     }
 
+    // complex**integer by repeated multiplication (binary exponentiation),
+    // a negative exponent giving 1/z**(-n). A constant exponent is unrolled
+    // here, otherwise the runtime is called. Both use the algorithm of
+    // ASRUtils::fold_binop_constants, so they give identical results.
+    llvm::Value* lfortran_complex_integer_pow(llvm::Value* base,
+            llvm::Value* exponent, ASR::expr_t* exponent_value, int a_kind,
+            llvm::Type* complex_type) {
+        base = convert_complex_vector_to_struct(base, complex_type);
+        int64_t n = 0;
+        if (exponent_value == nullptr ||
+                !ASRUtils::extract_value(exponent_value, n)) {
+            std::string fn_name = (a_kind == 4) ?
+                "_lfortran_complex_pow_int_32" : "_lfortran_complex_pow_int_64";
+            llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+            llvm::Function *fn = module->getFunction(fn_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            complex_type->getPointerTo(), i64_ty,
+                            complex_type->getPointerTo()
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, fn_name, module.get());
+            }
+            llvm::AllocaInst *pbase = llvm_utils->CreateAlloca(complex_type);
+            builder->CreateStore(base, pbase);
+            llvm::AllocaInst *presult = llvm_utils->CreateAlloca(complex_type);
+            builder->CreateCall(fn, {pbase,
+                llvm_utils->convert_kind(exponent, i64_ty), presult});
+            return llvm_utils->CreateLoad2(complex_type, presult);
+        }
+        llvm::Type* real_type = llvm_utils->getFPType(a_kind);
+        auto make_complex = [&](double re, double im) -> llvm::Value* {
+            llvm::Value* c = llvm::UndefValue::get(complex_type);
+            c = builder->CreateInsertValue(c,
+                llvm::ConstantFP::get(real_type, re), {0});
+            return builder->CreateInsertValue(c,
+                llvm::ConstantFP::get(real_type, im), {1});
+        };
+        if (n == 0) {
+            return make_complex(1.0, 0.0);
+        }
+        std::string mul_name = (a_kind == 4) ?
+            "_lfortran_complex_mul_32" : "_lfortran_complex_mul_64";
+        uint64_t u = n < 0 ? -(uint64_t)n : (uint64_t)n;
+        while ((u & 1) == 0) {
+            base = lfortran_complex_bin_op(base, base, mul_name, complex_type);
+            u >>= 1;
+        }
+        llvm::Value* result = base;
+        u >>= 1;
+        while (u != 0) {
+            base = lfortran_complex_bin_op(base, base, mul_name, complex_type);
+            if (u & 1) {
+                result = lfortran_complex_bin_op(result, base, mul_name,
+                    complex_type);
+            }
+            u >>= 1;
+        }
+        if (n < 0) {
+            result = lfortran_complex_bin_op(make_complex(1.0, 0.0), result,
+                (a_kind == 4) ? "_lfortran_complex_div_32"
+                              : "_lfortran_complex_div_64", complex_type);
+        }
+        return result;
+    }
+
     void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -16926,6 +17014,12 @@ public:
             ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_pointer(x.m_type)))->m_kind;
         type = llvm_utils->getComplexType(a_kind);
+        if (x.m_op == ASR::binopType::Pow &&
+                ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
+            tmp = lfortran_complex_integer_pow(left_val, right_val,
+                ASRUtils::expr_value(x.m_right), a_kind, type);
+            return;
+        }
         std::string fn_name;
         switch (x.m_op) {
             case ASR::binopType::Add: {
@@ -24760,46 +24854,47 @@ public:
                 tmp = inline_char_member_as_string_descriptor(
                     x.m_args[i].m_value, tmp, "inline_call_arg");
                 llvm::Value *value = tmp;
-                if (orig_arg_intent == ASR::intentType::In ||
-                    orig_arg_intent == ASR::intentType::InOut ||
-                    orig_arg_intent == ASR::intentType::Out) {
-                    /*
-                        For the cases where argument intent is In or InOut or Out, we
-                        cannot pass the evaluated value of expression directly to it. Currently
-                        the value of `value` is the evaluated value of expression and this is because
-                        for every expression we visit, we have a check to prefer the evaluated value.
-
-                        To avoid this problem, we manually set the expr value to nullptr.
-                        For example, refer integration_tests/intent_03.f90
-                    */
-                    // TODO: this is possible in other cases as well, support those.
-                    if ( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ) {
-                        ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_args[i].m_value);
-                        arr_item->m_value = nullptr;
-                        this->visit_expr_wrapper((ASR::expr_t*)arr_item);
-                        value = tmp;
-                    } else if ( ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value) ||
-                                ASR::is_a<ASR::ComplexIm_t>(*x.m_args[i].m_value) ) {
-                        bool is_re = ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value);
-                        ASR::expr_t* complex_elem_expr = is_re
-                            ? ASR::down_cast<ASR::ComplexRe_t>(x.m_args[i].m_value)->m_arg
-                            : ASR::down_cast<ASR::ComplexIm_t>(x.m_args[i].m_value)->m_arg;
-                        int ptr_loads_copy = ptr_loads;
-                        ptr_loads = 0;
-                        this->visit_expr(*complex_elem_expr);
-                        ptr_loads = ptr_loads_copy;
-                        llvm::Value* complex_ptr = tmp;
-                        if (!complex_ptr->getType()->isPointerTy()) {
-                            llvm::AllocaInst* alloc = llvm_utils->CreateAlloca(*builder, complex_ptr->getType());
-                            builder->CreateStore(complex_ptr, alloc);
-                            complex_ptr = alloc;
-                        }
-                        int cplx_kind = ASRUtils::extract_kind_from_ttype_t(
-                            ASRUtils::extract_type(ASRUtils::expr_type(complex_elem_expr)));
-                        llvm::Type* cplx_llvm_type = (cplx_kind == 4) ? complex_type_4 : complex_type_8;
-                        value = llvm_utils->create_gep2(cplx_llvm_type, complex_ptr, is_re ? 0 : 1);
-                    }
+                /*
+                
+                Handle cases where a compile-time value (register value) shouldn't
+                be used, but rather a reference-memory value.
+                As all Fortran functions are lowered to ones accepting reference-value arguments.
+                For example, refer integration_tests/intent_03.f90
+                TODO: Introduce a solid fix to handle all cases.
+                */
+            if(ASRUtils::expr_value(x.m_args[i].m_value) != nullptr){
+                LCOMPILERS_ASSERT(orig_arg_intent != ASR::intentType::Out &&
+                                  orig_arg_intent != ASR::intentType::InOut);
+                if ( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
+                    ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_args[i].m_value);
+                    arr_item->m_value = nullptr;
+                    this->visit_expr_wrapper((ASR::expr_t*)arr_item);
+                    value = tmp;
                 }
+            }
+            // Force revisit to handle the register/reference issue, plus,
+            // [TODO] We don't properly visit those even if no compile-time value exist -- Example complex_38.90
+            if ( ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value) ||
+                  ASR::is_a<ASR::ComplexIm_t>(*x.m_args[i].m_value) ) {
+                bool is_re = ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value);
+                ASR::expr_t* complex_elem_expr = is_re
+                    ? ASR::down_cast<ASR::ComplexRe_t>(x.m_args[i].m_value)->m_arg
+                    : ASR::down_cast<ASR::ComplexIm_t>(x.m_args[i].m_value)->m_arg;
+                int ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*complex_elem_expr);
+                ptr_loads = ptr_loads_copy;
+                llvm::Value* complex_ptr = tmp;
+                if (!complex_ptr->getType()->isPointerTy()) {
+                    llvm::AllocaInst* alloc = llvm_utils->CreateAlloca(*builder, complex_ptr->getType());
+                    builder->CreateStore(complex_ptr, alloc);
+                    complex_ptr = alloc;
+                }
+                int cplx_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::extract_type(ASRUtils::expr_type(complex_elem_expr)));
+                llvm::Type* cplx_llvm_type = (cplx_kind == 4) ? complex_type_4 : complex_type_8;
+                value = llvm_utils->create_gep2(cplx_llvm_type, complex_ptr, is_re ? 0 : 1);
+            }
                 // TODO: we are getting a warning of uninitialized variable,
                 // there might be a bug below.
                 llvm::Type *target_type = nullptr;

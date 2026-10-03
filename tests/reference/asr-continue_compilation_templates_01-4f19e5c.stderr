@@ -1166,17 +1166,17 @@ semantic error: No requirement 'r_undeclared' is defined
 1989 |         require :: r_undeclared {a, b}
      |                    ^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: initialization of named constant `x` with this expression of a deferred constant is not supported yet
-    --> tests/errors/continue_compilation_templates_01.f90:2006:36
+semantic error: Initialization of `x` must reduce to a compile time constant.
+    --> tests/errors/continue_compilation_templates_01.f90:2006:13
      |
-2006 |             real, parameter :: x = sin(real(n))  ! {Error} initialization of named constant `x` with this expression of a deferred constant is not supported yet
-     |                                    ^^^^^^^^^^^^ 
+2006 |             real, parameter :: x = -r  ! {Error} Initialization of `x` must reduce to a compile time constant.
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: initialization of named constant `k` with this expression of a deferred constant is not supported yet
-    --> tests/errors/continue_compilation_templates_01.f90:2026:39
+semantic error: Argument of `sqrt` has a negative argument
+    --> tests/errors/continue_compilation_templates_01.f90:2026:43
      |
-2026 |             integer, parameter :: k = ishft(n, 1) + 1  ! {Error} initialization of named constant `k` with this expression of a deferred constant is not supported yet
-     |                                       ^^^^^^^^^^^^^^^ 
+2026 |             integer, parameter :: k = int(sqrt(real(n - 4)))  ! {Error} Argument of `sqrt` has a negative argument
+     |                                           ^^^^^^^^^^^^^^^^^ 
 
 semantic error: Division by zero
     --> tests/errors/continue_compilation_templates_01.f90:2036:39
@@ -1391,6 +1391,12 @@ semantic error: Explicit shaped array with nonconstant bounds
 2373 |             integer :: b(max(n*nonconst_bound_m, 5))  ! {Error} Explicit shaped array with nonconstant bounds
      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: the instantiation argument 'operator(.minus.)' for 't' requires a deferred procedure
+    --> tests/errors/continue_compilation_templates_01.f90:2455:30
+     |
+2455 |         instantiate defop_t {operator(.minus.), integer}, only: defop_g => defop_f  ! {Error} the instantiation argument 'operator(.minus.)' for 't' requires a deferred procedure
+     |                              ^^^^^^^^^^^^^^^^^ 
+
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
     |
@@ -1457,3 +1463,15 @@ semantic error: Type mismatch in assignment, the types must be compatible
      |
 2337 |         x = [1, 2, 3]  ! {Error} type mismatch (t[:] and integer[:])
      |         ^   ^^^^^^^^^ type mismatch (t[:] and integer[:])
+
+semantic error: the defined operator '.plus.' is not declared
+    --> tests/errors/continue_compilation_templates_01.f90:2447:30
+     |
+2447 |         print *, defop_apply{operator(.plus.)}(9, 2)  ! {Error} the defined operator '.plus.' is not declared
+     |                              ^^^^^^^^^^^^^^^^ 
+
+semantic error: no specific procedure of the defined operator '.minus.' matches the interface of 'op'
+    --> tests/errors/continue_compilation_templates_01.f90:2451:31
+     |
+2451 |         print *, defop_applyr{operator(.minus.)}(9.0, 2.0)  ! {Error} no specific procedure of the defined operator '.minus.' matches the interface of 'op'
+     |                               ^^^^^^^^^^^^^^^^^ 
