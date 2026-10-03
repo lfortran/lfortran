@@ -12,7 +12,7 @@ with tempfile.TemporaryDirectory() as temporary_dir:
             [compiler, "--backend=liric", str(source_dir / f"{fixture}.f90"),
              "-o", str(output)], capture_output=True, text=True)
         diagnostic = result.stdout + result.stderr
-        if (result.returncode == 0 or "liric:" not in diagnostic
+        if (result.returncode <= 0 or "liric:" not in diagnostic
                 or "supported" not in diagnostic or output.exists()
                 or any(text in diagnostic for text in
                        ("LCompilersException", "visit_", "Traceback"))):
