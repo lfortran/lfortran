@@ -2022,6 +2022,8 @@ RUN(NAME modules_73 LABELS gfortran llvm EXTRAFILES modules_73_mod.f90)
 RUN(NAME module_func_generic_submodule LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME modules_74 LABELS gfortran llvm)
 RUN(NAME modules_75 LABELS gfortran llvm fortran)
+RUN(NAME modules_76 LABELS gfortran llvm)
+RUN(NAME modules_77 LABELS gfortran llvm)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
 
@@ -2777,6 +2779,7 @@ RUN(NAME derived_types_209 LABELS gfortran fortran)
 RUN(NAME derived_types_213 LABELS gfortran llvm)
 RUN(NAME derived_types_214 LABELS llvm) # gfortran segfaults on reshape () of a polymorphic array passed to a class dummy
 RUN(NAME derived_types_215 LABELS gfortran llvm)
+RUN(NAME derived_types_216 LABELS gfortran llvm)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)

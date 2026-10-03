@@ -7,16 +7,6 @@
                     (SymbolTable
                         18
                         {
-                            my_type:
-                                (ExternalSymbol
-                                    18
-                                    my_type
-                                    2 my_type
-                                    template_sort_01_type
-                                    []
-                                    my_type
-                                    Public
-                                ),
                             op_r:
                                 (ExternalSymbol
                                     18
@@ -49,8 +39,7 @@
                                 )
                         })
                     template_sort_01
-                    [template_sort_01_m
-                    template_sort_01_type]
+                    [template_sort_01_m]
                     [(SubroutineCall
                         18 test_template
                         ()
@@ -317,7 +306,7 @@
                                     template_sort_01_type
                                     []
                                     my_type
-                                    Public
+                                    Private
                                 ),
                             op_r:
                                 (Requirement

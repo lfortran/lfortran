@@ -627,7 +627,7 @@
                                     template_access_01_tmpl_m
                                     []
                                     t_tmpl
-                                    Public
+                                    Private
                                 )
                         })
                     template_access_01_priv_m
