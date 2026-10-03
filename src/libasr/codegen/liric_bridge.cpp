@@ -27,29 +27,29 @@ int liric_compile_to_object(
     auto &co = *reinterpret_cast<LCompilers::CompilerOptions*>(co_ptr);
     auto &lm = *reinterpret_cast<LCompilers::LocationManager*>(lm_ptr);
 
-    LCompilers::LLVMEvaluator e(co);
-
-    if (!LCompilers::ASRUtils::main_program_present(asr)
-        && !LCompilers::ASRUtils::global_function_present(asr)
-        && !co.separate_compilation
-        && !co.generate_code_for_global_procedures) {
-        e.create_empty_object_file(outfile);
-        liric_llvm::Module::writeEmptyObjectCompanionFiles(outfile);
-        return 0;
-    }
-
-    auto res = LCompilers::asr_to_llvm(asr, diag, e.get_context(),
-        e.get_target_config(), al, lpm, co, "", "", infile ? infile : "", lm);
-    if (!res.ok) return 1;
-
     try {
+        LCompilers::LLVMEvaluator e(co);
+
+        if (!LCompilers::ASRUtils::main_program_present(asr)
+            && !LCompilers::ASRUtils::global_function_present(asr)
+            && !co.separate_compilation
+            && !co.generate_code_for_global_procedures) {
+            e.create_empty_object_file(outfile);
+            liric_llvm::Module::writeEmptyObjectCompanionFiles(outfile);
+            return 0;
+        }
+
+        auto res = LCompilers::asr_to_llvm(asr, diag, e.get_context(),
+            e.get_target_config(), al, lpm, co, "", "", infile ? infile : "", lm);
+        if (!res.ok) return 1;
+
         e.save_object_file(*(res.result->m_m), outfile);
         res.result->m_m->emitObjectCompanionFiles(outfile);
+        return 0;
     } catch (const std::exception &ex) {
-        std::cerr << "liric object emission failed: " << ex.what() << std::endl;
+        std::cerr << "liric compilation failed: " << ex.what() << std::endl;
         return 1;
     }
-    return 0;
 }
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -58,12 +58,12 @@ __attribute__((visibility("default")))
 int liric_link_executable(const char *const *object_files, int nobjects,
     const char *outfile)
 {
-    std::vector<std::string> objects;
-    objects.reserve(nobjects);
-    for (int i = 0; i < nobjects; i++) {
-        objects.push_back(object_files[i]);
-    }
     try {
+        std::vector<std::string> objects;
+        objects.reserve(nobjects);
+        for (int i = 0; i < nobjects; i++) {
+            objects.push_back(object_files[i]);
+        }
         liric_llvm::Module::emitExecutableFromObjects(objects, outfile);
     } catch (const std::exception &ex) {
         std::cerr << "liric link failed: " << ex.what() << std::endl;
