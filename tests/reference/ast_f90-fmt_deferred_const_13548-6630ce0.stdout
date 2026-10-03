@@ -1,0 +1,6 @@
+module m
+implicit none
+template tmpl {n}
+deferred integer, parameter :: n
+end template tmpl
+end module m

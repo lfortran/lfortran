@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-fmt_deferred_const_13548-6630ce0",
+    "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/fmt_deferred_const_13548.f90",
+    "infile_hash": "3383b2051ae261524a5c3900831ecc405a496cd4cc71b066ea13dc99",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-fmt_deferred_const_13548-6630ce0.stdout",
+    "stdout_hash": "56300086ad1a1eb1bab49934f018cad916dde8f0f60d871cbdda4321",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
