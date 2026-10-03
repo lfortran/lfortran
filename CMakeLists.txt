@@ -13,7 +13,32 @@ if (LFORTRAN_BUILD_ALL)
     endif ()
 endif()
 
-file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version" LFORTRAN_VERSION)
+# Try:
+# 1. git
+# 2. version file
+# Then fallback to default dev version.
+if (NOT DEFINED LFORTRAN_VERSION)
+    execute_process(
+        COMMAND git describe --tags --dirty
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        RESULT_VARIABLE _GIT_DESCRIBE_RESULT
+        OUTPUT_VARIABLE LFORTRAN_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET)
+
+    if (NOT _GIT_DESCRIBE_RESULT EQUAL 0 OR LFORTRAN_VERSION STREQUAL "")
+        if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/version")
+            file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version"
+                LFORTRAN_VERSION LIMIT_COUNT 1)
+        endif ()
+    endif ()
+
+    if (LFORTRAN_VERSION STREQUAL "")
+        set(LFORTRAN_VERSION "0.1.0-dev")
+    endif ()
+endif ()
+
+string(REGEX REPLACE "^v" "" LFORTRAN_VERSION "${LFORTRAN_VERSION}")
 string(REGEX MATCH "^[^-]*" LFORTRAN_NO_TAG_VERSION ${LFORTRAN_VERSION})
 
 project(lfortran
