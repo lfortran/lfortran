@@ -22,6 +22,8 @@ omp_clause
   | OMPThreadLimit(expr thread_limit)
   | OMPDevice(expr device)
   | OMPMap(map_type type, expr* vars)
+  | OMPIndependent()
+  | OMPTargetRequested()
 ```
 
 ### Arguments
@@ -46,6 +48,10 @@ what each thread sees. The rest control how the region runs
 [OMPCollapse](OMPCollapse.md), [OMPIf](OMPIf.md), [OMPNowait](OMPNowait.md))
 or where ([OMPDevice](OMPDevice.md), [OMPMap](OMPMap.md),
 [OMPNumTeams](OMPNumTeams.md), [OMPThreadLimit](OMPThreadLimit.md)).
+Two record what the source asserted rather than what it asked to be done:
+[OMPIndependent](OMPIndependent.md) says the iterations do not depend on
+one another, and [OMPTargetRequested](OMPTargetRequested.md) says a device
+was asked for.
 
 A clause that is not written is simply absent from the list; there is no
 default clause node.

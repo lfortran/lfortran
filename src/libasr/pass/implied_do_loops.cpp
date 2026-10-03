@@ -759,6 +759,11 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         result_var = result_var_copy;
     }
 
+    void replace_StructConstant(ASR::StructConstant_t* /*x*/) {
+        // A StructConstant is emitted as static data, so its array
+        // arguments stay constants and are never expanded into temporaries
+    }
+
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
         const Location& loc = x->base.base.loc;
         ASR::expr_t* result_var_copy = result_var;
@@ -804,8 +809,14 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     ASRUtils::type_get_past_allocatable(x->m_type), &dims);
             }
         }
+        // A temporary of a derived type is declared by the type's symbol, so
+        // an expression naming that type is passed along.
+        ASR::expr_t* struct_expr = nullptr;
+        if (ASRUtils::is_struct(*result_type_)) {
+            struct_expr = ASRUtils::EXPR((ASR::asr_t*) x);
+        }
         result_var = PassUtils::create_var(result_counter, "_array_constant_",
-                        loc, result_type_, al, current_scope);
+                        loc, result_type_, al, current_scope, struct_expr);
         result_counter += 1;
         *current_expr = result_var;
 
@@ -906,6 +917,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         ASR::expr_t* m_iomsg = nullptr;
         ASR::expr_t* m_iostat = nullptr;
         ASR::expr_t* m_pos = nullptr;
+        ASR::expr_t* m_decimal = nullptr;
         bool m_is_formatted = true;
         ReplaceArrayConstant replacer;
         Vec<ASR::stmt_t*> pass_result;
@@ -934,11 +946,16 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             m_iomsg = nullptr;
             m_iostat = nullptr;
             m_pos = nullptr;
+            m_decimal = nullptr;
             m_is_formatted = true;
         }
 
         void visit_Variable(const ASR::Variable_t& /*x*/) {
             // Do nothing, already handled in init_expr pass
+        }
+
+        void visit_StructConstant(const ASR::StructConstant_t& /*x*/) {
+            // Its arguments are constants emitted as static data
         }
 
         void visit_ttype(const ASR::ttype_t& /*x*/) {
@@ -985,6 +1002,49 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 if (contains_string_trim(idl->m_values[i])) return true;
             }
             return false;
+        }
+
+        // Check if the values of an implied do loop hold character values that
+        // do not all share one and the same compile time length. Such a loop
+        // must not be gathered into a temporary array: an array has a single
+        // element length, so every character value would be padded (or
+        // truncated) to it. Each value has to be emitted at its own length
+        // instead.
+        bool implied_do_loop_has_varying_string_length(ASR::ImpliedDoLoop_t* idl) {
+            size_t string_values = 0;
+            int64_t common_len = -1;
+            bool has_runtime_len = false;
+            for (size_t i = 0; i < idl->n_values; i++) {
+                ASR::expr_t* value = idl->m_values[i];
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+                    // A nested loop carries its own values, leave it alone.
+                    return false;
+                }
+                ASR::ttype_t* value_type = ASRUtils::extract_type(
+                    ASRUtils::expr_type(value));
+                if (!ASR::is_a<ASR::String_t>(*value_type)) {
+                    continue;
+                }
+                string_values += 1;
+                ASR::expr_t* len = ASR::down_cast<ASR::String_t>(value_type)->m_len;
+                int64_t len_value = -1;
+                if (len == nullptr ||
+                    !ASRUtils::extract_value(ASRUtils::expr_value(len), len_value)) {
+                    has_runtime_len = true;
+                    continue;
+                }
+                if (common_len == -1) {
+                    common_len = len_value;
+                } else if (common_len != len_value) {
+                    return true;
+                }
+            }
+            if (string_values < 2) {
+                return false;
+            }
+            // A length known only at runtime cannot be shown to agree with the
+            // lengths of the other values.
+            return has_runtime_len;
         }
 
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
@@ -1099,7 +1159,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             if (ASRUtils::is_array(ASRUtils::expr_type(value))) {
                 array_type = ASRUtils::expr_type(value);
             } else {
-                array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, ASRUtils::expr_type(value), dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray));
+                array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, ASRUtils::expr_type(value), dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
             }
             ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(al, value->base.loc,
                                         args.p, args.n, array_type, ASR::arraystorageType::ColMajor);
@@ -1281,7 +1341,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 } else {
                     // this will be file_write
                     LCOMPILERS_ASSERT(file_write);
-                    stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->base.base.loc, 0, m_unit, nullptr, nullptr, nullptr, print_values.p, print_values.size(), nullptr, nullptr, nullptr, true, nullptr, nullptr, nullptr, nullptr));
+                    stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->base.base.loc, 0, m_unit, nullptr, nullptr, nullptr, print_values.p, print_values.size(), nullptr, nullptr, nullptr, true, nullptr, nullptr, nullptr, nullptr, m_decimal));
                 }
                 do_loop_body.push_back(al, stmt);
             }
@@ -1313,7 +1373,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->base.base.loc,
                     0, m_unit, m_iomsg, m_iostat, nullptr,
                     args.p, args.size(), nullptr, nullptr, nullptr,
-                    m_is_formatted, nullptr, m_rec, m_pos, nullptr));
+                    m_is_formatted, nullptr, m_rec, m_pos, nullptr, m_decimal));
                 do_loop_body.push_back(al, stmt);
             }
 
@@ -1367,6 +1427,30 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 ASR::expr_t* value = x.m_args[i];
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
                     ASR::ImpliedDoLoop_t* implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
+                    // Character values of differing lengths cannot share one
+                    // temporary array, so expand the loop and keep every value
+                    // at its own length.
+                    if (implied_do_loop_has_varying_string_length(implied_do_loop)) {
+                        Vec<ASR::expr_t*> expanded_values;
+                        expanded_values.reserve(al, 16);
+                        if (expand_implied_do_loop_flat(implied_do_loop, expanded_values)) {
+                            Vec<ASR::expr_t*> new_args;
+                            new_args.reserve(al, x.n_args + expanded_values.size());
+                            for (size_t j = 0; j < i; j++) {
+                                new_args.push_back(al, x.m_args[j]);
+                            }
+                            for (size_t j = 0; j < expanded_values.size(); j++) {
+                                new_args.push_back(al, expanded_values.p[j]);
+                            }
+                            for (size_t j = i + 1; j < x.n_args; j++) {
+                                new_args.push_back(al, x.m_args[j]);
+                            }
+                            string_format_stmt->m_args = new_args.p;
+                            string_format_stmt->n_args = new_args.size();
+                            i = i + expanded_values.size() - 1;
+                            continue;
+                        }
+                    }
                     // Use do-loop approach ONLY for formatted I/O (not list-directed)
                     // with Tuple types or when values contain StringTrim
                     // (to preserve variable-length trimmed strings instead of storing in fixed-length array)
@@ -1534,6 +1618,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             m_iomsg = x.m_iomsg;
             m_iostat = x.m_iostat;
             m_pos = x.m_pos;
+            m_decimal = x.m_decimal;
             m_is_formatted = x.m_is_formatted;
             if (x.m_overloaded) {
                 this->visit_stmt(*x.m_overloaded);

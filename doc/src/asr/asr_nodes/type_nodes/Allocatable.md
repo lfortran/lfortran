@@ -45,6 +45,7 @@ The wrapped type carries the shape and the length: an allocatable array is an
       )
     ]
     :physical_type :DescriptorArray
+    :memory_space :Global
   )
 )
 ```

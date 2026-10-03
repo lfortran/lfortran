@@ -2,19 +2,19 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @__Wrong_allocation = private unnamed_addr constant [51 x i8] c"Attempting to allocate already allocated variable!\00", align 1
 @string_const_data = private constant [8 x i8] c"learned "
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([8 x i8], [8 x i8]* @string_const_data, i32 0, i32 0), i64 8 }>
+@string_const = private global %string_descriptor { i8* getelementptr inbounds ([8 x i8], [8 x i8]* @string_const_data, i32 0, i32 0), i64 8 }
 @string_const_data.1 = private constant [5 x i8] c"from "
-@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data.1, i32 0, i32 0), i64 5 }>
+@string_const.2 = private global %string_descriptor { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data.1, i32 0, i32 0), i64 5 }
 @string_const_data.3 = private constant [4 x i8] c"the "
-@string_const.4 = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data.3, i32 0, i32 0), i64 4 }>
+@string_const.4 = private global %string_descriptor { i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data.3, i32 0, i32 0), i64 4 }
 @string_const_data.5 = private constant [4 x i8] c"best"
-@string_const.6 = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data.5, i32 0, i32 0), i64 4 }>
+@string_const.6 = private global %string_descriptor { i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data.5, i32 0, i32 0), i64 4 }
 @string_const_data.7 = private constant [5 x i8] c"I've "
-@string_const.8 = private global %string_descriptor <{ i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data.7, i32 0, i32 0), i64 5 }>
+@string_const.8 = private global %string_descriptor { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data.7, i32 0, i32 0), i64 5 }
 @0 = private unnamed_addr constant [27 x i8] c"_lcompilers_stringconcat_1\00", align 1
 @1 = private unnamed_addr constant [41 x i8] c"tests/../integration_tests/string_03.f90\00", align 1
 @2 = private unnamed_addr constant [20 x i8] c"This is unallocated\00", align 1
@@ -32,7 +32,7 @@ target datalayout = "..."
 @14 = private unnamed_addr constant [20 x i8] c"This is unallocated\00", align 1
 @15 = private unnamed_addr constant [45 x i8] c"Argument %d of subroutine %s is unallocated.\00", align 1
 @string_const_data.9 = private constant [1 x i8] c"."
-@string_const.10 = private global %string_descriptor <{ i8* getelementptr inbounds ([1 x i8], [1 x i8]* @string_const_data.9, i32 0, i32 0), i64 1 }>
+@string_const.10 = private global %string_descriptor { i8* getelementptr inbounds ([1 x i8], [1 x i8]* @string_const_data.9, i32 0, i32 0), i64 1 }
 @16 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @17 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
@@ -152,40 +152,40 @@ define i32 @main(i32 %0, i8** %1) {
   %__libasr__created__var__1_return_slot = alloca %string_descriptor, align 8
   %__libasr__created__var__0_return_slot = alloca %string_descriptor, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__0_return_slot, align 1
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__1_return_slot, align 1
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__2_return_slot, align 1
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__3_return_slot, align 1
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__4_return_slot, align 1
-  store %string_descriptor zeroinitializer, %string_descriptor* %combined, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__0_return_slot, align 8
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__1_return_slot, align 8
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__2_return_slot, align 8
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__3_return_slot, align 8
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__4_return_slot, align 8
+  store %string_descriptor zeroinitializer, %string_descriptor* %combined, align 8
   %3 = getelementptr %string_descriptor, %string_descriptor* %combined, i32 0, i32 1
   store i64 29, i64* %3, align 8
   %4 = getelementptr %string_descriptor, %string_descriptor* %combined, i32 0, i32 0
   %5 = call i8* @_lfortran_get_default_allocator()
   %6 = call i8* @_lfortran_malloc_alloc(i8* %5, i64 29)
   store i8* %6, i8** %4, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %last_name, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %last_name, align 8
   %7 = getelementptr %string_descriptor, %string_descriptor* %last_name, i32 0, i32 1
   store i64 7, i64* %7, align 8
   %8 = getelementptr %string_descriptor, %string_descriptor* %last_name, i32 0, i32 0
   %9 = call i8* @_lfortran_get_default_allocator()
   %10 = call i8* @_lfortran_malloc_alloc(i8* %9, i64 7)
   store i8* %10, i8** %8, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %posit, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %posit, align 8
   %11 = getelementptr %string_descriptor, %string_descriptor* %posit, i32 0, i32 1
   store i64 5, i64* %11, align 8
   %12 = getelementptr %string_descriptor, %string_descriptor* %posit, i32 0, i32 0
   %13 = call i8* @_lfortran_get_default_allocator()
   %14 = call i8* @_lfortran_malloc_alloc(i8* %13, i64 5)
   store i8* %14, i8** %12, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %title, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %title, align 8
   %15 = getelementptr %string_descriptor, %string_descriptor* %title, i32 0, i32 1
   store i64 4, i64* %15, align 8
   %16 = getelementptr %string_descriptor, %string_descriptor* %title, i32 0, i32 0
   %17 = call i8* @_lfortran_get_default_allocator()
   %18 = call i8* @_lfortran_malloc_alloc(i8* %17, i64 4)
   store i8* %18, i8** %16, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %verb, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %verb, align 8
   %19 = getelementptr %string_descriptor, %string_descriptor* %verb, i32 0, i32 1
   store i64 8, i64* %19, align 8
   %20 = getelementptr %string_descriptor, %string_descriptor* %verb, i32 0, i32 0

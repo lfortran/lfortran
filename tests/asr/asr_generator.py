@@ -151,7 +151,7 @@ def array_type(element, lengths):
         for length in lengths)
     return (
         f"(Array :type {type_of(element)} :dims [{dimensions}] "
-        f":physical_type :FixedSizeArray)"
+        f":physical_type :FixedSizeArray :memory_space :Global)"
     )
 
 
@@ -160,7 +160,7 @@ def deferred_array_type(element, rank=1):
         "(dimension :start nil :length nil)" for _ in range(rank))
     return (
         f"(Array :type {type_of(element)} :dims [{dimensions}] "
-        f":physical_type :DescriptorArray)"
+        f":physical_type :DescriptorArray :memory_space :Global)"
     )
 
 
@@ -300,7 +300,8 @@ def procedure(name, returns, dummies, body, extra_locals=None,
         f":arg_types [{arg_types}] :return_var_type {return_type} "
         f":abi :Source :deftype :{deftype} :bindc_name nil "
         f":elemental false :pure false :module false :inline false "
-        f":static false :restrictions [] :is_restriction false) "
+        f":static false :restrictions [] :is_restriction false "
+        f":exec_space :Host) "
         f":dependencies [] "
         f":args [{args}] "
         f":body [{' '.join(body or [])}] "
@@ -329,7 +330,8 @@ def function_symbol(name, parameter_name, kind):
         f":return_var_type {integer_type(kind)} "
         f":abi :Source :deftype :Implementation :bindc_name nil "
         f":elemental false :pure false :module false :inline false "
-        f":static false :restrictions [] :is_restriction false) "
+        f":static false :restrictions [] :is_restriction false "
+        f":exec_space :Host) "
         f":dependencies [] "
         f":args [{var(PROCEDURE_SYMTAB, parameter_name)}] "
         f":body [{body}] "
@@ -382,7 +384,7 @@ def scope(symtab_id, symbols):
 def program(symtab_id, name, symbols, body):
     return (
         f"(Program :symtab {scope(symtab_id, symbols)} :name {string(name)} "
-        f":dependencies [] :body [{' '.join(body)}])"
+        f":dependencies [] :body [{' '.join(body)}] :global_init nil)"
     )
 
 
@@ -390,7 +392,7 @@ def global_unit(symbols, items=()):
     """A TranslationUnit whose global scope holds `symbols` verbatim."""
     return (
         f"(TranslationUnit :symtab {scope(GLOBAL_SYMTAB, symbols)} "
-        f":items [{' '.join(items)}])\n"
+        f":items [{' '.join(items)}] :global_init nil)\n"
     )
 
 
@@ -408,7 +410,8 @@ def module(symtab_id, name, symbols, dependencies=(), parent_module=None,
         f":parent_module {string(parent_module) if parent_module else 'nil'} "
         f":dependencies [{names}] :loaded_from_mod false "
         f":intrinsic false "
-        f":has_submodules {'true' if has_submodules else 'false'})"
+        f":has_submodules {'true' if has_submodules else 'false'} "
+        f":global_init nil)"
     )
 
 
@@ -429,7 +432,7 @@ def function_type(arg_types, return_type=None, deftype="Interface"):
         f":return_var_type {return_type or 'nil'} :abi :Source "
         f":deftype :{deftype} :bindc_name nil :elemental false :pure false "
         f":module false :inline false :static false :restrictions [] "
-        f":is_restriction false)"
+        f":is_restriction false :exec_space :Host)"
     )
 
 
@@ -1699,7 +1702,7 @@ def invalid_array_constructor_element(_rng):
     element = f"(Array :type {integer_type(4)} " \
               f":dims [(dimension :start {integer_constant(1, 4)} " \
               f":length {integer_constant(2, 4)})] " \
-              f":physical_type :FixedSizeArray)"
+              f":physical_type :FixedSizeArray :memory_space :Global)"
     constructor = (
         f"(ArrayConstructor :args [{integer_constant(1, 4)} "
         f"{integer_constant(2, 8)}] :type {element} :value nil "

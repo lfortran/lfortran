@@ -74,6 +74,7 @@ for instance, can often be folded into the multiplication.
       )
     ]
     :physical_type :FixedSizeArray
+    :memory_space :Global
   )
   :value nil
 )

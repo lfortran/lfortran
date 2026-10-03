@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.operation.operand_not_assumed_rank]: RealUnaryMinus argument is an assumed rank array, which has no known rank; it must be cast to a descriptor array first
-  --> tests/asr/verify/unary_op_assumed_rank_operand.asr:77:24
+  --> tests/asr/verify/unary_op_assumed_rank_operand.asr:78:24
    |
-77 |                       (RealUnaryMinus
+78 |                       (RealUnaryMinus
    |                        ^^^^^^^^^^^^^^ failed here

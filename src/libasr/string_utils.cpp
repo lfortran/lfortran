@@ -56,6 +56,8 @@ std::vector<std::string> string_split(const std::string &s,
     return result;
 }
 
+// Splits the string `str` at blanks outside parentheses. Blanks before an
+// opening parenthesis do not split, so `name (args)` is the word `name(args)`.
 std::vector<std::string> string_split_avoid_parentheses(const std::string &str, bool strs_to_lower) {
     std::vector<std::string> result;
     std::string word;
@@ -67,6 +69,10 @@ std::vector<std::string> string_split_avoid_parentheses(const std::string &str, 
                 word.clear();
             }
         } else {
+            if (ch == '(' && !in_brackets && word.empty() && !result.empty()) {
+                word = result.back();
+                result.pop_back();
+            }
             if (ch == '(') in_brackets = true;
             if (ch == ')') in_brackets = false;
             word += ch;

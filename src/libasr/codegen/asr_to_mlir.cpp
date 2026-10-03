@@ -119,6 +119,11 @@ public:
         return builder->create<mlir::LLVM::AddressOfOp>(loc, globalStr);
     }
 
+    void visit_IfExp(const ASR::IfExp_t &x) {
+        throw CodeGenError("conditional expressions are not supported by the MLIR backend",
+            x.base.base.loc);
+    }
+
     void visit_expr2(ASR::expr_t &x) {
         this->visit_expr(x);
         if (ASR::is_a<ASR::Var_t>(x) || ASR::is_a<ASR::ArrayItem_t>(x)) {

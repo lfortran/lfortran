@@ -7,7 +7,8 @@ An array type.
 ### Syntax
 
 ```text
-Array(ttype type, dimension* dims, array_physical_type physical_type)
+Array(ttype type, dimension* dims, array_physical_type physical_type,
+    memory_space memory_space)
 ```
 
 ### Arguments
@@ -17,6 +18,7 @@ Array(ttype type, dimension* dims, array_physical_type physical_type)
 | `type` | the element type. It is never itself an array: a rank two array is one **Array** with two dimensions. |
 | `dims` | one [dimension](../helper_nodes/dimension.md) per rank, giving the lower bound and the extent. Both may be `nil` when the shape is not known where the type is written. |
 | `physical_type` | how the array is represented; see [array_physical_type](../enum_nodes/array_physical_type.md). |
+| `memory_space` | which memory the storage lives in; see [memory_space](../enum_nodes/memory_space.md). |
 
 ### Return values
 
@@ -32,6 +34,11 @@ argument passed to it may have the same element type and rank but different
 An assumed-rank array has no dimensions at all: its `dims` is empty and its
 physical type is `AssumedRankArray`. Its rank is only known at the call, and
 [SelectRank](../statement_nodes/SelectRank.md) is what recovers it.
+
+`memory_space` says which memory the elements live in. Everything on the host
+is `Global`, and so is a buffer a kernel is given; the other spaces appear
+only inside GPU code, where a variable may instead be private to a thread or
+shared by a threadgroup. See [memory_space](../enum_nodes/memory_space.md).
 
 ## Examples
 
@@ -59,6 +66,7 @@ physical type is `AssumedRankArray`. Its rank is only known at the call, and
     )
   ]
   :physical_type :FixedSizeArray
+  :memory_space :Global
 )
 ```
 
@@ -70,4 +78,4 @@ It comes from this complete ASR text document:
 
 ## See Also
 
-[dimension](../helper_nodes/dimension.md), [array_physical_type](../enum_nodes/array_physical_type.md), [ArrayItem](../expression_nodes/ArrayItem.md), [ArrayPhysicalCast](../expression_nodes/ArrayPhysicalCast.md), [ArrayConstant](../expression_nodes/ArrayConstant.md)
+[dimension](../helper_nodes/dimension.md), [array_physical_type](../enum_nodes/array_physical_type.md), [memory_space](../enum_nodes/memory_space.md), [ArrayItem](../expression_nodes/ArrayItem.md), [ArrayPhysicalCast](../expression_nodes/ArrayPhysicalCast.md), [ArrayConstant](../expression_nodes/ArrayConstant.md)

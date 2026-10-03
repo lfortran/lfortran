@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"R4\00", align 1
@@ -31,8 +31,6 @@ FINALIZE_SYMTABLE_cb:                             ; preds = %return
   %7 = load float, float* %cb, align 4
   ret float %7
 }
-
-declare float @f(float*)
 
 define void @__module_callback_03_foo1(float* %c, float* %d) {
 .entry:

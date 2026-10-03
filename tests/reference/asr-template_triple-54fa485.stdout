@@ -100,6 +100,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 x)
@@ -216,6 +217,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 x)
@@ -333,6 +335,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 x)
@@ -450,6 +453,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 x)
@@ -517,6 +521,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -577,6 +582,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -600,6 +606,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             math_real_m:
                 (Module
@@ -699,6 +706,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 10 x)
@@ -815,6 +823,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 x)
@@ -932,6 +941,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 14 x)
@@ -1049,6 +1059,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 11 x)
@@ -1116,6 +1127,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -1228,6 +1240,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 12 x)
@@ -1295,6 +1308,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -1321,6 +1335,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             template_triple:
                 (Program
@@ -1534,6 +1549,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             triple_m:
                 (Module
@@ -1561,6 +1577,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1587,6 +1605,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1613,6 +1633,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1633,12 +1655,18 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -1650,6 +1678,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 19 l)
@@ -1672,6 +1701,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -1714,6 +1745,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1740,6 +1773,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1766,6 +1801,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1786,12 +1823,18 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -1803,6 +1846,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 21 l)
@@ -1825,6 +1869,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -1856,6 +1902,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1882,6 +1930,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1902,9 +1952,13 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -1916,6 +1970,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [plus_t]
                                                     [(Var 22 t)]
@@ -1931,6 +1986,8 @@
                                                                 ((Var 22 t))]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ()
                                                                 ()
@@ -1938,6 +1995,8 @@
                                                             ((Var 22 t))]
                                                             (TypeParameter
                                                                 t
+                                                                NonExtensible
+                                                                .false.
                                                             )
                                                             ()
                                                             ()
@@ -1968,6 +2027,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1994,6 +2055,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2014,9 +2077,13 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -2028,6 +2095,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [plus_t]
                                                     [(Var 23 t)]
@@ -2044,12 +2112,16 @@
                                                                 ((Var 23 t))]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ()
                                                                 ()
                                                             ))]
                                                             (TypeParameter
                                                                 t
+                                                                NonExtensible
+                                                                .false.
                                                             )
                                                             ()
                                                             ()
@@ -2081,6 +2153,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             use_triple_m:
                 (Module
@@ -2328,6 +2401,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 26 t)]
@@ -2428,6 +2502,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 27 t)]
@@ -2475,6 +2550,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -2653,6 +2729,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 32 t)]
@@ -2753,6 +2830,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 33 t)]
@@ -2800,6 +2878,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -2984,6 +3063,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 29 t)]
@@ -3084,6 +3164,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 30 t)]
@@ -3131,6 +3212,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -3234,7 +3316,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -17,6 +17,7 @@
                             (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 ),
             tomlf_build:
                 (Module
@@ -92,6 +93,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_build_array:
                 (Module
@@ -221,6 +223,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 array)
@@ -357,6 +360,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 array)
@@ -493,6 +497,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 array)
@@ -583,6 +588,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_build_keyval:
                 (Module
@@ -691,6 +697,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 10 self)
@@ -797,6 +804,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 11 self)
@@ -840,7 +848,9 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

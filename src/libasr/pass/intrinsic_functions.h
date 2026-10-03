@@ -1163,7 +1163,7 @@ namespace Abs {
             if (ASR::is_a<ASR::Array_t>(*type)) {
                 ASR::Array_t* e = ASR::down_cast<ASR::Array_t>(type);
                 type = TYPE(ASR::make_Array_t(al, type->base.loc, real_type,
-                                    e->m_dims, e->n_dims, e->m_physical_type));
+                                    e->m_dims, e->n_dims, e->m_physical_type, e->m_memory_space));
             } else {
                 type = real_type;
             }
@@ -1267,8 +1267,19 @@ namespace StorageSize {
             
         } else if (ASR::is_a<ASR::StructType_t>(*type) ||
                    ASR::is_a<ASR::CPtr_t>(*type)) {
-            auto [size_bytes, _align] = ASRUtils::compute_type_size_align(type);
-            (void)_align;
+            int64_t size_bytes = -1;
+            if (ASR::is_a<ASR::StructType_t>(*type)) {
+                // The type alone lists only the components the derived type
+                // declares itself, so for an extended type it leaves out the
+                // inherited ones. Go through the declared type symbol, which
+                // is what the backends build the layout from.
+                size_bytes = ASRUtils::get_struct_expr_byte_size(args[0]);
+            }
+            if (size_bytes <= 0) {
+                auto [type_size_bytes, _align] = ASRUtils::compute_type_size_align(type);
+                (void)_align;
+                size_bytes = type_size_bytes;
+            }
             if (size_bytes > 0) {
                 return make_ConstantWithType(make_IntegerConstant_t, size_bytes * 8, t1, loc);
             }
@@ -6101,10 +6112,10 @@ namespace StringConcat {
                 ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(
                     ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arr_arg)));
                 ASR::ttype_t* result_arr_type = ASRUtils::TYPE(ASR::make_Array_t(
-                    al, loc, return_type, arr_t->m_dims, arr_t->n_dims, arr_t->m_physical_type));
-                value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(
-                    al, loc, n * result_elem_len, (void*)result_buf,
-                    result_arr_type, ASR::arraystorageType::ColMajor));
+                    al, loc, return_type, arr_t->m_dims, arr_t->n_dims, arr_t->m_physical_type, arr_t->m_memory_space));
+                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(
+                    al, loc, (void*)result_buf, result_arr_type,
+                    ASR::arraystorageType::ColMajor));
             }
         } else {
             // Fall back to computing return type from argument types
@@ -7789,7 +7800,7 @@ static inline ASR::ttype_t* set_longest_string_length(Allocator& al,
     if (ASR::is_a<ASR::Array_t>(*type)) {
         ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(type);
         return ASRUtils::TYPE(ASR::make_Array_t(al, loc, new_str_type,
-            array_type->m_dims, array_type->n_dims, array_type->m_physical_type));
+            array_type->m_dims, array_type->n_dims, array_type->m_physical_type, array_type->m_memory_space));
     }
     return new_str_type;
 }

@@ -62,6 +62,7 @@
                 false
                 []
                 false
+                :Host
               )
               []
               []
@@ -348,6 +349,7 @@
             []
           )
         ]
+        nil
       )
       "my_module" (Module
         (SymbolTable
@@ -400,6 +402,7 @@
                 false
                 []
                 false
+                :Host
               )
               []
               []
@@ -439,6 +442,7 @@
                       false
                       []
                       false
+                      :Host
                     )
                     (SymbolRef 3 "fun_interface")
                     :Source
@@ -526,6 +530,7 @@
                       false
                       []
                       false
+                      :Host
                     )
                     []
                     []
@@ -577,6 +582,7 @@
                     false
                     []
                     false
+                    :Host
                   )
                 ]
                 (Real
@@ -592,6 +598,7 @@
                 false
                 []
                 false
+                :Host
               )
               []
               [
@@ -637,8 +644,10 @@
         false
         false
         false
+        nil
       )
     }
   )
   []
+  nil
 )
