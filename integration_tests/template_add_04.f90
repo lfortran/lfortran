@@ -5,15 +5,17 @@ module template_add_04_m
 
   requirement R {T, F}
       deferred type :: T
-      function F(x, y) result(z)
-          type(T), intent(in) :: x, y
-          type(T) :: z
-      end function
+      deferred interface
+          function F(x, y) result(z)
+              type(T), intent(in) :: x, y
+              type(T) :: z
+          end function
+      end interface
   end requirement
 
-  template add_t(T, F, mult)
+  template add_t {T, F, mult}
       require :: R {T, F}
-      integer :: mult
+      deferred integer, parameter :: mult
       private
       public :: add_generic
   contains

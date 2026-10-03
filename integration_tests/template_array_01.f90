@@ -8,7 +8,7 @@ module template_array_01_m
         deferred type :: t
     end requirement
 
-    template array_tmpl(t)
+    template array_tmpl {t}
         require :: r {t}
         private
         public :: insert_t

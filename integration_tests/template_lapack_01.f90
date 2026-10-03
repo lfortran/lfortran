@@ -5,24 +5,28 @@ module template_lapack_01_m
 
     requirement gemm_r {T, gemm}
         deferred type :: T
-        subroutine gemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
-            character, intent(in) :: transa, transb
-            integer, intent(in) :: m, n, k, lda, ldb, ldc
-            type(T), intent(in) :: alpha, a(lda, *), b(ldb, *), beta
-            type(T), intent(out) :: c(ldc, *)
-        end subroutine
+        deferred interface
+            subroutine gemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
+                character, intent(in) :: transa, transb
+                integer, intent(in) :: m, n, k, lda, ldb, ldc
+                type(T), intent(in) :: alpha, a(lda, *), b(ldb, *), beta
+                type(T), intent(out) :: c(ldc, *)
+            end subroutine
+        end interface
     end requirement
 
     requirement cast_r {T, U, cast}
         deferred type :: T
         deferred type :: U
-        pure elemental function cast(arg) result(res)
-            type(T), intent(in) :: arg
-            type(U) :: res
-        end function
+        deferred interface
+            pure elemental function cast(arg) result(res)
+                type(T), intent(in) :: arg
+                type(U) :: res
+            end function
+        end interface
     end requirement
 
-    template external_matmul_t(T, gemm, cast_to_T)
+    template external_matmul_t {T, gemm, cast_to_T}
         require :: gemm_r {T, gemm}
         require :: cast_r {real, T, cast_to_T}
         private
@@ -78,7 +82,7 @@ contains
         call my_gemm_real('n', 'n', m, n, k, my_cast_to_real(1.0), a, m, b, k, my_cast_to_real(0.0), c, m)
     end function
 
-    function simple_external_matmul {T, gemm, cast_to_T} (a, b) result(c)
+    template function simple_external_matmul {T, gemm, cast_to_T} (a, b) result(c)
         require :: gemm_r {T, gemm}
         require :: cast_r {real, T, cast_to_T}
         type(T), intent(in) :: a(:,:), b(:,:)

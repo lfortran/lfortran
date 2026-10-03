@@ -3,7 +3,7 @@ module mod_template_06
     private
     public :: error_T
 
-    template error_T(T, U)
+    template error_T {T, U}
         deferred type :: T
         deferred type :: U
         private

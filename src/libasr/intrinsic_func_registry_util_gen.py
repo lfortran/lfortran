@@ -810,7 +810,7 @@ intrinsic_funcs_args = {
     ],
     "Merge": [
         {
-            "args": [("any", "any", "bool")],
+            "args": [("any_or_type_param", "any_or_type_param", "bool")],
             "ret_type_arg_idx": 0,
             "same_type_arg": 2
         }
@@ -968,6 +968,7 @@ compile_time_only_fn = [
 
 type_to_asr_type_check = {
     "any": "!ASR::is_a<ASR::TypeParameter_t>",
+    "any_or_type_param": "",
     "int": "is_integer",
     "uint": "is_unsigned_integer",
     "real": "is_real",
@@ -978,6 +979,10 @@ type_to_asr_type_check = {
     "dict": "ASR::is_a<ASR::Dict_t>",
     "list": "ASR::is_a<ASR::List_t>",
     "tuple": "ASR::is_a<ASR::Tuple_t>"
+}
+
+type_to_msg_name = {
+    "any_or_type_param": "any",
 }
 
 intrinsic_funcs_ret_type = {
@@ -1004,12 +1009,15 @@ def compute_arg_condition(no_of_args, args_lists, allow_polymorphic_arg, args_va
         subcond_in_msg = []
         for i in range(no_of_args):
             arg = arg_list[i]
-            type_check = f"{type_to_asr_type_check[arg]}(*arg_type{i})"
+            if type_to_asr_type_check[arg]:
+                type_check = f"{type_to_asr_type_check[arg]}(*arg_type{i})"
+            else:
+                type_check = "true"
             # Add unlimited polymorphic check if specified
             if allow_polymorphic_arg and i in allow_polymorphic_arg:
                 type_check = f"({type_check} || (is_unlimited_polymorphic_type({args_var}[{i}])))"
             subcond.append(type_check)
-            subcond_in_msg.append(arg)
+            subcond_in_msg.append(type_to_msg_name.get(arg, arg))
         condition.append(" && ".join(subcond))
         cond_in_msg.append(", ".join(subcond_in_msg))
     return (f"({') || ('.join(condition)})", f"({') or ('.join(cond_in_msg)})")

@@ -13,18 +13,22 @@ module field_m
 
     requirement field_only_division {T, plus, zero, mult, one, minus, negate, divide}
         require :: unit_ring {T, plus, zero, mult, one, minus, negate}
-        elemental function divide(x, y) result(quotient)
-            type(T), intent(in) :: x, y
-            type(T) :: quotient
-        end function
+        deferred interface
+            elemental function divide(x, y) result(quotient)
+                type(T), intent(in) :: x, y
+                type(T) :: quotient
+            end function
+        end interface
     end requirement
 
     requirement field_only_inverse {T, plus, zero, mult, one, minus, negate, invert}
         require :: unit_ring {T, plus, zero, mult, one, minus, negate}
-        elemental function invert(x) result(inverse)
-            type(T), intent(in) :: x
-            type(T) :: inverse
-        end function
+        deferred interface
+            elemental function invert(x) result(inverse)
+                type(T), intent(in) :: x
+                type(T) :: inverse
+            end function
+        end interface
     end requirement
 
     requirement field {T, plus, zero, mult, one, minus, negate, divide, invert}
@@ -32,7 +36,7 @@ module field_m
         require :: field_only_inverse {T, plus, zero, mult, one, minus, negate, invert}
     end requirement
 
-    template derive_field_from_division(T, plus, zero, mult, one, minus, negate, divide)
+    template derive_field_from_division {T, plus, zero, mult, one, minus, negate, divide}
         require :: field_only_division {T, plus, zero, mult, one, minus, negate, divide}
 
         private
@@ -47,7 +51,7 @@ module field_m
         end function
     end template
 
-    template derive_field_from_inverse(T, plus, zero, mult, one, minus, negate, invert)
+    template derive_field_from_inverse {T, plus, zero, mult, one, minus, negate, invert}
         require :: field_only_inverse {T, plus, zero, mult, one, minus, negate, invert}
 
         private
