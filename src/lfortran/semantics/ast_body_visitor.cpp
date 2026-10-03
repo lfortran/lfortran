@@ -486,6 +486,7 @@ public:
         }
         unit->m_items = items.p;
         unit->n_items = items.size();
+        instantiate_pending_bodies();
     }
 
     template <typename T>
@@ -2495,6 +2496,7 @@ public:
             }
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
+            check_io_item_not_function(expr);
             // For READ: expand implied-do loops to individual elements or array section
             if (_type == AST::decl_stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                 expand_implied_do_for_read(
@@ -2902,13 +2904,21 @@ public:
                     al, loc, 0, iostat_type));
                 ASR::ttype_t* cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(
                     al, loc, compiler_options.po.default_integer_kind));
+                // Each fallback READ gets its own copy of the expressions:
+                // an ASR expression node must belong to one statement only.
+                ASR::stmt_t* first_read = ASRUtils::STMT(tmp);
+                auto fallback_read = [&]() {
+                    ASRUtils::ExprStmtDuplicator duplicator(al);
+                    ASR::FileRead_t* read = ASR::down_cast<ASR::FileRead_t>(
+                        duplicator.duplicate_stmt(first_read));
+                    read->m_iostat = nullptr;
+                    return &read->base;
+                };
                 if (end_label == -1) {
                     ASR::expr_t* eof_test = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
                         al, loc, a_iostat, ASR::cmpopType::Lt, zero, cmp_type, nullptr));
                     Vec<ASR::stmt_t*> body; body.reserve(al, 1);
-                    body.push_back(al, ASRUtils::STMT(ASR::make_FileRead_t(al, loc, m_label,
-                        a_unit, a_fmt, a_iomsg, nullptr, a_advance, a_size, a_id, a_pos,
-                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml, a_rec, a_pad, a_decimal)));
+                    body.push_back(al, fallback_read());
                     tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, eof_test,
                         body.p, body.size(), nullptr, 0));
                 }
@@ -2916,9 +2926,7 @@ public:
                     ASR::expr_t* err_test = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
                         al, loc, a_iostat, ASR::cmpopType::Gt, zero, cmp_type, nullptr));
                     Vec<ASR::stmt_t*> body; body.reserve(al, 1);
-                    body.push_back(al, ASRUtils::STMT(ASR::make_FileRead_t(al, loc, m_label,
-                        a_unit, a_fmt, a_iomsg, nullptr, a_advance, a_size, a_id, a_pos,
-                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml, a_rec, a_pad, a_decimal)));
+                    body.push_back(al, fallback_read());
                     tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, err_test,
                         body.p, body.size(), nullptr, 0));
                 }
@@ -3026,7 +3034,7 @@ public:
 
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = type_subs_it->second;
         std::map<std::string, ASR::symbol_t*> symbol_subs = symbol_subs_it->second;
-        std::set<ASR::symbol_t*> instantiated_bodies;
+        std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> symbols;
 
         if (x.n_symbols == 0) {
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
@@ -3037,11 +3045,30 @@ public:
                     if (new_s == nullptr) {
                         continue;
                     }
-                    instantiate_body(al, type_subs, symbol_subs, new_s, s, instantiated_bodies);
+                    symbols.push_back({new_s, s});
                 }
             }
         } else {
             for (size_t i = 0; i < x.n_symbols; i++){
+                std::string remote_sym, local_sym, spec;
+                if (instantiation_generic_spec(x.m_symbols[i], remote_sym,
+                        local_sym, spec)) {
+                    // The specific procedures of a generic spec are recorded
+                    // in the substitutions by their names in the template.
+                    // A deferred procedure is replaced by its actual argument,
+                    // which has no body to instantiate.
+                    ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(
+                        temp->m_symtab->get_symbol(remote_sym));
+                    for (size_t j = 0; j < op->n_procs; j++) {
+                        ASR::symbol_t *s = op->m_procs[j];
+                        std::string s_name = ASRUtils::symbol_name(s);
+                        if (ASRUtils::is_template_arg(template_sym, s_name)) {
+                            continue;
+                        }
+                        symbols.push_back({symbol_subs[s_name], s});
+                    }
+                    continue;
+                }
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(to_lower(use_symbol->m_remote_sym));
                 std::string new_s_name = to_lower(use_symbol->m_remote_sym);
@@ -3052,10 +3079,10 @@ public:
                 if (s == nullptr || new_s == nullptr) {
                     continue;
                 }
-                instantiate_body(al, type_subs, symbol_subs, new_s, s, instantiated_bodies);
+                symbols.push_back({new_s, s});
             }
         }
-
+        queue_body_instantiation(type_subs, symbol_subs, symbols);
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
@@ -3458,6 +3485,12 @@ public:
                     // target the pointer refers to instead of being assigned a
                     // copy of its value.
                     create_associate_stmt = !selector_is_constant;
+                } else if (ASRUtils::is_finalizable_function_reference(tmp_expr)) {
+                    // The associate name is associated with the function
+                    // result itself, which is finalized after the ASSOCIATE
+                    // construct (F2018 7.5.6.3 p5), and only then. A copy
+                    // would be a second entity to finalize.
+                    create_associate_stmt = true;
                 }
             }
 
@@ -3849,8 +3882,22 @@ public:
         // variable so the function is called only once. Without this, the
         // source expression is duplicated into ArrayBound, ArraySize,
         // Allocate, and Assignment nodes, causing multiple evaluations.
+        // A scalar whose result is finalized after the statement (F2018
+        // 7.5.6.3 p5) is left in place when every object is a scalar, since
+        // it is then not duplicated: assigning it to a temporary would
+        // finalize the undefined temporary, and the result and the temporary
+        // would both be finalized. An array object is also assigned the
+        // source below, so the temporary is kept for it.
+        bool source_used_once = source_cond && source != nullptr &&
+            ASRUtils::is_finalizable_function_reference(source);
+        for (size_t i = 0; source_used_once && i < alloc_args_vec.size(); i++) {
+            if (alloc_args_vec[i].n_dims > 0 ||
+                    ASRUtils::is_array(ASRUtils::expr_type(alloc_args_vec[i].m_a))) {
+                source_used_once = false;
+            }
+        }
         if (source_cond && source != nullptr &&
-                ASR::is_a<ASR::FunctionCall_t>(*source)) {
+                ASR::is_a<ASR::FunctionCall_t>(*source) && !source_used_once) {
             ASR::ttype_t* source_type = ASRUtils::expr_type(source);
             std::string tmp_name = current_scope->get_unique_name(
                 "__lfortran_allocate_source_tmp");
@@ -7510,7 +7557,18 @@ public:
                     throw SemanticAbort();
                 }
             }
-            if (!ASRUtils::is_array(ASRUtils::expr_type(target)) && ASRUtils::is_struct(*ASRUtils::expr_type(target)) && ASRUtils::is_allocatable(ASRUtils::expr_type(target)) && ASR::is_a<ASR::FunctionCall_t>(*value)) {
+            // A result that is finalized after the statement is returned into
+            // a variable of its own and then assigned, which allocates the
+            // target only if it is not allocated already: F2018 7.5.6.3 p1
+            // finalizes the target only in that case, so it must not be
+            // allocated beforehand.
+            bool result_assigned_from_own_variable =
+                overloaded_stmt == nullptr &&
+                !ASRUtils::is_class_type(
+                    ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(target))) &&
+                ASRUtils::is_finalizable_function_reference(value);
+            if (!ASRUtils::is_array(ASRUtils::expr_type(target)) && ASRUtils::is_struct(*ASRUtils::expr_type(target)) && ASRUtils::is_allocatable(ASRUtils::expr_type(target)) && ASR::is_a<ASR::FunctionCall_t>(*value) && !result_assigned_from_own_variable) {
                 // Allocate the target if the value is a function call returning an allocatable
                 // array and the target is allocatable
                 ASR::alloc_arg_t alloc_arg;
@@ -8447,11 +8505,12 @@ public:
         if (ASR::is_a<ASR::Function_t>(*sym)) {
             f = ASR::down_cast<ASR::Function_t>(sym);
             if (ASRUtils::is_intrinsic_procedure(f)) {
-                if (intrinsic_module_procedures_as_asr_nodes.find(sub_name) !=
+                std::string orig_name = f->m_name;
+                if (intrinsic_module_procedures_as_asr_nodes.find(orig_name) !=
                     intrinsic_module_procedures_as_asr_nodes.end()) {
-                    if (sub_name == "c_f_pointer") {
+                    if (orig_name == "c_f_pointer") {
                         tmp = create_CFPointer(x);
-                    } else if (sub_name == "c_f_procpointer") {
+                    } else if (orig_name == "c_f_procpointer") {
                         tmp = create_CFProcPointer(x);
                     } else {
                         LCOMPILERS_ASSERT(false)
@@ -8673,8 +8732,11 @@ public:
                         args_with_mdt.push_back(al, args[i]);
                     }
                 }
+                // A generic interface of a template block is only visible
+                // inside the template and cannot be imported.
                 if( !ASR::is_a<ASR::Module_t>(*original_sym_owner) &&
-                    !ASR::is_a<ASR::Program_t>(*original_sym_owner) ) {
+                    !ASR::is_a<ASR::Program_t>(*original_sym_owner) &&
+                    !ASR::is_a<ASR::Template_t>(*original_sym_owner) ) {
                     std::string s_name = "1_" + std::string(p->m_name);
                     std::string original_sym_owner_name = ASRUtils::symbol_name(original_sym_owner);
                     if( current_scope->resolve_symbol(original_sym_owner_name) == nullptr ) {
@@ -9173,6 +9235,23 @@ public:
             nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr, true, nullptr, nullptr, nullptr, nullptr, nullptr);
     }
 
+    void check_io_item_not_function(ASR::expr_t *expr) {
+        ASR::ttype_t *t = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(expr));
+        if (!ASR::is_a<ASR::FunctionType_t>(*t)) {
+            return;
+        }
+        std::string name;
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            name = " '" + std::string(ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v)) + "'";
+        }
+        diag.add(Diagnostic("Procedure" + name + " requires an argument list",
+            Level::Error, Stage::Semantic, {
+            Label("", {expr->base.loc})
+        }));
+        throw SemanticAbort();
+    }
+
     void visit_Print(const AST::Print_t &x) {
         mark_IO_side_effect();
         Vec<ASR::expr_t*> body;
@@ -9227,6 +9306,7 @@ public:
         for (size_t i=0; i<x.n_values; i++) {
             this->visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            check_io_item_not_function(expr);
             if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
                 ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(expr);
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v->m_v);
@@ -9369,6 +9449,28 @@ public:
                 diag::Level::Error, diag::Stage::Semantic, {
                     diag::Label("", {test_int->base.loc})}));
             throw SemanticAbort();
+        }
+        if (ASRUtils::contains_finalizable_function_reference(test_int)) {
+            // The test is evaluated once, and the results of the functions
+            // it references are finalized after that (F2018 7.5.6.3 p5):
+            // the two comparisons below would otherwise share the reference.
+            std::string tmp_name = current_scope->get_unique_name(
+                "__lfortran_arithmetic_if_test");
+            ASR::asr_t* tmp_sym = ASRUtils::make_Variable_t_util(
+                al, test_int->base.loc, current_scope, s2c(al, tmp_name),
+                nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default,
+                ASRUtils::duplicate_type(al, test_int_type), nullptr,
+                current_procedure_abi_type, ASR::Public,
+                ASR::presenceType::Required, false);
+            current_scope->add_symbol(tmp_name,
+                ASR::down_cast<ASR::symbol_t>(tmp_sym));
+            ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(
+                al, test_int->base.loc, ASR::down_cast<ASR::symbol_t>(tmp_sym)));
+            current_body->push_back(al, ASRUtils::STMT(
+                ASRUtils::make_Assignment_t_util(al, test_int->base.loc,
+                    tmp_var, test_int, nullptr, false, false)));
+            test_int = tmp_var;
         }
         ASR::expr_t *test_lt, *test_gt;
         int kind = ASRUtils::extract_kind_from_ttype_t(test_int_type);

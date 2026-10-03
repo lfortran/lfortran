@@ -2024,3 +2024,68 @@ subroutine exit_without_construct_name_1()
         end do
     end do
 end subroutine
+
+module inline_intrinsic_template_arg_1
+    implicit none
+contains
+    template function iita_g{f, t}(x, y) result(r)
+        deferred type :: t
+        interface
+            pure elemental function f(a, b) result(c)
+                import :: t
+                type(t), intent(in) :: a, b
+                type(t) :: c
+            end function
+        end interface
+        type(t), intent(in) :: x, y
+        type(t) :: r
+        r = f(x, y)
+    end function
+
+    template function iita_h{f}(x, y) result(r)
+        interface
+            pure elemental function f(a, b) result(c)
+                integer, intent(in) :: a, b
+                logical :: c
+            end function
+        end interface
+        integer, intent(in) :: x, y
+        logical :: r
+        r = f(x, y)
+    end function
+end module
+
+subroutine inline_intrinsic_template_arg_errors()
+    use inline_intrinsic_template_arg_1
+    implicit none
+    print *, iita_g{max, logical}(.true., .false.)  ! {Error} Arguments to max0 must be of real, integer or character type
+    print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
+    print *, iita_g{max, integer}(1, 2)
+end subroutine
+
+! The OPTIONAL and VALUE check also applies to a BIND(C) procedure that has
+! internal procedures.
+subroutine bindc_optional_value_contains(x) bind(c)  ! {Error} Variable `x` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value_contains` is BIND(C)
+    implicit none
+    integer, optional, value :: x
+contains
+    subroutine inner()
+    end subroutine
+end subroutine
+
+module derived_type_nonconst_bound_in_continue_compilation_1_m
+    implicit none
+    integer :: dtncb_m = 3
+    type :: dtncb_t
+        ! `dtncb_m` is not a named constant, so `dtncb_m*2` is not constant
+        integer :: b(dtncb_m*2)  ! {Error} Explicit shaped array with nonconstant bounds
+    end type
+end module
+
+subroutine parameter_nonconstant_init()
+    implicit none
+    integer :: pnc_bla
+    integer, parameter :: pnc_y1 = abs(pnc_bla)  ! {Error} Initialization of `pnc_y1` must reduce to a compile time constant.
+    integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
+    print *, pnc_y1, pnc_y2
+end subroutine
