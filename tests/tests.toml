@@ -6215,3 +6215,7 @@ filename = "show_pass_error_02.f90"
 fortran = true
 pass = "parallel_canonicalize,parallel_dispatch"
 options = "--gpu=metal"
+
+[[test]]
+filename = "../integration_tests/string_122.f90"
+asr = true
