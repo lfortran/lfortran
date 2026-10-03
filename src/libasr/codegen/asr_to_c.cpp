@@ -1184,6 +1184,303 @@ R"(    // Initialise Numpy
         src += indent + dest_src + " = (" + type_src + ") " + source_src + ";\n";
     }
 
+    /*
+        The C backend emits every character value as a byte string, so a
+        character item of kind 4 would be described to the runtime as four
+        byte code units it does not have.
+    */
+    void check_character_item_kind(ASR::ttype_t* type, const Location &loc) {
+        int64_t char_kind = ASRUtils::extract_kind_from_ttype_t(type);
+        if (char_kind != 1) {
+            throw CodeGenError("character(kind=" + std::to_string(char_kind) +
+                ") is not supported by the C backend, only kind 1 is", loc);
+        }
+    }
+
+    /*
+        Emits declarations, into the enclosing block, that format `x` with the
+        runtime's `_lcompilers_string_format_fortran`. The formatted text is
+        stored in `result_data` (char *) and its length in `result_len`.
+
+        The runtime takes each item by address and describes it by its type
+        code (`ASRUtils::get_format_type_code`, shared with the LLVM backend),
+        so every item is first stored in a local. A character item is passed
+        as a string descriptor holding its data and length.
+    */
+    std::string emit_string_format(const ASR::StringFormat_t &x,
+            const std::string &indent, const std::string &result_data,
+            const std::string &result_len, const std::string &decimal_mode,
+            const std::string &sign_mode, const std::string &round_mode) {
+        if (x.m_kind != ASR::string_format_kindType::FormatFortran) {
+            throw CodeGenError("only Fortran formatting is supported by the C backend",
+                x.base.base.loc);
+        }
+        std::string out;
+        std::string fmt_data = "NULL", fmt_len = "0";
+        if (x.m_fmt) {
+            if (ASRUtils::is_array(ASRUtils::expr_type(x.m_fmt))) {
+                throw CodeGenError("a character array format in write is not "
+                    "supported by the C backend yet", x.m_fmt->base.loc);
+            }
+            visit_expr(*x.m_fmt);
+            out += indent + "const char *" + result_data + "_fmt = " + src + ";\n";
+            fmt_data = result_data + "_fmt";
+            fmt_len = "strlen(" + fmt_data + ")";
+        }
+        std::string serialization, item_ptrs;
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::expr_t* item = x.m_args[i];
+            ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(item));
+            if (ASRUtils::is_array(type)) {
+                throw CodeGenError("array items in write are not supported by "
+                    "the C backend yet", item->base.loc);
+            }
+            std::string code = ASRUtils::get_format_type_code(type);
+            bool is_string = ASR::is_a<ASR::String_t>(*type);
+            if (is_string) {
+                check_character_item_kind(type, item->base.loc);
+            }
+            if (code.empty() || ASR::is_a<ASR::CPtr_t>(*type) || (is_string &&
+                    ASR::down_cast<ASR::String_t>(type)->m_physical_type
+                        != ASR::DescriptorString)) {
+                throw CodeGenError("items of type " +
+                    ASRUtils::type_to_str_fortran_expr(type, item) +
+                    " in write are not supported by the C backend yet",
+                    item->base.loc);
+            }
+            if (i > 0) {
+                serialization += ",";
+            }
+            serialization += code;
+            std::string item_name = result_data + "_item" + std::to_string(i);
+            visit_expr(*item);
+            if (is_string) {
+                out += indent + "const char *" + item_name + "_data = " + src + ";\n";
+                out += indent + "struct { const char *data; int64_t len; } " + item_name
+                    + " = { " + item_name + "_data, (int64_t) strlen(" + item_name
+                    + "_data) };\n";
+            } else {
+                std::string item_type;
+                if (ASR::is_a<ASR::Logical_t>(*type)) {
+                    // The runtime reads a logical as an integer of the
+                    // serialized width, while C stores it as `bool`.
+                    item_type = "int" + std::to_string(
+                        ASRUtils::extract_kind_from_ttype_t(type) * 8) + "_t";
+                } else {
+                    item_type = CUtils::get_c_type_from_ttype_t(type);
+                }
+                out += indent + item_type + " " + item_name + " = " + src + ";\n";
+            }
+            item_ptrs += ", (void *) &" + item_name;
+        }
+        if (x.n_args == 0) {
+            item_ptrs = ", (void *) NULL";
+        }
+        out += indent + "int64_t " + result_len + ";\n";
+        out += indent + "char *" + result_data + " = _lcompilers_string_format_fortran("
+            "_lfortran_get_default_allocator(), " + fmt_data + ", " + fmt_len + ", \""
+            + serialization + "\", &" + result_len + ", 0, 0, " + decimal_mode + ", "
+            + sign_mode + ", " + round_mode + item_ptrs + ");\n";
+        return out;
+    }
+
+    /*
+        Checks that `unit`, the internal file of a write, is a character
+        variable whose storage this backend owns, and returns its type.
+
+        The C backend keeps a fixed-length character variable as a `char *`
+        that starts out NULL and carries no length, so the write takes the
+        length from the declaration and writes into the variable's own buffer,
+        allocating a NUL-terminated buffer of that length the first time (so
+        once per variable, not once per write). That is only valid for a
+        variable nothing else gives storage to:
+        a dummy argument may be bound to any of the caller's buffers, of a
+        length the callee does not know, a variable with an initial value
+        starts out pointing at a read-only string literal, and a `save`
+        variable of a procedure is declared without `static`, so its buffer
+        does not outlive the call.
+    */
+    ASR::String_t* check_internal_file(ASR::expr_t* unit) {
+        const Location &loc = unit->base.loc;
+        if (ASRUtils::is_array(ASRUtils::expr_type(unit))) {
+            throw CodeGenError("a character array internal file in write is "
+                "not supported by the C backend yet", loc);
+        }
+        ASR::Variable_t* var = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*unit)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(unit)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                var = ASR::down_cast<ASR::Variable_t>(sym);
+            }
+        }
+        if (var == nullptr) {
+            throw CodeGenError("only a character variable is supported as an "
+                "internal file in write by the C backend yet", loc);
+        }
+        ASR::String_t* str_type = ASRUtils::get_string_type(unit);
+        if (str_type->m_len_kind != ASR::string_length_kindType::ExpressionLength
+                || str_type->m_len == nullptr) {
+            throw CodeGenError("an internal file of assumed or deferred length "
+                "is not supported by the C backend yet", loc);
+        }
+        if (ASRUtils::is_arg_dummy(var->m_intent)) {
+            throw CodeGenError("an internal file that is a dummy argument is not "
+                "supported by the C backend yet", loc);
+        }
+        if (var->m_symbolic_value != nullptr) {
+            throw CodeGenError("an internal file with an initial value is not "
+                "supported by the C backend yet", loc);
+        }
+        if (var->m_intent != ASRUtils::intent_local ||
+                ASRUtils::is_allocatable_or_pointer(var->m_type)) {
+            throw CodeGenError("an internal file that is allocatable, a pointer "
+                "or a function result is not supported by the C backend yet", loc);
+        }
+        // A character variable is declared without `static`, so a `save`
+        // variable of a procedure or a block would lose its buffer, and its
+        // value, between activations.
+        ASR::asr_t* owner = var->m_parent_symtab->asr_owner;
+        if (var->m_storage == ASR::storage_typeType::Save &&
+                !(ASR::is_a<ASR::symbol_t>(*owner) &&
+                  (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(owner)) ||
+                   ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner))))) {
+            throw CodeGenError("an internal file with the save attribute in a "
+                "procedure or a block is not supported by the C backend yet", loc);
+        }
+        return str_type;
+    }
+
+    void visit_FileWrite(const ASR::FileWrite_t &x) {
+        const Location &loc = x.base.base.loc;
+        if (x.m_overloaded) {
+            throw CodeGenError("user-defined derived-type output is not supported "
+                "by the C backend yet", loc);
+        }
+        if (x.m_nml) {
+            throw CodeGenError("namelist output is not supported by the C backend yet", loc);
+        }
+        if (!x.m_is_formatted) {
+            throw CodeGenError("unformatted write is not supported by the C backend yet", loc);
+        }
+        if (x.m_rec || x.m_pos || x.m_decimal || x.m_id || x.m_asynchronous) {
+            throw CodeGenError("rec=, pos=, decimal=, id= and asynchronous= in write "
+                "are not supported by the C backend yet", loc);
+        }
+        if (x.n_values > 1) {
+            throw CodeGenError("write with more than one formatted value is not "
+                "supported by the C backend yet", loc);
+        }
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string inner_indent = indent + std::string(indentation_spaces, ' ');
+        bool is_internal = x.m_unit &&
+            ASRUtils::is_character(*ASRUtils::expr_type(x.m_unit));
+        ASR::String_t* internal_type = is_internal ? check_internal_file(x.m_unit) : nullptr;
+        std::string out = indent + "{\n";
+        std::string unit = "__lfortran_unit";
+        std::string decimal_mode = "0", sign_mode = "0", round_mode = "0";
+        if (!is_internal) {
+            std::string unit_value = "6";
+            if (x.m_unit) {
+                if (!ASRUtils::is_integer(*ASRUtils::expr_type(x.m_unit))) {
+                    throw CodeGenError("unsupported type for unit in write", x.m_unit->base.loc);
+                }
+                visit_expr(*x.m_unit);
+                unit_value = src;
+            }
+            out += inner_indent + "int32_t " + unit + " = " + unit_value + ";\n";
+            decimal_mode = "_lfortran_get_decimal_mode(" + unit + ")";
+            sign_mode = "_lfortran_get_sign_mode(" + unit + ")";
+            round_mode = "_lfortran_get_round_mode(" + unit + ")";
+        }
+
+        // The runtime reports the status through an `int32_t *`, so a variable
+        // of another kind receives it through an `int32_t` local.
+        std::string iostat = "NULL", iostat_copy_back;
+        if (x.m_iostat) {
+            ASR::ttype_t* iostat_type = ASRUtils::expr_type(x.m_iostat);
+            visit_expr(*x.m_iostat);
+            if (ASRUtils::extract_kind_from_ttype_t(iostat_type) == 4) {
+                iostat = "&" + src;
+            } else {
+                out += inner_indent + "int32_t __lfortran_iostat = 0;\n";
+                iostat = "&__lfortran_iostat";
+                iostat_copy_back = inner_indent + src + " = ("
+                    + CUtils::get_c_type_from_ttype_t(iostat_type)
+                    + ") __lfortran_iostat;\n";
+            }
+        }
+
+        // The record to transfer, as data and length.
+        std::string data = "\"\"", len = "0";
+        bool free_data = false;
+        if (x.n_values == 1) {
+            ASR::expr_t* value = x.m_values[0];
+            if (ASR::is_a<ASR::StringFormat_t>(*value)) {
+                out += emit_string_format(*ASR::down_cast<ASR::StringFormat_t>(value),
+                    inner_indent, "__lfortran_record", "__lfortran_record_len",
+                    decimal_mode, sign_mode, round_mode);
+                data = "__lfortran_record";
+                len = "__lfortran_record_len";
+                free_data = true;
+            } else if (ASRUtils::is_character(*ASRUtils::expr_type(value)) &&
+                    !ASRUtils::is_array(ASRUtils::expr_type(value))) {
+                check_character_item_kind(ASRUtils::expr_type(value), value->base.loc);
+                visit_expr(*value);
+                out += inner_indent + "const char *__lfortran_record = " + src + ";\n";
+                data = "__lfortran_record";
+                len = "strlen(__lfortran_record)";
+            } else {
+                throw CodeGenError("this write value is not supported by the C backend yet",
+                    value->base.loc);
+            }
+        }
+
+        // Every length passed through `...` is read by the runtime as an
+        // `int64_t` and every string as a `char *`, so both are cast.
+        if (is_internal) {
+            visit_expr(*x.m_unit);
+            std::string target = src;
+            std::string target_len;
+            int64_t const_len;
+            if (ASRUtils::extract_value(internal_type->m_len, const_len)) {
+                target_len = std::to_string(const_len);
+            } else {
+                visit_expr(*internal_type->m_len);
+                target_len = src;
+            }
+            std::string char_kind = std::to_string(internal_type->m_kind);
+            out += inner_indent + "int64_t __lfortran_target_len = " + target_len + ";\n";
+            out += inner_indent + "if (" + target + " == NULL) {\n";
+            out += inner_indent + std::string(indentation_spaces, ' ') + target
+                + " = (char *) calloc(__lfortran_target_len + 1, " + char_kind + ");\n";
+            out += inner_indent + "}\n";
+            out += inner_indent + "_lfortran_string_write(_lfortran_get_default_allocator(), "
+                "&" + target + ", false, false, false, " + char_kind
+                + ", 1, &__lfortran_target_len, " + iostat + ", \"%s\", 2, (char *) "
+                + data + ", (int64_t) " + len + ");\n";
+        } else {
+            std::string end_data = "\"\\n\"", end_len = "1";
+            if (x.m_end) {
+                visit_expr(*x.m_end);
+                out += inner_indent + "const char *__lfortran_end = " + src + ";\n";
+                end_data = "__lfortran_end";
+                end_len = "strlen(__lfortran_end)";
+            }
+            out += inner_indent + "_lfortran_file_write(" + unit + ", " + iostat
+                + ", \"%s%s\", 4, (char *) " + data + ", (int64_t) " + len
+                + ", (char *) " + end_data + ", (int64_t) " + end_len + ");\n";
+        }
+        out += iostat_copy_back;
+        if (free_data) {
+            out += inner_indent + "ALLOCATOR_DEALLOC(_lfortran_get_default_allocator(), "
+                + data + ");\n";
+        }
+        out += indent + "}\n";
+        src = check_tmp_buffer() + out;
+    }
+
     void visit_Print(const ASR::Print_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string tmp_gen = indent + "printf(\"", out = "";

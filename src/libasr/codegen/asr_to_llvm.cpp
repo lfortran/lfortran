@@ -23713,45 +23713,48 @@ public:
         walked_size_known = true;
         type = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(type));
-        if (ASR::is_a<ASR::Integer_t>(*type)) {
-            res += "I";
-            res += std::to_string(ASRUtils::extract_kind_from_ttype_t(type));
-            walked_size = ASRUtils::extract_kind_from_ttype_t(type);
-        } else if (ASR::is_a<ASR::UnsignedInteger_t>(*type)) {
-            res += "U";
-            res += std::to_string(ASRUtils::extract_kind_from_ttype_t(type));
-            walked_size = ASRUtils::extract_kind_from_ttype_t(type);
-        } else if (ASR::is_a<ASR::Real_t>(*type)) {
-            int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
-            res += "R";
-            res += std::to_string(a_kind);
-            // A real(10) is walked with `sizeof(long double)`, which the
-            // compiler cannot reproduce from the LLVM type.
-            if( a_kind == 4 || a_kind == 8 || a_kind == 16 ) {
-                walked_size = a_kind;
-            } else {
-                walked_size_known = false;
+        std::string scalar_code = ASRUtils::get_format_type_code(type);
+        if (!scalar_code.empty()) {
+            res += scalar_code;
+            switch (type->type) {
+                case ASR::ttypeType::Integer:
+                case ASR::ttypeType::UnsignedInteger:
+                case ASR::ttypeType::Logical: {
+                    walked_size = ASRUtils::extract_kind_from_ttype_t(type);
+                    break;
+                }
+                case ASR::ttypeType::Real: {
+                    int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
+                    // A real(10) is walked with `sizeof(long double)`, which
+                    // the compiler cannot reproduce from the LLVM type.
+                    if( a_kind == 4 || a_kind == 8 || a_kind == 16 ) {
+                        walked_size = a_kind;
+                    } else {
+                        walked_size_known = false;
+                    }
+                    break;
+                }
+                case ASR::ttypeType::Complex: {
+                    walked_size = 2 * (int64_t) ASRUtils::extract_kind_from_ttype_t(type);
+                    break;
+                }
+                case ASR::ttypeType::String: {
+                    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
+                    walked_size = (str_type->m_physical_type == ASR::DescriptorString) ?
+                        (int64_t) module->getDataLayout().getTypeAllocSize(
+                            llvm_utils->string_descriptor) : pointer_size;
+                    int len;
+                    if(ASRUtils::extract_value(str_type->m_len, len)){res += "-" + std::to_string(len);}
+                    break;
+                }
+                case ASR::ttypeType::CPtr: {
+                    walked_size = pointer_size;
+                    break;
+                }
+                default: {
+                    LCOMPILERS_ASSERT(false);
+                }
             }
-        } else if (ASR::is_a<ASR::String_t>(*type)) {
-            res += "S-";
-            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
-            if(str_type->m_physical_type == ASR::DescriptorString) res += "DESC";
-            else if(str_type->m_physical_type == ASR::CChar) res +="CCHAR";
-            else throw LCompilersException("Unhandled string physical type");
-            // The character kind tells the runtime how many bytes one character
-            // occupies, so that it can transcode a kind 4 value to UTF-8 and
-            // count field widths in characters rather than bytes.
-            res += "-K" + std::to_string(str_type->m_kind);
-            walked_size = (str_type->m_physical_type == ASR::DescriptorString) ?
-                (int64_t) module->getDataLayout().getTypeAllocSize(
-                    llvm_utils->string_descriptor) : pointer_size;
-            int len;
-            if(ASRUtils::extract_value(str_type->m_len, len)){res += "-" + std::to_string(len);}
-        } else if (ASR::is_a<ASR::Complex_t>(*type)){
-            res += "{R" + std::to_string(ASRUtils::extract_kind_from_ttype_t(type))+
-                    ",R" + std::to_string(ASRUtils::extract_kind_from_ttype_t(type))+
-                    "}";
-            walked_size = 2 * (int64_t) ASRUtils::extract_kind_from_ttype_t(type);
         } else if (ASR::is_a<ASR::Array_t>(*type)) {
             // push array size only if it's not a struct member.
             if(in_struct && ASRUtils::is_fixed_size_array(type)){
@@ -23788,13 +23791,6 @@ public:
                 ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr)),
                 walked_size, walked_size_known);
             res += ")";
-        } else if (ASR::is_a<ASR::Logical_t>(*type)) {
-            int a_kind = ASR::down_cast<ASR::Logical_t>(type)->m_kind;
-            res += "L" + std::to_string(a_kind * 8);
-            walked_size = a_kind;
-        } else if(ASR::is_a<ASR::CPtr_t>(*type)){
-            res += "CPtr";
-            walked_size = pointer_size;
         } else {
             throw CodeGenError("Printing support is not available for `" +
                 ASRUtils::type_to_str_fortran_expr(type, expr) + "` type.");

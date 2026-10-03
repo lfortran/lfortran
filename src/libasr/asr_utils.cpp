@@ -5752,6 +5752,50 @@ InterfaceMismatch binding_override_mismatch(
     return interface_mismatch(what, proc, base, self_index, use_expr_context);
 }
 
+std::string get_format_type_code(ASR::ttype_t* type) {
+    type = type_get_past_allocatable(type_get_past_pointer(type));
+    switch (type->type) {
+        case ASR::ttypeType::Integer: {
+            return "I" + std::to_string(extract_kind_from_ttype_t(type));
+        }
+        case ASR::ttypeType::UnsignedInteger: {
+            return "U" + std::to_string(extract_kind_from_ttype_t(type));
+        }
+        case ASR::ttypeType::Real: {
+            return "R" + std::to_string(extract_kind_from_ttype_t(type));
+        }
+        case ASR::ttypeType::Complex: {
+            std::string real = "R" + std::to_string(extract_kind_from_ttype_t(type));
+            return "{" + real + "," + real + "}";
+        }
+        case ASR::ttypeType::Logical: {
+            return "L" + std::to_string(
+                ASR::down_cast<ASR::Logical_t>(type)->m_kind * 8);
+        }
+        case ASR::ttypeType::String: {
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
+            std::string res = "S-";
+            if (str_type->m_physical_type == ASR::DescriptorString) {
+                res += "DESC";
+            } else if (str_type->m_physical_type == ASR::CChar) {
+                res += "CCHAR";
+            } else {
+                throw LCompilersException("Unhandled string physical type");
+            }
+            // The character kind tells the runtime how many bytes one
+            // character occupies, so that it can transcode a kind 4 value to
+            // UTF-8 and count field widths in characters rather than bytes.
+            return res + "-K" + std::to_string(str_type->m_kind);
+        }
+        case ASR::ttypeType::CPtr: {
+            return "CPtr";
+        }
+        default: {
+            return "";
+        }
+    }
+}
+
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
 ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;
 
