@@ -2,7 +2,7 @@ program gpu_metal_378
 implicit none
 real :: c(6), x(3), neg_res(5)
 real :: matrix(2, 3)
-integer(8) :: i, n, lb8, ub8
+integer(8) :: i, n, lb8, ub8, j8
 integer(4) :: j, i4
 integer(8) :: k, m
 real :: total
@@ -34,11 +34,11 @@ if (neg_res(1) /= -4.0) error stop 5
 if (neg_res(3) /= 0.0) error stop 6
 if (neg_res(5) /= 4.0) error stop 7
 
-! Test 4: Multi-dimensional loop nest with mixed integer(4) and integer(8) indices
+! Test 4: Multi-dimensional loop nest with integer(8) indices and default integer bounds
 m = 2_8
 matrix = 0.0
-do concurrent (j = 1:2, k = 1_8:3_8)
-    matrix(j, k) = real(j) + real(k)
+do concurrent (j8 = 1:2, k = 1:3)
+    matrix(j8, k) = real(j8) + real(k)
 end do
 if (matrix(1, 1) /= 2.0) error stop 8
 if (matrix(2, 1) /= 3.0) error stop 9

@@ -9865,6 +9865,15 @@ public:
             } else {
                 increment = nullptr;
             }
+            ASR::ttype_t *var_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(var));
+            ASR::ttype_t *start_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(start));
+            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &start, start_type, var_type, diag);
+            ASR::ttype_t *end_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(end));
+            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &end, end_type, var_type, diag);
+            if (increment) {
+                ASR::ttype_t *inc_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(increment));
+                ImplicitCastRules::set_converted_value(al, x.base.base.loc, &increment, inc_type, var_type, diag);
+            }
             ASR::do_loop_head_t head;
             head.m_v = var;
             head.m_start = start;
