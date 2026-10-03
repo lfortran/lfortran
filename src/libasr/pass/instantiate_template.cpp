@@ -5,6 +5,7 @@
 #include <libasr/asr.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/semantic_exception.h>
 
 namespace LCompilers {
@@ -1020,6 +1021,19 @@ public:
 
 };
 
+// The nested template's own parameters are not bound by the enclosing
+// instantiation: they stay deferred (and shadow any enclosing parameter of the
+// same name) until the nested template is instantiated itself.
+static std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>
+nested_template_type_subs(ASR::Template_t* x,
+        const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs) {
+    std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> result = type_subs;
+    for (size_t i=0; i<x->n_args; i++) {
+        result.erase(x->m_args[i]);
+    }
+    return result;
+}
+
 // A procedure defined in the template itself, as opposed to a template
 // parameter (a requirement's procedure), which is substituted by the
 // instantiation's argument.
@@ -1176,6 +1190,10 @@ public:
             case (ASR::symbolType::CustomOperator) : {
                 ASR::CustomOperator_t* x = ASR::down_cast<ASR::CustomOperator_t>(sym);
                 return instantiate_CustomOperator(x);
+            }
+            case (ASR::symbolType::GenericProcedure) : {
+                ASR::GenericProcedure_t* x = ASR::down_cast<ASR::GenericProcedure_t>(sym);
+                return instantiate_GenericProcedure(x);
             }
             case (ASR::symbolType::AssociateBlock) : {
                 ASR::AssociateBlock_t* x = ASR::down_cast<ASR::AssociateBlock_t>(sym);
@@ -1540,7 +1558,42 @@ public:
             value, dest);
     }
 
-    // An intrinsic of a deferred constant, e.g. `abs(-n)` or `int(n*2.5)`,
+    // The compile-time value of an intrinsic whose arguments `args` are all
+    // constants, computed by the intrinsic's evaluation function `eval`;
+    // nullptr if an argument has no compile-time value, or if `eval` reports
+    // an error, which is passed on.
+    ASR::expr_t* eval_intrinsic(ASRUtils::eval_intrinsic_function eval,
+            Vec<ASR::expr_t*> &args, ASR::ttype_t* type, const Location &loc) {
+        Vec<ASR::expr_t*> arg_values;
+        arg_values.reserve(al, args.size());
+        for (size_t i = 0; i < args.size(); i++) {
+            // An array argument is passed through a change of its physical
+            // type, which carries no value of its own.
+            arg_values.push_back(al, args[i]
+                ? ASRUtils::get_past_array_physical_cast(args[i]) : nullptr);
+        }
+        if (eval == nullptr || !ASRUtils::all_args_evaluated(arg_values, true)) {
+            return nullptr;
+        }
+        for (size_t i = 0; i < arg_values.size(); i++) {
+            if (arg_values[i]) {
+                arg_values.p[i] = ASRUtils::expr_value(arg_values[i]);
+            }
+        }
+        diag::Diagnostics eval_diagnostics;
+        ASR::expr_t* value = eval(al, loc, type, arg_values, eval_diagnostics);
+        if (eval_diagnostics.has_error()) {
+            value = nullptr;
+            if (diagnostics) {
+                for (auto &d: eval_diagnostics.diagnostics) {
+                    diagnostics->diagnostics.push_back(d);
+                }
+            }
+        }
+        return value;
+    }
+
+    // An intrinsic of a deferred constant, e.g. `abs(-n)` or `sin(real(n))`,
     // evaluated by the intrinsic's own evaluation function.
     ASR::asr_t* duplicate_IntrinsicElementalFunction(
             ASR::IntrinsicElementalFunction_t* x) {
@@ -1551,47 +1604,58 @@ public:
         }
         ASR::ttype_t* type = duplicate_ttype(x->m_type);
         ASR::expr_t* value = duplicate_expr(x->m_value);
-        ASRUtils::eval_intrinsic_function eval =
-            ASRUtils::IntrinsicElementalFunctionRegistry::get_eval_function(
-                x->m_intrinsic_id);
-        if (value == nullptr && eval && !ASRUtils::is_array(type)) {
-            Vec<ASR::expr_t*> arg_values;
-            arg_values.reserve(al, args.size());
-            for (size_t i = 0; i < args.size(); i++) {
-                ASR::expr_t* arg_value = ASRUtils::expr_value(args[i]);
-                if (arg_value == nullptr
-                        || !(ASR::is_a<ASR::IntegerConstant_t>(*arg_value)
-                            || ASR::is_a<ASR::RealConstant_t>(*arg_value))) {
-                    break;
-                }
-                arg_values.push_back(al, arg_value);
-            }
-            // `eval_Mod` divides an integer by the second argument unchecked,
-            // while `eval_Modulo` reports a zero second argument itself.
-            int64_t divisor = -1;
-            if (arg_values.size() == args.size()
-                    && x->m_intrinsic_id == static_cast<int64_t>(
-                        ASRUtils::IntrinsicElementalFunctions::Mod)
-                    && ASRUtils::extract_value(arg_values[1], divisor)
-                    && divisor == 0) {
-                report_error("Second argument of mod cannot be 0",
-                    x->base.base.loc);
-            } else if (arg_values.size() == args.size()) {
-                diag::Diagnostics eval_diagnostics;
-                value = eval(al, x->base.base.loc, type, arg_values,
-                    eval_diagnostics);
-                if (eval_diagnostics.has_error()) {
-                    value = nullptr;
-                    if (diagnostics) {
-                        for (auto &d: eval_diagnostics.diagnostics) {
-                            diagnostics->diagnostics.push_back(d);
-                        }
-                    }
-                }
-            }
+        // `eval_Mod` divides an integer by the second argument unchecked,
+        // while `eval_Modulo` reports a zero second argument itself.
+        int64_t divisor = -1;
+        if (value == nullptr
+                && x->m_intrinsic_id == static_cast<int64_t>(
+                    ASRUtils::IntrinsicElementalFunctions::Mod)
+                && ASRUtils::all_args_evaluated(args)
+                && ASRUtils::extract_value(ASRUtils::expr_value(args[1]), divisor)
+                && divisor == 0) {
+            report_error("Second argument of mod cannot be 0",
+                x->base.base.loc);
+        } else if (value == nullptr) {
+            value = eval_intrinsic(
+                ASRUtils::IntrinsicElementalFunctionRegistry::get_eval_function(
+                    x->m_intrinsic_id), args, type, x->base.base.loc);
         }
         return ASRUtils::make_IntrinsicElementalFunction_t_util(al,
             x->base.base.loc, x->m_intrinsic_id, args.p, args.size(),
+            x->m_overload_id, type, value);
+    }
+
+    // An array constructor of a deferred constant, e.g. `[n, 2*n]`, becomes
+    // an array constant once its elements are.
+    ASR::asr_t* duplicate_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            args.push_back(al, duplicate_expr(x->m_args[i]));
+        }
+        return ASRUtils::make_ArrayConstructor_t_util(al, x->base.base.loc,
+            args.p, args.size(), duplicate_ttype(x->m_type),
+            x->m_storage_format, duplicate_expr(x->m_struct_var));
+    }
+
+    // A transformational intrinsic of a deferred constant, e.g.
+    // `sum([n, n])`, evaluated by the intrinsic's own evaluation function.
+    ASR::asr_t* duplicate_IntrinsicArrayFunction(
+            ASR::IntrinsicArrayFunction_t* x) {
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            args.push_back(al, duplicate_expr(x->m_args[i]));
+        }
+        ASR::ttype_t* type = duplicate_ttype(x->m_type);
+        ASR::expr_t* value = duplicate_expr(x->m_value);
+        if (value == nullptr) {
+            value = eval_intrinsic(
+                ASRUtils::IntrinsicArrayFunctionRegistry::get_eval_function(
+                    x->m_arr_intrinsic_id), args, type, x->base.base.loc);
+        }
+        return ASRUtils::make_IntrinsicArrayFunction_t_util(al,
+            x->base.base.loc, x->m_arr_intrinsic_id, args.p, args.size(),
             x->m_overload_id, type, value);
     }
 
@@ -1715,9 +1779,12 @@ public:
     ASR::symbol_t* instantiate_Template(ASR::Template_t* x) {
         new_scope = al.make_new<SymbolTable>(target_scope);
 
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> nested_type_subs =
+            nested_template_type_subs(x, type_subs);
+
         // duplicate symbol table
         for (auto const &sym_pair: x->m_symtab->get_scope()) {
-            SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
+            SymbolInstantiator t(al, new_scope, nested_type_subs, symbol_subs,
                 ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
                 diagnostics);
             t.instantiate();
@@ -1846,6 +1913,78 @@ public:
         return new_scope->resolve_symbol(x->m_name);
     }
 
+    static bool is_in_template(SymbolTable* scope) {
+        for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+            if (s->asr_owner != nullptr && ASR::is_a<ASR::symbol_t>(*s->asr_owner)
+                    && ASR::is_a<ASR::Template_t>(
+                        *ASR::down_cast<ASR::symbol_t>(s->asr_owner))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // A procedure declared outside the template, e.g. a module procedure,
+    // is not instantiated: the existing procedure is referenced from
+    // target_scope, through an ExternalSymbol if it is not visible there.
+    ASR::symbol_t* reference_host_procedure(ASR::symbol_t* proc) {
+        ASR::symbol_t* proc_past = ASRUtils::symbol_get_past_external(proc);
+        std::string name = ASRUtils::symbol_name(proc);
+        ASR::symbol_t* visible = target_scope->resolve_symbol(name);
+        if (visible != nullptr
+                && ASRUtils::symbol_get_past_external(visible) == proc_past) {
+            return visible;
+        }
+        SymbolTable* host_scope = ASRUtils::symbol_parent_symtab(proc_past);
+        if (host_scope->asr_owner == nullptr
+                || !ASR::is_a<ASR::symbol_t>(*host_scope->asr_owner)
+                || !ASR::is_a<ASR::Module_t>(
+                    *ASR::down_cast<ASR::symbol_t>(host_scope->asr_owner))) {
+            return nullptr;
+        }
+        ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(
+            ASR::down_cast<ASR::symbol_t>(host_scope->asr_owner));
+        char* original_name = ASRUtils::symbol_name(proc_past);
+        std::string ext_name = target_scope->get_unique_name(
+            "1_" + std::string(module->m_name) + "_" + original_name, false);
+        ASR::symbol_t* e = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+            al, proc_past->base.loc, target_scope, s2c(al, ext_name), proc_past,
+            module->m_name, nullptr, 0, original_name, ASR::accessType::Private));
+        target_scope->add_symbol(ext_name, e);
+        return e;
+    }
+
+    // A generic interface declared in a templated procedure: a specific that
+    // is part of the template, such as a deferred procedure, is instantiated
+    // in the same scope, so that a deferred procedure becomes the procedure
+    // it is instantiated with. Any other specific is the existing procedure.
+    ASR::symbol_t* instantiate_GenericProcedure(ASR::GenericProcedure_t* x) {
+        Vec<ASR::symbol_t*> procs;
+        procs.reserve(al, x->n_procs);
+        for (size_t i = 0; i < x->n_procs; i++) {
+            ASR::symbol_t* proc = x->m_procs[i];
+            std::string proc_name = ASRUtils::symbol_name(proc);
+            ASR::symbol_t* new_proc = nullptr;
+            if (symbol_subs.find(proc_name) == symbol_subs.end()
+                    && !is_in_template(ASRUtils::symbol_parent_symtab(proc))) {
+                new_proc = reference_host_procedure(proc);
+            }
+            if (new_proc == nullptr) {
+                SymbolInstantiator t(al, target_scope, type_subs, symbol_subs,
+                    proc_name, proc, diagnostics);
+                new_proc = t.instantiate();
+            }
+            procs.push_back(al, new_proc);
+        }
+
+        ASR::symbol_t* new_x = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_GenericProcedure_t(al, x->base.base.loc, target_scope,
+                s2c(al, new_sym_name), procs.p, procs.size(), x->m_access));
+        target_scope->add_symbol(new_sym_name, new_x);
+
+        return new_x;
+    }
+
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
 
@@ -1923,6 +2062,10 @@ public:
         switch (ttype->type) {
             case (ASR::ttypeType::TypeParameter) : {
                 ASR::TypeParameter_t *param = ASR::down_cast<ASR::TypeParameter_t>(ttype);
+                if (type_subs.find(param->m_param) == type_subs.end()) {
+                    // A parameter of a nested template, left deferred
+                    return ASRUtils::duplicate_type(al, ttype);
+                }
                 return ASRUtils::substitute_class_type_parameter(al, param,
                     ASRUtils::duplicate_type(al, type_subs[param->m_param].first),
                     type_subs[param->m_param].second);
@@ -2062,6 +2205,9 @@ public:
             case (ASR::symbolType::CustomOperator) : {
                 break;
             }
+            case (ASR::symbolType::GenericProcedure) : {
+                break;
+            }
             default: {
                 std::string sym_name = ASRUtils::symbol_name(sym);
                 throw LCompilersException("Instantiation body of " + sym_name
@@ -2191,12 +2337,14 @@ public:
 
     void instantiate_Template(ASR::Template_t* x) {
         ASR::Template_t* new_t = ASR::down_cast<ASR::Template_t>(new_sym);
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> nested_type_subs =
+            nested_template_type_subs(x, type_subs);
 
         for (auto const &sym_pair: new_t->m_symtab->get_scope()) {
             ASR::symbol_t* new_sym_i = sym_pair.second;
             ASR::symbol_t* sym_i = x->m_symtab->get_symbol(sym_pair.first);
 
-            BodyInstantiator t(al, type_subs, symbol_subs, new_sym_i, sym_i,
+            BodyInstantiator t(al, nested_type_subs, symbol_subs, new_sym_i, sym_i,
                 instantiated_bodies);
             t.instantiate();
         }
@@ -2252,6 +2400,29 @@ public:
         return ASR::make_Var_t(al, x->base.base.loc, sym);
     }
 
+    // A call through a generic interface declared in the templated procedure
+    // refers to that generic's instantiation.
+    // Any other generic interface of the template, e.g. one declared in a
+    // template block, is not reachable from the instantiation: the call then
+    // only refers to its resolved specific.
+    ASR::symbol_t* instantiate_original_name(ASR::symbol_t* original_name) {
+        if (original_name == nullptr
+                || !ASR::is_a<ASR::GenericProcedure_t>(*original_name)) {
+            return original_name;
+        }
+        SymbolTable* generic_scope = ASRUtils::symbol_parent_symtab(original_name);
+        if (generic_scope == ASRUtils::symbol_symtab(sym)) {
+            ASR::symbol_t* new_original_name = new_scope->get_symbol(
+                ASRUtils::symbol_name(original_name));
+            LCOMPILERS_ASSERT(new_original_name != nullptr);
+            return new_original_name;
+        }
+        if (SymbolInstantiator::is_in_template(generic_scope)) {
+            return nullptr;
+        }
+        return original_name;
+    }
+
     ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t* x) {
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
@@ -2303,7 +2474,7 @@ public:
         // A call made by its own name must keep naming the instantiated
         // procedure, not the template's.
         ASR::symbol_t* original_name = x->m_original_name == x->m_name
-            ? name : x->m_original_name;
+            ? name : instantiate_original_name(x->m_original_name);
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name,
             original_name, args.p, args.size(), type, value, dt);
     }
@@ -2370,7 +2541,7 @@ public:
         }
 
         ASR::symbol_t* original_name = x->m_original_name == x->m_name
-            ? name : x->m_original_name;
+            ? name : instantiate_original_name(x->m_original_name);
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name,
             original_name, args.p, args.size(), dt, nullptr, false);
     }
@@ -2579,6 +2750,10 @@ public:
         switch (ttype->type) {
             case (ASR::ttypeType::TypeParameter) : {
                 ASR::TypeParameter_t *param = ASR::down_cast<ASR::TypeParameter_t>(ttype);
+                if (type_subs.find(param->m_param) == type_subs.end()) {
+                    // A parameter of a nested template, left deferred
+                    return ASRUtils::duplicate_type(al, ttype);
+                }
                 return ASRUtils::substitute_class_type_parameter(al, param,
                     ASRUtils::duplicate_type(al, type_subs[param->m_param].first),
                     type_subs[param->m_param].second);

@@ -2265,7 +2265,37 @@ public:
     std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure;
     LCompilers::LocationManager &lm;
 
-    std::map<std::string, std::vector<std::pair<std::string, Location>>> generic_procedures;
+    // A specific procedure named in a generic interface block, with the scope
+    // of that block: the generic interface is created in that scope and the
+    // specific is looked up from it, so a generic declared in a procedure can
+    // name the procedure's dummy procedures.
+    struct GenericSpecific {
+        std::string name;
+        Location loc;
+        SymbolTable *scope;
+    };
+    std::map<std::string, std::vector<GenericSpecific>> generic_procedures;
+
+    // Whether a generic interface `name` is declared in `scope` (or, if
+    // `enclosing` is true, in a scope enclosing it) and not built yet.
+    bool is_pending_generic_procedure(const std::string &name,
+            SymbolTable *scope, bool enclosing) {
+        auto it = generic_procedures.find(name);
+        if (it == generic_procedures.end()) {
+            return false;
+        }
+        for (auto &specific : it->second) {
+            for (SymbolTable *s = scope; s != nullptr; s = s->parent) {
+                if (s == specific.scope) {
+                    return true;
+                }
+                if (!enclosing) {
+                    break;
+                }
+            }
+        }
+        return false;
+    }
     /*
      * A struct to store the information of a postponed call to genericProcedure
      * The information should be consumed by function `evaluate_delayed_generic_procedure_calls`
@@ -2299,6 +2329,7 @@ public:
     std::map<ASR::symbol_t*, SelectTypeCastInfo> select_type_casts_map;
     // global save variable
     bool is_global_save_enabled = false;
+    std::set<std::string> explicit_save_symbols;
 
     // implied do loop nesting
     int idl_nesting_level = 0;
@@ -3095,9 +3126,9 @@ public:
 
     bool is_funcCall_to_unresolved_genereicProcedure(AST::expr_t* expr){
         return AST::is_a<AST::FuncCallOrArray_t>(*expr) &&
-            (generic_procedures.find(
-                AST::down_cast<AST::FuncCallOrArray_t>(expr)->m_func)
-            != generic_procedures.end());
+            is_pending_generic_procedure(
+                AST::down_cast<AST::FuncCallOrArray_t>(expr)->m_func,
+                current_scope, true);
     }
 
     bool is_type_bound_func_call(AST::expr_t* expr) {
@@ -3281,186 +3312,6 @@ public:
         for (auto &name: added) {
             scope->erase_symbol(name);
         }
-    }
-
-    enum class DeferredConstantInit {
-        // The expression does not read a deferred constant of the template
-        // being defined.
-        None,
-        // A scalar expression of a deferred constant, such as `-n`,
-        // `real(n)*2`, `abs(n - 5)` or `n > 3 .and. n < 10`: it reads a named
-        // constant without a compile-time value (a deferred constant, or a
-        // named constant initialized with such an expression), and is
-        // otherwise built only from constants and the operations that the
-        // instantiation of the template evaluates once the deferred constant
-        // is substituted: integer, real and logical operations and
-        // comparisons (`ASRUtils::fold_binop_constants`,
-        // `ASRUtils::fold_compare_constants`, `ASRUtils::fold_logical_binop`),
-        // numeric conversions (`ASRUtils::make_Cast_t_value`) and the numeric
-        // intrinsics with an evaluation function.
-        Foldable,
-        // Reads a deferred constant in any other way, such as
-        // `sin(real(n))`, `[n, 2*n]` or `-(n*0.1_16)`, which the
-        // instantiation cannot evaluate.
-        Unsupported
-    };
-
-    static DeferredConstantInit classify_deferred_constant_init(ASR::expr_t *e) {
-        class Finder : public ASR::BaseWalkVisitor<Finder> {
-            public:
-                bool reads_deferred = false;
-                bool foldable = true;
-
-                // The kind of `e` if it is a real, 0 otherwise.
-                static int real_kind(ASR::expr_t *e) {
-                    ASR::ttype_t *t = ASRUtils::expr_type(e);
-                    return ASRUtils::is_real(*t)
-                        ? ASRUtils::extract_kind_from_ttype_t(t) : 0;
-                }
-
-                // Real constants of kinds 10 and 16 are stored in their own
-                // formats. Only the binary operations and comparisons, and the
-                // conversion of an integer, evaluate real(16) values;
-                // real(10) values are evaluated by none of them.
-                static bool evaluates_real_kinds(const ASR::expr_t &x) {
-                    ASR::expr_t *e = const_cast<ASR::expr_t*>(&x);
-                    std::vector<ASR::expr_t*> operands = {e};
-                    bool real16 = false;
-                    switch (x.type) {
-                        case ASR::exprType::RealBinOp: {
-                            ASR::RealBinOp_t *b = ASR::down_cast<ASR::RealBinOp_t>(e);
-                            operands.push_back(b->m_left);
-                            operands.push_back(b->m_right);
-                            real16 = true;
-                            break;
-                        }
-                        case ASR::exprType::RealCompare: {
-                            ASR::RealCompare_t *c = ASR::down_cast<ASR::RealCompare_t>(e);
-                            operands.push_back(c->m_left);
-                            operands.push_back(c->m_right);
-                            real16 = true;
-                            break;
-                        }
-                        case ASR::exprType::Cast: {
-                            ASR::Cast_t *c = ASR::down_cast<ASR::Cast_t>(e);
-                            operands.push_back(c->m_arg);
-                            real16 = c->m_kind == ASR::cast_kindType::IntegerToReal;
-                            break;
-                        }
-                        case ASR::exprType::IntrinsicElementalFunction: {
-                            ASR::IntrinsicElementalFunction_t *f =
-                                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
-                            for (size_t i = 0; i < f->n_args; i++) {
-                                operands.push_back(f->m_args[i]);
-                            }
-                            break;
-                        }
-                        default: break;
-                    }
-                    for (ASR::expr_t *operand: operands) {
-                        int kind = real_kind(operand);
-                        if (kind == 10 || (kind == 16 && !real16)) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-
-                static bool is_arithmetic(ASR::binopType op) {
-                    return op == ASR::binopType::Add || op == ASR::binopType::Sub
-                        || op == ASR::binopType::Mul || op == ASR::binopType::Div
-                        || op == ASR::binopType::Pow;
-                }
-
-                void visit_expr(const ASR::expr_t &x) {
-                    if (x.type != ASR::exprType::Var
-                            && ASRUtils::expr_value(const_cast<ASR::expr_t*>(&x))) {
-                        // Already a compile-time constant, e.g. `kind(n)`.
-                        return;
-                    }
-                    bool supported = true;
-                    switch (x.type) {
-                        case ASR::exprType::Var: {
-                            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
-                                ASR::down_cast<ASR::Var_t>(&x)->m_v);
-                            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
-                                foldable = false;
-                                return;
-                            }
-                            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
-                            if (var->m_storage != ASR::storage_typeType::Parameter) {
-                                foldable = false;
-                            } else if (var->m_value == nullptr) {
-                                reads_deferred = true;
-                            }
-                            return;
-                        }
-                        case ASR::exprType::IntegerConstant:
-                        case ASR::exprType::RealConstant:
-                        case ASR::exprType::LogicalConstant:
-                            return;
-                        case ASR::exprType::IntrinsicElementalFunction: {
-                            supported = ASRUtils::IntrinsicElementalFunctionRegistry
-                                ::get_eval_function(ASR::down_cast<
-                                    ASR::IntrinsicElementalFunction_t>(&x)
-                                        ->m_intrinsic_id) != nullptr;
-                            break;
-                        }
-                        case ASR::exprType::Cast: {
-                            ASR::cast_kindType kind =
-                                ASR::down_cast<ASR::Cast_t>(&x)->m_kind;
-                            supported = kind == ASR::cast_kindType::IntegerToReal
-                                || kind == ASR::cast_kindType::RealToInteger
-                                || kind == ASR::cast_kindType::RealToReal
-                                || kind == ASR::cast_kindType::IntegerToInteger;
-                            break;
-                        }
-                        case ASR::exprType::IntegerBinOp: {
-                            supported = is_arithmetic(
-                                ASR::down_cast<ASR::IntegerBinOp_t>(&x)->m_op);
-                            break;
-                        }
-                        case ASR::exprType::RealBinOp: {
-                            supported = is_arithmetic(
-                                ASR::down_cast<ASR::RealBinOp_t>(&x)->m_op);
-                            break;
-                        }
-                        case ASR::exprType::IntegerUnaryMinus:
-                        case ASR::exprType::RealUnaryMinus:
-                        case ASR::exprType::IntegerCompare:
-                        case ASR::exprType::RealCompare:
-                        case ASR::exprType::LogicalNot:
-                            break;
-                        case ASR::exprType::LogicalBinOp: {
-                            bool result;
-                            supported = ASRUtils::fold_logical_binop(
-                                ASR::down_cast<ASR::LogicalBinOp_t>(&x)->m_op,
-                                false, false, result);
-                            break;
-                        }
-                        default: {
-                            supported = false;
-                            break;
-                        }
-                    }
-                    if (!supported
-                            || ASRUtils::is_array(ASRUtils::expr_type(
-                                const_cast<ASR::expr_t*>(&x)))
-                            || !evaluates_real_kinds(x)) {
-                        foldable = false;
-                    }
-                    ASR::BaseWalkVisitor<Finder>::visit_expr(x);
-                }
-        };
-        Finder finder;
-        finder.visit_expr(*e);
-        if (!finder.reads_deferred) {
-            return DeferredConstantInit::None;
-        }
-        if (finder.foldable) {
-            return DeferredConstantInit::Foldable;
-        }
-        return DeferredConstantInit::Unsupported;
     }
 
     // Rejects `e`, the array bound or character length just built for
@@ -3691,6 +3542,58 @@ public:
         return element_size * array_size;
     }
 
+    // Same logic used by `use`: body visitor patches Module.m_dependencies
+    // in place; symbol-table visitor accumulates on current_module_dependencies.
+    void append_module_dependency(char *m_name) {
+        if (!m_name || m_name[0] == '\0') return;
+        // We are in body visitor
+        // Add the module `m` to current module dependencies
+        if (current_module) {
+            SetChar vec;
+            vec.from_pointer_n_copy(al, current_module->m_dependencies,
+                        current_module->n_dependencies);
+            vec.push_back(al, m_name);
+            current_module->m_dependencies = vec.p;
+            current_module->n_dependencies = vec.size();
+        } else {
+            // We are in the symtab visitor or body visitor (the
+            // current_module_dependencies is not used in body visitor)
+            current_module_dependencies.push_back(al, m_name);
+        }
+    }
+
+    // Record that the enclosing user module depends on a synthetic file_common_block_* module.
+    void add_common_block_module_dependency(const std::string &module_name) {
+        if (module_name.empty() || in_block_data) return;
+        if (!in_module && !current_module) return;
+        if (current_module && module_name == current_module->m_name) return;
+        append_module_dependency(s2c(al, module_name));
+    }
+
+    // Import a COMMON-module symbol into `scope` only (like use), not via
+    // resolve_symbol which would reuse a TU-level ExternalSymbol and not process
+    // the Var pointing outside the using module (asr_verify / save_mod_files).
+    ASR::symbol_t* import_common_external_symbol(SymbolTable *scope, const Location &loc,
+            const std::string &local_name, ASR::symbol_t *target,
+            const std::string &module_name, const std::string &original_name) {
+        if (!scope || !target) return nullptr;
+        ASR::symbol_t *target_past = ASRUtils::symbol_get_past_external(target);
+        ASR::symbol_t *existing = scope->get_symbol(local_name);
+        if (existing && ASRUtils::symbol_get_past_external(existing) == target_past) {
+            return existing;
+        }
+        std::string name = local_name;
+        if (existing) {
+            name = scope->get_unique_name("1_" + local_name);
+        }
+        ASR::symbol_t *ext = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_ExternalSymbol_t(al, loc, scope, s2c(al, name),
+                target_past, s2c(al, module_name), nullptr, 0,
+                s2c(al, original_name), ASR::accessType::Public));
+        scope->add_symbol(name, ext);
+        return ext;
+    }
+
     ASR::asr_t* create_StructInstanceMember(ASR::expr_t* target, ASR::Variable_t* target_var,
             SymbolTable* use_scope = nullptr) {
         uint64_t hash = get_hash((ASR::asr_t*) target_var);
@@ -3703,22 +3606,18 @@ public:
             ASR::Struct_t *struct_type = ASR::down_cast<ASR::Struct_t>(curr_struct);
             std::string ext_sym_name = std::string(struct_type->m_name);
             std::string module_name = "file_common_block_" + std::string(struct_type->m_name);
-            ASR::symbol_t* ext_sym_struct = scope->resolve_symbol(ext_sym_name);
-            if (!ext_sym_struct) {
-                ext_sym_struct = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, curr_struct->base.loc, scope,
-                                                struct_type->m_name, curr_struct, s2c(al, module_name), nullptr, 0, struct_type->m_name, ASR::accessType::Public));
-                scope->add_symbol(ext_sym_name, ext_sym_struct);
-            }
+            add_common_block_module_dependency(module_name);
+            // Import the COMMON struct type into the using scope, like `use`.
+            import_common_external_symbol(
+                scope, curr_struct->base.loc, ext_sym_name, curr_struct,
+                module_name, ext_sym_name);
 
             SymbolTable* module_scope = ASR::down_cast<ASR::Struct_t>(curr_struct)->m_symtab->parent;
             std::string struct_var_name = "struct_instance_"+std::string(struct_type->m_name);
             ASR::symbol_t* module_var_sym = module_scope->resolve_symbol(struct_var_name);
-            ASR::symbol_t* struct_sym = scope->resolve_symbol(struct_var_name);
-            if (!struct_sym) {
-                struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, curr_struct->base.loc, scope,
-                                                s2c(al, struct_var_name), module_var_sym, s2c(al, module_name), nullptr, 0, s2c(al, struct_var_name), ASR::accessType::Public));
-                scope->add_symbol(struct_var_name, struct_sym);
-            }
+            ASR::symbol_t* struct_sym = import_common_external_symbol(
+                scope, curr_struct->base.loc, struct_var_name, module_var_sym,
+                module_name, struct_var_name);
 
             ASR::asr_t* struct_var_ = ASR::make_Var_t(al, target_var->base.base.loc, struct_sym);
 
@@ -3764,12 +3663,11 @@ public:
             LCOMPILERS_ASSERT(struct_member_sym != nullptr);
 
             std::string member_name = "1_"+std::string(struct_type->m_name)+"_"+actual_member_name;
-            ASR::symbol_t* member_sym = scope->resolve_symbol(member_name);
-            if (!member_sym) {
-                member_sym = ASR::down_cast<ASR::symbol_t>(make_ExternalSymbol_t(al, target_var->base.base.loc, scope, s2c(al, member_name),
-                                                        struct_member_sym, s2c(al, ext_sym_name), nullptr, 0, s2c(al, actual_member_name), ASR::accessType::Public));
-                scope->add_symbol(member_name, member_sym);
-            }
+            // m_module_name is the struct name: the member's owner is the
+            // COMMON Struct, matching visit_ExternalSymbol in asr_verify.
+            ASR::symbol_t* member_sym = import_common_external_symbol(
+                scope, target_var->base.base.loc, member_name, struct_member_sym,
+                ext_sym_name, actual_member_name);
 
             // Use local variable's type for COMMON block access. This preserves
             // the local view of the storage (e.g., integer array vs real array).
@@ -5298,9 +5196,11 @@ public:
             ASR::symbol_t* current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
             global_scope->add_symbol(to_lower(module_name), current_module_sym);
             current_scope = parent_scope;
+            add_common_block_module_dependency(module_name);
             return struct_symbol;
         } else {
             ASR::symbol_t* current_module_sym = global_scope->resolve_symbol(module_name);
+            add_common_block_module_dependency(module_name);
             return ASR::down_cast<ASR::Module_t>(current_module_sym)->m_symtab->resolve_symbol(common_block_name);
         }
     }
@@ -5535,16 +5435,31 @@ public:
 
     template <typename T>
     void check_if_global_save_is_enabled(T &x) {
+        is_global_save_enabled = false;
+        explicit_save_symbols.clear();
         for ( size_t i = 0; i < x.n_items; i++ ) {
             if ( AST::is_a<AST::Declaration_t>(*x.m_items[i]) ) {
                 AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
-                if ( decl->n_attributes > 0 && decl->n_syms == 0 &&
-                    decl->m_trivia == nullptr &&
-                    AST::is_a<AST::SimpleAttribute_t>(*decl->m_attributes[0]) ) {
-                    AST::SimpleAttribute_t* attr = AST::down_cast<AST::SimpleAttribute_t>(decl->m_attributes[0]);
-                    if ( attr->m_attr == AST::simple_attributeType::AttrSave ) {
+                bool has_save = false;
+                for (size_t a = 0; a < decl->n_attributes; a++) {
+                    if (AST::is_a<AST::SimpleAttribute_t>(*decl->m_attributes[a])) {
+                        AST::SimpleAttribute_t* attr = AST::down_cast<AST::SimpleAttribute_t>(decl->m_attributes[a]);
+                        if (attr->m_attr == AST::simple_attributeType::AttrSave) {
+                            has_save = true;
+                            break;
+                        }
+                    }
+                }
+                if (has_save) {
+                    if (decl->n_syms == 0) {
                         is_global_save_enabled = true;
                         break;
+                    } else {
+                        for (size_t j = 0; j < decl->n_syms; j++) {
+                            if (decl->m_syms[j].m_sym != AST::symbolType::Slash && decl->m_syms[j].m_name) {
+                                explicit_save_symbols.insert(to_lower(decl->m_syms[j].m_name));
+                            }
+                        }
                     }
                 }
             }
@@ -8494,19 +8409,19 @@ public:
             // Example
             // real(dp), private :: x, y(3), z
             for (size_t i=0; i<x.n_syms; i++) {
-                bool is_save = false;
+                AST::var_sym_t &s = x.m_syms[i];
+                std::string sym = to_lower(s.m_name);
+                bool is_save = (explicit_save_symbols.find(sym) != explicit_save_symbols.end());
                 bool implicit_save = false;
                 bool is_compile_time = false;
                 bool is_implicitly_declared = false;
                 bool is_dimension_star = false;
                 bool is_assumed_rank = false;
-                AST::var_sym_t &s = x.m_syms[i];
-                std::string sym = to_lower(s.m_name);
                 bool is_external = check_is_external(sym);
                 bool is_attr_external = false;
                 ASR::accessType s_access = dflt_access;
                 ASR::presenceType s_presence = dflt_presence;
-                ASR::storage_typeType storage_type = dflt_storage;
+                ASR::storage_typeType storage_type = is_save ? ASR::storage_typeType::Save : dflt_storage;
                 bool target_attr = false;
                 bool contig_attr = false;
                 bool value_attr = false;
@@ -10102,11 +10017,10 @@ public:
                         if ( init_expr && !ASR::is_a<ASR::FunctionType_t>(*
                                 ASRUtils::type_get_past_pointer(
                                     ASRUtils::expr_type(init_expr))) ) {
-                            DeferredConstantInit deferred_init =
-                                in_template_definition
-                                    && storage_type == ASR::storage_typeType::Parameter
-                                ? classify_deferred_constant_init(init_expr)
-                                : DeferredConstantInit::None;
+                            bool reads_deferred = in_template_definition
+                                && storage_type == ASR::storage_typeType::Parameter
+                                && value == nullptr
+                                && ASRUtils::reads_valueless_parameter(init_expr);
                             if (is_pointer && !is_allocatable &&
                                     ASRUtils::is_pointer_association_initializer(
                                         init_expr)) {
@@ -10120,18 +10034,7 @@ public:
                                 // The target is kept as the value as well, as
                                 // the character branch above already does.
                                 value = init_expr;
-                            } else if (deferred_init != DeferredConstantInit::None) {
-                                if (deferred_init == DeferredConstantInit::Unsupported) {
-                                    diag.add(Diagnostic(
-                                        "initialization of named constant `"
-                                        + std::string(x.m_syms[i].m_name)
-                                        + "` with this expression of a"
-                                        " deferred constant is not supported yet",
-                                        Level::Error, Stage::Semantic, {
-                                            Label("", {init_expr->base.loc})
-                                        }));
-                                    throw SemanticAbort();
-                                }
+                            } else if (reads_deferred) {
                                 // The initializer, e.g. `n*2`, `-n` or
                                 // `abs(n - 5)`, uses a deferred constant of the
                                 // template, so it has no compile-time value
@@ -10291,8 +10194,7 @@ public:
                             } else if ( ASR::is_a<ASR::ArrayConstructor_t>(*init_expr) ||
                                 ( ASR::is_a<ASR::Cast_t>(*init_expr) &&
                                 ASR::is_a<ASR::ArrayConstructor_t>(*ASR::down_cast<ASR::Cast_t>(init_expr)->m_arg) )
-                                || ASR::is_a<ASR::IntrinsicElementalFunction_t>(*init_expr) ||
-                                ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr) ||
+                                || ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr) ||
                                 ASR::is_a<ASR::TypeInquiry_t>(*init_expr) ||
                                 ASR::is_a<ASR::StringLen_t>(*init_expr) ) {
                                 // For IntrinsicArrayFunction (transformational intrinsics like minloc, maxloc, sum, etc.),
@@ -10323,12 +10225,6 @@ public:
                                         }
                                     }
                                 }
-                                value = init_expr;
-                            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr) ||
-                                        ASR::is_a<ASR::ComplexBinOp_t>(*init_expr)) {
-                                value = init_expr;
-                            } else if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr) || ASR::is_a<ASR::BitCast_t>(*init_expr) ||
-                                ASR::is_a<ASR::IntegerCompare_t>(*init_expr)) {
                                 value = init_expr;
                             } else {
                                 diag.add(Diagnostic(
@@ -10407,7 +10303,7 @@ public:
                                 value = a->m_value;
                             }
                         }
-                    } else {
+                    } else if (!is_derived_type) {
                         implicit_save = true;
                         storage_type = ASR::storage_typeType::Save; // implicit save
                     }
@@ -21615,20 +21511,7 @@ public:
 
         current_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(fn);
-        if (current_module) {
-            // We are in body visitor
-            // Add the module `m` to current module dependencies
-            SetChar vec;
-            vec.from_pointer_n_copy(al, current_module->m_dependencies,
-                        current_module->n_dependencies);
-            vec.push_back(al, m->m_name);
-            current_module->m_dependencies = vec.p;
-            current_module->n_dependencies = vec.size();
-        } else {
-            // We are in the symtab visitor or body visitor (the
-            // current_module_dependencies is not used in body visitor)
-            current_module_dependencies.push_back(al, m->m_name);
-        }
+        append_module_dependency(m->m_name);
         return v;
     }
 

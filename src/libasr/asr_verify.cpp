@@ -1483,7 +1483,9 @@ public:
                 for (size_t j = 0; j < array_construct->n_args; j++) {
                     require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
                             (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                            (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(array_construct->m_args[j])),
+                            (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(array_construct->m_args[j])) ||
+                            (_inside_template && x.m_storage == ASR::storage_typeType::Parameter &&
+                                ASRUtils::reads_valueless_parameter(x.m_symbolic_value)),
                             "Initialisation of " + std::string(x.m_name) +
                             " must reduce to a compile time constant.");
                 }

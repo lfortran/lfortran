@@ -1038,6 +1038,11 @@ bool set_allocation_size(
                     ASRUtils::expr_type(int32_one), nullptr));
                 allocate_dims.push_back(al, allocate_dim);
             }
+            if( ASRUtils::is_character(*struct_instance_member_t->m_type) ) {
+                ASRUtils::ASRBuilder b(al, loc);
+                len_allocte_expr = b.StringLen(ASRUtils::EXPR(
+                    (ASR::asr_t*) struct_instance_member_t));
+            }
             break;
         }
         case ASR::exprType::ArrayReshape: {
