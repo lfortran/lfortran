@@ -2,17 +2,17 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 %complex_module.complextype.3_class = type <{ i32 (...)**, %complex_module.complextype.3* }>
 %complex_module.complextype.3 = type { float, float }
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data = private constant [27 x i8] c"Calling integer_add_subrout"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([27 x i8], [27 x i8]* @string_const_data, i32 0, i32 0), i64 27 }>
+@string_const = private global %string_descriptor { i8* getelementptr inbounds ([27 x i8], [27 x i8]* @string_const_data, i32 0, i32 0), i64 27 }
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.1 = private constant [24 x i8] c"Calling real_add_subrout"
-@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([24 x i8], [24 x i8]* @string_const_data.1, i32 0, i32 0), i64 24 }>
+@string_const.2 = private global %string_descriptor { i8* getelementptr inbounds ([24 x i8], [24 x i8]* @string_const_data.1, i32 0, i32 0), i64 24 }
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @_Name_complextype = private unnamed_addr constant [12 x i8] c"complextype\00", align 1
 @_Type_Info_complextype = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([12 x i8], [12 x i8]* @_Name_complextype, i32 0, i32 0), i8* inttoptr (i64 8 to i8*), i8* null }, align 8

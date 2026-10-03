@@ -44,6 +44,7 @@ function enumerate_libraries(self, prefix, libs) result(r)
     end if
 
     allocate(character(len=1) :: r)
+    r = "x"
 
 end function enumerate_libraries
 
@@ -57,5 +58,6 @@ character(len=3) :: prefix_arg
 type(string_t) :: libs_arg(4)
 
 print *, compiler_arg%enumerate_libraries(prefix_arg, libs_arg)
+if (compiler_arg%enumerate_libraries(prefix_arg, libs_arg) /= "x") error stop
 
 end program

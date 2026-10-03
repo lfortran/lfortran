@@ -36,7 +36,7 @@
                                     2
                                     d
                                     []
-                                    Local
+                                    Unspecified
                                     ()
                                     ()
                                     Default
@@ -60,7 +60,7 @@
                                     2
                                     e
                                     []
-                                    Local
+                                    Unspecified
                                     ()
                                     ()
                                     Default
@@ -363,7 +363,8 @@
                         })
                     a
                     (FunctionType
-                        []
+                        [(Integer 4)
+                        (Integer 4)]
                         ()
                         Source
                         Implementation
@@ -378,7 +379,8 @@
                         Host
                     )
                     []
-                    []
+                    [(Var 2 d)
+                    (Var 2 e)]
                     [(Assignment
                         (ArrayItem
                             (Var 2 y)
@@ -599,4 +601,5 @@
                 )
         })
     []
+    ()
 )

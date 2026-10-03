@@ -6,11 +6,11 @@
 module ASR {
 
 unit
-    = TranslationUnit(symbol_table symtab, node* items)
+    = TranslationUnit(symbol_table symtab, node* items, identifier? global_init)
 
 symbol
-    = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, location start_name, location end_name)
-    | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, location start_name, location end_name)
+    = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, identifier? global_init, location start_name, location end_name)
+    | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, identifier? global_init, location start_name, location end_name)
     | Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file, gpu_kernel_layout? gpu, location start_name, location end_name)
     | GenericProcedure(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name, symbol* procs, access access)
@@ -18,6 +18,13 @@ symbol
     | Struct(symbol_table symtab, identifier name, ttype struct_signature, identifier* dependencies, identifier* members, identifier* member_functions, abi abi, access access, bool is_packed, bool is_abstract, bool is_sequence, call_arg* initializers, expr? alignment, symbol? parent, identifier* kind_params)
     | Enum(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, enumtype enum_value_type, ttype type, symbol? parent)
     | Union(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, call_arg* initializers, symbol? parent)
+    -- A Local integer Variable of Default storage whose symbolic_value is not
+    -- constant and whose value is empty is initialized on every entry to its
+    -- procedure or BLOCK, before the declarations that depend on it
+    -- (ASRUtils::is_entry_initialized_local). The function_call_in_declaration
+    -- pass creates such locals to evaluate automatic array bounds exactly
+    -- once. The initializer references only dummy arguments, host or module
+    -- entities, parameters and other such locals (checked by asr_verify).
     | Variable(symbol_table parent_symtab, identifier name, identifier* dependencies, intent intent,
                expr? symbolic_value, expr? value, storage_type storage, ttype type, symbol? type_declaration,
                abi abi, access access, presence presence, bool value_attr, bool target_attr, bool contiguous_attr,
@@ -93,7 +100,6 @@ stmt
     | Expr(expr expression)
     | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args)
     | GpuSync()
-    | GpuOffload(symbol kernel, stmt* body, stmt* fallback)
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
@@ -177,7 +183,7 @@ expr
     | ArrayReshape(expr array, expr shape, expr? pad, expr? order, ttype type, expr? value)
     | ArrayBroadcast(expr array, expr shape, ttype type, expr? value)
     | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
-    | FunctionPointerCast(expr arg, symbol to, ttype type, expr? value)
+    | FunctionPointerCast(expr arg, symbol? to, ttype type, expr? value)
     | StructInstanceMember(expr v, symbol m, ttype type, expr? value)
     | StructStaticMember(expr v, symbol m, ttype type, expr? value)
     | EnumStaticMember(expr v, symbol m, ttype type, expr? value)
@@ -233,13 +239,20 @@ ttype
     | Dict(ttype key_type, ttype value_type)
     | Pointer(ttype type)
     | Allocatable(ttype type)
-    | CPtr()
+    | CPtr(cptr_kind kind)
     | SymbolicExpression()
-    | TypeParameter(identifier param)
+    | TypeParameter(identifier param, deferred_type_attr deferred_attr, bool is_class)
     | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
 
 cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | LogicalToLogical | RealToString | IntegerToString | LogicalToString | StringToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
+-- The effective deferred-type-attr (F2028 draft J3/26-007r1 R1617) of a
+-- deferred type argument of a template or a requirement. `Abstract`
+-- subsumes `Extensible`, because a deferred type with the ABSTRACT
+-- attribute implicitly has the EXTENSIBLE attribute (16.4.1.2 paragraph 2);
+-- `NonExtensible` is a plain `deferred type ::` with no attribute.
+deferred_type_attr = NonExtensible | Extensible | Abstract
+cptr_kind = CPointer | CFunPointer | CPtrUnspecified
 storage_type = Default | Save | Parameter
 access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified

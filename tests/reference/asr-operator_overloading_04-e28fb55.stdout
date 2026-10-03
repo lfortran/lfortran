@@ -347,6 +347,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             operator_overloading_stdlib_string_use:
                 (Module
@@ -521,6 +522,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             stdlib_string:
                 (Program
@@ -532,7 +534,9 @@
                     stdlib_string
                     []
                     []
+                    ()
                 )
         })
     []
+    ()
 )

@@ -883,6 +883,22 @@ class UpdateProcedureEntityTypes:
             retyped.insert((ASR::symbol_t*) &xx);
         }
 
+        // A cast of a procedure to a transformed interface takes the
+        // interface's new signature, the same way.
+        void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t& x) {
+            ASR::BaseWalkVisitor<UpdateProcedureEntityTypes>::visit_FunctionPointerCast(x);
+            if( x.m_to == nullptr ) {
+                return;
+            }
+            ASR::symbol_t* to = ASRUtils::symbol_get_past_external(x.m_to);
+            if( to == nullptr || !ASR::is_a<ASR::Function_t>(*to) ||
+                transformed.find(to) == transformed.end() ) {
+                return;
+            }
+            const_cast<ASR::FunctionPointerCast_t&>(x).m_type =
+                ASR::down_cast<ASR::Function_t>(to)->m_function_signature;
+        }
+
         void visit_Function(const ASR::Function_t& x) {
             ASR::BaseWalkVisitor<UpdateProcedureEntityTypes>::visit_Function(x);
             // The signature repeats each dummy's type, so a dummy whose type

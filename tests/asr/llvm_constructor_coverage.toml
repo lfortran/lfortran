@@ -15,7 +15,6 @@
 "stmt.DoConcurrentLoop" = "lowered:do_loops"
 "stmt.OMPRegion" = "lowered:openmp"
 "stmt.GpuKernelLaunch" = "lowered:device_launch_expand"
-"stmt.GpuOffload" = "lowered:gpu_kernel_finalize"
 "stmt.ForAllSingle" = "lowered:for_all"
 "stmt.ForEach" = "helper:container iteration"
 "stmt.IfArithmetic" = "helper:branch lowering"
@@ -33,7 +32,6 @@
 
 "expr.NamedExpr" = "helper:named expression value"
 "expr.IntrinsicArrayFunction" = "lowered:intrinsic_function"
-"expr.StructConstructor" = "lowered:class_constructor"
 "expr.ImpliedDoLoop" = "lowered:implied_do_loops"
 "expr.ListConcat" = "lowered:pass_list_expr"
 "expr.ListContains" = "helper:container runtime"
@@ -65,6 +63,7 @@
 "ttype.Dict" = "helper:LLVM type lowering"
 "ttype.Pointer" = "helper:LLVM type lowering"
 "ttype.Allocatable" = "helper:LLVM type lowering"
+"ttype.CPtr" = "helper:LLVM type lowering"
 "ttype.TypeParameter" = "helper:LLVM type lowering"
 "ttype.Array" = "helper:LLVM type lowering"
 "ttype.FunctionType" = "helper:LLVM type lowering"
