@@ -1,14 +1,24 @@
-module test_struct_kind_shadow_logical
-    implicit none
-    integer, parameter :: l = 4
-    type ty
-        logical(l) :: l = .true.
-    end type
-end module
-program test
-    use test_struct_kind_shadow_logical
-    implicit none
-    type(ty) :: t
-    if (.not. t%l) error stop "value incorrect"
-    print *, "PASS"
-end program test
+program p
+    type :: t
+        integer, allocatable :: arr(:)
+    end type t
+    
+    type(t) :: varr
+    allocate(varr%arr(3))
+    
+    varr%arr = [1,2,3]
+    varr = ff(varr)
+    if (.not. all(varr%arr == [1, 2, 3])) error stop
+
+    contains 
+
+    function ff(s) result(ret) 
+       type(t),intent(in) :: s
+       type(t) :: ret
+       print *, s%arr
+       allocate(ret%arr(3))
+
+       ret%arr = s%arr
+       print *, ret%arr
+    end function 
+end program

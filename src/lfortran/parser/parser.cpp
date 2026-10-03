@@ -2,6 +2,7 @@
 #include <string>
 #include <cctype>
 
+#include <lfortran/ast_kind.h>
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/diagnostics.h>
@@ -34,10 +35,7 @@ bool is_program_end(AST::Name_t* name) {
 
 void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics) {
     Vec<AST::ast_t*> global_items; global_items.reserve(al, 0);
-    Vec<AST::unit_decl1_t*> use; use.reserve(al, 0);
-    Vec<AST::implicit_statement_t*> implicit; implicit.reserve(al, 0);
-    Vec<AST::unit_decl2_t*> decl; decl.reserve(al, 0);
-    Vec<AST::stmt_t*> body; body.reserve(al, 0);
+    Vec<AST::decl_stmt_t*> items; items.reserve(al, 0);
     Vec<AST::program_unit_t*> contains_body; contains_body.reserve(al, 0);
     bool contains = false, program_added = false;
     for (size_t i = 0; i < ast.n_items; i++) {
@@ -61,8 +59,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                     AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
                     if (is_program_end(name)) {
                         AST::ast_t* program_ast = AST::make_Program_t(al, ast.base.base.loc, s2c(al, "__xx_main"), nullptr,
-                            use.p, use.size(), implicit.p, implicit.size(), decl.p, decl.size(),
-                            body.p, body.size(), contains_body.p, contains_body.size());
+                            items.p, items.size(), contains_body.p, contains_body.size());
 
                         global_items.push_back(al, program_ast);
                         program_added = true;
@@ -84,39 +81,30 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                     diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
                 throw parser_local::ParserAbort();
             }
-        } else if (ast.m_items[i]->type == AST::astType::stmt) {
-            body.push_back(al, AST::down_cast<AST::stmt_t>(ast.m_items[i]));
-        } else if (ast.m_items[i]->type == AST::astType::unit_decl1) {
-            // use module_name
-            use.push_back(al, AST::down_cast<AST::unit_decl1_t>(ast.m_items[i]));
-        } else if (ast.m_items[i]->type == AST::astType::implicit_statement) {
-            implicit.push_back(al, AST::down_cast<AST::implicit_statement_t>(ast.m_items[i]));
-        } else if (ast.m_items[i]->type == AST::astType::unit_decl2) {
-            // Declaration, Interface, DerivedType, Template, Enum, Instantiate, Requirement, Requires
-            decl.push_back(al, AST::down_cast<AST::unit_decl2_t>(ast.m_items[i]));
+        } else if (ast.m_items[i]->type == AST::astType::decl_stmt) {
+            items.push_back(al, AST::down_cast<AST::decl_stmt_t>(ast.m_items[i]));
         } else if (ast.m_items[i]->type == AST::astType::expr) {
             AST::expr_t* expr = AST::down_cast<AST::expr_t>(ast.m_items[i]);
             if (AST::is_a<AST::Name_t>(*expr)) {
                 AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
                 if (to_lower(name->m_id) == "stop") {
                     AST::ast_t* stop_ast = AST::make_Stop_t(al, name->base.base.loc, 0, nullptr, nullptr, nullptr);
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(stop_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(stop_ast));
                 } else if (to_lower(name->m_id) == "return") {
                     AST::ast_t* return_ast = AST::make_Return_t(al, name->base.base.loc, 0, nullptr, nullptr);
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(return_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(return_ast));
                 } else if (to_lower(name->m_id) == "exit") {
                     AST::ast_t* exit_ast = AST::make_Exit_t(al, name->base.base.loc, 0, name->m_id, nullptr);
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(exit_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(exit_ast));
                 } else if (to_lower(name->m_id) == "cycle") {
                     AST::ast_t* cycle_ast = AST::make_Cycle_t(al, name->base.base.loc, 0, name->m_id, nullptr);
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(cycle_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(cycle_ast));
                 } else if (to_lower(name->m_id) == "continue") {
                     AST::ast_t* continue_ast = AST::make_Continue_t(al, name->base.base.loc, 0, nullptr);
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(continue_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(continue_ast));
                 } else if (is_program_end(name)) {
                     AST::ast_t* program_ast = AST::make_Program_t(al, ast.base.base.loc, s2c(al, "__xx_main"), nullptr,
-                    use.p, use.size(), implicit.p, implicit.size(), decl.p, decl.size(),
-                    body.p, body.size(), contains_body.p, contains_body.size());
+                    items.p, items.size(), contains_body.p, contains_body.size());
 
                     global_items.push_back(al, program_ast);
                     program_added = true;
@@ -140,7 +128,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                                                     func_call_or_array->n_keywords,
                                                     nullptr);
 
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(allocate_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(allocate_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "deallocate") {
                     AST::ast_t* deallocate_ast = AST::make_Deallocate_t(al,
                                                     func_call_or_array->base.base.loc,
@@ -151,7 +139,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                                                     func_call_or_array->n_keywords,
                                                     nullptr);
 
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(deallocate_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(deallocate_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "open") {
                     Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
                     for (size_t j = 0; j < func_call_or_array->n_args; j++) {
@@ -166,7 +154,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                                                     func_call_or_array->n_keywords,
                                                     nullptr);
 
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(open_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(open_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "close") {
                     Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
                     for (size_t j = 0; j < func_call_or_array->n_args; j++) {
@@ -181,7 +169,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                                                     func_call_or_array->n_keywords,
                                                     nullptr);
 
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(close_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(close_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "nullify") {
                     Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
                     for (size_t j = 0; j < func_call_or_array->n_args; j++) {
@@ -196,7 +184,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                                                     func_call_or_array->n_keywords,
                                                     nullptr);
 
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(nullify_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(nullify_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "flush") {
                     Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
                     for (size_t j = 0; j < func_call_or_array->n_args; j++) {
@@ -211,7 +199,68 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                                                     func_call_or_array->n_keywords,
                                                     nullptr);
 
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(flush_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(flush_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "rewind") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* rewind_ast = AST::make_Rewind_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(rewind_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "backspace") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* backspace_ast = AST::make_Backspace_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(backspace_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "endfile" || to_lower(func_call_or_array->m_func) == "end_file") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* endfile_ast = AST::make_Endfile_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(endfile_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "inquire") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* inquire_ast = AST::make_Inquire_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr, 0,
+                                                    nullptr);
+
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(inquire_ast));
                 }
             } else {
                 diagnostics.add(diag::Diagnostic(
@@ -234,9 +283,11 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
 }
 
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
-        diag::Diagnostics &diagnostics, const CompilerOptions &co)
+        diag::Diagnostics &diagnostics, const CompilerOptions &co,
+        uint32_t loc_offset)
 {
     Parser p(al, diagnostics, co.fixed_form, co.continue_compilation, co.openmp);
+    p.m_tokenizer.loc_offset = loc_offset;
     try {
         if (!p.parse(s)) {
             if (!co.continue_compilation) {
@@ -436,6 +487,14 @@ bool is_digit(unsigned char ch) {
     return (ch >= '0' && ch <= '9');
 }
 
+bool str_compare_ci(const unsigned char *pos, const char *s) {
+    for (size_t i = 0; s[i] != '\0'; i++) {
+        if (pos[i] == '\0') return false;
+        if (tolower(pos[i]) != s[i]) return false;
+    }
+    return true;
+}
+
 enum LineType {
     Comment, Statement, LabeledStatement, Continuation, EndOfFile,
     ContinuationTab, StatementTab, Include,
@@ -457,17 +516,22 @@ LineType determine_line_type(const unsigned char *pos)
         return LineType::EndOfFile;
     } else if (*pos == '\t') {
         pos++;
-        if (*pos == '\0') {
+        // Skip any additional whitespace after the leading tab so that a
+        // line containing only whitespace is treated as a blank line
+        // rather than a (broken) statement.
+        const unsigned char *p = pos;
+        while (*p == ' ' || *p == '\t') p++;
+        if (*p == '\0') {
             return LineType::EndOfFile;
+        } else if (*p == '\n' || (*p == '\r' && *(p+1) == '\n')) {
+            // Blank line (tab followed only by whitespace) => comment
+            return LineType::Comment;
+        } else if (is_digit(*pos)) {
+            // A continuation line after a tab
+            return LineType::ContinuationTab;
         } else {
-            if (is_digit(*pos)) {
-                // A continuation line after a tab
-                return LineType::ContinuationTab;
-            } else {
-                // A statement line after a tab
-                return LineType::StatementTab;
-            }
-
+            // A statement line after a tab
+            return LineType::StatementTab;
         }
     } else {
         while (*pos == ' ') {
@@ -487,7 +551,7 @@ LineType determine_line_type(const unsigned char *pos)
         }
         if (col <= 6) {
             return LineType::LabeledStatement;
-        } else if (str_compare(pos, "include")) {
+        } else if (str_compare_ci((const unsigned char*)pos, "include")) {
             return LineType::Include;
         } else {
             return LineType::Statement;
@@ -561,10 +625,14 @@ bool is_num(char c)
 void copy_label(std::string &out, const std::string &s, size_t &pos)
 {
     size_t col = 1;
-    while (pos < s.size() && s[pos] != '\n' && col <= 6) {
+    while (pos < s.size() && s[pos] != '\n' && col <= 5) {
         out += s[pos];
         pos++;
         col++;
+    }
+    // Skip column 6 (continuation indicator field)
+    if (pos < s.size() && s[pos] != '\n') {
+        pos++;
     }
 }
 
@@ -584,7 +652,7 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
             skip_rest_of_line(s, pos);
             out += '\n';
             return;
-        } else if (s[pos] == ' ') {
+        } else if (s[pos] == ' ' || s[pos] == '\t') {
             // Skip white space in a fixed-form parser
             pos++;
             col++;
@@ -623,10 +691,10 @@ bool check_newlines(const std::string &s, const std::vector<uint32_t> &newlines)
     return true;
 }
 
-void process_include(std::string& out, const std::string& s,
+bool process_include(std::string& out, const std::string& s,
                      LocationManager& lm, size_t& pos, bool fixed_form,
                      std::vector<std::filesystem::path> &include_dirs,
-                     int &col)
+                     int &col, diag::Diagnostics &diagnostics)
 {
     std::string include_filename;
     parse_string(include_filename, s, pos, fixed_form, col);
@@ -648,9 +716,15 @@ void process_include(std::string& out, const std::string& s,
     }
 
     if (!file_found) {
-        throw LCompilersException("Include file '" + include_filename
+        Location loc;
+        loc.first = pos;
+        loc.last = pos;
+        diagnostics.add(diag::Diagnostic(
+            "Include file '" + include_filename
             + "' not found. If an include path "
-            "is available, please use the `-I` option to specify it.");
+            "is available, please use the `-I` option to specify it.",
+            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
+        return false;
     }
 
     LocationManager lm_tmp;
@@ -659,7 +733,13 @@ void process_include(std::string& out, const std::string& s,
         fl.in_filename = include_filename;
         lm_tmp.files.push_back(fl);
     }
-    include = prescan(include, lm_tmp, fixed_form, include_dirs);
+    Result<std::string> include_res = prescan(include, lm_tmp, fixed_form,
+        include_dirs, diagnostics);
+    if (include_res.ok) {
+        include = include_res.result;
+    } else {
+        return false;
+    }
 
     // Possible it goes here
     // lm.files.back().out_start.push_back(out.size());
@@ -667,11 +747,13 @@ void process_include(std::string& out, const std::string& s,
     while (pos < s.size() && s[pos] != '\n') pos++;
     lm.files.back().out_start.push_back(out.size());
     lm.files.back().in_start.push_back(pos);
+    return true;
 }
 
 bool is_include(const std::string &s, uint32_t pos) {
     while (pos < s.size() && s[pos] == ' ') pos++;
-    if (pos + 6 < s.size() && s.substr(pos, 7) == "include") {
+    if (pos + 6 < s.size() && str_compare_ci(
+            (const unsigned char*)&s[pos], "include")) {
         pos += 7;
         while (pos < s.size() && s[pos] == ' ') pos++;
         if (pos < s.size() && ((s[pos] == '"') || (s[pos] == '\''))) {
@@ -693,8 +775,9 @@ The prescan phase includes:
 - Conversion to lowercase (fixed-form only)
 - Handling of fixed-form column rules (columns 1–6 for labels/comments)
 */
-std::string prescan(const std::string &s, LocationManager &lm,
-        bool fixed_form, std::vector<std::filesystem::path> &include_dirs)
+Result<std::string> prescan(const std::string &s, LocationManager &lm,
+        bool fixed_form, std::vector<std::filesystem::path> &include_dirs,
+        diag::Diagnostics &diagnostics)
 {
     if (fixed_form) {
         // `pos` is the position in the original code `s`
@@ -780,12 +863,16 @@ std::string prescan(const std::string &s, LocationManager &lm,
                 }
                 case LineType::Include: {
                     while (pos < s.size() && s[pos] == ' ') pos++;
-                    LCOMPILERS_ASSERT(s.substr(pos, 7) == "include");
+                    LCOMPILERS_ASSERT(str_compare_ci(
+                        (const unsigned char*)&s[pos], "include"));
                     pos += 7;
                     while (pos < s.size() && s[pos] == ' ') pos++;
                     if ((s[pos] == '"') || (s[pos] == '\'')) {
-                        process_include(out, s, lm, pos, fixed_form,
-                            include_dirs, col);
+                        if (!process_include(out, s, lm, pos, fixed_form,
+                                include_dirs, col, diagnostics)) {
+                            Error error;
+                            return error;
+                        }
                     }
                     break;
                 }
@@ -816,16 +903,25 @@ std::string prescan(const std::string &s, LocationManager &lm,
             if (newline && is_include(s, pos)) {
                 int col = 0; // doesn't matter
                 while (pos < s.size() && s[pos] == ' ') pos++;
-                LCOMPILERS_ASSERT(pos + 6 < s.size() && s.substr(pos, 7) == "include")
+                LCOMPILERS_ASSERT(pos + 6 < s.size() && str_compare_ci(
+                    (const unsigned char*)&s[pos], "include"))
                 pos += 7;
                 while (pos < s.size() && s[pos] == ' ') pos++;
                 LCOMPILERS_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
-                process_include(out, s, lm, pos, fixed_form, include_dirs, col);
+                if (!process_include(out, s, lm, pos, fixed_form, include_dirs, col, diagnostics)) {
+                    Error error;
+                    return error;
+                }
             }
             newline = false;
             if (s[pos] == '!' && !in_string) in_comment = true;
             if (in_comment && s[pos] == '\n') in_comment = false;
-            if (!in_comment && s[pos] == '&' &&(next_nonspace_character(s,pos) == '\n' || next_nonspace_character(s,pos) == '!')) {
+            // `&` starts a continuation if it is the last non-blank character
+            // on the line, or (outside a string) if it is followed by a
+            // trailing comment. Inside a string `!` never starts a comment,
+            // so `&!` must be kept verbatim there.
+            if (!in_comment && s[pos] == '&' && (next_nonspace_character(s,pos) == '\n'
+                    || (!in_string && next_nonspace_character(s,pos) == '!'))) {
                 size_t pos2=pos+1;
                 bool ws_or_comment = false;
                 cont1(s, pos2, in_string, quote, ws_or_comment);
@@ -904,6 +1000,8 @@ std::string token2text(const int token)
         T(TK_RBRACKET_OLD, "/)")
         T(TK_PERCENT, "%")
         T(TK_VBAR, "|")
+        T(TK_QUESTION, "?")
+        T(TK_NIL, ".nil.")
 
         T(TK_STRING, "string")
         T(TK_COMMENT, "comment")
@@ -1030,6 +1128,7 @@ std::string token2text(const int token)
         T(KW_EVENT, "event")
         T(KW_EXIT, "exit")
         T(KW_EXTENDS, "extends")
+        T(KW_EXTENSIBLE, "extensible")
         T(KW_EXTERNAL, "external")
         T(KW_FILE, "file")
         T(KW_FINAL, "final")

@@ -32,6 +32,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             x:
                                 (Struct
@@ -58,6 +61,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     x
@@ -72,6 +78,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -109,6 +116,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     a
@@ -123,6 +133,7 @@
                                                     []
                                                     Source
                                                     Public
+                                                    .false.
                                                     .false.
                                                     .false.
                                                     []
@@ -155,6 +166,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     y
@@ -171,6 +185,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -211,6 +226,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     a
@@ -225,6 +243,7 @@
                                                     []
                                                     Source
                                                     Public
+                                                    .false.
                                                     .false.
                                                     .false.
                                                     []
@@ -257,6 +276,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             z:
                                                 (Variable
@@ -278,6 +300,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     z
@@ -294,6 +319,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -314,7 +340,9 @@
                     derived_types_03
                     []
                     []
+                    ()
                 )
         })
     []
+    ()
 )

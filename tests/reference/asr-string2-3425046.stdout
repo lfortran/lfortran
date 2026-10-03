@@ -87,6 +87,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -99,6 +100,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             f_string@f_string~genericprocedure:
                                                 (ExternalSymbol
@@ -132,6 +136,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     get_temp_filename
@@ -150,6 +157,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -189,8 +197,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -200,6 +210,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             dir_handle:
                                                 (Variable
@@ -210,8 +223,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -221,6 +236,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             f_string@f_string_cptr:
                                                 (ExternalSymbol
@@ -254,6 +272,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     list_files
@@ -270,6 +291,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -337,6 +359,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_strings:
                 (Module
@@ -412,6 +435,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             s:
                                                                 (Variable
@@ -422,8 +448,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (CPtr)
-                                                                    ()
+                                                                    (CPtr
+                                                                        CPointer
+                                                                    )
+                                                                    4 c_ptr
                                                                     BindC
                                                                     Public
                                                                     Required
@@ -433,11 +461,16 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     c_strlen
                                                     (FunctionType
-                                                        [(CPtr)]
+                                                        [(CPtr
+                                                            CPointer
+                                                        )]
                                                         (Integer 8)
                                                         BindC
                                                         Interface
@@ -449,6 +482,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 7 s)]
@@ -468,8 +502,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    4 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -479,6 +515,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             lfortran_tmp:
                                                 (Variable
@@ -500,6 +539,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             s:
                                                 (Variable
@@ -523,11 +565,16 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f_string_cptr
                                     (FunctionType
-                                        [(CPtr)]
+                                        [(CPtr
+                                            CPointer
+                                        )]
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
                                         )
@@ -541,6 +588,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [f_string_cptr_n]
                                     [(Var 6 cptr)]
@@ -593,8 +641,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    4 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -604,6 +654,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             n:
                                                 (Variable
@@ -625,6 +678,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             s:
                                                 (Variable
@@ -646,11 +702,16 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f_string_cptr_n
                                     (FunctionType
-                                        [(CPtr)
+                                        [(CPtr
+                                            CPointer
+                                        )
                                         (Integer 8)]
                                         (String 1 (FunctionParam
                                             1
@@ -667,6 +728,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 8 cptr)
@@ -697,6 +759,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -708,6 +771,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             f_string:
                                                 (Variable
@@ -731,6 +797,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f_string~genericprocedure
@@ -740,6 +809,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
@@ -754,6 +824,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 9 c_string)]
@@ -791,6 +862,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     string_t
@@ -809,6 +883,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -822,9 +897,11 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
 )

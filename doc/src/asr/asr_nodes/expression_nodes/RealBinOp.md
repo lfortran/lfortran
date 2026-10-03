@@ -1,84 +1,61 @@
 # RealBinOp
 
-Real Binary Operation expression type. An **expr** node.
+An arithmetic operation on reals.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 RealBinOp(expr left, binop op, expr right, ttype type, expr? value)
 ```
 
 ### Arguments
 
-`left` and `right` represent expression on the left and right side of operator
-`op`. `type` represents table entry type and `value` represents expression.
+| Argument | Description |
+|----------|-------------|
+| `left` | the left operand. |
+| `op` | the operator; see [binop](../enum_nodes/binop.md). |
+| `right` | the right operand. |
+| `type` | the type of the expression. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the RealBinOp represents.
+The value of the expression.
 
 ## Description
 
-**RealBinOp** represents real binary operation expression type. It is an
-ASR expr node. ASR has multiple binary expression types, for example: for Integer,
-real, complex, and logical.
-
-The binary operations accept two arguments of the same type.
-
-## Types
-
-Only accepts real constants, real exponents, floating point values.
+Both operands and the result have the same real type. There are no bitwise
+operators here: `binop` values such as `BitAnd` are not valid for reals.
 
 ## Examples
 
-```fortran
-(2.1+3.1)*5.1
+```clojure
+(RealBinOp
+  :left (Var
+    :v (SymbolRef 1 "x")
+  )
+  :op :Div
+  :right (RealConstant
+    :r 2.0
+    :type (Real
+      :kind 8
+    )
+  )
+  :type (Real
+    :kind 8
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(RealBinOp
-        (RealBinOp
-            (RealConstant
-                2.100000
-                (Real 4 [])
-            )
-            Add
-            (RealConstant
-                3.100000
-                (Real 4 [])
-            )
-            (Real 4 [])
-            (RealConstant
-                5.200000
-                (Real 4 [])
-            )
-        )
-        Mul
-        (RealConstant
-            5.100000
-            (Real 4 [])
-        )
-        (Real 4 [])
-        (RealConstant
-            26.520000
-            (Real 4 [])
-        )
-    )]
-)
-
+```{literalinclude} ../../examples/real_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[IntegerBinOp](IntegerBinOp.md), [ComplexBinOp](ComplexBinOp.md),
-[LogicalBinOp](LogicalBinOp.md)
+[binop](../enum_nodes/binop.md), [IntegerBinOp](IntegerBinOp.md), [RealCompare](RealCompare.md)

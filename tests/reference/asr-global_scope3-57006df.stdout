@@ -22,6 +22,9 @@
                     ()
                     .false.
                     .false.
+                    NotMethod
+                    ()
+                    []
                 )
         })
     [(Assignment
@@ -44,4 +47,5 @@
         .false.
         .false.
     )]
+    ()
 )

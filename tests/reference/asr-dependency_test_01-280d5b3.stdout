@@ -17,8 +17,8 @@
                                                     6
                                                     1_dependency_tree_t_find_dependency
                                                     5 find_dependency
-                                                    dependency_tree_t
-                                                    []
+                                                    fpm_dependency
+                                                    [dependency_tree_t]
                                                     find_dependency
                                                     Public
                                                 ),
@@ -52,6 +52,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             id:
                                                 (Variable
@@ -73,6 +76,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -84,19 +90,22 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(Allocatable
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
                                                         )
+                                                        (Integer 4)
                                                         (Allocatable
                                                             (Array
                                                                 (StructType
-                                                                    [(Logical 4)
-                                                                    (Allocatable
+                                                                    [(Allocatable
                                                                         (String 1 () DeferredLength DescriptorString)
                                                                     )
                                                                     (Allocatable
                                                                         (String 1 () DeferredLength DescriptorString)
                                                                     )
+                                                                    (Logical 4)
                                                                     (Logical 4)]
                                                                     []
                                                                     .true.
@@ -105,14 +114,12 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )
                                                         (Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        (Integer 4)
-                                                        (Integer 4)
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .false.
                                                         .false.
@@ -127,24 +134,30 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     add_dependency
                                     (FunctionType
                                         [(StructType
-                                            [(Allocatable
+                                            [(Integer 4)
+                                            (Integer 4)
+                                            (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
+                                            (Integer 4)
                                             (Allocatable
                                                 (Array
                                                     (StructType
-                                                        [(Logical 4)
-                                                        (Allocatable
+                                                        [(Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
                                                         )
                                                         (Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
                                                         )
+                                                        (Logical 4)
                                                         (Logical 4)]
                                                         []
                                                         .true.
@@ -153,14 +166,12 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
-                                            )
-                                            (Integer 4)
-                                            (Integer 4)
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .false.
                                             .false.
@@ -187,6 +198,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 self)
@@ -196,7 +208,8 @@
                                         (FunctionCall
                                             6 1_dependency_tree_t_find_dependency
                                             ()
-                                            [((Var 6 dependency))]
+                                            [((Var 6 self))
+                                            ((Var 6 dependency))]
                                             (Integer 4)
                                             ()
                                             (Var 6 self)
@@ -238,6 +251,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             path:
                                                 (Variable
@@ -261,6 +277,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     dependency_config_t
@@ -281,6 +300,7 @@
                                     []
                                     Source
                                     Private
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -307,7 +327,7 @@
                                                         .false.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -319,6 +339,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             proj_dir:
                                                 (Variable
@@ -342,6 +365,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             revision:
                                                 (Variable
@@ -365,6 +391,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             update:
                                                 (Variable
@@ -380,7 +409,7 @@
                                                         .false.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -392,17 +421,20 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     dependency_node_t
                                     (StructType
-                                        [(Logical 4)
-                                        (Allocatable
+                                        [(Allocatable
                                             (String 1 () DeferredLength DescriptorString)
                                         )
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
                                         )
+                                        (Logical 4)
                                         (Logical 4)]
                                         []
                                         .true.
@@ -416,6 +448,7 @@
                                     []
                                     Source
                                     Private
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -468,6 +501,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             dep:
                                                 (Variable
@@ -481,13 +517,13 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                [(Logical 4)
-                                                                (Allocatable
+                                                                [(Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
                                                                 )
                                                                 (Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
                                                                 )
+                                                                (Logical 4)
                                                                 (Logical 4)]
                                                                 []
                                                                 .true.
@@ -496,6 +532,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 dependency_node_t
@@ -508,6 +545,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             dep_dir:
                                                 (Variable
@@ -531,6 +571,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             find:
                                                 (GenericProcedure
@@ -558,7 +601,7 @@
                                                     Local
                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -570,6 +613,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             unit:
                                                 (Variable
@@ -591,6 +637,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             verbosity:
                                                 (Variable
@@ -600,7 +649,7 @@
                                                     Local
                                                     (IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 1 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -612,23 +661,29 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     dependency_tree_t
                                     (StructType
-                                        [(Allocatable
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
                                         )
+                                        (Integer 4)
                                         (Allocatable
                                             (Array
                                                 (StructType
-                                                    [(Logical 4)
-                                                    (Allocatable
+                                                    [(Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     (Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
+                                                    (Logical 4)
                                                     (Logical 4)]
                                                     []
                                                     .true.
@@ -637,14 +692,12 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
-                                        )
-                                        (Integer 4)
-                                        (Integer 4)
-                                        (Integer 4)]
+                                        )]
                                         []
                                         .true.
                                         .false.
@@ -659,6 +712,7 @@
                                     []
                                     Source
                                     Private
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -701,6 +755,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             pos:
                                                 (Variable
@@ -722,6 +779,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -733,19 +793,22 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(Allocatable
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
                                                         )
+                                                        (Integer 4)
                                                         (Allocatable
                                                             (Array
                                                                 (StructType
-                                                                    [(Logical 4)
-                                                                    (Allocatable
+                                                                    [(Allocatable
                                                                         (String 1 () DeferredLength DescriptorString)
                                                                     )
                                                                     (Allocatable
                                                                         (String 1 () DeferredLength DescriptorString)
                                                                     )
+                                                                    (Logical 4)
                                                                     (Logical 4)]
                                                                     []
                                                                     .true.
@@ -754,14 +817,12 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )
                                                         (Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        (Integer 4)
-                                                        (Integer 4)
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .false.
                                                         .false.
@@ -776,24 +837,30 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     find_dependency
                                     (FunctionType
                                         [(StructType
-                                            [(Allocatable
+                                            [(Integer 4)
+                                            (Integer 4)
+                                            (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
+                                            (Integer 4)
                                             (Allocatable
                                                 (Array
                                                     (StructType
-                                                        [(Logical 4)
-                                                        (Allocatable
+                                                        [(Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
                                                         )
                                                         (Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
                                                         )
+                                                        (Logical 4)
                                                         (Logical 4)]
                                                         []
                                                         .true.
@@ -802,14 +869,12 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
-                                            )
-                                            (Integer 4)
-                                            (Integer 4)
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .false.
                                             .false.
@@ -836,6 +901,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 self)
@@ -854,7 +920,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

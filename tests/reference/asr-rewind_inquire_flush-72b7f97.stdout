@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             b:
                                 (Variable
@@ -48,6 +51,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             ext:
                                 (Variable
@@ -69,6 +75,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             fm:
                                 (Variable
@@ -90,6 +99,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             ios:
                                 (Variable
@@ -111,6 +123,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             len:
                                 (Variable
@@ -132,6 +147,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     rewind_inquire_flush
@@ -141,6 +159,7 @@
                         (IntegerConstant 9 (Integer 4) Decimal)
                         (Var 2 ios)
                         (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
                     )
                     (FileInquire
                         0
@@ -180,6 +199,14 @@
                         ()
                         ()
                         []
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
                     )
                     (FileInquire
                         0
@@ -216,6 +243,14 @@
                         ()
                         ()
                         []
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
                     )
                     (FileInquire
                         0
@@ -253,6 +288,14 @@
                         (Var 2 len)
                         [(Var 2 a)
                         (Var 2 b)]
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
                     )
                     (GoToTarget
                         10
@@ -274,7 +317,9 @@
                             (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

@@ -99,6 +99,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     bindc_06
@@ -235,6 +238,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             bindc_06_mod:
                 (Module
@@ -271,6 +275,9 @@
                                     "c_int4"
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             f_int8:
                                 (Variable
@@ -292,6 +299,9 @@
                                     "c_int8"
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             f_logical:
                                 (Variable
@@ -313,6 +323,9 @@
                                     "c_logical"
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             f_type_c_ptr:
                                 (Variable
@@ -323,8 +336,10 @@
                                     ()
                                     ()
                                     Default
-                                    (CPtr)
-                                    ()
+                                    (CPtr
+                                        CPointer
+                                    )
+                                    2 c_ptr
                                     BindC
                                     Public
                                     Required
@@ -334,6 +349,9 @@
                                     "c_type_c_ptr"
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     bindc_06_mod
@@ -342,9 +360,11 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
 )

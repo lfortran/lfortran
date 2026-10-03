@@ -2,7 +2,6 @@
     [(Program
         array7
         ()
-        []
         [(Implicit
             [(ImplicitSpec
                 (AttrType
@@ -38,8 +37,8 @@
                 )]
             )]
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -84,7 +83,6 @@
             ())]
             ()
         )]
-        []
         []
     )]
 )

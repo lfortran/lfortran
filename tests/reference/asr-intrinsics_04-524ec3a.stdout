@@ -47,6 +47,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             z:
                                 (Variable
@@ -68,6 +71,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     intrinsics_04
@@ -164,7 +170,7 @@
                                     )
                                     (Real 4)
                                     (RealConstant
-                                        -0.000000
+                                        0.000000
                                         (Real 4)
                                     )
                                 )]
@@ -498,9 +504,11 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env)
         })
     []
+    ()
 )

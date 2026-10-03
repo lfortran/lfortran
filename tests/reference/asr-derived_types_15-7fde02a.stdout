@@ -17,8 +17,8 @@
                                                     4
                                                     1_t_1_i
                                                     3 i
-                                                    t_1
-                                                    []
+                                                    derived_types_15_module_1
+                                                    [t_1]
                                                     i
                                                     Public
                                                 ),
@@ -42,6 +42,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -63,6 +66,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -89,6 +95,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     multiply
@@ -111,6 +120,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 self)
@@ -149,8 +159,8 @@
                                                     5
                                                     1_t_1_i
                                                     3 i
-                                                    t_1
-                                                    []
+                                                    derived_types_15_module_1
+                                                    [t_1]
                                                     i
                                                     Public
                                                 ),
@@ -174,6 +184,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -195,6 +208,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -221,6 +237,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     sqrt_subtract
@@ -243,6 +262,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 self)
@@ -319,6 +339,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             multiply:
                                                 (StructMethodDeclaration
@@ -357,6 +380,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -369,6 +393,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             name:
                 (Program
@@ -380,8 +405,8 @@
                                     6
                                     1_t_1_i
                                     3 i
-                                    t_1
-                                    []
+                                    derived_types_15_module_1
+                                    [t_1]
                                     i
                                     Public
                                 ),
@@ -390,8 +415,8 @@
                                     6
                                     1_t_1_multiply
                                     3 multiply
-                                    t_1
-                                    []
+                                    derived_types_15_module_1
+                                    [t_1]
                                     multiply
                                     Public
                                 ),
@@ -400,8 +425,8 @@
                                     6
                                     1_t_1_sqrt_subtract
                                     3 sqrt_subtract
-                                    t_1
-                                    []
+                                    derived_types_15_module_1
+                                    [t_1]
                                     sqrt_subtract
                                     Public
                                 ),
@@ -440,6 +465,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     name
@@ -465,7 +493,8 @@
                             (FunctionCall
                                 6 1_t_1_multiply
                                 ()
-                                [((RealConstant
+                                [((Var 6 type_1))
+                                ((RealConstant
                                     5.000000
                                     (Real 4)
                                 ))]
@@ -498,7 +527,8 @@
                             (FunctionCall
                                 6 1_t_1_sqrt_subtract
                                 ()
-                                [((IntegerConstant 2500 (Integer 4) Decimal))]
+                                [((Var 6 type_1))
+                                ((IntegerConstant 2500 (Integer 4) Decimal))]
                                 (Real 4)
                                 ()
                                 (Var 6 type_1)
@@ -522,7 +552,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

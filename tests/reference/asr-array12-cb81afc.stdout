@@ -72,6 +72,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             cpath:
                                                 (Variable
@@ -88,6 +91,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -100,6 +104,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             path:
                                                 (Variable
@@ -123,6 +130,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             tmp:
                                                 (Variable
@@ -133,8 +143,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -144,6 +156,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     get_current_directory
@@ -162,6 +177,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [getcwd]
                                     [(Var 14 path)]
@@ -169,6 +185,7 @@
                                         [((Var 14 cpath)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 1000 (Integer 4) Decimal))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -186,15 +203,18 @@
                                                 DescriptorArray
                                                 StringArraySinglePointer
                                                 (Array
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength CChar)
                                                     [(()
                                                     ())]
                                                     StringArraySinglePointer
+                                                    Global
                                                 )
                                                 ()
                                             ))
                                             ((Var 14 buffersize))]
-                                            (CPtr)
+                                            (CPtr
+                                                CPointer
+                                            )
                                             ()
                                             ()
                                         )
@@ -252,6 +272,7 @@
                                                         [(()
                                                         ())]
                                                         StringArraySinglePointer
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -263,6 +284,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             bufsize:
                                                 (Variable
@@ -284,6 +308,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             path:
                                                 (Variable
@@ -294,8 +321,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -305,6 +334,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     getcwd
@@ -314,9 +346,12 @@
                                             [(()
                                             ())]
                                             StringArraySinglePointer
+                                            Global
                                         )
                                         (Integer 4)]
-                                        (CPtr)
+                                        (CPtr
+                                            CPointer
+                                        )
                                         BindC
                                         Interface
                                         "getcwd"
@@ -327,6 +362,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 buf)
@@ -346,9 +382,11 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
 )

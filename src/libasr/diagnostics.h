@@ -70,7 +70,7 @@ enum Level {
  */
 enum Stage {
     CPreprocessor, Prescanner, Tokenizer, Parser, Semantic, ASRPass,
-    ASRVerify, CodeGen
+    ASRVerify, CodeGen, ASRParser
 };
 
 /*
@@ -98,18 +98,21 @@ enum Stage {
 struct Diagnostic {
     Level level;
     Stage stage;
+    std::string code;
     std::string message;
     std::vector<Label> labels;
     std::vector<Diagnostic> children;
     std::vector<StacktraceItem> stacktrace = get_stacktrace_addresses();
 
     Diagnostic(const std::string &message, const Level &level,
-        const Stage &stage) : level{level}, stage{stage}, message{message} {}
+        const Stage &stage)
+        : level{level}, stage{stage}, message{message} {}
 
     Diagnostic(const std::string &message, const Level &level,
         const Stage &stage,
-        const std::vector<Label> &labels
-        ) : level{level}, stage{stage}, message{message}, labels{labels} {}
+        const std::vector<Label> &labels, const std::string &code=""
+        ) : level{level}, stage{stage}, code{code}, message{message},
+            labels{labels} {}
 };
 
 struct Diagnostics {
@@ -133,10 +136,12 @@ struct Diagnostics {
             const std::vector<Location> &locations,
             const std::string &error_label,
             const Level &level,
-            const Stage &stage
+            const Stage &stage,
+            const std::string &code=""
             ) {
         diagnostics.push_back(
-            Diagnostic(message, level, stage, {Label(error_label, locations)})
+            Diagnostic(message, level, stage,
+                {Label(error_label, locations)}, code)
         );
     }
 
@@ -168,6 +173,12 @@ struct Diagnostics {
             const std::vector<Location> &locations, const std::string &error_label) {
         message_label(message, locations, error_label,
             Level::Warning, Stage::CodeGen);
+    }
+
+    void asr_parser_error_label(const std::string &message,
+            const std::vector<Location> &locations, const std::string &error_label) {
+        message_label(message, locations, error_label,
+            Level::Error, Stage::ASRParser);
     }
 
     void codegen_error_label(const std::string &message,

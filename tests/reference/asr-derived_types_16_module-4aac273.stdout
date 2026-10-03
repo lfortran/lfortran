@@ -12,8 +12,8 @@
                                     5
                                     1_fpm_run_settings_bool
                                     3 bool
-                                    fpm_run_settings
-                                    []
+                                    fpm_command_line
+                                    [fpm_run_settings]
                                     bool
                                     Public
                                 ),
@@ -22,8 +22,8 @@
                                     5
                                     1_fpm_run_settings_float
                                     3 float
-                                    fpm_run_settings
-                                    []
+                                    fpm_command_line
+                                    [fpm_run_settings]
                                     float
                                     Public
                                 ),
@@ -32,8 +32,8 @@
                                     5
                                     1_fpm_run_settings_int
                                     3 int
-                                    fpm_run_settings
-                                    []
+                                    fpm_command_line
+                                    [fpm_run_settings]
                                     int
                                     Public
                                 ),
@@ -68,9 +68,9 @@
                                     Default
                                     (Allocatable
                                         (StructType
-                                            [(Logical 4)
+                                            [(Integer 4)
                                             (Real 4)
-                                            (Integer 4)]
+                                            (Logical 4)]
                                             []
                                             .false.
                                             .false.
@@ -86,12 +86,16 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     derived_types_16
                     [fpm_command_line]
                     [(Allocate
                         [((Var 5 settings)
+                        []
                         []
                         ()
                         ()
@@ -185,6 +189,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             fpm_command_line:
                 (Module
@@ -216,6 +221,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             float:
                                                 (Variable
@@ -237,6 +245,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             int:
                                                 (Variable
@@ -258,13 +269,16 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     fpm_run_settings
                                     (StructType
-                                        [(Logical 4)
+                                        [(Integer 4)
                                         (Real 4)
-                                        (Integer 4)]
+                                        (Logical 4)]
                                         []
                                         .true.
                                         .false.
@@ -276,6 +290,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -299,9 +314,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            [(Logical 4)
+                                                            [(Integer 4)
                                                             (Real 4)
-                                                            (Integer 4)]
+                                                            (Logical 4)]
                                                             []
                                                             .false.
                                                             .false.
@@ -317,15 +332,18 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     get_command_line_settings
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
-                                                [(Logical 4)
+                                                [(Integer 4)
                                                 (Real 4)
-                                                (Integer 4)]
+                                                (Logical 4)]
                                                 []
                                                 .false.
                                                 .false.
@@ -342,6 +360,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 cmd_settings)]
@@ -359,9 +378,9 @@
                                                 (Logical 4)
                                             ))]
                                             (StructType
-                                                [(Logical 4)
+                                                [(Integer 4)
                                                 (Real 4)
-                                                (Integer 4)]
+                                                (Logical 4)]
                                                 []
                                                 .true.
                                                 .false.
@@ -385,7 +404,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

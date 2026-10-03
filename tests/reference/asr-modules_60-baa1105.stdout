@@ -48,6 +48,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             inf_mod_1:
                 (Module
@@ -82,6 +83,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -99,6 +101,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             infnan_mod_1:
                 (Module
@@ -140,6 +143,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     is_finite_1
@@ -156,6 +162,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 x)]
@@ -207,7 +214,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

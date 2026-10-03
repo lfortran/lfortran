@@ -7,12 +7,11 @@
             (EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             ()
             [(SimpleAttribute
                 AttrPrivate
@@ -98,7 +97,6 @@
             ()
         )]
         []
-        []
     )
     (Program
         modules_05
@@ -116,10 +114,8 @@
             )]
             .true.
             ()
-        )]
-        []
-        []
-        [(Print
+        )
+        (Print
             0
             ()
             [a

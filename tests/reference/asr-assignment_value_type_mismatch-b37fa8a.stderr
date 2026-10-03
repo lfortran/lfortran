@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.assignment.value_type_matches_target]: Assignment value type i32 does not match target type i16
+  --> tests/asr/verify/assignment_value_type_mismatch.asr:43:14
+   |
+43 |             (IntegerConstant
+   |              ^^^^^^^^^^^^^^^ failed here

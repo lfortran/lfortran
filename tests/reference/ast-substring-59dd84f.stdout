@@ -2,12 +2,11 @@
     [(Program
         substring
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeCharacter
                 [(()
@@ -58,8 +57,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             str
             (Substring

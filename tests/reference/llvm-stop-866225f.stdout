@@ -1,5 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
+target datalayout = "..."
 
 @STOP = private unnamed_addr constant [5 x i8] c"STOP\00", align 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
@@ -16,6 +17,7 @@ define i32 @main(i32 %0, i8** %1) {
 
 then:                                             ; preds = %.entry
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @STOP, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 0)
   br label %ifcont
 
@@ -23,13 +25,13 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont
   br label %FINALIZE_SYMTABLE_stop
 
 FINALIZE_SYMTABLE_stop:                           ; preds = %return
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
@@ -37,6 +39,6 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lcompilers_print_error(i8*, ...)
 
-declare void @exit(i32)
+declare void @_lfortran_internal_alloc_finalize()
 
-declare void @_lpython_free_argv()
+declare void @exit(i32)

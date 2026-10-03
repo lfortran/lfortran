@@ -6,6 +6,7 @@ program string_37
     string2 => cast_to_string()
     string = string2
     if (string /= "Hello") error stop
+    deallocate(string2)
     contains
 
     function maybe(string) result(maybe_string)

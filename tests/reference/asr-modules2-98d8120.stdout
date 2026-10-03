@@ -24,6 +24,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_structure_base:
                 (Module
@@ -60,6 +61,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             toml_value:
                                                 (ExternalSymbol
@@ -91,6 +95,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 self)]
@@ -122,6 +127,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     10 toml_structure
@@ -158,6 +164,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -170,6 +177,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_type_array:
                 (Module
@@ -186,8 +194,8 @@
                                                     15
                                                     1_toml_array_list
                                                     14 list
-                                                    toml_array
-                                                    []
+                                                    tomlf_type_array
+                                                    [toml_array]
                                                     list
                                                     Public
                                                 ),
@@ -206,8 +214,8 @@
                                                     15
                                                     1_toml_structure_destroy
                                                     12 destroy
-                                                    1_toml_structure
-                                                    []
+                                                    tomlf_structure_base
+                                                    [toml_structure]
                                                     destroy
                                                     Public
                                                 ),
@@ -216,8 +224,8 @@
                                                     15
                                                     1_toml_value_key
                                                     5 key
-                                                    toml_value
-                                                    []
+                                                    tomlf_type_value
+                                                    [toml_value]
                                                     key
                                                     Public
                                                 ),
@@ -253,6 +261,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     destroy
@@ -281,6 +292,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 15 self)]
@@ -336,7 +348,19 @@
                                         [(SubroutineCall
                                             15 1_toml_structure_destroy
                                             ()
-                                            []
+                                            [((StructInstanceMember
+                                                (Var 15 self)
+                                                15 1_toml_array_list
+                                                (Allocatable
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                )
+                                                ()
+                                            ))]
                                             (StructInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_array_list
@@ -419,6 +443,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     new_array
@@ -447,6 +474,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 16 self)]
@@ -500,6 +528,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     toml_array
@@ -521,6 +552,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -557,6 +589,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_type_value:
                 (Module
@@ -595,6 +628,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     destroy
@@ -618,6 +654,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 self)]
@@ -666,6 +703,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     toml_value
@@ -684,6 +724,7 @@
                                     Private
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -696,7 +737,9 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

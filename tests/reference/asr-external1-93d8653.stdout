@@ -12,34 +12,14 @@
                                     (SymbolTable
                                         3
                                         {
-                                            matvect_return_var_name:
-                                                (Variable
-                                                    3
-                                                    matvect_return_var_name
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                )
+                                            
                                         })
                                     matvect
                                     (FunctionType
                                         []
-                                        (Real 4)
+                                        ()
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
@@ -48,11 +28,12 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
                                     []
-                                    (Var 3 matvect_return_var_name)
+                                    ()
                                     Public
                                     .false.
                                     .false.
@@ -63,9 +44,9 @@
                     (FunctionType
                         [(FunctionType
                             []
-                            (Real 4)
+                            ()
                             BindC
-                            Interface
+                            ImplicitInterface
                             ()
                             .false.
                             .false.
@@ -74,6 +55,7 @@
                             .false.
                             []
                             .false.
+                            Host
                         )]
                         ()
                         Source
@@ -86,6 +68,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 matvect)]
@@ -98,4 +81,5 @@
                 )
         })
     []
+    ()
 )

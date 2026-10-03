@@ -32,6 +32,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             j:
                                                 (Variable
@@ -53,6 +56,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             mask:
                                                 (Variable
@@ -69,6 +75,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -81,6 +88,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             n:
                                                 (Variable
@@ -102,6 +112,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             pos:
                                                 (Variable
@@ -118,6 +131,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -130,6 +144,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             vec:
                                                 (Variable
@@ -145,6 +162,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -156,6 +174,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     change_positions_chr
@@ -165,6 +186,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         (Allocatable
                                             (Array
@@ -172,6 +194,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         Source
@@ -184,6 +207,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [~neq_intrinsic1]
                                     [(Var 12 vec)]
@@ -203,6 +227,7 @@
                                         [((Var 12 pos)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 12 n))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -235,6 +260,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                                     FixedSizeArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -244,6 +270,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             ()
@@ -349,6 +376,7 @@
                                         [((Var 12 mask)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 12 j))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -418,6 +446,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             j:
                                                 (Variable
@@ -439,6 +470,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             mask:
                                                 (Variable
@@ -455,6 +489,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -467,6 +502,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             n:
                                                 (Variable
@@ -488,6 +526,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             pos:
                                                 (Variable
@@ -504,6 +545,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -516,6 +558,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             vec:
                                                 (Variable
@@ -531,6 +576,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -542,6 +588,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     change_positions_int
@@ -551,6 +600,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         (Allocatable
                                             (Array
@@ -558,6 +608,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         Source
@@ -570,6 +621,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [~neq_intrinsic]
                                     [(Var 10 vec)]
@@ -589,6 +641,7 @@
                                         [((Var 10 pos)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 10 n))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -621,6 +674,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                                     FixedSizeArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -630,6 +684,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             ()
@@ -735,6 +790,7 @@
                                         [((Var 10 mask)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 10 j))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -799,14 +855,6 @@
                                     eq
                                     Public
                                 ),
-                            ~neq:
-                                (CustomOperator
-                                    8
-                                    ~neq
-                                    [8 ~neq_intrinsic
-                                    8 ~neq_intrinsic1]
-                                    Public
-                                ),
                             ~neq_intrinsic:
                                 (Function
                                     (SymbolTable
@@ -832,6 +880,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             arg1:
                                                 (Variable
@@ -853,6 +904,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             ret:
                                                 (Variable
@@ -874,6 +928,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     ~neq_intrinsic
@@ -891,6 +948,7 @@
                                         .false.
                                         []
                                         .true.
+                                        Host
                                     )
                                     []
                                     [(Var 9 arg0)
@@ -939,6 +997,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             arg1:
                                                 (Variable
@@ -960,6 +1021,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             ret:
                                                 (Variable
@@ -981,6 +1045,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     ~neq_intrinsic1
@@ -998,6 +1065,7 @@
                                         .false.
                                         []
                                         .true.
+                                        Host
                                     )
                                     []
                                     [(Var 11 arg0)
@@ -1039,6 +1107,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 7 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                            Global
                                         )
                                         ColMajor
                                     )
@@ -1049,6 +1118,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 7 (Integer 4) Decimal))]
                                         DescriptorArray
+                                        Global
                                     )
                                     ()
                                 ))]
@@ -1058,6 +1128,7 @@
                                         [(()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                 )
                                 ()
@@ -1085,6 +1156,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 7 (Integer 4) Decimal))]
                                             PointerArray
+                                            Global
                                         )
                                         ColMajor
                                     )
@@ -1095,6 +1167,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 7 (Integer 4) Decimal))]
                                         DescriptorArray
+                                        Global
                                     )
                                     ()
                                 ))]
@@ -1104,6 +1177,7 @@
                                         [(()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                 )
                                 ()
@@ -1116,6 +1190,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             template_02_m:
                 (Module
@@ -1152,6 +1227,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             j:
                                                                 (Variable
@@ -1173,6 +1251,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             mask:
                                                                 (Variable
@@ -1189,6 +1270,7 @@
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     ()
@@ -1201,6 +1283,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1222,6 +1307,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             pos:
                                                                 (Variable
@@ -1238,6 +1326,7 @@
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     ()
@@ -1250,6 +1339,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             vec:
                                                                 (Variable
@@ -1263,10 +1355,13 @@
                                                                     (Array
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -1278,6 +1373,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     change_positions_t
@@ -1285,10 +1383,13 @@
                                                         [(Array
                                                             (TypeParameter
                                                                 t
+                                                                NonExtensible
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (Allocatable
                                                             (Array
@@ -1296,6 +1397,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )
                                                         Source
@@ -1308,6 +1410,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [ne]
                                                     [(Var 7 vec)]
@@ -1327,6 +1430,7 @@
                                                         [((Var 7 pos)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 7 n))]
+                                                        []
                                                         ()
                                                         ()
                                                         ())]
@@ -1359,6 +1463,7 @@
                                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                                                     FixedSizeArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             )
@@ -1368,6 +1473,7 @@
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                             )
                                                             ()
@@ -1416,6 +1522,8 @@
                                                                     ())]
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ColMajor
                                                                     ()
@@ -1433,6 +1541,8 @@
                                                                     ())]
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ColMajor
                                                                     ()
@@ -1477,6 +1587,7 @@
                                                         [((Var 7 mask)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 7 j))]
+                                                        []
                                                         ()
                                                         ()
                                                         ())]
@@ -1537,6 +1648,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1548,6 +1661,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             ne:
                                                                 (Variable
@@ -1569,6 +1685,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -1581,6 +1700,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1592,15 +1713,22 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     ne
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (Logical 4)
                                                         Source
@@ -1613,6 +1741,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 6 lhs)
@@ -1635,6 +1764,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -1646,6 +1777,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     change_positions_tmpl
@@ -1678,6 +1812,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1689,6 +1825,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             ne:
                                                                 (Variable
@@ -1710,6 +1849,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -1722,6 +1864,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1733,15 +1877,22 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     ne
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (Logical 4)
                                                         Source
@@ -1754,6 +1905,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 4 lhs)
@@ -1776,6 +1928,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -1787,6 +1941,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     eq
@@ -1801,7 +1958,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

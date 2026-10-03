@@ -17,6 +17,16 @@
                                     c_f_pointer
                                     Public
                                 ),
+                            c_intptr_t:
+                                (ExternalSymbol
+                                    2
+                                    c_intptr_t
+                                    4 c_intptr_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_intptr_t
+                                    Public
+                                ),
                             c_loc:
                                 (ExternalSymbol
                                     2
@@ -57,6 +67,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             queries:
                                 (Variable
@@ -67,8 +80,10 @@
                                     ()
                                     ()
                                     Default
-                                    (CPtr)
-                                    ()
+                                    (CPtr
+                                        CPointer
+                                    )
+                                    2 c_ptr
                                     Source
                                     Public
                                     Required
@@ -78,6 +93,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -101,6 +119,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -122,6 +143,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     bindc3
@@ -135,12 +159,26 @@
                     (Print
                         (StringFormat
                             ()
-                            [(PointerToCPtr
-                                (Var 2 x)
-                                (CPtr)
+                            [(BitCast
+                                (PointerToCPtr
+                                    (Var 2 x)
+                                    (CPtr
+                                        CPointer
+                                    )
+                                    ()
+                                )
+                                (IntegerConstant 0 (Integer 8) Decimal)
+                                ()
+                                (Integer 8)
                                 ()
                             )
-                            (Var 2 queries)]
+                            (BitCast
+                                (Var 2 queries)
+                                (IntegerConstant 0 (Integer 8) Decimal)
+                                ()
+                                (Integer 8)
+                                ()
+                            )]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -155,20 +193,36 @@
                     (Print
                         (StringFormat
                             ()
-                            [(PointerToCPtr
-                                (Var 2 x)
-                                (CPtr)
-                                ()
-                            )
-                            (PointerToCPtr
-                                (GetPointer
-                                    (Var 2 y)
-                                    (Pointer
-                                        (Integer 2)
+                            [(BitCast
+                                (PointerToCPtr
+                                    (Var 2 x)
+                                    (CPtr
+                                        CPointer
                                     )
                                     ()
                                 )
-                                (CPtr)
+                                (IntegerConstant 0 (Integer 8) Decimal)
+                                ()
+                                (Integer 8)
+                                ()
+                            )
+                            (BitCast
+                                (PointerToCPtr
+                                    (GetPointer
+                                        (Var 2 y)
+                                        (Pointer
+                                            (Integer 2)
+                                        )
+                                        ()
+                                    )
+                                    (CPtr
+                                        CPointer
+                                    )
+                                    ()
+                                )
+                                (IntegerConstant 0 (Integer 8) Decimal)
+                                ()
+                                (Integer 8)
                                 ()
                             )]
                             FormatFortran
@@ -178,9 +232,11 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
 )

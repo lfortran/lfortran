@@ -61,4 +61,7 @@ program class_51
    print *, "my_type_var_ptr%value: ", my_type_var_ptr%value
    if (my_type_var_ptr%value /= 37) error stop
 
+   deallocate(my_class_var_ptr)
+   deallocate(my_type_var_ptr)
+
 end program

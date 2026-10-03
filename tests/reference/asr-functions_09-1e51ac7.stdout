@@ -31,6 +31,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -42,6 +43,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     stdlib_quadrature
@@ -61,6 +65,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                 ))]
@@ -69,6 +74,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 4 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ()
                                 ()
@@ -80,6 +86,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             stdlib_quadrature_simps:
                 (Module
@@ -112,6 +119,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -123,6 +131,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -138,6 +149,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -149,6 +161,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     simps38_weights_dp
@@ -158,12 +173,14 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 4 (Integer 4) Decimal))]
                                             PointerArray
+                                            Global
                                         )]
                                         (Array
                                             (Real 8)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 4 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                            Global
                                         )
                                         Source
                                         Implementation
@@ -175,6 +192,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 x)]
@@ -204,6 +222,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -215,6 +234,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     simps38_weights_dp_use
@@ -224,6 +246,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 4 (Integer 4) Decimal))]
                                             PointerArray
+                                            Global
                                         )]
                                         ()
                                         Source
@@ -236,6 +259,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [simps38_weights_dp]
                                     [(Var 4 x1)]
@@ -251,6 +275,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 4 (Integer 4) Decimal))]
                                                     FixedSizeArray
+                                                    Global
                                                 )
                                                 ()
                                                 ()
@@ -275,7 +300,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

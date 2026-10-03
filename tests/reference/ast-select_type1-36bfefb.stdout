@@ -2,13 +2,11 @@
     [(Program
         select_type1
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        []
-        [(SelectType
+        )
+        (SelectType
             0
             ()
             uptr

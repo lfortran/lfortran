@@ -66,6 +66,11 @@ std::string get_runtime_library_dir()
 #ifdef HAVE_BUILD_TO_WASM
     return "asset_dir";
 #endif
+#ifdef __EMSCRIPTEN__
+    // JupyterLite (xlfortran): empack mounts $PREFIX at / in the VFS,
+    // so runtime .mod files installed to $PREFIX/lib end up at /lib.
+    return "/lib";
+#endif
     char *env_p = std::getenv("LFORTRAN_RUNTIME_LIBRARY_DIR");
     if (env_p) return env_p;
 
@@ -103,6 +108,21 @@ std::string get_runtime_library_c_header_dir()
             return lfortran_exec_path_dir + "/../../libasr/runtime";
         case ExecutionMode::LFortranInstalled:
             return lfortran_exec_path_dir + "/" + CMAKE_INSTALL_INCLUDEDIR_RELATIVE + "/lfortran/impure";
+        default:
+            return "";
+    }
+}
+
+std::string get_c_include_dir()
+{
+    switch (execution_mode)
+    {
+        case ExecutionMode::LFortranDevelopment:
+            return lfortran_exec_path_dir + "/../libasr/runtime";
+        case ExecutionMode::LFortranCtest:
+            return lfortran_exec_path_dir + "/../../libasr/runtime";
+        case ExecutionMode::LFortranInstalled:
+            return lfortran_exec_path_dir + "/" + CMAKE_INSTALL_INCLUDEDIR_RELATIVE + "/lfortran";
         default:
             return "";
     }

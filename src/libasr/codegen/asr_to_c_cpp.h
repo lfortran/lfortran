@@ -218,6 +218,15 @@ public:
               ds_funcs_defined + util_funcs_defined;
     }
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        // A translation unit initializer has to run before main, which only
+        // a target with a startup hook of its own can arrange. Nothing that
+        // reaches this backend sets one today — it comes from a saved coarray
+        // of an external procedure — so say so rather than quietly dropping
+        // the initialization on the floor.
+        if (x.m_global_init != nullptr) {
+            throw CodeGenError("a startup initializer of the translation unit "
+                "is not supported by this backend");
+        }
         global_scope = x.m_symtab;
         // All loose statements must be converted to a function, so the items
         // must be empty:
@@ -724,6 +733,9 @@ R"(#include <stdio.h>
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            return;
+        }
         std::string sub = "";
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
@@ -1213,14 +1225,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         } else {
             step = "1";
         }
-        src = "_lfortran_str_slice(" + arg + ", " + left + ", " + right + ", " + \
+        src = "_lfortran_str_slice_alloc(_lfortran_get_default_allocator(), " + arg + ", " + left + ", " + right + ", " + \
                     step + ", " + left_present + ", " + rig_present + ")";
     }
 
     void visit_StringChr(const ASR::StringChr_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
-        src = "_lfortran_str_chr(" + src + ")";
+        src = "_lfortran_str_chr_alloc(_lfortran_get_default_allocator(), " + src + ")";
     }
 
     void visit_StringOrd(const ASR::StringOrd_t& x) {
@@ -1239,7 +1251,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string s = src;
         self().visit_expr(*x.m_right);
         std::string n = src;
-        src = "_lfortran_strrepeat_c(" + s + ", " + n + ")";
+        src = "_lfortran_strrepeat_c_alloc(_lfortran_get_default_allocator(), " + s + ", " + n + ")";
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
@@ -2240,10 +2252,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     ASR::ttype_t *arg_type = ASRUtils::expr_type(x.m_arg);
                     int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                     switch (arg_kind) {
-                        case 1: src = "_lfortran_int_to_str1(" + src + ")"; break;
-                        case 2: src = "_lfortran_int_to_str2(" + src + ")"; break;
-                        case 4: src = "_lfortran_int_to_str4(" + src + ")"; break;
-                        case 8: src = "_lfortran_int_to_str8(" + src + ")"; break;
+                        case 1: src = "_lfortran_int_to_str1_alloc(_lfortran_get_default_allocator(), " + src + ")"; break;
+                        case 2: src = "_lfortran_int_to_str2_alloc(_lfortran_get_default_allocator(), " + src + ")"; break;
+                        case 4: src = "_lfortran_int_to_str4_alloc(_lfortran_get_default_allocator(), " + src + ")"; break;
+                        case 8: src = "_lfortran_int_to_str8_alloc(_lfortran_get_default_allocator(), " + src + ")"; break;
                         default: throw CodeGenError("Cast IntegerToString: Unsupported Kind " + \
                                         std::to_string(arg_kind));
                     }
@@ -2268,8 +2280,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     ASR::ttype_t *arg_type = ASRUtils::expr_type(x.m_arg);
                     int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                     switch (arg_kind) {
-                        case 4: src = "_lfortran_float_to_str4(" + src + ")"; break;
-                        case 8: src = "_lfortran_float_to_str8(" + src + ")"; break;
+                        case 4: src = "_lfortran_float_to_str4_alloc(_lfortran_get_default_allocator(), " + src + ")"; break;
+                        case 8: src = "_lfortran_float_to_str8_alloc(_lfortran_get_default_allocator(), " + src + ")"; break;
                         default: throw CodeGenError("Cast RealToString: Unsupported Kind " + \
                                         std::to_string(arg_kind));
                     }
@@ -2673,13 +2685,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_allocatable(type)));
                 size_str += "*sizeof(" + ty + ")";
-                out += indent + sym + "->data = (" + ty + "*) _lfortran_malloc(" + size_str + ")";
+                out += indent + sym + "->data = (" + ty + "*) _lfortran_malloc_alloc(_lfortran_get_default_allocator(), " + size_str + ")";
                 out += ";\n";
                 out += indent + sym + "->is_allocated = true;\n";
             } else {
                 std::string ty = CUtils::get_c_type_from_ttype_t(type), size_str;
                 size_str = "sizeof(" + ty + ")";
-                out += indent + sym + " = (" + ty + "*) _lfortran_malloc(" + size_str + ")";
+                out += indent + sym + " = (" + ty + "*) _lfortran_malloc_alloc(_lfortran_get_default_allocator(), " + size_str + ")";
                 out += ";\n";
             }
         }
@@ -2712,21 +2724,33 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
+    // Neither deallocate statement releases anything in this backend yet; both
+    // only name what would be released, so a component is named the same way a
+    // whole variable is rather than being refused.
+    std::string deallocate_operand_name(ASR::expr_t* e) {
+        if( ASR::is_a<ASR::Var_t>(*e) ) {
+            return ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(e)->m_v);
+        }
+        if( ASR::is_a<ASR::StructInstanceMember_t>(*e) ) {
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(e);
+            return deallocate_operand_name(member->m_v) + "." +
+                ASRUtils::symbol_name(member->m_m);
+        }
+        if( ASR::is_a<ASR::ArrayItem_t>(*e) ) {
+            return deallocate_operand_name(ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
+        }
+        if( ASR::is_a<ASR::ArraySection_t>(*e) ) {
+            return deallocate_operand_name(ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
+        }
+        return ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(e), e);
+    }
+
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "// FIXME: deallocate(";
         for (size_t i=0; i<x.n_vars; i++) {
-            ASR::symbol_t* tmp_sym = nullptr;
-            ASR::expr_t* tmp_expr = x.m_vars[i];
-            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
-                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
-                tmp_sym = tmp_var->m_v;
-            } else {
-                throw CodeGenError("Cannot deallocate variables in expression " +
-                                    ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(tmp_expr), tmp_expr),
-                                    tmp_expr->base.loc);
-            }
-            out += std::string(ASRUtils::symbol_name(tmp_sym)) + ", ";
+            out += deallocate_operand_name(x.m_vars[i]) + ", ";
         }
         out += ");\n";
         src = out;
@@ -2736,17 +2760,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "// FIXME: implicit deallocate(";
         for (size_t i=0; i<x.n_vars; i++) {
-            ASR::symbol_t* tmp_sym = nullptr;
-            ASR::expr_t* tmp_expr = x.m_vars[i];
-            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
-                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
-                tmp_sym = tmp_var->m_v;
-            } else {
-                throw CodeGenError("Cannot deallocate variables in expression " +
-                                    ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(tmp_expr), tmp_expr),
-                                    tmp_expr->base.loc);
-            }
-            out += std::string(ASRUtils::symbol_name(tmp_sym)) + ", ";
+            out += deallocate_operand_name(x.m_vars[i]) + ", ";
         }
         out += ");\n";
         src = out;
@@ -2903,6 +2917,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     void visit_SyncAll(const ASR::SyncAll_t & /* x */) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         src = indent + "// SYNC ALL\n";
+    }
+
+    void visit_SyncMemory(const ASR::SyncMemory_t & /* x */) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        src = indent + "// SYNC MEMORY\n";
     }
 
     void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &/*x*/) {

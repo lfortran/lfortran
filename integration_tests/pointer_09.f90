@@ -9,7 +9,7 @@ type :: node
     type(node), pointer :: next => null()
 end type
 
-type(node), pointer :: a, b, c
+type(node), pointer :: a, b, c, save_a
 allocate(a)
 allocate(b)
 allocate(c)
@@ -18,6 +18,7 @@ b%val = 2
 c%val = 3
 a%next => b
 b%next => c
+save_a => a
 
 ! Test 1: associated(p, q) with pointer reassignment inside if-block
 call advance_if_same(a)
@@ -35,6 +36,9 @@ if (b%val /= 3) error stop
 if (.not. associated(b, c)) error stop
 
 print *, "PASS"
+deallocate(save_a)
+deallocate(a)
+deallocate(c)
 
 contains
 

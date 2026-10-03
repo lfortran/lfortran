@@ -365,18 +365,8 @@ public:
             r.append("\n");
         }
         if (indent_unit) inc_indent();
-        if(x.n_use > 0) {
-            for (size_t i=0; i<x.n_use; i++) {
-                this->visit_unit_decl1(*x.m_use[i]);
-                r.append(s);
-            }
-            r.append("\n");
-        }
-        if(x.n_decl > 0) {
-            for (size_t i=0; i<x.n_decl; i++) {
-                this->visit_unit_decl2(*x.m_decl[i]);
-                r.append(s);
-            }
+        if (x.n_items > 0) {
+            r += format_items(x);
             r.append("\n");
         }
         if (x.n_contains > 0) {
@@ -422,20 +412,7 @@ public:
             r.append("\n");
         }
         inc_indent();
-        for (size_t i=0; i<x.n_use; i++) {
-            this->visit_unit_decl1(*x.m_use[i]);
-            r.append(s);
-        }
-        r += format_implicit(x);
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
-            r.append(s);
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            r.append(indent);
-            this->visit_stmt(*x.m_body[i]);
-            r.append(s);
-        }
+        r += format_items(x);
         dec_indent();
         r += indent;
         r += syn(gr::UnitHeader);
@@ -488,10 +465,19 @@ public:
             r.append(" ");
         }
         r += syn(gr::UnitHeader);
+        // C1609 (J3/26-007r1): TEMPLATE appears in the prefix of a templated
+        // subprogram, which is what a deferred argument list makes this.
+        if (x.n_temp_args > 0) {
+            r.append("template ");
+        }
         r.append("subroutine");
         r += syn();
         r += " ";
         r.append(x.m_name);
+        if (x.n_temp_args > 0) {
+            r.append(" ");
+            r += format_generic_args(x.m_temp_args, x.n_temp_args);
+        }
         r.append("(");
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_arg(x.m_args[i]);
@@ -565,7 +551,38 @@ public:
         s = r;
     }
 
+    // `deferred type [, deferred-type-attr-list] :: t` (F2028 R1616) is stored
+    // as a DerivedType whose first attribute is `deferred`, optionally followed
+    // by the deferred-type-attrs of the statement (R1617).
+    bool is_deferred_type(const DerivedType_t &x) {
+        return x.n_attrtype >= 1 && x.n_namelist == 0 && x.n_items == 0
+            && x.n_contains == 0
+            && is_a<SimpleAttribute_t>(*x.m_attrtype[0])
+            && down_cast<SimpleAttribute_t>(x.m_attrtype[0])->m_attr
+                == simple_attributeType::AttrDeferred;
+    }
+
     void visit_DerivedType(const DerivedType_t &x) {
+        if (is_deferred_type(x)) {
+            std::string r = indent;
+            r += syn(gr::UnitHeader);
+            r.append("deferred type");
+            r += syn();
+            for (size_t i=1; i<x.n_attrtype; i++) {
+                r.append(", ");
+                this->visit_decl_attribute(*x.m_attrtype[i]);
+                r.append(s);
+            }
+            r.append(" :: ");
+            r.append(x.m_name);
+            if (x.m_trivia) {
+                r += print_trivia_after(*x.m_trivia);
+            } else {
+                r.append("\n");
+            }
+            s = r;
+            return;
+        }
         std::string r = indent;
         r += syn(gr::UnitHeader);
         r.append("type");
@@ -591,7 +608,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_items; i++) {
-            visit_unit_decl2(*x.m_items[i]);
+            visit_decl_stmt(*x.m_items[i]);
             r.append(s);
         }
         dec_indent();
@@ -845,7 +862,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_items; i++) {
-            this->visit_unit_decl2(*x.m_items[i]);
+            this->visit_decl_stmt(*x.m_items[i]);
             r.append(s);
         }
         dec_indent();
@@ -860,10 +877,169 @@ public:
         s = r;
     }
 
+    // The `{...}` argument list of a template instantiation, a requirement
+    // header or a templated procedure name.
+    std::string format_generic_args(decl_attribute_t **args, size_t n) {
+        std::string r = "{";
+        for (size_t i=0; i<n; i++) {
+            this->visit_decl_attribute(*args[i]);
+            r.append(s);
+            if (i < n-1) r.append(", ");
+        }
+        r.append("}");
+        return r;
+    }
+
+    std::string format_generic_args(char **args, size_t n) {
+        std::string r = "{";
+        for (size_t i=0; i<n; i++) {
+            r.append(args[i]);
+            if (i < n-1) r.append(", ");
+        }
+        r.append("}");
+        return r;
+    }
+
+    void visit_Template(const Template_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("template");
+        r += syn();
+        r += " ";
+        r.append(x.m_name);
+        r.append(" {");
+        for (size_t i=0; i<x.n_namelist; i++) {
+            r.append(x.m_namelist[i]);
+            if (i < x.n_namelist-1) r.append(", ");
+        }
+        r.append("}");
+        r.append("\n");
+        r += format_unit_body(x, !indent_unit);
+        r += indent;
+        r += syn(gr::UnitHeader);
+        r.append("end template");
+        r += syn();
+        r += " ";
+        r.append(x.m_name);
+        r.append("\n");
+        s = r;
+    }
+
+    void visit_Requirement(const Requirement_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("requirement");
+        r += syn();
+        r += " ";
+        r.append(x.m_name);
+        r.append(" {");
+        for (size_t i=0; i<x.n_namelist; i++) {
+            this->visit_arg(x.m_namelist[i]);
+            r.append(s);
+            if (i < x.n_namelist-1) r.append(", ");
+        }
+        r.append("}");
+        r.append("\n");
+        if (indent_unit) inc_indent();
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_decl_stmt(*x.m_items[i]);
+            r.append(s);
+        }
+        // The functions of a requirement follow the declarations directly,
+        // there is no `contains` statement.
+        for (size_t i=0; i<x.n_funcs; i++) {
+            this->visit_program_unit(*x.m_funcs[i]);
+            r.append(s);
+        }
+        if (indent_unit) dec_indent();
+        r += indent;
+        r += syn(gr::UnitHeader);
+        r.append("end requirement");
+        r += syn();
+        r += " ";
+        r.append(x.m_name);
+        r.append("\n");
+        s = r;
+    }
+
+    // F2028 R1622: DEFERRED PROCEDURE ( interface-name ) [ :: ]
+    //              deferred-proc-name-list
+    // The `::` is optional in the source; it is always printed.
+    void visit_DeferredProcedure(const DeferredProcedure_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("deferred procedure");
+        r += syn();
+        r.append(" (");
+        r.append(x.m_interface_name);
+        r.append(") :: ");
+        for (size_t i=0; i<x.n_names; i++) {
+            this->visit_arg(x.m_names[i]);
+            r.append(s);
+            if (i < x.n_names-1) r.append(", ");
+        }
+        if (x.m_trivia) {
+            r += print_trivia_after(*x.m_trivia);
+        } else {
+            r.append("\n");
+        }
+        s = r;
+    }
+
+    void visit_Require(const Require_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("require");
+        r += syn();
+        r.append(" :: ");
+        for (size_t i=0; i<x.n_reqs; i++) {
+            this->visit_unit_require(*x.m_reqs[i]);
+            r.append(s);
+            if (i < x.n_reqs-1) r.append(", ");
+        }
+        r.append("\n");
+        s = r;
+    }
+
+    void visit_UnitRequire(const UnitRequire_t &x) {
+        std::string r;
+        r.append(x.m_name);
+        r.append(" ");
+        r += format_generic_args(x.m_namelist, x.n_namelist);
+        s = r;
+    }
+
+    void visit_Instantiate(const Instantiate_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("instantiate");
+        r += syn();
+        r += " ";
+        r.append(x.m_name);
+        r.append(" ");
+        r += format_generic_args(x.m_args, x.n_args);
+        if (x.n_symbols > 0) {
+            r.append(", ");
+            r += syn(gr::UnitHeader);
+            r.append("only");
+            r += syn();
+            r.append(": ");
+            for (size_t i=0; i<x.n_symbols; i++) {
+                this->visit_use_symbol(*x.m_symbols[i]);
+                r.append(s);
+                if (i < x.n_symbols-1) r.append(", ");
+            }
+        }
+        r.append("\n");
+        s = r;
+    }
+
     void visit_Interface(const Interface_t &x) {
         std::string r;
         if(x.m_header->type == AbstractInterfaceHeader) {
             r += "abstract ";
+        } else if(x.m_header->type == DeferredInterfaceHeader) {
+            r += "deferred ";
         }
         r += syn(gr::UnitHeader);
         r.append("interface");
@@ -927,6 +1103,11 @@ public:
         s = "";
     }
 
+    void visit_DeferredInterfaceHeader
+            (const DeferredInterfaceHeader_t &/* x */) {
+        s = "";
+    }
+
     void visit_InterfaceHeaderWrite(const InterfaceHeaderWrite_t &x) {
         s = " write(";
         s.append(x.m_id);
@@ -968,45 +1149,13 @@ public:
     }
 
     template <typename T>
-    std::string format_import(const T &x) {
+    std::string format_items(const T &x) {
         std::string r;
-        for (size_t i=0; i<x.n_import; i++) {
-            this->visit_import_statement(*x.m_import[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_decl_stmt(*x.m_items[i]);
             r.append(s);
         }
         return r;
-    }
-
-    std::string format_import(const Program_t &/*x*/) {
-        return "";
-    }
-
-    std::string format_import(const Module_t &/*x*/) {
-        return "";
-    }
-
-    template <typename T>
-    std::string format_implicit(const T &x) {
-        std::string r;
-        for (size_t i=0; i<x.n_implicit; i++) {
-            this->visit_implicit_statement(*x.m_implicit[i]);
-            r.append(s);
-        }
-        return r;
-    }
-
-    template <typename T>
-    std::string format_body(const T &x) {
-        std::string r;
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
-            r.append(s);
-        }
-        return r;
-    }
-
-    std::string format_body(const Module_t &/*x*/) {
-        return "";
     }
 
 
@@ -1014,17 +1163,7 @@ public:
     std::string format_unit_body(const T &x, bool indent_contains=false) {
         std::string r;
         if (indent_unit) inc_indent();
-        for (size_t i=0; i<x.n_use; i++) {
-            this->visit_unit_decl1(*x.m_use[i]);
-            r.append(s);
-        }
-        r += format_import(x);
-        r += format_implicit(x);
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
-            r.append(s);
-        }
-        r += format_body(x);
+        r += format_items(x);
         if (x.n_contains > 0) {
             r += "\n";
             r += syn(gr::UnitHeader);
@@ -1053,10 +1192,19 @@ public:
             r.append(" ");
         }
         r += syn(gr::UnitHeader);
+        // C1609 (J3/26-007r1): TEMPLATE appears in the prefix of a templated
+        // subprogram, which is what a deferred argument list makes this.
+        if (x.n_temp_args > 0) {
+            r.append("template ");
+        }
         r.append("function");
         r += syn();
         r += " ";
         r.append(x.m_name);
+        if (x.n_temp_args > 0) {
+            r.append(" ");
+            r += format_generic_args(x.m_temp_args, x.n_temp_args);
+        }
         r.append("(");
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_arg(x.m_args[i]);
@@ -1278,13 +1426,18 @@ public:
             r += syn(gr::Type);
             r.append("namelist");
             r += syn();
-            r.append(" /");
-            r += down_cast<AttrNamelist_t>(x.m_attributes[0])->m_name;
-            r.append("/ ");
-            for (size_t i=0; i<x.n_syms; i++) {
-                visit_var_sym(x.m_syms[i]);
-                r += s;
-                if (i < x.n_syms-1) r.append(", ");
+            AttrNamelist_t *namelist = down_cast<AttrNamelist_t>(x.m_attributes[0]);
+            for (size_t j = 0; j < namelist->n_groups; j++) {
+                namelist_group_t &group = namelist->m_groups[j];
+                if (j > 0) r.append(" ");
+                r.append(" /");
+                r += group.m_name;
+                r.append("/ ");
+                for (size_t i = 0; i < group.n_objects; i++) {
+                    visit_var_sym(group.m_objects[i]);
+                    r += s;
+                    if (i < group.n_objects - 1) r.append(", ");
+                }
             }
         } else {
             if (x.m_vartype) {
@@ -1376,7 +1529,7 @@ public:
     }
 
     void visit_DataStmt(const DataStmt_t &x) {
-        std::string r;
+        std::string r = indent;
         r += syn(gr::Type);
         r += "data ";
         r += syn();
@@ -1512,6 +1665,7 @@ public:
             ATTRTYPE(Deferred)
             ATTRTYPE(Elemental)
             ATTRTYPE(Enumerator)
+            ATTRTYPE(Extensible)
             ATTRTYPE(External)
             ATTRTYPE(Impure)
             ATTRTYPE(Intrinsic)
@@ -1637,6 +1791,22 @@ public:
         s = r;
     }
 
+    void visit_AttrName(const AttrName_t &x) {
+        s = std::string(x.m_name);
+    }
+
+    void visit_AttrKeyword(const AttrKeyword_t &x) {
+        std::string r = std::string(x.m_name);
+        r += " = ";
+        this->visit_decl_attribute(*x.m_value);
+        r += s;
+        s = r;
+    }
+
+    void visit_AttrExpr(const AttrExpr_t &x) {
+        this->visit_expr(*x.m_value);
+    }
+
     void visit_AttrIntent(const AttrIntent_t &x) {
         std::string r;
         r += syn(gr::Type);
@@ -1692,6 +1862,23 @@ public:
             }
             r += ")";
         }
+        s = r;
+    }
+
+    // F2028 R831 rank-clause, `RANK ( rank-spec-list )`, which only a deferred
+    // constant declaration accepts so far (R1619).
+    void visit_AttrRank(const AttrRank_t &x) {
+        std::string r;
+        r += syn(gr::Type);
+        r += "rank";
+        r += syn();
+        r += "(";
+        for (size_t i=0; i<x.n_rank; i++) {
+            visit_expr(*x.m_rank[i]);
+            r += s;
+            if (i < x.n_rank-1) r.append(", ");
+        }
+        r += ")";
         s = r;
     }
 
@@ -1909,6 +2096,9 @@ public:
             r.append("%");
         }
         r.append(x.m_name);
+        if (x.n_temp_args > 0) {
+            r += format_generic_args(x.m_temp_args, x.n_temp_args);
+        }
         r.append("(");
         for (size_t i=0; i<x.n_args; i++) {
             if (x.m_args[i].m_end) {
@@ -2038,7 +2228,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -2054,7 +2244,7 @@ public:
             }
             inc_indent();
             for (size_t i=0; i<x.n_orelse; i++) {
-                this->visit_stmt(*x.m_orelse[i]);
+                this->visit_decl_stmt(*x.m_orelse[i]);
                 r += s;
             }
             dec_indent();
@@ -2111,7 +2301,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -2127,7 +2317,7 @@ public:
             }
             inc_indent();
             for (size_t i=0; i<x.n_orelse; i++) {
-                this->visit_stmt(*x.m_orelse[i]);
+                this->visit_decl_stmt(*x.m_orelse[i]);
                 r += s;
             }
             dec_indent();
@@ -2409,12 +2599,16 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
         r += indent;
         r += syn(gr::Repeat);
+        if (x.m_do_label != 0) {
+            r += std::to_string(x.m_do_label);
+            r += " ";
+        }
         r.append("end do");
         r += syn();
         r += end_stmt_name(x);
@@ -2491,7 +2685,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
@@ -2520,19 +2714,7 @@ public:
             r.append("\n");
         }
         inc_indent();
-        for (size_t i=0; i<x.n_use; i++) {
-            this->visit_unit_decl1(*x.m_use[i]);
-            r.append(s);
-        }
-        r += format_import(x);
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
-            r.append(s);
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
-            r.append(s);
-        }
+        r += format_items(x);
         dec_indent();
         r += indent;
         r += syn(gr::UnitHeader);
@@ -2577,7 +2759,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
@@ -2635,7 +2817,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
@@ -2699,7 +2881,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
@@ -2745,7 +2927,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
@@ -2783,7 +2965,7 @@ public:
         r.append(")");
         r.append("\n");
         inc_indent();
-        this->visit_stmt(*x.m_assign);
+        this->visit_decl_stmt(*x.m_assign);
         r.append(s);
         dec_indent();
         r += indent;
@@ -2967,7 +3149,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -3662,6 +3844,9 @@ public:
             }
         }
         r.append(x.m_func);
+        if (x.n_temp_args > 0) {
+            r += format_generic_args(x.m_temp_args, x.n_temp_args);
+        }
         r.append("(");
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_fnarg(x.m_args[i]);
@@ -3796,6 +3981,40 @@ public:
         r.append(s);
         r += ")";
         s = r;
+        last_expr_precedence = 13;
+    }
+
+    void visit_ConditionalExpr(const ConditionalExpr_t &x) {
+        // Fortran 2023 R1002. The parentheses are part of the syntax, so they
+        // are always printed. A conditional expression in the `orelse`
+        // position is printed flat, as the repeating group of R1002:
+        //     ( c1 ? a : c2 ? b : d )
+        std::string r = "(";
+        const ConditionalExpr_t *e = &x;
+        while (true) {
+            this->visit_expr(*e->m_test);
+            r.append(s);
+            r += " ? ";
+            this->visit_expr(*e->m_body);
+            r.append(s);
+            r += " : ";
+            if (is_a<ConditionalExpr_t>(*e->m_orelse)) {
+                e = down_cast<ConditionalExpr_t>(e->m_orelse);
+            } else {
+                this->visit_expr(*e->m_orelse);
+                r.append(s);
+                break;
+            }
+        }
+        r += ")";
+        s = r;
+        last_expr_precedence = 13;
+    }
+
+    // `.NIL.` (R1527), the consequent of a conditional argument that leaves
+    // the dummy argument not present
+    void visit_Nil(const Nil_t &/*x*/) {
+        s = ".nil.";
         last_expr_precedence = 13;
     }
 
@@ -4056,34 +4275,30 @@ public:
 
     void visit_coarrayarg(const coarrayarg_t &x) {
         std::string r;
-        if (x.m_step) {
-            // Array section
+        if (x.m_star == codimension_typeType::CodimensionStar) {
             if (x.m_start) {
                 this->visit_expr(*x.m_start);
-                r += s;
-            }
-            if(x.m_star == codimension_typeType::CodimensionStar) {
+                r += s + ":*";
+            } else {
                 r += "*";
-            } else {
-                r += ":";
             }
-            if (x.m_end) {
-                this->visit_expr(*x.m_end);
-                r += s;
-            }
-            if (is_a<Num_t>(*x.m_step) && down_cast<Num_t>(x.m_step)->m_n == 1) {
-                // Nothing, a:b:1 is printed as a:b
-            } else {
-                r += ":";
-                this->visit_expr(*x.m_step);
-                r += s;
-            }
-        } else {
-            // Array element
-            LCOMPILERS_ASSERT(x.m_end);
-            LCOMPILERS_ASSERT(!x.m_start);
+        } else if (x.m_start && x.m_end) {
+            // a:b
+            this->visit_expr(*x.m_start);
+            r += s + ":";
             this->visit_expr(*x.m_end);
-            r = s;
+            r += s;
+        } else if (x.m_start) {
+            // a:
+            this->visit_expr(*x.m_start);
+            r += s + ":";
+        } else if (x.m_end) {
+            // a
+            this->visit_expr(*x.m_end);
+            r += s;
+        } else {
+            // :
+            r += ":";
         }
         s = r;
     }
@@ -4231,7 +4446,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4268,7 +4483,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4329,7 +4544,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4349,7 +4564,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4368,7 +4583,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4429,7 +4644,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4453,7 +4668,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4476,7 +4691,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4494,7 +4709,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();

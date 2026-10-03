@@ -4,10 +4,12 @@ program intrinsics_241
     logical(8), parameter :: e = logical(.true., 8)
     logical(4), parameter :: f = logical(.false., 4)
     logical(4), parameter :: ar1(3) = logical([.true., .false., .true.], 4)
+    logical :: x
     a = .true.
     b = .false.
     c = .true.
     d = .false.
+    x = .true.
 
     print *, e
     if (e .neqv. .true.) error stop
@@ -40,4 +42,14 @@ program intrinsics_241
 
     print *, ar1
     if(any(ar1 .neqv. [.true., .false., .true.])) error stop
+
+    x = logical(get_bool(), 4) 
+    if (kind(logical(get_bool(), 4)) /= 4) error stop
+    print *, x
+    if (x .neqv. .false.) error stop
+
+contains
+    logical function get_bool()
+        get_bool = .false.
+    end function get_bool
 end program 
