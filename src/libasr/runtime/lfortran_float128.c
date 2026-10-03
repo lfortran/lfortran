@@ -531,10 +531,8 @@ lf_float128 __addtf3_lf_impl(lf_float128 a, lf_float128 b) {
     if (pb.is_zero) return a;
 
     /* Sort so pa has the larger (or equal) magnitude */
-    int swapped = 0;
     if (pa.exp < pb.exp || (pa.exp == pb.exp && u128_lt(pa.mant, pb.mant))) {
         f128_parts tmp = pa; pa = pb; pb = tmp;
-        swapped = 1;
     }
 
     if (pa.sign == pb.sign) {
@@ -542,8 +540,8 @@ lf_float128 __addtf3_lf_impl(lf_float128 a, lf_float128 b) {
     } else {
         /* Subtraction: pa.mant >= pb.mant (by sort above) */
         if (u128_eq(pa.mant, pb.mant) && pa.exp == pb.exp) return f128_make_zero(0);
-        int rsign = swapped ? pb.sign : pa.sign;
-        return f128_sub_mag(pa, pb, rsign);
+        /* pa holds the larger magnitude after the sort, so it decides the sign */
+        return f128_sub_mag(pa, pb, pa.sign);
     }
 }
 
@@ -669,11 +667,22 @@ lf_float128 __divtf3_lf_impl(lf_float128 a, lf_float128 b) {
      * After one shift: (mant_a << 112) / mant_b gives a 112-bit or 113-bit quotient.
      */
 
-    /* Method: 113-step binary restoring division */
+    /* Method: binary restoring division. The loop keeps the invariant
+     * remainder < mant_b, so when mant_a >= mant_b the first quotient bit
+     * has to be produced before the loop; the quotient then needs one
+     * fewer doubling and the result exponent is one larger. */
     u128 remainder = mant_a;
     u128 quotient  = u128_zero();
-    /* We want quotient = floor(mant_a * 2^113 / mant_b), giving 113 bits */
-    for (int i = 0; i < 113; i++) {
+    int  steps     = 113;
+    int32_t rexp   = exp_a - exp_b - 1;  /* quotient scaled by 2^113 */
+    if (u128_gte(remainder, mant_b)) {
+        remainder = u128_sub(remainder, mant_b);
+        quotient  = u128_one();
+        steps     = 112;
+        rexp      = exp_a - exp_b;       /* quotient scaled by 2^112 */
+    }
+    /* quotient = floor(mant_a * 2^steps / mant_b), a 113-bit value */
+    for (int i = 0; i < steps; i++) {
         remainder = u128_shl1(remainder);
         quotient  = u128_shl1(quotient);
         if (u128_gte(remainder, mant_b)) {
@@ -681,10 +690,12 @@ lf_float128 __divtf3_lf_impl(lf_float128 a, lf_float128 b) {
             quotient  = u128_or(quotient, u128_one());
         }
     }
-    /* Round: if remainder*2 >= mant_b, round up */
-    if (u128_gte(u128_shl1(remainder), mant_b)) quotient = u128_inc(quotient);
-
-    int32_t rexp = exp_a - exp_b - 1;  /* -1 because quotient has an extra factor of 2 */
+    /* Round to nearest, ties to even */
+    u128 twice_rem = u128_shl1(remainder);
+    if (u128_gt(twice_rem, mant_b) ||
+        (u128_eq(twice_rem, mant_b) && !u128_is_zero(u128_and(quotient, u128_one())))) {
+        quotient = u128_inc(quotient);
+    }
 
     return f128_pack_parts(rsign, rexp, quotient);
 }
@@ -770,7 +781,10 @@ double __trunctfdf2_lf_impl(lf_float128 a) {
     int round_bit = u128_bit(p.mant, rsh - 1);
     u128 sticky    = u128_and(p.mant, u128_sub(u128_shl(u128_one(), rsh - 1), u128_one()));
     if (round_bit && (!u128_is_zero(sticky) || (dmant & 1))) dmant++;
-    if (dmant >> 52) { dmant >>= 1; dexp++; }
+    /* rounding carried out of the 52-bit fraction: the value is the next
+     * power of two, so the fraction is zero and the exponent grows */
+    if (dmant >> 52) { dmant = 0; dexp++; }
+    if (dexp >= 0x7FF) return p.sign ? -INFINITY : INFINITY;
     uint64_t bits = ((uint64_t)p.sign << 63) | ((uint64_t)dexp << 52) | dmant;
     double r; memcpy(&r, &bits, 8); return r;
 }
@@ -964,7 +978,7 @@ lf_float128 lf_f128_pow(lf_float128 base, lf_float128 exp_v) {
 /* biased exp: 16382 (true exp -1), mant bits */
 static lf_float128 f128_ln2(void) {
     return f128_const(0, 16382,
-        0x00002C5C85FDF473U, 0xDE3A68C90C02396EU);
+        0x000062E42FEFA39EU, 0xF35793C7673007E6U);
 }
 
 /* 1/ln(2) */
@@ -984,19 +998,19 @@ static lf_float128 f128_log10e(void) {
 /* pi = 3.14159265358979... */
 static lf_float128 f128_pi(void) {
     return f128_const(0, 16384,
-        0x00001921FB54442DU, 0x18469898CC51701BU);
+        0x0000921FB54442D1U, 0x8469898CC51701B8U);
 }
 
 /* pi/2 */
 static lf_float128 f128_pi_2(void) {
     return f128_const(0, 16383,
-        0x00001921FB54442DU, 0x18469898CC51701BU);
+        0x0000921FB54442D1U, 0x8469898CC51701B8U);
 }
 
 /* pi/4 */
 static lf_float128 f128_pi_4(void) {
     return f128_const(0, 16382,
-        0x00001921FB54442DU, 0x18469898CC51701BU);
+        0x0000921FB54442D1U, 0x8469898CC51701B8U);
 }
 
 /* Evaluate polynomial: coeffs[0] + coeffs[1]*x + ... + coeffs[n-1]*x^(n-1)
@@ -1077,9 +1091,9 @@ lf_float128 lf_f128_log(lf_float128 a) {
      * Let u = (m-1)/(m+1), log(m) = 2*atanh(u) = 2*(u + u^3/3 + u^5/5 + ...)
      * u = (m-1)/(m+1) ∈ [0, 1/3) since m ∈ [1, 2).
      */
-    int32_t n = p.exp - 112;  /* exponent, so m = a * 2^(-n) ∈ [1,2) */
+    int32_t n = p.exp;  /* exponent, so m = a * 2^(-n) ∈ [1,2) */
     /* Build m = a with exponent forced to 0 */
-    lf_float128 m = f128_pack_parts(0, 112, p.mant);  /* m ∈ [1, 2) */
+    lf_float128 m = f128_pack_parts(0, 0, p.mant);  /* m ∈ [1, 2) */
 
     /* u = (m - 1) / (m + 1) */
     lf_float128 one = f128_one();
@@ -1255,6 +1269,16 @@ static lf_float128 atan_kernel(lf_float128 x) {
     return sum;
 }
 
+/* 0 <= x <= 1. The series in atan_kernel only reaches full precision for
+ * x <= 1/2, so fold larger arguments with
+ * atan(x) = pi/4 + atan((x - 1) / (x + 1)), which maps (1/2, 1] to (-1/3, 0]. */
+static lf_float128 atan_kernel_reduced(lf_float128 x) {
+    if (f128_cmp_internal(x, f128_half()) <= 0) return atan_kernel(x);
+    lf_float128 one = f128_one();
+    lf_float128 t = __divtf3_lf_impl(__subtf3_lf_impl(x, one), __addtf3_lf_impl(x, one));
+    return __addtf3_lf_impl(f128_pi_4(), atan_kernel(t));
+}
+
 lf_float128 lf_f128_atan(lf_float128 a) {
     f128_parts p = f128_unpack(a);
     if (p.is_nan) return a;
@@ -1269,9 +1293,9 @@ lf_float128 lf_f128_atan(lf_float128 a) {
     if (f128_cmp_internal(ax, one) > 0) {
         /* |x| > 1: atan(x) = sign(x)*(pi/2 - atan(1/x)) */
         result = __subtf3_lf_impl(f128_pi_2(),
-                     atan_kernel(__divtf3_lf_impl(one, ax)));
+                     atan_kernel_reduced(__divtf3_lf_impl(one, ax)));
     } else {
-        result = atan_kernel(ax);
+        result = atan_kernel_reduced(ax);
     }
     return sign ? __negtf2_lf_impl(result) : result;
 }
@@ -1347,6 +1371,39 @@ lf_float128 lf_f128_tanh(lf_float128 a) {
     return __divtf3_lf_impl(
         __subtf3_lf_impl(e2x, one),
         __addtf3_lf_impl(e2x, one));
+}
+
+lf_float128 lf_f128_asinh(lf_float128 a) {
+    /* asinh(x) = sign(x) * log(|x| + sqrt(x^2 + 1)) */
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan || p.is_inf || p.is_zero) return a;
+    lf_float128 ax = lf_f128_abs(a);
+    lf_float128 t  = lf_f128_sqrt(__addtf3_lf_impl(__multf3_lf_impl(ax, ax), f128_one()));
+    lf_float128 r  = lf_f128_log(__addtf3_lf_impl(ax, t));
+    return p.sign ? __negtf2_lf_impl(r) : r;
+}
+
+lf_float128 lf_f128_acosh(lf_float128 a) {
+    /* acosh(x) = log(x + sqrt(x^2 - 1)), x >= 1 */
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan) return a;
+    if (f128_cmp_internal(a, f128_one()) < 0) return f128_make_nan();
+    if (p.is_inf) return a;
+    lf_float128 t = lf_f128_sqrt(__subtf3_lf_impl(__multf3_lf_impl(a, a), f128_one()));
+    return lf_f128_log(__addtf3_lf_impl(a, t));
+}
+
+lf_float128 lf_f128_atanh(lf_float128 a) {
+    /* atanh(x) = log((1 + x) / (1 - x)) / 2, |x| < 1 */
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan || p.is_zero) return a;
+    lf_float128 one = f128_one();
+    lf_float128 ax  = lf_f128_abs(a);
+    int c = f128_cmp_internal(ax, one);
+    if (c > 0) return f128_make_nan();
+    if (c == 0) return f128_make_inf(p.sign);
+    lf_float128 r = lf_f128_log(__divtf3_lf_impl(__addtf3_lf_impl(one, a), __subtf3_lf_impl(one, a)));
+    return __divtf3_lf_impl(r, f128_two());
 }
 
 /* ========================================================================
@@ -1731,6 +1788,24 @@ int __unordtf2(lf_f128_abi a, lf_f128_abi b) { return __unordtf2_lf_impl(lf_f128
  * LLVM-emitted `call fp128 @lf_sqrtq(fp128)` / `lf_powq(fp128, fp128)`. */
 lf_f128_abi lf_sqrtq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f128_sqrt(lf_f128_from_abi(a))); }
 lf_f128_abi lf_powq(lf_f128_abi a, lf_f128_abi b)   { return lf_f128_to_abi(lf_f128_pow(lf_f128_from_abi(a), lf_f128_from_abi(b))); }
+lf_f128_abi lf_expq(lf_f128_abi a)                  { return lf_f128_to_abi(lf_f128_exp(lf_f128_from_abi(a))); }
+/* `_lfortran_q<name>`: the real(16) counterparts of `_lfortran_d<name>`
+ * that the intrinsic pass binds to for real(16) arguments. */
+lf_f128_abi _lfortran_qsin  (lf_f128_abi a) { return lf_f128_to_abi(lf_f128_sin  (lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qcos  (lf_f128_abi a) { return lf_f128_to_abi(lf_f128_cos  (lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qtan  (lf_f128_abi a) { return lf_f128_to_abi(lf_f128_tan  (lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qasin (lf_f128_abi a) { return lf_f128_to_abi(lf_f128_asin (lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qacos (lf_f128_abi a) { return lf_f128_to_abi(lf_f128_acos (lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qatan (lf_f128_abi a) { return lf_f128_to_abi(lf_f128_atan (lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qsinh (lf_f128_abi a) { return lf_f128_to_abi(lf_f128_sinh (lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qcosh (lf_f128_abi a) { return lf_f128_to_abi(lf_f128_cosh (lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qtanh (lf_f128_abi a) { return lf_f128_to_abi(lf_f128_tanh (lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qasinh(lf_f128_abi a) { return lf_f128_to_abi(lf_f128_asinh(lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qacosh(lf_f128_abi a) { return lf_f128_to_abi(lf_f128_acosh(lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qatanh(lf_f128_abi a) { return lf_f128_to_abi(lf_f128_atanh(lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qlog  (lf_f128_abi a) { return lf_f128_to_abi(lf_f128_log  (lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qlog10(lf_f128_abi a) { return lf_f128_to_abi(lf_f128_log10(lf_f128_from_abi(a))); }
+lf_f128_abi _lfortran_qatan2(lf_f128_abi y, lf_f128_abi x) { return lf_f128_to_abi(lf_f128_atan2(lf_f128_from_abi(y), lf_f128_from_abi(x))); }
 #endif
 
 /* ========================================================================
@@ -2013,6 +2088,22 @@ _LF_SHIM2(__divtf3,          __divtf3_lf_impl)
  * struct-ABI implementations in lf_f128_sqrt / lf_f128_pow. */
 _LF_SHIM1(lf_sqrtq,          lf_f128_sqrt)
 _LF_SHIM2(lf_powq,           lf_f128_pow)
+_LF_SHIM1(lf_expq,           lf_f128_exp)
+_LF_SHIM1(_lfortran_qsin,    lf_f128_sin)
+_LF_SHIM1(_lfortran_qcos,    lf_f128_cos)
+_LF_SHIM1(_lfortran_qtan,    lf_f128_tan)
+_LF_SHIM1(_lfortran_qasin,   lf_f128_asin)
+_LF_SHIM1(_lfortran_qacos,   lf_f128_acos)
+_LF_SHIM1(_lfortran_qatan,   lf_f128_atan)
+_LF_SHIM1(_lfortran_qsinh,   lf_f128_sinh)
+_LF_SHIM1(_lfortran_qcosh,   lf_f128_cosh)
+_LF_SHIM1(_lfortran_qtanh,   lf_f128_tanh)
+_LF_SHIM1(_lfortran_qasinh,  lf_f128_asinh)
+_LF_SHIM1(_lfortran_qacosh,  lf_f128_acosh)
+_LF_SHIM1(_lfortran_qatanh,  lf_f128_atanh)
+_LF_SHIM1(_lfortran_qlog,    lf_f128_log)
+_LF_SHIM1(_lfortran_qlog10,  lf_f128_log10)
+_LF_SHIM2(_lfortran_qatan2,  lf_f128_atan2)
 _LF_SHIM1(__negtf2,          __negtf2_lf_impl)
 _LF_SHIM_FROM_SCALAR(__extenddftf2,   __extenddftf2_lf_impl)
 _LF_SHIM_FROM_SCALAR(__extendsftf2,   __extendsftf2_lf_impl)

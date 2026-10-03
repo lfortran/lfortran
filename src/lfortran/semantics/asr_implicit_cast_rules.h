@@ -286,9 +286,20 @@ public:
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::RealConstant_t>(*value)) {
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
-                    double rval = r->m_r;
-                    value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                        rval, dest_type2);
+                    int src_kind = ASRUtils::extract_kind_from_ttype_t(r->m_type);
+                    int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                    // kind=16 constants carry a binary128 payload, not a double
+                    if (dest_kind == 16 && src_kind != 16) {
+                        value = ASRUtils::make_RealConstant_r16(al, a_loc,
+                            lf_f128_from_double(r->m_r), dest_type2);
+                    } else if (src_kind == 16 && dest_kind != 16) {
+                        value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
+                            lf_f128_to_double(ASRUtils::real_constant_get_r16(r)), dest_type2);
+                    } else {
+                        double rval = r->m_r;
+                        value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
+                            rval, dest_type2);
+                    }
               } else {
                   LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
                   ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);

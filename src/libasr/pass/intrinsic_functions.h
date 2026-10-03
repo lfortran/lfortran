@@ -274,6 +274,17 @@ static inline bool contains_function_call(ASR::expr_t* expr) {
 
 namespace UnaryIntrinsicFunction {
 
+// The elemental functions that the runtime implements in binary128
+// (`_lfortran_q<name>`); the others still go through the double entry point.
+static inline bool has_f128_runtime(const std::string &name) {
+    static const std::set<std::string> names = {
+        "sin", "cos", "tan", "asin", "acos", "atan",
+        "sinh", "cosh", "tanh", "asinh", "acosh", "atanh",
+        "log", "log10"
+    };
+    return names.count(name) > 0;
+}
+
 static inline ASR::expr_t* instantiate_functions(Allocator &al,
         const Location &loc, SymbolTable *scope, std::string new_name,
         ASR::ttype_t *arg_type, ASR::ttype_t *return_type,
@@ -289,8 +300,11 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
             break;
         }
         default : {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+            if (kind == 4) {
                 c_func_name = "_lfortran_s" + new_name;
+            } else if (kind == 16 && has_f128_runtime(new_name)) {
+                c_func_name = "_lfortran_q" + new_name;
             } else {
                 c_func_name = "_lfortran_d" + new_name;
             }
@@ -919,8 +933,11 @@ namespace Atan2 {
                 break;
             }
             default : {
-                if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+                int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                if (kind == 4) {
                     c_func_name = "_lfortran_s" + new_name;
+                } else if (kind == 16) {
+                    c_func_name = "_lfortran_q" + new_name;
                 } else {
                     c_func_name = "_lfortran_d" + new_name;
                 }
@@ -2017,8 +2034,17 @@ namespace Sign {
     static ASR::expr_t *eval_Sign(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (ASRUtils::is_real(*t1)) {
-            double rv1 = std::abs(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
-            double rv2 = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            ASR::RealConstant_t* c1 = ASR::down_cast<ASR::RealConstant_t>(args[0]);
+            ASR::RealConstant_t* c2 = ASR::down_cast<ASR::RealConstant_t>(args[1]);
+            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+                lf_float128 mag = lf_f128_abs(ASRUtils::real_constant_get_r16(c1));
+                if (lf_f128_signbit(ASRUtils::real_constant_get_r16(c2))) {
+                    mag = lf_f128_neg(mag);
+                }
+                return ASRUtils::make_RealConstant_r16(al, loc, mag, t1);
+            }
+            double rv1 = std::abs(c1->m_r);
+            double rv2 = c2->m_r;
             rv1 = copysign(rv1, rv2);
             return ASRUtils::make_RealConstant_util(al, loc, rv1, t1);
         } else {
@@ -5578,8 +5604,14 @@ namespace SelectedRealKind {
             kind = 4;
         } else if (p < 16 && r < 308 && radix == 2) {
             kind = 8;
+        } else if (p < 34 && r < 4932 && radix == 2) {
+            kind = 16;
         } else if (radix != 2) {
             kind = -5;
+        } else if (p >= 34 && r >= 4932) {
+            kind = -3;
+        } else if (r >= 4932) {
+            kind = -2;
         } else {
             kind = -1;
         }
@@ -5604,13 +5636,25 @@ namespace SelectedRealKind {
         body.push_back(al, b.If(b.And(b.And(b.Lt(p, b.i_t(7, arg_types[0])), b.Lt(r, b.i_t(38, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
             b.Assignment(result, b.i32(4))
         }, {
-            b.If( b.And(b.And(b.Lt(p, b.i_t(15, arg_types[0])), b.Lt(r, b.i_t(308, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
+            b.If( b.And(b.And(b.Lt(p, b.i_t(16, arg_types[0])), b.Lt(r, b.i_t(308, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
                 b.Assignment(result, b.i32(8))
             }, {
-                b.If(b.NotEq(radix, b.i_t(2, arg_types[2])), {
-                    b.Assignment(result, b.i32(-5))
+                b.If( b.And(b.And(b.Lt(p, b.i_t(34, arg_types[0])), b.Lt(r, b.i_t(4932, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
+                    b.Assignment(result, b.i32(16))
                 }, {
-                    b.Assignment(result, b.i32(-1))
+                    b.If(b.NotEq(radix, b.i_t(2, arg_types[2])), {
+                        b.Assignment(result, b.i32(-5))
+                    }, {
+                        b.If(b.And(b.GtE(p, b.i_t(34, arg_types[0])), b.GtE(r, b.i_t(4932, arg_types[1]))), {
+                            b.Assignment(result, b.i32(-3))
+                        }, {
+                            b.If(b.GtE(r, b.i_t(4932, arg_types[1])), {
+                                b.Assignment(result, b.i32(-2))
+                            }, {
+                                b.Assignment(result, b.i32(-1))
+                            })
+                        })
+                    })
                 })
             })
         }));
