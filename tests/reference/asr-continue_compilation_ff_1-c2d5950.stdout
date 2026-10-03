@@ -34,6 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -57,6 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     f
@@ -73,6 +75,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 x)]
@@ -102,6 +105,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             continue_compilation_ff:
                 (Program
@@ -130,6 +134,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             a_2:
                                 (Variable
@@ -145,6 +150,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -158,6 +164,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             a_3:
                                 (Variable
@@ -173,6 +180,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -186,6 +194,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             a_4:
                                 (Variable
@@ -209,6 +218,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             a_5:
                                 (Variable
@@ -232,6 +242,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             circlearea:
                                 (Variable
@@ -255,6 +266,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             i:
                                 (Variable
@@ -278,6 +290,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             i_1:
                                 (Variable
@@ -301,6 +314,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             i_2:
                                 (Variable
@@ -324,6 +338,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             i_3:
                                 (Variable
@@ -347,6 +362,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             ij:
                                 (Variable
@@ -370,6 +386,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             image:
                                 (Variable
@@ -387,6 +404,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 450 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -400,6 +418,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             init_x:
                                 (Variable
@@ -423,6 +442,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             j:
                                 (Variable
@@ -446,6 +466,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             j_1:
                                 (Variable
@@ -469,6 +490,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             kindvar:
                                 (Variable
@@ -492,6 +514,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             nx:
                                 (Variable
@@ -515,6 +538,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             ny:
                                 (Variable
@@ -538,6 +562,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             shape:
                                 (Variable
@@ -555,6 +580,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -568,6 +594,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             size_a:
                                 (Variable
@@ -591,6 +618,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             size_a_2:
                                 (Variable
@@ -614,6 +642,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             str:
                                 (Variable
@@ -643,6 +672,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             val:
                                 (Variable
@@ -666,6 +696,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             var:
                                 (Variable
@@ -689,6 +720,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -712,6 +744,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             x_2:
                                 (Variable
@@ -735,6 +768,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             x_3:
                                 (Variable
@@ -751,6 +785,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -765,6 +800,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             y_1:
                                 (Variable
@@ -790,6 +826,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             y_2:
                                 (Variable
@@ -806,6 +843,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -820,6 +858,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             y_3:
                                 (Variable
@@ -843,6 +882,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             y_4:
                                 (Variable
@@ -866,6 +906,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     continue_compilation_ff
@@ -925,7 +966,9 @@
                         .false.
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

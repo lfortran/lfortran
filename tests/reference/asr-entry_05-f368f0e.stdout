@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             ftol:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             n:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             r:
                                 (Variable
@@ -91,6 +94,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -105,6 +109,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             reltol:
                                 (Variable
@@ -128,6 +133,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             zx:
                                 (Variable
@@ -151,6 +157,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     dstzr
@@ -167,6 +174,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [dzror_main__lcompilers]
                     []
@@ -185,6 +193,7 @@
                                     [(()
                                     ())]
                                     PointerArray
+                                    Global
                                 )
                             )
                             ()
@@ -225,6 +234,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             ftol:
                                 (Variable
@@ -248,6 +258,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             n:
                                 (Variable
@@ -271,6 +282,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             r:
                                 (Variable
@@ -286,6 +298,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -299,6 +312,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             reltol:
                                 (Variable
@@ -322,6 +336,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             zx:
                                 (Variable
@@ -345,6 +360,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     dzror
@@ -359,6 +375,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )]
                         ()
                         Source
@@ -371,6 +388,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [dzror_main__lcompilers]
                     [(Var 2 n)
@@ -417,6 +435,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             entry__lcompilers:
                                 (Variable
@@ -440,6 +459,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             ftol:
                                 (Function
@@ -468,6 +488,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             zx:
                                                 (Variable
@@ -491,6 +512,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     ftol
@@ -507,6 +529,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 zx)]
@@ -573,6 +596,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             r:
                                 (Variable
@@ -588,6 +612,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 4 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -601,6 +626,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             reltol:
                                 (Variable
@@ -624,6 +650,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             zx:
                                 (Variable
@@ -647,6 +674,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     dzror_main__lcompilers
@@ -662,6 +690,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )]
                         ()
                         Source
@@ -674,6 +703,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 4 entry__lcompilers)
@@ -736,6 +766,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ()
                             )
@@ -744,6 +775,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (Var 4 n))]
                                 PointerArray
+                                Global
                             )
                             ()
                         )
@@ -790,6 +822,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             r:
                                 (Variable
@@ -805,6 +838,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -818,6 +852,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     entry_05
@@ -835,6 +870,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                 PointerArray
+                                Global
                             )
                             ()
                         ))]
@@ -907,7 +943,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

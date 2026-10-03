@@ -13,6 +13,9 @@ contains
       if (arg /= 'foo') error stop
     end select
   end subroutine
+  subroutine cleanup()
+    if (associated(string)) deallocate(string)
+  end subroutine
 end module
 
 program select_type_32
@@ -25,4 +28,5 @@ program select_type_32
     call set(s)
   end select
   if (.not. entered) error stop
+  call cleanup()
 end program

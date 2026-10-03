@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -34,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             b:
                                 (Variable
@@ -49,6 +51,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -62,6 +65,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             i:
                                 (Variable
@@ -85,6 +89,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             size_a4:
                                 (Variable
@@ -108,6 +113,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             size_a8:
                                 (Variable
@@ -131,6 +137,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             size_b4:
                                 (Variable
@@ -154,6 +161,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             size_b8:
                                 (Variable
@@ -177,6 +185,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     arrays_01
@@ -285,7 +294,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

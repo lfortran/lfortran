@@ -34,6 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -57,6 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     point
@@ -75,6 +77,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -87,6 +90,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             select_type_02:
                 (Program
@@ -118,8 +122,8 @@
                                     4
                                     1_point_x
                                     3 x
-                                    point
-                                    []
+                                    derived_type_collection
+                                    [point]
                                     x
                                     Public
                                 ),
@@ -128,8 +132,8 @@
                                     4
                                     1_point_y
                                     3 y
-                                    point
-                                    []
+                                    derived_type_collection
+                                    [point]
                                     y
                                     Public
                                 ),
@@ -160,6 +164,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     color_point
@@ -174,6 +179,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -208,6 +214,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             p:
                                 (Variable
@@ -237,6 +244,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             p3d:
                                 (Variable
@@ -265,6 +273,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             p_or_cp:
                                 (Variable
@@ -296,6 +305,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             point:
                                 (ExternalSymbol
@@ -334,6 +344,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     point_3d
@@ -348,6 +359,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -365,8 +377,8 @@
                                                     7
                                                     1_point_x
                                                     3 x
-                                                    point
-                                                    []
+                                                    derived_type_collection
+                                                    [point]
                                                     x
                                                     Public
                                                 ),
@@ -375,8 +387,8 @@
                                                     7
                                                     1_point_y
                                                     3 y
-                                                    point
-                                                    []
+                                                    derived_type_collection
+                                                    [point]
                                                     y
                                                     Public
                                                 ),
@@ -410,6 +422,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     ~select_type_block_
@@ -478,8 +491,8 @@
                                                     8
                                                     1_point_x
                                                     3 x
-                                                    point
-                                                    []
+                                                    derived_type_collection
+                                                    [point]
                                                     x
                                                     Public
                                                 ),
@@ -488,8 +501,8 @@
                                                     8
                                                     1_point_y
                                                     3 y
-                                                    point
-                                                    []
+                                                    derived_type_collection
+                                                    [point]
                                                     y
                                                     Public
                                                 ),
@@ -522,6 +535,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     ~select_type_block_1
@@ -718,7 +732,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

@@ -12,6 +12,7 @@
                     kwargs_02
                     []
                     []
+                    ()
                 ),
             kwargs_02_stdlib_logger:
                 (Module
@@ -28,8 +29,8 @@
                                                     4
                                                     1_logger_type_log_io_error
                                                     3 log_io_error
-                                                    logger_type
-                                                    []
+                                                    kwargs_02_stdlib_logger
+                                                    [logger_type]
                                                     log_io_error
                                                     Public
                                                 ),
@@ -55,6 +56,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -83,6 +85,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             unit:
                                                 (Variable
@@ -106,6 +109,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     add_log_file
@@ -129,6 +133,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 self)
@@ -177,6 +182,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             filename:
                                                 (Variable
@@ -200,6 +206,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -228,6 +235,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             unit:
                                                 (Variable
@@ -251,6 +259,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     log_io_error
@@ -275,6 +284,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 self)
@@ -330,6 +340,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -342,7 +353,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

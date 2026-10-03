@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             double:
                                 (ExternalSymbol
@@ -82,6 +83,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     string_54
@@ -100,7 +102,29 @@
                         ((Var 5 char))]
                         ()
                         .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (StringLen
+                                (Var 5 char)
+                                (Integer 4)
+                                (IntegerConstant 10 (Integer 4) Decimal)
+                            )
+                            NotEq
+                            (IntegerConstant 10 (Integer 4) Decimal)
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
+                    ()
                 ),
             string_54_mod:
                 (Module
@@ -141,6 +165,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -164,6 +189,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     double_
@@ -180,6 +206,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 x)]
@@ -237,6 +264,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -260,6 +288,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     foo_sub
@@ -288,11 +317,29 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [double_]
                                     [(Var 4 x)
                                     (Var 4 char)]
-                                    []
+                                    [(If
+                                        ()
+                                        (IntegerCompare
+                                            (StringLen
+                                                (Var 4 char)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 20 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )]
                                     ()
                                     Public
                                     .true.
@@ -306,7 +353,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -12,6 +12,7 @@
                     debug
                     []
                     []
+                    ()
                 ),
             derived_types_04_bitset:
                 (Module
@@ -45,6 +46,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -73,6 +75,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     all_abstract
@@ -94,6 +97,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 self)]
@@ -142,6 +146,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     bitset_type
@@ -158,6 +163,7 @@
                                     Private
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -170,7 +176,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -6,7 +6,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -14,8 +13,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(DerivedType
+        )
+        (DerivedType
             X
             []
             (TriviaNode
@@ -109,7 +108,6 @@
             )]
             []
         )]
-        []
         [(Subroutine
             set
             [(a)]
@@ -120,9 +118,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeType
@@ -142,8 +137,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 i [(a
                 [])]
@@ -177,16 +172,16 @@
             )]
             .true.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(DerivedType
+        )
+        (DerivedType
             Z
             []
             (TriviaNode
@@ -234,7 +229,6 @@
             []
         )]
         []
-        []
     )
     (Program
         derived_types_01
@@ -262,12 +256,12 @@
             )]
             .true.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeType
                 []
@@ -302,8 +296,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             i [(b
             [])]

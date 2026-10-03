@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -34,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             p:
                                 (Variable
@@ -49,6 +51,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -62,6 +65,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     array_02_pack
@@ -76,6 +80,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 4 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ColMajor
                         )
@@ -96,6 +101,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 4 (Integer 4) Decimal))]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             )
@@ -109,6 +115,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                 )
@@ -119,6 +126,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 4 (Integer 4) Decimal))]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             )
@@ -131,6 +139,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ColMajor
                                 )
@@ -141,6 +150,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 4 (Integer 4) Decimal))]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             )]
@@ -150,6 +160,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 4 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ()
                         )
@@ -184,6 +195,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 4 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                            Global
                                         )
                                         ColMajor
                                     )
@@ -192,6 +204,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                 )
@@ -202,6 +215,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 4 (Integer 4) Decimal))]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             )]
@@ -214,7 +228,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

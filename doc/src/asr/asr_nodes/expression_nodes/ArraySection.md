@@ -1,123 +1,103 @@
 # ArraySection
 
-Section of Array.
+A part of an array, with the same rank or a lower one.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 ArraySection(expr v, array_index* args, ttype type, expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`v`  | expression |
-|`args` | array index arguments |
-|`type` | table entry type |
-|`value` | expression value |
+| Argument | Description |
+|----------|-------------|
+| `v` | the array. |
+| `args` | one [array_index](../helper_nodes/array_index.md) per dimension. A dimension with `left`, `right` and `step` is a range; a dimension with only `right` is a single subscript and does not appear in the result. |
+| `type` | the array type of the result. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the ArraySection represents.
+The value of the expression.
 
 ## Description
 
-**ArraySection** represents section of the array.
+`a(1:3)` or `a(2, :)`. The result is an array, and a section that fixes a
+subscript in one dimension has a lower rank than the array it came from.
 
-## Types
-
-Only accepts section of arrays.
+A section is not necessarily contiguous, so its type usually has a descriptor
+physical type: the stride has to be carried along with the data.
 
 ## Examples
 
-```fortran
-integer, dimension(3) :: x
-x(0) = 0
-x(1) = 1
-x(2) = 2
-print *, x(1:)
+```clojure
+(ArraySection
+  :v (Var
+    :v (SymbolRef 1 "a")
+  )
+  :args [
+    (array_index
+      :left (IntegerConstant
+        :n 1
+        :type (Integer
+          :kind 4
+        )
+        :intboz_type :Decimal
+      )
+      :right (IntegerConstant
+        :n 3
+        :type (Integer
+          :kind 4
+        )
+        :intboz_type :Decimal
+      )
+      :step (IntegerConstant
+        :n 1
+        :type (Integer
+          :kind 4
+        )
+        :intboz_type :Decimal
+      )
+    )
+  ]
+  :type (Array
+    :type (Integer
+      :kind 4
+    )
+    :dims [
+      (dimension
+        :start (IntegerConstant
+          :n 1
+          :type (Integer
+            :kind 4
+          )
+          :intboz_type :Decimal
+        )
+        :length (IntegerConstant
+          :n 3
+          :type (Integer
+            :kind 4
+          )
+          :intboz_type :Decimal
+        )
+      )
+    ]
+    :physical_type :DescriptorArray
+    :memory_space :Global
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            x:
-                (Variable
-                    1
-                    x
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                    (IntegerConstant 3 (Integer 4 [])))])
-                    Source
-                    Public
-                    Required
-                    .false.
-                )
-
-        })
-    [(=
-        (ArrayItem
-            (Var 1 x)
-            [(()
-            (IntegerConstant 0 (Integer 4 []))
-            ())]
-            (Integer 4 [])
-            ()
-        )
-        (IntegerConstant 0 (Integer 4 []))
-        ()
-    )
-    (=
-        (ArrayItem
-            (Var 1 x)
-            [(()
-            (IntegerConstant 1 (Integer 4 []))
-            ())]
-            (Integer 4 [])
-            ()
-        )
-        (IntegerConstant 1 (Integer 4 []))
-        ()
-    )
-    (=
-        (ArrayItem
-            (Var 1 x)
-            [(()
-            (IntegerConstant 2 (Integer 4 []))
-            ())]
-            (Integer 4 [])
-            ()
-        )
-        (IntegerConstant 2 (Integer 4 []))
-        ()
-    )
-    (Print
-        ()
-        [(ArraySection
-            (Var 1 x)
-            [((IntegerConstant 1 (Integer 4 []))
-            ()
-            (IntegerConstant 1 (Integer 4 [])))]
-            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-            (IntegerConstant 3 (Integer 4 [])))])
-            ()
-        )]
-        ()
-        ()
-    )]
-)
-
+```{literalinclude} ../../examples/array_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
+[ArrayItem](ArrayItem.md), [array_index](../helper_nodes/array_index.md), [ArrayIsContiguous](ArrayIsContiguous.md), [ArrayPhysicalCast](ArrayPhysicalCast.md)

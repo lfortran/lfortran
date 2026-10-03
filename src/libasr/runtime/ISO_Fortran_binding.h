@@ -162,6 +162,15 @@ extern "C" {
 #endif
 
 /*
+ * CFI allocation helpers — defined in lfortran_intrinsics.c.
+ * These route through the tracked allocator when --detect-leaks is active,
+ * so allocations made by CFI_allocate and freed by CFI_deallocate (or vice
+ * versa with Fortran allocate/deallocate) stay in sync with the leak tracker.
+ */
+extern void* _lfortran_cfi_calloc(size_t nmemb, size_t size);
+extern void  _lfortran_cfi_free(void* ptr);
+
+/*
  * CFI_allocate — allocate memory for an allocatable or pointer descriptor.
  *
  * `lower` and `upper` are arrays of length `desc->rank` giving the
@@ -195,7 +204,7 @@ static inline int CFI_allocate(CFI_cdesc_t *desc,
         total *= (size_t)desc->dim[i].extent;
     }
     if (total == 0) total = 1;
-    desc->base_addr = calloc(1, total);
+    desc->base_addr = _lfortran_cfi_calloc(1, total);
     if (!desc->base_addr) return CFI_ERROR_MEM_ALLOCATION;
     return CFI_SUCCESS;
 }
@@ -209,7 +218,7 @@ static inline int CFI_deallocate(CFI_cdesc_t *desc) {
     if (desc->attribute != CFI_attribute_allocatable &&
         desc->attribute != CFI_attribute_pointer)
         return CFI_INVALID_ATTRIBUTE;
-    free(desc->base_addr);
+    _lfortran_cfi_free(desc->base_addr);
     desc->base_addr = NULL;
     return CFI_SUCCESS;
 }

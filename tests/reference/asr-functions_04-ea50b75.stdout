@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             to_negative:
                                 (ExternalSymbol
@@ -124,6 +125,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             stdlib_int:
                 (Module
@@ -164,6 +166,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             neg_int:
                                                 (Variable
@@ -187,6 +190,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     to_negative~genericprocedure
@@ -203,6 +207,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 int)]
@@ -247,7 +252,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

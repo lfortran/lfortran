@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             r:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     types_05
@@ -535,7 +537,9 @@
                         .false.
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

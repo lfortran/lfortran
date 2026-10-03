@@ -35,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             pi:
                                 (Variable
@@ -64,6 +65,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -93,6 +95,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -116,6 +119,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     div_to_mul
@@ -331,7 +335,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

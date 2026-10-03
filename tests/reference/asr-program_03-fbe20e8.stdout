@@ -34,6 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -57,6 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     add_z
@@ -73,6 +75,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 x)]
@@ -127,6 +130,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -150,6 +154,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 )
                                                         })
                                                     fun
@@ -166,6 +171,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 4 x)]
@@ -198,6 +204,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -221,6 +228,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     apply
@@ -238,6 +246,7 @@
                                             .false.
                                             []
                                             .false.
+                                            Host
                                         )
                                         (Integer 4)]
                                         (Integer 4)
@@ -251,6 +260,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 fun)
@@ -297,6 +307,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     closuretest
@@ -328,7 +339,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

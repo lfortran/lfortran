@@ -47,6 +47,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             reverse_m:
                 (Module
@@ -69,6 +70,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -82,6 +85,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     default_behavior
@@ -110,10 +114,13 @@
                                                                     (Array
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -127,6 +134,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -150,6 +158,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 ),
                                                             j:
                                                                 (Variable
@@ -173,6 +182,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 )
                                                         })
                                                     reverse
@@ -180,10 +190,13 @@
                                                         [(Array
                                                             (TypeParameter
                                                                 t
+                                                                NonExtensible
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         ()
                                                         Source
@@ -196,6 +209,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [swap]
                                                     [(Var 6 arr)]
@@ -250,6 +264,8 @@
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -261,6 +277,8 @@
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -292,6 +310,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -305,6 +325,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -317,6 +338,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -330,6 +353,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -342,6 +366,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -355,15 +381,20 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 )
                                                         })
                                                     swap
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         ()
                                                         Source
@@ -376,6 +407,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 5 x)
@@ -418,6 +450,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -431,6 +465,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     reverse_tmpl
@@ -472,6 +507,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -495,6 +531,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -518,6 +555,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 )
                                                         })
                                                     __asr_swap
@@ -535,6 +573,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 10 x)
@@ -580,6 +619,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -593,6 +633,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             ireverse:
                                                 (Function
@@ -613,6 +654,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -626,6 +668,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -649,6 +692,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 ),
                                                             j:
                                                                 (Variable
@@ -672,6 +716,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    []
                                                                 )
                                                         })
                                                     ireverse
@@ -681,6 +726,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         ()
                                                         Source
@@ -693,6 +739,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [__asr_swap]
                                                     [(Var 8 arr)]
@@ -784,6 +831,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -797,6 +845,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 5 (Integer 4) Decimal))]
                                                 FixedSizeArray
+                                                Global
                                             )
                                             ColMajor
                                         )
@@ -816,6 +865,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 5 (Integer 4) Decimal))]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         ))]
@@ -890,7 +940,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

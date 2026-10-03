@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             random_sp:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     intrinsics_29
@@ -78,7 +80,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

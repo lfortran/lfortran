@@ -35,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             char2:
                                 (Variable
@@ -58,6 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             char_param:
                                 (Variable
@@ -87,6 +89,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     character2
@@ -101,7 +104,9 @@
                         .false.
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

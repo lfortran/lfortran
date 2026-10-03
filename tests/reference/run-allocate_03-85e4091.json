@@ -1,0 +1,13 @@
+{
+    "basename": "run-allocate_03-85e4091",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/allocate_03.f90",
+    "infile_hash": "61117df36c26a45a3bcdebd0d5778ebed7547d0d529701bb20865c12",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-allocate_03-85e4091.stderr",
+    "stderr_hash": "1578bae8bcf745170f2d08da63412dabdef357f91a43052b4c6770f9",
+    "returncode": 1
+}

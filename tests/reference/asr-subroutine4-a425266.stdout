@@ -21,6 +21,7 @@
                                         [(()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -34,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             b:
                                 (Variable
@@ -49,6 +51,7 @@
                                         [(()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -62,6 +65,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             c:
                                 (Variable
@@ -77,6 +81,7 @@
                                         [(()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -90,6 +95,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             i:
                                 (Variable
@@ -113,6 +119,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             n:
                                 (Variable
@@ -136,6 +143,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             scalar:
                                 (Variable
@@ -159,6 +167,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     triad
@@ -168,12 +177,14 @@
                             [(()
                             ())]
                             DescriptorArray
+                            Global
                         )
                         (Array
                             (Real 4)
                             [(()
                             ())]
                             DescriptorArray
+                            Global
                         )
                         (Real 4)
                         (Array
@@ -181,6 +192,7 @@
                             [(()
                             ())]
                             DescriptorArray
+                            Global
                         )]
                         ()
                         Source
@@ -193,6 +205,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 a)
@@ -271,4 +284,5 @@
                 )
         })
     []
+    ()
 )

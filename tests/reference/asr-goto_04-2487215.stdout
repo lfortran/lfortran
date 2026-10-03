@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             n:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     goto_04
@@ -412,7 +414,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

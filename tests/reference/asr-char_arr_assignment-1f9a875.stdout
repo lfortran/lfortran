@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -34,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     char_arr_assignment
@@ -61,6 +63,7 @@
                                 [(()
                                 ())]
                                 DescriptorArray
+                                Global
                             )
                             ()
                         )
@@ -93,6 +96,7 @@
                                         [(()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                     ()
                                 )]
@@ -102,6 +106,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ()
                             )
@@ -110,6 +115,7 @@
                                 [(()
                                 ())]
                                 DescriptorArray
+                                Global
                             )
                             ()
                         )
@@ -117,7 +123,9 @@
                         .false.
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

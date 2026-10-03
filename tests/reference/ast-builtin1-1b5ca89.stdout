@@ -8,7 +8,6 @@
             )]
             []
         )
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -16,9 +15,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        []
-        [(Inquire
+        )
+        (Inquire
             0
             []
             [(unit

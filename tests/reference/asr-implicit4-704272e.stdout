@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             idd_random_transf:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             iixs:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             iww:
                                 (Variable
@@ -98,6 +101,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             n:
                                 (Variable
@@ -121,6 +125,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             nsteps:
                                 (Variable
@@ -144,6 +149,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             w:
                                 (Variable
@@ -159,6 +165,7 @@
                                         [(()
                                         ())]
                                         UnboundedPointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -172,6 +179,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -187,6 +195,7 @@
                                         [(()
                                         ())]
                                         UnboundedPointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -200,6 +209,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -215,6 +225,7 @@
                                         [(()
                                         ())]
                                         UnboundedPointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -228,6 +239,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     idd_random_transf
@@ -237,18 +249,21 @@
                             [(()
                             ())]
                             UnboundedPointerArray
+                            Global
                         )
                         (Array
                             (Real 8)
                             [(()
                             ())]
                             UnboundedPointerArray
+                            Global
                         )
                         (Array
                             (Real 8)
                             [(()
                             ())]
                             UnboundedPointerArray
+                            Global
                         )]
                         (Integer 4)
                         Source
@@ -261,6 +276,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 x)
@@ -379,4 +395,5 @@
                 )
         })
     []
+    ()
 )

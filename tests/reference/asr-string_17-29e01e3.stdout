@@ -24,8 +24,8 @@
                                                     4
                                                     1_string_type_raw
                                                     3 raw
-                                                    string_type
-                                                    []
+                                                    string_17_string_module
+                                                    [string_type]
                                                     raw
                                                     Public
                                                 ),
@@ -51,6 +51,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -81,6 +82,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     len_string
@@ -104,6 +106,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 string)]
@@ -165,8 +168,8 @@
                                                     5
                                                     1_string_type_raw
                                                     3 raw
-                                                    string_type
-                                                    []
+                                                    string_17_string_module
+                                                    [string_type]
                                                     raw
                                                     Public
                                                 ),
@@ -200,6 +203,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -230,6 +234,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     maybe
@@ -271,6 +276,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [len_string]
                                     [(Var 5 string)]
@@ -350,6 +356,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     string_type
@@ -368,6 +375,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
@@ -380,7 +388,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

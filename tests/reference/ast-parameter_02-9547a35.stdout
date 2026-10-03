@@ -9,13 +9,11 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -46,8 +44,8 @@
             Equal
             ())]
             ()
-        )]
-        [(Print
+        )
+        (Print
             0
             ()
             [i]
@@ -63,12 +61,11 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -101,7 +98,6 @@
             ()
         )]
         []
-        []
     )
     (Program
         parameter_02
@@ -115,13 +111,12 @@
             )]
             .true.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
-        )]
-        []
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             a_proc
             []

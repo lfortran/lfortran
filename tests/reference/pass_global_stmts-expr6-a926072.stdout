@@ -5,11 +5,11 @@
             f:
                 (Function
                     (SymbolTable
-                        2
+                        3
                         {
                             f1:
                                 (Variable
-                                    2
+                                    3
                                     f1
                                     []
                                     Local
@@ -29,10 +29,11 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             f2:
                                 (Variable
-                                    2
+                                    3
                                     f2
                                     []
                                     ReturnVar
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     f
@@ -68,11 +70,12 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
                     [(Assignment
-                        (Var 2 f1)
+                        (Var 3 f1)
                         (IntegerBinOp
                             (IntegerConstant 5 (Integer 4) Decimal)
                             Add
@@ -85,7 +88,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f2)
+                        (Var 3 f2)
                         (RealConstant
                             5.300000
                             (Real 4)
@@ -94,7 +97,7 @@
                         .false.
                         .false.
                     )]
-                    (Var 2 f2)
+                    (Var 3 f2)
                     Public
                     .false.
                     .false.
@@ -102,4 +105,5 @@
                 )
         })
     []
+    ()
 )

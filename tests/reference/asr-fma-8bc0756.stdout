@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -34,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             pi:
                                 (Variable
@@ -63,6 +65,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             r:
                                 (Variable
@@ -86,6 +89,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             s1:
                                 (Variable
@@ -124,6 +128,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             s2:
                                 (Variable
@@ -162,6 +167,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -191,6 +197,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             z:
                                 (Variable
@@ -229,6 +236,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     fma
@@ -405,6 +413,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ColMajor
                             )
@@ -413,6 +422,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             (ArrayConstant
                                 40
@@ -422,6 +432,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 10 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ColMajor
                             )
@@ -604,7 +615,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

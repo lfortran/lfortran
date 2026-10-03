@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.struct.final_procedure_signature]: Final procedure 'cleanup' of 'base' must take exactly one argument, not 2
+ --> tests/asr/verify/final_procedure_signature.asr:9:21
+  |
+9 |             "base" (Struct
+  |                     ^^^^^^ failed here

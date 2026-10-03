@@ -34,6 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             lhs:
                                                 (Variable
@@ -57,6 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             rhs:
                                                 (Variable
@@ -80,6 +82,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     and
@@ -97,6 +100,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 lhs)
@@ -134,6 +138,7 @@
                     .false.
                     .false.
                     .true.
+                    ()
                 ),
             operator_overloading_12:
                 (Program
@@ -162,6 +167,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             and@~and:
                                 (ExternalSymbol
@@ -195,6 +201,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             c:
                                 (Variable
@@ -218,6 +225,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             ~and:
                                 (ExternalSymbol
@@ -297,7 +305,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

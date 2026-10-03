@@ -2,20 +2,20 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data = private constant [11 x i8] c"Hello World"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data, i32 0, i32 0), i64 11 }>
+@string_const = private global %string_descriptor { i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data, i32 0, i32 0), i64 11 }
 @2 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   %2 = call i8* @_lfortran_get_default_allocator()
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %lfortran_iomsg = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %lfortran_iomsg, align 1
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  store %string_descriptor zeroinitializer, %string_descriptor* %lfortran_iomsg, align 8
   %3 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 1
   store i64 0, i64* %3, align 8
   %4 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 0

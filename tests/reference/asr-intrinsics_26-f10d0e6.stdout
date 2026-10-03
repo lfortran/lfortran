@@ -39,6 +39,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     intrinsics_26
@@ -62,6 +63,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             stdlib_bitsets_64:
                 (Module
@@ -95,6 +97,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             pos:
                                                 (Variable
@@ -118,6 +121,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -141,6 +145,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -164,6 +169,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     all_set
@@ -181,6 +187,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 x)
@@ -248,7 +255,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

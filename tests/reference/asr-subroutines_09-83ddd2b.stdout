@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             f:
                                 (Variable
@@ -58,6 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             get_elem_table@get_value:
                                 (ExternalSymbol
@@ -131,6 +133,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             ptr:
                                 (Variable
@@ -156,6 +159,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     main
@@ -181,6 +185,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             subroutines_09_tomlf_build_array:
                 (Module
@@ -214,6 +219,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             pos:
                                                 (Variable
@@ -237,6 +243,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             ptr:
                                                 (Variable
@@ -262,6 +269,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             stat:
                                                 (Variable
@@ -285,6 +293,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     get_elem_table
@@ -306,6 +315,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 array)
@@ -358,6 +368,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             def:
                                                 (Variable
@@ -381,6 +392,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             pos:
                                                 (Variable
@@ -404,6 +416,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             ptr:
                                                 (Variable
@@ -429,6 +442,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 ),
                                             stat:
                                                 (Variable
@@ -452,6 +466,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    []
                                                 )
                                         })
                                     get_elem_value_string
@@ -474,6 +489,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 array)
@@ -515,7 +531,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -23,5 +23,6 @@ program associate_19
     allocate(pool)
     pool % lastpool => null()
     call free_map_entry_pool(pool)
+    deallocate(pool)
 end program associate_19
 

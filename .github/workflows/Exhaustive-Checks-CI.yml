@@ -6,8 +6,13 @@ on:
       - main
     tags:
       - 'v*'
+  # Not on `labeled`/`unlabeled`: GitHub cannot filter them by label name, and
+  # the PR page shows only the newest run of a workflow, so every unrelated
+  # label would add an all-skipped run that hides the real one. Instead,
+  # Exhaustive-Checks-Label-CI.yml reruns this workflow when
+  # Tests::Run-Exhaustive is added or removed.
   pull_request:
-    types: [labeled, unlabeled, synchronize]
+    types: [opened, reopened, synchronize]
     branches:
       - main
 
@@ -27,16 +32,43 @@ env:
   MACOSX_DEPLOYMENT_TARGET: 15.0
 
 jobs:
+  # Every other job needs this one. A rerun (see
+  # Exhaustive-Checks-Label-CI.yml) replays the original event payload, whose
+  # labels may be stale, so this reads the PR's current labels.
+  gate:
+    name: Check Tests::Run-Exhaustive label
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      run: ${{ steps.label.outputs.run }}
+    steps:
+      - name: Run on push, or on a PR labeled Tests::Run-Exhaustive
+        id: label
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.number }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            run=true
+          else
+            run=$(gh pr view "$PR" --json labels \
+              --jq 'any(.labels[]; .name == "Tests::Run-Exhaustive")')
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+
   debug_outOfSource:
     name: Check Out-of-Source Debug build
     runs-on: ubuntu-latest
-    # Run on push to main, or when the PR has the label at the time of the event
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' &&
-           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # Main and Tests::Run-Exhaustive PRs only. Hosts option-combination
+    # tests moved out of Quick checks (llvm -sc, --detect-leaks, C++
+    # compiler build).
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: src
@@ -79,6 +111,22 @@ jobs:
         run: ctest --output-on-failure
         working-directory: builddir
 
+      - name: Test option combinations
+        shell: bash -e -l {0}
+        run: |
+            export PATH="$(pwd)/inst/bin:$PATH"
+            NPROC=$(nproc)
+            cd src/integration_tests
+            ./run_tests.py -b llvm -sc -j${NPROC}
+            ./run_tests.py -b llvm_submodule -sc -j${NPROC}
+            ./run_tests.py -b llvm --detect-leaks -j${NPROC}
+
+      - name: Test C++ compiler build
+        shell: bash -e -l {0}
+        working-directory: src
+        run: |
+            shell ci/test_cpp_version.sh
+
       - name: Test Moved Installation
         shell: bash -e -l {0}
         run: |
@@ -95,12 +143,13 @@ jobs:
   release:
     name: Check Release build
     runs-on: ubuntu-latest
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # Main and Tests::Run-Exhaustive PRs only. Hosts --std=f23 and
+    # llvm_single_invocation, moved out of Quick checks. llvm / llvm -f
+    # here also cover the Release build (Quick checks builds Debug).
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -148,8 +197,12 @@ jobs:
             ./run_tests.py -vh
             cd integration_tests
             ./run_tests.py -m
-            ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f -nf16
+            NPROC=$(nproc)
+            ./run_tests.py -b llvm -j${NPROC}
+            ./run_tests.py -b llvm -f -j${NPROC}
+            ./run_tests.py -b llvm_single_invocation -j${NPROC}
+            ./run_tests.py -b llvm --std=f23 -j${NPROC}
+            ./run_tests.py -b llvm -f --std=f23 -j${NPROC}
 
       - name: Test Installation
         shell: bash -e -l {0}
@@ -160,6 +213,7 @@ jobs:
             test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
             test -f inst/man/O/man/man1/lfortran.1
 
+
 # Commented out to save CI runners:
 #  test-pixi:
 #    name: Pixi Build (${{ matrix.os }})
@@ -169,7 +223,7 @@ jobs:
 #      matrix:
 #        os: ["ubuntu-latest"]
 #    steps:
-#      - uses: actions/checkout@v6
+#      - uses: actions/checkout@v7
 #        with:
 #          fetch-depth: 0
 #      - uses: prefix-dev/setup-pixi@v0.8.1
@@ -200,48 +254,58 @@ jobs:
 #          pixi run clean
 
   test_llvm:
-    name: Test LLVM ${{ matrix.llvm-version }}
+    name: Test LLVM ${{ matrix.llvm-version }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     strategy:
       fail-fast: false
       matrix:
-        # this is only run on ubuntu intentionally
+        # this is only run on ubuntu intentionally (except macOS LLVM 22)
         os: ["ubuntu-latest"]
-        # Note: The LLVM 11 test is redundant, since it is already tested by
-        # most other tests (since LLVM 11 is our default version), but we have
-        # it here as well for consistency, and that way other tests can freely
-        # switch to other versions as needed. We test all versions here in
-        # exactly the same manner, to ensure that users can just change the
-        # `llvmdev` version in their conda environment and everything will just
-        # work.
-        llvm-version: ["8", "10", "11", "15", "17", "18", "19", "21", "22"]
+        # Rotation: every LLVM version is tested on every push to main (i.e.
+        # on every merge), so a version-specific break is caught within one
+        # merge. On a pull request we test only the versions where breakage
+        # actually originates:
+        #   7  - oldest supported; integration tests (newer LLVM APIs)
+        #   11 - default version; third-party codes (full LAPACK)
+        #   19 - third-party codes (smoke, Release). WASM is a separate job.
+        #   23 - newest; integration tests (removed/deprecated LLVM APIs)
+        # llvm --fast now runs on Quick LLVM 11 for every PR, so LLVM 17 is
+        # main-only (with 8/10/15/18/21/22).
+        # Third-party codes exercise LFortran, not LLVM, so they run on two
+        # Ubuntu versions only. Every other Ubuntu version runs the LLVM
+        # integration-test option combinations instead. macOS LLVM 22 stays
+        # on third-party because Fiats/Formal Metal tests are Darwin-only.
+        llvm-version: "${{ github.event_name == 'push' && fromJSON('[\"7\",\"8\",\"10\",\"11\",\"15\",\"17\",\"18\",\"19\",\"21\",\"22\",\"23\"]') || fromJSON('[\"7\",\"11\",\"19\",\"23\"]') }}"
         python-version: ["3.10"]
+        include:
+          - os: macos-latest
+            llvm-version: "22"
+            python-version: "3.10"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
+      # Pin 7.0.1: the conda-forge llvmdev 7.1.0 build is compiled with a
+      # newer toolchain, and its static libraries crash at run time (in
+      # createX86MCSubtargetInfo) when linked with the runner's binutils 2.42.
       - uses: mamba-org/setup-micromamba@v2.0.2
-        if: contains(matrix.llvm-version, '19')
+        if: matrix.llvm-version == '7'
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             python=${{ matrix.python-version }}
-            llvmdev=${{ matrix.llvm-version }}
+            llvmdev=7.0.1
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
-            nodejs=18.20.4
             openmpi=5.0.6=hb85ec53_102
-            xonsh=0.16.0
-            zlib=1.3.1
-            zstd-static=1.5.6
+            zstd-static=1.5.7
 
       - uses: mamba-org/setup-micromamba@v2.0.2
         if: contains(matrix.llvm-version, '10')
@@ -310,7 +374,7 @@ jobs:
             openmpi=5.0.6=hb85ec53_102
 
       - uses: mamba-org/setup-micromamba@v2.0.2
-        if: contains(matrix.llvm-version, '22')
+        if: contains(matrix.llvm-version, '22') && contains(matrix.os, 'ubuntu')
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -323,6 +387,36 @@ jobs:
             make=4.3
             openmpi=5.0.10
             binutils=2.45.1
+            zstd-static=1.5.7
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '23') && contains(matrix.os, 'ubuntu')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.10
+            binutils=2.45.1
+            zstd-static=1.5.7
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.os, 'macos')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment.yml
+          create-args: >-
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.10
             zstd-static=1.5.7
 
       - uses: mamba-org/setup-micromamba@v2.0.2
@@ -340,7 +434,7 @@ jobs:
             openmpi=5.0.3
 
       - uses: mamba-org/setup-micromamba@v2.0.2
-        if: ${{! ( contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21') || contains(matrix.llvm-version, '22') )}}
+        if: ${{! ( matrix.llvm-version == '7' || contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21') || contains(matrix.llvm-version, '22') || contains(matrix.llvm-version, '23') )}}
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -356,14 +450,111 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.llvm-version }}
+          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
 
       - name: Install libunwind
-        if: matrix.llvm-version > 11
+        if: matrix.llvm-version > 11 && contains(matrix.os, 'ubuntu')
+        run: micromamba install -y -n lf libunwind=1.7.2
+
+      - name: Build
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            # Integration tests include EXTRA_ARGS -g (e.g. derived_types_123),
+            # which needs runtime stacktraces. Third-party jobs (LLVM 11/19 and
+            # macOS) must not enable it: Caffeine passes -g at link time and
+            # dwarf_convert.py then fails without llvm-dwarfdump.
+            STACKTRACE_FLAG=""
+            if [[ "${{ matrix.llvm-version }}" != "11" && "${{ matrix.llvm-version }}" != "19" && "${{ matrix.os }}" != *macos* ]]; then
+                STACKTRACE_FLAG="-DWITH_RUNTIME_STACKTRACE=yes"
+            fi
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -O3 -funroll-loops -DNDEBUG" \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              ${STACKTRACE_FLAG} \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test third party codes
+        shell: bash -e -l {0}
+        if: ${{ matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos') }}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            LAPACK_MODE="smoke"
+            # The full Reference-LAPACK suite costs ~10 min more than smoke.
+            # It exercises LFortran, not LLVM, so run it on the default
+            # version only. LLVM 19 and macOS stay on smoke.
+            if [[ "${{ matrix.llvm-version }}" == "11" ]]; then
+                LAPACK_MODE="full"
+            fi
+            echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
+            RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
+
+      # The unit tests exercise the JIT, whose code path differs between
+      # LLVM versions, so run them for every version.
+      - name: Test unit tests
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
+
+      - name: Test LLVM integration tests
+        shell: bash -e -l {0}
+        if: ${{ matrix.llvm-version != '11' && matrix.llvm-version != '19' && !contains(matrix.os, 'macos') }}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
+            bash ci/test_llvm_integration.sh
+
+      - name: Test coarray runtime with Caffeine
+        shell: bash -e -l {0}
+        run: ci/test_caffeine.sh --verify-all-passes
+
+  test_llvm_wasm:
+    name: Test LLVM 19 WASM (ubuntu-latest)
+    runs-on: ubuntu-latest
+    # llvm_wasm / llvm_wasm_emcc need a Debug build with WITH_TARGET_WASM.
+    # Kept separate from Test LLVM 19 so third-party codes use a Release
+    # compiler. Same PR/main gating as the other LLVM version jobs.
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=3.10
+            llvmdev=19
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            nodejs=18.20.4
+            openmpi=5.0.6=hb85ec53_102
+            xonsh=0.16.0
+            zlib=1.3.1
+            zstd-static=1.5.6
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-ubuntu-latest-19
+
+      - name: Install libunwind
         run: micromamba install -y -n lf libunwind=1.7.2
 
       - name: Setup WASI SDK
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           mkdir -p $HOME/ext
@@ -376,7 +567,6 @@ jobs:
           $WASI_SDK_PATH/bin/clang --version
 
       - name: Install wasmtime
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           cd $HOME
@@ -386,7 +576,6 @@ jobs:
           wasmtime --version
 
       - name: Setup Emscripten SDK
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           mkdir -p $HOME/ext
@@ -401,7 +590,6 @@ jobs:
           ./emsdk activate 3.1.35
 
       - name: Build Linux ( WASM )
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/ext/wasi-sdk
@@ -422,8 +610,11 @@ jobs:
 
             cmake --build . -j16 --target install
 
+      - name: Test unit tests
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
+
       - name: Test Linux ( WASM )
-        if: contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/ext/wasi-sdk
@@ -433,46 +624,14 @@ jobs:
             cd integration_tests
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc
 
-      - name: Build Linux
-        if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -O3 -funroll-loops -DNDEBUG" \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test third party codes
-        shell: bash -e -x -l {0}
-        if: ${{! (matrix.llvm-version == '7') }}
-        run: |
-            export PATH="$(pwd)/src/bin:$PATH"
-            LAPACK_MODE="smoke"
-            if [[ "${{ matrix.llvm-version }}" == "11" || "${{ matrix.llvm-version }}" == "21" ]]; then
-                LAPACK_MODE="full"
-            fi
-            echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
-            RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
-
   upload_tarball:
     name: Upload Tarball
     runs-on: ubuntu-latest
     # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -503,11 +662,10 @@ jobs:
     name: Test without LLVM Backend
     runs-on: ubuntu-latest
     # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -527,11 +685,10 @@ jobs:
     name: Test MLIR backend
     runs-on: ubuntu-latest
     # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -569,21 +726,24 @@ jobs:
 
             cmake --build . -j16 --target install
 
+      - name: Test unit tests
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
+
       - name: Test Linux
         shell: bash -e -l {0}
         run: |
             cd integration_tests
-            ./run_tests.py -b mlir mlir_omp mlir_llvm_omp -j1
+            ./run_tests.py -b mlir -j1
 
   upload_docs:
     name: Documentation
     runs-on: ubuntu-latest
     # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -633,9 +793,8 @@ jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
     # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     permissions:
       contents: read
       packages: write
@@ -644,7 +803,7 @@ jobs:
       USER: lfortran
       PROJECT: lfortran
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -656,9 +815,101 @@ jobs:
           username: ${{ env.USER }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Determine image tags
+        id: image-tags
+        run: |
+          TAGS="${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:latest"
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${{ github.ref_name }}"
+            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:${VERSION}"
+          fi
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
           context: .
           push: ${{ github.event_name == 'push' }}
-          tags: ${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:latest
+          tags: ${{ steps.image-tags.outputs.tags }}
+
+  build_xlfortran_jupyterlite:
+    name: Build xlfortran JupyterLite kernel and run tests
+    runs-on: ubuntu-24.04
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install build0 prerequisites
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: ci/environment_linux.yml
+          init-shell: bash
+          environment-name: lf
+
+      - name: Generate parser/ASR headers (build0.sh)
+        run: ./build0.sh
+
+      - name: Install WASM build environment
+        run: micromamba create -f environment-wasm-build.yml -y
+
+      - name: Create WASM host environment
+        run: |
+          set -ex
+          micromamba create -f environment-wasm-host.yml -y \
+            --platform=emscripten-wasm32 \
+            -c https://prefix.dev/emscripten-forge-4x \
+            -c https://prefix.dev/conda-forge
+          echo "PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host" >> $GITHUB_ENV
+
+      - name: Build native runtime .mod files
+        run: ./wasm-build0.sh
+
+      - name: Build WASM kernel
+        run: micromamba run -n xeus-lfortran-wasm-build ./wasm-build1.sh
+
+      - name: Run WASM evaluator tests
+        run: |
+          set -ex
+          cd build-wasm/src/lfortran/tests
+          micromamba run -n xeus-lfortran-wasm-build \
+            node test_lfortran.js
+
+      - name: Build JupyterLite site
+        run: |
+          set -ex
+          micromamba create -n xeus-lite-host jupyter_server jupyterlite-xeus -c conda-forge -y
+          micromamba run -n xeus-lite-host jupyter lite build \
+              --XeusAddon.prefix=${{ env.PREFIX }} \
+              --contents share/lfortran/nb/Demo1.ipynb \
+              --contents share/lfortran/nb/Demo2.ipynb \
+              --contents share/lfortran/nb/Variables.ipynb \
+              --contents share/lfortran/nb/Mandelbrot.ipynb \
+              --contents share/lfortran/nb/Rich_Display.ipynb \
+              --output-dir dist
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: ./dist
+
+  deploy_jupyterlite:
+    name: Deploy JupyterLite to GitHub Pages
+    needs: build_xlfortran_jupyterlite
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

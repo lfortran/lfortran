@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 ),
                             teststring:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    []
                                 )
                         })
                     string_11
@@ -131,7 +133,9 @@
                             )
                         )]
                     )]
+                    ()
                 )
         })
     []
+    ()
 )
