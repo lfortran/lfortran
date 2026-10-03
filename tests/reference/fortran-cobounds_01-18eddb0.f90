@@ -1,4 +1,4 @@
-type :: prif_coarray_handle
+type, bind(c) :: prif_coarray_handle
     type(c_ptr) :: info
 end type prif_coarray_handle
 
@@ -10,25 +10,31 @@ integer(4), dimension(1) :: lc
 integer(4) :: stat
 integer(4), dimension(1) :: uc
 integer(4), dimension(:), pointer :: x
-type(c_ptr) :: x__coarray_data
-type(prif_coarray_handle) :: x__coarray_handle
 call __module_prif_prif_init(stat)
-call __module_prif_prif_allocate_coarray([2_8], [integer(8) :: ], 4_8*int(5, kind=8), null(), x__coarray_handle,&
-         x__coarray_data)
-call c_f_pointer(x__coarray_data, x, [5])
 call __module_prif_prif_sync_all()
-a = lcompilers_prif_lcobound_with_dim_k4(x__coarray_handle, 1)
-b = lcompilers_prif_ucobound_with_dim_k4(x__coarray_handle, 1)
-lc = lcompilers_prif_lcobound_no_dim_1_k4(x__coarray_handle)
-uc = lcompilers_prif_ucobound_no_dim_1_k4(x__coarray_handle)
+a = lcompilers_prif_lcobound_with_dim_k4(__cac_x__coarray_handle, 1)
+b = lcompilers_prif_ucobound_with_dim_k4(__cac_x__coarray_handle, 1)
+lc = [lcompilers_prif_lcobound_with_dim_k4(__cac_x__coarray_handle, 1)]
+uc = [lcompilers_prif_ucobound_with_dim_k4(__cac_x__coarray_handle, 1)]
 call __module_prif_prif_stop(.false.)
 
 contains
 
+subroutine __lfortran_global_init_cobounds_01()
+    logical(4), save :: __lfortran_global_init_done = .false.
+    integer(4) :: stat
+    if (.not. __lfortran_global_init_done) then
+        __lfortran_global_init_done = .true.
+        call __module_prif_prif_init(stat)
+        call __module_prif_prif_allocate_coarray([int(2, kind=8)], [integer(8) :: ], 4_8*int(5, kind=8), null(),&
+         __cac_x__coarray_handle, __cac_x__coarray_data)
+        call c_f_pointer(__cac_x__coarray_data, x, [5], [1])
+    end if
+end subroutine __lfortran_global_init_cobounds_01
+
 interface
-    subroutine __module_prif_prif_allocate_coarray(lcobounds, ucobounds, size_in_bytes, final_proc,&
-        &
-         coarray_handle, allocated_memory, stat, errmsg, errmsg_alloc)
+    subroutine __module_prif_prif_allocate_coarray(lcobounds, ucobounds, size_in_bytes, final_proc, coarray_handle,&
+         allocated_memory, stat, errmsg, errmsg_alloc)
         type(c_ptr), intent(out) :: allocated_memory
         type(prif_coarray_handle), intent(out) :: coarray_handle
         character(len=*, kind=1), intent(inout), optional :: errmsg
@@ -45,13 +51,6 @@ interface
     subroutine __module_prif_prif_init(stat)
         integer(4), intent(out) :: stat
     end subroutine __module_prif_prif_init
-end interface
-
-interface
-    subroutine __module_prif_prif_lcobound_no_dim(coarray, lcobounds)
-        type(prif_coarray_handle), intent(in) :: coarray
-        integer(8), dimension(:), intent(out) :: lcobounds
-    end subroutine __module_prif_prif_lcobound_no_dim
 end interface
 
 interface
@@ -79,27 +78,12 @@ interface
 end interface
 
 interface
-    subroutine __module_prif_prif_ucobound_no_dim(coarray, ucobounds)
-        type(prif_coarray_handle), intent(in) :: coarray
-        integer(8), dimension(:), intent(out) :: ucobounds
-    end subroutine __module_prif_prif_ucobound_no_dim
-end interface
-
-interface
     subroutine __module_prif_prif_ucobound_with_dim(coarray, dim, ucobound)
         type(prif_coarray_handle), intent(in) :: coarray
         integer(4), intent(in) :: dim
         integer(8), intent(out) :: ucobound
     end subroutine __module_prif_prif_ucobound_with_dim
 end interface
-
-function lcompilers_prif_lcobound_no_dim_1_k4(coarray_ptr)
-    type(prif_coarray_handle), intent(in) :: coarray_ptr
-    integer(4), dimension(1) :: lcompilers_prif_lcobound_no_dim_1_k4
-    integer(8), dimension(1) :: sub_res
-    call __module_prif_prif_lcobound_no_dim(coarray_ptr, sub_res)
-    lcompilers_prif_lcobound_no_dim_1_k4 = int(sub_res, kind=4)
-end function lcompilers_prif_lcobound_no_dim_1_k4
 
 integer(4) function lcompilers_prif_lcobound_with_dim_k4(coarray_ptr, dim_val)
     type(prif_coarray_handle), intent(in) :: coarray_ptr
@@ -108,14 +92,6 @@ integer(4) function lcompilers_prif_lcobound_with_dim_k4(coarray_ptr, dim_val)
     call __module_prif_prif_lcobound_with_dim(coarray_ptr, dim_val, sub_res)
     lcompilers_prif_lcobound_with_dim_k4 = int(sub_res, kind=4)
 end function lcompilers_prif_lcobound_with_dim_k4
-
-function lcompilers_prif_ucobound_no_dim_1_k4(coarray_ptr)
-    type(prif_coarray_handle), intent(in) :: coarray_ptr
-    integer(4), dimension(1) :: lcompilers_prif_ucobound_no_dim_1_k4
-    integer(8), dimension(1) :: sub_res
-    call __module_prif_prif_ucobound_no_dim(coarray_ptr, sub_res)
-    lcompilers_prif_ucobound_no_dim_1_k4 = int(sub_res, kind=4)
-end function lcompilers_prif_ucobound_no_dim_1_k4
 
 integer(4) function lcompilers_prif_ucobound_with_dim_k4(coarray_ptr, dim_val)
     type(prif_coarray_handle), intent(in) :: coarray_ptr

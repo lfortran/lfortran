@@ -4,7 +4,7 @@ program endfile_iomsg_01
     integer, parameter :: u = 10
     character(len=128) :: msg = ""
 
-    open(unit=u, file="test.txt", status="replace", iostat=ios)
+    open(unit=u, file="endfile_iomsg_01.txt", status="replace", iostat=ios)
     if (ios /= 0) error stop
     if (len_trim(msg) /= 0) error stop
 

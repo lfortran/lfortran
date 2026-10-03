@@ -145,11 +145,78 @@ namespace LCompilers {
             return array_ref;
         }
 
+        // `base` is the array somewhere inside the component chain `expr`, and
+        // `replacement` is the element of it that has just been indexed out.
+        // Rebuild every `%` level above `base` on top of `replacement`, so a
+        // chain of any depth survives: `v%nest%ii` with `v` an array becomes
+        // `v(i)%nest%ii`, not `v(i)%ii`. A level that inherited its shape from
+        // `base` drops it, since one element of `base` is a scalar; a level
+        // whose component is declared an array keeps its own dimensions, which
+        // one element of `base` still holds whole.
+        static ASR::expr_t* rebuild_struct_member_chain(Allocator& al,
+            ASR::expr_t* expr, ASR::expr_t* base, ASR::expr_t* replacement) {
+            if( expr == base ) {
+                return replacement;
+            }
+            if( !ASR::is_a<ASR::StructInstanceMember_t>(*expr) ) {
+                return nullptr;
+            }
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+            ASR::expr_t* new_v = rebuild_struct_member_chain(
+                al, member->m_v, base, replacement);
+            if( new_v == nullptr ) {
+                return nullptr;
+            }
+            ASR::ttype_t* new_type = member->m_type;
+            // Only a shape inherited from `base` is dropped. A component
+            // declared an array of its own keeps its dimensions, since one
+            // element of `base` still holds the whole component.
+            if( !ASRUtils::is_array(ASRUtils::symbol_type(member->m_m)) ) {
+                new_type = ASRUtils::type_get_past_allocatable(new_type);
+                if( ASR::is_a<ASR::Array_t>(*new_type) ) {
+                    new_type = ASR::down_cast<ASR::Array_t>(new_type)->m_type;
+                }
+            }
+            return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
+                member->base.base.loc, new_v, member->m_m, new_type,
+                member->m_value));
+        }
+
         ASR::expr_t* create_array_ref(ASR::expr_t* arr_expr,
             Vec<ASR::expr_t*>& idx_vars, Allocator& al, SymbolTable* current_scope,
             bool perform_cast, ASR::cast_kindType cast_kind, ASR::ttype_t* casted_type) {
             if (idx_vars.size() == 0) {
                 return arr_expr;
+            }
+            // `w%u(2)` with `w` an array is shaped like `w`, not like the
+            // component `u` its subscripts index: they select one element of
+            // `u` out of every element of `w`. Index `w` and rebuild the
+            // element selection on top of the indexed base.
+            if( ASR::is_a<ASR::ArrayItem_t>(*arr_expr) ) {
+                ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(arr_expr);
+                if( ASRUtils::is_array(item->m_type) &&
+                    ASRUtils::struct_base_lending_shape(item) != nullptr ) {
+                    ASR::expr_t* base =
+                        ASRUtils::get_struct_member_chain_array_part(item->m_v);
+                    ASR::expr_t* member = rebuild_struct_member_chain(al, item->m_v,
+                        base, create_array_ref(base, idx_vars, al, current_scope,
+                            false, cast_kind, nullptr));
+                    if( member != nullptr ) {
+                        ASR::expr_t* array_ref = ASRUtils::EXPR(
+                            ASRUtils::make_ArrayItem_t_util(al, item->base.base.loc,
+                                member, item->m_args, item->n_args,
+                                ASRUtils::extract_type(item->m_type),
+                                item->m_storage_format, nullptr));
+                        if( perform_cast ) {
+                            LCOMPILERS_ASSERT(casted_type != nullptr);
+                            array_ref = ASRUtils::EXPR(ASR::make_Cast_t(al,
+                                array_ref->base.loc, array_ref, cast_kind,
+                                casted_type, nullptr, nullptr));
+                        }
+                        return array_ref;
+                    }
+                }
             }
             Vec<ASR::array_index_t> args;
             args.reserve(al, 1);
@@ -178,7 +245,18 @@ namespace LCompilers {
             bool check_m_m = true;
             while(ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr) && !array_ref_container_node ){
                 tmp = ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr);
-                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(tmp->m_v)))){
+                // A member that reads a scalar component of an array base is
+                // itself shaped like that base, but it is not an array in its
+                // own right -- its elements are strided by the base's element
+                // size, not its own. Keep walking down to the array the shape
+                // actually comes from, and index that one instead.
+                bool inherits_shape_from_base =
+                    ASR::is_a<ASR::StructInstanceMember_t>(*tmp->m_v) &&
+                    !ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(
+                        ASRUtils::symbol_type(ASR::down_cast<ASR::StructInstanceMember_t>(
+                            tmp->m_v)->m_m)));
+                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(tmp->m_v))) &&
+                   !inherits_shape_from_base){
                     arr_expr = tmp->m_v;
                     array_ref_container_node = &(tmp->m_v);
                 } else if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(tmp->m_m))) && check_m_m){
@@ -201,15 +279,13 @@ namespace LCompilers {
                                                 ASRUtils::type_get_past_allocatable(array_ref_type))),
                                         ASR::arraystorageType::RowMajor, nullptr));
             if(array_ref_container_node){
+                ASR::expr_t* rebuilt = nullptr;
                 if(ASR::is_a<ASR::StructInstanceMember_t>(**original_arr_expr)){
-                    ASR::StructInstanceMember_t* orig_sim = ASR::down_cast<ASR::StructInstanceMember_t>(*original_arr_expr);
-                    ASR::ttype_t* new_type = ASRUtils::type_get_past_allocatable(orig_sim->m_type);
-                    if(ASR::is_a<ASR::Array_t>(*new_type)) {
-                        new_type = ASR::down_cast<ASR::Array_t>(new_type)->m_type;
-                    }
-                    array_ref = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
-                        orig_sim->base.base.loc, array_ref, orig_sim->m_m,
-                        new_type, orig_sim->m_value));
+                    rebuilt = rebuild_struct_member_chain(al, *original_arr_expr,
+                        arr_expr, array_ref);
+                }
+                if(rebuilt != nullptr){
+                    array_ref = rebuilt;
                 } else {
                     *array_ref_container_node = array_ref;
                     array_ref = *original_arr_expr;
@@ -353,7 +429,13 @@ namespace LCompilers {
                         al, current_scope->get_symbol(str_name)), var, true
                 ) ) {
                 ASR::symbol_t* type_decl = nullptr;
-                if ( var != nullptr ) {
+                // Only a derived type is declared by a symbol. Carrying one
+                // over for, say, a character temporary names a symbol that
+                // has nothing to do with the temporary's type.
+                if ( var != nullptr &&
+                     (ASRUtils::is_struct(*var_type) ||
+                      ASRUtils::is_class_type(
+                          ASRUtils::extract_type(var_type))) ) {
                     type_decl = ASRUtils::get_struct_sym_from_struct_expr(var);
                 }
                 str_name = current_scope->get_unique_name(str_name);
@@ -1695,6 +1777,39 @@ namespace LCompilers {
                 ASR::stmt_t* assign = b.Assignment(res, curr_init);
                 result_vec->push_back(al, assign);
             }
+        }
+
+        ASR::stmt_t* guard_allocatable_component_assignment(Allocator& al,
+            const Location& loc, ASR::expr_t* source, ASR::expr_t* component,
+            ASR::stmt_t* assign) {
+            // Only an allocatable object can be unallocated; any other
+            // data source is a value and is assigned as is.
+            if( !(ASR::is_a<ASR::Var_t>(*source) ||
+                    ASR::is_a<ASR::StructInstanceMember_t>(*source)) ||
+                    !ASRUtils::is_allocatable(ASRUtils::expr_type(source)) ) {
+                return assign;
+            }
+            ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+            Vec<ASR::expr_t*> allocated_args;
+            allocated_args.reserve(al, 1);
+            allocated_args.push_back(al, expr_duplicator.duplicate_expr(source));
+            ASR::expr_t* is_allocated = ASRUtils::EXPR(
+                ASR::make_IntrinsicImpureFunction_t(al, loc,
+                    static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                    allocated_args.p, allocated_args.n, 0,
+                    ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+            Vec<ASR::stmt_t*> if_body;
+            if_body.reserve(al, 1);
+            if_body.push_back(al, assign);
+            Vec<ASR::expr_t*> dealloc_args;
+            dealloc_args.reserve(al, 1);
+            dealloc_args.push_back(al, component);
+            Vec<ASR::stmt_t*> else_body;
+            else_body.reserve(al, 1);
+            else_body.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
+                al, loc, dealloc_args.p, dealloc_args.n)));
+            return ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, is_allocated,
+                if_body.p, if_body.n, else_body.p, else_body.n));
         }
 
         void visit_ArrayConstructor(ASR::ArrayConstructor_t* x, Allocator& al,

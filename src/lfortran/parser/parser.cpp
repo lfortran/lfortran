@@ -283,9 +283,11 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
 }
 
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
-        diag::Diagnostics &diagnostics, const CompilerOptions &co)
+        diag::Diagnostics &diagnostics, const CompilerOptions &co,
+        uint32_t loc_offset)
 {
     Parser p(al, diagnostics, co.fixed_form, co.continue_compilation, co.openmp);
+    p.m_tokenizer.loc_offset = loc_offset;
     try {
         if (!p.parse(s)) {
             if (!co.continue_compilation) {
@@ -914,7 +916,12 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
             newline = false;
             if (s[pos] == '!' && !in_string) in_comment = true;
             if (in_comment && s[pos] == '\n') in_comment = false;
-            if (!in_comment && s[pos] == '&' &&(next_nonspace_character(s,pos) == '\n' || next_nonspace_character(s,pos) == '!')) {
+            // `&` starts a continuation if it is the last non-blank character
+            // on the line, or (outside a string) if it is followed by a
+            // trailing comment. Inside a string `!` never starts a comment,
+            // so `&!` must be kept verbatim there.
+            if (!in_comment && s[pos] == '&' && (next_nonspace_character(s,pos) == '\n'
+                    || (!in_string && next_nonspace_character(s,pos) == '!'))) {
                 size_t pos2=pos+1;
                 bool ws_or_comment = false;
                 cont1(s, pos2, in_string, quote, ws_or_comment);
@@ -993,6 +1000,8 @@ std::string token2text(const int token)
         T(TK_RBRACKET_OLD, "/)")
         T(TK_PERCENT, "%")
         T(TK_VBAR, "|")
+        T(TK_QUESTION, "?")
+        T(TK_NIL, ".nil.")
 
         T(TK_STRING, "string")
         T(TK_COMMENT, "comment")
@@ -1119,6 +1128,7 @@ std::string token2text(const int token)
         T(KW_EVENT, "event")
         T(KW_EXIT, "exit")
         T(KW_EXTENDS, "extends")
+        T(KW_EXTENSIBLE, "extensible")
         T(KW_EXTERNAL, "external")
         T(KW_FILE, "file")
         T(KW_FINAL, "final")

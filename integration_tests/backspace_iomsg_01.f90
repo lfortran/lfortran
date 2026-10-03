@@ -4,7 +4,7 @@ program backspace_iomsg_01
     integer, parameter :: u = 10
     character(len=128) :: msg = ""
 
-    open(unit=u, file="test.txt", status="replace", iostat=ios)
+    open(unit=u, file="backspace_iomsg_01.txt", status="replace", iostat=ios)
     if (ios /= 0) error stop
 
     write(u, *) 1

@@ -27,6 +27,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             derived_types_17_module_1:
                 (Module
@@ -97,6 +98,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -198,6 +200,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -248,7 +251,7 @@
                                                     Local
                                                     (IntegerConstant 100 (Integer 4) Decimal)
                                                     (IntegerConstant 100 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -292,6 +295,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             derived_types_17_module_2:
                 (Module
@@ -329,6 +333,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -401,7 +406,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -14,7 +14,7 @@ mkdir -p build-wasm
 
 # Use explicit -S/-B so cmake never confuses the source-tree's in-source
 # CMakeCache.txt (from build1.sh) with the wasm binary directory.
-emcmake cmake -S . -B build-wasm \
+emcmake cmake -S . -B build-wasm -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DLFORTRAN_BUILD_ALL=no \
     -DWITH_LLVM=yes \
@@ -31,9 +31,4 @@ emcmake cmake -S . -B build-wasm \
     -DLLVM_DIR="$PREFIX/lib/cmake/llvm" \
     -DLLD_DIR="$PREFIX/lib/cmake/lld"
 
-if [ "$(uname)" = "Darwin" ]; then
-    CORES=$(sysctl -n hw.ncpu)
-else
-    CORES=$(nproc)
-fi
-emmake make -C build-wasm install -j$CORES
+emmake cmake --build build-wasm --target install
