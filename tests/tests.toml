@@ -3339,6 +3339,26 @@ cpp = true
 wat = true
 
 [[test]]
+filename = "errors/write_internal_file_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_internal_file_dummy_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_internal_file_init_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_internal_file_save_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_kind4_item_c.f90"
+c = true
+
+[[test]]
 filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
 
