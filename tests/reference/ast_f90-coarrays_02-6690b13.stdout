@@ -13,9 +13,7 @@ do i = 1, size(node)
 ! wait for children to complete
     if (nc(i) > 0) then
         event wait (done(i), until_count = nc(i), stat = status)
-        if (status /= 0) then
-            exit
-        end if
+        if (status /= 0) exit
     end if
 
 ! process node, using data from children.
@@ -24,9 +22,7 @@ do i = 1, size(node)
 ! place result on image parent (i) for node node (sub) [parent (i)]
 ! tell parent (i) that this has been done.
         event post (done(sub(i))[parent(i)], stat = status)
-        if (status /= 0) then
-            exit
-        end if
+        if (status /= 0) exit
     end if
 end do
 end program coarrays_02

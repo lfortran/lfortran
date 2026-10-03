@@ -2585,7 +2585,14 @@ public:
             m_args.push_back(al, self().duplicate_expr(ASRUtils::fetch_ArrayConstant_value(al, x, i)));
         }
         ASR::ttype_t* m_type = substitute_type(&x->base, x->m_type);
-        return ASRUtils::make_ArrayConstructor_t_util(al, x->base.base.loc, m_args.p, ASRUtils::get_fixed_size_of_array(x->m_type), m_type, x->m_storage_format);
+        ASR::asr_t* result = ASRUtils::make_ArrayConstructor_t_util(al, x->base.base.loc, m_args.p, ASRUtils::get_fixed_size_of_array(x->m_type), m_type, x->m_storage_format);
+        // The constant built above is rank 1; keep the shape of the original,
+        // e.g. the rank 2 value of reshape([1, 2, 3, 4], [2, 2]).
+        ASR::expr_t* result_expr = ASRUtils::EXPR(result);
+        if (ASR::is_a<ASR::ArrayConstant_t>(*result_expr)) {
+            ASR::down_cast<ASR::ArrayConstant_t>(result_expr)->m_type = m_type;
+        }
+        return result;
     }
 
     ASR::asr_t* duplicate_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t *x) {
