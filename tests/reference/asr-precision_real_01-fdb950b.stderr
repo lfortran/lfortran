@@ -1,11 +1,47 @@
-warning: This implies single precision; use a kind suffix to make precision explicit
- --> tests/warnings/precision_real_01.f90:4:5
-  |
-4 | x = 1.3
-  |     ^^^ hint: this is 1.2999999523162842 in single precision, use _dp suffix for double precision
+warning: this implies single precision, use a kind designator to make it explicit
+  --> tests/warnings/precision_real_01.f90:10:5
+   |
+10 | x = 1.3
+   |     ^^^ hint: 1.3 is equal to 1.2999999523162842e+00, use 1.3_dp to make it equal to 1.3000000000000000e+00
 
-warning: This implies single precision; use a kind suffix to make precision explicit
- --> tests/warnings/precision_real_01.f90:5:5
-  |
-5 | x = 0.1
-  |     ^^^ hint: this is 0.10000000149011612 in single precision, use _dp suffix for double precision
+warning: this implies single precision, use a kind designator to make it explicit
+  --> tests/warnings/precision_real_01.f90:11:5
+   |
+11 | x = 0.1
+   |     ^^^ hint: 0.1 is equal to 1.0000000149011612e-01, use 0.1_dp to make it equal to 1.0000000000000001e-01
+
+warning: this implies single precision, use a kind designator to make it explicit
+  --> tests/warnings/precision_real_01.f90:12:5
+   |
+12 | x = 1.3e-2
+   |     ^^^^^^ hint: 1.3e-2 is equal to 1.3000000268220901e-02, use 1.3e-2_dp to make it equal to 1.2999999999999999e-02
+
+warning: this implies single precision, use a kind designator to make it explicit
+  --> tests/warnings/precision_real_01.f90:13:5
+   |
+13 | a = 2.7
+   |     ^^^ hint: 2.7 is equal to 2.7000000476837158e+00, use 2.7_dp to make it equal to 2.7000000000000002e+00
+
+warning: this implies single precision, use a kind designator to make it explicit
+  --> tests/warnings/precision_real_01.f90:15:5
+   |
+15 | b = 3.3
+   |     ^^^ hint: 3.3 is equal to 3.2999999523162842e+00, use 3.3_dp to make it equal to 3.2999999999999998e+00
+
+warning: this implies single precision, use a kind designator to make it explicit
+  --> tests/warnings/precision_real_01.f90:16:8
+   |
+16 | a(2) = 1.1
+   |        ^^^ hint: 1.1 is equal to 1.1000000238418579e+00, use 1.1_dp to make it equal to 1.1000000000000001e+00
+
+warning: this implies single precision, use a kind designator to make it explicit
+  --> tests/warnings/precision_real_01.f90:51:5
+   |
+51 | z = 1.3
+   |     ^^^ hint: 1.3 is equal to 1.2999999523162842e+00, use 1.3_8 to make it equal to 1.3000000000000000e+00
+
+warning: this implies single precision, use a kind designator to make it explicit
+  --> tests/warnings/precision_real_01.f90:60:5
+   |
+60 | w = 1.3
+   |     ^^^ hint: 1.3 is equal to 1.2999999523162842e+00, use 1.3_real64 to make it equal to 1.3000000000000000e+00

@@ -2,18 +2,269 @@
     (SymbolTable
         1
         {
+            imported_kind_parameter:
+                (Function
+                    (SymbolTable
+                        4
+                        {
+                            real64:
+                                (ExternalSymbol
+                                    4
+                                    real64
+                                    6 real64
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real64
+                                    Public
+                                ),
+                            w:
+                                (Variable
+                                    4
+                                    w
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    imported_kind_parameter
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    []
+                    [(Assignment
+                        (Var 4 w)
+                        (Cast
+                            (RealConstant
+                                1.300000
+                                (Real 4)
+                            )
+                            RealToReal
+                            (Real 8)
+                            (RealConstant
+                                1.300000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 4 w)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            no_kind_parameter:
+                (Function
+                    (SymbolTable
+                        3
+                        {
+                            z:
+                                (Variable
+                                    3
+                                    z
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    no_kind_parameter
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    []
+                    [(Assignment
+                        (Var 3 z)
+                        (Cast
+                            (RealConstant
+                                1.300000
+                                (Real 4)
+                            )
+                            RealToReal
+                            (Real 8)
+                            (RealConstant
+                                1.300000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 3 z)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
             precision_real_01:
                 (Program
                     (SymbolTable
                         2
                         {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Real 8)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             dp:
                                 (Variable
                                     2
                                     dp
                                     []
                                     Local
-                                    (IntegerConstant 8 (Integer 4) Decimal)
+                                    (TypeInquiry
+                                        Kind
+                                        (Real 8)
+                                        (RealConstant
+                                            1.000000
+                                            (Real 8)
+                                        )
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                    )
                                     (IntegerConstant 8 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
@@ -27,6 +278,42 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            sp:
+                                (Variable
+                                    2
+                                    sp
+                                    []
+                                    Local
+                                    (TypeInquiry
+                                        Kind
+                                        (Real 4)
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        )
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -48,6 +335,33 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     precision_real_01
@@ -89,8 +403,413 @@
                         ()
                         .false.
                         .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (Cast
+                            (RealConstant
+                                0.013000
+                                (Real 4)
+                            )
+                            RealToReal
+                            (Real 8)
+                            (RealConstant
+                                0.013000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 a)
+                        (ArrayBroadcast
+                            (Cast
+                                (RealConstant
+                                    2.700000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    2.700000
+                                    (Real 8)
+                                )
+                                ()
+                            )
+                            (ArrayConstant
+                                4
+                                [3]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 8)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            (ArrayConstant
+                                24
+                                [2.7000000476837158e+00, 2.7000000476837158e+00, 2.7000000476837158e+00]
+                                (Array
+                                    (Real 8)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Allocate
+                        [((Var 2 b)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal))]
+                        []
+                        ()
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 b)
+                        (ArrayBroadcast
+                            (Cast
+                                (RealConstant
+                                    3.300000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    3.300000
+                                    (Real 8)
+                                )
+                                ()
+                            )
+                            (IntrinsicArrayFunction
+                                Shape
+                                [(Var 2 b)]
+                                0
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ()
+                            )
+                            (Allocatable
+                                (Array
+                                    (Real 8)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                    Global
+                                )
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 2 a)
+                            [(()
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            ())]
+                            (Real 8)
+                            ColMajor
+                            ()
+                        )
+                        (Cast
+                            (RealConstant
+                                1.100000
+                                (Real 4)
+                            )
+                            RealToReal
+                            (Real 8)
+                            (RealConstant
+                                1.100000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (RealConstant
+                            1.300000
+                            (Real 8)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (RealConstant
+                            1.300000
+                            (Real 8)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (RealConstant
+                            1.300000
+                            (Real 8)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (Cast
+                            (RealConstant
+                                1.300000
+                                (Real 4)
+                            )
+                            RealToReal
+                            (Real 8)
+                            (RealConstant
+                                1.300000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (Cast
+                            (RealConstant
+                                1.300000
+                                (Real 4)
+                            )
+                            RealToReal
+                            (Real 8)
+                            (RealConstant
+                                1.300000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (Cast
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                            RealToReal
+                            (Real 8)
+                            (RealConstant
+                                1.000000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (Cast
+                            (RealConstant
+                                0.500000
+                                (Real 4)
+                            )
+                            RealToReal
+                            (Real 8)
+                            (RealConstant
+                                0.500000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (Cast
+                            (RealConstant
+                                2.000000
+                                (Real 4)
+                            )
+                            RealToReal
+                            (Real 8)
+                            (RealConstant
+                                2.000000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (Cast
+                            (RealConstant
+                                150.000000
+                                (Real 4)
+                            )
+                            RealToReal
+                            (Real 8)
+                            (RealConstant
+                                150.000000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 y)
+                        (RealConstant
+                            1.300000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 y)
+                        (Cast
+                            (RealConstant
+                                1.300000
+                                (Real 8)
+                            )
+                            RealToReal
+                            (Real 4)
+                            (RealConstant
+                                1.300000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 y)
+                        (Cast
+                            (RealConstant
+                                1.300000
+                                (Real 8)
+                            )
+                            RealToReal
+                            (Real 4)
+                            (RealConstant
+                                1.300000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (Cast
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 8)
+                            (RealConstant
+                                1.000000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (Cast
+                            (Var 2 y)
+                            RealToReal
+                            (Real 8)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (SubroutineCall
+                        1 no_kind_parameter
+                        ()
+                        []
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        1 imported_kind_parameter
+                        ()
+                        []
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x)
+                            (Var 2 y)
+                            (Var 2 a)
+                            (Var 2 b)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

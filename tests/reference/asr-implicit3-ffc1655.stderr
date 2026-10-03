@@ -3,3 +3,9 @@ style suggestion: Use real(8) instead of real*8
   |
 3 | implicit real*8 (k)
   |              ^ help: write this as 'real(8)'
+
+warning: this implies single precision, use a kind designator to make it explicit
+ --> tests/implicit3.f90:8:5
+  |
+8 | k = 9.23
+  |     ^^^^ hint: 9.23 is equal to 9.2299995422363281e+00, use 9.23_8 to make it equal to 9.2300000000000004e+00
