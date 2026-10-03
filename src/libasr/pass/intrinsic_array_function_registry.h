@@ -7861,6 +7861,46 @@ namespace IntrinsicArrayFunctionRegistry {
         }
     }
 
+    // The function that computes the compile-time value of the intrinsic
+    // `id` from the values of its arguments (`m_args` of its
+    // IntrinsicArrayFunction) and its type; nullptr for the intrinsics
+    // without one.
+    static inline eval_intrinsic_function get_eval_function(int64_t id) {
+        switch (static_cast<IntrinsicArrayFunctions>(id)) {
+            case IntrinsicArrayFunctions::Any: return &Any::eval_Any;
+            case IntrinsicArrayFunctions::All: return &All::eval_All;
+            case IntrinsicArrayFunctions::Iany: return &Iany::eval_Iany;
+            case IntrinsicArrayFunctions::Iall: return &Iall::eval_Iall;
+            case IntrinsicArrayFunctions::Norm2: return &Norm2::eval_Norm2;
+            case IntrinsicArrayFunctions::MatMul: return &MatMul::eval_MatMul;
+            case IntrinsicArrayFunctions::MaxVal: return &MaxVal::eval_MaxVal;
+            case IntrinsicArrayFunctions::MinVal: return &MinVal::eval_MinVal;
+            case IntrinsicArrayFunctions::Product: return &Product::eval_Product;
+            case IntrinsicArrayFunctions::Shape: return &Shape::eval_Shape;
+            case IntrinsicArrayFunctions::Coshape: return &Coshape::eval_Coshape;
+            case IntrinsicArrayFunctions::Sum: return &Sum::eval_Sum;
+            case IntrinsicArrayFunctions::Iparity: return &Iparity::eval_Iparity;
+            case IntrinsicArrayFunctions::Transpose: return &Transpose::eval_Transpose;
+            case IntrinsicArrayFunctions::Pack: return &Pack::eval_Pack;
+            case IntrinsicArrayFunctions::Unpack: return &Unpack::eval_Unpack;
+            case IntrinsicArrayFunctions::Count: return &Count::eval_Count;
+            case IntrinsicArrayFunctions::Parity: return &Parity::eval_Parity;
+            case IntrinsicArrayFunctions::DotProduct: return &DotProduct::eval_DotProduct;
+            case IntrinsicArrayFunctions::Cshift: return &Cshift::eval_Cshift;
+            case IntrinsicArrayFunctions::Eoshift: return &Eoshift::eval_Eoshift;
+            case IntrinsicArrayFunctions::Spread: return &Spread::eval_Spread;
+            case IntrinsicArrayFunctions::Reduce: return &Reduce::eval_Reduce;
+            case IntrinsicArrayFunctions::MaxLoc:
+            case IntrinsicArrayFunctions::MinLoc:
+            case IntrinsicArrayFunctions::FindLoc:
+                return nullptr;
+            default: {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
+        }
+    }
+
     static inline bool is_elemental(int64_t id) {
         // IntrinsicArrayFunctions id_ = static_cast<IntrinsicArrayFunctions>(id);
         // return (id_ == IntrinsicArrayFunctions::Merge);
