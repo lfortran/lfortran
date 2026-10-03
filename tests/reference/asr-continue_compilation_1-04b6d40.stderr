@@ -3052,3 +3052,9 @@ semantic error: Unapplicable types for intrinsic function max
      |
 2062 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
      |                     ^^^ 
+
+semantic error: Required argument `get_ptr` at position 2 is missing in procedure call
+    --> tests/errors/continue_compilation_1.f90:2112:20
+     |
+2112 |     call take_proc(x)
+     |                    ^ 
