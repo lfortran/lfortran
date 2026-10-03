@@ -20,6 +20,7 @@
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/while_else.h>
 #include <libasr/pass/replace_init_expr.h>
+#include <libasr/pass/global_init.h>
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_select_case.h>
@@ -53,6 +54,7 @@
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/intent_out_deallocate.h>
 #include <libasr/pass/array_struct_temporary.h>
+#include <libasr/pass/function_result_scope.h>
 #include <libasr/pass/conditional_expr.h>
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
@@ -65,6 +67,7 @@
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_memory_space.h>
+#include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/pass/replace_coarray.h>
 #include <libasr/codegen/asr_to_fortran.h>
@@ -118,6 +121,8 @@ namespace LCompilers {
             {"subroutine_from_function", &pass_create_subroutine_from_function},
             {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
             {"init_expr", &pass_replace_init_expr},
+            {"global_init", &pass_global_init},
+            {"global_init_wire", &pass_global_init_wire},
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
@@ -130,6 +135,7 @@ namespace LCompilers {
             {"device_partition", &pass_device_partition},
             {"device_launch_expand", &pass_device_launch_expand},
             {"gpu_memory_space", &pass_gpu_memory_space},
+            {"gpu_kernel_finalize", &pass_gpu_kernel_finalize},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"intent_out_deallocate", &pass_intent_out_deallocate},
@@ -137,6 +143,7 @@ namespace LCompilers {
             {"gpu_device_allocatable", &pass_promote_device_allocatable},
             {"conditional_expr", &pass_replace_conditional_expr},
             {"array_struct_temporary", &pass_array_struct_temporary},
+            {"function_result_scope", &pass_function_result_scope},
             {"coarray", &pass_replace_coarray}
         };
 
@@ -205,7 +212,9 @@ namespace LCompilers {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
                 auto t1 = std::chrono::high_resolution_clock::now();
+                bool had_error = diagnostics.has_error();
                 _passes_db[passes[i]](al, *asr, pass_options);
+                if (!had_error && diagnostics.has_error()) return;
                 bool verify_after_pass = pass_options.verify_all_passes;
 #if defined(WITH_LFORTRAN_ASSERT)
                 verify_after_pass = true;
@@ -266,6 +275,11 @@ namespace LCompilers {
             _passes = {
                 "global_stmts",
                 "init_expr",
+                // A declaration initializer no target can lay out as static
+                // data becomes an executable statement of a startup
+                // initializer here, which the passes below lower like any
+                // other procedure body.
+                "global_init",
                 "function_call_in_declaration",
                 // Every parallel loop, however it was written, becomes one
                 // canonical `OMPRegion` before anything decides how to lower
@@ -273,10 +287,14 @@ namespace LCompilers {
                 // region.
                 "parallel_canonicalize",
                 "parallel_dispatch",
+                // Each statement that references a function whose result is
+                // finalized after the statement becomes a BLOCK here, before
+                // the passes below split it into several statements.
+                "function_result_scope",
                 "implied_do_loops",
-                // The device gets first refusal: a loop it declines is
-                // handed back as a host-thread loop, which the OpenMP pass
-                // below then picks up.
+                // Every loop the dispatch assigned to the device becomes a
+                // kernel and its launch. Nothing is kept to run it on the
+                // host instead: a loop this cannot lower is an error.
                 "gpu_offload",
                 "openmp",
                 // Whatever OpenMP construct no lowering claimed is unwrapped
@@ -290,6 +308,9 @@ namespace LCompilers {
                 "conditional_expr",
                 "array_struct_temporary",
                 "coarray",
+                // Every pass that can create a startup initializer has run,
+                // so the calls that make them run can be put in now.
+                "global_init_wire",
                 "transform_optional_argument_functions",
                 "select_case",
                 "nested_vars",
@@ -321,12 +342,9 @@ namespace LCompilers {
                 // every array of device code has the type it is emitted
                 // with, and before the code generators read those types.
                 "gpu_memory_space",
-                // Expanding a kernel launch reads the kernel signature and
-                // body, so it has to run once both are in the shape the
-                // device code generators see: after pass_array_by_data has
-                // turned array extents into explicit kernel arguments, and
-                // after array_dim_intrinsics_update has rewritten the size
-                // intrinsics that read them.
+                // Lay out each kernel, now that shared lowering has given it
+                // the shape the device code generators see.
+                "gpu_kernel_finalize",
                 "device_launch_expand",
                 "do_loops",
                 "while_else",
@@ -426,7 +444,9 @@ namespace LCompilers {
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
+                bool had_error = diagnostics.has_error();
                 _passes_db[passes[i]](al, *asr, pass_options);
+                if (!had_error && diagnostics.has_error()) return;
                 if (pass_options.dump_all_passes) {
                     std::string str_i = std::to_string(pass_cnt_asr_dump+1);
                     if ( pass_cnt_asr_dump < 9 )  str_i = "0" + str_i;

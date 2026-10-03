@@ -5,10 +5,14 @@
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/device_launch_expand.h>
+#include <libasr/pass/gpu_decline.h>
+#include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 
 #include <functional>
+#include <iostream>
 #include <map>
 #include <string>
 #include <vector>
@@ -34,530 +38,10 @@ generators (asr_to_metal.cpp and asr_to_cuda.cpp) expect:
     block = [block_size, 1, 1]
     call lfortran_gpu_launch(ctx, kernel, c_loc(grid), c_loc(block))
 
-`gpu_offload` asks this pass, through gpu_launch_is_supported(), whether it
-can lay out every argument of a launch the same way as the device code
-generator, and keeps the loop on the host when it cannot, rather than
-building a launch that would read the wrong bytes.
+The finalized Function.gpu layout fixes the buffer order, scalar fields and
+workspace bindings. This pass expands that contract without deciding whether
+the loop can be offloaded or deriving workspace extents again.
 */
-// Why the last rejected launch could not be expanded, for the warning.
-static std::string unsupported_reason;
-static bool unsupported(const std::string &why) {
-    unsupported_reason = why;
-    return false;
-}
-
-// A number or a logical: what the device languages have a scalar type for at
-// all, before their widths are considered.
-static bool is_numeric_scalar(ASR::ttype_t *type) {
-    return ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type)
-        || ASR::is_a<ASR::Logical_t>(*type);
-}
-
-// ... and of a width the device has a type of its own for.  A width the
-// device cannot match is not a layout the launch can hand over: the buffer is
-// sized from the host element type, so the kernel would stride through it at
-// the wrong size and quietly compute on the wrong elements.
-static bool is_plain_scalar(ASR::ttype_t *type) {
-    return is_numeric_scalar(type) && gpu_scalar_width_supported(type);
-}
-
-// An allocatable rank one array member of a struct is not stored inline: the
-// device code generators hand it over as three extra flat buffers holding
-// every element's data, offset and size.
-static bool struct_is_plain(ASR::symbol_t *struct_sym);
-static ASR::Struct_t* get_struct(ASR::symbol_t *struct_sym);
-
-static bool is_decomposed_member(ASR::symbol_t *member) {
-    if (!member || !ASR::is_a<ASR::Variable_t>(*member)) return false;
-    ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(member);
-    if (!ASRUtils::is_allocatable(variable->m_type)) return false;
-    ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(
-        variable->m_type);
-    if (!ASR::is_a<ASR::Array_t>(*inner)) return false;
-    ASR::ttype_t *element = ASRUtils::type_get_past_array(inner);
-    if (ASR::is_a<ASR::StructType_t>(*element)) {
-        return struct_is_plain(variable->m_type_declaration);
-    }
-    return is_plain_scalar(element);
-}
-
-static ASR::Struct_t* get_struct(ASR::symbol_t *struct_sym) {
-    if (!struct_sym) return nullptr;
-    ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(struct_sym);
-    if (!ASR::is_a<ASR::Struct_t>(*sym)) return nullptr;
-    return ASR::down_cast<ASR::Struct_t>(sym);
-}
-
-// A struct passed to a kernel is sized with SizeOfType, which lays it out as
-// an anonymous struct of its member types. Only structs whose members are
-// plain scalars, fixed size arrays, nested plain structs and decomposed
-// allocatable arrays are laid out that way; anything else (character or
-// pointer members) has no device layout at all, so a loop that needs it
-// stays on the host.
-//
-// An extended type is laid out with the type it extends as its first field,
-// on the device as on the host, so the type it extends has to be laid out
-// that way too.
-static bool struct_is_plain(ASR::symbol_t *struct_sym) {
-    ASR::Struct_t *st = get_struct(struct_sym);
-    if (!st) {
-        return unsupported("a derived type whose declaration is not known");
-    }
-    if (st->m_parent && !struct_is_plain(st->m_parent)) return false;
-    for (size_t i = 0; i < st->n_members; i++) {
-        ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
-        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) {
-            return unsupported("a derived type with a non-data member");
-        }
-        if (is_decomposed_member(member)) continue;
-        ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(member)->m_type;
-        if (ASRUtils::is_pointer(type)) {
-            return unsupported("a derived type with a pointer member");
-        }
-        if (ASRUtils::is_allocatable(type)) {
-            if (ASRUtils::is_array(type)) {
-                return unsupported("a derived type with an allocatable array "
-                    "member the gpu backend cannot decompose");
-            }
-            return unsupported(
-                "a derived type with an allocatable scalar member");
-        }
-        if (ASRUtils::is_array(type) &&
-                ASRUtils::get_fixed_size_of_array(type) <= 0) {
-            return unsupported(
-                "a derived type with an assumed shape array member");
-        }
-        ASR::ttype_t *base = ASRUtils::type_get_past_array(type);
-        if (ASR::is_a<ASR::StructType_t>(*base)) {
-            if (!struct_is_plain(
-                    ASR::down_cast<ASR::Variable_t>(member)
-                        ->m_type_declaration)) {
-                return false;
-            }
-            continue;
-        }
-        if (!is_plain_scalar(base)) {
-            if (is_numeric_scalar(base)) {
-                return unsupported("a derived type with a "
-                    + gpu_scalar_type_name(base)
-                    + " member, which has no gpu type of the same width");
-            }
-            return unsupported(
-                "a derived type with a member that is not a number");
-        }
-    }
-    return true;
-}
-
-// Every data member of `st`, the ones it inherits first, in layout order.
-static void collect_data_members(ASR::Struct_t *st,
-        std::vector<ASR::symbol_t*> &members) {
-    if (!st) return;
-    if (st->m_parent) collect_data_members(get_struct(st->m_parent), members);
-    for (size_t i = 0; i < st->n_members; i++) {
-        members.push_back(st->m_symtab->get_symbol(st->m_members[i]));
-    }
-}
-
-// True when a value of this type carries an allocatable or a pointer
-// component at any depth. Such a value cannot be copied by a single
-// assignment here: the launch is expanded after the passes that turn an
-// intrinsic assignment into a deep copy have run, so what reaches the
-// backend is a block copy of the descriptors, and the copy would then own
-// the original's storage and free it twice. It is copied part by part
-// instead, leaving those components alone.
-static bool struct_has_allocatable_parts(ASR::symbol_t *struct_sym) {
-    ASR::Struct_t *st = get_struct(struct_sym);
-    if (!st) return true;
-    if (st->m_parent && struct_has_allocatable_parts(st->m_parent)) {
-        return true;
-    }
-    for (size_t i = 0; i < st->n_members; i++) {
-        ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
-        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) return true;
-        ASR::ttype_t *type = ASRUtils::symbol_type(member);
-        if (ASRUtils::is_allocatable_or_pointer(type)) return true;
-        ASR::ttype_t *base = ASRUtils::type_get_past_array(type);
-        if (ASR::is_a<ASR::StructType_t>(*base) &&
-                struct_has_allocatable_parts(
-                    ASR::down_cast<ASR::Variable_t>(member)
-                        ->m_type_declaration)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-// A polymorphic argument reaches the device as the class container it is
-// represented by, so the launch hands the kernel a plain copy of the declared
-// type's own components instead of the container. That copy is only possible
-// when every component either is copied by an assignment or is one the device
-// never reads through the struct at all: an allocatable array component is
-// handed over as its own flat buffers, so it is skipped, but any other
-// allocatable or pointer component has no copy, and the loop stays on the
-// host rather than handing the kernel a container it would read as the
-// declared type.
-//
-// This walks the components in the same order, and asks the same questions
-// of each one, as the copy that copy_plain_parts() builds once the launch is
-// accepted. The two must agree: a launch accepted here whose copy cannot
-// then be built would leave the kernel reading a class container as the
-// declared type, which is the type descriptor read as data.
-static bool class_argument_can_be_copied(ASR::symbol_t *struct_sym);
-
-// The same question for one component, which may be an array of a derived
-// type, each element of which is copied on its own.
-static bool class_component_can_be_copied(ASR::ttype_t *type,
-        ASR::symbol_t *decl) {
-    if (!ASRUtils::is_array(type)) {
-        return class_argument_can_be_copied(decl);
-    }
-    ASR::dimension_t *dims = nullptr;
-    int rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
-    if (rank <= 0) {
-        return unsupported("a polymorphic argument with a component array "
-            "of no rank the gpu backend can copy");
-    }
-    for (int d = 0; d < rank; d++) {
-        if (dims[d].m_start == nullptr || dims[d].m_length == nullptr) {
-            return unsupported("a polymorphic argument with a component "
-                "array whose extents are not known where it is passed");
-        }
-    }
-    return class_argument_can_be_copied(decl);
-}
-
-static bool class_argument_can_be_copied(ASR::symbol_t *struct_sym) {
-    ASR::Struct_t *st = get_struct(struct_sym);
-    if (!st) {
-        return unsupported("a polymorphic argument whose declared type is "
-            "not known");
-    }
-    std::vector<ASR::symbol_t*> members;
-    collect_data_members(st, members);
-    for (ASR::symbol_t *member : members) {
-        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) {
-            return unsupported("a polymorphic argument with a non-data "
-                "component");
-        }
-        ASR::ttype_t *member_type = ASRUtils::symbol_type(member);
-        if (ASRUtils::is_allocatable_or_pointer(member_type)) {
-            if (is_decomposed_member(member)) continue;
-            return unsupported("a polymorphic argument with an allocatable "
-                "or pointer component the gpu backend cannot copy");
-        }
-        ASR::symbol_t *decl = ASR::down_cast<ASR::Variable_t>(
-            member)->m_type_declaration;
-        if (ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::type_get_past_array(member_type))
-                && struct_has_allocatable_parts(decl)
-                && !class_component_can_be_copied(member_type, decl)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-static ASR::ttype_t* struct_layout_type(Allocator &al,
-    ASR::symbol_t *struct_sym);
-
-// The type one member occupies inside its struct. A member that is itself a
-// derived type is laid out by that type's own layout, which is not what its
-// StructType signature says when the type extends another one.
-static ASR::ttype_t* member_layout_type(Allocator &al,
-        ASR::Variable_t *member) {
-    ASR::ttype_t *type = member->m_type;
-    ASR::ttype_t *element = ASRUtils::type_get_past_array(type);
-    if (!ASR::is_a<ASR::StructType_t>(*element)) return type;
-    ASR::ttype_t *layout = struct_layout_type(al, member->m_type_declaration);
-    if (!layout) return type;
-    if (!ASR::is_a<ASR::Array_t>(*type)) return layout;
-    ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(type);
-    return ASRUtils::TYPE(ASR::make_Array_t(al, type->base.loc, layout,
-        array->m_dims, array->n_dims, array->m_physical_type,
-        array->m_memory_space));
-}
-
-// The anonymous struct a value of `struct_sym` is laid out as: the type it
-// extends first, then its own members. Both the host and the device put the
-// inherited part of an extended type in front of the type's own, but a
-// StructType signature lists only the members the type declares itself, so a
-// launch that sized an extended type from its signature would copy only the
-// tail of it. Returns nullptr when the type cannot be inspected.
-static ASR::ttype_t* struct_layout_type(Allocator &al,
-        ASR::symbol_t *struct_sym) {
-    ASR::Struct_t *st = get_struct(struct_sym);
-    if (!st) return nullptr;
-    Vec<ASR::ttype_t*> members;
-    members.reserve(al, st->n_members + 1);
-    if (st->m_parent) {
-        ASR::ttype_t *parent = struct_layout_type(al, st->m_parent);
-        if (!parent) return nullptr;
-        members.push_back(al, parent);
-    }
-    for (size_t i = 0; i < st->n_members; i++) {
-        ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
-        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) return nullptr;
-        members.push_back(al, member_layout_type(al,
-            ASR::down_cast<ASR::Variable_t>(member)));
-    }
-    return ASRUtils::TYPE(ASR::make_StructType_t(al, st->base.base.loc,
-        members.p, members.n, nullptr, 0, true, false));
-}
-
-// The type to hand SizeOfType for a value of `type`, which is `type` itself
-// unless it is a derived type whose layout its signature does not describe.
-static ASR::ttype_t* size_of_type_arg(Allocator &al, ASR::expr_t *value,
-        ASR::ttype_t *type) {
-    ASR::ttype_t *element = ASRUtils::type_get_past_array(type);
-    if (!ASR::is_a<ASR::StructType_t>(*element)) return type;
-    ASR::ttype_t *layout = struct_layout_type(al,
-        ASRUtils::get_struct_sym_from_struct_expr(value));
-    if (!layout) return type;
-    if (!ASR::is_a<ASR::Array_t>(*type)) return layout;
-    ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(type);
-    return ASRUtils::TYPE(ASR::make_Array_t(al, type->base.loc, layout,
-        array->m_dims, array->n_dims, array->m_physical_type,
-        array->m_memory_space));
-}
-
-// True when a value of this type can be handed to the runtime as a plain
-// block of bytes whose size SizeOfType computes correctly.
-static bool is_supported_buffer(ASR::expr_t *arg) {
-    ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
-    ASR::ttype_t *base = ASRUtils::type_get_past_array(
-        ASRUtils::extract_type(arg_type));
-    if (ASR::is_a<ASR::StructType_t>(*base)) {
-        ASR::symbol_t *struct_sym =
-            ASRUtils::get_struct_sym_from_struct_expr(arg);
-        if (!struct_is_plain(struct_sym)) return false;
-        if (ASRUtils::is_class_type(base)) {
-            // The kernel is generated against the declared type, so the
-            // launch has to hand over the declared type's own data rather
-            // than the class container holding it.
-            if (ASRUtils::is_unlimited_polymorphic_type(arg_type)) {
-                return unsupported("an unlimited polymorphic argument");
-            }
-            if (ASRUtils::is_array(arg_type)) {
-                return unsupported("an array of a polymorphic type");
-            }
-            if (!class_argument_can_be_copied(struct_sym)) return false;
-        }
-        // An array of a derived type of any rank is handed over by the
-        // column-major position of its elements, which is the order both
-        // the host writes the flattened component buffers in and the
-        // device reads them back in, so the rank itself is no obstacle.
-        return true;
-    }
-    if (is_plain_scalar(base)) return true;
-    if (is_numeric_scalar(base)) {
-        return unsupported("an array of " + gpu_scalar_type_name(base)
-            + ", which has no gpu type of the same width");
-    }
-    return unsupported("an array whose elements are not numbers");
-}
-
-static bool is_supported_scalar(ASR::ttype_t *type) {
-    return is_plain_scalar(ASRUtils::extract_type(type));
-}
-
-static bool same_scalar_type(ASR::ttype_t *a, ASR::ttype_t *b) {
-    ASR::ttype_t *ta = ASRUtils::extract_type(a);
-    ASR::ttype_t *tb = ASRUtils::extract_type(b);
-    return ta->type == tb->type &&
-        ASRUtils::extract_kind_from_ttype_t(ta) ==
-            ASRUtils::extract_kind_from_ttype_t(tb);
-}
-
-// True when the host can turn this workspace dimension into an extent
-// expression at expand time. A dimension that cannot is not "already
-// fine": skipping it would size the buffer short while the device still
-// multiplies the extent in.
-static bool workspace_dim_can_expand(const GpuVlaDim &dim,
-        const ASR::Function_t *kernel, size_t n_call_args) {
-    if (dim.is_constant) return true;
-    if (dim.is_struct_member_size) {
-        if (dim.struct_member_key.empty()) return false;
-        if (dim.struct_member_elem_index < 0) {
-            return unsupported("a workspace sized from a struct element "
-                "whose shape may differ per thread");
-        }
-        std::string::size_type dot = dim.struct_member_key.find('.');
-        if (dot == std::string::npos) return false;
-        std::string arr = dim.struct_member_key.substr(0, dot);
-        std::string mem = dim.struct_member_key.substr(dot + 1);
-        for (size_t i = 0; i < kernel->n_args; i++) {
-            ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
-                ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v));
-            if (std::string(kparam->m_name) != arr) continue;
-            if (!ASRUtils::is_array(kparam->m_type)) return false;
-            ASR::Struct_t *st = get_struct(kparam->m_type_declaration);
-            if (!st) return false;
-            for (auto &m : ASRUtils::collect_allocatable_array_members(st)) {
-                if (m.first == mem && is_decomposed_member(
-                        &m.second->base)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        return false;
-    }
-    if (dim.is_host_expr) return dim.dim_expr != nullptr;
-    return dim.call_arg_index < n_call_args;
-}
-
-// The extent of a kernel-local array, including one declared in a BLOCK
-// the body opens. array_struct_temporary creates such locals after
-// gpu_offload, so a lookup that only reads the kernel's own symbol table
-// misses them.
-static ASR::expr_t* gpu_local_array_extent_nested(
-        const ASR::Function_t *kernel, const std::string &name, size_t dim) {
-    ASR::expr_t *e = gpu_local_array_extent(kernel->m_symtab,
-        kernel->m_body, kernel->n_body, name, dim);
-    if (e) return e;
-    std::function<ASR::expr_t*(ASR::stmt_t**, size_t)> walk =
-        [&](ASR::stmt_t **stmts, size_t n) -> ASR::expr_t* {
-        for (size_t i = 0; i < n; i++) {
-            if (ASR::is_a<ASR::BlockCall_t>(*stmts[i])) {
-                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::BlockCall_t>(stmts[i])->m_m);
-                if (!b || !ASR::is_a<ASR::Block_t>(*b)) continue;
-                ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-                ASR::expr_t *found = gpu_local_array_extent(blk->m_symtab,
-                    blk->m_body, blk->n_body, name, dim);
-                if (found) return found;
-                found = walk(blk->m_body, blk->n_body);
-                if (found) return found;
-            } else if (ASR::is_a<ASR::DoLoop_t>(*stmts[i])) {
-                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
-                ASR::expr_t *found = walk(dl->m_body, dl->n_body);
-                if (found) return found;
-            } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
-                ASR::If_t *ifs = ASR::down_cast<ASR::If_t>(stmts[i]);
-                ASR::expr_t *found = walk(ifs->m_body, ifs->n_body);
-                if (found) return found;
-                found = walk(ifs->m_orelse, ifs->n_orelse);
-                if (found) return found;
-            }
-        }
-        return nullptr;
-    };
-    return walk(kernel->m_body, kernel->n_body);
-}
-
-// Defined after DeviceLaunchExpandVisitor so it can rebuild a host-evaluable
-// workspace extent the same way expand does.
-static bool launch_is_supported(Allocator &al, ASR::symbol_t *kernel_sym,
-        ASR::call_arg_t *call_args, size_t n_call_args);
-
-// The device lays a placeholder out in the field of an allocatable
-// component and reads the component's data from a flat buffer of its own,
-// named after the argument the component hangs off. Only a component of an
-// argument itself, or of one of its elements, has such a buffer, so a
-// component reached through another component would be read as the
-// placeholder. Finds the first such read, so the loop stays on the host
-// instead.
-class NestedAllocatableReadFinder :
-        public ASR::BaseWalkVisitor<NestedAllocatableReadFinder> {
-public:
-    bool found = false;
-    std::string member_name;
-
-    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
-        ASR::symbol_t *member = ASRUtils::symbol_get_past_external(x.m_m);
-        if (!found && member && ASR::is_a<ASR::Variable_t>(*member)
-                && ASRUtils::is_allocatable_or_pointer(
-                    ASRUtils::symbol_type(member))) {
-            ASR::expr_t *base = x.m_v;
-            while (true) {
-                base = ASRUtils::get_past_array_physical_cast(base);
-                if (ASR::is_a<ASR::ArrayItem_t>(*base)) {
-                    base = ASR::down_cast<ASR::ArrayItem_t>(base)->m_v;
-                    continue;
-                }
-                if (ASR::is_a<ASR::ArraySection_t>(*base)) {
-                    base = ASR::down_cast<ASR::ArraySection_t>(base)->m_v;
-                    continue;
-                }
-                break;
-            }
-            if (ASR::is_a<ASR::StructInstanceMember_t>(*base)) {
-                found = true;
-                member_name = ASRUtils::symbol_name(member);
-            }
-        }
-        ASR::BaseWalkVisitor<NestedAllocatableReadFinder>
-            ::visit_StructInstanceMember(x);
-    }
-};
-
-// True when every argument of this launch has a shape the pass can expand.
-static bool launch_is_supported_args(ASR::symbol_t *kernel_sym,
-        ASR::call_arg_t *call_args, size_t n_call_args) {
-    ASR::Function_t *kernel = ASR::down_cast<ASR::Function_t>(kernel_sym);
-    if (n_call_args != kernel->n_args) {
-        return unsupported("a kernel that takes a different number of "
-            "arguments");
-    }
-    NestedAllocatableReadFinder nested;
-    for (size_t i = 0; i < kernel->n_body; i++) {
-        nested.visit_stmt(*kernel->m_body[i]);
-    }
-    if (nested.found) {
-        return unsupported("an allocatable component `" + nested.member_name
-            + "` reached through another component, which has no buffer of "
-            "its own");
-    }
-    for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
-        for (auto &dim : workspace.dims) {
-            if (!workspace_dim_can_expand(dim, kernel, n_call_args)) {
-                if (!unsupported_reason.empty()) return false;
-                return unsupported("a variable length array whose extent "
-                    "cannot be rebuilt on the host");
-            }
-        }
-    }
-    for (size_t i = 0; i < n_call_args; i++) {
-        ASR::expr_t *arg = call_args[i].m_value;
-        if (!arg) return unsupported("a missing argument");
-        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
-        ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
-            ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v));
-        if (ASRUtils::is_array(arg_type) ||
-                ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::extract_type(arg_type))) {
-            if (!is_supported_buffer(arg)) return false;
-        } else {
-            if (!is_supported_scalar(arg_type)) {
-                ASR::ttype_t *t = ASRUtils::extract_type(arg_type);
-                if (is_numeric_scalar(t)) {
-                    return unsupported("a scalar of "
-                        + gpu_scalar_type_name(t)
-                        + ", which has no gpu type of the same width");
-                }
-                return unsupported("a scalar that is not an integer, a "
-                    "real, or a logical");
-            }
-            if (!same_scalar_type(arg_type, kparam->m_type)) {
-                return unsupported("a scalar whose kind differs from the "
-                    "kernel parameter");
-            }
-        }
-    }
-    return true;
-}
-
-bool gpu_launch_is_supported(Allocator &al, ASR::symbol_t *kernel,
-        ASR::call_arg_t *args, size_t n_args, std::string &reason) {
-    unsupported_reason.clear();
-    if (launch_is_supported(al, kernel, args, n_args)) return true;
-    reason = unsupported_reason;
-    return false;
-}
-
 class DeviceLaunchExpandVisitor :
         public PassUtils::PassVisitor<DeviceLaunchExpandVisitor>
 {
@@ -568,9 +52,14 @@ class DeviceLaunchExpandVisitor :
             PassVisitor(al_, nullptr), unit(unit_) {}
 
         void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+            LCOMPILERS_ASSERT(ASR::down_cast<ASR::Function_t>(
+                x.m_kernel)->m_gpu != nullptr);
             Vec<ASR::stmt_t*> stmts;
             stmts.reserve(al, 8);
-            expand_launch(x, stmts);
+            if (!expand_launch(x, stmts)) {
+                remove_original_stmt = true;
+                return;
+            }
             pass_result.reserve(al, stmts.size());
             for (size_t i = 0; i < stmts.size(); i++) {
                 pass_result.push_back(al, stmts[i]);
@@ -594,15 +83,19 @@ class DeviceLaunchExpandVisitor :
     private:
 
         ASR::TranslationUnit_t &unit;
-        // Scalar argument struct created for each kernel, by kernel name.
-        std::map<std::string, ASR::symbol_t*> scalar_arg_structs;
-        // Size of the first element of a decomposed struct member, by
-        // "<array>.<member>". A member sized at run time from another one,
-        // and a workspace sized from a member, both read it.
-        std::map<std::string, ASR::expr_t*> member_first_sizes;
+        std::map<ASR::Function_t*, ASR::symbol_t*> scalar_arg_structs;
         // Sizes buffer of a decomposed member, so a workspace can be
         // counted from the same element the device strides by.
-        std::map<std::string, ASR::expr_t*> member_sizes_bufs;
+        std::map<GpuStructMemberKey, ASR::expr_t*> member_sizes_bufs;
+
+        // A launch this pass cannot lay out, found once the loop it came
+        // from is gone. `gpu_offload` answers the same question while the
+        // loop is still there and leaves it on the host; there is nothing
+        // left to leave it on here, so this is an error whatever the reason
+        // for the decline. The wording is the one every decline
+        // is phrased in, so that the two stages cannot describe the same
+        // limitation differently.
+
 
         ASR::call_arg_t call_arg(const Location &loc, ASR::expr_t *value) {
             ASR::call_arg_t arg;
@@ -745,27 +238,13 @@ class DeviceLaunchExpandVisitor :
             if (!ASRUtils::is_array(type) ||
                     ASRUtils::get_fixed_size_of_array(type) > 0) {
                 return ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc,
-                    size_of_type_arg(al, arg, type), int64, nullptr));
+                    gpu_size_of_type_argument(al, arg, type), int64, nullptr));
             }
-            ASR::ttype_t *element = size_of_type_arg(al, arg,
+            ASR::ttype_t *element = gpu_size_of_type_argument(al, arg,
                 ASRUtils::type_get_past_array(type));
             return b.Mul(b.i2i_t(b.ArraySize(arg, nullptr, int32), int64),
                 ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc, element,
                     int64, nullptr)));
-        }
-
-        // True when the kernel takes this argument as an assumed shape array,
-        // in which case the device code reads its extents from scalars.
-        static bool kernel_param_is_descriptor(ASR::Variable_t *kparam) {
-            if (std::string(kparam->m_name).substr(0, 2) == "__") return false;
-            ASR::ttype_t *type = ASRUtils::type_get_past_allocatable(
-                kparam->m_type);
-            if (!ASR::is_a<ASR::Array_t>(*type)) return false;
-            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
-            for (size_t d = 0; d < arr->n_dims; d++) {
-                if (!arr->m_dims[d].m_length) return true;
-            }
-            return false;
         }
 
         // Builds, once per kernel, the struct that carries every scalar
@@ -773,14 +252,14 @@ class DeviceLaunchExpandVisitor :
         // device code generator emits, so the members are created in the same
         // order.
         ASR::symbol_t* get_scalar_args_struct(const Location &loc,
-                const std::string &kernel_name,
+                ASR::Function_t *kernel,
                 const std::vector<std::pair<std::string, ASR::ttype_t*>> &fields) {
-            auto it = scalar_arg_structs.find(kernel_name);
+            auto it = scalar_arg_structs.find(kernel);
             if (it != scalar_arg_structs.end()) return it->second;
 
             SymbolTable *global_scope = unit.m_symtab;
             std::string struct_name = global_scope->get_unique_name(
-                "__ScalarArgs_" + kernel_name, false);
+                "__ScalarArgs_" + std::string(kernel->m_name), false);
             SymbolTable *struct_symtab = al.make_new<SymbolTable>(global_scope);
             ASRUtils::ASRBuilder b(al, loc);
             SetChar members;
@@ -800,7 +279,7 @@ class DeviceLaunchExpandVisitor :
             ASR::down_cast<ASR::Struct_t>(struct_sym)->m_struct_signature =
                 ASRUtils::make_StructType_t_util(al, loc, struct_sym, true);
             global_scope->add_symbol(struct_name, struct_sym);
-            scalar_arg_structs[kernel_name] = struct_sym;
+            scalar_arg_structs[kernel] = struct_sym;
             return struct_sym;
         }
 
@@ -811,60 +290,35 @@ class DeviceLaunchExpandVisitor :
         // may have written to it.
         void decompose_struct_members(const Location &loc,
                 Vec<ASR::stmt_t*> &out, ASR::expr_t *arg,
-                const std::string &arg_name,
+                ASR::symbol_t *parameter,
                 std::vector<BufferArg> &buffers,
                 std::vector<ASR::stmt_t*> &writebacks,
                 const ASR::Function_t &kernel) {
             ASRUtils::ASRBuilder b(al, loc);
-            ASR::Struct_t *st = get_struct(
+            ASR::Struct_t *st = gpu_struct_definition(
                 ASRUtils::get_struct_sym_from_struct_expr(arg));
             if (!st) return;
-            std::map<std::string, int64_t> write_sizes =
-                find_struct_member_vla_write_sizes(kernel,
-                    analyze_gpu_vla_workspaces(kernel));
-            std::map<std::string, std::string> runtime_sources =
-                find_struct_member_vla_runtime_sources(kernel);
+            std::string arg_name = ASRUtils::symbol_name(parameter);
             // A member inherited from a type this one extends is stored
             // and handed over exactly like one of its own.
-            for (auto &member_entry :
-                    ASRUtils::collect_allocatable_array_members(st)) {
-                const std::string &member_name = member_entry.first;
-                ASR::symbol_t *member = &member_entry.second->base;
-                if (!is_decomposed_member(member)) continue;
-                ASR::ttype_t *member_type = ASRUtils::type_get_past_allocatable(
-                    ASRUtils::symbol_type(member));
-                ASR::ttype_t *element_type = ASRUtils::type_get_past_array(
-                    member_type);
-                // A struct with no data members occupies no bytes on the host
-                // but one byte in the device language; size the buffer so
-                // that every element stays addressable, and copy nothing,
-                // because there is nothing to copy.
-                ASR::Struct_t *element_struct = get_struct(
-                    ASR::down_cast<ASR::Variable_t>(member)
-                        ->m_type_declaration);
-                bool element_is_empty = ASR::is_a<ASR::StructType_t>(
-                    *element_type) && element_struct &&
-                    element_struct->n_members == 0;
+            for (const GpuComponentLayout &component :
+                    gpu_component_layouts(*kernel.m_gpu, parameter, st)) {
+                std::string member_name = component.name();
+                ASR::symbol_t *member = component.component;
+                ASR::ttype_t *element_type = component.element_type;
+                bool element_is_empty = component.element_is_empty;
                 ASR::expr_t *element_bytes = element_is_empty
                     ? b.i64(1)
                     : ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc,
                         element_type, int64, nullptr));
 
-                // The kernel writes into a member the caller never allocated,
-                // so the host has to give it storage first.
-                std::string key = arg_name + "." + member_name;
-                ASR::expr_t *missing_size = nullptr;
-                auto write_size = write_sizes.find(key);
-                if (write_size != write_sizes.end()) {
-                    missing_size = b.i32(write_size->second);
-                } else {
-                    auto source = runtime_sources.find(key);
-                    if (source != runtime_sources.end()) {
-                        auto first = member_first_sizes.find(source->second);
-                        missing_size = first != member_first_sizes.end()
-                            ? first->second : b.i32(1);
-                    }
-                }
+                GpuStructMemberKey key{arg_name, member_name};
+                // The component of an element may not be allocated: the
+                // offload pass gave storage only to those the loop writes
+                // (see build_component_fit). One that is not holds nothing
+                // to hand over.
+                bool may_be_unallocated = ASRUtils::is_allocatable(
+                    ASRUtils::symbol_type(member));
 
                 ASR::expr_t *n = declare_local(loc, "gpu_struct_count", int32);
                 ASR::expr_t *total = declare_local(loc, "gpu_member_total",
@@ -877,8 +331,7 @@ class DeviceLaunchExpandVisitor :
                 ASR::expr_t *data = declare_local(loc, "gpu_member_data",
                     b.allocatable(b.Array({-1}, int8)));
 
-                size_t rank = gpu_struct_member_rank(
-                    ASR::down_cast<ASR::Variable_t>(member));
+                size_t rank = component.rank;
                 out.push_back(al, b.Assignment(n,
                     b.ArraySize(arg, nullptr, int32)));
                 Vec<ASR::dimension_t> dims;
@@ -902,33 +355,29 @@ class DeviceLaunchExpandVisitor :
                     size_dims.n));
                 out.push_back(al, b.Assignment(total, b.i32(0)));
                 std::vector<ASR::stmt_t*> measure;
-                if (missing_size) {
-                    Vec<ASR::dimension_t> member_dims;
-                    member_dims.reserve(al, 1);
-                    ASR::dimension_t member_dim;
-                    member_dim.loc = loc;
-                    member_dim.m_start = b.i32(1);
-                    member_dim.m_length = missing_size;
-                    member_dims.push_back(al, member_dim);
-                    measure.push_back(b.If(b.Not(is_allocated(loc,
-                        struct_member(loc, arg, k, member))),
-                        {b.Allocate(struct_member(loc, arg, k, member),
-                            member_dims.p, member_dims.n)}, {}));
-                }
                 measure.push_back(b.Assignment(b.ArrayItem_01(offsets, {k}),
                     total));
+                std::vector<ASR::stmt_t*> extents, no_extents;
                 for (size_t d = 0; d < rank; d++) {
-                    measure.push_back(b.Assignment(
+                    extents.push_back(b.Assignment(
                         member_extent(loc, sizes, k, rank, d),
                         b.ArraySize(struct_member(loc, arg, k, member),
                             rank > 1 ? b.i32((int)d + 1) : nullptr,
                             int32)));
+                    no_extents.push_back(b.Assignment(
+                        member_extent(loc, sizes, k, rank, d), b.i32(0)));
+                }
+                if (may_be_unallocated) {
+                    measure.push_back(b.If(is_allocated(loc,
+                        struct_member(loc, arg, k, member)), extents,
+                        no_extents));
+                } else {
+                    measure.insert(measure.end(), extents.begin(),
+                        extents.end());
                 }
                 measure.push_back(b.Assignment(total, b.Add(total,
                     member_element_count(loc, sizes, k, rank))));
                 out.push_back(al, b.DoLoop(k, b.i32(1), n, measure));
-                member_first_sizes[key] = member_element_count(loc, sizes,
-                    b.i32(1), rank);
                 member_sizes_bufs[key] = sizes;
                 // A member that is allocated but holds no elements in any
                 // of them -- `allocate(x%m(0,3))` -- leaves nothing to hand
@@ -944,13 +393,15 @@ class DeviceLaunchExpandVisitor :
                 out.push_back(al, allocate_bytes(loc, data, data_bytes));
                 if (!element_is_empty) {
                     out.push_back(al, b.DoLoop(k, b.i32(1), n, {
-                        memcpy_call(loc,
-                            member_data_address(loc, data, offsets, k,
-                                element_bytes),
-                            address_of(loc,
-                                struct_member(loc, arg, k, member)),
-                            member_byte_size(loc, sizes, k, rank,
-                                element_bytes))}));
+                        copy_if_allocated(loc, may_be_unallocated,
+                            struct_member(loc, arg, k, member),
+                            memcpy_call(loc,
+                                member_data_address(loc, data, offsets, k,
+                                    element_bytes),
+                                address_of(loc,
+                                    struct_member(loc, arg, k, member)),
+                                member_byte_size(loc, sizes, k, rank,
+                                    element_bytes)))}));
                 }
 
                 ASR::expr_t *index_bytes = b.Mul(b.i2i_t(n, int64), b.i64(4));
@@ -965,18 +416,29 @@ class DeviceLaunchExpandVisitor :
 
                 if (!element_is_empty) {
                     writebacks.push_back(b.DoLoop(k, b.i32(1), n, {
-                        memcpy_call(loc,
-                            address_of(loc,
-                                struct_member(loc, arg, k, member)),
-                            member_data_address(loc, data, offsets, k,
-                                element_bytes),
-                            member_byte_size(loc, sizes, k, rank,
-                                element_bytes))}));
+                        copy_if_allocated(loc, may_be_unallocated,
+                            struct_member(loc, arg, k, member),
+                            memcpy_call(loc,
+                                address_of(loc,
+                                    struct_member(loc, arg, k, member)),
+                                member_data_address(loc, data, offsets, k,
+                                    element_bytes),
+                                member_byte_size(loc, sizes, k, rank,
+                                    element_bytes)))}));
                 }
                 writebacks.push_back(b.Deallocate(data));
                 writebacks.push_back(b.Deallocate(offsets));
                 writebacks.push_back(b.Deallocate(sizes));
             }
+        }
+
+        // `copy`, only when `component` is allocated if it may not be.
+        ASR::stmt_t* copy_if_allocated(const Location &loc,
+                bool may_be_unallocated, ASR::expr_t *component,
+                ASR::stmt_t *copy) {
+            if (!may_be_unallocated) return copy;
+            ASRUtils::ASRBuilder b(al, loc);
+            return b.If(is_allocated(loc, component), {copy}, {});
         }
 
         ASR::expr_t* is_allocated(const Location &loc, ASR::expr_t *x) {
@@ -988,305 +450,6 @@ class DeviceLaunchExpandVisitor :
                     ASRUtils::IntrinsicImpureFunctions::Allocated),
                 args.p, args.n, 0,
                 ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
-        }
-
-    public:
-        // A designator the kernel writes in terms of its parameters, built
-        // again over the actual arguments of this launch so the host can
-        // read the same object: `self%points_(1,1,1,1)%values_` names one
-        // array whichever side asks for it.
-        static ASR::expr_t* host_designator(Allocator &al, const Location &loc,
-                const ASR::Function_t *kernel, ASR::call_arg_t *args,
-                size_t n_args, ASR::expr_t *e) {
-            if (e == nullptr) return nullptr;
-            ASRUtils::ASRBuilder b(al, loc);
-            ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
-            if (ASR::is_a<ASR::Var_t>(*v)) {
-                std::string name = ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(v)->m_v);
-                for (size_t i = 0; i < kernel->n_args; i++) {
-                    std::string pname = ASRUtils::symbol_name(
-                        ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v);
-                    if (pname != name) continue;
-                    if (i >= n_args) break;
-                    return args[i].m_value;
-                }
-                ASR::expr_t *bound = gpu_local_array_binding(
-                    ASR::down_cast<ASR::Var_t>(v)->m_v, kernel->m_body,
-                    kernel->n_body);
-                if (bound != nullptr) {
-                    return host_designator(al, loc, kernel, args, n_args,
-                        bound);
-                }
-                return nullptr;
-            }
-            if (ASR::is_a<ASR::StructInstanceMember_t>(*v)) {
-                ASR::StructInstanceMember_t *sm =
-                    ASR::down_cast<ASR::StructInstanceMember_t>(v);
-                ASR::expr_t *base = host_designator(al, loc, kernel, args,
-                    n_args, sm->m_v);
-                if (base == nullptr) return nullptr;
-                ASR::symbol_t *st =
-                    ASRUtils::get_struct_sym_from_struct_expr(base);
-                ASR::symbol_t *member = gpu_struct_lookup_member(st,
-                    ASRUtils::symbol_name(
-                        ASRUtils::symbol_get_past_external(sm->m_m)));
-                if (member == nullptr) return nullptr;
-                return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
-                    loc, base, member, ASRUtils::symbol_type(member),
-                    nullptr));
-            }
-            if (ASR::is_a<ASR::ArrayItem_t>(*v)) {
-                ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(v);
-                ASR::expr_t *base = host_designator(al, loc, kernel, args,
-                    n_args, item->m_v);
-                if (base == nullptr) return nullptr;
-                std::vector<ASR::expr_t*> subs;
-                for (size_t i = 0; i < item->n_args; i++) {
-                    ASR::expr_t *sub = host_extent(al, loc, kernel, args,
-                        n_args, item->m_args[i].m_right);
-                    if (sub == nullptr) return nullptr;
-                    subs.push_back(sub);
-                }
-                return b.ArrayItem_01(base, subs);
-            }
-            return nullptr;
-        }
-
-        // The extent expression of a workspace, rebuilt over the actual
-        // arguments of this launch. The kernel writes an extent in terms of
-        // its own parameters -- `op%m_ + 1` -- and the host has to compute
-        // the same number before it dispatches, so every parameter the
-        // expression names is replaced by the argument bound to it.
-        // Returns nullptr when some part of it has no host counterpart.
-        static ASR::expr_t* host_extent(Allocator &al, const Location &loc,
-                const ASR::Function_t *kernel, ASR::call_arg_t *args,
-                size_t n_args, ASR::expr_t *e) {
-            if (e == nullptr) return nullptr;
-            ASRUtils::ASRBuilder b(al, loc);
-            ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
-            // A compile-time constant -- a literal, or a name declared
-            // `parameter` -- is the same number on both sides, so the host
-            // computes it by folding it, exactly as the pre-flight in
-            // gpu_extent_is_host_evaluable() decided it could.
-            if (ASR::expr_t *k = gpu_folded_int_constant(v)) return k;
-            if (ASR::is_a<ASR::Cast_t>(*v)) {
-                return host_extent(al, loc, kernel, args, n_args,
-                    ASR::down_cast<ASR::Cast_t>(v)->m_arg);
-            }
-            if (ASR::is_a<ASR::IntegerBinOp_t>(*v)) {
-                ASR::IntegerBinOp_t *op =
-                    ASR::down_cast<ASR::IntegerBinOp_t>(v);
-                ASR::expr_t *l = host_extent(al, loc, kernel, args, n_args,
-                    op->m_left);
-                ASR::expr_t *r = host_extent(al, loc, kernel, args, n_args,
-                    op->m_right);
-                if (!l || !r) return nullptr;
-                return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, l,
-                    op->m_op, r, ASRUtils::expr_type(l), nullptr));
-            }
-            if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*v)) {
-                ASR::expr_t *a = host_extent(al, loc, kernel, args, n_args,
-                    ASR::down_cast<ASR::IntegerUnaryMinus_t>(v)->m_arg);
-                if (!a) return nullptr;
-                return ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc,
-                    a, ASRUtils::expr_type(a), nullptr));
-            }
-            if (ASR::is_a<ASR::IntegerCompare_t>(*v)) {
-                ASR::IntegerCompare_t *cmp =
-                    ASR::down_cast<ASR::IntegerCompare_t>(v);
-                ASR::expr_t *l = host_extent(al, loc, kernel, args, n_args,
-                    cmp->m_left);
-                ASR::expr_t *r = host_extent(al, loc, kernel, args, n_args,
-                    cmp->m_right);
-                if (!l || !r) return nullptr;
-                return ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, l,
-                    cmp->m_op, r, ASRUtils::expr_type(v), nullptr));
-            }
-            if (ASR::is_a<ASR::IfExp_t>(*v)) {
-                ASR::IfExp_t *ie = ASR::down_cast<ASR::IfExp_t>(v);
-                ASR::expr_t *t = host_extent(al, loc, kernel, args, n_args,
-                    ie->m_test);
-                ASR::expr_t *bdy = host_extent(al, loc, kernel, args, n_args,
-                    ie->m_body);
-                ASR::expr_t *els = host_extent(al, loc, kernel, args, n_args,
-                    ie->m_orelse);
-                if (!t || !bdy || !els) return nullptr;
-                return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, t, bdy, els,
-                    ASRUtils::expr_type(bdy), nullptr));
-            }
-            std::vector<std::string> arg_names;
-            for (size_t i = 0; i < kernel->n_args; i++) {
-                arg_names.push_back(ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v));
-            }
-            // An extent of an array parameter: the actual argument has the
-            // same shape, so ask it.
-            std::string arr_name;
-            size_t d = 0;
-            if (gpu_extent_of_array_dim(v, arr_name, d)) {
-                bool is_arg = false;
-                for (size_t i = 0; i < arg_names.size(); i++) {
-                    if (arg_names[i] != arr_name) continue;
-                    is_arg = true;
-                    if (i >= n_args || !args[i].m_value) break;
-                    return b.ArraySize(args[i].m_value,
-                        b.i32((int)d + 1), int32);
-                }
-                if (!is_arg) {
-                    // A local of the kernel, whose own extent is written
-                    // over the parameters. `size(t) + 1` is resolved by
-                    // carrying on through `t`'s extent. A later pass may
-                    // have created the local without a resolvable extent
-                    // here; fall through rather than giving up, so the
-                    // ArraySize case can still rebuild it.
-                    ASR::expr_t *local = gpu_local_array_extent_nested(
-                        kernel, arr_name, d);
-                    if (local != nullptr) {
-                        ASR::expr_t *rebuilt = host_extent(al, loc, kernel,
-                            args, n_args, local);
-                        if (rebuilt != nullptr) return rebuilt;
-                    }
-                }
-            }
-            size_t idx = 0;
-            std::vector<std::string> path;
-            if (resolve_extent_to_arg_member(v, arg_names, idx, path)) {
-                if (idx >= n_args || !args[idx].m_value) {
-                    return nullptr;
-                }
-                ASR::expr_t *out = args[idx].m_value;
-                for (const std::string &m : path) {
-                    ASR::symbol_t *st =
-                        ASRUtils::get_struct_sym_from_struct_expr(out);
-                    ASR::symbol_t *member = gpu_struct_lookup_member(st, m);
-                    if (member == nullptr) return nullptr;
-                    out = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
-                        al, loc, out, member,
-                        ASRUtils::symbol_type(member), nullptr));
-                }
-                return out;
-            }
-            // `size(<designator>, d)` where the host can read the
-            // designator: rebuild the designator over the actual and ask
-            // its shape.
-            if (ASR::is_a<ASR::ArraySize_t>(*v)) {
-                ASR::ArraySize_t *sz = ASR::down_cast<ASR::ArraySize_t>(v);
-                ASR::expr_t *array = sz->m_v;
-                // The shape asked for may sit one or more elementwise
-                // operators below the expression itself; walk down to the
-                // operand that carries it, exactly as the pre-flight in
-                // gpu_extent_is_host_evaluable() does, so the extent the
-                // host computes is the one it decided it could.
-                for (int hop = 0; hop < 8 && array != nullptr; hop++) {
-                    if (ASR::is_a<ASR::Var_t>(*array)) {
-                        ASR::expr_t *bound = gpu_local_array_binding(
-                            ASR::down_cast<ASR::Var_t>(array)->m_v,
-                            kernel->m_body, kernel->n_body);
-                        if (bound != nullptr) array = bound;
-                    }
-                    ASR::expr_t *host = host_designator(al, loc, kernel, args,
-                        n_args, array);
-                    if (host != nullptr) {
-                        ASR::expr_t *dim = sz->m_dim
-                            ? host_extent(al, loc, kernel, args, n_args,
-                                sz->m_dim) : nullptr;
-                        if (sz->m_dim == nullptr || dim != nullptr) {
-                            return b.ArraySize(host, dim, int32);
-                        }
-                    }
-                    // A section whose base the host cannot read as it stands
-                    // still has extents the host can work out: they come from
-                    // the ranges alone.
-                    std::vector<ASR::array_index_t*> ranges =
-                        gpu_section_extent_ranges(array, sz->m_dim);
-                    if (!ranges.empty()) {
-                        ASR::expr_t *out = nullptr;
-                        for (ASR::array_index_t *range : ranges) {
-                            ASR::expr_t *lo = host_extent(al, loc, kernel, args,
-                                n_args, range->m_left);
-                            ASR::expr_t *hi = host_extent(al, loc, kernel, args,
-                                n_args, range->m_right);
-                            ASR::expr_t *step = range->m_step
-                                ? host_extent(al, loc, kernel, args, n_args,
-                                    range->m_step)
-                                : b.i32(1);
-                            if (!lo || !hi || !step) { out = nullptr; break; }
-                            ASR::expr_t *one = b.Add(
-                                b.Div(b.Sub(hi, lo), step), b.i32(1));
-                            out = out ? b.Mul(out, one) : one;
-                        }
-                        if (out != nullptr) return out;
-                    }
-                    // Not a designator the host can read -- a function call,
-                    // say -- but its type still records its shape, written in
-                    // the symbols of the scope the call is made from.
-                    std::vector<ASR::expr_t*> lengths;
-                    if (gpu_expr_shape_extents(array, sz->m_dim, lengths)) {
-                        ASR::expr_t *out = nullptr;
-                        for (ASR::expr_t *length : lengths) {
-                            ASR::expr_t *one = host_extent(al, loc, kernel, args,
-                                n_args, length);
-                            if (one == nullptr) { out = nullptr; break; }
-                            out = out ? b.Mul(out, one) : one;
-                        }
-                        if (out != nullptr) return out;
-                    }
-                    // An elementwise array expression records no shape of its
-                    // own; it has the shape of its array operand.
-                    array = gpu_elementwise_shape_source(array);
-                }
-            }
-            if (ASR::is_a<ASR::ArrayBound_t>(*v)) {
-                ASR::ArrayBound_t *bd = ASR::down_cast<ASR::ArrayBound_t>(v);
-                ASR::expr_t *host = host_designator(al, loc, kernel, args,
-                    n_args, bd->m_v);
-                ASR::expr_t *dim = host
-                    ? host_extent(al, loc, kernel, args, n_args, bd->m_dim)
-                    : nullptr;
-                if (host != nullptr && dim != nullptr) {
-                    return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
-                        host, dim, int32, bd->m_bound, nullptr));
-                }
-            }
-            if (ASR::is_a<ASR::ArrayItem_t>(*v)) {
-                ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(v);
-                ASR::expr_t *base = ASRUtils::get_past_array_physical_cast(
-                    item->m_v);
-                if (!ASR::is_a<ASR::Var_t>(*base)) return nullptr;
-                std::string name = ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(base)->m_v);
-                for (size_t i = 0; i < arg_names.size(); i++) {
-                    if (arg_names[i] != name) continue;
-                    if (i >= n_args || !args[i].m_value) break;
-                    std::vector<ASR::expr_t*> subs;
-                    for (size_t k = 0; k < item->n_args; k++) {
-                        ASR::expr_t *sub = host_extent(al, loc, kernel, args,
-                            n_args, item->m_args[k].m_right);
-                        if (sub == nullptr) return nullptr;
-                        subs.push_back(sub);
-                    }
-                    return b.ArrayItem_01(args[i].m_value, subs);
-                }
-                return nullptr;
-            }
-            if (ASR::is_a<ASR::Var_t>(*v)) {
-                std::string name = ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(v)->m_v);
-                for (size_t i = 0; i < arg_names.size(); i++) {
-                    if (arg_names[i] != name) continue;
-                    if (i >= n_args) break;
-                    return args[i].m_value;
-                }
-                // A name of the kernel's own that stands for one value --
-                // an ASSOCIATE selector, once the construct is spliced in.
-                // The value it is bound to is what the host evaluates.
-                return host_extent(al, loc, kernel, args, n_args,
-                    gpu_local_scalar_binding(
-                        ASR::down_cast<ASR::Var_t>(v)->m_v,
-                        kernel->m_body, kernel->n_body));
-            }
-            return nullptr;
         }
 
     private:
@@ -1429,10 +592,10 @@ class DeviceLaunchExpandVisitor :
                 std::vector<ASR::stmt_t*> &out,
                 std::vector<ASR::stmt_t*> &back) {
             ASRUtils::ASRBuilder b(al, loc);
-            ASR::Struct_t *st = get_struct(struct_sym);
+            ASR::Struct_t *st = gpu_struct_definition(struct_sym);
             if (st == nullptr) return false;
             std::vector<ASR::symbol_t*> data_members;
-            collect_data_members(st, data_members);
+            gpu_collect_data_members(st, data_members);
             for (ASR::symbol_t *member : data_members) {
                 if (member == nullptr
                         || !ASR::is_a<ASR::Variable_t>(*member)) {
@@ -1450,7 +613,7 @@ class DeviceLaunchExpandVisitor :
                     member)->m_type_declaration;
                 if (ASR::is_a<ASR::StructType_t>(
                             *ASRUtils::type_get_past_array(mt))
-                        && struct_has_allocatable_parts(decl)) {
+                        && gpu_struct_has_allocatable_parts(decl)) {
                     if (!copy_plain_parts_of_value(loc, mto, mfrom, mt, decl,
                             out, back)) {
                         return false;
@@ -1534,9 +697,8 @@ class DeviceLaunchExpandVisitor :
                 plain_type, struct_sym);
             std::vector<ASR::stmt_t*> forward, back;
             if (!copy_plain_parts(loc, tmp, arg, struct_sym, forward, back)) {
-                // gpu_launch_is_supported() accepted this launch because
-                // class_argument_can_be_copied() walks these same
-                // components, so there is a copy for every one of them.
+                // The finalized layout requires a plain copy of each
+                // component, as checked by the kernel planner.
                 // Handing the container over instead would have the kernel
                 // read the type descriptor as the declared type's data, so
                 // the two walks disagreeing is reported, not compiled.
@@ -1631,7 +793,10 @@ class DeviceLaunchExpandVisitor :
             return false;
         }
 
-        void expand_launch(const ASR::GpuKernelLaunch_t &x,
+        // False when a shape only the passes after `gpu_offload` create
+        // stops the layout part way; the caller then drops the launch and
+        // the reported error fails the build.
+        bool expand_launch(const ASR::GpuKernelLaunch_t &x,
                 Vec<ASR::stmt_t*> &out) {
             const Location &loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
@@ -1639,6 +804,7 @@ class DeviceLaunchExpandVisitor :
             ASR::Function_t *kernel =
                 ASR::down_cast<ASR::Function_t>(x.m_kernel);
             std::string kernel_name(kernel->m_name);
+            const ASR::gpu_kernel_layout_t &layout = *kernel->m_gpu;
 
             std::vector<BufferArg> buffers;
             std::vector<std::pair<std::string, ASR::ttype_t*>> scalar_fields;
@@ -1668,15 +834,13 @@ class DeviceLaunchExpandVisitor :
             out.push_back(al, b.Assignment(gpu_kernel,
                 b.Call(load_sym, load_args, b.CPtr())));
 
-            for (size_t i = 0; i < x.n_args; i++) {
-                ASR::expr_t *arg = x.m_args[i].m_value;
+            for (size_t i = 0; i < layout.n_buffers; i++) {
+                const auto &entry = layout.m_buffers[i];
+                if (entry.m_member) continue;
+                ASR::expr_t *arg = x.m_args[entry.m_argument_index].m_value;
                 ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
-                ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
-                    ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v));
-                if (ASRUtils::is_array(arg_type) ||
-                        ASR::is_a<ASR::StructType_t>(
-                            *ASRUtils::extract_type(arg_type))) {
+                ASR::Variable_t *kparam = gpu_argument_variable(entry);
+                {
                     // An array the caller only knows through a descriptor
                     // may be a section of something larger, with a stride
                     // between its elements. The device is handed a block of
@@ -1696,34 +860,11 @@ class DeviceLaunchExpandVisitor :
                         // the actual need not be a plain variable: a
                         // component chain names one array just as well.
                         decompose_struct_members(loc, out, arg,
-                            kparam->m_name, buffers, writebacks, *kernel);
+                            entry.m_variable, buffers, writebacks, *kernel);
                     }
-                } else {
-                    scalar_fields.push_back({std::string(kparam->m_name),
-                        ASRUtils::extract_type(arg_type)});
-                    scalar_values.push_back(arg);
                 }
             }
-
-            // The device code reads the extents of an assumed shape array
-            // argument from scalars appended after the value scalars.
-            for (size_t i = 0; i < x.n_args; i++) {
-                ASR::expr_t *arg = x.m_args[i].m_value;
-                if (!ASRUtils::is_array(ASRUtils::expr_type(arg))) continue;
-                ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
-                    ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v));
-                if (!kernel_param_is_descriptor(kparam)) continue;
-                ASR::Array_t *kernel_arr = ASR::down_cast<ASR::Array_t>(
-                    ASRUtils::type_get_past_allocatable(kparam->m_type));
-                for (size_t d = 0; d < kernel_arr->n_dims; d++) {
-                    scalar_fields.push_back({"__size_"
-                        + std::string(kparam->m_name) + "_dim"
-                        + std::to_string(d + 1), int32});
-                    scalar_values.push_back(
-                        b.ArraySize(arg, b.i32(d + 1), int32));
-                }
-            }
+            LCOMPILERS_ASSERT(buffers.size() == layout.n_buffers);
 
             ASR::symbol_t *set_buffer_sym = runtime_subroutine(loc,
                 "lfortran_gpu_set_buffer_arg",
@@ -1733,7 +874,7 @@ class DeviceLaunchExpandVisitor :
             std::vector<PackedBuffer> packed_buffers;
             ASR::expr_t *packed = nullptr;
             ASR::expr_t *packed_size = nullptr;
-            if (gpu_kernel_needs_buffer_packing(*kernel)) {
+            if (layout.m_packed) {
                 // Metal binds at most 31 buffers, so past that the device
                 // code generator puts every array into one combined buffer
                 // and reads each one at an offset handed over as a scalar.
@@ -1771,12 +912,6 @@ class DeviceLaunchExpandVisitor :
                 args.push_back(al, call_arg(loc, address_of(loc, packed)));
                 args.push_back(al, call_arg(loc, packed_size));
                 out.push_back(al, b.SubroutineCall(set_buffer_sym, args));
-                for (size_t i = 0; i < packed_buffers.size(); i++) {
-                    scalar_fields.push_back({"__offset_"
-                        + std::to_string(i), int32});
-                    scalar_values.push_back(
-                        b.i2i_t(packed_buffers[i].offset, int32));
-                }
             } else {
                 for (auto &buffer : buffers) {
                     Vec<ASR::call_arg_t> args;
@@ -1789,9 +924,24 @@ class DeviceLaunchExpandVisitor :
                 }
             }
 
+            for (size_t i = 0; i < layout.n_scalars; i++) {
+                const auto &entry = layout.m_scalars[i];
+                ASR::expr_t *value = x.m_args[entry.m_argument_index].m_value;
+                if (entry.m_kind == ASR::gpu_argument_kindType::GpuArrayExtent) {
+                    value = b.ArraySize(value, b.i32(entry.m_dimension + 1),
+                        entry.m_type);
+                } else if (entry.m_kind ==
+                        ASR::gpu_argument_kindType::GpuPackedOffset) {
+                    value = b.i2i_t(packed_buffers[entry.m_dimension].offset,
+                        entry.m_type);
+                }
+                scalar_fields.push_back({gpu_argument_name(entry, layout),
+                    entry.m_type});
+                scalar_values.push_back(value);
+            }
             if (!scalar_fields.empty()) {
                 ASR::symbol_t *struct_sym = get_scalar_args_struct(loc,
-                    kernel_name, scalar_fields);
+                    kernel, scalar_fields);
                 ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(struct_sym);
                 ASR::ttype_t *struct_type = ASRUtils::make_StructType_t_util(
                     al, loc, struct_sym, true);
@@ -1831,84 +981,21 @@ class DeviceLaunchExpandVisitor :
             // extra device buffer holding one instance per thread, because
             // the device languages have no variable length arrays.
             std::vector<ASR::expr_t*> workspaces;
-            for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
+            for (size_t w = 0; w < layout.n_workspaces; w++) {
+                const ASR::gpu_workspace_t &workspace = layout.m_workspaces[w];
                 ASR::expr_t *n_elements = b.Mul(
                     b.i2i_t(x.m_grid_size, int64),
                     b.i2i_t(x.m_block_size, int64));
-                for (auto &dim : workspace.dims) {
-                    ASR::expr_t *extent = nullptr;
-                    if (dim.is_constant) {
-                        extent = b.i64(dim.constant_value);
-                    } else if (dim.is_struct_member_size) {
-                        auto sit = member_sizes_bufs.find(
-                            dim.struct_member_key);
-                        if (sit != member_sizes_bufs.end()) {
-                            size_t rank = dim.struct_member_rank;
-                            if (rank == 0) rank = 1;
-                            // The element the extent names, or the
-                            // first one when the index is the loop
-                            // variable and so has no value on the host --
-                            // which is what the device sizes its own slice
-                            // from, so both sides step through the buffer
-                            // together. While the loop still exists
-                            // gpu_launch_is_supported() declines that
-                            // second shape rather than assume every
-                            // element is alike; by here the loop is gone
-                            // and matching the device is all that is left.
-                            int64_t elem = dim.struct_member_elem_index;
-                            if (elem < 0) elem = 0;
-                            extent = b.i2i_t(member_element_count(loc,
-                                sit->second, b.i32((int) elem + 1),
-                                rank), int64);
-                        }
-                    } else if (dim.is_host_expr) {
-                        ASR::expr_t *host = host_extent(al, loc, kernel,
-                            x.m_args, x.n_args, dim.dim_expr);
-                        if (host != nullptr) {
-                            extent = b.i2i_t(host, int64);
-                        }
-                    } else if (!dim.member_path.empty()) {
-                        // A scalar component of a struct argument. The
-                        // struct reaches the kernel as a buffer, so the
-                        // host reads the component here instead.
-                        if (dim.call_arg_index < x.n_args) {
-                            ASR::expr_t *e =
-                                x.m_args[dim.call_arg_index].m_value;
-                            bool ok = true;
-                            for (const std::string &m : dim.member_path) {
-                                ASR::symbol_t *st =
-                                    ASRUtils::get_struct_sym_from_struct_expr(e);
-                                ASR::symbol_t *member =
-                                    gpu_struct_lookup_member(st, m);
-                                if (member == nullptr) { ok = false; break; }
-                                e = ASRUtils::EXPR(
-                                    ASR::make_StructInstanceMember_t(al, loc, e,
-                                        member, ASRUtils::symbol_type(member),
-                                        nullptr));
-                            }
-                            if (ok) extent = b.i2i_t(e, int64);
-                        }
-                    } else if (dim.call_arg_index < x.n_args) {
-                        extent = b.i2i_t(
-                            x.m_args[dim.call_arg_index].m_value, int64);
-                    }
-                    if (extent == nullptr) {
-                        // Nothing is left to fall back on: the loop this
-                        // launch came from is gone, so a workspace the host
-                        // cannot size has to be reported rather than
-                        // guessed at. gpu_launch_is_supported() declines
-                        // such a launch while the loop is still there;
-                        // this is the backstop for a shape only the later
-                        // passes create.
-                        throw LCompilersException("the gpu backend cannot "
-                            "size the per-thread workspace for '"
-                            + workspace.var_name + "': its extent is not "
-                            "known on the host");
-                    }
-                    n_elements = b.Mul(n_elements, extent);
+                for (size_t d = 0; d < workspace.n_dims; d++) {
+                    const auto &dim = workspace.m_dims[d];
+                    ASR::expr_t *extent = dim.m_parameter
+                        ? x.m_args[gpu_parameter_index(*kernel,
+                            dim.m_parameter)].m_value
+                        : dim.m_extent;
+                    n_elements = b.Mul(n_elements, b.i2i_t(extent, int64));
                 }
                 ASR::expr_t *n_bytes = b.Mul(n_elements,
-                    b.i64(workspace.elem_size));
+                    b.i64(workspace.m_element_size));
                 ASR::expr_t *buffer = declare_local(loc, "gpu_workspace",
                     b.allocatable(b.Array({-1}, int8)));
                 out.push_back(al, allocate_bytes(loc, buffer, n_bytes));
@@ -1916,7 +1003,7 @@ class DeviceLaunchExpandVisitor :
                 args.reserve(al, 4);
                 args.push_back(al, call_arg(loc, gpu_kernel));
                 args.push_back(al, call_arg(loc,
-                    b.i32(workspace.buffer_index)));
+                    b.i32(workspace.m_buffer_index)));
                 args.push_back(al, call_arg(loc, address_of(loc, buffer)));
                 args.push_back(al, call_arg(loc, n_bytes));
                 out.push_back(al, b.SubroutineCall(set_buffer_sym, args));
@@ -1947,6 +1034,7 @@ class DeviceLaunchExpandVisitor :
             for (ASR::expr_t *workspace : workspaces) {
                 out.push_back(al, b.Deallocate(workspace));
             }
+            return true;
         }
 
         void fill_geometry(const Location &loc, Vec<ASR::stmt_t*> &out,
@@ -1962,31 +1050,13 @@ class DeviceLaunchExpandVisitor :
 
 };
 
-static bool launch_is_supported(Allocator &al, ASR::symbol_t *kernel_sym,
-        ASR::call_arg_t *call_args, size_t n_call_args) {
-    if (!launch_is_supported_args(kernel_sym, call_args, n_call_args)) {
-        return false;
-    }
-    ASR::Function_t *kernel = ASR::down_cast<ASR::Function_t>(kernel_sym);
-    const Location &loc = kernel->base.base.loc;
-    for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
-        for (auto &dim : workspace.dims) {
-            if (dim.is_constant) continue;
-            if (dim.is_struct_member_size) continue;
-            if (dim.dim_expr == nullptr) continue;
-            if (DeviceLaunchExpandVisitor::host_extent(al, loc, kernel,
-                    call_args, n_call_args, dim.dim_expr) == nullptr) {
-                return unsupported("a variable length array whose extent "
-                    "cannot be rebuilt on the host");
-            }
-        }
-    }
-    return true;
-}
+
+
+
 
 void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
                                const LCompilers::PassOptions &pass_options) {
-    if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) {
+    if (!gpu_device_capabilities(pass_options).device_selected()) {
         return;
     }
     DeviceLaunchExpandVisitor v(al, unit);

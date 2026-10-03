@@ -871,7 +871,14 @@ int verify_asr_input(const std::string &infile,
     compiler_options.po.always_run = true;
     compiler_options.po.run_fun = "f";
 
+    // What was reported so far is printed already; a pass reports a hard
+    // error by adding it, and then there is no ASR to print.
+    diagnostics.diagnostics.clear();
     pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
+    if (diagnostics.has_error()) {
+        std::cerr << diagnostics.render(lm, compiler_options);
+        return 1;
+    }
     if (compiler_options.po.tree) {
         std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors, compiler_options.po.with_intrinsic_mods) << std::endl;
@@ -1117,7 +1124,7 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
 
             LCompilers::Location loc;
             LCompilers::ASR::asr_t *asr = LCompilers::ASR::make_TranslationUnit_t(al, loc,
-                symtab, nullptr, 0);
+                symtab, nullptr, 0, nullptr);
             LCompilers::ASR::TranslationUnit_t *tu =
                 LCompilers::ASR::down_cast2<LCompilers::ASR::TranslationUnit_t>(asr);
             LCompilers::diag::Diagnostics diagnostics;
@@ -2307,7 +2314,12 @@ int link_executable(const std::vector<std::string> &infiles,
                     "the debug information. This might be caused because either"
                     " `llvm-dwarfdump` or `Python` are not available. "
                     "Please activate the CONDA environment and compile again.\n";
-                return status;
+                // `system()` reports a wait status, not an exit code. Returning
+                // it unchanged would truncate it to its low 8 bits in `main()`,
+                // so a missing `llvm-dwarfdump` (127 << 8 == 32512) would be
+                // silently reported as a successful exit code of 0.
+                int exit_status = LCompilers::LFortran::get_exit_status(status);
+                return exit_status != 0 ? exit_status : 1;
             }
         }
 #endif
@@ -2416,7 +2428,7 @@ int link_executable(const std::vector<std::string> &infiles,
         run_cmd = outfile;
     } else if (LCompilers::startswith(t, "wasm")) {
         if (LCompilers::endswith(t, "wasi")) {
-            run_cmd = "wasmtime " + outfile + " --dir=.";
+            run_cmd = "wasmtime --dir=. " + outfile;
         } else if (LCompilers::endswith(t, "emscripten")) {
             run_cmd = "node " + outfile +
                 (compiler_options.wasm_html ? ".js" : "");

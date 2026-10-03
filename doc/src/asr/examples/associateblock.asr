@@ -98,8 +98,10 @@
             :m (SymbolRef 1 "block")
           )
         ]
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

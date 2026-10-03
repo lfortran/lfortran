@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [12 x i8] c"R4,R8,R4,R8\00", align 1
@@ -18,7 +18,7 @@ define i32 @main(i32 %0, i8** %1) {
   %x = alloca float, align 4
   %zero = alloca float, align 4
   store float 0x3FC24924A0000000, float* %zero, align 4
-  store double 0x3FC2492492492492, double* %u, align 8
+  store double 0x3FC24924A0000000, double* %u, align 8
   store double 0x3FC2492492492492, double* %v, align 8
   store float 0x3FC24924A0000000, float* %x, align 4
   %3 = alloca i64, align 8

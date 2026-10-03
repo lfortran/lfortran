@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @__module___lcompilers_created__nested_context__closuretest__z = global i32 0
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1

@@ -37,6 +37,28 @@ The kernel is an ordinary [Function](../symbol_nodes/Function.md); what makes
 it launchable is that its signature has `exec_space = Kernel`, and a kernel
 has no result. See [exec_space](../enum_nodes/exec_space.md).
 
+The `gpu_offload` pass replaces a parallel loop assigned to the device with its
+launch, together with the copies the host makes before and after it; nothing
+of the original loop is kept. `gpu_kernel_finalize` records the kernel's
+`Function.gpu` layout after shared lowering. `device_launch_expand` and both
+device emitters consume that layout. Workspace sizes are evaluated once on the host and passed as
+explicit scalar arguments, so host allocation and device indexing use the
+same values.
+
+Before creating a launch, GPU offload checks the allocation of allocatable
+array results in callees that remain out of line. Nested or multiple allocation
+sites must agree with a buffer shape established by an unconditional fixed
+allocation. Otherwise the loop is rejected while the original loop is still
+available, which is an error: it is a lowering LFortran does not have yet.
+Reallocation and conditional assignments remain eligible when they preserve
+every extent, not just the total element count.
+
+A loop reaches GPU offload only after the unsupported-construct check in the
+`parallel_dispatch` pass has assigned it to the device (see
+[GPU offloading](../../../gpu_offloading.md)), so a loop the offload cannot
+lower is a compile-time error, whatever its reason, whether or not
+`--gpu-allow-cpu-fallback` is given, and also with `--show-gpu-kernel-source`.
+
 ## Examples
 
 ```clojure

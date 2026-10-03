@@ -2,7 +2,7 @@
     "basename": "asr-assignment_value_type_mismatch-b37fa8a",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/assignment_value_type_mismatch.asr",
-    "infile_hash": "1234d2165112853ea50059f29eac3138a4b5f1740a5ae8320b49886e",
+    "infile_hash": "4223859975fe9ac46861fa4e8e8c1bd49e0196bcafdd973f33be08b2",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

@@ -41,7 +41,8 @@ namespace {
 
 // Every routine a body calls, with the call node itself so the caller can be
 // retargeted at a clone.
-class GpuCallCollector : public ASR::BaseWalkVisitor<GpuCallCollector> {
+class GpuCallCollector :
+        public ASRUtils::BlockBodyWalkVisitor<GpuCallCollector> {
 public:
     std::vector<ASR::FunctionCall_t*> function_calls;
     std::vector<ASR::SubroutineCall_t*> subroutine_calls;
@@ -55,53 +56,17 @@ public:
         subroutine_calls.push_back(const_cast<ASR::SubroutineCall_t*>(&x));
         ASR::BaseWalkVisitor<GpuCallCollector>::visit_SubroutineCall(x);
     }
-
-    // The base walker stops at a block, whose body is where a kernel keeps
-    // most of its work.
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        if (!ASR::is_a<ASR::Block_t>(*x.m_m)) return;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        if (!ASR::is_a<ASR::AssociateBlock_t>(*x.m_m)) return;
-        ASR::AssociateBlock_t *block =
-            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
 };
 
 // Every Associate of a body, so a pointer can take the space of what it
 // points at.
 class GpuAssociateCollector
-        : public ASR::BaseWalkVisitor<GpuAssociateCollector> {
+        : public ASRUtils::BlockBodyWalkVisitor<GpuAssociateCollector> {
 public:
     std::vector<ASR::Associate_t*> associates;
 
     void visit_Associate(const ASR::Associate_t &x) {
         associates.push_back(const_cast<ASR::Associate_t*>(&x));
-    }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        if (!ASR::is_a<ASR::Block_t>(*x.m_m)) return;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        if (!ASR::is_a<ASR::AssociateBlock_t>(*x.m_m)) return;
-        ASR::AssociateBlock_t *block =
-            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
     }
 };
 
@@ -139,7 +104,8 @@ private:
     Allocator &al;
     std::set<ASR::Function_t*> processed;
     // (original routine, memory-space signature) -> clone
-    std::map<std::pair<ASR::symbol_t*, std::string>, ASR::symbol_t*> clones;
+    std::map<std::pair<ASR::symbol_t*, std::vector<ASR::memory_spaceType>>,
+        ASR::symbol_t*> clones;
 
     static ASR::memory_spaceType type_memory_space(ASR::ttype_t *type) {
         ASR::ttype_t *base =
@@ -226,7 +192,7 @@ private:
     // the host had to allocate a workspace buffer for it because the device
     // cannot size it on entry.
     void assign_scope(SymbolTable *scope,
-            const std::set<std::string> &device_backed) {
+            const std::set<ASR::symbol_t*> &device_backed) {
         for (auto &item : scope->get_scope()) {
             if (ASR::is_a<ASR::Block_t>(*item.second)) {
                 assign_scope(ASR::down_cast<ASR::Block_t>(
@@ -243,7 +209,7 @@ private:
                 ASR::down_cast<ASR::Variable_t>(item.second);
             if (var->m_intent != ASR::intentType::Local) continue;
             if (!ASRUtils::is_array(var->m_type)) continue;
-            if (device_backed.count(std::string(var->m_name))) continue;
+            if (device_backed.count(item.second)) continue;
             if (ASR::is_a<ASR::Pointer_t>(
                     *ASRUtils::type_get_past_allocatable(var->m_type))) {
                 // A pointer has the space of whatever it is associated
@@ -274,10 +240,10 @@ private:
         if (processed.count(fn)) return;
         processed.insert(fn);
 
-        std::set<std::string> device_backed;
+        std::set<ASR::symbol_t*> device_backed;
         if (is_kernel) {
             for (auto &workspace : collect_gpu_vla_workspaces(*fn, 0)) {
-                device_backed.insert(workspace.var_name);
+                device_backed.insert(workspace.var);
             }
         }
         assign_scope(fn->m_symtab, device_backed);
@@ -313,7 +279,9 @@ private:
         if (!target || !ASR::is_a<ASR::Function_t>(*target)) return nullptr;
         ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(target);
         ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(callee);
-        if (ftype->m_deftype != ASR::deftypeType::Implementation) {
+        if (ftype->m_deftype != ASR::deftypeType::Implementation &&
+                ftype->m_abi != ASR::abiType::BindC &&
+                ftype->m_abi != ASR::abiType::Intrinsic) {
             return nullptr;
         }
         if (callee->n_args != n_args) return nullptr;
@@ -321,7 +289,8 @@ private:
         std::vector<ASR::memory_spaceType> spaces(n_args,
             ASR::memory_spaceType::Global);
         std::string signature;
-        bool needs_clone = false;
+        bool needs_clone = ftype->m_exec_space == ASR::exec_spaceType::Host ||
+            ftype->m_exec_space == ASR::exec_spaceType::HostDevice;
         for (size_t i = 0; i < n_args; i++) {
             if (!args[i].m_value) continue;
             if (!ASR::is_a<ASR::Var_t>(*callee->m_args[i])) continue;
@@ -336,7 +305,7 @@ private:
             }
             spaces[i] = expr_memory_space(args[i].m_value);
             signature += memory_space_tag(spaces[i]);
-            if (spaces[i] != ASR::memory_spaceType::Global) {
+            if (spaces[i] != type_memory_space(dummy->m_type)) {
                 needs_clone = true;
             }
         }
@@ -345,7 +314,7 @@ private:
             return nullptr;
         }
 
-        auto key = std::make_pair(target, signature);
+        auto key = std::make_pair(target, spaces);
         auto it = clones.find(key);
         if (it != clones.end()) {
             return reachable_symbol(called, it->second);
@@ -353,7 +322,7 @@ private:
 
         SymbolTable *destination = callee->m_symtab->parent;
         std::string clone_name = destination->get_unique_name(
-            std::string(callee->m_name) + "_" + signature);
+            std::string(callee->m_name) + "_device_" + signature);
         ASRUtils::SymbolDuplicator duplicator(al);
         ASR::symbol_t *clone_sym = duplicator.duplicate_Function(callee,
             destination);
@@ -369,14 +338,20 @@ private:
         clones[key] = clone_sym;
 
         ASR::FunctionType_t *clone_type = ASRUtils::get_FunctionType(clone);
+        clone_type->m_exec_space = ASR::exec_spaceType::Device;
+        if (clone_type->m_deftype != ASR::deftypeType::Implementation &&
+                clone_type->m_abi == ASR::abiType::BindC &&
+                clone_type->m_bindc_name == nullptr) {
+            clone_type->m_bindc_name = s2c(al, callee->m_name);
+        }
         for (size_t i = 0; i < n_args; i++) {
-            if (spaces[i] == ASR::memory_spaceType::Global) continue;
             if (!ASR::is_a<ASR::Var_t>(*clone->m_args[i])) continue;
             ASR::symbol_t *dummy_sym =
                 ASR::down_cast<ASR::Var_t>(clone->m_args[i])->m_v;
             if (!ASR::is_a<ASR::Variable_t>(*dummy_sym)) continue;
             ASR::Variable_t *dummy =
                 ASR::down_cast<ASR::Variable_t>(dummy_sym);
+            if (!ASRUtils::is_array(dummy->m_type)) continue;
             set_variable_space(dummy, spaces[i]);
             if (i < clone_type->n_arg_types) {
                 clone_type->m_arg_types[i] = with_memory_space(
