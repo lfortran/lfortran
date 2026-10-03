@@ -34,11 +34,17 @@ semantic error: Module 'continue_compilation_3_fake_module' modfile was not foun
 55 |     use continue_compilation_3_fake_module
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Explicit shaped array with nonconstant bounds
-  --> tests/errors/continue_compilation_3.f90:76:23
+semantic error: the variable 'a' is local to this scoping unit, so it cannot appear in a specification expression
+  --> tests/errors/continue_compilation_3.f90:76:34
    |
 76 |     integer :: arr_nc(minval(abs(a)))
-   |                       ^^^^^^^^^^^^^^ 
+   |                                  ^ the value of 'a' is read to give an array bound
+   |
+60 |     integer :: a(5), b(10), x1(3,2), c, a1(3), i, k = 3, x
+   |                ~~~~ 'a' is declared here
+   |
+76 |     integer :: arr_nc(minval(abs(a)))
+   |                                  ~ help: Fortran 2023 10.1.11 allows a dummy argument, a variable in a common block, and one made accessible by use or host association; a named constant, and an inquiry such as `size` or `len` about a local, are also allowed
 
 semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
   --> tests/errors/continue_compilation_3.f90:86:9

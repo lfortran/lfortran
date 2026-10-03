@@ -1672,20 +1672,24 @@ lf_float128 lf_float128_from_str(const char *s) {
  * treats __m128d parameters and return values.
  * The conversions are pure memcpy, so no fp128 arithmetic is generated here
  * and these wrappers cannot recurse into themselves.
+ *
+ * On other targets (e.g. PowerPC, 32-bit x86, 32-bit ARM, RISC-V) the fp128
+ * calling convention is not spelled out here, so these entry points are not
+ * provided. The rest of the runtime still builds; real(16) arithmetic on
+ * such targets relies on the system's compiler-rt/libgcc, if available.
  * ======================================================================== */
-#if !defined(__aarch64__) && !defined(__wasm32__)
+#if (defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))) \
+    || (defined(_MSC_VER) && defined(_M_X64))
 
 #if defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
 typedef double lf_f128_abi __attribute__((vector_size(16)));
-#elif defined(_MSC_VER) && defined(_M_X64)
+#else
 /* On Windows x64 LLVM passes fp128 arguments indirectly through a pointer to
  * a 16-byte aligned slot and returns fp128 in XMM0. MSVC gives __m128d
  * parameters and return values exactly that treatment, so it spells the same
  * ABI the vector typedef above does for the System V targets. */
 #include <emmintrin.h>
 typedef __m128d lf_f128_abi;
-#else
-#error "unsupported real(16) compiler-rt ABI for this target; add target-specific fp128 ABI wrappers before enabling these entry points"
 #endif
 
 static lf_f128_abi lf_f128_to_abi(lf_float128 v) {

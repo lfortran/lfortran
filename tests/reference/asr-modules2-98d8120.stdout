@@ -24,6 +24,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_structure_base:
                 (Module
@@ -176,6 +177,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_type_array:
                 (Module
@@ -587,6 +589,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_type_value:
                 (Module
@@ -734,7 +737,9 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )
