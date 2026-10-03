@@ -420,7 +420,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: krystophny/liric
-          ref: 9eff0961b7d1740764f83ce260918451344d8a1a
+          ref: 1c01cb8e952e63a0704b73021bd42bd7867944d2
           path: deps/liric
       - uses: mamba-org/setup-micromamba@v2.0.2
         with:
@@ -445,6 +445,8 @@ jobs:
         run: |
           LFORTRAN_WITH_LIRIC=1 LFORTRAN_DIR="$PWD" \
             LFORTRAN_BUILD_DIR="$PWD/build-liric" \
+            LIRIC_CLANG="$(command -v clang)" \
+            LIRIC_RUNTIME_ROOTS="_lfortran_dsinh,_lcompilers_print_error,_lfortran_internal_alloc_finalize,_lpython_call_initial_functions" \
             bash deps/liric/tools/lfortran_mass/prepare_liric_runtime.sh
           unset LIRIC_RUNTIME_BC LIRIC_RUNTIME_LIB
           export LIRIC_RUNTIME_ARCHIVE="$PWD/build-liric/liric_runtime.lrarch"

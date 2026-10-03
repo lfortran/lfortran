@@ -233,7 +233,7 @@ if (WITH_LIRIC)
         include(FetchContent)
         FetchContent_Declare(liric
             GIT_REPOSITORY https://github.com/krystophny/liric.git
-            GIT_TAG 9eff0961b7d1740764f83ce260918451344d8a1a)
+            GIT_TAG 1c01cb8e952e63a0704b73021bd42bd7867944d2)
         FetchContent_MakeAvailable(liric)
         set(LIRIC_DIR "${liric_SOURCE_DIR}")
         set(LIRIC_LIB liric)
