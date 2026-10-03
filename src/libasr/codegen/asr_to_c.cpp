@@ -594,7 +594,8 @@ public:
             }
             if (dims.size() == 0 && v.m_symbolic_value && !do_not_initialize) {
                 ASR::expr_t* init_expr = v.m_symbolic_value;
-                if( v.m_storage != ASR::storage_typeType::Parameter ) {
+                if( v.m_storage != ASR::storage_typeType::Parameter &&
+                        !ASRUtils::is_entry_initialized_local(v) ) {
                     for( size_t i = 0; i < v.n_dependencies; i++ ) {
                         std::string variable_name = v.m_dependencies[i];
                         ASR::symbol_t* dep_sym = current_scope->resolve_symbol(variable_name);

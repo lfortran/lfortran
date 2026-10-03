@@ -1,5 +1,0 @@
-warning: Assuming implicit save attribute for variable declaration
-  --> tests/../integration_tests/global_init_07.f90:37:25
-   |
-37 |         type(extent) :: e(1) = extent(5)
-   |                         ^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
