@@ -208,6 +208,10 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if ( ASR::is_a<ASR::Variable_t>(*item.second) ) {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if ( ASRUtils::is_entry_initialized_local(*v) ) {
+                    // E.g. an automatic array bound that uses a host variable.
+                    visit_expr(*v->m_symbolic_value);
+                }
                 if ( ASRUtils::is_array(v->m_type) ) {
                     ASR::dimension_t* m_dims;
                     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, m_dims);

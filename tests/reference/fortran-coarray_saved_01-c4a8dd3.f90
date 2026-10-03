@@ -33,7 +33,7 @@ end subroutine mod_sub
 
 end module coarray_saved_mod
 
-type :: prif_coarray_handle
+type, bind(c) :: prif_coarray_handle
     type(c_ptr) :: info
 end type prif_coarray_handle
 
@@ -59,6 +59,7 @@ call __module_prif_prif_stop(.false.)
 contains
 
 subroutine __lfortran_global_init_coarray_saved_01()
+    use coarray_saved_mod, only: __lfortran_global_init_coarray_saved_mod
     logical(4), save :: __lfortran_global_init_done = .false.
     integer(4) :: stat
     if (.not. __lfortran_global_init_done) then
@@ -92,9 +93,8 @@ subroutine __lfortran_coarray_init_coarray_saved_sub()
 end subroutine __lfortran_coarray_init_coarray_saved_sub
 
 interface
-    subroutine __module_prif_prif_allocate_coarray(lcobounds, ucobounds, size_in_bytes, final_proc,&
-        &
-         coarray_handle, allocated_memory, stat, errmsg, errmsg_alloc)
+    subroutine __module_prif_prif_allocate_coarray(lcobounds, ucobounds, size_in_bytes, final_proc, coarray_handle,&
+         allocated_memory, stat, errmsg, errmsg_alloc)
         type(c_ptr), intent(out) :: allocated_memory
         type(prif_coarray_handle), intent(out) :: coarray_handle
         character(len=*, kind=1), intent(inout), optional :: errmsg
