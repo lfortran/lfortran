@@ -69,6 +69,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             nested_namelist_01:
                 (Program
@@ -95,6 +96,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             nested_namelist_01_mod:
                 (Module
@@ -346,7 +348,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

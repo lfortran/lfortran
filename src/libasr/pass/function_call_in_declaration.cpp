@@ -6,6 +6,11 @@
 #include <libasr/asr_builder.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/pass/gpu_decline.h>
+#include <libasr/pickle.h>
+
+#include <set>
 
 namespace LCompilers {
 
@@ -92,6 +97,12 @@ private :
         std::vector<std::pair<ASR::ExternalSymbol_t*,ASR::symbol_t**>> 
             externalSymbols_vec = get_externalSymbols(expr);
         for(auto &ext_sym : externalSymbols_vec){
+            // The same function may be called more than once in the expression.
+            ASR::symbol_t* already_duplicated = new_function_scope->get_symbol(ext_sym.first->m_name);
+            if (already_duplicated) {
+                *ext_sym.second = already_duplicated;
+                continue;
+            }
             ASRUtils::SymbolDuplicator sym_duplicator_instance(al);
             ASR::symbol_t* extSym_duplicated =  
                 sym_duplicator_instance.duplicate_ExternalSymbol(ext_sym.first, new_function_scope);
@@ -103,6 +114,7 @@ private :
 public:
     Allocator& al;
     SymbolTable* new_function_scope = nullptr;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> helper_arguments;
     SymbolTable* &current_scope; // Dependency -- Passed by visitor -- Avoids maintaining 2 separate variables
     ASR::expr_t* assignment_value = nullptr;
     ASR::expr_t* call_for_return_var = nullptr;
@@ -126,7 +138,49 @@ public:
         if ( new_function_scope == nullptr ) {
             return ;
         }
-        *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, new_function_scope->get_symbol(ASRUtils::symbol_name(x->m_v))));
+        auto helper_argument = helper_arguments.find(x->m_v);
+        ASR::symbol_t* new_sym = helper_argument != helper_arguments.end()
+            ? helper_argument->second
+            : new_function_scope->get_symbol(ASRUtils::symbol_name(x->m_v));
+        *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, new_sym));
+    }
+
+    /*
+        Adds the argument of a helper function through which the helper reads
+        the variable `sym` of the helped scope. Different variables, e.g. two
+        host- or use-associated ones whose names clash in the helper, always
+        get different arguments; `helper_arguments` maps each variable to its
+        argument for replace_Var.
+    */
+    ASR::symbol_t* add_helper_argument(ASR::symbol_t* sym, SymbolTable* new_scope,
+            ASRUtils::SymbolDuplicator &sd) {
+        ASR::symbol_t* original = ASRUtils::symbol_get_past_external(sym);
+        ASR::symbol_t* new_sym = nullptr;
+        if (ASR::is_a<ASR::Variable_t>(*original)) {
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(original);
+            new_sym = sd.duplicate_Variable(v, new_scope);
+            LCOMPILERS_ASSERT(new_sym)
+            ASR::Variable_t* temp_var = ASR::down_cast<ASR::Variable_t>(new_sym);
+            std::string name = new_scope->get_symbol(v->m_name)
+                ? new_scope->get_unique_name(std::string(v->m_name), false)
+                : std::string(v->m_name);
+            if (temp_var->m_intent == ASR::intentType::Local) {
+                new_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, new_sym->base.loc, temp_var->m_parent_symtab,
+                    s2c(al, name), temp_var->m_dependencies, temp_var->n_dependencies, ASR::intentType::In,
+                    nullptr, nullptr, ASR::storage_typeType::Default, temp_var->m_type,
+                    temp_var->m_type_declaration, temp_var->m_abi, temp_var->m_access,
+                    ASR::presenceType::Required, temp_var->m_value_attr, temp_var->m_target_attr));
+            } else {
+                temp_var->m_name = s2c(al, name);
+            }
+            new_scope->add_symbol(name, new_sym);
+        } else {
+            sd.duplicate_symbol(original, new_scope);
+            new_sym = new_scope->get_symbol(ASRUtils::symbol_name(original));
+        }
+        helper_arguments[sym] = new_sym;
+        return new_sym;
     }
 
     // TODO : This replacer should be in a dedicated replacer class, rather than implementing it in the same current replacer. 
@@ -173,7 +227,8 @@ public:
 
         bool exists_in_arginfo(int arg_number, std::vector<ArgInfo>& indices) {
             for (auto info: indices) {
-                if (info.arg_number == arg_number) return true;
+                if (ASR::is_a<ASR::FunctionParam_t>(*info.arg_param) &&
+                        info.arg_number == arg_number) return true;
             }
             return false;
         }
@@ -192,22 +247,19 @@ public:
                 indices.push_back(info);
             }
         }
+        // A variable is identified by its symbol, not by a position in the
+        // current scope: host- and use-associated variables are not in it.
         void visit_Var(const ASR::Var_t& x) {
             LCOMPILERS_ASSERT(current_scope)
             ASR::Var_t* xx = &const_cast<ASR::Var_t&>(x);
-            int arg_num = -1;
-            int i = 0;
-            for (auto &sym: current_scope->get_scope()) {
-                if (sym.second == xx->m_v) { 
-                    arg_num = i;
-                    break;
+            for (auto &info: indices) {
+                if (ASR::is_a<ASR::Var_t>(*info.arg_param) &&
+                        ASR::down_cast<ASR::Var_t>(info.arg_param)->m_v == xx->m_v) {
+                    return;
                 }
-                i++;
             }
-            ArgInfo info = {arg_num, ASRUtils::expr_type(&xx->base), &xx->base , &xx->base};
-            if (!exists_in_arginfo(arg_num, indices)) {
-                indices.push_back(info);
-            }
+            ArgInfo info = {-1, ASRUtils::expr_type(&xx->base), &xx->base , &xx->base};
+            indices.push_back(info);
         }
         // 
         static std::vector<ArgInfo> get(const ASR::expr_t* arg, SymbolTable* current_scope){
@@ -250,25 +302,12 @@ public:
         ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4));
         ASR::expr_t* return_var = b.Variable(new_scope, new_scope->get_unique_name("__lcompilers_return_var_", false), integer_type, ASR::intentType::ReturnVar);
 
+        helper_arguments.clear();
         for (auto arg: indices) {
             ASR::expr_t* arg_expr = arg.arg_expr;
             if (is_a<ASR::Var_t>(*arg_expr)) {
                 ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg_expr);
-                sd.duplicate_symbol(ASRUtils::symbol_get_past_external(var->m_v), new_scope);
-                ASR::symbol_t* new_sym = new_scope->get_symbol(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(var->m_v)));
-                if (ASRUtils::symbol_intent(new_sym) == ASR::intentType::Local) {
-                    if (ASR::is_a<ASR::Variable_t>(*new_sym)) {
-                        ASR::Variable_t* temp_var = ASR::down_cast<ASR::Variable_t>(new_sym);
-                        ASR::symbol_t* updated_sym = ASR::down_cast<ASR::symbol_t>(
-                            ASRUtils::make_Variable_t_util(al, new_sym->base.loc, temp_var->m_parent_symtab, 
-                            temp_var->m_name, temp_var->m_dependencies, temp_var->n_dependencies, ASR::intentType::In, 
-                            nullptr, nullptr, ASR::storage_typeType::Default, temp_var->m_type, 
-                            temp_var->m_type_declaration, temp_var->m_abi, temp_var->m_access, 
-                            ASR::presenceType::Required, temp_var->m_value_attr, temp_var->m_target_attr));
-                        new_scope->add_or_overwrite_symbol(ASRUtils::symbol_name(new_sym), updated_sym);
-                        new_sym = updated_sym;
-                    }
-                }
+                ASR::symbol_t* new_sym = add_helper_argument(var->m_v, new_scope, sd);
                 ASR::expr_t* new_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, new_sym));
                 new_args.push_back(al, new_var_expr);
             }
@@ -318,14 +357,17 @@ public:
         new_function_scope = new_function_scope_copy;
     }
 
-    /* 
-        *Replaces expressions returning non-scalar 
-        in the length member of the ASR::string type
-        * Handles : 
+    /*
+        *Replaces an expression that calls a function returning a non-scalar
+        (array, struct, character) by a call to a new integer helper function
+        that evaluates it. Used for the length member of the ASR::String type
+        and for the dimensions of a local array.
+        * Handles :
         - `ASR::StrLen`
         - `ASR::FunctionCall`
+        - Any other integer expression (when not processing FunctionParam)
     */
-    void stringLength_replacer(ASR::expr_t *x) {
+    void replace_with_helper_function_call(ASR::expr_t *x) {
         if( newargsp != nullptr /*Processing FunctionParam*/) {
             switch(x->type){
                 case ASR::StringLen:
@@ -358,29 +400,16 @@ public:
         Vec<ASR::call_arg_t> args_for_return_var; args_for_return_var.reserve(al, indices.size());
 
         Vec<ASR::stmt_t*> new_body; new_body.reserve(al, 1);
-        std::string new_function_name = global_scope->get_unique_name("__lcompilers_created_helper_function_", false);
-        ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.loc, 4));
+        std::string new_function_name = helper_parent->get_unique_name("__lcompilers_created_helper_function_", false);
+        ASR::ttype_t* integer_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(assignment_value));
         ASR::expr_t* return_var = b.Variable(new_scope, new_scope->get_unique_name("__lcompilers_return_var_", false), integer_type, ASR::intentType::ReturnVar);
 
+        helper_arguments.clear();
         for (auto arg: indices) {
             ASR::expr_t* arg_expr = arg.arg_expr;
             if (is_a<ASR::Var_t>(*arg_expr)) {
                 ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg_expr);
-                sd.duplicate_symbol(ASRUtils::symbol_get_past_external(var->m_v), new_scope);
-                ASR::symbol_t* new_sym = new_scope->get_symbol(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(var->m_v)));
-                if (ASRUtils::symbol_intent(new_sym) == ASR::intentType::Local) {
-                    if (ASR::is_a<ASR::Variable_t>(*new_sym)) {
-                        ASR::Variable_t* temp_var = ASR::down_cast<ASR::Variable_t>(new_sym);
-                        ASR::symbol_t* updated_sym = ASR::down_cast<ASR::symbol_t>(
-                            ASRUtils::make_Variable_t_util(al, new_sym->base.loc, temp_var->m_parent_symtab, 
-                            temp_var->m_name, temp_var->m_dependencies, temp_var->n_dependencies, ASR::intentType::In, 
-                            nullptr, nullptr, ASR::storage_typeType::Default, temp_var->m_type, 
-                            temp_var->m_type_declaration, temp_var->m_abi, temp_var->m_access, 
-                            ASR::presenceType::Required, temp_var->m_value_attr, temp_var->m_target_attr));
-                        new_scope->add_or_overwrite_symbol(ASRUtils::symbol_name(new_sym), updated_sym);
-                        new_sym = updated_sym;
-                    }
-                }
+                ASR::symbol_t* new_sym = add_helper_argument(var->m_v, new_scope, sd);
                 ASR::expr_t* new_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, new_sym));
                 new_args.push_back(al, new_var_expr);
             }
@@ -433,6 +462,613 @@ public:
 
 };
 
+/* ========================= AUTOMATIC ARRAY BOUNDS ===========================*/
+
+/*
+    The bounds of an explicit-shape local (automatic) array are specification
+    expressions. They are evaluated on entry to the procedure or BLOCK, and a
+    later redefinition of a variable they reference does not change them
+    (F2018 8.5.8.2, 10.1.11). The type of the array, and every array type
+    that semantics copied from it into the body, would otherwise evaluate the
+    bound expression again at each use.
+
+    Each bound whose value can change while the procedure or BLOCK executes
+    (see bound_may_change) is therefore captured in a new integer local that
+    is initialized with the bound on entry, and the array type, as well as
+    the types in the body that describe the shape of the array, refer to that
+    local instead:
+
+        real :: tmp(n)              integer :: __lcompilers_tmp_extent_1 = n
+        n = 7                  ->   real :: tmp(__lcompilers_tmp_extent_1)
+        print *, size(tmp + 1)      ...
+*/
+
+// Whether two expressions are the same tree. Unlike ASRUtils::expr_equal it
+// does not treat unknown node kinds as equal.
+static bool same_expr(ASR::expr_t* a, ASR::expr_t* b) {
+    if (a == b) return true;
+    if (a == nullptr || b == nullptr || a->type != b->type) return false;
+    return LCompilers::pickle(a->base) == LCompilers::pickle(b->base);
+}
+
+// Replaces every occurrence of a target in an expression by its replacement.
+// An enclosing occurrence is replaced before the ones it contains.
+class ReplaceSameExpr : public ASR::BaseExprReplacer<ReplaceSameExpr> {
+public:
+    std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> replacements;
+
+    void replace_expr(ASR::expr_t* x) {
+        if (x == nullptr) return;
+        for (auto &r : replacements) {
+            if (same_expr(x, r.first)) {
+                *current_expr = r.second;
+                return;
+            }
+        }
+        ASR::BaseExprReplacer<ReplaceSameExpr>::replace_expr(x);
+    }
+
+    void replace_in(ASR::expr_t* &expr) {
+        current_expr = &expr;
+        replace_expr(expr);
+    }
+};
+
+struct CapturedArrayBounds {
+    // Bounds as declared, and as captured (a Var of the new local for each
+    // captured bound, nullptr for a bound that is left alone).
+    ASR::dimension_t* declared;
+    ASR::dimension_t* captured;
+    size_t n_dims;
+};
+
+static bool is_constant_bound(ASR::expr_t* bound) {
+    return bound == nullptr || ASRUtils::is_value_constant(bound) ||
+        ASRUtils::is_value_constant(ASRUtils::expr_value(bound));
+}
+
+// Whether the value of the variable `sym` stays the same while the procedure
+// or BLOCK that declares an automatic array executes: a named constant, a
+// nonpointer intent(in) dummy argument (of the procedure or of a host), or a
+// local that captures a bound.
+static bool is_invariant_variable(ASR::symbol_t* sym) {
+    sym = ASRUtils::symbol_get_past_external(sym);
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+    ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+    if (v->m_storage == ASR::storage_typeType::Parameter) return true;
+    if (ASRUtils::is_entry_initialized_local(*v)) return true;
+    return v->m_intent == ASR::intentType::In && !ASRUtils::is_pointer(v->m_type);
+}
+
+static bool bound_may_change(ASR::expr_t* e);
+
+// Whether the shape and the length type parameters of the variable `sym`
+// stay the same: those of a nonallocatable, nonpointer variable, and those
+// of an intent(in) dummy argument, cannot change.
+static bool has_invariant_shape(ASR::symbol_t* sym) {
+    sym = ASRUtils::symbol_get_past_external(sym);
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+    ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+    if (v->m_intent == ASR::intentType::In) return true;
+    if (ASRUtils::is_allocatable(v->m_type) || ASRUtils::is_pointer(v->m_type)) {
+        return false;
+    }
+    if (ASRUtils::is_character(*v->m_type)) {
+        // The length of a nonallocatable, nonpointer character variable
+        // is fixed when the variable is declared or associated.
+        return true;
+    }
+    return ASRUtils::is_array(v->m_type);
+}
+
+// The same for the designator `e`: a variable as above, or a nonpointer
+// component or an element of an intent(in) dummy argument (whose
+// allocatable components cannot be allocated or deallocated either).
+static bool has_invariant_shape(ASR::expr_t* e) {
+    e = ASRUtils::get_past_array_physical_cast(e);
+    if (ASR::is_a<ASR::Var_t>(*e)) {
+        return has_invariant_shape(ASR::down_cast<ASR::Var_t>(e)->m_v);
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*e) ||
+            ASR::is_a<ASR::ArrayItem_t>(*e)) {
+        return !ASRUtils::is_pointer(ASRUtils::expr_type(e)) &&
+            !bound_may_change(e);
+    }
+    return false;
+}
+
+/*
+    Whether the value of a bound expression can change while the procedure
+    or BLOCK that declares the automatic array executes. Only such a bound
+    is captured: a bound that references only constants, named constants,
+    intent(in) dummy arguments and inquiries about the shape of dummy
+    arguments evaluates to the same value at each use, and is left as it is.
+    Anything else (a variable of the procedure, of a host or of a module, a
+    dummy argument that can be defined, a function reference) is captured.
+*/
+static bool bound_may_change(ASR::expr_t* e) {
+    if (e == nullptr || ASRUtils::is_value_constant(e) ||
+            ASRUtils::is_value_constant(ASRUtils::expr_value(e))) {
+        return false;
+    }
+    switch (e->type) {
+        case ASR::exprType::Var:
+            return !is_invariant_variable(ASR::down_cast<ASR::Var_t>(e)->m_v);
+        case ASR::exprType::ArraySize: {
+            ASR::ArraySize_t* x = ASR::down_cast<ASR::ArraySize_t>(e);
+            return !has_invariant_shape(x->m_v) || bound_may_change(x->m_dim);
+        }
+        case ASR::exprType::ArrayBound: {
+            ASR::ArrayBound_t* x = ASR::down_cast<ASR::ArrayBound_t>(e);
+            return !has_invariant_shape(x->m_v) || bound_may_change(x->m_dim);
+        }
+        case ASR::exprType::StringLen: {
+            return !has_invariant_shape(ASR::down_cast<ASR::StringLen_t>(e)->m_arg);
+        }
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t* x = ASR::down_cast<ASR::ArrayItem_t>(e);
+            if (bound_may_change(x->m_v)) return true;
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (bound_may_change(x->m_args[i].m_left) ||
+                        bound_may_change(x->m_args[i].m_right) ||
+                        bound_may_change(x->m_args[i].m_step)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t* x = ASR::down_cast<ASR::StructInstanceMember_t>(e);
+            return ASRUtils::is_pointer(x->m_type) || bound_may_change(x->m_v);
+        }
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t* x = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+            return bound_may_change(x->m_left) || bound_may_change(x->m_right);
+        }
+        case ASR::exprType::IntegerUnaryMinus:
+            return bound_may_change(ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg);
+        case ASR::exprType::IntegerCompare: {
+            ASR::IntegerCompare_t* x = ASR::down_cast<ASR::IntegerCompare_t>(e);
+            return bound_may_change(x->m_left) || bound_may_change(x->m_right);
+        }
+        case ASR::exprType::RealBinOp: {
+            ASR::RealBinOp_t* x = ASR::down_cast<ASR::RealBinOp_t>(e);
+            return bound_may_change(x->m_left) || bound_may_change(x->m_right);
+        }
+        case ASR::exprType::RealUnaryMinus:
+            return bound_may_change(ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg);
+        case ASR::exprType::RealCompare: {
+            ASR::RealCompare_t* x = ASR::down_cast<ASR::RealCompare_t>(e);
+            return bound_may_change(x->m_left) || bound_may_change(x->m_right);
+        }
+        case ASR::exprType::LogicalBinOp: {
+            ASR::LogicalBinOp_t* x = ASR::down_cast<ASR::LogicalBinOp_t>(e);
+            return bound_may_change(x->m_left) || bound_may_change(x->m_right);
+        }
+        case ASR::exprType::LogicalCompare: {
+            ASR::LogicalCompare_t* x = ASR::down_cast<ASR::LogicalCompare_t>(e);
+            return bound_may_change(x->m_left) || bound_may_change(x->m_right);
+        }
+        case ASR::exprType::LogicalNot:
+            return bound_may_change(ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg);
+        case ASR::exprType::ArrayPhysicalCast:
+            return bound_may_change(ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
+        case ASR::exprType::ArrayBroadcast: {
+            ASR::ArrayBroadcast_t* x = ASR::down_cast<ASR::ArrayBroadcast_t>(e);
+            return bound_may_change(x->m_array) || bound_may_change(x->m_shape);
+        }
+        case ASR::exprType::Cast:
+            return bound_may_change(ASR::down_cast<ASR::Cast_t>(e)->m_arg);
+        case ASR::exprType::IntrinsicElementalFunction: {
+            ASR::IntrinsicElementalFunction_t* x =
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (bound_may_change(x->m_args[i])) return true;
+            }
+            return false;
+        }
+        case ASR::exprType::IntrinsicArrayFunction: {
+            ASR::IntrinsicArrayFunction_t* x =
+                ASR::down_cast<ASR::IntrinsicArrayFunction_t>(e);
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (bound_may_change(x->m_args[i])) return true;
+            }
+            return false;
+        }
+        default:
+            return true;
+    }
+}
+
+static bool is_automatic_array(const ASR::Variable_t &v) {
+    if (v.m_intent != ASR::intentType::Local ||
+            v.m_storage != ASR::storage_typeType::Default ||
+            !ASR::is_a<ASR::Array_t>(*v.m_type)) {
+        return false;
+    }
+    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(v.m_type);
+    if (array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+        return false;
+    }
+    for (size_t i = 0; i < array_t->n_dims; i++) {
+        if (!is_constant_bound(array_t->m_dims[i].m_start) ||
+                !is_constant_bound(array_t->m_dims[i].m_length)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+    Rewrites the array types in the body that were copied from the type of a
+    captured array. An expression takes the shape of a captured array if it
+    is a reference to it, or if it is an elemental or shape preserving
+    operation on such an expression and has the same rank. Only the bounds
+    that are the same tree as the declared bound are replaced, so a bound
+    evaluated at that point of the body (e.g. of a function result) is kept.
+*/
+class CapturedArrayTypeRewriter : public ASR::BaseWalkVisitor<CapturedArrayTypeRewriter> {
+private:
+    Allocator &al;
+    std::map<ASR::symbol_t*, CapturedArrayBounds> &captured;
+    // For each expression being visited, the captured array whose shape one
+    // of its operands has (nullptr if none).
+    std::vector<ASR::symbol_t*> operand_shape;
+
+    // The type of an expression that has the shape of its array operands.
+    static ASR::ttype_t** shape_preserving_type(ASR::expr_t* x) {
+        switch (x->type) {
+            case ASR::exprType::ArrayPhysicalCast:
+                return &ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_type;
+            case ASR::exprType::ArrayBroadcast:
+                return &ASR::down_cast<ASR::ArrayBroadcast_t>(x)->m_type;
+            case ASR::exprType::Cast:
+                return &ASR::down_cast<ASR::Cast_t>(x)->m_type;
+            case ASR::exprType::IntegerBinOp:
+                return &ASR::down_cast<ASR::IntegerBinOp_t>(x)->m_type;
+            case ASR::exprType::UnsignedIntegerBinOp:
+                return &ASR::down_cast<ASR::UnsignedIntegerBinOp_t>(x)->m_type;
+            case ASR::exprType::RealBinOp:
+                return &ASR::down_cast<ASR::RealBinOp_t>(x)->m_type;
+            case ASR::exprType::ComplexBinOp:
+                return &ASR::down_cast<ASR::ComplexBinOp_t>(x)->m_type;
+            case ASR::exprType::LogicalBinOp:
+                return &ASR::down_cast<ASR::LogicalBinOp_t>(x)->m_type;
+            case ASR::exprType::IntegerCompare:
+                return &ASR::down_cast<ASR::IntegerCompare_t>(x)->m_type;
+            case ASR::exprType::UnsignedIntegerCompare:
+                return &ASR::down_cast<ASR::UnsignedIntegerCompare_t>(x)->m_type;
+            case ASR::exprType::RealCompare:
+                return &ASR::down_cast<ASR::RealCompare_t>(x)->m_type;
+            case ASR::exprType::ComplexCompare:
+                return &ASR::down_cast<ASR::ComplexCompare_t>(x)->m_type;
+            case ASR::exprType::LogicalCompare:
+                return &ASR::down_cast<ASR::LogicalCompare_t>(x)->m_type;
+            case ASR::exprType::StringCompare:
+                return &ASR::down_cast<ASR::StringCompare_t>(x)->m_type;
+            case ASR::exprType::StringConcat:
+                return &ASR::down_cast<ASR::StringConcat_t>(x)->m_type;
+            case ASR::exprType::IntegerUnaryMinus:
+                return &ASR::down_cast<ASR::IntegerUnaryMinus_t>(x)->m_type;
+            case ASR::exprType::RealUnaryMinus:
+                return &ASR::down_cast<ASR::RealUnaryMinus_t>(x)->m_type;
+            case ASR::exprType::ComplexUnaryMinus:
+                return &ASR::down_cast<ASR::ComplexUnaryMinus_t>(x)->m_type;
+            case ASR::exprType::IntegerBitNot:
+                return &ASR::down_cast<ASR::IntegerBitNot_t>(x)->m_type;
+            case ASR::exprType::LogicalNot:
+                return &ASR::down_cast<ASR::LogicalNot_t>(x)->m_type;
+            case ASR::exprType::RealCopySign:
+                return &ASR::down_cast<ASR::RealCopySign_t>(x)->m_type;
+            case ASR::exprType::ComplexRe:
+                return &ASR::down_cast<ASR::ComplexRe_t>(x)->m_type;
+            case ASR::exprType::ComplexIm:
+                return &ASR::down_cast<ASR::ComplexIm_t>(x)->m_type;
+            case ASR::exprType::StructInstanceMember:
+                return &ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_type;
+            case ASR::exprType::IntrinsicElementalFunction:
+                return &ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x)->m_type;
+            case ASR::exprType::IntrinsicArrayFunction: {
+                ASR::IntrinsicArrayFunction_t* f = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(x);
+                switch (static_cast<ASRUtils::IntrinsicArrayFunctions>(f->m_arr_intrinsic_id)) {
+                    case ASRUtils::IntrinsicArrayFunctions::Cshift:
+                    case ASRUtils::IntrinsicArrayFunctions::Eoshift:
+                        return &f->m_type;
+                    default:
+                        return nullptr;
+                }
+            }
+            case ASR::exprType::FunctionCall: {
+                ASR::FunctionCall_t* call = ASR::down_cast<ASR::FunctionCall_t>(x);
+                ASR::symbol_t* fn = ASRUtils::symbol_get_past_external(call->m_name);
+                if (ASR::is_a<ASR::Function_t>(*fn) &&
+                        ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(fn))->m_elemental) {
+                    return &call->m_type;
+                }
+                return nullptr;
+            }
+            default:
+                return nullptr;
+        }
+    }
+
+    // Replaces the declared bounds of `bounds` in `type` by the captured ones.
+    ASR::ttype_t* rewrite_type(ASR::ttype_t* type, const CapturedArrayBounds &bounds) {
+        if (!ASR::is_a<ASR::Array_t>(*type)) return nullptr;
+        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(type);
+        if (array_t->n_dims != bounds.n_dims) return nullptr;
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, array_t->n_dims);
+        bool changed = false;
+        for (size_t i = 0; i < array_t->n_dims; i++) {
+            ASR::dimension_t dim = array_t->m_dims[i];
+            if (bounds.captured[i].m_start && dim.m_start &&
+                    same_expr(dim.m_start, bounds.declared[i].m_start)) {
+                dim.m_start = bounds.captured[i].m_start;
+                changed = true;
+            }
+            if (bounds.captured[i].m_length && dim.m_length &&
+                    same_expr(dim.m_length, bounds.declared[i].m_length)) {
+                dim.m_length = bounds.captured[i].m_length;
+                changed = true;
+            }
+            dims.push_back(al, dim);
+        }
+        if (!changed) return type;
+        return ASRUtils::duplicate_type(al, type, &dims, array_t->m_physical_type, true);
+    }
+
+    void replace_declared_bounds(ASR::expr_t* &value, const CapturedArrayBounds &bounds) {
+        if (value == nullptr || ASRUtils::is_value_constant(value)) return;
+        // The value may share nodes with the declared type.
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        value = duplicator.duplicate_expr(value);
+        ReplaceSameExpr replace;
+        for (size_t i = 0; i < bounds.n_dims; i++) {
+            if (bounds.captured[i].m_length) {
+                replace.replacements.push_back({bounds.declared[i].m_length,
+                    bounds.captured[i].m_length});
+            }
+        }
+        for (size_t i = 0; i < bounds.n_dims; i++) {
+            if (bounds.captured[i].m_start) {
+                replace.replacements.push_back({bounds.declared[i].m_start,
+                    bounds.captured[i].m_start});
+            }
+        }
+        replace.replace_in(value);
+    }
+
+    ASR::symbol_t* shape_of(ASR::expr_t* x, ASR::symbol_t* operand) {
+        if (ASR::is_a<ASR::Var_t>(*x)) {
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x)->m_v;
+            return captured.find(sym) != captured.end() ? sym : nullptr;
+        }
+        if (operand == nullptr) return nullptr;
+        // The value of an inquiry about the shape of the array may be given
+        // in terms of the declared bounds.
+        if (ASR::is_a<ASR::ArraySize_t>(*x)) {
+            replace_declared_bounds(ASR::down_cast<ASR::ArraySize_t>(x)->m_value, captured[operand]);
+            return nullptr;
+        }
+        if (ASR::is_a<ASR::ArrayBound_t>(*x)) {
+            replace_declared_bounds(ASR::down_cast<ASR::ArrayBound_t>(x)->m_value, captured[operand]);
+            return nullptr;
+        }
+        if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*x) &&
+                ASR::down_cast<ASR::IntrinsicArrayFunction_t>(x)->m_arr_intrinsic_id ==
+                    static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape)) {
+            replace_declared_bounds(ASR::down_cast<ASR::IntrinsicArrayFunction_t>(x)->m_value,
+                captured[operand]);
+            // `shape(tmp)`, as used by the broadcast in `tmp = 1`.
+            return operand;
+        }
+        ASR::ttype_t** type = shape_preserving_type(x);
+        if (type == nullptr) return nullptr;
+        ASR::ttype_t* new_type = rewrite_type(*type, captured[operand]);
+        if (new_type == nullptr) return nullptr;
+        *type = new_type;
+        return operand;
+    }
+
+public:
+    CapturedArrayTypeRewriter(Allocator &al_,
+        std::map<ASR::symbol_t*, CapturedArrayBounds> &captured_)
+        : al(al_), captured(captured_) {}
+
+    void visit_expr(const ASR::expr_t &x) {
+        operand_shape.push_back(nullptr);
+        ASR::BaseWalkVisitor<CapturedArrayTypeRewriter>::visit_expr(x);
+        ASR::symbol_t* operand = operand_shape.back();
+        operand_shape.pop_back();
+        ASR::symbol_t* shape = shape_of(const_cast<ASR::expr_t*>(&x), operand);
+        if (shape && !operand_shape.empty() && operand_shape.back() == nullptr) {
+            operand_shape.back() = shape;
+        }
+    }
+
+    void visit_ttype(const ASR::ttype_t &x) {
+        // Expressions in a type (e.g. bounds) are not operands of the
+        // expression that has the type.
+        operand_shape.push_back(nullptr);
+        ASR::BaseWalkVisitor<CapturedArrayTypeRewriter>::visit_ttype(x);
+        operand_shape.pop_back();
+    }
+
+    // The captured array whose shape the expression `x` has (nullptr if none).
+    ASR::symbol_t* visit_operand(ASR::expr_t* x) {
+        operand_shape.push_back(nullptr);
+        visit_expr(*x);
+        ASR::symbol_t* shape = operand_shape.back();
+        operand_shape.pop_back();
+        return shape;
+    }
+
+    /*
+        An associate name takes the shape of its selector. Its type was
+        copied from the type of the selector, so it gets the captured bounds
+        as well, and it is itself treated as a captured array from then on:
+        a selector of a nested ASSOCIATE, or an expression in the body, may
+        have its shape.
+    */
+    void capture_associate_name(ASR::expr_t* target, ASR::symbol_t* shape) {
+        if (shape == nullptr || !ASR::is_a<ASR::Var_t>(*target)) return;
+        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(target)->m_v;
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) return;
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+        ASR::ttype_t* new_type = rewrite_type(v->m_type, captured[shape]);
+        if (new_type) v->m_type = new_type;
+        if (captured.find(sym) == captured.end()) {
+            captured[sym] = captured[shape];
+            added_associate_names = true;
+        }
+    }
+
+    // Whether `target` is the associate name of an ASSOCIATE whose selector
+    // is an expression: semantics declares a nonpointer variable in the
+    // AssociateBlock and assigns the value of the selector to it.
+    static bool is_expression_associate_name(ASR::expr_t* target) {
+        if (!ASR::is_a<ASR::Var_t>(*target)) return false;
+        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(target)->m_v;
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+        return v->m_parent_symtab->asr_owner &&
+            ASR::is_a<ASR::symbol_t>(*v->m_parent_symtab->asr_owner) &&
+            ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(
+                v->m_parent_symtab->asr_owner)) &&
+            !ASRUtils::is_pointer(v->m_type) &&
+            !ASRUtils::is_allocatable(v->m_type);
+    }
+
+public:
+    // Whether an associate name became a captured array during the last
+    // walk (see capture_associate_name); another walk then updates the
+    // expressions that have its shape.
+    bool added_associate_names = false;
+
+    void visit_Associate(const ASR::Associate_t &x) {
+        ASR::symbol_t* shape = visit_operand(x.m_value);
+        visit_expr(*x.m_target);
+        capture_associate_name(x.m_target, shape);
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (!is_expression_associate_name(x.m_target)) {
+            ASR::BaseWalkVisitor<CapturedArrayTypeRewriter>::visit_Assignment(x);
+            return;
+        }
+        ASR::symbol_t* shape = visit_operand(x.m_value);
+        visit_expr(*x.m_target);
+        capture_associate_name(x.m_target, shape);
+        if (x.m_overloaded) visit_stmt(*x.m_overloaded);
+    }
+};
+
+/*
+    Under --gpu=..., the offload passes turn the BLOCKs of an offloaded loop
+    (DO CONCURRENT, or an OpenMP region), and the procedures such a loop
+    references directly or through other procedures, into kernel code, and
+    size the per-thread storage of their automatic arrays from the declared
+    bound expressions. They do not handle a bound captured in a local
+    initialized on entry, so the scopes they may take are not captured: those
+    BLOCKs, the device procedures, the procedures reachable from them or from
+    an offloaded loop, and the BLOCKs of those procedures. Every other scope
+    (a PURE or ELEMENTAL procedure that only host code references included)
+    is captured as without --gpu.
+*/
+class OffloadableScopeCollector : public ASR::BaseWalkVisitor<OffloadableScopeCollector> {
+private:
+    std::set<SymbolTable*> &scopes;
+    // Whether the statements being visited may be device code.
+    bool offloadable = false;
+    std::vector<ASR::Function_t*> reached;
+    std::set<ASR::Function_t*> reached_set;
+
+    void reach(ASR::symbol_t* sym) {
+        if (sym == nullptr) return;
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+            sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(sym)->m_proc);
+        }
+        if (!ASR::is_a<ASR::Function_t>(*sym)) return;
+        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
+        if (reached_set.insert(f).second) {
+            reached.push_back(f);
+        }
+    }
+
+    template <typename T>
+    void visit_offloadable(const T &x) {
+        bool offloadable_copy = offloadable;
+        offloadable = true;
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+        }
+        offloadable = offloadable_copy;
+    }
+
+public:
+    OffloadableScopeCollector(std::set<SymbolTable*> &scopes_) : scopes(scopes_) {}
+
+    void collect(ASR::TranslationUnit_t &unit) {
+        visit_TranslationUnit(unit);
+        offloadable = true;
+        for (size_t i = 0; i < reached.size(); i++) {
+            ASR::Function_t* f = reached[i];
+            scopes.insert(f->m_symtab);
+            for (size_t j = 0; j < f->n_body; j++) {
+                visit_stmt(*f->m_body[j]);
+            }
+        }
+    }
+
+    void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::get_FunctionType(x)->m_exec_space != ASR::exec_spaceType::Host) {
+            reach(const_cast<ASR::symbol_t*>(&x.base));
+        }
+        bool offloadable_copy = offloadable;
+        offloadable = false;
+        ASR::BaseWalkVisitor<OffloadableScopeCollector>::visit_Function(x);
+        offloadable = offloadable_copy;
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        visit_offloadable(x);
+    }
+
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        visit_offloadable(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        if (offloadable) reach(x.m_name);
+        ASR::BaseWalkVisitor<OffloadableScopeCollector>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        if (offloadable) reach(x.m_name);
+        ASR::BaseWalkVisitor<OffloadableScopeCollector>::visit_SubroutineCall(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        if (!offloadable) return;
+        ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        scopes.insert(block->m_symtab);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        if (!offloadable) return;
+        ASR::AssociateBlock_t* block = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
 /* ================================== VISITOR ==================================*/
 
 class FunctionTypeVisitor : public ASR::CallReplacerOnExpressionsVisitor<FunctionTypeVisitor>
@@ -451,15 +1087,21 @@ private:
             ASRUtils::is_array(type)      ||
             ASRUtils::is_struct(*type);
         }
+        // Whether only references to user procedures count.
+        bool function_calls_only = false;
         bool is_call_to_function(const ASR::expr_t* expr){
+            if (function_calls_only) {
+                return ASR::is_a<ASR::FunctionCall_t>(*expr);
+            }
             return ASR::is_a<ASR::FunctionCall_t>(*expr) || 
             ASR::is_a<ASR::IntrinsicArrayFunction_t>(*expr) ||
             ASR::is_a<ASR::IntrinsicElementalFunction_t>(*expr);
         }
     public :
-        static bool check(const ASR::expr_t* expr){
+        static bool check(const ASR::expr_t* expr, bool function_calls_only = false){
             LCOMPILERS_ASSERT(expr)
             expr_contains_functionCall_with_Nonscalar_return instance {};
+            instance.function_calls_only = function_calls_only;
             instance.visit_expr(*expr);
             return instance.found;
         }
@@ -483,6 +1125,10 @@ public:
     SymbolTable* current_scope;
     Vec<ASR::stmt_t*> pass_result;
     ASR::TranslationUnit_t &tt;
+    std::map<ASR::symbol_t*, CapturedArrayBounds> captured;
+    // The scopes whose automatic arrays are not captured (see
+    // OffloadableScopeCollector).
+    std::set<SymbolTable*> uncaptured_scopes;
 
 
 
@@ -499,7 +1145,133 @@ public:
     }
 
 
+    /*
+        A specification expression of a local array may call a function
+        returning a non-scalar, e.g. `real :: tmp(comp(construct(3)))` with
+        `construct` returning a derived type. Later passes would evaluate
+        such a call as a statement at the start of the body, after the
+        array has already been sized. Evaluate the whole bound in a helper
+        function instead, so that the bound is self-contained and the
+        function result is finalized before the body executes.
+    */
+    void replace_nonscalar_calls_in_array_bounds(const ASR::Variable_t &x) {
+        if (x.m_intent != ASR::intentType::Local) return;
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(x.m_type);
+        if (!ASR::is_a<ASR::Array_t>(*type)) return;
+        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(type);
+        for (size_t i = 0; i < array_t->n_dims; i++) {
+            ASR::expr_t** bounds[2] = {&array_t->m_dims[i].m_start, &array_t->m_dims[i].m_length};
+            for (ASR::expr_t** bound : bounds) {
+                // Intrinsic array functions in a bound are handled by
+                // later passes as before.
+                if (*bound && expr_contains_functionCall_with_Nonscalar_return::check(*bound, true)) {
+                    replacer.current_expr = bound;
+                    replacer.assignment_value = *bound;
+                    replacer.replace_with_helper_function_call(*bound);
+                    replacer.assignment_value = nullptr;
+                }
+            }
+        }
+    }
+
+    // Same for the initializer of a local that captures such a bound on entry.
+    void replace_nonscalar_calls_in_entry_initializer(const ASR::Variable_t &x) {
+        if (!ASRUtils::is_entry_initialized_local(x)) return;
+        if (expr_contains_functionCall_with_Nonscalar_return::check(x.m_symbolic_value)) {
+            ASR::expr_t** initializer = const_cast<ASR::expr_t**>(&x.m_symbolic_value);
+            replacer.current_expr = initializer;
+            replacer.assignment_value = *initializer;
+            replacer.replace_with_helper_function_call(*initializer);
+            replacer.assignment_value = nullptr;
+        }
+    }
+
+    ASR::expr_t* create_bound_local(SymbolTable* scope, const ASR::Variable_t &array,
+            const char* what, size_t dim, ASR::expr_t* bound) {
+        std::string name = scope->get_unique_name("__lcompilers_" +
+            std::string(array.m_name) + "_" + what + "_" + std::to_string(dim + 1), false);
+        ASR::ttype_t* type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(bound)));
+        SetChar dependencies; dependencies.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, dependencies, type, bound);
+        ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+            al, bound->base.loc, scope, s2c(al, name), dependencies.p, dependencies.size(),
+            ASR::intentType::Local, bound, nullptr, ASR::storage_typeType::Default, type,
+            nullptr, array.m_abi, ASR::accessType::Public, ASR::presenceType::Required, false));
+        scope->add_symbol(name, sym);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, bound->base.loc, sym));
+    }
+
+    // Captures the non-constant bounds of the automatic arrays declared in
+    // `scope` in locals initialized on entry (see CapturedArrayTypeRewriter).
+    bool capture_automatic_array_bounds(SymbolTable* scope) {
+        bool any_captured = false;
+        if (uncaptured_scopes.count(scope) > 0) return false;
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        for (auto &name : ASRUtils::determine_variable_declaration_order(scope)) {
+            ASR::symbol_t* sym = scope->get_symbol(name);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (!is_automatic_array(*v)) continue;
+            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(v->m_type);
+            Vec<ASR::dimension_t> captured_dims; captured_dims.reserve(al, array_t->n_dims);
+            Vec<ASR::dimension_t> new_dims; new_dims.reserve(al, array_t->n_dims);
+            bool any_dim_captured = false;
+            for (size_t i = 0; i < array_t->n_dims; i++) {
+                ASR::dimension_t dim = array_t->m_dims[i];
+                ASR::dimension_t captured_dim; captured_dim.loc = dim.loc;
+                captured_dim.m_start = nullptr; captured_dim.m_length = nullptr;
+                ASR::dimension_t new_dim = dim;
+                if (bound_may_change(dim.m_start)) {
+                    captured_dim.m_start = create_bound_local(scope, *v, "lbound", i,
+                        duplicator.duplicate_expr(dim.m_start));
+                    new_dim.m_start = captured_dim.m_start;
+                }
+                if (bound_may_change(dim.m_length)) {
+                    ASR::expr_t* length = duplicator.duplicate_expr(dim.m_length);
+                    if (captured_dim.m_start) {
+                        // The extent is `ubound - lbound + 1`: evaluate the
+                        // lower bound only once.
+                        ReplaceSameExpr replace_start;
+                        replace_start.replacements.push_back({dim.m_start, captured_dim.m_start});
+                        replace_start.replace_in(length);
+                    }
+                    captured_dim.m_length = create_bound_local(scope, *v, "extent", i, length);
+                    new_dim.m_length = captured_dim.m_length;
+                }
+                captured_dims.push_back(al, captured_dim);
+                new_dims.push_back(al, new_dim);
+                any_dim_captured = any_dim_captured ||
+                    captured_dim.m_start || captured_dim.m_length;
+            }
+            if (!any_dim_captured) continue;
+            v->m_type = ASRUtils::duplicate_type(al, v->m_type, &new_dims,
+                array_t->m_physical_type, true);
+            SetChar dependencies; dependencies.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, dependencies, v->m_type,
+                v->m_symbolic_value, v->m_value, v->m_name);
+            v->m_dependencies = dependencies.p;
+            v->n_dependencies = dependencies.size();
+            captured[sym] = {ASRUtils::duplicate_dimensions(al, array_t->m_dims, array_t->n_dims),
+                captured_dims.p, array_t->n_dims};
+            any_captured = true;
+        }
+        return any_captured;
+    }
+
     void visit_Variable(const ASR::Variable_t &x){
+        replace_nonscalar_calls_in_array_bounds(x);
+        if (ASRUtils::is_entry_initialized_local(x)) {
+            // Treat the initializer like the array bound it was taken from.
+            replace_nonscalar_calls_in_entry_initializer(x);
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&x.m_symbolic_value);
+            if (is_function_call_or_intrinsic_array_function(x.m_symbolic_value)) {
+                this->call_replacer_(x.m_symbolic_value);
+            }
+            this->visit_expr(*x.m_symbolic_value);
+            current_expr = current_expr_copy;
+        }
         visit_ttype(*x.m_type);
     }
 
@@ -510,6 +1282,14 @@ public:
     void visit_Function(const ASR::Function_t &x) { // NO Body Visiting
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
+        if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Implementation &&
+                capture_automatic_array_bounds(x.m_symtab)) {
+            CapturedArrayTypeRewriter rewriter(al, captured);
+            do {
+                rewriter.added_associate_names = false;
+                rewriter.visit_Function(x);
+            } while (rewriter.added_associate_names);
+        }
         this->visit_ttype(*x.m_function_signature); // Visit signature first to handle returnVar
         for( auto sym: x.m_symtab->get_scope() ) {
             visit_symbol(*sym.second);
@@ -527,7 +1307,16 @@ public:
         current_scope = current_scope_copy;
     }
     
-    void visit_Block(const ASR::Block_t &x)                     { visit_construct(x); }
+    void visit_Block(const ASR::Block_t &x) {
+        if (capture_automatic_array_bounds(x.m_symtab)) {
+            CapturedArrayTypeRewriter rewriter(al, captured);
+            do {
+                rewriter.added_associate_names = false;
+                rewriter.visit_Block(x);
+            } while (rewriter.added_associate_names);
+        }
+        visit_construct(x);
+    }
     void visit_Module(const ASR::Module_t &x)                   { visit_construct(x); }
     void visit_Program(const ASR::Program_t &x)                 { visit_construct(x); }
     void visit_AssociateBlock(const ASR::AssociateBlock_t &x)   { visit_construct(x); }
@@ -545,6 +1334,11 @@ public:
     }
 
     void set_type_of_result_var(const ASR::FunctionType_t &x, ASR::Function_t* func) {
+        if (func->m_return_var == nullptr) {
+            // A function that only declares a procedure type, such as the
+            // interface of an opaque procedure, has no result variable.
+            return;
+        }
         if( ASR::is_a<ASR::Array_t>(*x.m_return_var_type) ) {
             ASR::ttype_t* return_type_copy = ASRUtils::duplicate_type(al, x.m_return_var_type);
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(return_type_copy);
@@ -590,7 +1384,7 @@ public:
             { // Same as `this->call_replacer_()`. We did in here to workaround. In general this needs a refactor.
                 replacer.current_expr = current_expr;
                 replacer.assignment_value = x.m_len;
-                replacer.stringLength_replacer(*current_expr);
+                replacer.replace_with_helper_function_call(*current_expr);
             }
             current_expr = current_expr_copy;
         }
@@ -740,8 +1534,12 @@ public:
 };
 
 void pass_replace_function_call_in_declaration(Allocator &al, ASR::TranslationUnit_t &unit,
-                        const LCompilers::PassOptions& /*pass_options*/) {
+                        const LCompilers::PassOptions& pass_options) {
     FunctionTypeVisitor v(al, unit);
+    if (gpu_device_capabilities(pass_options).device_selected()) {
+        OffloadableScopeCollector collector(v.uncaptured_scopes);
+        collector.collect(unit);
+    }
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);

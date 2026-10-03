@@ -1,4 +1,7 @@
-subroutine a()
+! The bounds of `Y` and `X` below are specification expressions, so
+! Fortran 2023 10.1.11 lets them read `d` and `e` only because those are dummy
+! arguments; a local of this same scoping unit could not appear there.
+subroutine a(d, e)
 implicit integer (b-c)
 implicit integer*4 (d-e)
 implicit integer*8 (f-g)

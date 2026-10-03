@@ -912,7 +912,7 @@
                                                     Local
                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -980,6 +980,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_type_keyval:
                 (Module
@@ -1212,6 +1213,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_type_value:
                 (Module
@@ -1545,7 +1547,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

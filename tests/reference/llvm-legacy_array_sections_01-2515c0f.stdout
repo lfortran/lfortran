@@ -4,7 +4,7 @@ target datalayout = "..."
 
 %array.1 = type { double*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %dimension_descriptor = type { i64, i64, i64 }
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @0 = private unnamed_addr constant [37 x i8] c"__libasr_created__subroutine_call_b1\00", align 1
 @1 = private unnamed_addr constant [56 x i8] c"tests/../integration_tests/legacy_array_sections_01.f90\00", align 1

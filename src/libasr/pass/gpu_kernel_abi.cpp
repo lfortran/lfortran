@@ -1,8 +1,6 @@
 #include <libasr/asr_builder.h>
 #include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/pass_utils.h>
-#include <libasr/pass/parallel_canonicalize.h>
-#include <libasr/pass/replace_openmp.h>
 
 namespace LCompilers {
 
@@ -51,53 +49,15 @@ public:
     }
 };
 
-class LaunchCollector : public ASRUtils::BlockBodyWalkVisitor<LaunchCollector> {
-public:
-    std::vector<ASR::GpuKernelLaunch_t*> launches;
-    void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
-        launches.push_back(const_cast<ASR::GpuKernelLaunch_t*>(&x));
-    }
-    void visit_GpuOffload(const ASR::GpuOffload_t &) {}
-};
-
+// Lays out each kernel once shared lowering has given it its final shape,
+// and passes the workspace extents that layout needs from every launch. A
+// kernel the layout cannot be built for is an error at its launch.
 class FinalizeGpuKernels : public PassUtils::PassVisitor<FinalizeGpuKernels> {
-    ASR::TranslationUnit_t &unit;
     const PassOptions &options;
 
 public:
-    FinalizeGpuKernels(Allocator &al, ASR::TranslationUnit_t &unit,
-            const PassOptions &options)
-        : PassVisitor(al, nullptr), unit(unit), options(options) {}
-
-    void visit_GpuOffload(const ASR::GpuOffload_t &x) {
-        LaunchCollector collector;
-        for (size_t i = 0; i < x.n_body; i++) {
-            collector.visit_stmt(*x.m_body[i]);
-        }
-        LCOMPILERS_ASSERT(collector.launches.size() == 1);
-        ASR::GpuKernelLaunch_t &launch = *collector.launches.front();
-        LCOMPILERS_ASSERT(launch.m_kernel == x.m_kernel);
-        ASR::Function_t &kernel =
-            *ASR::down_cast<ASR::Function_t>(x.m_kernel);
-        GpuDecline decline;
-        bool accepted = gpu_create_kernel_layout(al, kernel,
-            launch.m_args, launch.n_args, decline);
-        ASR::stmt_t **body;
-        size_t n_body;
-        if (accepted) {
-            body = x.m_body;
-            n_body = x.n_body;
-            transform_stmts(body, n_body);
-        } else {
-            report_gpu_decline(options, x.base.base.loc, decline);
-            unit.m_symtab->erase_symbol(kernel.m_name);
-            body = x.m_fallback;
-            n_body = x.n_fallback;
-        }
-        pass_result.reserve(al, n_body);
-        for (size_t i = 0; i < n_body; i++) pass_result.push_back(al, body[i]);
-        remove_original_stmt = true;
-    }
+    FinalizeGpuKernels(Allocator &al, const PassOptions &options)
+        : PassVisitor(al, nullptr), options(options) {}
 
     void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
         ASR::Function_t &kernel =
@@ -106,7 +66,7 @@ public:
             GpuDecline decline;
             if (!gpu_create_kernel_layout(al, kernel, x.m_args, x.n_args,
                     decline)) {
-                report_gpu_decline(options, x.base.base.loc, decline, false);
+                report_gpu_decline(options, x.base.base.loc, decline);
                 return;
             }
         }
@@ -168,22 +128,8 @@ ASR::expr_t* gpu_bind_kernel_expression(Allocator &al,
 void pass_gpu_kernel_finalize(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &options) {
     if (!gpu_device_capabilities(options).device_selected()) return;
-    FinalizeGpuKernels finalizer(al, unit, options);
+    FinalizeGpuKernels finalizer(al, options);
     finalizer.visit_TranslationUnit(unit);
-    pass_replace_openmp(al, unit, options);
-    pass_flatten_omp_regions(al, unit, options);
-    PassUtils::UpdateDependenciesVisitor dependencies(al);
-    dependencies.visit_TranslationUnit(unit);
-}
-
-bool has_pending_gpu_offload(const ASR::TranslationUnit_t &unit) {
-    struct Finder : ASR::BaseWalkVisitor<Finder> {
-        bool found = false;
-        void visit_GpuOffload(const ASR::GpuOffload_t &) { found = true; }
-    };
-    Finder finder;
-    finder.visit_TranslationUnit(unit);
-    return finder.found;
 }
 
 } // namespace LCompilers

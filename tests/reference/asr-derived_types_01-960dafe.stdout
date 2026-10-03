@@ -564,6 +564,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             derived_types_01_m_01:
                 (Module
@@ -854,6 +855,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             derived_types_01_m_02:
                 (Module
@@ -977,7 +979,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )
