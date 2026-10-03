@@ -2813,6 +2813,19 @@ public:
         }
 
         if (a_fmt && ASR::is_a<ASR::IntegerConstant_t>(*a_fmt)) {
+
+            if (_type == AST::stmtType::Read) {
+                diag.add(Diagnostic(
+                    "FORMAT statement labels are not supported yet for formatted READ.",
+                    Level::Error, Stage::Semantic, {
+                        Label(
+                            "use a character literal instead, e.g. READ(*,'(I3)')",
+                            {loc}
+                        )
+                    }));
+                throw SemanticAbort();
+            }
+
             ASR::IntegerConstant_t* a_fmt_int = ASR::down_cast<ASR::IntegerConstant_t>(a_fmt);
             int64_t label = a_fmt_int->m_n;
             if (format_statements.find(label) == format_statements.end()) {
@@ -2845,6 +2858,9 @@ public:
                 }
                 return;
             }
+
+            std::string fmt_str = format_statements[label];
+
             ASR::ttype_t* a_fmt_type = ASRUtils::TYPE(ASR::make_String_t(
                 al, a_fmt->base.loc, 1,
                 ASRUtils::EXPR(ASR::make_IntegerConstant_t(
@@ -2854,6 +2870,7 @@ public:
                 ASR::string_physical_typeType::DescriptorString));
             a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
                 al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
+                a_fmt = a_fmt_constant;
         }
         // Don't use stringFormat with single character argument. An implied
         // do loop is a list of output items rather than a single character
