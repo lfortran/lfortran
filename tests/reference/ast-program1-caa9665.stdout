@@ -2,12 +2,11 @@
     [(Program
         program1
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -24,8 +23,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             i
             5

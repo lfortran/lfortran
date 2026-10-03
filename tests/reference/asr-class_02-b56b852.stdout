@@ -27,6 +27,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             class_circle2:
                 (Module
@@ -97,6 +98,7 @@
                                     []
                                     Source
                                     Private
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -192,6 +194,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 this)]
@@ -323,6 +326,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 this)]
@@ -440,6 +444,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -537,7 +542,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

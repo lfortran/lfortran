@@ -2,12 +2,11 @@
     [(Program
         array8
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeCharacter
                 [(()
@@ -58,7 +57,6 @@
             ())]
             ()
         )]
-        []
         []
     )]
 )

@@ -98,6 +98,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             template_sort_02_m:
                 (Module
@@ -197,6 +198,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 14 lhs)
@@ -323,6 +325,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 lhs)
@@ -377,6 +380,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -403,6 +408,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         v
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -429,6 +436,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -449,12 +458,18 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             v
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -466,6 +481,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 7 lhs)
@@ -488,6 +504,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -514,6 +532,8 @@
                                                     Default
                                                     (TypeParameter
                                                         u
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -540,6 +560,8 @@
                                                     Default
                                                     (TypeParameter
                                                         v
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -584,6 +606,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -610,6 +634,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -636,6 +662,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -662,6 +690,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -682,9 +712,13 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         ()
                                                         Source
@@ -697,6 +731,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 17 lhs)
@@ -744,6 +779,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -770,6 +807,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -796,6 +835,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -822,6 +863,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -842,9 +885,13 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         ()
                                                         Source
@@ -857,6 +904,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 18 lhs)
@@ -928,6 +976,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -978,6 +1028,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -998,9 +1050,13 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (Logical 4)
                                                         Source
@@ -1013,6 +1069,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 11 lhs)
@@ -1041,10 +1098,13 @@
                                                                     (Array
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -1167,6 +1227,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1188,10 +1250,13 @@
                                                         [(Array
                                                             (TypeParameter
                                                                 t
+                                                                NonExtensible
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Integer 4)
                                                         (Integer 4)]
@@ -1206,6 +1271,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [lt
                                                     __instantiated_swap
@@ -1232,6 +1298,8 @@
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -1277,6 +1345,8 @@
                                                                         ())]
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         ColMajor
                                                                         ()
@@ -1309,6 +1379,8 @@
                                                                         ())]
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         ColMajor
                                                                         ()
@@ -1320,6 +1392,8 @@
                                                                         ())]
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         ColMajor
                                                                         ()
@@ -1347,6 +1421,8 @@
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -1358,6 +1434,8 @@
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -1375,10 +1453,13 @@
                                                                 (Array
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))
@@ -1397,10 +1478,13 @@
                                                                 (Array
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))
@@ -1434,6 +1518,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -1481,6 +1567,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1507,6 +1595,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1533,6 +1623,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1559,6 +1651,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1579,9 +1673,13 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         ()
                                                         Source
@@ -1594,6 +1692,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 9 lhs)
@@ -1636,6 +1735,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -1664,11 +1765,11 @@
                                             __asr___instantiated_swap:
                                                 (Function
                                                     (SymbolTable
-                                                        20
+                                                        22
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    20
+                                                                    22
                                                                     lhs
                                                                     []
                                                                     InOut
@@ -1692,7 +1793,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    20
+                                                                    22
                                                                     rhs
                                                                     []
                                                                     InOut
@@ -1716,7 +1817,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    20
+                                                                    22
                                                                     t
                                                                     []
                                                                     In
@@ -1740,7 +1841,7 @@
                                                                 ),
                                                             tmp:
                                                                 (Variable
-                                                                    20
+                                                                    22
                                                                     tmp
                                                                     []
                                                                     Local
@@ -1778,27 +1879,28 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
-                                                    [(Var 20 lhs)
-                                                    (Var 20 rhs)]
+                                                    [(Var 22 lhs)
+                                                    (Var 22 rhs)]
                                                     [(Assignment
-                                                        (Var 20 tmp)
-                                                        (Var 20 lhs)
+                                                        (Var 22 tmp)
+                                                        (Var 22 lhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 20 lhs)
-                                                        (Var 20 rhs)
+                                                        (Var 22 lhs)
+                                                        (Var 22 rhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 20 rhs)
-                                                        (Var 20 tmp)
+                                                        (Var 22 rhs)
+                                                        (Var 22 tmp)
                                                         ()
                                                         .false.
                                                         .false.
@@ -1812,11 +1914,11 @@
                                             __asr___instantiated_swap1:
                                                 (Function
                                                     (SymbolTable
-                                                        21
+                                                        23
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    21
+                                                                    23
                                                                     lhs
                                                                     []
                                                                     InOut
@@ -1840,7 +1942,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    21
+                                                                    23
                                                                     rhs
                                                                     []
                                                                     InOut
@@ -1864,7 +1966,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    21
+                                                                    23
                                                                     t
                                                                     []
                                                                     In
@@ -1888,7 +1990,7 @@
                                                                 ),
                                                             tmp:
                                                                 (Variable
-                                                                    21
+                                                                    23
                                                                     tmp
                                                                     []
                                                                     Local
@@ -1926,27 +2028,28 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
-                                                    [(Var 21 lhs)
-                                                    (Var 21 rhs)]
+                                                    [(Var 23 lhs)
+                                                    (Var 23 rhs)]
                                                     [(Assignment
-                                                        (Var 21 tmp)
-                                                        (Var 21 lhs)
+                                                        (Var 23 tmp)
+                                                        (Var 23 lhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 21 lhs)
-                                                        (Var 21 rhs)
+                                                        (Var 23 lhs)
+                                                        (Var 23 rhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 21 rhs)
-                                                        (Var 21 tmp)
+                                                        (Var 23 rhs)
+                                                        (Var 23 tmp)
                                                         ()
                                                         .false.
                                                         .false.
@@ -1960,11 +2063,11 @@
                                             __asr___instantiated_swap11:
                                                 (Function
                                                     (SymbolTable
-                                                        24
+                                                        25
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    24
+                                                                    25
                                                                     lhs
                                                                     []
                                                                     InOut
@@ -1988,7 +2091,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    24
+                                                                    25
                                                                     rhs
                                                                     []
                                                                     InOut
@@ -2012,7 +2115,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    24
+                                                                    25
                                                                     t
                                                                     []
                                                                     In
@@ -2036,7 +2139,7 @@
                                                                 ),
                                                             tmp:
                                                                 (Variable
-                                                                    24
+                                                                    25
                                                                     tmp
                                                                     []
                                                                     Local
@@ -2074,27 +2177,28 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
-                                                    [(Var 24 lhs)
-                                                    (Var 24 rhs)]
+                                                    [(Var 25 lhs)
+                                                    (Var 25 rhs)]
                                                     [(Assignment
-                                                        (Var 24 tmp)
-                                                        (Var 24 lhs)
+                                                        (Var 25 tmp)
+                                                        (Var 25 lhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 24 lhs)
-                                                        (Var 24 rhs)
+                                                        (Var 25 lhs)
+                                                        (Var 25 rhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 24 rhs)
-                                                        (Var 24 tmp)
+                                                        (Var 25 rhs)
+                                                        (Var 25 tmp)
                                                         ()
                                                         .false.
                                                         .false.
@@ -2252,6 +2356,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 27 lhs)
@@ -2286,11 +2391,11 @@
                                             __asr___instantiated_swap2:
                                                 (Function
                                                     (SymbolTable
-                                                        23
+                                                        24
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    23
+                                                                    24
                                                                     lhs
                                                                     []
                                                                     InOut
@@ -2314,7 +2419,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    23
+                                                                    24
                                                                     rhs
                                                                     []
                                                                     InOut
@@ -2338,7 +2443,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    23
+                                                                    24
                                                                     t
                                                                     []
                                                                     In
@@ -2362,7 +2467,7 @@
                                                                 ),
                                                             tmp:
                                                                 (Variable
-                                                                    23
+                                                                    24
                                                                     tmp
                                                                     []
                                                                     Local
@@ -2400,27 +2505,28 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
-                                                    [(Var 23 lhs)
-                                                    (Var 23 rhs)]
+                                                    [(Var 24 lhs)
+                                                    (Var 24 rhs)]
                                                     [(Assignment
-                                                        (Var 23 tmp)
-                                                        (Var 23 lhs)
+                                                        (Var 24 tmp)
+                                                        (Var 24 lhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 23 lhs)
-                                                        (Var 23 rhs)
+                                                        (Var 24 lhs)
+                                                        (Var 24 rhs)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 23 rhs)
-                                                        (Var 23 tmp)
+                                                        (Var 24 rhs)
+                                                        (Var 24 tmp)
                                                         ()
                                                         .false.
                                                         .false.
@@ -2578,6 +2684,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 26 lhs)
@@ -2628,6 +2735,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -2771,6 +2879,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Integer 4)
                                                         (Integer 4)]
@@ -2785,6 +2894,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [lt_integer
                                                     __asr___instantiated_swap
@@ -2944,6 +3054,7 @@
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))
@@ -2964,6 +3075,7 @@
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))
@@ -2989,11 +3101,11 @@
                                             __instantiated_quicksort1:
                                                 (Function
                                                     (SymbolTable
-                                                        22
+                                                        20
                                                         {
                                                             arr:
                                                                 (Variable
-                                                                    22
+                                                                    20
                                                                     arr
                                                                     []
                                                                     InOut
@@ -3005,6 +3117,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -3022,7 +3135,7 @@
                                                                 ),
                                                             high:
                                                                 (Variable
-                                                                    22
+                                                                    20
                                                                     high
                                                                     []
                                                                     In
@@ -3046,7 +3159,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    22
+                                                                    20
                                                                     i
                                                                     []
                                                                     Local
@@ -3070,7 +3183,7 @@
                                                                 ),
                                                             last:
                                                                 (Variable
-                                                                    22
+                                                                    20
                                                                     last
                                                                     []
                                                                     Local
@@ -3094,7 +3207,7 @@
                                                                 ),
                                                             low:
                                                                 (Variable
-                                                                    22
+                                                                    20
                                                                     low
                                                                     []
                                                                     In
@@ -3118,7 +3231,7 @@
                                                                 ),
                                                             pivot:
                                                                 (Variable
-                                                                    22
+                                                                    20
                                                                     pivot
                                                                     []
                                                                     Local
@@ -3148,6 +3261,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Integer 4)
                                                         (Integer 4)]
@@ -3162,29 +3276,30 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [lt_real
                                                     __asr___instantiated_swap2
                                                     __asr___instantiated_swap11
                                                     __instantiated_quicksort1]
-                                                    [(Var 22 arr)
-                                                    (Var 22 low)
-                                                    (Var 22 high)]
+                                                    [(Var 20 arr)
+                                                    (Var 20 low)
+                                                    (Var 20 high)]
                                                     [(If
                                                         ()
                                                         (IntegerCompare
-                                                            (Var 22 low)
+                                                            (Var 20 low)
                                                             Lt
-                                                            (Var 22 high)
+                                                            (Var 20 high)
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(Assignment
-                                                            (Var 22 pivot)
+                                                            (Var 20 pivot)
                                                             (ArrayItem
-                                                                (Var 22 arr)
+                                                                (Var 20 arr)
                                                                 [(()
-                                                                (Var 22 high)
+                                                                (Var 20 high)
                                                                 ())]
                                                                 (Real 4)
                                                                 ColMajor
@@ -3195,9 +3310,9 @@
                                                             .false.
                                                         )
                                                         (Assignment
-                                                            (Var 22 last)
+                                                            (Var 20 last)
                                                             (IntegerBinOp
-                                                                (Var 22 low)
+                                                                (Var 20 low)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Integer 4)
@@ -3209,10 +3324,10 @@
                                                         )
                                                         (DoLoop
                                                             ()
-                                                            ((Var 22 i)
-                                                            (Var 22 low)
+                                                            ((Var 20 i)
+                                                            (Var 20 low)
                                                             (IntegerBinOp
-                                                                (Var 22 high)
+                                                                (Var 20 high)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Integer 4)
@@ -3225,23 +3340,23 @@
                                                                     5 lt_real
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 22 arr)
+                                                                        (Var 20 arr)
                                                                         [(()
-                                                                        (Var 22 i)
+                                                                        (Var 20 i)
                                                                         ())]
                                                                         (Real 4)
                                                                         ColMajor
                                                                         ()
                                                                     ))
-                                                                    ((Var 22 pivot))]
+                                                                    ((Var 20 pivot))]
                                                                     (Logical 4)
                                                                     ()
                                                                     ()
                                                                 )
                                                                 [(Assignment
-                                                                    (Var 22 last)
+                                                                    (Var 20 last)
                                                                     (IntegerBinOp
-                                                                        (Var 22 last)
+                                                                        (Var 20 last)
                                                                         Add
                                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Integer 4)
@@ -3255,18 +3370,18 @@
                                                                     15 __asr___instantiated_swap2
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 22 arr)
+                                                                        (Var 20 arr)
                                                                         [(()
-                                                                        (Var 22 last)
+                                                                        (Var 20 last)
                                                                         ())]
                                                                         (Real 4)
                                                                         ColMajor
                                                                         ()
                                                                     ))
                                                                     ((ArrayItem
-                                                                        (Var 22 arr)
+                                                                        (Var 20 arr)
                                                                         [(()
-                                                                        (Var 22 i)
+                                                                        (Var 20 i)
                                                                         ())]
                                                                         (Real 4)
                                                                         ColMajor
@@ -3283,10 +3398,10 @@
                                                             15 __asr___instantiated_swap11
                                                             ()
                                                             [((ArrayItem
-                                                                (Var 22 arr)
+                                                                (Var 20 arr)
                                                                 [(()
                                                                 (IntegerBinOp
-                                                                    (Var 22 last)
+                                                                    (Var 20 last)
                                                                     Add
                                                                     (IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Integer 4)
@@ -3298,9 +3413,9 @@
                                                                 ()
                                                             ))
                                                             ((ArrayItem
-                                                                (Var 22 arr)
+                                                                (Var 20 arr)
                                                                 [(()
-                                                                (Var 22 high)
+                                                                (Var 20 high)
                                                                 ())]
                                                                 (Real 4)
                                                                 ColMajor
@@ -3313,7 +3428,7 @@
                                                             15 __instantiated_quicksort1
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 22 arr)
+                                                                (Var 20 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -3321,11 +3436,12 @@
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))
-                                                            ((Var 22 low))
-                                                            ((Var 22 last))]
+                                                            ((Var 20 low))
+                                                            ((Var 20 last))]
                                                             ()
                                                             .false.
                                                         )
@@ -3333,7 +3449,7 @@
                                                             15 __instantiated_quicksort1
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 22 arr)
+                                                                (Var 20 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -3341,17 +3457,18 @@
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))
                                                             ((IntegerBinOp
-                                                                (Var 22 last)
+                                                                (Var 20 last)
                                                                 Add
                                                                 (IntegerConstant 2 (Integer 4) Decimal)
                                                                 (Integer 4)
                                                                 ()
                                                             ))
-                                                            ((Var 22 high))]
+                                                            ((Var 20 high))]
                                                             ()
                                                             .false.
                                                         )]
@@ -3366,11 +3483,11 @@
                                             __instantiated_quicksort2:
                                                 (Function
                                                     (SymbolTable
-                                                        25
+                                                        21
                                                         {
                                                             arr:
                                                                 (Variable
-                                                                    25
+                                                                    21
                                                                     arr
                                                                     []
                                                                     InOut
@@ -3387,6 +3504,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     5 my_type
                                                                     Source
@@ -3404,7 +3522,7 @@
                                                                 ),
                                                             high:
                                                                 (Variable
-                                                                    25
+                                                                    21
                                                                     high
                                                                     []
                                                                     In
@@ -3428,7 +3546,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    25
+                                                                    21
                                                                     i
                                                                     []
                                                                     Local
@@ -3452,7 +3570,7 @@
                                                                 ),
                                                             last:
                                                                 (Variable
-                                                                    25
+                                                                    21
                                                                     last
                                                                     []
                                                                     Local
@@ -3476,7 +3594,7 @@
                                                                 ),
                                                             low:
                                                                 (Variable
-                                                                    25
+                                                                    21
                                                                     low
                                                                     []
                                                                     In
@@ -3500,7 +3618,7 @@
                                                                 ),
                                                             pivot:
                                                                 (Variable
-                                                                    25
+                                                                    21
                                                                     pivot
                                                                     []
                                                                     Local
@@ -3540,6 +3658,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Integer 4)
                                                         (Integer 4)]
@@ -3554,28 +3673,29 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [__asr___instantiated_swap3
                                                     __asr___instantiated_swap12
                                                     __instantiated_quicksort2]
-                                                    [(Var 25 arr)
-                                                    (Var 25 low)
-                                                    (Var 25 high)]
+                                                    [(Var 21 arr)
+                                                    (Var 21 low)
+                                                    (Var 21 high)]
                                                     [(If
                                                         ()
                                                         (IntegerCompare
-                                                            (Var 25 low)
+                                                            (Var 21 low)
                                                             Lt
-                                                            (Var 25 high)
+                                                            (Var 21 high)
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(Assignment
-                                                            (Var 25 pivot)
+                                                            (Var 21 pivot)
                                                             (ArrayItem
-                                                                (Var 25 arr)
+                                                                (Var 21 arr)
                                                                 [(()
-                                                                (Var 25 high)
+                                                                (Var 21 high)
                                                                 ())]
                                                                 (StructType
                                                                     [(Real 4)]
@@ -3591,9 +3711,9 @@
                                                             .false.
                                                         )
                                                         (Assignment
-                                                            (Var 25 last)
+                                                            (Var 21 last)
                                                             (IntegerBinOp
-                                                                (Var 25 low)
+                                                                (Var 21 low)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Integer 4)
@@ -3605,10 +3725,10 @@
                                                         )
                                                         (DoLoop
                                                             ()
-                                                            ((Var 25 i)
-                                                            (Var 25 low)
+                                                            ((Var 21 i)
+                                                            (Var 21 low)
                                                             (IntegerBinOp
-                                                                (Var 25 high)
+                                                                (Var 21 high)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Integer 4)
@@ -3621,9 +3741,9 @@
                                                                     5 lt_my_type
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 25 arr)
+                                                                        (Var 21 arr)
                                                                         [(()
-                                                                        (Var 25 i)
+                                                                        (Var 21 i)
                                                                         ())]
                                                                         (StructType
                                                                             [(Real 4)]
@@ -3634,15 +3754,15 @@
                                                                         ColMajor
                                                                         ()
                                                                     ))
-                                                                    ((Var 25 pivot))]
+                                                                    ((Var 21 pivot))]
                                                                     (Logical 4)
                                                                     ()
                                                                     ()
                                                                 )
                                                                 [(Assignment
-                                                                    (Var 25 last)
+                                                                    (Var 21 last)
                                                                     (IntegerBinOp
-                                                                        (Var 25 last)
+                                                                        (Var 21 last)
                                                                         Add
                                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Integer 4)
@@ -3656,9 +3776,9 @@
                                                                     15 __asr___instantiated_swap3
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 25 arr)
+                                                                        (Var 21 arr)
                                                                         [(()
-                                                                        (Var 25 last)
+                                                                        (Var 21 last)
                                                                         ())]
                                                                         (StructType
                                                                             [(Real 4)]
@@ -3670,9 +3790,9 @@
                                                                         ()
                                                                     ))
                                                                     ((ArrayItem
-                                                                        (Var 25 arr)
+                                                                        (Var 21 arr)
                                                                         [(()
-                                                                        (Var 25 i)
+                                                                        (Var 21 i)
                                                                         ())]
                                                                         (StructType
                                                                             [(Real 4)]
@@ -3694,10 +3814,10 @@
                                                             15 __asr___instantiated_swap12
                                                             ()
                                                             [((ArrayItem
-                                                                (Var 25 arr)
+                                                                (Var 21 arr)
                                                                 [(()
                                                                 (IntegerBinOp
-                                                                    (Var 25 last)
+                                                                    (Var 21 last)
                                                                     Add
                                                                     (IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Integer 4)
@@ -3714,9 +3834,9 @@
                                                                 ()
                                                             ))
                                                             ((ArrayItem
-                                                                (Var 25 arr)
+                                                                (Var 21 arr)
                                                                 [(()
-                                                                (Var 25 high)
+                                                                (Var 21 high)
                                                                 ())]
                                                                 (StructType
                                                                     [(Real 4)]
@@ -3734,7 +3854,7 @@
                                                             15 __instantiated_quicksort2
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 25 arr)
+                                                                (Var 21 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -3747,11 +3867,12 @@
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))
-                                                            ((Var 25 low))
-                                                            ((Var 25 last))]
+                                                            ((Var 21 low))
+                                                            ((Var 21 last))]
                                                             ()
                                                             .false.
                                                         )
@@ -3759,7 +3880,7 @@
                                                             15 __instantiated_quicksort2
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 25 arr)
+                                                                (Var 21 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -3772,17 +3893,18 @@
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))
                                                             ((IntegerBinOp
-                                                                (Var 25 last)
+                                                                (Var 21 last)
                                                                 Add
                                                                 (IntegerConstant 2 (Integer 4) Decimal)
                                                                 (Integer 4)
                                                                 ()
                                                             ))
-                                                            ((Var 25 high))]
+                                                            ((Var 21 high))]
                                                             ()
                                                             .false.
                                                         )]
@@ -3832,6 +3954,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -3866,6 +3989,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     5 my_type
                                                     Source
@@ -3895,6 +4019,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -3925,6 +4050,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -3938,6 +4064,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                                 FixedSizeArray
+                                                Global
                                             )
                                             ColMajor
                                         )
@@ -3955,6 +4082,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                                 FixedSizeArray
+                                                Global
                                             )
                                             ColMajor
                                         )
@@ -4020,6 +4148,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         ))
@@ -4040,6 +4169,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         ))
@@ -4065,6 +4195,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         ))
@@ -4120,6 +4251,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             template_sort_02_type:
                 (Module
@@ -4249,6 +4381,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 lhs)
@@ -4326,6 +4459,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -4338,7 +4472,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

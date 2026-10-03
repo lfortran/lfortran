@@ -2,9 +2,6 @@
     [(Program
         implicit_program_lfortran
         ()
-        []
-        []
-        []
         [(Print
             20
             ()

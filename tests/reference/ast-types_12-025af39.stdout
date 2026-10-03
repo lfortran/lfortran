@@ -15,16 +15,16 @@
             )]
             .true.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Interface
+        )
+        (Interface
             (InterfaceHeader)
             (TriviaNode
                 []
@@ -48,15 +48,13 @@
                     r
                     ()
                     ()
-                    []
                     [(Import
                         [c_int
                         c_double]
                         ImportDefault
                         ()
-                    )]
-                    []
-                    [(Declaration
+                    )
+                    (Declaration
                         (AttrType
                             TypeInteger
                             [(()
@@ -108,11 +106,9 @@
                     )]
                     []
                     []
-                    []
                 )
             )]
         )]
-        []
         []
     )]
 )

@@ -96,6 +96,7 @@
                     [(Allocate
                         [((Var 5 settings)
                         []
+                        []
                         ()
                         ()
                         ())]
@@ -188,6 +189,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             fpm_command_line:
                 (Module
@@ -290,6 +292,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -357,6 +360,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 cmd_settings)]
@@ -400,7 +404,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

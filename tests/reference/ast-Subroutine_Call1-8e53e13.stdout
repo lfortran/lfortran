@@ -2,7 +2,6 @@
     [(Program
         Subroutine_Call1
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -15,9 +14,8 @@
                     "!Subroutine CALL"
                 )]
             )
-        )]
-        []
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             randn
             []

@@ -2,12 +2,11 @@
     [(Program
         fixed_form_interface
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -233,9 +232,6 @@
                     []
                     ()
                     ()
-                    []
-                    []
-                    []
                     [(Declaration
                         (AttrType
                             TypeInteger
@@ -258,7 +254,6 @@
                     )]
                     []
                     []
-                    []
                 )
             )
             (InterfaceProc
@@ -269,9 +264,6 @@
                     res
                     ()
                     ()
-                    []
-                    []
-                    []
                     [(Declaration
                         (AttrType
                             TypeInteger
@@ -310,7 +302,6 @@
                         ())]
                         ()
                     )]
-                    []
                     []
                     []
                 )
@@ -358,8 +349,8 @@
             None
             ())]
             ()
-        )]
-        [(Allocate
+        )
+        (Allocate
             0
             [(()
             (FuncCallOrArray

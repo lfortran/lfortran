@@ -2,8 +2,6 @@
     [(Program
         __xx_main
         ()
-        []
-        []
         [(Declaration
             ()
             [(SimpleAttribute
@@ -18,7 +16,6 @@
             ())]
             ()
         )]
-        []
         []
     )]
 )

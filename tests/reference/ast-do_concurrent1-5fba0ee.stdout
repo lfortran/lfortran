@@ -10,9 +10,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -69,8 +66,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             N
             (FuncCallOrArray
@@ -156,9 +153,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -225,8 +219,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             x
             (Real "1.0")
@@ -376,9 +370,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -445,8 +436,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             x
             (Real "1.0")
@@ -596,9 +587,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -665,8 +653,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             x
             (Real "1.0")

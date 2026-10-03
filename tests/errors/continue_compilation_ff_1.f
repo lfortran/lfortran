@@ -118,4 +118,7 @@ c     module above.
       IF I .EQ. 10 THEN PRINT *, "Ten"
       CALL FUNC( 5, 6,
       IF (i == ICHAR(x_2))) error stop
+      DO WHILE ( I.LT.20 )
+        XINTEGER :: Y
+      END DO
       END PROGRAM continue_compilation_ff

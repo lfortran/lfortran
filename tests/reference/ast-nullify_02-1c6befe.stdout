@@ -2,7 +2,6 @@
     [(Program
         nullify_02
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -10,8 +9,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeReal
                 []
@@ -94,8 +93,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Associate
+        )
+        (Associate
             0
             p1
             t1

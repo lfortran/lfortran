@@ -86,6 +86,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 map)
@@ -128,6 +129,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -140,6 +142,7 @@
                     .false.
                     .false.
                     .true.
+                    ()
                 ),
             submod_submodule_04:
                 (Module
@@ -249,6 +252,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 map)
@@ -283,6 +287,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             submodule_04:
                 (Program
@@ -398,7 +403,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

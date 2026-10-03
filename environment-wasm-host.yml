@@ -3,7 +3,7 @@ channels:
   - https://prefix.dev/emscripten-forge-4x
   - https://prefix.dev/conda-forge
 dependencies:
-  - xeus-lite
-  - xeus
-  - nlohmann_json
-  - llvm
+  - xeus-lite==5.0.0
+  - xeus==6.0.5
+  - nlohmann_json==3.12.0
+  - llvm==22.1.8
