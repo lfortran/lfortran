@@ -410,3 +410,48 @@ jobs:
         env:
           SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
 
+  Liric:
+    name: LFortran Liric compatibility (no LLVM)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@v7
+        with:
+          repository: krystophny/liric
+          ref: 1c01cb8e952e63a0704b73021bd42bd7867944d2
+          path: deps/liric
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment.yml
+          create-args: >-
+            bison=3.4 clang=21 llvm-tools=21
+      - name: Build the compatibility backend and runtime archive tool
+        shell: bash -e -l {0}
+        run: |
+          cmake -S deps/liric -B deps/liric/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DWITH_REAL_LLVM_BACKEND=OFF
+          cmake --build deps/liric/build --parallel 2 --target liric liric_runtime_archive
+          ./build0.sh
+          cmake -S . -B build-liric -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DWITH_LLVM=OFF -DWITH_LIRIC=ON \
+            -DLIRIC_DIR="$PWD/deps/liric" \
+            -DWITH_STACKTRACE=OFF -DWITH_RUNTIME_STACKTRACE=OFF
+          cmake --build build-liric --parallel 2
+      - name: Run runtime-linked native executables and registered tests
+        shell: bash -e -l {0}
+        run: |
+          LFORTRAN_WITH_LIRIC=1 LFORTRAN_DIR="$PWD" \
+            LFORTRAN_BUILD_DIR="$PWD/build-liric" \
+            LIRIC_CLANG="$(command -v clang)" \
+            LIRIC_RUNTIME_ROOTS="_lfortran_dsinh,_lcompilers_print_error,_lfortran_internal_alloc_finalize,_lpython_call_initial_functions" \
+            bash deps/liric/tools/lfortran_mass/prepare_liric_runtime.sh
+          unset LIRIC_RUNTIME_BC LIRIC_RUNTIME_LIB
+          export LIRIC_RUNTIME_ARCHIVE="$PWD/build-liric/liric_runtime.lrarch"
+          export PATH="$PWD/build-liric/src/bin:$PATH"
+          lfortran --backend=liric integration_tests/liric_compat_runtime.f90 \
+            -o /tmp/liric-compat-runtime
+          /tmp/liric-compat-runtime
+          python integration_tests/run_tests.py -b liric -j2

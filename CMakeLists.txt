@@ -149,6 +149,8 @@ endif()
 
 # LLVM
 set(WITH_LLVM no CACHE BOOL "Build with LLVM support")
+set(WITH_LIRIC no CACHE BOOL "Use liric as LLVM replacement (C++ compat headers)")
+set(LIRIC_DIR "" CACHE PATH "Path to liric source/build directory")
 set(WITH_TARGET_AARCH64 no CACHE BOOL "Enable target AARCH64")
 set(WITH_TARGET_X86 no CACHE BOOL "Enable target X86")
 set(WITH_TARGET_WASM no CACHE BOOL "Enable target WebAssembly")
@@ -219,6 +221,49 @@ if (WITH_MACHO)
 endif()
 if (WITH_UNWIND)
     set(HAVE_LFORTRAN_UNWIND yes)
+endif()
+
+if (WITH_LIRIC)
+    if (WITH_LLVM)
+        message(FATAL_ERROR "WITH_LIRIC replaces LLVM; configure with -DWITH_LLVM=OFF")
+    endif()
+    add_compile_definitions(WITH_LIRIC)
+    set(HAVE_LFORTRAN_LIRIC yes)
+    if ("${LIRIC_DIR}" STREQUAL "")
+        include(FetchContent)
+        FetchContent_Declare(liric
+            GIT_REPOSITORY https://github.com/krystophny/liric.git
+            GIT_TAG 1c01cb8e952e63a0704b73021bd42bd7867944d2)
+        FetchContent_MakeAvailable(liric)
+        set(LIRIC_DIR "${liric_SOURCE_DIR}")
+        set(LIRIC_LIB liric)
+        message(STATUS "Fetched liric: ${LIRIC_DIR}")
+    else()
+        find_library(LIRIC_LIB liric
+            PATHS "${LIRIC_DIR}/build" "${LIRIC_DIR}/lib" "${LIRIC_DIR}"
+            NO_DEFAULT_PATH)
+        if (NOT LIRIC_LIB)
+            message(FATAL_ERROR "Could not find libliric in ${LIRIC_DIR}")
+        endif()
+    endif()
+    message(STATUS "Using liric: ${LIRIC_LIB}")
+    add_library(p::liric INTERFACE IMPORTED)
+    set_property(TARGET p::liric PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+        "${LIRIC_DIR}/include/liric" "${LIRIC_DIR}/include")
+    set_property(TARGET p::liric PROPERTY INTERFACE_COMPILE_OPTIONS
+        $<$<COMPILE_LANGUAGE:CXX>:${LFORTRAN_CXX_NO_RTTI_FLAG}>
+        $<$<COMPILE_LANGUAGE:CXX>:-include>
+        $<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/src/libasr/codegen/liric_llvm_alias.h>)
+    find_package(Threads REQUIRED)
+    set_property(TARGET p::liric PROPERTY INTERFACE_LINK_LIBRARIES
+        "${LIRIC_LIB}" stdc++ Threads::Threads ${CMAKE_DL_LIBS})
+    if (UNIX)
+        set_property(TARGET p::liric APPEND PROPERTY INTERFACE_LINK_LIBRARIES m)
+    endif()
+    if (UNIX AND NOT APPLE)
+        add_link_options(
+            $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:-no-pie>)
+    endif()
 endif()
 
 if (WITH_LLVM)
