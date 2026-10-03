@@ -15,6 +15,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             foo2:
                 (Module
@@ -42,6 +43,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -95,9 +97,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     foo2
@@ -106,6 +106,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             test:
                 (Program
@@ -228,7 +229,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

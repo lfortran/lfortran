@@ -24,9 +24,7 @@
                     .false.
                     NotMethod
                     ()
-                    0
                     []
-                    .false.
                 )
         })
     [(Assignment
@@ -37,4 +35,5 @@
         .false.
     )
     (Var 1 x)]
+    ()
 )

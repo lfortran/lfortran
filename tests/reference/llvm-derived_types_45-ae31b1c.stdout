@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%derived_types_45_mod.myint = type { i32 }
+%derived_types_45_mod.myint.3 = type { i32 }
 
 @0 = private unnamed_addr constant [4 x i8] c"ins\00", align 1
 @1 = private unnamed_addr constant [48 x i8] c"tests/../integration_tests/derived_types_45.f90\00", align 1
@@ -16,34 +16,34 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   %2 = call i8* @_lfortran_get_default_allocator()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %ins = alloca %derived_types_45_mod.myint*, align 8
-  store %derived_types_45_mod.myint* null, %derived_types_45_mod.myint** %ins, align 8
-  %temp_struct_var__ = alloca %derived_types_45_mod.myint, align 8
-  %3 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %temp_struct_var__, i32 0, i32 0
-  %4 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %temp_struct_var__, i32 0, i32 0
+  %ins = alloca %derived_types_45_mod.myint.3*, align 8
+  store %derived_types_45_mod.myint.3* null, %derived_types_45_mod.myint.3** %ins, align 8
+  %temp_struct_var__ = alloca %derived_types_45_mod.myint.3, align 8
+  %3 = getelementptr %derived_types_45_mod.myint.3, %derived_types_45_mod.myint.3* %temp_struct_var__, i32 0, i32 0
+  %4 = getelementptr %derived_types_45_mod.myint.3, %derived_types_45_mod.myint.3* %temp_struct_var__, i32 0, i32 0
   store i32 44, i32* %4, align 4
-  %5 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
-  %6 = icmp eq %derived_types_45_mod.myint* %5, null
+  %5 = load %derived_types_45_mod.myint.3*, %derived_types_45_mod.myint.3** %ins, align 8
+  %6 = icmp eq %derived_types_45_mod.myint.3* %5, null
   br i1 %6, label %then, label %else
 
 then:                                             ; preds = %.entry
   %7 = call i8* @_lfortran_get_default_allocator()
   %8 = call i8* @_lfortran_malloc_alloc(i8* %7, i64 4)
   call void @llvm.memset.p0i8.i32(i8* %8, i8 0, i32 4, i1 false)
-  %9 = bitcast i8* %8 to %derived_types_45_mod.myint*
-  store %derived_types_45_mod.myint* %9, %derived_types_45_mod.myint** %ins, align 8
-  %10 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
-  %11 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %10, i32 0, i32 0
+  %9 = bitcast i8* %8 to %derived_types_45_mod.myint.3*
+  store %derived_types_45_mod.myint.3* %9, %derived_types_45_mod.myint.3** %ins, align 8
+  %10 = load %derived_types_45_mod.myint.3*, %derived_types_45_mod.myint.3** %ins, align 8
+  %11 = getelementptr %derived_types_45_mod.myint.3, %derived_types_45_mod.myint.3* %10, i32 0, i32 0
   br label %ifcont
 
 else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %12 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
-  %13 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %temp_struct_var__, i32 0, i32 0
+  %12 = load %derived_types_45_mod.myint.3*, %derived_types_45_mod.myint.3** %ins, align 8
+  %13 = getelementptr %derived_types_45_mod.myint.3, %derived_types_45_mod.myint.3* %temp_struct_var__, i32 0, i32 0
   %14 = load i32, i32* %13, align 4
-  %15 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %12, i32 0, i32 0
+  %15 = getelementptr %derived_types_45_mod.myint.3, %derived_types_45_mod.myint.3* %12, i32 0, i32 0
   br i1 true, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
@@ -54,8 +54,8 @@ else2:                                            ; preds = %ifcont
   br label %ifcont3
 
 ifcont3:                                          ; preds = %else2, %then1
-  %16 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
-  %17 = ptrtoint %derived_types_45_mod.myint* %16 to i64
+  %16 = load %derived_types_45_mod.myint.3*, %derived_types_45_mod.myint.3** %ins, align 8
+  %17 = ptrtoint %derived_types_45_mod.myint.3* %16 to i64
   %18 = icmp eq i64 %17, 0
   br i1 %18, label %then4, label %ifcont5
 
@@ -90,7 +90,7 @@ then4:                                            ; preds = %ifcont3
   unreachable
 
 ifcont5:                                          ; preds = %ifcont3
-  %35 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %16, i32 0, i32 0
+  %35 = getelementptr %derived_types_45_mod.myint.3, %derived_types_45_mod.myint.3* %16, i32 0, i32 0
   %36 = load i32, i32* %35, align 4
   %37 = icmp ne i32 %36, 44
   br i1 %37, label %then6, label %else7
@@ -114,8 +114,8 @@ FINALIZE_SYMTABLE_derived_types_45:               ; preds = %return
   br label %Finalize_Variable_ins
 
 Finalize_Variable_ins:                            ; preds = %FINALIZE_SYMTABLE_derived_types_45
-  %38 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
-  call void @finalize_allocatable__StructType__myint_3_of_derived_types_45_mod(%derived_types_45_mod.myint* %38)
+  %38 = load %derived_types_45_mod.myint.3*, %derived_types_45_mod.myint.3** %ins, align 8
+  call void @finalize_allocatable__StructType__myint_3_of_derived_types_45_mod(%derived_types_45_mod.myint.3* %38)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
@@ -139,14 +139,14 @@ declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lfortran_internal_alloc_finalize()
 
-define internal void @finalize_allocatable__StructType__myint_3_of_derived_types_45_mod(%derived_types_45_mod.myint* %0) {
+define internal void @finalize_allocatable__StructType__myint_3_of_derived_types_45_mod(%derived_types_45_mod.myint.3* %0) {
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
-  %2 = icmp ne %derived_types_45_mod.myint* %0, null
+  %2 = icmp ne %derived_types_45_mod.myint.3* %0, null
   br i1 %2, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %entry
-  %3 = bitcast %derived_types_45_mod.myint* %0 to i8*
+  %3 = bitcast %derived_types_45_mod.myint.3* %0 to i8*
   call void @_lfortran_free_alloc(i8* %1, i8* %3)
   br label %is_allocated.ifcont
 

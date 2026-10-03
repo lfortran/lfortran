@@ -136,9 +136,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -162,9 +160,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     call_fortran_f32
@@ -181,6 +177,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 51 i)]
@@ -218,9 +215,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -244,9 +239,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     call_fortran_f32_value
@@ -263,6 +256,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 52 i)]
@@ -300,9 +294,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -326,9 +318,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     call_fortran_f64
@@ -345,6 +335,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 53 i)]
@@ -382,9 +373,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -408,9 +397,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     call_fortran_f64_value
@@ -427,6 +414,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 54 i)]
@@ -464,9 +452,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -490,9 +476,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     call_fortran_i32
@@ -509,6 +493,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 45 i)]
@@ -546,9 +531,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -572,9 +555,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     call_fortran_i32_value
@@ -591,6 +572,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 46 i)]
@@ -628,9 +610,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -654,9 +634,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     call_fortran_i32_value2
@@ -673,6 +651,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 47 i)]
@@ -710,9 +689,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -736,9 +713,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     call_fortran_i64
@@ -755,6 +730,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 48 i)]
@@ -792,9 +768,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -818,9 +792,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     call_fortran_i64_value
@@ -837,6 +809,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 49 i)]
@@ -874,9 +847,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -900,9 +871,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     call_fortran_i64_value2
@@ -919,6 +888,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 50 i)]
@@ -956,9 +926,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -982,9 +950,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_double_complex_value_return
@@ -1001,6 +967,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 22 b)]
@@ -1038,9 +1005,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -1064,9 +1029,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_float_complex_value_return
@@ -1083,6 +1046,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 21 b)]
@@ -1120,9 +1084,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -1146,9 +1108,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -1172,9 +1132,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_double
@@ -1192,6 +1150,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 14 a)
@@ -1230,9 +1189,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -1256,9 +1213,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -1282,9 +1237,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_double_complex
@@ -1302,6 +1255,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 16 a)
@@ -1340,9 +1294,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -1366,9 +1318,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -1392,9 +1342,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_double_complex2
@@ -1412,6 +1360,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 18 a)
@@ -1450,9 +1399,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -1476,9 +1423,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -1502,9 +1447,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_double_complex_value
@@ -1522,6 +1465,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 20 a)
@@ -1560,9 +1504,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -1586,9 +1528,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -1612,9 +1552,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_double_value
@@ -1632,6 +1570,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 24 a)
@@ -1670,9 +1609,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -1696,9 +1633,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -1722,9 +1657,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_double_value_name
@@ -1742,6 +1675,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 31 a)
@@ -1772,6 +1706,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 27 n))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -1785,9 +1720,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -1811,9 +1744,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -1837,9 +1768,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_doublearray
@@ -1854,6 +1783,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )]
                                         (Real 8)
                                         BindC
@@ -1866,6 +1796,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 27 n)
@@ -1896,6 +1827,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -1909,9 +1841,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -1935,9 +1865,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -1961,9 +1889,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_doublearray_star
@@ -1974,6 +1900,7 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            Global
                                         )]
                                         (Real 8)
                                         BindC
@@ -1986,6 +1913,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 30 n)
@@ -2024,9 +1952,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -2050,9 +1976,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -2076,9 +2000,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_float
@@ -2096,6 +2018,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 a)
@@ -2134,9 +2057,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -2160,9 +2081,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -2186,9 +2105,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_float_complex
@@ -2206,6 +2123,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 15 a)
@@ -2244,9 +2162,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -2270,9 +2186,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -2296,9 +2210,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_float_complex2
@@ -2316,6 +2228,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 17 a)
@@ -2354,9 +2267,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -2380,9 +2291,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -2406,9 +2315,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_float_complex_value
@@ -2426,6 +2333,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 19 a)
@@ -2464,9 +2372,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -2490,9 +2396,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -2516,9 +2420,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_float_value
@@ -2536,6 +2438,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 23 a)
@@ -2566,6 +2469,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 26 n))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -2579,9 +2483,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -2605,9 +2507,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -2631,9 +2531,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_floatarray
@@ -2648,6 +2546,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )]
                                         (Real 4)
                                         BindC
@@ -2660,6 +2559,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 26 n)
@@ -2690,6 +2590,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -2703,9 +2604,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -2729,9 +2628,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -2755,9 +2652,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_floatarray_star
@@ -2768,6 +2663,7 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            Global
                                         )]
                                         (Real 4)
                                         BindC
@@ -2780,6 +2676,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 29 n)
@@ -2810,6 +2707,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 25 n))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -2823,9 +2721,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -2849,9 +2745,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -2875,9 +2769,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_intarray
@@ -2892,6 +2784,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )]
                                         (Integer 4)
                                         BindC
@@ -2904,6 +2797,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 25 n)
@@ -2934,6 +2828,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -2947,9 +2842,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -2973,9 +2866,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -2999,9 +2890,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_int_intarray_star
@@ -3012,6 +2901,7 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            Global
                                         )]
                                         (Integer 4)
                                         BindC
@@ -3024,6 +2914,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 28 n)
@@ -3062,9 +2953,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -3088,9 +2977,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_string
@@ -3107,6 +2994,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [f_string0]
                                     [(Var 55 s)]
@@ -3170,9 +3058,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -3196,9 +3082,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     f_string0
@@ -3215,6 +3099,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 44 s)]
@@ -3252,9 +3137,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -3278,9 +3161,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     fortran_f32
@@ -3297,6 +3178,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 60 i)]
@@ -3349,9 +3231,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -3375,9 +3255,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     fortran_f32_value
@@ -3394,6 +3272,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 61 i)]
@@ -3446,9 +3325,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -3472,9 +3349,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     fortran_f64
@@ -3491,6 +3366,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 62 i)]
@@ -3543,9 +3419,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -3569,9 +3443,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     fortran_f64_value
@@ -3588,6 +3460,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 63 i)]
@@ -3640,9 +3513,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -3666,9 +3537,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     fortran_i32
@@ -3685,6 +3554,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 56 i)]
@@ -3734,9 +3604,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -3760,9 +3628,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     fortran_i32_value
@@ -3779,6 +3645,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 57 i)]
@@ -3828,9 +3695,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -3854,9 +3719,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     fortran_i64
@@ -3873,6 +3736,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 58 i)]
@@ -3928,9 +3792,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -3954,9 +3816,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     fortran_i64_value
@@ -3973,6 +3833,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 59 i)]
@@ -4028,9 +3889,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -4054,9 +3913,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -4080,9 +3937,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sub_int_double
@@ -4101,6 +3956,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 33 a)
@@ -4140,9 +3996,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -4166,9 +4020,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -4192,9 +4044,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sub_int_double_complex
@@ -4213,6 +4063,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 35 a)
@@ -4252,9 +4103,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -4278,9 +4127,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -4304,9 +4151,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sub_int_double_complex_value
@@ -4325,6 +4170,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 39 a)
@@ -4364,9 +4210,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -4390,9 +4234,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -4416,9 +4258,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sub_int_double_value
@@ -4437,6 +4277,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 37 a)
@@ -4476,9 +4317,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -4502,9 +4341,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -4528,9 +4365,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sub_int_double_value_name
@@ -4549,6 +4384,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 43 a)
@@ -4580,6 +4416,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 42 n))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -4593,9 +4430,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -4619,9 +4454,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -4645,9 +4478,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sub_int_doublearray
@@ -4662,6 +4493,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         (Real 8)]
                                         ()
@@ -4675,6 +4507,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 42 n)
@@ -4714,9 +4547,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -4740,9 +4571,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -4766,9 +4595,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sub_int_float
@@ -4787,6 +4614,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 32 a)
@@ -4826,9 +4654,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -4852,9 +4678,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -4878,9 +4702,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sub_int_float_complex
@@ -4899,6 +4721,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 34 a)
@@ -4938,9 +4761,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -4964,9 +4785,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -4990,9 +4809,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sub_int_float_complex_value
@@ -5011,6 +4828,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 38 a)
@@ -5050,9 +4868,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -5076,9 +4892,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -5102,9 +4916,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sub_int_float_value
@@ -5123,6 +4935,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 36 a)
@@ -5154,6 +4967,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 41 n))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -5167,9 +4981,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -5193,9 +5005,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -5219,9 +5029,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sub_int_floatarray
@@ -5236,6 +5044,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         (Real 4)]
                                         ()
@@ -5249,6 +5058,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 41 n)
@@ -5280,6 +5090,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 40 n))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -5293,9 +5104,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -5319,9 +5128,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -5345,9 +5152,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sub_int_intarray
@@ -5362,6 +5167,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         (Integer 4)]
                                         ()
@@ -5375,6 +5181,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 40 n)
@@ -5395,7 +5202,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

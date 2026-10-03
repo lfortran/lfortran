@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -34,9 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -52,6 +51,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -65,9 +65,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             ifault:
                                 (Variable
@@ -91,9 +89,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -117,9 +113,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             r:
                                 (Variable
@@ -143,9 +137,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     f
@@ -162,6 +154,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )]
                         ()
                         Source
@@ -174,6 +167,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 ifault)
@@ -228,6 +222,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -241,9 +236,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -259,6 +252,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -272,9 +266,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             g:
                                 (Variable
@@ -298,9 +290,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             ifault:
                                 (Variable
@@ -324,9 +314,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -350,9 +338,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             r:
                                 (Variable
@@ -376,9 +362,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     g
@@ -395,6 +379,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )]
                         (Integer 4)
                         Source
@@ -407,6 +392,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 3 ifault)
@@ -444,4 +430,5 @@
                 )
         })
     []
+    ()
 )

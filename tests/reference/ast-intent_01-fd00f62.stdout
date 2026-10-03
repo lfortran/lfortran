@@ -8,9 +8,6 @@
             (EndOfLine)]
         )
         []
-        []
-        []
-        []
         [(Subroutine
             foo
             [(c)
@@ -22,9 +19,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -63,8 +57,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 e
                 (FuncCallOrArray
@@ -117,9 +111,6 @@
                     [(EndOfLine)
                     (EndOfLine)]
                 )
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeReal
@@ -139,8 +130,8 @@
                     None
                     ())]
                     ()
-                )]
-                [(Assignment
+                )
+                (Assignment
                     0
                     f
                     (* 2 x)
@@ -167,10 +158,8 @@
             []
             .false.
             ()
-        )]
-        []
-        []
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             foo
             []

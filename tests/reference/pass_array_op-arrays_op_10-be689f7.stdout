@@ -34,9 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -52,6 +50,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -65,9 +64,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     compare_solutions
@@ -84,6 +81,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [solution]
                                     []
@@ -100,6 +98,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     ()
@@ -129,6 +128,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                                     FixedSizeArray
+                                                    Global
                                                 )
                                                 ()
                                                 ()
@@ -241,6 +241,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -254,9 +255,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     solution
@@ -267,6 +266,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 2 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                            Global
                                         )
                                         Source
                                         Implementation
@@ -278,6 +278,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -333,7 +334,9 @@
                         ()
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

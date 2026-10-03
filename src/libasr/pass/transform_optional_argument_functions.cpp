@@ -231,6 +231,28 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
         }
 
         void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+            // In interactive mode each cell is a TranslationUnit chained to
+            // the previous one. A procedure declared in an earlier cell was
+            // transformed when that cell was compiled, and this cell's calls
+            // to it have to be transformed the same way, so visit the earlier
+            // cells too. Transforming is idempotent: once a procedure takes a
+            // presence flag instead of an optional argument, there is nothing
+            // left for is_optional_argument_present() to find.
+            for (SymbolTable *s = x.m_symtab->parent; s != nullptr; s = s->parent) {
+                if( !ASRUtils::is_tu_scope(s) ) continue;
+                for (auto &item : s->get_scope()) {
+                    if (is_a<ASR::Function_t>(*item.second)) {
+                        ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
+                        if (is_optional_argument_present(f)) {
+                            transform_functions_with_optional_arguments(f);
+                        }
+                    }
+                }
+                for (auto &item : s->get_scope()) {
+                    this->visit_symbol(*item.second);
+                }
+            }
+
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::Function_t>(*item.second)) {
                     ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
@@ -360,8 +382,10 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(func_sym);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(v->m_type)));
         func_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-        ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(v->m_type_declaration))->m_function_signature);
+        ASR::ttype_t* new_type = ASRUtils::TYPE(
+            ASRUtils::ExprStmtWithScopeDuplicator(al, scope).
+                duplicate_FunctionType(ASRUtils::get_FunctionType(
+                    ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration)))));
         if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
             new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, v->base.base.loc, new_type));
         }
@@ -414,7 +438,17 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     }
                 }
                 ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
-                if( ASR::is_a<ASR::Array_t>(*arg_type) ) { // Create dummy array dims
+                if( ASR::is_a<ASR::Array_t>(*arg_type) &&
+                    ASR::down_cast<ASR::Array_t>(arg_type)->m_physical_type ==
+                        ASR::array_physical_typeType::AssumedRankArray ) {
+                    // An assumed-rank dummy has no rank to copy dimensions
+                    // from, and assumed rank is only meaningful on a dummy
+                    // argument anyway. This placeholder stands in for an
+                    // argument that is absent, so it is never accessed and
+                    // the element type is enough.
+                    arg_type = ASRUtils::duplicate_type(al,
+                        ASR::down_cast<ASR::Array_t>(arg_type)->m_type);
+                } else if( ASR::is_a<ASR::Array_t>(*arg_type) ) { // Create dummy array dims
                     ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(arg_type);
                     Vec<ASR::dimension_t> dims;
                     dims.reserve(al, array_t->n_dims);
@@ -430,7 +464,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     arg_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg_type->base.loc,
                                 array_t->m_type, dims.p, dims.size(),
                                 (ASRUtils::is_character(*array_t->m_type) || ASRUtils::is_class_type(array_t->m_type))
-                                    ? ASR::PointerArray : ASR::FixedSizeArray));
+                                    ? ASR::PointerArray : ASR::FixedSizeArray, ASR::memory_spaceType::Global));
                 }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(
                     x.m_args[i].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
@@ -555,6 +589,15 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 if (arg_decl && ASRUtils::is_unlimited_polymorphic_type(arg_decl)) {
                     dummy_variable_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
                 }
+                {
+                    ASR::ttype_t* formal_t = func_arg_j->m_type;
+                    if (ASR::is_a<ASR::Array_t>(*formal_t) &&
+                        ASR::down_cast<ASR::Array_t>(formal_t)->m_physical_type
+                            == ASR::array_physical_typeType::AssumedRankArray) {
+                        dummy_variable_type = ASRUtils::duplicate_type(al,
+                            ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
+                    }
+                }
                 ASR::ttype_t* pointer_variable_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
                 // Don't declare AssumedLength strings, they are only arguments
                 if (ASRUtils::is_string_only(dummy_variable_type) || ASRUtils::is_array_of_strings(dummy_variable_type)) {
@@ -585,7 +628,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     }
                     dummy_variable_type = ASRUtils::TYPE(
                             ASR::make_Array_t(
-                                al, dummy_variable_type->base.loc, ASRUtils::extract_type(dummy_variable_type), dims.p, n_dims, phy_type));
+                                al, dummy_variable_type->base.loc, ASRUtils::extract_type(dummy_variable_type), dims.p, n_dims, phy_type, ASR::memory_spaceType::Global));
                 }
                 if (ASRUtils::is_assumed_rank_array(func_arg_j->m_type) &&
                     !ASRUtils::is_allocatable(func_arg_j->m_type)) {
@@ -626,7 +669,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         }
                         dummy_variable_type = ASRUtils::TYPE(
                             ASR::make_Array_t(al, dummy_variable_type->base.loc,
-                                elem_type, dims.p, n_dims_actual, phy_type));
+                                elem_type, dims.p, n_dims_actual, phy_type, ASR::memory_spaceType::Global));
                     } else {
                         // Scalar actual argument
                         dummy_variable_type = elem_type;
@@ -797,12 +840,97 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
         }
 };
 
+// A `procedure(iface)` entity holds a copy of the interface's FunctionType
+// rather than sharing it, so transforming the interface leaves the entity
+// declaring the argument list the procedure no longer has. A call through it
+// is then checked against a signature nothing has.
+class UpdateProcedureEntityTypes:
+    public ASR::BaseWalkVisitor<UpdateProcedureEntityTypes> {
+
+    public:
+
+        Allocator& al;
+        std::map<ASR::symbol_t*, std::vector<int32_t>>& transformed;
+        std::set<ASR::symbol_t*> retyped;
+
+        UpdateProcedureEntityTypes(Allocator& al_,
+            std::map<ASR::symbol_t*, std::vector<int32_t>>& transformed_) :
+            al{al_}, transformed{transformed_} {}
+
+        void visit_Variable(const ASR::Variable_t& x) {
+            ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
+            if( xx.m_type_declaration == nullptr ) {
+                return;
+            }
+            ASR::symbol_t* decl = ASRUtils::symbol_get_past_external(
+                xx.m_type_declaration);
+            if( decl == nullptr || !ASR::is_a<ASR::Function_t>(*decl) ||
+                transformed.find(decl) == transformed.end() ) {
+                return;
+            }
+            if( !ASR::is_a<ASR::FunctionType_t>(
+                    *ASRUtils::type_get_past_pointer(xx.m_type)) ) {
+                return;
+            }
+            ASR::ttype_t* signature = ASR::down_cast<ASR::Function_t>(
+                decl)->m_function_signature;
+            if( ASRUtils::is_pointer(xx.m_type) ) {
+                xx.m_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+                    al, xx.base.base.loc, signature));
+            } else {
+                xx.m_type = signature;
+            }
+            retyped.insert((ASR::symbol_t*) &xx);
+        }
+
+        // A cast of a procedure to a transformed interface takes the
+        // interface's new signature, the same way.
+        void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t& x) {
+            ASR::BaseWalkVisitor<UpdateProcedureEntityTypes>::visit_FunctionPointerCast(x);
+            if( x.m_to == nullptr ) {
+                return;
+            }
+            ASR::symbol_t* to = ASRUtils::symbol_get_past_external(x.m_to);
+            if( to == nullptr || !ASR::is_a<ASR::Function_t>(*to) ||
+                transformed.find(to) == transformed.end() ) {
+                return;
+            }
+            const_cast<ASR::FunctionPointerCast_t&>(x).m_type =
+                ASR::down_cast<ASR::Function_t>(to)->m_function_signature;
+        }
+
+        void visit_Function(const ASR::Function_t& x) {
+            ASR::BaseWalkVisitor<UpdateProcedureEntityTypes>::visit_Function(x);
+            // The signature repeats each dummy's type, so a dummy whose type
+            // just changed leaves the two disagreeing. Only those dummies:
+            // every other argument type belongs to the signature as it is.
+            ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(x);
+            if( ft->n_arg_types != x.n_args ) {
+                return;
+            }
+            for( size_t i = 0; i < x.n_args; i++ ) {
+                if( !ASR::is_a<ASR::Var_t>(*x.m_args[i]) ) {
+                    continue;
+                }
+                ASR::symbol_t* arg = ASR::down_cast<ASR::Var_t>(
+                    x.m_args[i])->m_v;
+                if( arg == nullptr || retyped.find(arg) == retyped.end() ) {
+                    continue;
+                }
+                ft->m_arg_types[i] = ASR::down_cast<ASR::Variable_t>(
+                    arg)->m_type;
+            }
+        }
+};
+
 void pass_transform_optional_argument_functions(
     Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& /*pass_options*/) {
     std::map<ASR::symbol_t*, std::vector<int32_t>> sym2optionalargidx;
     TransformFunctionsWithOptionalArguments v(al, sym2optionalargidx);
     v.visit_TranslationUnit(unit);
+    UpdateProcedureEntityTypes u(al, sym2optionalargidx);
+    u.visit_TranslationUnit(unit);
     ReplaceFunctionCallsWithOptionalArgumentsVisitor w(al, sym2optionalargidx);
     w.visit_TranslationUnit(unit);
     ReplaceSubroutineCallsWithOptionalArgumentsVisitor y(al, sym2optionalargidx);

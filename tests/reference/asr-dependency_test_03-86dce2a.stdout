@@ -39,9 +39,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     default_help
@@ -58,6 +56,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     []
@@ -88,6 +87,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -111,6 +111,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             m_cli2_user:
                 (Module
@@ -134,7 +135,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

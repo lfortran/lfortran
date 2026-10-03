@@ -89,9 +89,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -115,9 +113,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             newshape:
                                 (Variable
@@ -133,6 +129,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -146,9 +143,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             queries:
                                 (Variable
@@ -159,8 +154,10 @@
                                     ()
                                     ()
                                     Default
-                                    (CPtr)
-                                    ()
+                                    (CPtr
+                                        CPointer
+                                    )
+                                    2 c_ptr
                                     Source
                                     Public
                                     Required
@@ -172,27 +169,31 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             queries2:
                                 (Variable
                                     2
                                     queries2
-                                    []
+                                    [c_ptr]
                                     Local
                                     (PointerNullConstant
-                                        (CPtr)
-                                        ()
+                                        (CPtr
+                                            CPointer
+                                        )
+                                        (Var 2 c_ptr)
                                     )
                                     (PointerNullConstant
-                                        (CPtr)
-                                        ()
+                                        (CPtr
+                                            CPointer
+                                        )
+                                        (Var 2 c_ptr)
                                     )
                                     Default
-                                    (CPtr)
-                                    ()
+                                    (CPtr
+                                        CPointer
+                                    )
+                                    2 c_ptr
                                     Source
                                     Public
                                     Required
@@ -204,9 +205,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -225,6 +224,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -239,9 +239,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             xv:
                                 (Variable
@@ -259,6 +257,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -272,9 +271,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -293,6 +290,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -307,9 +305,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             yv:
                                 (Variable
@@ -327,6 +323,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -340,9 +337,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     bindc4
@@ -390,6 +385,7 @@
                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 4 (Integer 4) Decimal))]
                                 DescriptorArray
+                                Global
                             )
                             ()
                         )
@@ -407,6 +403,7 @@
                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 4 (Integer 4) Decimal))]
                                 DescriptorArray
+                                Global
                             )
                             ()
                         )
@@ -472,7 +469,9 @@
                                                 )
                                                 ()
                                             )
-                                            (CPtr)
+                                            (CPtr
+                                                CPointer
+                                            )
                                             ()
                                         )
                                         (IntegerConstant 0 (Integer 8) Decimal)
@@ -503,7 +502,9 @@
                             [(BitCast
                                 (PointerToCPtr
                                     (Var 2 x)
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (IntegerConstant 0 (Integer 8) Decimal)
@@ -586,7 +587,9 @@
                                                 )
                                                 ()
                                             )
-                                            (CPtr)
+                                            (CPtr
+                                                CPointer
+                                            )
                                             ()
                                         )
                                         (IntegerConstant 0 (Integer 8) Decimal)
@@ -616,6 +619,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                 PointerArray
+                                Global
                             )
                             ColMajor
                         )
@@ -627,7 +631,9 @@
                             [(BitCast
                                 (PointerToCPtr
                                     (Var 2 x)
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (IntegerConstant 0 (Integer 8) Decimal)
@@ -710,7 +716,9 @@
                                                 )
                                                 ()
                                             )
-                                            (CPtr)
+                                            (CPtr
+                                                CPointer
+                                            )
                                             ()
                                         )
                                         (IntegerConstant 0 (Integer 8) Decimal)
@@ -753,7 +761,9 @@
                                         )
                                         ()
                                     )
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (Logical 4)
@@ -774,7 +784,9 @@
                                 (Var 2 queries)
                                 (PointerToCPtr
                                     (Var 2 x)
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (Logical 4)
@@ -794,7 +806,9 @@
                             (Var 2 queries)
                             (PointerToCPtr
                                 (Var 2 y)
-                                (CPtr)
+                                (CPtr
+                                    CPointer
+                                )
                                 ()
                             )
                             (Logical 4)
@@ -821,16 +835,20 @@
                     (Assignment
                         (Var 2 queries)
                         (PointerNullConstant
-                            (CPtr)
-                            ()
+                            (CPtr
+                                CPointer
+                            )
+                            (Var 2 c_null_ptr)
                         )
                         ()
                         .false.
                         .false.
                     )]
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
 )

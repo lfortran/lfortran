@@ -17,6 +17,7 @@
                             (String 1 (IntegerConstant 28 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 ),
             tomlf_utils_sort:
                 (Module
@@ -33,8 +34,8 @@
                                                     8
                                                     1_toml_key_key
                                                     3 key
-                                                    toml_key
-                                                    []
+                                                    tomlf_utils_sort
+                                                    [toml_key]
                                                     key
                                                     Public
                                                 ),
@@ -60,9 +61,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             lhs:
                                                 (Variable
@@ -93,9 +92,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -126,9 +123,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     compare_keys_less
@@ -160,6 +155,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 8 lhs)
@@ -224,9 +220,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             lhs:
                                                 (Variable
@@ -257,9 +251,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -290,9 +282,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     compare_less
@@ -324,6 +314,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 lhs)
@@ -362,9 +353,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -388,9 +377,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             idx:
                                                 (Variable
@@ -406,6 +393,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -419,9 +407,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             last:
                                                 (Variable
@@ -445,9 +431,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             less:
                                                 (Variable
@@ -486,6 +470,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     2 compare_less
                                                     Source
@@ -499,9 +484,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             list:
                                                 (Variable
@@ -524,6 +507,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     2 toml_key
                                                     Source
@@ -537,9 +521,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             low:
                                                 (Variable
@@ -563,9 +545,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             pivot:
                                                 (Variable
@@ -589,9 +569,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     quicksort
@@ -608,12 +586,14 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Integer 4)
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (Integer 4)
@@ -645,6 +625,7 @@
                                             .false.
                                             []
                                             .false.
+                                            Host
                                         )]
                                         ()
                                         Source
@@ -657,6 +638,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [swap
                                     quicksort]
@@ -877,6 +859,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             ))
@@ -889,6 +872,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             ))
@@ -923,6 +907,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             ))
@@ -935,6 +920,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             ))
@@ -1007,6 +993,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     2 compare_less
                                                     Source
@@ -1020,9 +1007,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             high:
                                                 (Variable
@@ -1046,9 +1031,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -1072,9 +1055,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             idx:
                                                 (Variable
@@ -1090,6 +1071,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1103,9 +1085,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             indexarray:
                                                 (Variable
@@ -1122,6 +1102,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -1136,9 +1117,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             list:
                                                 (Variable
@@ -1161,6 +1140,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     2 toml_key
                                                     Source
@@ -1174,9 +1154,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             low:
                                                 (Variable
@@ -1200,9 +1178,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             sorted:
                                                 (Variable
@@ -1226,6 +1202,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 toml_key
@@ -1240,9 +1217,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sort_keys
@@ -1259,12 +1234,14 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Integer 4)
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (FunctionType
                                             [(StructType
@@ -1294,6 +1271,7 @@
                                             .false.
                                             []
                                             .false.
+                                            Host
                                         )]
                                         ()
                                         Source
@@ -1306,6 +1284,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [quicksort]
                                     [(Var 5 list)
@@ -1341,6 +1320,7 @@
                                         [((Var 5 indexarray)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 5 high))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -1361,6 +1341,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                             ColMajor
@@ -1384,6 +1365,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                             ColMajor
@@ -1529,9 +1511,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -1555,9 +1535,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             tmp:
                                                 (Variable
@@ -1581,9 +1559,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     swap
@@ -1601,6 +1577,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 lhs)
@@ -1661,9 +1638,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     toml_key
@@ -1682,6 +1657,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -1694,7 +1670,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

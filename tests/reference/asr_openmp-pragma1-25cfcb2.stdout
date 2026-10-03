@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -34,9 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -52,6 +51,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -65,9 +65,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -91,9 +89,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -117,9 +113,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     a1
@@ -134,6 +128,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )
                         (Array
                             (Real 4)
@@ -144,6 +139,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )]
                         ()
                         Source
@@ -156,6 +152,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 n)
@@ -230,6 +227,7 @@
                             )]
                             []
                         )]
+                        ExecAuto
                     )]
                     ()
                     Public
@@ -256,6 +254,7 @@
                                         [(()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -269,9 +268,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -295,9 +292,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -321,9 +316,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             partial_sum:
                                 (Variable
@@ -347,9 +340,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             total_sum:
                                 (Variable
@@ -373,9 +364,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     parallel_sum
@@ -386,6 +375,7 @@
                             [(()
                             ())]
                             DescriptorArray
+                            Global
                         )]
                         ()
                         Source
@@ -398,6 +388,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 3 n)
@@ -456,7 +447,9 @@
                                 )]
                                 []
                             )]
+                            ExecAuto
                         )]
+                        ExecAuto
                     )]
                     ()
                     Public
@@ -466,4 +459,5 @@
                 )
         })
     []
+    ()
 )

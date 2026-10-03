@@ -34,9 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -60,9 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             c:
                                                 (Variable
@@ -78,6 +74,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -91,9 +88,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     block_1
@@ -112,6 +107,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
@@ -144,9 +140,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     file_common_block_block_1
@@ -155,6 +149,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             main:
                 (Program
@@ -223,9 +218,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             struct_instance_block_1:
                                 (ExternalSymbol
@@ -273,6 +266,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 5 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ()
                         )
@@ -286,6 +280,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ColMajor
                             )
@@ -294,6 +289,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 5 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             (ArrayConstant
                                 20
@@ -303,6 +299,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 5 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ColMajor
                             )
@@ -334,6 +331,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 5 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ()
                             )
@@ -454,6 +452,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 5 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                            Global
                                         )
                                         ()
                                     )
@@ -667,6 +666,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 5 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ()
                             )
@@ -726,6 +726,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 5 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ()
                             )
@@ -798,6 +799,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 5 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                            Global
                                         )
                                         ()
                                     )
@@ -839,7 +841,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

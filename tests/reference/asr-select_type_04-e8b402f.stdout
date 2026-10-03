@@ -24,7 +24,7 @@
                                                         (IntegerConstant -1 (Integer 4) Decimal)
                                                     )
                                                     (IntegerConstant -1 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -38,9 +38,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             success:
                                                 (Variable
@@ -50,7 +48,7 @@
                                                     Local
                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -64,9 +62,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     enum_stat
@@ -83,6 +79,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -140,9 +137,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     class_default_select_type
@@ -151,6 +146,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             class_default_select_type_user:
                 (Module
@@ -200,9 +196,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     check_table
@@ -225,6 +219,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 tab)]
@@ -275,9 +270,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -301,9 +294,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -333,9 +324,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             tmp:
                                                 (Variable
@@ -367,9 +356,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             ~select_type_block_:
                                                 (Block
@@ -381,8 +368,8 @@
                                                                     9
                                                                     1_enum_stat_success
                                                                     13 success
-                                                                    1_enum_stat
-                                                                    []
+                                                                    class_default_select_type
+                                                                    [enum_stat]
                                                                     success
                                                                     Public
                                                                 )
@@ -440,8 +427,8 @@
                                                                     10
                                                                     1_enum_stat_fatal
                                                                     13 fatal
-                                                                    1_enum_stat
-                                                                    []
+                                                                    class_default_select_type
+                                                                    [enum_stat]
                                                                     fatal
                                                                     Public
                                                                 )
@@ -502,6 +489,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [check_table]
                                     [(Var 8 table)
@@ -576,7 +564,7 @@
                                                         .false.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -590,9 +578,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             inline:
                                                 (Variable
@@ -608,7 +594,7 @@
                                                         .false.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -622,9 +608,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     toml_table
@@ -641,6 +625,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -675,9 +660,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             int:
                                                 (Variable
@@ -701,9 +684,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     toml_value
@@ -722,6 +703,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -734,6 +716,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             class_default_select_type_user1:
                 (Module
@@ -808,6 +791,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             select_type4:
                 (Program
@@ -824,7 +808,9 @@
                             (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

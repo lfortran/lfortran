@@ -11,9 +11,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -95,8 +92,8 @@
             None
             ())]
             ()
-        )]
-        [(Pragma
+        )
+        (Pragma
             0
             OMPPragma
             .false.
@@ -169,9 +166,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -245,8 +239,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             partial_sum
             0

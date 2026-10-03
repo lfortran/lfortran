@@ -28,6 +28,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -149,6 +150,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             test_scan_verify:
                 (Program
@@ -192,9 +194,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     test_verify_intrinsic
@@ -211,6 +211,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -433,7 +434,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

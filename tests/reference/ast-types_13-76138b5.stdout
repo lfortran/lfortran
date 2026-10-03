@@ -19,16 +19,16 @@
             )]
             .true.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Interface
+        )
+        (Interface
             (InterfaceHeader)
             (TriviaNode
                 []
@@ -46,9 +46,6 @@
                         [(EndOfLine)
                         (EndOfLine)]
                     )
-                    []
-                    []
-                    []
                     [(Declaration
                         (AttrType
                             TypeCharacter
@@ -69,7 +66,6 @@
                     )]
                     []
                     []
-                    []
                 )
             )
             (InterfaceProc
@@ -83,9 +79,6 @@
                         [(EndOfLine)
                         (EndOfLine)]
                     )
-                    []
-                    []
-                    []
                     [(Declaration
                         (AttrType
                             TypeCharacter
@@ -108,7 +101,6 @@
                     )]
                     []
                     []
-                    []
                 )
             )
             (InterfaceProc
@@ -122,14 +114,12 @@
                         [(EndOfLine)
                         (EndOfLine)]
                     )
-                    []
                     [(Import
                         [c_char]
                         ImportDefault
                         ()
-                    )]
-                    []
-                    [(Declaration
+                    )
+                    (Declaration
                         (AttrType
                             TypeCharacter
                             [(len
@@ -154,7 +144,6 @@
                     )]
                     []
                     []
-                    []
                 )
             )
             (InterfaceProc
@@ -168,14 +157,12 @@
                         [(EndOfLine)
                         (EndOfLine)]
                     )
-                    []
                     [(Import
                         [c_char]
                         ImportDefault
                         ()
-                    )]
-                    []
-                    [(Declaration
+                    )
+                    (Declaration
                         (AttrType
                             TypeCharacter
                             [(()
@@ -200,7 +187,6 @@
                     )]
                     []
                     []
-                    []
                 )
             )
             (InterfaceProc
@@ -214,14 +200,12 @@
                         [(EndOfLine)
                         (EndOfLine)]
                     )
-                    []
                     [(Import
                         [c_char]
                         ImportDefault
                         ()
-                    )]
-                    []
-                    [(Declaration
+                    )
+                    (Declaration
                         (AttrType
                             TypeCharacter
                             [(kind
@@ -246,7 +230,6 @@
                     )]
                     []
                     []
-                    []
                 )
             )
             (InterfaceProc
@@ -261,9 +244,6 @@
                         (EndOfLine)
                         (EndOfLine)]
                     )
-                    []
-                    []
-                    []
                     [(Declaration
                         (AttrType
                             TypeCharacter
@@ -284,7 +264,6 @@
                         ())]
                         ()
                     )]
-                    []
                     []
                     []
                 )
@@ -315,15 +294,13 @@
                         [(EndOfLine)
                         (EndOfLine)]
                     )
-                    []
                     [(Import
                         [c_int
                         c_double]
                         ImportDefault
                         ()
-                    )]
-                    []
-                    [(Declaration
+                    )
+                    (Declaration
                         (AttrType
                             TypeInteger
                             [(()
@@ -393,7 +370,6 @@
                         ())]
                         ()
                     )]
-                    []
                     []
                     []
                 )
@@ -424,15 +400,13 @@
                         [(EndOfLine)
                         (EndOfLine)]
                     )
-                    []
                     [(Import
                         [c_int
                         c_double]
                         ImportDefault
                         ()
-                    )]
-                    []
-                    [(Declaration
+                    )
+                    (Declaration
                         (AttrType
                             TypeInteger
                             [(()
@@ -502,7 +476,6 @@
                         ())]
                         ()
                     )]
-                    []
                     []
                     []
                 )
@@ -525,15 +498,13 @@
                         [(EndOfLine)
                         (EndOfLine)]
                     )
-                    []
                     [(Import
                         [c_int
                         c_double]
                         ImportDefault
                         ()
-                    )]
-                    []
-                    [(Declaration
+                    )
+                    (Declaration
                         (AttrType
                             TypeInteger
                             [(()
@@ -623,7 +594,6 @@
                         ())]
                         ()
                     )]
-                    []
                     []
                     []
                 )
@@ -646,15 +616,13 @@
                         [(EndOfLine)
                         (EndOfLine)]
                     )
-                    []
                     [(Import
                         [c_int
                         c_double]
                         ImportDefault
                         ()
-                    )]
-                    []
-                    [(Declaration
+                    )
+                    (Declaration
                         (AttrType
                             TypeInteger
                             [(()
@@ -746,7 +714,6 @@
                     )]
                     []
                     []
-                    []
                 )
             )
             (InterfaceProc
@@ -762,7 +729,6 @@
                         (String "_cf5" ()))]
                     )
                     ()
-                    []
                     [(Import
                         [c_int]
                         ImportDefault
@@ -772,9 +738,8 @@
                         [c_double]
                         ImportDefault
                         ()
-                    )]
-                    []
-                    [(Declaration
+                    )
+                    (Declaration
                         (AttrType
                             TypeInteger
                             [(()
@@ -864,11 +829,9 @@
                     )]
                     []
                     []
-                    []
                 )
             )]
         )]
-        []
         []
     )]
 )

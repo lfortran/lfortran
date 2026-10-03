@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             to_negative:
                                 (ExternalSymbol
@@ -127,6 +125,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             stdlib_int:
                 (Module
@@ -167,9 +166,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             neg_int:
                                                 (Variable
@@ -193,9 +190,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     to_negative~genericprocedure
@@ -212,6 +207,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 int)]
@@ -256,7 +252,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

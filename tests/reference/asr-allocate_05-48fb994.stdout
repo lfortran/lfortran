@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             string:
                                 (Variable
@@ -57,15 +55,14 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     allocate_05
                     []
                     [(Allocate
                         [((Var 2 string)
+                        []
                         []
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
@@ -159,7 +156,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

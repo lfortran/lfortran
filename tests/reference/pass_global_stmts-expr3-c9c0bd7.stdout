@@ -5,11 +5,11 @@
             f:
                 (Function
                     (SymbolTable
-                        2
+                        3
                         {
                             f1:
                                 (Variable
-                                    2
+                                    3
                                     f1
                                     []
                                     Local
@@ -29,13 +29,11 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             f2:
                                 (Variable
-                                    2
+                                    3
                                     f2
                                     []
                                     Local
@@ -55,13 +53,11 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             f3:
                                 (Variable
-                                    2
+                                    3
                                     f3
                                     []
                                     Local
@@ -81,13 +77,11 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             f4:
                                 (Variable
-                                    2
+                                    3
                                     f4
                                     []
                                     Local
@@ -107,13 +101,11 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             f5:
                                 (Variable
-                                    2
+                                    3
                                     f5
                                     []
                                     Local
@@ -133,13 +125,11 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             f6:
                                 (Variable
-                                    2
+                                    3
                                     f6
                                     []
                                     Local
@@ -159,13 +149,11 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             f7:
                                 (Variable
-                                    2
+                                    3
                                     f7
                                     []
                                     Local
@@ -185,13 +173,11 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             f8:
                                 (Variable
-                                    2
+                                    3
                                     f8
                                     []
                                     ReturnVar
@@ -211,9 +197,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     f
@@ -230,18 +214,19 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
                     [(Assignment
-                        (Var 2 f1)
+                        (Var 3 f1)
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 2 f2)
+                        (Var 3 f2)
                         (IntegerBinOp
                             (IntegerConstant 5 (Integer 4) Decimal)
                             Add
@@ -254,7 +239,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f3)
+                        (Var 3 f3)
                         (IntegerBinOp
                             (IntegerBinOp
                                 (IntegerConstant 5 (Integer 4) Decimal)
@@ -273,7 +258,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f4)
+                        (Var 3 f4)
                         (IntegerBinOp
                             (IntegerConstant 5 (Integer 4) Decimal)
                             Add
@@ -292,7 +277,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f5)
+                        (Var 3 f5)
                         (IntegerBinOp
                             (IntegerConstant 5 (Integer 4) Decimal)
                             Sub
@@ -305,7 +290,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f6)
+                        (Var 3 f6)
                         (IntegerBinOp
                             (IntegerConstant 4 (Integer 4) Decimal)
                             Pow
@@ -318,7 +303,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f7)
+                        (Var 3 f7)
                         (IntegerBinOp
                             (IntegerConstant 5 (Integer 4) Decimal)
                             Add
@@ -331,7 +316,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f8)
+                        (Var 3 f8)
                         (IntegerBinOp
                             (IntegerConstant 5 (Integer 4) Decimal)
                             Add
@@ -343,7 +328,7 @@
                         .false.
                         .false.
                     )]
-                    (Var 2 f8)
+                    (Var 3 f8)
                     Public
                     .false.
                     .false.
@@ -351,4 +336,5 @@
                 )
         })
     []
+    ()
 )

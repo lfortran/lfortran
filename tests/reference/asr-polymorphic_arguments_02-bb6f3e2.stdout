@@ -35,9 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             i_value:
                                 (Variable
@@ -61,9 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             l_value:
                                 (Variable
@@ -93,9 +89,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             r_value:
                                 (Variable
@@ -131,9 +125,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             str:
                                 (GenericProcedure
@@ -162,7 +154,7 @@
                                                         .false.
                                                         .true.
                                                     )
-                                                    3 ~unlimited_polymorphic_type
+                                                    2 ~unlimited_polymorphic_type
                                                     Source
                                                     Public
                                                     Required
@@ -174,9 +166,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             str_scalar:
                                                 (Variable
@@ -200,34 +190,6 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
-                                                    []
-                                                    .false.
-                                                ),
-                                            ~unlimited_polymorphic_type:
-                                                (Struct
-                                                    (SymbolTable
-                                                        4
-                                                        {
-                                                            
-                                                        })
-                                                    ~unlimited_polymorphic_type
-                                                    (StructType
-                                                        []
-                                                        []
-                                                        .false.
-                                                        .true.
-                                                    )
-                                                    []
-                                                    []
-                                                    []
-                                                    Source
-                                                    Public
-                                                    .false.
-                                                    .true.
-                                                    []
-                                                    ()
-                                                    ()
                                                     []
                                                 )
                                         })
@@ -250,6 +212,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 g1)]
@@ -265,6 +228,33 @@
                                     .true.
                                     .true.
                                     ()
+                                ),
+                            ~unlimited_polymorphic_type:
+                                (Struct
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    ~unlimited_polymorphic_type
+                                    (StructType
+                                        []
+                                        []
+                                        .false.
+                                        .true.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .true.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
                                 )
                         })
                     polymorphic_argument_02
@@ -581,7 +571,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

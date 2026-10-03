@@ -17,8 +17,8 @@
                                                     17
                                                     1_git_target_t_object
                                                     16 object
-                                                    git_target_t
-                                                    []
+                                                    fpm_git1
+                                                    [git_target_t]
                                                     object
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     17
                                                     1_git_target_t_url
                                                     16 url
-                                                    git_target_t
-                                                    []
+                                                    fpm_git1
+                                                    [git_target_t]
                                                     url
                                                     Public
                                                 ),
@@ -54,9 +54,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -90,9 +88,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             url:
                                                 (Variable
@@ -116,9 +112,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     git_target_branch
@@ -146,6 +140,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 17 url)
@@ -213,9 +208,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             url:
                                                 (Variable
@@ -241,9 +234,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     git_target_t
@@ -266,6 +257,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -278,6 +270,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_manifest_dependency1:
                 (Module
@@ -323,9 +316,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             name:
                                                 (Variable
@@ -351,9 +342,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             path:
                                                 (Variable
@@ -379,9 +368,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     dependency_config_t
@@ -418,6 +405,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -452,9 +440,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     error_t
@@ -471,6 +457,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -541,6 +528,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     8 dependency_config_t
@@ -555,9 +543,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             error:
                                                 (Variable
@@ -590,9 +576,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             root:
                                                 (Variable
@@ -616,9 +600,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -647,9 +629,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     new_dependencies
@@ -683,6 +663,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         (StructType
@@ -713,6 +694,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 12 deps)
@@ -736,8 +718,8 @@
                                                     13
                                                     1_dependency_config_t_git
                                                     9 git
-                                                    dependency_config_t
-                                                    []
+                                                    fpm_manifest_dependency1
+                                                    [dependency_config_t]
                                                     git
                                                     Public
                                                 ),
@@ -765,9 +747,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -814,9 +794,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             url:
                                                 (Variable
@@ -842,9 +820,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     new_dependency
@@ -884,6 +860,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 self)]
@@ -936,6 +913,7 @@
                                                 )
                                                 ()
                                             )
+                                            []
                                             []
                                             ()
                                             ()
@@ -1013,7 +991,7 @@
                                                         .false.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -1027,9 +1005,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     toml_table
@@ -1046,6 +1022,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -1058,6 +1035,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_manifest_executable:
                 (Module
@@ -1127,6 +1105,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     4 dependency_config_t
@@ -1141,9 +1120,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             main:
                                                 (Variable
@@ -1169,9 +1146,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             name:
                                                 (Variable
@@ -1197,9 +1172,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             source_dir:
                                                 (Variable
@@ -1225,9 +1198,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     executable_config_t
@@ -1270,6 +1241,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         []
@@ -1284,6 +1256,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -1311,8 +1284,8 @@
                                                     6
                                                     1_executable_config_t_dependency
                                                     5 dependency
-                                                    executable_config_t
-                                                    []
+                                                    fpm_manifest_executable
+                                                    [executable_config_t]
                                                     dependency
                                                     Public
                                                 ),
@@ -1345,9 +1318,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             error:
                                                 (Variable
@@ -1380,9 +1351,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -1432,6 +1401,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )]
                                                         []
@@ -1450,9 +1420,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -1481,9 +1449,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     new_executable
@@ -1527,6 +1493,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -1560,6 +1527,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 self)
@@ -1600,6 +1568,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             ()
@@ -1633,6 +1602,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             modules_29:
                 (Program
@@ -1709,7 +1679,9 @@
                             (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

@@ -43,6 +43,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -56,9 +57,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             c_associated:
                                 (ExternalSymbol
@@ -260,6 +259,86 @@
                                     c_int8_t
                                     Public
                                 ),
+                            c_int_fast16_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_fast16_t
+                                    4 c_int_fast16_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_fast16_t
+                                    Public
+                                ),
+                            c_int_fast32_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_fast32_t
+                                    4 c_int_fast32_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_fast32_t
+                                    Public
+                                ),
+                            c_int_fast64_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_fast64_t
+                                    4 c_int_fast64_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_fast64_t
+                                    Public
+                                ),
+                            c_int_fast8_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_fast8_t
+                                    4 c_int_fast8_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_fast8_t
+                                    Public
+                                ),
+                            c_int_least16_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_least16_t
+                                    4 c_int_least16_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_least16_t
+                                    Public
+                                ),
+                            c_int_least32_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_least32_t
+                                    4 c_int_least32_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_least32_t
+                                    Public
+                                ),
+                            c_int_least64_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_least64_t
+                                    4 c_int_least64_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_least64_t
+                                    Public
+                                ),
+                            c_int_least8_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_least8_t
+                                    4 c_int_least8_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_least8_t
+                                    Public
+                                ),
                             c_intmax_t:
                                 (ExternalSymbol
                                     2
@@ -450,7 +529,9 @@
                                     ()
                                     Default
                                     (StructType
-                                        [(CPtr)]
+                                        [(CPtr
+                                            CPointer
+                                        )]
                                         []
                                         .true.
                                         .false.
@@ -467,9 +548,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             r_ptr:
                                 (Variable
@@ -486,6 +565,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -500,9 +580,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             temp_ptr:
                                 (Variable
@@ -513,8 +591,10 @@
                                     ()
                                     ()
                                     Default
-                                    (CPtr)
-                                    ()
+                                    (CPtr
+                                        CPointer
+                                    )
+                                    2 c_ptr
                                     Source
                                     Public
                                     Required
@@ -526,9 +606,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             test_obj:
                                 (Struct
@@ -539,19 +617,25 @@
                                                 (Variable
                                                     13
                                                     ptr
-                                                    []
+                                                    [c_ptr]
                                                     Local
                                                     (PointerNullConstant
-                                                        (CPtr)
-                                                        ()
+                                                        (CPtr
+                                                            CPointer
+                                                        )
+                                                        (Var 2 c_ptr)
                                                     )
                                                     (PointerNullConstant
-                                                        (CPtr)
-                                                        ()
+                                                        (CPtr
+                                                            CPointer
+                                                        )
+                                                        (Var 2 c_ptr)
                                                     )
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -563,14 +647,14 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     test_obj
                                     (StructType
-                                        [(CPtr)]
+                                        [(CPtr
+                                            CPointer
+                                        )]
                                         []
                                         .true.
                                         .false.
@@ -580,6 +664,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -595,7 +680,9 @@
                         (StructInstanceMember
                             (Var 2 instance)
                             2 1_test_obj_ptr
-                            (CPtr)
+                            (CPtr
+                                CPointer
+                            )
                             ()
                         )
                         ()
@@ -623,6 +710,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ColMajor
                             )
@@ -631,6 +719,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ()
                         )
@@ -648,11 +737,14 @@
                                         [(()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                 )
                                 ()
                             )
-                            (CPtr)
+                            (CPtr
+                                CPointer
+                            )
                             ()
                         )
                         (Var 2 r_ptr)
@@ -664,6 +756,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                 PointerArray
+                                Global
                             )
                             ColMajor
                         )
@@ -713,7 +806,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

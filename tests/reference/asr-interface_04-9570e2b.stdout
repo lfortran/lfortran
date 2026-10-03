@@ -46,9 +46,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     interface_04
@@ -82,6 +80,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             interface_04_mod1:
                 (Module
@@ -122,9 +121,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     a1
@@ -141,6 +138,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 a)]
@@ -170,6 +168,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             interface_04_mod2:
                 (Module
@@ -203,7 +202,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

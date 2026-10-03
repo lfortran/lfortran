@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             piv:
                                 (Variable
@@ -47,6 +45,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 k))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -60,9 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     redeclare1
@@ -76,6 +73,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )
                         (Integer 4)]
                         ()
@@ -89,6 +87,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 piv)
@@ -102,4 +101,5 @@
                 )
         })
     []
+    ()
 )

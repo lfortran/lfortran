@@ -34,9 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             map:
                                                 (Variable
@@ -65,9 +63,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     map_open_entry
@@ -90,6 +86,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 map)
@@ -132,6 +129,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -144,6 +142,7 @@
                     .false.
                     .false.
                     .true.
+                    ()
                 ),
             submod_submodule_04:
                 (Module
@@ -177,9 +176,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             key:
                                                 (Variable
@@ -203,9 +200,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             map:
                                                 (Variable
@@ -234,9 +229,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     map_open_entry
@@ -259,6 +252,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 map)
@@ -293,6 +287,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             submodule_04:
                 (Program
@@ -304,8 +299,8 @@
                                     7
                                     1_open_hashmap_type_map_entry
                                     3 map_entry
-                                    open_hashmap_type
-                                    []
+                                    mod_submodule_04
+                                    [open_hashmap_type]
                                     map_entry
                                     Public
                                 ),
@@ -331,9 +326,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             map:
                                 (Variable
@@ -362,9 +355,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             open_hashmap_type:
                                 (ExternalSymbol
@@ -412,7 +403,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

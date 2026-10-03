@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -55,9 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -81,9 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             lhs:
                                 (Variable
@@ -99,6 +93,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -112,9 +107,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             r1:
                                 (Variable
@@ -130,6 +123,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -143,9 +137,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             rhs:
                                 (Variable
@@ -161,6 +153,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -174,9 +167,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     transfer_09
@@ -191,6 +182,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 3 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ColMajor
                         )
@@ -272,6 +264,7 @@
                                 [(()
                                 ())]
                                 DescriptorArray
+                                Global
                             )
                             ()
                         )
@@ -284,6 +277,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 3 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ()
                         )
@@ -302,6 +296,7 @@
                                 [(()
                                 ())]
                                 DescriptorArray
+                                Global
                             )
                             ()
                         )
@@ -314,6 +309,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 3 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ()
                         )
@@ -503,7 +499,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

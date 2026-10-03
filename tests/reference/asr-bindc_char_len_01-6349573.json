@@ -1,0 +1,13 @@
+{
+    "basename": "asr-bindc_char_len_01-6349573",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/bindc_char_len_01.f90",
+    "infile_hash": "c5c8b03d768ef673240e653b9fb0b9a5402846ba2afc03542debd276",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-bindc_char_len_01-6349573.stdout",
+    "stdout_hash": "42cddd539a9df1a7d680783a3c5e0163a35c8b67129f9636a888231f",
+    "stderr": "asr-bindc_char_len_01-6349573.stderr",
+    "stderr_hash": "ef02f5dd9863328962209b4f27ea93281cbd78067c084df16ae9b86c",
+    "returncode": 0
+}

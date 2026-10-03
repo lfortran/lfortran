@@ -69,9 +69,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             queries:
                                 (Variable
@@ -82,8 +80,10 @@
                                     ()
                                     ()
                                     Default
-                                    (CPtr)
-                                    ()
+                                    (CPtr
+                                        CPointer
+                                    )
+                                    2 c_ptr
                                     Source
                                     Public
                                     Required
@@ -95,9 +95,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -123,9 +121,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -149,9 +145,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     bindc3
@@ -168,7 +162,9 @@
                             [(BitCast
                                 (PointerToCPtr
                                     (Var 2 x)
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (IntegerConstant 0 (Integer 8) Decimal)
@@ -200,7 +196,9 @@
                             [(BitCast
                                 (PointerToCPtr
                                     (Var 2 x)
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (IntegerConstant 0 (Integer 8) Decimal)
@@ -217,7 +215,9 @@
                                         )
                                         ()
                                     )
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (IntegerConstant 0 (Integer 8) Decimal)
@@ -232,9 +232,11 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
 )

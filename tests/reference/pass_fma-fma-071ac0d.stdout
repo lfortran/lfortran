@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -55,9 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -81,9 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -107,9 +101,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     _lcompilers_optimization_fma_f32
@@ -128,6 +120,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 3 a)
@@ -185,9 +178,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -211,9 +202,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -237,9 +226,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -263,9 +250,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     _lcompilers_optimization_fma_f321
@@ -284,6 +269,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 4 a)
@@ -341,9 +327,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -367,9 +351,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -393,9 +375,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -419,9 +399,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     _lcompilers_optimization_fma_f322
@@ -440,6 +418,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 6 a)
@@ -497,9 +476,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -523,9 +500,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -549,9 +524,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -575,9 +548,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     _lcompilers_optimization_fma_f323
@@ -596,6 +567,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 7 a)
@@ -653,9 +625,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -679,9 +649,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -705,9 +673,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -731,9 +697,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     _lcompilers_optimization_fma_f64
@@ -752,6 +716,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 5 a)
@@ -801,6 +766,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -814,9 +780,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             pi:
                                 (Variable
@@ -846,9 +810,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             r:
                                 (Variable
@@ -872,9 +834,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             s1:
                                 (Variable
@@ -913,9 +873,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             s2:
                                 (Variable
@@ -954,9 +912,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -986,9 +942,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -1027,9 +981,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     fma
@@ -1201,6 +1153,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ColMajor
                             )
@@ -1209,6 +1162,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             (ArrayConstant
                                 40
@@ -1218,6 +1172,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 10 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ColMajor
                             )
@@ -1398,7 +1353,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

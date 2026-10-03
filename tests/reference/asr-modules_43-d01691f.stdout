@@ -43,6 +43,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     5 srcfile_t
@@ -57,9 +58,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             srcfile_t:
                                 (ExternalSymbol
@@ -78,6 +77,7 @@
                         [((Var 5 sources)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 1 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -92,6 +92,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             modules_43_fpm_sources:
                 (Module
@@ -129,6 +130,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 srcfile_t
@@ -143,9 +145,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             exclude_source:
                                                 (Variable
@@ -161,6 +161,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -174,9 +175,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             sources:
                                                 (Variable
@@ -204,6 +203,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 srcfile_t
@@ -218,9 +218,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     add_sources_from_dir
@@ -242,6 +240,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         ()
@@ -255,6 +254,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 sources)]
@@ -262,6 +262,7 @@
                                         [((Var 4 dir_sources)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -295,6 +296,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 10 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -305,6 +307,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                 )]
@@ -326,6 +329,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 ()
@@ -349,6 +353,7 @@
                                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                                                 FixedSizeArray
+                                                                Global
                                                             )
                                                             ()
                                                         )
@@ -359,6 +364,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 10 (Integer 4) Decimal))]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )]
@@ -380,28 +386,28 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
                                                 )]
-                                                (Allocatable
-                                                    (Array
-                                                        (StructType
-                                                            [(Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            (Integer 8)]
-                                                            []
-                                                            .true.
-                                                            .false.
+                                                (Array
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
                                                         )
-                                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        ())]
-                                                        DescriptorArray
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Integer 8)]
+                                                        []
+                                                        .true.
+                                                        .false.
                                                     )
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    ())]
+                                                    DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                                 ColMajor
@@ -445,9 +451,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             exe_name:
                                                 (Variable
@@ -473,9 +477,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             file_name:
                                                 (Variable
@@ -501,9 +503,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     srcfile_t
@@ -528,6 +528,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -540,7 +541,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

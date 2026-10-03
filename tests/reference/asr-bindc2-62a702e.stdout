@@ -59,9 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             newshape:
                                 (Variable
@@ -77,6 +75,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -90,9 +89,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             queries:
                                 (Variable
@@ -103,8 +100,10 @@
                                     ()
                                     ()
                                     Default
-                                    (CPtr)
-                                    ()
+                                    (CPtr
+                                        CPointer
+                                    )
+                                    2 c_ptr
                                     Source
                                     Public
                                     Required
@@ -116,9 +115,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -137,6 +134,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -151,9 +149,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             xv:
                                 (Variable
@@ -171,6 +167,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -184,9 +181,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     bindc2
@@ -234,6 +229,7 @@
                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 4 (Integer 4) Decimal))]
                                 DescriptorArray
+                                Global
                             )
                             ()
                         )
@@ -635,9 +631,11 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
 )

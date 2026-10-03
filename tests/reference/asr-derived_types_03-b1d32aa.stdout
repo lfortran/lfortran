@@ -34,9 +34,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             x:
                                 (Struct
@@ -65,9 +63,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     x
@@ -82,6 +78,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -121,9 +118,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     a
@@ -138,6 +133,7 @@
                                                     []
                                                     Source
                                                     Public
+                                                    .false.
                                                     .false.
                                                     .false.
                                                     []
@@ -172,9 +168,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     y
@@ -191,6 +185,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -233,9 +228,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     a
@@ -250,6 +243,7 @@
                                                     []
                                                     Source
                                                     Public
+                                                    .false.
                                                     .false.
                                                     .false.
                                                     []
@@ -284,9 +278,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             z:
                                                 (Variable
@@ -310,9 +302,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     z
@@ -329,6 +319,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -349,7 +340,9 @@
                     derived_types_03
                     []
                     []
+                    ()
                 )
         })
     []
+    ()
 )

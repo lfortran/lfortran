@@ -104,6 +104,10 @@ struct LocationManager {
         // has these mappings for each file
         bool preprocessor = false;
         std::string in_filename;
+        // The file's text, when it is not on disk to be read back: an
+        // interactive cell is only ever in memory. Empty means read
+        // `in_filename`.
+        std::string source;
         uint32_t current_line=0;
         std::vector<uint32_t> out_start0; // consecutive intervals in the output code
         std::vector<uint32_t> in_start0; // start + size in the original code
@@ -273,6 +277,16 @@ struct LocationManager {
         for (uint32_t pos=0; pos < s.size(); pos++) {
             if (s[pos] == '\n') newlines.push_back(pos);
         }
+    }
+
+    // The text of the file the given position is in, or nullptr when that file
+    // has to be read from disk.
+    const std::string *source_at(uint32_t position) const {
+        if (file_ends.empty()) return nullptr;
+        uint32_t index = bisection(file_ends, position);
+        if (index != 0 && index == file_ends.size()) index -= 1;
+        if (files[index].source.empty()) return nullptr;
+        return &files[index].source;
     }
 
     void init_simple(const std::string &input) {

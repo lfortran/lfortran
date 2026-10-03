@@ -122,9 +122,7 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
     bool not_complete = true;
     while (not_complete) {
         key = term.read_key();
-        if (  (key >= 'a' && key <= 'z') ||
-              (key >= 'A' && key <= 'Z') ||
-              (!iscntrl(key) && key < 128)  ) {
+        if  (key >= 32 && key <= 126) {
             std::string before = m.lines[m.cursor_row-1].substr(0,
                     m.cursor_col-1);
             std::string newchar; newchar.push_back(key);
@@ -277,8 +275,12 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
         line_skips += "\n";
     }
     std::cout << line_skips << std::flush;
-    history.push_back(concat(m.lines));
-    return concat(m.lines);
+    std::string current_entry = concat(m.lines);
+    if (current_entry.find_first_not_of(" \t\r\n") != std::string::npos) {
+        history.push_back(current_entry);
+    }
+   
+    return current_entry;
 }
 
 #endif // TERMINAL_PROMPT0_H

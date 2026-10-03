@@ -35,9 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             greater_than_inverse:
                                 (ExternalSymbol
@@ -97,9 +95,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             ~gt:
                                 (ExternalSymbol
@@ -136,10 +132,7 @@
                                 Gt
                                 (Var 6 t)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 greater_than_inverse
                                     6 ~gt
@@ -169,10 +162,7 @@
                                 Gt
                                 (Var 6 f)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .true.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 greater_than_inverse
                                     6 ~gt
@@ -202,10 +192,7 @@
                                 Gt
                                 (Var 6 t)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 greater_than_inverse
                                     6 ~gt
@@ -235,10 +222,7 @@
                                 Gt
                                 (Var 6 f)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 greater_than_inverse
                                     6 ~gt
@@ -268,10 +252,7 @@
                                 Lt
                                 (Var 6 t)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 less_than_inverse
                                     6 ~lt
@@ -301,10 +282,7 @@
                                 Lt
                                 (Var 6 f)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 less_than_inverse
                                     6 ~lt
@@ -334,10 +312,7 @@
                                 Lt
                                 (Var 6 t)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .true.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 less_than_inverse
                                     6 ~lt
@@ -367,10 +342,7 @@
                                 Lt
                                 (Var 6 f)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 less_than_inverse
                                     6 ~lt
@@ -388,6 +360,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             operator_overloading_01_overload_comp_m:
                 (Module
@@ -421,9 +394,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -447,9 +418,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -473,9 +442,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     greater_than_inverse
@@ -493,6 +460,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 log1)
@@ -578,9 +546,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -604,9 +570,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -630,9 +594,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     less_than_inverse
@@ -650,6 +612,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 log1)
@@ -735,9 +698,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -761,9 +722,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -787,9 +746,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     less_than_overload_use
@@ -807,6 +764,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [less_than_inverse]
                                     [(Var 5 log1)
@@ -860,7 +818,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

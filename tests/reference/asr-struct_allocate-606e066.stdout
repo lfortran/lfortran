@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             rp1d:
                                 (Struct
@@ -53,6 +51,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -67,9 +66,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     rp1d
@@ -80,6 +77,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         []
@@ -91,6 +89,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -120,6 +119,7 @@
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                             )]
                                                             []
@@ -129,6 +129,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     2 rp1d
                                                     Source
@@ -142,9 +143,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sds
@@ -157,6 +156,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )]
                                                 []
@@ -166,6 +166,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                            Global
                                         )]
                                         []
                                         .true.
@@ -176,6 +177,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -190,6 +192,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             struct_allocate:
                 (Program
@@ -201,8 +204,8 @@
                                     5
                                     1_rp1d_f
                                     3 f
-                                    rp1d
-                                    []
+                                    mod_struct_allocate
+                                    [rp1d]
                                     f
                                     Public
                                 ),
@@ -211,8 +214,8 @@
                                     5
                                     1_sds_scales
                                     4 scales
-                                    sds
-                                    []
+                                    mod_struct_allocate
+                                    [sds]
                                     scales
                                     Public
                                 ),
@@ -244,6 +247,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )]
                                                 []
@@ -253,6 +257,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                            Global
                                         )]
                                         []
                                         .true.
@@ -270,9 +275,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             sds:
                                 (ExternalSymbol
@@ -301,6 +304,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -310,6 +314,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                 )
@@ -323,6 +328,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )]
                                     []
@@ -339,12 +345,14 @@
                                     [(()
                                     ())]
                                     DescriptorArray
+                                    Global
                                 )
                             )
                             ()
                         )
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 4 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -366,6 +374,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -375,6 +384,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                 )
@@ -388,6 +398,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )]
                                     []
@@ -404,12 +415,14 @@
                                     [(()
                                     ())]
                                     DescriptorArray
+                                    Global
                                 )
                             )
                             ()
                         )
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 3 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -417,7 +430,9 @@
                         ()
                         ()
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

@@ -34,9 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             w:
                                                 (Variable
@@ -52,6 +50,7 @@
                                                         [(()
                                                         ())]
                                                         UnboundedPointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -65,9 +64,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     mvndfn
@@ -77,6 +74,7 @@
                                             [(()
                                             ())]
                                             UnboundedPointerArray
+                                            Global
                                         )]
                                         (Real 8)
                                         Source
@@ -89,6 +87,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 w)]
@@ -113,6 +112,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -126,9 +126,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     entry_06
@@ -151,6 +149,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 UnboundedPointerArray
+                                                Global
                                             )
                                             ()
                                         ))]
@@ -192,6 +191,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             mvndfn:
                 (Function
@@ -220,9 +220,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             w:
                                 (Variable
@@ -238,6 +236,7 @@
                                         [(()
                                         ())]
                                         UnboundedPointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -251,9 +250,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     mvndfn
@@ -263,6 +260,7 @@
                             [(()
                             ())]
                             UnboundedPointerArray
+                            Global
                         )]
                         (Real 8)
                         Source
@@ -275,6 +273,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [mvndfn_main__lcompilers]
                     [(Var 2 w)]
@@ -326,9 +325,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             mvndfn:
                                 (Variable
@@ -352,9 +349,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             mvndfn_main__lcompilers:
                                 (Variable
@@ -378,9 +373,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             w:
                                 (Variable
@@ -396,6 +389,7 @@
                                         [(()
                                         ())]
                                         UnboundedPointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -409,9 +403,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     mvndfn_main__lcompilers
@@ -422,6 +414,7 @@
                             [(()
                             ())]
                             UnboundedPointerArray
+                            Global
                         )]
                         (Real 8)
                         Source
@@ -434,6 +427,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 4 entry__lcompilers)
@@ -797,9 +791,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             mvndnt:
                                 (Variable
@@ -823,9 +815,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             w:
                                 (Variable
@@ -842,6 +832,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -856,9 +847,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     mvndnt
@@ -875,6 +864,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [mvndfn_main__lcompilers]
                     []
@@ -901,4 +891,5 @@
                 )
         })
     []
+    ()
 )

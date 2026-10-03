@@ -17,6 +17,7 @@
                             (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 ),
             modules_40_tomlf_de_tokenizer:
                 (Module
@@ -55,9 +56,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             fill_stack:
                                                 (Function
@@ -91,9 +90,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -108,7 +105,7 @@
                                                                         (Array
                                                                             (StructType
                                                                                 [(Allocatable
-                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                    (String 4 () DeferredLength DescriptorString)
                                                                                 )]
                                                                                 []
                                                                                 .true.
@@ -117,6 +114,7 @@
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     2 toml_key
@@ -131,9 +129,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             top:
                                                                 (Variable
@@ -157,9 +153,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     fill_stack
@@ -175,7 +169,7 @@
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                        (String 4 () DeferredLength DescriptorString)
                                                                     )]
                                                                     []
                                                                     .true.
@@ -184,6 +178,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )]
                                                         ()
@@ -197,6 +192,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [resize]
                                                     [(Var 6 de)
@@ -267,9 +263,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -284,7 +278,7 @@
                                                                         (Array
                                                                             (StructType
                                                                                 [(Allocatable
-                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                    (String 4 () DeferredLength DescriptorString)
                                                                                 )]
                                                                                 []
                                                                                 .true.
@@ -293,6 +287,7 @@
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     2 toml_key
@@ -307,9 +302,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     resize
@@ -318,7 +311,7 @@
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                        (String 4 () DeferredLength DescriptorString)
                                                                     )]
                                                                     []
                                                                     .true.
@@ -327,6 +320,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )
                                                         (Integer 4)]
@@ -341,6 +335,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 7 stack)
@@ -372,6 +367,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 de)]
@@ -404,9 +400,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             toml_key:
                                 (Struct
@@ -423,7 +417,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
+                                                        (String 4 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -437,15 +431,13 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     toml_key
                                     (StructType
                                         [(Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
+                                            (String 4 () DeferredLength DescriptorString)
                                         )]
                                         []
                                         .true.
@@ -456,6 +448,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -494,6 +487,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -506,7 +500,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

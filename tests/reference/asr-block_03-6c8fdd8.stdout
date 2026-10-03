@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             loop:
                                 (Block
@@ -60,9 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     loop
@@ -133,6 +129,7 @@
                         -1
                         2 loop
                     )]
+                    ()
                 ),
             square:
                 (Function
@@ -161,9 +158,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             result:
                                 (Variable
@@ -187,9 +182,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     square
@@ -206,6 +199,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 3 b)]
@@ -255,4 +249,5 @@
                 )
         })
     []
+    ()
 )

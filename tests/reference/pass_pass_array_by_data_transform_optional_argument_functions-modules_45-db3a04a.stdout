@@ -31,9 +31,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             file_scope_flag:
                                 (ExternalSymbol
@@ -87,9 +85,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             os_valid:
                                 (Variable
@@ -113,9 +109,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             profile_config_t:
                                 (ExternalSymbol
@@ -151,9 +145,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             profiles:
                                 (Variable
@@ -197,6 +189,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 (Logical 4)]
@@ -207,6 +200,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     7 profile_config_t
@@ -221,9 +215,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             profindex:
                                 (Variable
@@ -247,15 +239,14 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     modules_45
                     [modules_45_fpm_manifest_profile]
                     [(Allocate
                         [((Var 7 profile_name)
+                        []
                         []
                         (IntegerConstant 40 (Integer 4) Decimal)
                         ()
@@ -266,6 +257,7 @@
                     )
                     (Allocate
                         [((Var 7 compiler_name)
+                        []
                         []
                         (IntegerConstant 40 (Integer 4) Decimal)
                         ()
@@ -278,6 +270,7 @@
                         [((Var 7 profiles)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 5 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -297,6 +290,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             modules_45_fpm_manifest_profile:
                 (Module
@@ -322,6 +316,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -356,9 +351,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_created_dummy_variable_1:
                                                 (Variable
@@ -382,9 +375,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_created_dummy_variable_2:
                                                 (Variable
@@ -408,9 +399,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_created_dummy_variable_3:
                                                 (Variable
@@ -434,9 +423,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_created_dummy_variable_4:
                                                 (Variable
@@ -457,6 +444,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 1 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     2 file_scope_flag
                                                     Source
@@ -470,9 +458,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_created_variable_:
                                                 (Variable
@@ -496,9 +482,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_created_variable_pointer_:
                                                 (Variable
@@ -524,9 +508,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_created_variable_pointer_1:
                                                 (Variable
@@ -552,9 +534,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_created_variable_pointer_2:
                                                 (Variable
@@ -580,9 +560,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_created_variable_pointer_3:
                                                 (Variable
@@ -608,9 +586,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_created_variable_pointer_4:
                                                 (Variable
@@ -632,6 +608,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -646,9 +623,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             c_flags:
                                                 (Variable
@@ -674,9 +649,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             compiler_name:
                                                 (Variable
@@ -702,9 +675,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -730,9 +701,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             err_message:
                                                 (Variable
@@ -758,9 +727,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             file_flags:
                                                 (Variable
@@ -786,9 +753,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             file_name:
                                                 (Variable
@@ -814,9 +779,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             file_scope_flags:
                                                 (Variable
@@ -838,6 +801,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -852,9 +816,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -880,9 +842,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             ifile:
                                                 (Variable
@@ -906,9 +866,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             ikey:
                                                 (Variable
@@ -932,9 +890,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             is_valid:
                                                 (Variable
@@ -958,9 +914,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             key_name:
                                                 (Variable
@@ -986,9 +940,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -1014,9 +966,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -1040,9 +990,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             os_valid:
                                                 (Variable
@@ -1066,9 +1014,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -1094,9 +1040,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             profiles:
                                                 (Variable
@@ -1140,6 +1084,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
                                                                 (Logical 4)]
@@ -1150,6 +1095,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 profile_config_t
@@ -1164,9 +1110,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             profindex:
                                                 (Variable
@@ -1190,9 +1134,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -1216,9 +1158,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     get_flags
@@ -1263,6 +1203,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     (Logical 4)]
@@ -1273,6 +1214,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         (Integer 4)
@@ -1288,6 +1230,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [new_profile]
                                     [(Var 6 profile_name)
@@ -1423,6 +1366,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 (Logical 4)]
@@ -1560,6 +1504,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 (Logical 4)]
@@ -1620,9 +1565,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_is_present_cxx_flags:
                                                 (Variable
@@ -1646,9 +1589,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_is_present_file_scope_flags:
                                                 (Variable
@@ -1672,9 +1613,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_is_present_flags:
                                                 (Variable
@@ -1698,9 +1637,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_is_present_is_built_in:
                                                 (Variable
@@ -1724,9 +1661,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             __libasr_is_present_link_time_flags:
                                                 (Variable
@@ -1750,9 +1685,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             c_flags:
                                                 (Variable
@@ -1776,9 +1709,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             compiler:
                                                 (Variable
@@ -1802,9 +1733,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -1828,9 +1757,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             file_scope_flags:
                                                 (Variable
@@ -1851,6 +1778,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     2 file_scope_flag
                                                     Source
@@ -1864,9 +1792,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -1890,9 +1816,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             is_built_in:
                                                 (Variable
@@ -1916,9 +1840,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -1942,9 +1864,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -1968,9 +1888,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             profile:
                                                 (Variable
@@ -2012,6 +1930,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )
                                                         (Logical 4)]
@@ -2031,9 +1950,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -2057,9 +1974,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     new_profile
@@ -2085,6 +2000,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Logical 4)
                                         (Logical 4)
@@ -2120,6 +2036,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             (Logical 4)]
@@ -2137,6 +2054,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 profile_name)
@@ -2190,9 +2108,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             compiler:
                                                 (Variable
@@ -2218,9 +2134,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -2246,9 +2160,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             file_scope_flags:
                                                 (Variable
@@ -2270,6 +2182,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -2284,9 +2197,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -2312,9 +2223,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             is_built_in:
                                                 (Variable
@@ -2338,9 +2247,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -2366,9 +2273,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -2392,9 +2297,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -2420,9 +2323,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     profile_config_t
@@ -2457,6 +2358,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         (Logical 4)]
@@ -2479,6 +2381,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -2491,7 +2394,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )
