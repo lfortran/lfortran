@@ -26,6 +26,35 @@ env:
   MACOSX_DEPLOYMENT_TARGET: 26.0
 
 jobs:
+  LiricDirect:
+    name: LFortran Liric direct (no LLVM)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment.yml
+          create-args: >-
+            bison=3.4
+      - name: Build with the pinned Liric session API
+        shell: bash -e -l {0}
+        run: |
+          ./build0.sh
+          cmake -S . -B build-liric -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DWITH_LLVM=OFF -DWITH_LIRIC=ON \
+            -DWITH_STACKTRACE=OFF -DWITH_RUNTIME_STACKTRACE=OFF
+          cmake --build build-liric --parallel 2
+      - name: Run native executable and registered Liric tests
+        shell: bash -e -l {0}
+        run: |
+          export PATH="$PWD/build-liric/src/bin:$PATH"
+          lfortran --backend=liric integration_tests/expr_02.f90 -o /tmp/expr_02-liric
+          /tmp/expr_02-liric
+          python integration_tests/run_tests.py -b liric -j2
+
   Build:
     name: LFortran CI (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
