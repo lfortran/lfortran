@@ -12,9 +12,7 @@ contains
     ! 0, or the number of the first check that failed.
     integer(c_int) function coarrays_59_run() bind(c)
         integer :: other, i
-        coarrays_59_run = 1
-        if (num_images() /= 2) return
-        other = 3 - this_image()
+        other = num_images() + 1 - this_image()
         coarrays_59_run = 2
         if (counter[other] /= 7) return
         coarrays_59_run = 3

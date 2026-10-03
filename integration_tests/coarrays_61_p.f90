@@ -10,10 +10,8 @@ contains
     ! 0, or the number of the first check that failed.
     integer(c_int) function coarrays_61_run() bind(c)
         integer :: me, other, i
-        coarrays_61_run = 1
-        if (num_images() /= 2) return
         me = this_image()
-        other = 3 - me
+        other = num_images() + 1 - me
         coarrays_61_run = 2
         if (allocated(a)) return
         allocate(a(2)[*])
@@ -23,7 +21,6 @@ contains
         do i = 1, 2
             if (a(i)[other] /= 100 * other) return
         end do
-        sync all
         deallocate(a)
         coarrays_61_run = 0
     end function coarrays_61_run

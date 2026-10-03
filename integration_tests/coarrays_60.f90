@@ -14,10 +14,8 @@ contains
     ! 0, or the number of the first check that failed.
     integer(c_int) function coarrays_60_run() bind(c)
         integer :: me, other, i
-        coarrays_60_run = 1
-        if (num_images() /= 2) return
         me = this_image()
-        other = 3 - me
+        other = num_images() + 1 - me
         coarrays_60_run = 2
         if (counter /= 7 .or. counter[other] /= 7) return
         coarrays_60_run = 3
@@ -27,7 +25,6 @@ contains
         do i = 1, 3
             if (a(i)[other] /= 10 * other) return
         end do
-        sync all
         deallocate(a)
         counter = counter + me
         sync all
@@ -38,7 +35,7 @@ contains
     integer(c_int) function coarrays_60_again() bind(c)
         integer :: me, other
         me = this_image()
-        other = 3 - me
+        other = num_images() + 1 - me
         coarrays_60_again = 1
         if (counter /= 7 + me .or. counter[other] /= 7 + other) return
         sync all

@@ -226,10 +226,9 @@ fi
 # with a failure status (with Caffeine on macOS it exits with 0), so the
 # output is checked as well. It is kept in the log when the test fails.
 set +e
-gasnetrun_smp -n "$num_images" ./"${base}_lf.out" > "${base}_lf.log" 2>&1
-run_status=$?
+gasnetrun_smp -n "$num_images" ./"${base}_lf.out" 2>&1 | tee "${base}_lf.log"
+run_status=${PIPESTATUS[0]}
 set -e
-cat "${base}_lf.log"
 if [ "$run_status" -ne 0 ]; then
     echo "FAIL: $testfile exited with status $run_status; output in ${base}_lf.log"
     exit 1
@@ -299,10 +298,9 @@ else
     plugin="$PWD/libcoarrays_61.dylib"
 fi
 set +e
-gasnetrun_smp -n 2 ./coarrays_61_lf.out "$plugin" > coarrays_61_lf.log 2>&1
-run_status=$?
+gasnetrun_smp -n 2 ./coarrays_61_lf.out "$plugin" 2>&1 | tee coarrays_61_lf.log
+run_status=${PIPESTATUS[0]}
 set -e
-cat coarrays_61_lf.log
 if [ "$run_status" -ne 0 ] || grep -q "ERROR STOP" coarrays_61_lf.log; then
     echo "FAIL: coarrays_61 (status $run_status); output in coarrays_61_lf.log"
     exit 1
