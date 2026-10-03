@@ -2455,3 +2455,34 @@ contains
         instantiate defop_t {operator(.minus.), integer}, only: defop_g => defop_f  ! {Error} the instantiation argument 'operator(.minus.)' for 't' requires a deferred procedure
     end subroutine
 end module
+
+module continue_compilation_templates_01_clash_tmpl
+    implicit none
+    template clash_t {T}
+        deferred type :: T
+        type :: clash_box
+            type(T) :: x
+        end type
+    contains
+        function clash_get(b) result(r)
+            type(clash_box), intent(in) :: b
+            type(T) :: r
+            r = b%x
+        end function
+    end template
+end module
+
+module continue_compilation_templates_01_clash
+    use continue_compilation_templates_01_clash_tmpl
+    implicit none
+    type :: clash_box
+        real :: y
+    end type
+    instantiate clash_t {integer}  ! {Error} the instantiation of template 'clash_t' defines 'clash_box', which is already declared in this scope
+contains
+    subroutine clash_proc()
+        integer :: clash_get
+        instantiate clash_t {real}  ! {Error} the instantiation of template 'clash_t' defines 'clash_get', which is already declared in this scope
+        clash_get = 1
+    end subroutine
+end module
