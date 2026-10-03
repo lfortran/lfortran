@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-struct_member_order_fortran_13789-ecb2c2b",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/struct_member_order_fortran_13789.f90",
+    "infile_hash": "dff8aab66bf3724c291567f98b7335be51da7f507538b80fc8efd71a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-struct_member_order_fortran_13789-ecb2c2b.f90",
+    "stdout_hash": "f386f47660aedfa3945c7ddfa3bf0cc33d540584c2d22b81036a3eda",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

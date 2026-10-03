@@ -996,8 +996,20 @@ public:
         }
         bool old_in_struct_member_declaration = in_struct_member_declaration;
         in_struct_member_declaration = true;
+        // Print in declaration order (m_members), not symbol-table order
+        std::set<std::string> printed_members;
+        for (size_t i = 0; i < x.n_members; i++) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(x.m_members[i]);
+            if (var_sym && is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
+                r += src;
+                printed_members.insert(x.m_members[i]);
+            }
+        }
+        // fallback for any variable missing from m_members
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
+            if (printed_members.count(item)) continue;
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             if (is_a<ASR::Variable_t>(*var_sym)) {
                 visit_symbol(*var_sym);
