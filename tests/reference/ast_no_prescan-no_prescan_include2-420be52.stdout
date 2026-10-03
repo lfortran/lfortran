@@ -2,9 +2,6 @@
     [(Program
         include2
         ()
-        []
-        []
-        []
         [(Include
             0
             "include2b.f90"

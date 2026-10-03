@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in assignment to 't%v'. Tried to match size 2 of dimension 1 of LHS with size 3 of dimension 1 of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.
+  --> tests/errors/array_bounds_check_16.f90:12:5
+   |
+12 |     t%v = [1.0, 2.0, 3.0] ! t%v can be reallocated, so suggest the option
+   |     ^^^ LHS size is 2
+   |
+12 |     t%v = [1.0, 2.0, 3.0] ! t%v can be reallocated, so suggest the option
+   |           ^^^^^^^^^^^^^^^ RHS size is 3

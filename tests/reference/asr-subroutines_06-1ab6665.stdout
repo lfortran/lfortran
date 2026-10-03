@@ -61,6 +61,7 @@
                     subroutines_06
                     [subroutines_06_bitset]
                     []
+                    ()
                 ),
             subroutines_06_bitset:
                 (Module
@@ -136,6 +137,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 set1)
@@ -166,6 +168,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -214,6 +217,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         ()
                                         Source
@@ -226,6 +230,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 self)
@@ -388,6 +393,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 message)
@@ -428,7 +434,9 @@
                     .false.
                     .false.
                     .true.
+                    ()
                 )
         })
     []
+    ()
 )

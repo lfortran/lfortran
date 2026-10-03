@@ -6,7 +6,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(Implicit
             [(ImplicitSpec
                 (AttrType
@@ -22,8 +21,8 @@
                 )]
             )]
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             ()
             [(AttrCommon
                 [(range
@@ -44,8 +43,8 @@
             )]
             []
             ()
-        )]
-        [(DataStmt
+        )
+        (DataStmt
             0
             [(DataStmtSet
                 [x0
@@ -59,7 +58,6 @@
     (Program
         block_data1
         ()
-        []
         [(Implicit
             [(ImplicitSpec
                 (AttrType
@@ -75,8 +73,8 @@
                 )]
             )]
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             ()
             [(AttrCommon
                 [(range
@@ -97,8 +95,8 @@
             )]
             []
             ()
-        )]
-        [(Print
+        )
+        (Print
             0
             ()
             [(String "Printing Even number in the Range: " ())

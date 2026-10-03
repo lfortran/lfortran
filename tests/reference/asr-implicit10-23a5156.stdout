@@ -108,7 +108,7 @@
                                     2
                                     d1
                                     []
-                                    Local
+                                    Unspecified
                                     ()
                                     ()
                                     Default
@@ -156,7 +156,7 @@
                                     2
                                     e1
                                     []
-                                    Local
+                                    Unspecified
                                     ()
                                     ()
                                     Default
@@ -204,7 +204,7 @@
                                     2
                                     f1
                                     []
-                                    Local
+                                    Unspecified
                                     ()
                                     ()
                                     Default
@@ -483,6 +483,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 f1))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -512,6 +513,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 e1))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -530,7 +532,9 @@
                         })
                     a
                     (FunctionType
-                        []
+                        [(Integer 4)
+                        (Integer 4)
+                        (Integer 4)]
                         (Integer 4)
                         Source
                         Implementation
@@ -542,9 +546,12 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
-                    []
+                    [(Var 2 d1)
+                    (Var 2 e1)
+                    (Var 2 f1)]
                     [(Assignment
                         (ArrayItem
                             (Var 2 y)
@@ -742,4 +749,5 @@
                 )
         })
     []
+    ()
 )

@@ -2,8 +2,6 @@
     [(Program
         test_data
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -28,8 +26,8 @@
             None
             ())]
             ()
-        )]
-        [(DataStmt
+        )
+        (DataStmt
             0
             [(DataStmtSet
                 [(DataImpliedDo

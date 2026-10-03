@@ -2,9 +2,6 @@
     [(Program
         assign3
         ()
-        []
-        []
-        []
         [(Assign
             10
             30

@@ -12,6 +12,7 @@
                     string_14
                     []
                     []
+                    ()
                 ),
             string_14_stdlib_string_type:
                 (Module
@@ -190,6 +191,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -223,6 +225,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (String 1 () AssumedLength DescriptorString)]
@@ -237,6 +240,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 string)
@@ -300,6 +304,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
@@ -451,6 +456,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -484,6 +490,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (String 1 () AssumedLength DescriptorString)]
@@ -498,6 +505,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 string)
@@ -534,7 +542,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

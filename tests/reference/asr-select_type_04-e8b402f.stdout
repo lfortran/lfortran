@@ -24,7 +24,7 @@
                                                         (IntegerConstant -1 (Integer 4) Decimal)
                                                     )
                                                     (IntegerConstant -1 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -48,7 +48,7 @@
                                                     Local
                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -79,6 +79,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -145,6 +146,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             class_default_select_type_user:
                 (Module
@@ -217,6 +219,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 tab)]
@@ -486,6 +489,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [check_table]
                                     [(Var 8 table)
@@ -560,7 +564,7 @@
                                                         .false.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -590,7 +594,7 @@
                                                         .false.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -621,6 +625,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -698,6 +703,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -710,6 +716,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             class_default_select_type_user1:
                 (Module
@@ -784,6 +791,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             select_type4:
                 (Program
@@ -800,7 +808,9 @@
                             (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

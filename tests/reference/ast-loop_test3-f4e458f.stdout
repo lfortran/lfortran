@@ -2,9 +2,6 @@
     [(Program
         test
         ()
-        []
-        []
-        []
         [(DoLoop
             0
             ()

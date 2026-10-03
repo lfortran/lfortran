@@ -6,8 +6,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -25,8 +23,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             A
             10
@@ -35,8 +33,6 @@
         (Block
             1
             loop
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -54,8 +50,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 A
                 (+ A 5)
@@ -106,9 +102,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -133,8 +126,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             Result
             (* B B)

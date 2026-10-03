@@ -23,7 +23,7 @@ TEST_CASE("Test types") {
 
     AST::ast_t &a = *AST::make_Num_t(al, loc, 5, nullptr);
     CHECK(AST::is_a<AST::expr_t>(a));
-    CHECK(! AST::is_a<AST::stmt_t>(a));
+    CHECK(! AST::is_a<AST::decl_stmt_t>(a));
 
     AST::Num_t &x = *AST::down_cast2<AST::Num_t>(&a);
     CHECK(x.m_n == 5);
