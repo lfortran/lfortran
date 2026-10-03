@@ -12,6 +12,7 @@ newshape(2) = 3
 
 x => xv
 y => yv
+queries = c_loc(xv)
 
 do i = lbound(x, 1), ubound(x, 1)
     do j = lbound(x, 2), ubound(x, 2)
