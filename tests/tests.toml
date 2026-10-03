@@ -1756,6 +1756,10 @@ ast = true
 wat = true
 
 [[test]]
+filename = "../integration_tests/if_09.f90"
+ast_f90 = true
+
+[[test]]
 filename = "../integration_tests/case_01.f90"
 ast = true
 ast_f90 = true
@@ -2712,6 +2716,10 @@ ast_f90 = true
 [[test]]
 filename = "where1.f90"
 ast = true
+ast_f90 = true
+
+[[test]]
+filename = "../integration_tests/construct_name_01.f90"
 ast_f90 = true
 
 [[test]]
@@ -4685,6 +4693,10 @@ asr = true
 filename = "errors/external1.f90"
 asr = true
 
+[[test]]
+filename = "../integration_tests/implicit_interface_44.f90"
+asr = true
+
 # Parser
 
 [[test]]
@@ -6203,3 +6215,7 @@ filename = "show_pass_error_02.f90"
 fortran = true
 pass = "parallel_canonicalize,parallel_dispatch"
 options = "--gpu=metal"
+
+[[test]]
+filename = "../integration_tests/string_122.f90"
+asr = true
