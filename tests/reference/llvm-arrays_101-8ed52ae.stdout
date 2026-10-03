@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @0 = private unnamed_addr constant [10 x i8] c"small_arr\00", align 1
 @1 = private unnamed_addr constant [42 x i8] c"tests/../integration_tests/arrays_101.f90\00", align 1
@@ -37,7 +37,7 @@ target datalayout = "..."
 @29 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @30 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data = private constant [2 x i8] c"OK"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data, i32 0, i32 0), i64 2 }>
+@string_const = private global %string_descriptor { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data, i32 0, i32 0), i64 2 }
 @31 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define float @_lcompilers_real_i32(i32* %x) {

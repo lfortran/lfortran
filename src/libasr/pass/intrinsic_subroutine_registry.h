@@ -161,6 +161,45 @@ namespace IntrinsicImpureSubroutineRegistry {
         return ASRUtils::get_intrinsic_subroutine_name(static_cast<int>(id));
     }
 
+    // Whether `x` never defines its argument `x.m_args[i]`, because the
+    // argument is `intent(in)`. The positions are those of `x.m_args`, which
+    // some `create_*` functions compact by leaving absent optional arguments
+    // out. Where a position does not say which argument it holds, the
+    // argument is assumed to be defined.
+    static inline bool is_intent_in_argument(
+            const ASR::IntrinsicImpureSubroutine_t& x, size_t i) {
+        switch (static_cast<IntrinsicImpureSubroutines>(x.m_sub_intrinsic_id)) {
+            case IntrinsicImpureSubroutines::RandomInit:
+            case IntrinsicImpureSubroutines::Srand:
+            case IntrinsicImpureSubroutines::Abort:
+            case IntrinsicImpureSubroutines::System:
+            case IntrinsicImpureSubroutines::Sleep:
+            case IntrinsicImpureSubroutines::Exit:
+                return true;
+            case IntrinsicImpureSubroutines::RandomSeed:
+                // size, put, get
+                return i == 1;
+            case IntrinsicImpureSubroutines::GetCommandArgument:
+                // number, [value], [length], [status]
+                return i == 0;
+            case IntrinsicImpureSubroutines::GetEnvironmentVariable:
+                // name, [value], [length], [status], [trim_name]
+                return i == 0 ||
+                    ((x.m_overload_id & (1 << 3)) != 0 && i + 1 == x.n_args);
+            case IntrinsicImpureSubroutines::ExecuteCommandLine:
+                // command, wait, [exitstat], [cmdstat], [cmdmsg]
+                return i <= 1;
+            case IntrinsicImpureSubroutines::Mvbits:
+                // from, frompos, len, to, topos
+                return i != 3;
+            case IntrinsicImpureSubroutines::CoBroadcast:
+                // a, source_image, [stat], [errmsg]
+                return i == 1;
+            default:
+                return false;
+        }
+    }
+
 } // namespace IntrinsicImpureSubroutineRegistry
 
 } // namespace ASRUtils

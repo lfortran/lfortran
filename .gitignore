@@ -52,7 +52,7 @@ Makefile
 CTestTestfile.cmake
 cmake_install.cmake
 install_manifest.txt
-Testing/Temporary
+**/Testing/Temporary/
 CPackConfig.cmake
 CPackSourceConfig.cmake
 _CPack_Packages
@@ -264,6 +264,7 @@ doc/man/lfortran.1
 ## test it adds under integration_tests/.
 /run.sh
 /run_re.sh
+/.fix-issue/
 /mre_*.f90
 /re_*.f90
 /test_ref
