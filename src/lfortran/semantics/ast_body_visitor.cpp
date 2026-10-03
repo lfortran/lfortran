@@ -2452,7 +2452,8 @@ public:
             throw SemanticAbort();
         }
         if (_type == AST::decl_stmtType::Write && a_fmt == nullptr
-                && compiler_options.print_leading_space && formatted) {
+                && compiler_options.print_leading_space && formatted
+                && n_values > 0) {
             ASR::asr_t* file_write_asr_t = construct_leading_space(loc);
             ASR::FileWrite_t* file_write = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(file_write_asr_t));
             file_write->m_id = a_id;
@@ -9280,7 +9281,7 @@ public:
                 validate_format_string(fmt_str, fmt->base.loc, diag);
             }
         } else {
-            if (compiler_options.print_leading_space) {
+            if (compiler_options.print_leading_space && x.n_values > 0) {
                 current_body->push_back(al, ASRUtils::STMT(construct_leading_space(x.base.base.loc)));
             }
         }
