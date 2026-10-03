@@ -389,6 +389,21 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
         if (size == 0 && intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::Iparity) {
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, t));
         }
+        bool is_max_or_min = intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MaxVal ||
+                             intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MinVal;
+        if (size == 0 && is_max_or_min && ASRUtils::is_character(*t)) {
+            // MAXVAL of a zero sized character array is a string of char(0) and
+            // MINVAL of one is a string of char(n - 1), the last character of
+            // the collating sequence (Fortran 2018, 16.9.126 and 16.9.135).
+            // A length or a kind we cannot fold gives nullptr, leaving the
+            // reduction to be evaluated at runtime.
+            ASR::ttype_t* string_type = ASRUtils::extract_type(t);
+            if (ASRUtils::extract_kind_from_ttype_t(string_type) != 1) {
+                return nullptr;
+            }
+            return ASRUtils::get_string_filled_with_char(al, string_type,
+                intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MinVal ? 0xff : 0);
+        }
         if (size == 0 && intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MaxVal) {
             return ASRUtils::get_minimum_value_with_given_type(al, t);
         }
@@ -803,6 +818,11 @@ static inline ASR::asr_t* create_ArrIntrinsic(
     if (dim && mask) {
         overload_id = id_array_dim_mask;
     }
+    if (overload_id != id_array && ASRUtils::is_character(*ASRUtils::expr_type(array))) {
+        append_error(diag, "`dim` and `mask` arguments to `" + intrinsic_func_name +
+            "` are not implemented yet for arrays of character type", loc);
+        return nullptr;
+    }
 
     ASR::expr_t *value = nullptr;
     bool runtime_dim = false;
@@ -835,6 +855,13 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(
         ASRUtils::type_get_past_pointer(array_type));
         return_type = ASRUtils::duplicate_type_without_dims(al, type, loc);
+        if (ASR::is_a<ASR::String_t>(*return_type) &&
+            ASR::down_cast<ASR::String_t>(return_type)->m_len_kind ==
+                ASR::string_length_kindType::DeferredLength) {
+            // A deferred length string is only representable as an allocatable;
+            // the reduction allocates it to `len(array)`
+            return_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type));
+        }
     } else if( overload_id == id_array_dim || overload_id == id_array_dim_mask ) {
         Vec<ASR::dimension_t> dims;
         size_t n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
@@ -869,6 +896,61 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         arr_intrinsic_args.p, arr_intrinsic_args.n, overload_id, return_type, value);
 }
 
+// A `DeferredLength` string is only a valid declaration for an allocatable or a
+// pointer variable. The `array` dummy argument of a generated reduction is
+// neither, so it is declared with an assumed length instead.
+static inline ASR::ttype_t* assumed_length_if_deferred(Allocator& al, ASR::ttype_t* type) {
+    ASR::ttype_t* element_type = ASRUtils::extract_type(type);
+    if (!ASR::is_a<ASR::String_t>(*element_type)) {
+        return type;
+    }
+    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(element_type);
+    if (str_type->m_len_kind != ASR::string_length_kindType::DeferredLength) {
+        return type;
+    }
+    ASRBuilder b(al, type->base.loc);
+    ASR::ttype_t* assumed_length_type = b.String(nullptr,
+        ASR::string_length_kindType::AssumedLength, str_type->m_physical_type,
+        str_type->m_kind);
+    if (!ASRUtils::is_array(type)) {
+        return assumed_length_type;
+    }
+    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
+        ASRUtils::type_get_past_allocatable_pointer(type));
+    return ASRUtils::make_Array_t_util(al, type->base.loc, assumed_length_type,
+        array_type->m_dims, array_type->n_dims, ASR::abiType::Source, true,
+        array_type->m_physical_type, true);
+}
+
+// Seeds a character reduction with its identity value: a string as long as the
+// elements of `array` with every character equal to `fill`. Every element of
+// `array` compares greater than a string of char(0) and smaller than a string
+// of char(255), so seeding this way also gives an empty `array` (a zero sized
+// array, or one fully masked out) the result the standard requires
+// (Fortran 2018, 16.9.126 and 16.9.135).
+static inline void seed_string_reduction(Allocator& al, const Location& loc,
+    SymbolTable* fn_scope, Vec<ASR::stmt_t*>& fn_body, ASRBuilder& b,
+    ASR::expr_t* return_var, ASR::expr_t* array, unsigned char fill) {
+    ASR::ttype_t* return_type = ASRUtils::expr_type(return_var);
+    ASR::expr_t* identity = ASRUtils::get_string_filled_with_char(al,
+        ASRUtils::extract_type(return_type), fill);
+    if (identity) {
+        fn_body.push_back(al, b.Assignment(return_var, identity));
+        return;
+    }
+    // The length of the elements of `array` is only known at runtime
+    if (ASRUtils::is_allocatable(return_type)) {
+        fn_body.push_back(al, b.Allocate(return_var, nullptr, 0, b.StringLen(array)));
+    }
+    ASR::expr_t* idx = b.Variable(fn_scope,
+        fn_scope->get_unique_name("_lcompilers_string_seed_idx", false),
+        int32, ASR::intentType::Local);
+    fn_body.push_back(al, b.DoLoop(idx, b.i32(1), b.StringLen(array), {
+        b.Assignment(b.StringSection(return_var, idx, idx),
+            b.StringConstant(std::string(1, (char) fill), character(1)))
+    }));
+}
+
 static inline void generate_body_for_array_input(Allocator& al, const Location& loc,
     ASR::expr_t* array, ASR::expr_t* return_var, SymbolTable* fn_scope,
     Vec<ASR::stmt_t*>& fn_body, get_initial_value_func get_initial_value, elemental_operation_func elemental_operation,
@@ -882,18 +964,9 @@ static inline void generate_body_for_array_input(Allocator& al, const Location& 
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
             ASR::ttype_t* element_type = ASRUtils::duplicate_type_without_dims(al, array_type, loc);
             if (ASR::is_a<ASR::String_t>(*element_type)) {
-                Vec<ASR::expr_t*> first_idx;
-                first_idx.reserve(al, 1);
-                ASR::expr_t* one = ASRUtils::EXPR(
-                    ASR::make_IntegerConstant_t(
-                        al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, index_kind))));
-                first_idx.push_back(al, one);
-                ASR::expr_t* first_elem = PassUtils::create_array_ref(array, first_idx, al);
-                ASR::expr_t* tmp =
-                    builder.Variable(fn_scope, "_lcompilers_string_tmp", element_type,
-                        ASR::intentType::Local, nullptr, ASR::abiType::Source, false);
-                fn_body.push_back(al, builder.Assignment(tmp, first_elem));
-                fn_body.push_back(al, builder.Assignment(return_var, tmp));
+                seed_string_reduction(al, loc, fn_scope, fn_body, builder,
+                    return_var, array,
+                    elemental_operation == &ASRBuilder::Min ? 0xff : 0);
             } else {
                 ASR::expr_t* initial_val = get_initial_value(al, element_type);
                 ASR::stmt_t* return_var_init = builder.Assignment(return_var, initial_val);
@@ -1044,25 +1117,91 @@ static inline ASR::expr_t* make_reduce_op_call(Allocator& al, const Location& lo
     return builder.Call(op_sym, ca, result_elem_type, nullptr);
 }
 
-static inline ASR::expr_t* get_reduce_initial_value(Allocator& al, const Location& loc,
-        ASR::ttype_t* value_type, ASR::expr_t* array_expr,
+// Returns the derived type of the elements `reduce` is applied to, or nullptr
+// if they are not of a derived type.
+static inline ASR::symbol_t* get_reduce_struct_sym(ASR::expr_t* array_expr,
         ASR::symbol_t* caller_array_struct_sym) {
-    ASR::ttype_t* t = ASRUtils::type_get_past_allocatable(
-        ASRUtils::type_get_past_pointer(value_type));
-    while (ASRUtils::is_array(t)) {
-        t = ASRUtils::type_get_past_array(t);
+    if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
+            ASRUtils::expr_type(array_expr)))) {
+        return nullptr;
     }
-    if (ASR::is_a<ASR::StructType_t>(*t)) {
-        ASR::symbol_t* s = ASRUtils::get_struct_sym_from_struct_expr(array_expr);
-        if (s == nullptr) {
-            s = caller_array_struct_sym;
-        }
-        if (s == nullptr) {
-            throw LCompilersException("reduce: cannot resolve derived type for array argument");
-        }
-        return ASRUtils::get_struct_type_constructor_zero(al, loc, s);
+    ASR::symbol_t* s = ASRUtils::get_struct_sym_from_struct_expr(array_expr);
+    if (s == nullptr) {
+        s = caller_array_struct_sym;
     }
-    return ASRUtils::get_constant_zero_with_given_type(al, value_type);
+    if (s == nullptr) {
+        throw LCompilersException("reduce: cannot resolve derived type for array argument");
+    }
+    return s;
+}
+
+// Assigns the zero a reduction starts from to `target`, whose derived type
+// is `struct_sym`, or nullptr if it has none.
+//
+// A derived type is zeroed component by component, parent components first,
+// and an array of a derived type element by element. Allocatable and pointer
+// components are left unallocated or disassociated. Any other array is
+// assigned a scalar zero, so the zero is never built element by element.
+static inline void push_reduce_zero_assignment(Allocator& al, const Location& loc,
+        ASRBuilder& builder, ASR::expr_t* target, ASR::symbol_t* struct_sym,
+        SymbolTable* fn_scope, Vec<ASR::stmt_t*>& body) {
+    ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+    if (struct_sym == nullptr) {
+        body.push_back(al, builder.Assignment(target,
+            ASRUtils::get_constant_zero_with_given_type(al, target_type)));
+        return;
+    }
+    if (ASRUtils::is_array(target_type)) {
+        int n_dims = ASRUtils::extract_n_dims_from_ttype(target_type);
+        Vec<ASR::expr_t*> idx_vars;
+        PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, fn_scope, "_z");
+        Vec<ASR::stmt_t*> element_body;
+        element_body.reserve(al, 1);
+        push_reduce_zero_assignment(al, loc, builder,
+            PassUtils::create_array_ref(target, idx_vars, al, fn_scope),
+            struct_sym, fn_scope, element_body);
+        if (element_body.size() == 0) {
+            return;
+        }
+        // The first dimension varies fastest, so its loop is innermost.
+        std::vector<ASR::stmt_t*> loop_body(element_body.p,
+            element_body.p + element_body.size());
+        for (int d = 0; d < n_dims; d++) {
+            loop_body = {builder.DoLoop(idx_vars[d],
+                PassUtils::get_bound(target, d + 1, "lbound", al),
+                PassUtils::get_bound(target, d + 1, "ubound", al), loop_body)};
+        }
+        body.push_back(al, loop_body[0]);
+        return;
+    }
+    ASR::Struct_t* derived = ASR::down_cast<ASR::Struct_t>(
+        ASRUtils::symbol_get_past_external(struct_sym));
+    if (derived->m_parent != nullptr) {
+        push_reduce_zero_assignment(al, loc, builder, target, derived->m_parent,
+            fn_scope, body);
+    }
+    for (size_t i = 0; i < derived->n_members; i++) {
+        ASR::symbol_t* member = derived->m_symtab->get_symbol(derived->m_members[i]);
+        if (!ASR::is_a<ASR::Variable_t>(*member)) {
+            continue;
+        }
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(member);
+        if (ASRUtils::is_allocatable(v->m_type) || ASRUtils::is_pointer(v->m_type)) {
+            continue;
+        }
+        ASR::symbol_t* member_struct_sym = nullptr;
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
+            member_struct_sym = v->m_type_declaration;
+            if (member_struct_sym == nullptr) {
+                continue;
+            }
+        }
+        ASR::expr_t* member_ref = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+            al, loc, target, ASRUtils::import_struct_instance_member(al, member, fn_scope),
+            ASRUtils::symbol_type(member), nullptr));
+        push_reduce_zero_assignment(al, loc, builder, member_ref, member_struct_sym,
+            fn_scope, body);
+    }
 }
 
 static inline void generate_body_for_reduce_array_input(Allocator& al, const Location& loc,
@@ -1076,12 +1215,8 @@ static inline void generate_body_for_reduce_array_input(Allocator& al, const Loc
     builder.generate_reduction_intrinsic_stmts_for_scalar_output(loc,
         array, fn_scope, fn_body, idx_vars, doloop_body,
         [=, &al, &fn_body, &builder] {
-            ASR::ttype_t* array_type = ASRUtils::expr_type(array);
-            ASR::ttype_t* element_type = ASRUtils::duplicate_type_without_dims(al, array_type, loc);
-            ASR::expr_t* initial_val = ArrIntrinsic::get_reduce_initial_value(
-                al, loc, element_type, array, caller_array_struct_sym);
-            ASR::stmt_t* return_var_init = builder.Assignment(return_var, initial_val);
-            fn_body.push_back(al, return_var_init);
+            push_reduce_zero_assignment(al, loc, builder, return_var,
+                get_reduce_struct_sym(array, caller_array_struct_sym), fn_scope, fn_body);
         },
         [=, &al, &idx_vars, &doloop_body, &builder, &operation] () {
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
@@ -1105,12 +1240,8 @@ static inline void generate_body_for_reduce_array_mask_input(Allocator& al, cons
     builder.generate_reduction_intrinsic_stmts_for_scalar_output(loc,
         array, fn_scope, fn_body, idx_vars, doloop_body,
         [=, &al, &fn_body, &builder] {
-            ASR::ttype_t* array_type = ASRUtils::expr_type(array);
-            ASR::ttype_t* element_type = ASRUtils::duplicate_type_without_dims(al, array_type, loc);
-            ASR::expr_t* initial_val = ArrIntrinsic::get_reduce_initial_value(
-                al, loc, element_type, array, caller_array_struct_sym);
-            ASR::stmt_t* return_var_init = builder.Assignment(return_var, initial_val);
-            fn_body.push_back(al, return_var_init);
+            push_reduce_zero_assignment(al, loc, builder, return_var,
+                get_reduce_struct_sym(array, caller_array_struct_sym), fn_scope, fn_body);
         },
         [=, &al, &idx_vars, &doloop_body, &builder, &operation] () {
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
@@ -1144,11 +1275,8 @@ static inline void generate_body_for_reduce_array_dim_input(
         loc, array, dim, fn_scope, fn_body,
         idx_vars, target_idx_vars, doloop_body,
         [=, &al, &fn_body, &builder] () {
-            ASR::ttype_t* array_type = ASRUtils::expr_type(array);
-            ASR::expr_t* initial_val = ArrIntrinsic::get_reduce_initial_value(
-                al, loc, array_type, array, caller_array_struct_sym);
-            ASR::stmt_t* result_init = builder.Assignment(result, initial_val);
-            fn_body.push_back(al, result_init);
+            push_reduce_zero_assignment(al, loc, builder, result,
+                get_reduce_struct_sym(array, caller_array_struct_sym), fn_scope, fn_body);
         },
         [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &builder, &result, &operation] () {
             ASR::expr_t* result_ref = PassUtils::create_array_ref(result, target_idx_vars, al);
@@ -1176,11 +1304,8 @@ static inline void generate_body_for_reduce_array_dim_mask_input(
         loc, array, dim, fn_scope, fn_body,
         idx_vars, target_idx_vars, doloop_body,
         [=, &al, &fn_body, &builder] () {
-            ASR::ttype_t* array_type = ASRUtils::expr_type(array);
-            ASR::expr_t* initial_val = ArrIntrinsic::get_reduce_initial_value(
-                al, loc, array_type, array, caller_array_struct_sym);
-            ASR::stmt_t* result_init = builder.Assignment(result, initial_val);
-            fn_body.push_back(al, result_init);
+            push_reduce_zero_assignment(al, loc, builder, result,
+                get_reduce_struct_sym(array, caller_array_struct_sym), fn_scope, fn_body);
         },
         [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &builder, &result, &operation] () {
             ASR::expr_t* result_ref = PassUtils::create_array_ref(result, target_idx_vars, al);
@@ -1222,6 +1347,19 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
                             "_" + std::to_string(rank) +
                             "_" + std::to_string(overload_id) +
                             "_idx" + std::to_string(index_kind);
+    ASR::ttype_t* arg_element_type = ASRUtils::extract_type(arg_type);
+    if (ASR::is_a<ASR::String_t>(*arg_element_type)) {
+        // Two character arrays whose elements differ only in length compare
+        // equal with `types_equal`, so make the length part of the name of the
+        // generated function to avoid reusing one written for another length
+        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(arg_element_type);
+        int64_t str_len = -1;
+        if (str_type->m_len && ASRUtils::extract_value(str_type->m_len, str_len)) {
+            new_name += "_len" + std::to_string(str_len);
+        } else {
+            new_name += "_lenstar";
+        }
+    }
     // Check if Function is already defined.
     {
         std::string new_func_name = new_name;
@@ -1254,7 +1392,8 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
     Vec<ASR::expr_t*> args;
     args.reserve(al, 1);
 
-    ASR::ttype_t* array_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_type);
+    ASR::ttype_t* array_type = assumed_length_if_deferred(al,
+        ASRUtils::duplicate_type_with_empty_dims(al, arg_type));
     fill_func_arg("array", array_type)
     if( overload_id == id_array_dim || overload_id == id_array_dim_mask ) {
         ASR::ttype_t* dim_type = ASRUtils::TYPE(ASR::make_Integer_t(
@@ -1307,6 +1446,14 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
         ASR::expr_t *result = declare("result", return_type_, Out);
         args.push_back(al, result);
     } else if( result_dims == 0 ) {
+        ASR::ttype_t* result_type = ASRUtils::extract_type(return_type);
+        if (ASR::is_a<ASR::String_t>(*result_type) && !ASRUtils::is_allocatable(return_type)
+            && ASR::down_cast<ASR::String_t>(result_type)->m_len_kind ==
+                ASR::string_length_kindType::DeferredLength) {
+            // A deferred length result must be allocatable; it is allocated to
+            // `len(array)` when the reduction is seeded
+            return_type = b.allocatable(result_type);
+        }
         return_var = declare("result", return_type, ReturnVar);
     }
 
@@ -6588,14 +6735,13 @@ namespace Pack {
                 mask_expr.push_back(al, mask);
             }
             if (all_args_evaluated(mask_expr)) {
-                int64_t n_data = mask_expr.n * extract_kind_from_ttype_t(logical);
-                mask = EXPR(ASR::make_ArrayConstant_t(al, mask->base.loc, n_data,
+                ASR::ttype_t* mask_type = TYPE(ASR::make_Array_t(al, mask->base.loc, logical, array_dims, array_rank, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                mask = EXPR(ASRUtils::make_ArrayConstant_t_util(al, mask->base.loc,
                         ASRUtils::set_ArrayConstant_data(mask_expr.p, mask_expr.n, logical),
-                        TYPE(ASR::make_Array_t(al, mask->base.loc, logical, array_dims, array_rank, ASR::array_physical_typeType::FixedSizeArray)),
-                        ASR::arraystorageType::ColMajor));
+                        mask_type, ASR::arraystorageType::ColMajor));
             } else {
                 mask = EXPR(ASR::make_ArrayConstructor_t(al, mask->base.loc, mask_expr.p, mask_expr.n,
-                    TYPE(ASR::make_Array_t(al, mask->base.loc, logical, array_dims, array_rank, ASR::array_physical_typeType::FixedSizeArray)),
+                    TYPE(ASR::make_Array_t(al, mask->base.loc, logical, array_dims, array_rank, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global)),
                     nullptr, ASR::arraystorageType::ColMajor, nullptr));
             }
             type_mask = expr_type(mask);
@@ -7712,6 +7858,46 @@ namespace IntrinsicArrayFunctionRegistry {
             return false;
         } else {
             return true;
+        }
+    }
+
+    // The function that computes the compile-time value of the intrinsic
+    // `id` from the values of its arguments (`m_args` of its
+    // IntrinsicArrayFunction) and its type; nullptr for the intrinsics
+    // without one.
+    static inline eval_intrinsic_function get_eval_function(int64_t id) {
+        switch (static_cast<IntrinsicArrayFunctions>(id)) {
+            case IntrinsicArrayFunctions::Any: return &Any::eval_Any;
+            case IntrinsicArrayFunctions::All: return &All::eval_All;
+            case IntrinsicArrayFunctions::Iany: return &Iany::eval_Iany;
+            case IntrinsicArrayFunctions::Iall: return &Iall::eval_Iall;
+            case IntrinsicArrayFunctions::Norm2: return &Norm2::eval_Norm2;
+            case IntrinsicArrayFunctions::MatMul: return &MatMul::eval_MatMul;
+            case IntrinsicArrayFunctions::MaxVal: return &MaxVal::eval_MaxVal;
+            case IntrinsicArrayFunctions::MinVal: return &MinVal::eval_MinVal;
+            case IntrinsicArrayFunctions::Product: return &Product::eval_Product;
+            case IntrinsicArrayFunctions::Shape: return &Shape::eval_Shape;
+            case IntrinsicArrayFunctions::Coshape: return &Coshape::eval_Coshape;
+            case IntrinsicArrayFunctions::Sum: return &Sum::eval_Sum;
+            case IntrinsicArrayFunctions::Iparity: return &Iparity::eval_Iparity;
+            case IntrinsicArrayFunctions::Transpose: return &Transpose::eval_Transpose;
+            case IntrinsicArrayFunctions::Pack: return &Pack::eval_Pack;
+            case IntrinsicArrayFunctions::Unpack: return &Unpack::eval_Unpack;
+            case IntrinsicArrayFunctions::Count: return &Count::eval_Count;
+            case IntrinsicArrayFunctions::Parity: return &Parity::eval_Parity;
+            case IntrinsicArrayFunctions::DotProduct: return &DotProduct::eval_DotProduct;
+            case IntrinsicArrayFunctions::Cshift: return &Cshift::eval_Cshift;
+            case IntrinsicArrayFunctions::Eoshift: return &Eoshift::eval_Eoshift;
+            case IntrinsicArrayFunctions::Spread: return &Spread::eval_Spread;
+            case IntrinsicArrayFunctions::Reduce: return &Reduce::eval_Reduce;
+            case IntrinsicArrayFunctions::MaxLoc:
+            case IntrinsicArrayFunctions::MinLoc:
+            case IntrinsicArrayFunctions::FindLoc:
+                return nullptr;
+            default: {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
         }
     }
 

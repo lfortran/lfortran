@@ -1,12 +1,12 @@
 # cast_kind
 
-Cast Kind nodes or cast kind types.
+Which conversion a [Cast](../expression_nodes/Cast.md) performs.
 
 ## Declaration
 
 ### Syntax
 
-```
+```text
 cast_kind
     = RealToInteger
     | IntegerToReal
@@ -17,753 +17,115 @@ cast_kind
     | IntegerToComplex
     | IntegerToLogical
     | RealToLogical
-    | CharacterToLogical
-    | CharacterToInteger
-    | CharacterToList
+    | StringToLogical
+    | StringToInteger
+    | StringToList
     | ComplexToLogical
     | ComplexToComplex
     | ComplexToReal
     | ComplexToInteger
     | LogicalToInteger
-    | RealToCharacter
-    | IntegerToCharacter
-    | LogicalToCharacter
+    | LogicalToLogical
+    | RealToString
+    | IntegerToString
+    | LogicalToString
+    | StringToString
+    | UnsignedIntegerToInteger
+    | UnsignedIntegerToUnsignedInteger
+    | UnsignedIntegerToReal
+    | UnsignedIntegerToLogical
+    | IntegerToUnsignedInteger
+    | RealToUnsignedInteger
+    | CPtrToUnsignedInteger
+    | UnsignedIntegerToCPtr
+    | IntegerToSymbolicExpression
+    | ListToArray
+    | StringToArray
+    | PointerToInteger
     | ClassToStruct
     | ClassToClass
+    | ClassToIntrinsic
 ```
 
-### Arguments
+### Values
 
-None.
+| Value | Meaning |
+|----------|-------------|
+| `RealToInteger` | truncates towards zero. |
+| `IntegerToReal` | exact for values the real type can represent. |
+| `LogicalToReal` | false becomes 0.0, true becomes 1.0. |
+| `RealToReal` | changes the real kind, rounding when it narrows. |
+| `IntegerToInteger` | changes the integer kind, wrapping when it narrows. |
+| `RealToComplex` | the value becomes the real part; the imaginary part is zero. |
+| `IntegerToComplex` | the value becomes the real part. |
+| `IntegerToLogical` | zero becomes false, anything else true. |
+| `RealToLogical` | zero becomes false, anything else true. |
+| `StringToLogical` | an LPython conversion: the empty string is false. |
+| `StringToInteger` | parses the string as an integer. |
+| `StringToList` | an LPython conversion to a list of characters. |
+| `ComplexToLogical` | zero becomes false. |
+| `ComplexToComplex` | changes the complex kind. |
+| `ComplexToReal` | takes the real part. |
+| `ComplexToInteger` | takes the real part and truncates it. |
+| `LogicalToInteger` | false becomes 0, true becomes 1. |
+| `LogicalToLogical` | changes the logical kind. |
+| `RealToString` | formats the value. |
+| `IntegerToString` | formats the value. |
+| `LogicalToString` | formats the value. |
+| `StringToString` | changes the string kind. |
+| `UnsignedIntegerToInteger` | reinterprets the value as signed. |
+| `UnsignedIntegerToUnsignedInteger` | changes the unsigned kind. |
+| `UnsignedIntegerToReal` | exact for values the real type can represent. |
+| `UnsignedIntegerToLogical` | zero becomes false. |
+| `IntegerToUnsignedInteger` | reinterprets the value as unsigned. |
+| `RealToUnsignedInteger` | truncates towards zero. |
+| `CPtrToUnsignedInteger` | the address as a number. |
+| `UnsignedIntegerToCPtr` | a number as an address. |
+| `IntegerToSymbolicExpression` | wraps an integer as a symbolic expression. |
+| `ListToArray` | an LPython conversion from a list to an array. |
+| `StringToArray` | a string as an array of characters. |
+| `PointerToInteger` | the address as a number. |
+| `ClassToStruct` | narrows a polymorphic value to a derived type. |
+| `ClassToClass` | changes which class a polymorphic value is described as. |
+| `ClassToIntrinsic` | narrows a polymorphic value to an intrinsic type. |
 
 ### Return values
 
-None.
+None. An enumeration value is not evaluated.
 
 ## Description
 
-**cast_kind** nodes or cast kind types denotes kinds to typecast one idenfier to
-another.
+Every implicit conversion is explicit in ASR, and this enumeration says which
+conversion a [Cast](../expression_nodes/Cast.md) performs. The kind and the
+`type` of the **Cast** agree: the kind names the pair of types, and the type
+is the result.
 
-`cast_kind` denotes the types supported for cast in LFortran.
-
-## Types
-
-It denotes all types supported in LFortran, which are:
-
-1. `RealToInteger` denotes `cast_kind` of `real` to `integer` type.
-2. `IntegerToReal` denotes `cast_kind` of `integer` to `real` type.
-3. `LogicalToReal` denotes `cast_kind` of `logical` to `real` type.
-4. `RealToReal` denotes `cast_kind` of `Real` to `Real`.
-5. `IntegerToInteger` denotes `cast_kind` of `integer` to `integer`.
-6. `RealToComplex` denotes `cast_kind` of `Real` to `complex`.
-7. `IntegerToComplex` denotes `cast_kind` of `integer` to `complex`.
-8. `IntegerToLogical` denotes `cast_kind` of `integer` to `logical`.
-9. `RealToLogical` denotes `cast_kind` of `real` to	`logical`.
-10. `CharacterToLogical` denotes `cast_kind` of `character` to `logical`.
-11. `CharacterToInteger` denotes `cast_kind` of `character` to `integer`.
-12. `CharacterToList` denotes `cast_kind` of `character` to `list`.
-13. `ComplexToLogical` denotes `cast_kind` of `complex` to `logical`.
-14. `ComplexToComplex` denotes `cast_kind` of `complex` to `complex`.
-15. `ComplexToReal` denotes `cast_kind` of `complex` to `real`.
-16. `ComplexToInteger` denotes `cast_kind` of `complex` to `integer`.
-17. `LogicalToInteger` denotes `cast_kind` of `logical` to `integer`.
-18. `RealToCharacter` denotes `cast_kind` of `real` to `character`.
-19. `IntegerToCharacter` denotes `cast_kind` of `integer` to `character`.
-20. `LogicalToCharacter` denotes `cast_kind` of `logical` to `character`.
+Conversions that do not change the bits belong to
+[ArrayPhysicalCast](../expression_nodes/ArrayPhysicalCast.md) and
+[StringPhysicalCast](../expression_nodes/StringPhysicalCast.md) instead.
 
 ## Examples
 
-Example for	`RealToInteger`:
-
-```fortran
-program types_03
-implicit none
-real :: r
-integer :: i
-r = 1.5
-print *, r
-i = r
-print *, i
-end program
-```
-
-ASR:
-
-```
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            types_03:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            i:
-                                (Variable
-                                    2
-                                    i
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            r:
-                                (Variable
-                                    2
-                                    r
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                )
-
-                        })
-                    types_03
-                    []
-                    [(=
-                        (Var 2 r)
-                        (RealConstant
-                            1.500000
-                            (Real 4 [])
-                        )
-                        ()
-                    )
-                    (Print
-                        ()
-                        [(Var 2 r)]
-                        ()
-                        ()
-                    )
-                    (=
-                        (Var 2 i)
-                        (Cast
-                            (Var 2 r)
-                            RealToInteger
-                            (Integer 4 [])
-                            ()
-                        )
-                        ()
-                    )
-                    (Print
-                        ()
-                        [(Var 2 i)]
-                        ()
-                        ()
-                    )]
-                )
-
-        })
-    []
+```clojure
+(Cast
+  :arg (Var
+    :v (SymbolRef 1 "i")
+  )
+  :kind :IntegerToReal
+  :type (Real
+    :kind 8
+  )
+  :value nil
+  :dest nil
 )
 ```
 
-Example for `IntegerToReal`:
+It comes from this complete ASR text document:
 
-```fortran
-program types_02
-implicit none
-real :: r
-integer :: i
-i = 1
-r = 1
-r = i
-end program
+```{literalinclude} ../../examples/cast_expr.asr
+:language: clojure
 ```
 
-ASR:
-
-```
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            types_02:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            i:
-                                (Variable
-                                    2
-                                    i
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            r:
-                                (Variable
-                                    2
-                                    r
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                )
-
-                        })
-                    types_02
-                    []
-                    [(=
-                        (Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        ()
-                    )
-                    (=
-                        (Var 2 r)
-                        (Cast
-                            (IntegerConstant 1 (Integer 4 []))
-                            IntegerToReal
-                            (Real 4 [])
-                            (RealConstant
-                                1.000000
-                                (Real 4 [])
-                            )
-                        )
-                        ()
-                    )
-                    (=
-                        (Var 2 r)
-                        (Cast
-                            (Var 2 i)
-                            IntegerToReal
-                            (Real 4 [])
-                            ()
-                        )
-                        ()
-                    )]
-                )
-
-        })
-    []
-)
-```
-
-Example of `RealToReal`:
-
-```fortran
-program types_01
-implicit none
-real :: r
-r = 1.0
-r = 1.5
-r = 1.
-r = float(2)
-r = dble(3)
-end program
-```
-
-ASR:
-
-```
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            types_01:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            r:
-                                (Variable
-                                    2
-                                    r
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                )
-
-                        })
-                    types_01
-                    []
-                    [(=
-                        (Var 2 r)
-                        (RealConstant
-                            1.000000
-                            (Real 4 [])
-                        )
-                        ()
-                    )
-                    (=
-                        (Var 2 r)
-                        (RealConstant
-                            1.500000
-                            (Real 4 [])
-                        )
-                        ()
-                    )
-                    (=
-                        (Var 2 r)
-                        (RealConstant
-                            1.000000
-                            (Real 4 [])
-                        )
-                        ()
-                    )
-                    (=
-                        (Var 2 r)
-                        (Cast
-                            (Cast
-                                (IntegerConstant 2 (Integer 4 []))
-                                IntegerToReal
-                                (Real 8 [])
-                                (RealConstant
-                                    2.000000
-                                    (Real 8 [])
-                                )
-                            )
-                            RealToReal
-                            (Real 4 [])
-                            (RealConstant
-                                2.000000
-                                (Real 4 [])
-                            )
-                        )
-                        ()
-                    )
-                    (=
-                        (Var 2 r)
-                        (Cast
-                            (Cast
-                                (IntegerConstant 3 (Integer 4 []))
-                                IntegerToReal
-                                (Real 8 [])
-                                (RealConstant
-                                    3.000000
-                                    (Real 8 [])
-                                )
-                            )
-                            RealToReal
-                            (Real 4 [])
-                            (RealConstant
-                                3.000000
-                                (Real 4 [])
-                            )
-                        )
-                        ()
-                    )]
-                )
-
-        })
-    []
-)
-```
-
-Example of `IntegerToLogical`:
-
-```fortran
-program logical4
-    ! this program checks logical operators
-    implicit none
-
-       ! variable declaration
-       logical :: a, b, c
-
-       ! assigning values
-       a = 2
-       b = -1
-       c = 0
-
-       print *, a, b, c
-
-end program logical4
-```
-
-ASR:
-
-```
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            logical4:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            a:
-                                (Variable
-                                    2
-                                    a
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Logical 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            b:
-                                (Variable
-                                    2
-                                    b
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Logical 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            c:
-                                (Variable
-                                    2
-                                    c
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Logical 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                )
-
-                        })
-                    logical4
-                    []
-                    [(=
-                        (Var 2 a)
-                        (Cast
-                            (IntegerConstant 2 (Integer 4 []))
-                            IntegerToLogical
-                            (Logical 4 [])
-                            ()
-                        )
-                        ()
-                    )
-                    (=
-                        (Var 2 b)
-                        (Cast
-                            (IntegerUnaryMinus
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
-                                (IntegerConstant -1 (Integer 4 []))
-                            )
-                            IntegerToLogical
-                            (Logical 4 [])
-                            ()
-                        )
-                        ()
-                    )
-                    (=
-                        (Var 2 c)
-                        (Cast
-                            (IntegerConstant 0 (Integer 4 []))
-                            IntegerToLogical
-                            (Logical 4 [])
-                            ()
-                        )
-                        ()
-                    )
-                    (Print
-                        ()
-                        [(Var 2 a)
-                        (Var 2 b)
-                        (Var 2 c)]
-                        ()
-                        ()
-                    )]
-                )
-
-        })
-    []
-)
-```
-
-Example of `ComplexToComplex`:
-
-```fortran
-program complex_dp
-
-    complex(4) :: zero
-    complex(8) :: v
-    complex :: x
-    zero = 0.0_4
-    v = (1.05_4, 1.05_4)
-    x = (1.05_4, 1.05_8)
-    print *, v, x, zero
-
-end program
-```
-
-ASR:
-
-```
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            complex_dp:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            v:
-                                (Variable
-                                    2
-                                    v
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Complex 8 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            x:
-                                (Variable
-                                    2
-                                    x
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Complex 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            zero:
-                                (Variable
-                                    2
-                                    zero
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Complex 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                )
-
-                        })
-                    complex_dp
-                    []
-                    [(=
-                        (Var 2 zero)
-                        (Cast
-                            (RealConstant
-                                0.000000
-                                (Real 4 [])
-                            )
-                            RealToComplex
-                            (Complex 4 [])
-                            (ComplexConstant
-                                0.000000
-                                0.000000
-                                (Complex 4 [])
-                            )
-                        )
-                        ()
-                    )
-                    (=
-                        (Var 2 v)
-                        (Cast
-                            (ComplexConstructor
-                                (RealConstant
-                                    1.050000
-                                    (Real 4 [])
-                                )
-                                (RealConstant
-                                    1.050000
-                                    (Real 4 [])
-                                )
-                                (Complex 4 [])
-                                (ComplexConstant
-                                    1.050000
-                                    1.050000
-                                    (Complex 4 [])
-                                )
-                            )
-                            ComplexToComplex
-                            (Complex 8 [])
-                            ()
-                        )
-                        ()
-                    )
-                    (=
-                        (Var 2 x)
-                        (Cast
-                            (ComplexConstructor
-                                (RealConstant
-                                    1.050000
-                                    (Real 4 [])
-                                )
-                                (RealConstant
-                                    1.050000
-                                    (Real 8 [])
-                                )
-                                (Complex 8 [])
-                                (ComplexConstant
-                                    1.050000
-                                    1.050000
-                                    (Complex 8 [])
-                                )
-                            )
-                            ComplexToComplex
-                            (Complex 4 [])
-                            ()
-                        )
-                        ()
-                    )
-                    (Print
-                        ()
-                        [(Var 2 v)
-                        (Var 2 x)
-                        (Var 2 zero)]
-                        ()
-                        ()
-                    )]
-                )
-
-        })
-    []
-)
-```
-
-Example of `ClassToStruct/ClassToClass`:
-
-```fortran
-select type(var)
-    type is (base)
-        print *, var%x
-    class is (derived)
-        print *, var%y
-end select
-```
-
-ASR:
-
-```
-~select_type_block_:
-    (Block
-        (SymbolTable
-            5
-            {
-                1_base_x:
-                    (ExternalSymbol
-                        5
-                        1_base_x
-                        3 x
-                        base
-                        []
-                        x
-                        Public
-                    )
-            })
-        ~select_type_block_
-        [(Print
-            (StringFormat
-                ()
-                [(StructInstanceMember
-                    (Cast
-                        (Var 2 var)
-                        ClassToStruct
-                        (StructType
-                            [(Integer 4)]
-                            []
-                            .true.
-                            .false.
-                        )
-                        ()
-                        (Var 2 base)
-                    )
-                    5 1_base_x
-                    (Integer 4)
-                    ()
-                )]
-                FormatFortran
-                (Allocatable
-                    (String 1 () DeferredLength DescriptorString)
-                )
-                ()
-            )
-        )]
-    ),
-~select_type_block_1:
-    (Block
-        (SymbolTable
-            6
-            {
-                1_derived_y:
-                    (ExternalSymbol
-                        6
-                        1_derived_y
-                        4 y
-                        derived
-                        []
-                        y
-                        Public
-                    )
-            })
-        ~select_type_block_1
-        [(Print
-            (StringFormat
-                ()
-                [(StructInstanceMember
-                    (Cast
-                        (Var 2 var)
-                        ClassToClass
-                        (StructType
-                            [(Integer 4)]
-                            []
-                            .false.
-                            .false.
-                        )
-                        ()
-                        (Var 2 derived)
-                    )
-                    6 1_derived_y
-                    (Integer 4)
-                    ()
-                )]
-                FormatFortran
-                (Allocatable
-                    (String 1 () DeferredLength DescriptorString)
-                )
-                ()
-            )
-        )]
-    )
-```
 ## See Also
+
+[Cast](../expression_nodes/Cast.md), [Integer](../type_nodes/Integer.md), [Real](../type_nodes/Real.md), [ArrayPhysicalCast](../expression_nodes/ArrayPhysicalCast.md), [StringPhysicalCast](../expression_nodes/StringPhysicalCast.md)

@@ -360,6 +360,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             operator_overloading_01_overload_comp_m:
                 (Module
@@ -459,6 +460,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 log1)
@@ -610,6 +612,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 log1)
@@ -761,6 +764,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [less_than_inverse]
                                     [(Var 5 log1)
@@ -814,7 +818,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

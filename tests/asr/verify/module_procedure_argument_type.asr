@@ -55,6 +55,7 @@
                 false
                 []
                 false
+                :Host
               )
               []
               [
@@ -77,6 +78,7 @@
         false
         false
         true
+        nil
       )
       "s" (Module
         (SymbolTable
@@ -131,6 +133,7 @@
                 false
                 []
                 false
+                :Host
               )
               []
               [
@@ -153,6 +156,7 @@
         false
         false
         false
+        nil
       )
       "generated" (Program
         (SymbolTable
@@ -162,8 +166,10 @@
         "generated"
         []
         []
+        nil
       )
     }
   )
   []
+  nil
 )

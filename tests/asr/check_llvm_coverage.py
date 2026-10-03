@@ -5,7 +5,7 @@ import pathlib
 import re
 import sys
 
-import toml
+import tomli
 
 
 def load_asdl(asdl_path):
@@ -35,7 +35,8 @@ def main():
     llvm_source = args.llvm.read_text(encoding="utf-8")
     direct = set(re.findall(
         r"\bvisit_([A-Za-z0-9_]+)\s*\(", llvm_source))
-    exceptions = toml.load(args.manifest.resolve())["constructors"]
+    with open(args.manifest.resolve(), "rb") as f:
+        exceptions = tomli.load(f)["constructors"]
 
     missing = []
     for base, constructor in constructors:

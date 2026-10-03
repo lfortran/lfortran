@@ -729,7 +729,8 @@ intrinsic_funcs_args = {
     "NewLine": [
         {
             "args": [("char",)],
-            "return": "character(1)"
+            "return": "character(1)",
+            "char_kind_from_arg": 0
         }
     ],
     "Range": [
@@ -809,7 +810,7 @@ intrinsic_funcs_args = {
     ],
     "Merge": [
         {
-            "args": [("any", "any", "bool")],
+            "args": [("any_or_type_param", "any_or_type_param", "bool")],
             "ret_type_arg_idx": 0,
             "same_type_arg": 2
         }
@@ -938,7 +939,8 @@ intrinsic_funcs_args = {
         {
             "args": [("char",)],
             "return" : "allocatable_deferred_string()",
-            "allow_polymorphic_arg": [0]
+            "allow_polymorphic_arg": [0],
+            "char_kind_from_arg": 0
         }
     ],
 }
@@ -966,6 +968,7 @@ compile_time_only_fn = [
 
 type_to_asr_type_check = {
     "any": "!ASR::is_a<ASR::TypeParameter_t>",
+    "any_or_type_param": "",
     "int": "is_integer",
     "uint": "is_unsigned_integer",
     "real": "is_real",
@@ -976,6 +979,10 @@ type_to_asr_type_check = {
     "dict": "ASR::is_a<ASR::Dict_t>",
     "list": "ASR::is_a<ASR::List_t>",
     "tuple": "ASR::is_a<ASR::Tuple_t>"
+}
+
+type_to_msg_name = {
+    "any_or_type_param": "any",
 }
 
 intrinsic_funcs_ret_type = {
@@ -1002,12 +1009,15 @@ def compute_arg_condition(no_of_args, args_lists, allow_polymorphic_arg, args_va
         subcond_in_msg = []
         for i in range(no_of_args):
             arg = arg_list[i]
-            type_check = f"{type_to_asr_type_check[arg]}(*arg_type{i})"
+            if type_to_asr_type_check[arg]:
+                type_check = f"{type_to_asr_type_check[arg]}(*arg_type{i})"
+            else:
+                type_check = "true"
             # Add unlimited polymorphic check if specified
             if allow_polymorphic_arg and i in allow_polymorphic_arg:
                 type_check = f"({type_check} || (is_unlimited_polymorphic_type({args_var}[{i}])))"
             subcond.append(type_check)
-            subcond_in_msg.append(arg)
+            subcond_in_msg.append(type_to_msg_name.get(arg, arg))
         condition.append(" && ".join(subcond))
         cond_in_msg.append(", ".join(subcond_in_msg))
     return (f"({') || ('.join(condition)})", f"({') or ('.join(cond_in_msg)})")
@@ -1166,6 +1176,14 @@ def add_create_func_return_src(func_name):
         ret_type = "type_"
     kind_arg = arg_infos[0].get("kind_arg", False)
     src += indent * 2 + f"ASR::ttype_t *return_type = {ret_type};\n"
+    char_kind_from_arg = arg_infos[0].get("char_kind_from_arg", None)
+    if char_kind_from_arg is not None:
+        # The result is a character of the same kind as the argument, not of
+        # the default kind.
+        src += indent * 2 + f"if (is_character(*ASRUtils::expr_type(args[{char_kind_from_arg}]))) {{\n"
+        src += indent * 3 +     "set_kind_to_ttype_t(ASRUtils::extract_type(return_type),\n"
+        src += indent * 4 +         f"ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[{char_kind_from_arg}])));\n"
+        src += indent * 2 + "}\n"
     if kind_arg:
         src += indent * 2 + "if ( args[1] != nullptr ) {\n"
         src += indent * 3 +     "int kind = -1;\n"

@@ -29,6 +29,7 @@ set(SRC
     test_error_rendering.cpp
     test_asr_text.cpp
     test_asr_text_parser.cpp
+    test_gpu.cpp
 )
 
 if (WITH_JSON)
@@ -157,6 +158,15 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 --input ${CMAKE_SOURCE_DIR}/tests/asr/compile/asr_text_compile_01.asr
                 --input ${CMAKE_SOURCE_DIR}/tests/asr/edn_strings_01.f90
                 --input ${CMAKE_SOURCE_DIR}/examples/expr2.f90
+        )
+        # The ASR node documentation goes stale silently unless something
+        # reads it: this round-trips every documented example and compares
+        # every documented declaration with ASR.asdl.
+        add_test(
+            NAME test_asr_documentation
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/tests/asr/check_docs.py
+                --lfortran $<TARGET_FILE:lfortran>
         )
         # Producing an executable is required by the fuzzer's oracle, so the
         # smoke case is skipped where the toolchain cannot link one.

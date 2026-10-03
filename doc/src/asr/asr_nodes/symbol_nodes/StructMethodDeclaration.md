@@ -1,13 +1,12 @@
 # StructMethodDeclaration
 
-StructMethodDeclaration is a **symbol** node representing a type-bound procedure
-declaration inside a derived type's `contains` section.
+A type-bound procedure of a derived type.
 
 ## Declaration
 
 ### Syntax
 
-```
+```text
 StructMethodDeclaration(symbol_table parent_symtab, identifier name,
     identifier? self_argument, identifier proc_name, symbol proc,
     abi abi, bool is_deferred, bool is_nopass)
@@ -15,31 +14,16 @@ StructMethodDeclaration(symbol_table parent_symtab, identifier name,
 
 ### Arguments
 
-`parent_symtab` the symbol table of the parent struct (derived type)
-
-`name` the binding name (the name used after `%` in a method call)
-
-`self_argument` identifies which dummy argument of the bound procedure receives
-the passed object:
-- `nullptr` — the passed object goes to the first dummy argument (default
-  when `pass` is used without a name, or when neither `pass` nor `nopass` is
-  specified)
-- a name (e.g. `"pt"`) — the passed object goes to the dummy argument with
-  that name, which may be at any position in the argument list (from
-  `pass(pt)`)
-
-`proc_name` the name of the actual procedure being bound
-
-`proc` the symbol of the bound procedure (a `Function`)
-
-`abi` abi such as: `Source`, `Interface`, `BindC`
-
-`is_deferred` if true, this is a `deferred` binding (the procedure has no
-implementation in this type and must be overridden in extending types)
-
-`is_nopass` if true, no object is passed implicitly when the procedure is
-called through this binding. When false, the object is passed as the argument
-identified by `self_argument`
+| Argument | Description |
+|----------|-------------|
+| `parent_symtab` | the symbol table of the derived type that declares the binding. |
+| `name` | the binding name, the name written after the `%`. |
+| `self_argument` | the name of the passed-object dummy argument, or `nil` for the first argument. |
+| `proc_name` | the name of the procedure the binding resolves to. |
+| `proc` | the procedure symbol itself. |
+| `abi` | the ABI of the procedure. |
+| `is_deferred` | `true` for a `deferred` binding of an abstract type, which has no implementation here. |
+| `is_nopass` | `true` for `nopass`: the object is not passed as an argument. |
 
 ### Return values
 
@@ -47,94 +31,39 @@ None.
 
 ## Description
 
-A `StructMethodDeclaration` represents a type-bound procedure — a procedure
-declared in a derived type's `contains` section. It binds a name (the binding
-name) to an actual procedure, with optional pass/nopass semantics controlling
-how the invoking object is passed.
+A **StructMethodDeclaration** is stored in the symbol table of the
+[Struct](Struct.md) that declares it, and it names the procedure that
+implements the binding. Binding name and procedure name are separate, because
+`procedure :: area => circle_area` gives them different spellings.
 
-### Pass/NoPass Semantics
-
-In Fortran, type-bound procedures can control whether and how the invoking
-object is passed as an argument:
-
-```fortran
-type :: point
-    real :: x, y
-contains
-    ! Default: pass on first argument (self_argument = null, is_nopass = false)
-    procedure :: move => point_move
-
-    ! Explicit pass on first argument (same as default)
-    procedure, pass :: translate => point_translate
-
-    ! Pass on a named argument (self_argument = "pt", is_nopass = false)
-    procedure, pass(pt) :: scale => point_scale
-
-    ! No pass: no implicit object argument (is_nopass = true)
-    procedure, nopass :: create => point_create
-end type
-```
-
-When `is_nopass` is false, calling `obj%method(args)` implicitly inserts `obj`
-as an argument at the position determined by `self_argument`:
-- If `self_argument` is null: `obj` becomes the first argument
-- If `self_argument` is `"pt"`: `obj` is inserted at the position of the dummy
-  argument named `"pt"` in the procedure's argument list
-
-When `is_nopass` is true, calling `obj%method(args)` passes `args` directly
-without inserting the object.
-
-### Relationship to Variable
-
-Procedure pointer *components* (declared in the data section of a derived type,
-not in `contains`) are represented as [Variable](Variable.md) nodes with
-`pass_attr` and `self_argument` fields that serve the same purpose as
-`is_nopass` and `self_argument` in `StructMethodDeclaration`.
-
-```fortran
-type :: calculator
-contains
-    ! This is a StructMethodDeclaration
-    procedure :: compute => compute_impl
-    ! This is a Variable with type FunctionType (procedure pointer component)
-    procedure(iface), nopass, pointer :: helper => null()
-end type
-```
+A call through a binding is an ordinary
+[SubroutineCall](../statement_nodes/SubroutineCall.md) or
+[FunctionCall](../expression_nodes/FunctionCall.md) whose `dt` member carries
+the object the binding was reached through. For a `deferred` binding of an
+abstract type the actual procedure is chosen at run time from the dynamic type
+of `dt`.
 
 ## Examples
 
-```fortran
-module shapes
-    type :: circle
-        real :: radius
-    contains
-        procedure :: area => circle_area
-    end type
-contains
-    function circle_area(self) result(a)
-        class(circle), intent(in) :: self
-        real :: a
-        a = 3.14159 * self%radius**2
-    end function
-end module
+```clojure
+(StructMethodDeclaration
+  :parent_symtab 2
+  :name "area"
+  :self_argument nil
+  :proc_name "circle_area"
+  :proc (SymbolRef 1 "circle_area")
+  :abi :Source
+  :is_deferred false
+  :is_nopass false
+)
 ```
 
-In the ASR for type `circle`, the symbol table contains a
-`StructMethodDeclaration`:
+It comes from this complete ASR text document:
 
-```
-area:
-    (StructMethodDeclaration
-        area        -- binding name
-        ()          -- self_argument (null = first arg)
-        circle_area -- proc_name
-        circle_area -- proc (symbol)
-        Source       -- abi
-        .false.      -- is_deferred
-        .false.      -- is_nopass
-    )
+```{literalinclude} ../../examples/structmethoddeclaration.asr
+:language: clojure
 ```
 
 ## See Also
 
-[Variable](Variable.md)
+[Struct](Struct.md), [FunctionCall](../expression_nodes/FunctionCall.md), [SubroutineCall](../statement_nodes/SubroutineCall.md), [Function](Function.md)

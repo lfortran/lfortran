@@ -350,6 +350,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             operator_overloading_01_overload_asterisk_m:
                 (Module
@@ -449,6 +450,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 log1)
@@ -601,6 +603,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 log1)
@@ -645,7 +648,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

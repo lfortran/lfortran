@@ -12,7 +12,6 @@ module continue_compilation_3_mod
         procedure, pass(self) :: m => tbp_ptr_dummy_pass_f  ! Warning: passed-object dummy argument that is POINTER is not standard
     end type
 
-
 contains
 
     subroutine check_incompatible_type(i)
@@ -36,6 +35,7 @@ contains
         print *, x(1)
 	    x = [1, 2]
         print *, (x /= [1, 2])
+        print *, x + x
     end subroutine assumed_rank
 
     subroutine ss(x)

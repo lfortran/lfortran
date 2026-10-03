@@ -8,6 +8,7 @@
 #include <set>
 
 #include <libasr/asr_text_parser.h>
+#include <libasr/string_utils.h>
 
 namespace LCompilers::ASRText {
 
@@ -49,59 +50,6 @@ bool is_token_terminator(unsigned char c) {
 
 bool is_ascii_digit(unsigned char c) {
     return c >= '0' && c <= '9';
-}
-
-// Appends the UTF-8 encoding of a BMP code point that is not a surrogate.
-void append_utf8(std::string &out, uint32_t cp) {
-    if (cp <= 0x7F) {
-        out += static_cast<char>(cp);
-    } else if (cp <= 0x7FF) {
-        out += static_cast<char>(0xC0 | (cp >> 6));
-        out += static_cast<char>(0x80 | (cp & 0x3F));
-    } else {
-        out += static_cast<char>(0xE0 | (cp >> 12));
-        out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
-        out += static_cast<char>(0x80 | (cp & 0x3F));
-    }
-}
-
-bool is_well_formed_utf8(const std::string &text) {
-    size_t i = 0;
-    const size_t size = text.size();
-    while (i < size) {
-        const unsigned char c = static_cast<unsigned char>(text[i]);
-        size_t length;
-        uint32_t code_point;
-        if (c < 0x80) {
-            i++;
-            continue;
-        } else if ((c & 0xe0) == 0xc0) {
-            length = 2;
-            code_point = c & 0x1f;
-        } else if ((c & 0xf0) == 0xe0) {
-            length = 3;
-            code_point = c & 0x0f;
-        } else if ((c & 0xf8) == 0xf0) {
-            length = 4;
-            code_point = c & 0x07;
-        } else {
-            return false;
-        }
-        if (i + length > size) return false;
-        for (size_t k = 1; k < length; k++) {
-            const unsigned char cont =
-                static_cast<unsigned char>(text[i + k]);
-            if ((cont & 0xc0) != 0x80) return false;
-            code_point = (code_point << 6) | (cont & 0x3f);
-        }
-        if (length == 2 && code_point < 0x80) return false;
-        if (length == 3 && code_point < 0x800) return false;
-        if (length == 4 && code_point < 0x10000) return false;
-        if (code_point > 0x10ffff) return false;
-        if (code_point >= 0xd800 && code_point <= 0xdfff) return false;
-        i += length;
-    }
-    return true;
 }
 
 bool hex_digit_value(char c, int &value) {
@@ -498,7 +446,7 @@ private:
                                     span_loc(esc_start, pos - 1),
                                     "surrogate escapes are not valid UTF-8");
                         }
-                        append_utf8(buffer, cp);
+                        utf8_encode_codepoint(buffer, cp);
                         break;
                     }
                     default:
@@ -512,7 +460,7 @@ private:
             }
         }
         Location loc = span_loc(start, pos - 1);
-        if (!is_well_formed_utf8(buffer)) {
+        if (!is_valid_utf8(buffer)) {
             return fail("string literal is not well-formed UTF-8",
                     loc, "invalid UTF-8 in this string");
         }

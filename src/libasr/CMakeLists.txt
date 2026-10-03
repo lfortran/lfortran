@@ -37,10 +37,13 @@ set(SRC
 
     pass/nested_vars.cpp
     pass/array_struct_temporary.cpp
+    pass/function_result_scope.cpp
     pass/where.cpp
     pass/function_call_in_declaration.cpp
     pass/array_passed_in_function_call.cpp
     pass/openmp.cpp
+    pass/parallel_canonicalize.cpp
+    pass/parallel_dispatch.cpp
     pass/param_to_const.cpp
     pass/do_loops.cpp
     pass/for_all.cpp
@@ -48,6 +51,7 @@ set(SRC
     pass/global_stmts.cpp
     pass/select_case.cpp
     pass/init_expr.cpp
+    pass/global_init.cpp
     pass/implied_do_loops.cpp
     pass/array_op.cpp
     pass/subroutine_from_function.cpp
@@ -67,6 +71,7 @@ set(SRC
     pass/loop_vectorise.cpp
     pass/sign_from_value.cpp
     pass/inline_function_calls.cpp
+    pass/scoped_inlining.cpp
     pass/loop_unroll.cpp
     pass/dead_code_removal.cpp
     pass/instantiate_template.cpp
@@ -77,8 +82,31 @@ set(SRC
     pass/unique_symbols.cpp
     pass/intent_out_deallocate.cpp
     pass/promote_allocatable_to_nonallocatable.cpp
+    pass/conditional_expr.cpp
     pass/replace_with_compile_time_values.cpp
+    pass/gpu_decline.cpp
+    pass/gpu_unsupported_check.cpp
     pass/gpu_offload.cpp
+    pass/gpu_offload_associate.cpp
+    pass/gpu_offload_body.cpp
+    pass/gpu_offload_decide.cpp
+    pass/gpu_offload_launch.cpp
+    pass/gpu_offload_component_fit.cpp
+    pass/gpu_offload_designator.cpp
+    pass/gpu_offload_preflight.cpp
+    pass/gpu_offload_rewrite.cpp
+    pass/gpu_offload_collect.cpp
+    pass/gpu_offload_device_fn.cpp
+    pass/gpu_offload_intrinsics.cpp
+    pass/gpu_offload_array_ops.cpp
+    pass/gpu_offload_import.cpp
+    pass/gpu_offload_kernel_scope.cpp
+    pass/device_partition.cpp
+    pass/gpu_kernel_abi.cpp
+    pass/gpu_kernel_plan.cpp
+    pass/gpu_data_layout.cpp
+    pass/device_launch_expand.cpp
+    pass/gpu_memory_space.cpp
     pass/coarray.cpp
 
     codegen/asr_to_metal.cpp
@@ -168,10 +196,26 @@ install(
     DESTINATION ${CMAKE_INSTALL_PREFIX}/share/lfortran
 )
 
-# Copy Metal GPU runtime source to build directory so the
-# lfortran binary can find it at its expected relative path
-file(COPY
+set(LFORTRAN_GPU_RUNTIME_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_metal.m
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_cuda.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_cpu.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cuda_cpu_device.h
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_runtime.h
+)
+
+# The driver compiles these sources when linking GPU programs. Keep the
+# build-tree and installed layouts consistent with its runtime lookup path.
+file(COPY ${LFORTRAN_GPU_RUNTIME_SOURCES}
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/runtime)
+
+get_filename_component(LFORTRAN_GPU_RUNTIME_INSTALL_PARENT
+    "${CMAKE_INSTALL_LIBDIR}" DIRECTORY)
+if (LFORTRAN_GPU_RUNTIME_INSTALL_PARENT)
+    set(LFORTRAN_GPU_RUNTIME_INSTALL_DIR
+        "${LFORTRAN_GPU_RUNTIME_INSTALL_PARENT}/libasr/runtime")
+else()
+    set(LFORTRAN_GPU_RUNTIME_INSTALL_DIR "libasr/runtime")
+endif()
+install(FILES ${LFORTRAN_GPU_RUNTIME_SOURCES}
+    DESTINATION ${LFORTRAN_GPU_RUNTIME_INSTALL_DIR})

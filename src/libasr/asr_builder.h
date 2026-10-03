@@ -171,12 +171,12 @@ class ASRBuilder {
                 al, loc,
                 type,
                 arr_dimensions.p, arr_dimensions.n,
-                ASR::UnboundedPointerArray));
+                ASR::UnboundedPointerArray, ASR::memory_spaceType::Global));
         return array_type;
     }
 
     ASR::ttype_t* CPtr() {
-        return TYPE(ASR::make_CPtr_t(al, loc));
+        return TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
     }
 
     // Expressions -------------------------------------------------------------
@@ -376,8 +376,17 @@ class ASRBuilder {
         return EXPR(ASR::make_StringSection_t(al, loc, s, start, end, i32(1), string_type, nullptr));
     }
 
+    // A single character of `x` has the same character kind as `x` itself.
     inline ASR::expr_t* StringItem(ASR::expr_t* x, ASR::expr_t* idx) {
-        return EXPR(ASR::make_StringItem_t(al, loc, x, idx, character(1), nullptr));
+        int char_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x));
+        return EXPR(ASR::make_StringItem_t(al, loc, x, idx,
+            String(i32(1), ASR::ExpressionLength, ASR::DescriptorString, char_kind), nullptr));
+    }
+
+    // A blank of the given character kind, for padding and trimming.
+    inline ASR::expr_t* StringBlank(int char_kind) {
+        return StringConstant(" ",
+            String(i32(1), ASR::ExpressionLength, ASR::DescriptorString, char_kind));
     }
 
     inline ASR::expr_t* StringConstant(std::string s, ASR::ttype_t* type) {
@@ -1026,8 +1035,8 @@ class ASRBuilder {
         ASR::expr_t *arr_constant;
         if (elements.size() == 0) {
             // Zero-size array: create an empty ArrayConstant directly
-            arr_constant = EXPR(ASR::make_ArrayConstant_t(al, loc,
-                0, nullptr, fixed_size_type, ASR::arraystorageType::ColMajor));
+            arr_constant = EXPR(ASRUtils::make_ArrayConstant_t_util(al, loc,
+                nullptr, fixed_size_type, ASR::arraystorageType::ColMajor));
         } else {
             arr_constant = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
                 m_eles.p, m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));

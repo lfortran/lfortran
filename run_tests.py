@@ -76,7 +76,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_clojure = is_included("asr_clojure")
     asr_openmp = is_included("asr_openmp")
     c_target_omp = is_included("c_target_omp")
-    c_target_cuda = is_included("c_target_cuda")
     asr_logical_casting = is_included("asr_logical_casting")
     mod_to_asr = is_included("mod_to_asr")
     llvm = is_included("llvm")
@@ -86,6 +85,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     is_cumulative_pass = is_included("cumulative")
     julia = is_included("julia")
     gpu_cuda_kernel = is_included("gpu_cuda_kernel")
+    gpu_offload_cuda = is_included("gpu_offload_cuda")
+    gpu_offload_metal = is_included("gpu_offload_metal")
     wat = is_included("wat")
     obj = is_included("obj")
     x86 = is_included("x86")
@@ -112,9 +113,12 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "transform_optional_argument_functions",
                         "array_op", "select_case",
                         "class_constructor", "implied_do_loops",
-                        "pass_array_by_data", "init_expr", "where",
+                        "pass_array_by_data", "init_expr", "global_init",
+                        "global_init_wire",
+                        "where",
                         "nested_vars", "intent_out_deallocate", "openmp",
-                        "array_struct_temporary", "coarray"] and
+                        "array_struct_temporary", "coarray",
+                        "parallel_canonicalize", "parallel_dispatch"] and
                 _pass not in optimization_passes):
                 raise Exception(f"Unknown pass: {_pass}")
     if update_reference:
@@ -626,16 +630,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference,
             verify_hash,
             extra_args)
-        
-    if c_target_cuda:
-        run_test(
-            filename,
-            "c_target_cuda",
-            "lfortran --show-c --openmp --target-offload {infile} -o {outfile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
 
     if asr_logical_casting:
         run_test(
@@ -667,17 +661,35 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             extra_args)
 
     if pass_ is not None and not fortran:
-        cmd = "lfortran "
-        if is_cumulative_pass:
-            cmd += "--cumulative "
-        cmd += "--pass=" + pass_ + \
-            " --show-asr --no-color {infile} -o {outfile}"
-        pass_ = pass_.replace(",", "_")
-        run_test(filename, "pass_{}".format(pass_), cmd,
-                filename,
-                update_reference,
-                verify_hash,
-                extra_args)
+        # A pass can need the modfiles of the modules the test uses, the same
+        # way an `asr` test does: `--separate-compilation` only reads a module
+        # from a modfile if one is there to read.
+        skip_test = False
+        for extrafile in extrafiles:
+            extrafile_ = extrafile.rstrip().lstrip()
+            if len(extrafile_) == 0:
+                continue
+            if no_llvm:
+                log.info(f"{filename} * pass  SKIPPED because LLVM is not enabled")
+                skip_test = True
+                break
+            extrafile_ = os.path.join("tests", extrafile_)
+            modfile = extrafile_[:-4] + ".mod"
+            if not os.path.exists(modfile):
+                run_cmd("lfortran -c {}".format(extrafile_))
+
+        if not skip_test:
+            cmd = "lfortran "
+            if is_cumulative_pass:
+                cmd += "--cumulative "
+            cmd += "--pass=" + pass_ + \
+                " --show-asr --no-color {infile} -o {outfile}"
+            pass_ = pass_.replace(",", "_")
+            run_test(filename, "pass_{}".format(pass_), cmd,
+                    filename,
+                    update_reference,
+                    verify_hash,
+                    extra_args)
     if llvm:
         if no_llvm:
             log.info(f"{filename} * llvm   SKIPPED as requested")
@@ -732,6 +744,22 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 update_reference,
                 verify_hash,
                 extra_args)
+
+    for gpu_offload, device in ((gpu_offload_cuda, "cuda"),
+                                (gpu_offload_metal, "metal")):
+        if not gpu_offload:
+            continue
+        name = "gpu_offload_" + device
+        if no_llvm:
+            log.info(f"{filename} * {name}   SKIPPED because LLVM is not enabled")
+        else:
+            run_test(filename, name,
+                    "lfortran --no-color --gpu=" + device +
+                    " -c {infile} -o {outfile}",
+                    filename,
+                    update_reference,
+                    verify_hash,
+                    extra_args)
 
     if wat:
         run_test(filename, "wat", "lfortran --no-color --show-wat {infile}",

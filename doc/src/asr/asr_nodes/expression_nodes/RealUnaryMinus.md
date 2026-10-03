@@ -1,68 +1,51 @@
 # RealUnaryMinus
 
-Floating point unary minus operator as the second operand of binary arithmetic operators, a
-`expr` node.
+Negation of a real.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 RealUnaryMinus(expr arg, ttype type, expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`arg` |  expression arguments |
-|`type`| table entry type |
-|`value`| expression value|
+| Argument | Description |
+|----------|-------------|
+| `arg` | the operand. |
+| `type` | the type of the expression. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the RealUnaryMinus represents.
+The value of the expression.
 
 ## Description
 
-**RealUnaryMinus** represents real unary minus operand of binary
-arithmetic operators, to be used without parantheses.
-
-Example : `a = b.x * -c.x`
-
-## Types
-
-Only accepts floating point values, exponents.
+The sign bit of the operand is flipped, so negating zero gives negative zero.
 
 ## Examples
 
-```fortran
--1.2
+```clojure
+(RealUnaryMinus
+  :arg (Var
+    :v (SymbolRef 1 "x")
+  )
+  :type (Real
+    :kind 8
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(RealUnaryMinus
-        (RealConstant
-            1.200000
-            (Real 4 [])
-        )
-        (Real 4 [])
-        (RealConstant
-            -1.200000
-            (Real 4 [])
-        )
-    )]
-)
+```{literalinclude} ../../examples/real_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[IntegerUnaryMinus](IntegerUnaryMinus.md)
+[IntegerUnaryMinus](IntegerUnaryMinus.md), [RealBinOp](RealBinOp.md)

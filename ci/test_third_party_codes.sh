@@ -151,15 +151,12 @@ time_section "🧪 Testing caffeine" '
     fi
   done
 
-  # inject ISO_Fortran_binding.h into the C include path
-  export CPPFLAGS="-I$(lfortran --print-c-include-dir)"
-
-  # checkout a snapshot more recent than the current release
-  git checkout 341a507bfd61c464fe6db4b8185520e6461e5a9b
+  # Release 0.8.2
+  git checkout 0.8.2
+  assert_git_commit 6cdf2eafb139ccb40a9a0f2a1b74750b34a9a1ac
 
   # Now build and test caffeine with LFortran
-  export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug" 
-  ./install.sh --yes --prefix=$PWD/inst --verbose
+  ./install.sh --yes --prefix=$PWD/inst --verbose --enable-rpath --enable-debug
 
   # Execute Caffeine unit tests
   export CAF_IMAGES=4
@@ -241,8 +238,13 @@ time_section "🧪 Testing Fiats" '
   if [[ "$(uname)" == "Darwin" ]]; then
     rm -rf build
     git fetch https://github.com/certik/fiats lf1
-    git checkout f5d91ae48c01297a7fb183957654a73721ad4520
-    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal"
+    git checkout 869584f56955fe591304587eb34068b814448c33
+    # Fiats computes in real(8), which is on the unsupported list for Metal
+    # (it has no 64-bit float), so --gpu-allow-cpu-fallback runs those
+    # `do concurrent` loops on the CPU with a warning; every other loop is
+    # offloaded. The lf1 branch turns the loops LFortran cannot offload yet
+    # into serial loops.
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal --gpu-allow-cpu-fallback"
   fi
 
   print_success "Done with Fiats"
@@ -271,12 +273,18 @@ time_section "🧪 Testing Formal" '
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  git checkout 0.3.0
-  assert_git_commit d3f8c5a37684a0598eee62c5f60629c94c6c3536
+  git checkout 0.4.0
+  assert_git_commit d60710a33a0c2a3a0e4e9450000ad1a6782a394a
   # disabled because it gets a SEGV on Linux:
   #fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
   rm -rf build
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+  if [[ "$(uname)" == "Darwin" ]]; then
+    # Every do concurrent in Formal is offloaded to Metal. A loop the
+    # compiler cannot lower is a compile error, so this keeps it that way.
+    rm -rf build
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag --gpu=metal
+  fi
 
   print_success "Done with Formal"
   cd ..

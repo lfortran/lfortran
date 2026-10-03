@@ -113,6 +113,7 @@ class ASRToLLVMVisitor;
                     llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // format
                     llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // str
                     llvm::Type::getInt32Ty(context),                               // str_len
+                    llvm::Type::getInt32Ty(context),                               // str_kind
                     llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // end
                     llvm::Type::getInt32Ty(context)                                // end_len
                 },
@@ -225,6 +226,19 @@ class ASRToLLVMVisitor;
         // e.g. -> `i64*`
         bool is_llvm_pointer(const ASR::ttype_t& asr_type);
 
+        // Returns the terminator of `bb`, or nullptr when `bb` is not
+        // terminated yet. `llvm::BasicBlock::getTerminator()` asserts on a
+        // block without a terminator from LLVM 23 on, so inspect the last
+        // instruction directly: this behaves identically on every LLVM
+        // version we support.
+        static inline llvm::Instruction* get_terminator(llvm::BasicBlock* bb) {
+            if (bb->empty()) {
+                return nullptr;
+            }
+            llvm::Instruction& last_instruction = bb->back();
+            return last_instruction.isTerminator() ? &last_instruction : nullptr;
+        }
+
     }
 
     class LLVMList;
@@ -273,7 +287,7 @@ class ASRToLLVMVisitor;
             llvm::StructType *complex_type_4, *complex_type_8;
             llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
             llvm::PointerType *character_type;
-            llvm::Type* string_descriptor; /* <{ i8* --DATA-- , i64 --LENGTH-- }> */
+            llvm::Type* string_descriptor; /* { i8* --DATA-- , i64 --LENGTH-- } */
             llvm::Type* vptr_type;
             llvm::Type* dim_descr_type_; // dimension_descriptor type (used with descriptorArrays)
             llvm::FunctionType* struct_copy_functype;
@@ -668,6 +682,16 @@ class ASRToLLVMVisitor;
                 ASR::String_t* dest_str_type, ASR::String_t* src_str_type,
                 bool is_dest_allocatable);
 
+            /*
+                Copies every element of a fixed-size `PointerArray` array of
+                strings (one string descriptor whose data holds all elements
+                back to back) from src into dest. Other layouts of arrays of strings
+                are not supported (CodeGenError).
+            */
+            void copy_fixed_size_array_of_strings(
+                llvm::Value* dest, llvm::Value* src,
+                ASR::ttype_t* dest_type, ASR::ttype_t* src_type);
+
 
             /*
                 *String copying src into destination,
@@ -680,9 +704,9 @@ class ASRToLLVMVisitor;
                 llvm::Value* char_kind = nullptr);
 
             // Handles string literals ==> e.g. `print *, "HelloWorld"`
-            llvm::Value* declare_string_constant(const ASR::StringConstant_t* str_const);
+            llvm::Value* declare_string_constant(const ASR::StringConstant_t* str_const, bool is_const = true);
 
-            llvm::Value* declare_constant_stringArray(Allocator &al, const ASR::ArrayConstant_t* arr_const);
+            llvm::Value* declare_constant_stringArray(Allocator &al, const ASR::ArrayConstant_t* arr_const, bool is_const = true);
             /*
                 Declare + Setup
                 string in the global scope of the llvm module.
@@ -779,6 +803,9 @@ class ASRToLLVMVisitor;
 
             llvm::Type* getClassType(ASR::Struct_t* der_type, bool is_pointer=false);
 
+            llvm::Value* get_type_identifier_for_polymorphic_type(ASR::expr_t* arg, llvm::Value* arg_val, 
+                ASR::symbol_t* struct_sym, llvm::Module* module, int class_type_id);
+
             llvm::Type* getFPType(int a_kind, bool get_pointer=false);
 
             llvm::Type* getComplexType(int a_kind, bool get_pointer=false);
@@ -793,6 +820,11 @@ class ASRToLLVMVisitor;
 
             llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
 
+            // Pointer to a function of the opaque procedure type `x`: no
+            // parameters, returning the explicit result type or void.
+            llvm::PointerType* get_opaque_procedure_ptr_type(const ASR::FunctionType_t &x,
+                llvm::Module* module);
+
             // Convert complex return value from platform ABI to internal representation
             // (\<2 x float\>, i64 on Windows, etc.) to the internal complex_4 struct.
             llvm::Value* complex_function_return_abi_to_internal(llvm::Value* abi_val,
@@ -803,6 +835,9 @@ class ASRToLLVMVisitor;
             std::vector<llvm::Type*> convert_args(ASR::Function_t* fn, ASR::FunctionType_t* x);
 
             llvm::Value* get_array_size(llvm::Value* array_ptr, llvm::Type* array_llvm_type, ASR::ttype_t* array_asr_type, ASRToLLVMVisitor *asr_to_llvm_visitor);
+
+            // Number of elements read from the descriptor at runtime, as i64.
+            llvm::Value* get_descriptor_array_size(llvm::Value* array_ptr, llvm::Type* array_llvm_type);
 
 
             llvm::Type* get_type_from_ttype_t(ASR::expr_t* arg_expr, ASR::ttype_t* asr_type,
@@ -830,9 +865,12 @@ class ASRToLLVMVisitor;
 
             void set_set_api(ASR::Set_t* set_type);
 
+            // `finalize_dest` false: `dest` has just been allocated, so the
+            // copy defines it rather than assigning to it, and it is not
+            // finalized first.
             void deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::ttype_t* asr_dest_type, ASR::ttype_t* asr_src_type, llvm::Module* module,
-                bool use_defined_assignment = false);
+                bool use_defined_assignment = false, bool finalize_dest = true);
 
             llvm::Value* convert_kind(llvm::Value* val, llvm::Type* target_type);
 
@@ -1345,11 +1383,19 @@ class ASRToLLVMVisitor;
                     verify(arr, get_llvm_type(&arr_t->base, struct_sym)->getPointerTo());
                     auto const data = builder_->CreateLoad(array_data_ptr_type, 
                                                             llvm_utils_->create_gep2(arr_llvm_t, arr, 0));
+                    // The finalizer is cached per rank and element type and
+                    // reused for every descriptor array of that type, so the
+                    // size must come from the descriptor, never from the
+                    // (possibly constant) shape of the array it is emitted for.
+                    auto const descriptor_size_lazy = [&]() {
+                        insert_BB_for_readability("Calculate_arraySize");
+                        return llvm_utils_->get_descriptor_array_size(arr, arr_llvm_t);
+                    };
                     if(arr_t->m_type->type == ASR::StructType){
                         check_if_allocated_then_finalize(data, arr_t->m_type, struct_sym,[&](){
-                            free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);});
+                            free_array_data(data, arr_t->m_type, struct_sym, descriptor_size_lazy);});
                     } else {
-                        free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
+                        free_array_data(data, arr_t->m_type, struct_sym, descriptor_size_lazy);
                     }
 
                     free_array_ptr_to_consecutive_data(data, arr_t->m_type);
@@ -2100,7 +2146,7 @@ class ASRToLLVMVisitor;
          */
         void END_CACHE(llvm::BasicBlock* revert_bb) {
             LCOMPILERS_ASSERT(revert_bb)
-            LCOMPILERS_ASSERT_MSG(!builder_->GetInsertBlock()->getTerminator(),
+            LCOMPILERS_ASSERT_MSG(!LLVM::get_terminator(builder_->GetInsertBlock()),
                 "`END CACHE` adds the terminator, not expected to be added by other utility")
             builder_->CreateRetVoid();
             builder_->SetInsertPoint(revert_bb);
@@ -2260,6 +2306,9 @@ class ASRToLLVMVisitor;
                     }
                     if (ASR::is_a<ASR::StructType_t>(*base_t)
                             && v->m_symbolic_value != nullptr) {
+                        if (ASR::is_a<ASR::ArrayBroadcast_t>(*v->m_symbolic_value)) {
+                            return false;
+                        }
                         return true;
                     }
                 }
@@ -2270,7 +2319,8 @@ class ASRToLLVMVisitor;
         static bool non_deallocatable_construct(ASR::asr_t* const s){ // Can't deallocate
             ASR::symbol_t* sym = ASR::is_a<ASR::symbol_t>(*s) ? ASR::down_cast<ASR::symbol_t>(s) : nullptr;
             const bool is_interface = sym && ASR::is_a<ASR::Function_t>(*sym)
-                                      && ASRUtils::get_FunctionType(sym)->m_deftype == ASR::Interface;
+                                      && ASRUtils::is_declaration_deftype(
+                                          ASRUtils::get_FunctionType(sym)->m_deftype);
             const bool is_external_abi = sym && ASR::is_a<ASR::Function_t>(*sym)
                                       && ASRUtils::get_FunctionType(sym)->m_abi == ASR::ExternalUndefined;
             const bool is_TU = !sym && ASR::is_a<ASR::unit_t>(*s) && ASR::is_a<ASR::TranslationUnit_t>(*(ASR::unit_t*)s);
@@ -2350,6 +2400,8 @@ class ASRToLLVMVisitor;
                 case ASR::Complex:
                 case ASR::UnsignedInteger:
                 case ASR::Logical:
+                // An enumeration value is the integer it is stored as.
+                case ASR::EnumType:
                     return false;
                 case ASR::StructType:{
                     ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t);
@@ -2511,7 +2563,7 @@ class ASRToLLVMVisitor;
 
         void check_all_caches_done_properly(){
             for(auto const& cache_pair : type_finalizer_cache_){
-                if(cache_pair.second->back().getTerminator() == nullptr){
+                if(LLVM::get_terminator(&cache_pair.second->back()) == nullptr){
                     throw LCompilersException("Cache function" + 
                             cache_pair.second->getName().str() +
                             "Not properly created");
@@ -2532,6 +2584,18 @@ class ASRToLLVMVisitor;
         void finalize_temporary(llvm::Value* const ptr, ASR::ttype_t* const t) {
             if (!is_finalizable_type(t, nullptr, false)) return;
             finalize_type(ptr, t, nullptr);
+        }
+
+        /**
+         * Free the storage owned by `n_elements` consecutive array elements
+         * starting at `data` (e.g. the string buffers and allocatable
+         * components of structs), without freeing the elements themselves.
+         */
+        void finalize_array_elements(llvm::Value* const data, llvm::Value* const n_elements,
+                ASR::ttype_t* const elem_type, ASR::Struct_t* const struct_sym) {
+            if (!is_finalizable_type(elem_type, struct_sym, false)) return;
+            auto const array_size = [&]() { return n_elements; };
+            free_array_data(data, elem_type, struct_sym, array_size);
         }
 
         /**
@@ -2614,6 +2678,26 @@ class ASRToLLVMVisitor;
                 }
             }
             LCOMPILERS_ASSERT([&]() { check_all_caches_done_properly(); return true;}());
+        }
+
+        /**
+         * Finalize a save variable of struct type at program exit.
+         *
+         * A procedure's save variable outlives every call, so
+         * `not_finalizable_variable` keeps it out of that procedure's own
+         * scope finalization. Its struct members may still own heap storage
+         * that the procedure allocated on its first call (string buffers,
+         * array descriptors), and the program is what owns it, so the caller
+         * finalizes it here when the program ends.
+         *
+         * @param v the save variable
+         * @param ptr llvm global holding it
+         */
+        void finalize_saved_struct_variable(ASR::Variable_t* const v, llvm::Value* const ptr){
+            ASR::Struct_t* const struct_sym = get_struct_sym(v);
+            if(!is_finalizable_type(v->m_type, struct_sym, false)) { return; }
+            insert_BB_for_readability((std::string("Finalize_Saved_Variable_") + v->m_name).c_str());
+            check_userDefinedFinalizer_then_finalize(ptr, v->m_type, struct_sym, false);
         }
 
         // Wrapper to the `get_UPoly_finalize_fn(ASR::ttype_t*, ASR::Struct_t*)` below 
@@ -2847,9 +2931,17 @@ class ASRToLLVMVisitor;
 
             void fill_intrinsic_type_allocate_body(ASR::ttype_t* type, llvm::Function* func, llvm::Module* module);
 
+            // Allocate the member storage owned by the struct at `ptr` (array
+            // descriptors, fixed-size character array buffers, ...), as done
+            // for every newly created struct instance.
+            void allocate_struct_members(ASR::Struct_t* struct_t, llvm::Value* ptr,
+                ASR::ttype_t* struct_type) {
+                allocate_struct_array_members(struct_t, ptr, struct_type, false);
+            }
+
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
-                bool use_defined_assignment = false);
+                bool use_defined_assignment = false, bool finalize_dest = true);
 
             // Copy dimension descriptors and rank from src to dest array descriptor.
             void copy_dimension_descriptors(

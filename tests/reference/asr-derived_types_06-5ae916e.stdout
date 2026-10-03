@@ -61,6 +61,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 a)]
@@ -105,6 +106,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             derived_types_01:
                 (Program
@@ -116,7 +118,9 @@
                     derived_types_01
                     []
                     []
+                    ()
                 )
         })
     []
+    ()
 )

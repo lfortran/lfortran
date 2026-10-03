@@ -26,7 +26,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `-D TEXT ...`: Define `<macro>=<value>` (or 1 if `<value>` omitted)
 - `--version`: Display compiler version information
 - `-W TEXT ...`: Linker flags
-- `-f TEXT ...`: All `-f*` flags (only -fPIC supported for now)
+- `-f TEXT ...`: All `-f*` flags (only -fPIC, -fPIE & -fdefault-integer-8 supported for now)
 - `--cpp`: Enable C preprocessing
 - `--fixed-form`: Use fixed form Fortran source parsing
 - `--fixed-form-infer`: Use heuristics to infer if a file is in fixed form
@@ -57,6 +57,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--show-wat`: Show WAT (WebAssembly Text Format) and exit
 - `--show-julia`: Show Julia translation source for the given file and exit
 - `--show-gpu-kernel-source`: Show the GPU kernel source for the backend selected by `--gpu` and exit
+- `--gpu-allow-cpu-fallback`: Run a parallel loop that uses a construct the selected GPU does not support (`real(8)` on Metal, `real(10)` or `real(16)`, input/output, or `stop` and `error stop` on Metal) on the CPU with a warning, instead of failing compilation. A loop the GPU offloading pipeline cannot lower is still an error
 - `--show-fortran`: Show Fortran translation source for the given file and exit
 - `--show-stacktrace`: Show internal stacktrace on compiler errors
 - `--symtab-only`: Only create symbol tables in ASR (skip executable stmt)
@@ -73,9 +74,12 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--separate-compilation`: Generate object code into .o files
 - `--rtlib`: Include the full runtime library in the LLVM output
 - `--use-loop-variable-after-loop`: Allow using loop variable after the loop
-- `--fast`: Best performance (disable strict standard compliance)
+- `--fast`: Optimize for best performance on the host CPU (disable strict standard compliance)
 - `--link-with-gcc`: Calls GCC for linking instead of clang
 - `--target TEXT`: Generate code for the given target
+- `--march TEXT`: Generate code for the selected instruction-set architecture (`native` for the host)
+- `--mcpu TEXT`: Generate and tune code for the selected CPU (`native` for the host)
+- `--mtune TEXT`: Tune code for the selected CPU without changing the instruction set (`native` for the host)
 - `--print-targets`: Print the registered targets
 - `--implicit-typing`: Allow implicit typing
 - `--implicit-interface`: Allow implicit interface

@@ -37,6 +37,7 @@
                   )
                 ]
                 :FixedSizeArray
+                :Global
               )
               nil
               :Source
@@ -93,8 +94,10 @@
             false
           )
         ]
+        nil
       )
     }
   )
   []
+  nil
 )
