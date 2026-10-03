@@ -204,6 +204,17 @@ set(LFORTRAN_GPU_RUNTIME_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_runtime.h
 )
 
+# Keep executable-relative header lookup working in out-of-source builds.
+if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
+    foreach(header IN ITEMS lfortran_intrinsics.h ISO_Fortran_binding.h)
+        configure_file(
+            "${CMAKE_CURRENT_SOURCE_DIR}/runtime/${header}"
+            "${CMAKE_CURRENT_BINARY_DIR}/runtime/${header}"
+            COPYONLY
+        )
+    endforeach()
+endif()
+
 # The driver compiles these sources when linking GPU programs. Keep the
 # build-tree and installed layouts consistent with its runtime lookup path.
 file(COPY ${LFORTRAN_GPU_RUNTIME_SOURCES}

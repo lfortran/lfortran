@@ -119,6 +119,12 @@ Now you can use our script `./build1.sh` to build in Debug mode:
 
 and can use `ninja` to rebuild.
 
+Uninstalled compilers locate their C runtime headers relative to the executable.
+For out-of-source builds, CMake copies `lfortran_intrinsics.h` and
+`ISO_Fortran_binding.h` into `<build>/src/libasr/runtime` and refreshes them when
+the source headers change. Keep this directory with the executable when moving
+a built tree; header lookup does not depend on the original source path.
+
 To do a clean rebuild, you can use:
 ```bash
 # NOTE: the below git command deletes all untracked files
