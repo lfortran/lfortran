@@ -866,18 +866,87 @@ void handle_logical(char* format, bool val, char** result) {
 static void format_float_fortran(char* result, float val);
 static void format_double_fortran(char* result, double val);
 
-void handle_float(FloatFormatType format_type, char* format, double val, int scale, char** result, bool use_sign_plus, char rounding_mode) {
+// The real edit descriptors take a long double, so that a real(10) value
+// keeps all of its digits. Their arithmetic and their printf conversions are
+// carried out in the precision of the value being formatted: long double for
+// a real(10) value (`extended`) and double otherwise. The output of real(4)
+// and real(8) values is then the same as with double arithmetic, and it does
+// not depend on long double support in printf, which wasi-libc, for example,
+// leaves out by default.
+static inline long double fmt_pow10(int n, bool extended) {
+    return extended ? powl(10, n) : pow(10, n);
+}
+
+// 10^k is exact in long double for 0 <= k <= 27 (5^27 < 2^64), but 10^-k is
+// not. For a real(10) value, scaling by 10^-k with such a k therefore divides
+// by 10^k, and dividing by 10^-k multiplies by 10^k: 0.5 divided by the
+// inexact 10^-3 is just below 500, and directed rounding then gives a wrong
+// digit.
+static inline long double fmt_mul_pow10(long double val, int n, bool extended) {
+    if (!extended) return (double)val * pow(10, n);
+    if (n < 0 && n >= -27) return val / powl(10, -n);
+    return val * powl(10, n);
+}
+
+static inline long double fmt_div_pow10(long double val, int n, bool extended) {
+    if (!extended) return (double)val / pow(10, n);
+    if (n < 0 && n >= -27) return val * powl(10, -n);
+    return val / powl(10, n);
+}
+
+static inline int fmt_floor_log10(long double x, bool extended) {
+    return extended ? (int)floorl(log10l(x)) : (int)floor(log10((double)x));
+}
+
+// Round `hi` + `lo` to an integer, where `hi` is a rounded product and `lo`
+// its rounding error. A product that is just below or above an integer can
+// round to that integer, and only `lo` then tells which way to round it.
+static inline long double fmt_floor_exact(long double hi, long double lo) {
+    long double f = floorl(hi);
+    return (f == hi && lo < 0) ? f - 1 : f;
+}
+
+static inline long double fmt_ceil_exact(long double hi, long double lo) {
+    long double c = ceill(hi);
+    return (c == hi && lo > 0) ? c + 1 : c;
+}
+
+static inline long double fmt_round_exact(long double hi, long double lo) {
+    long double f = floorl(hi);
+    if (hi - f == 0.5L && lo != 0) {
+        return lo < 0 ? f : f + 1;
+    }
+    return roundl(hi);
+}
+
+// snprintf(buf, size, "%.*f", prec, val), or "%#.*f" if `alt`
+static int fmt_snprintf_f(char* buf, size_t size, bool alt, int prec,
+                          long double val, bool extended) {
+    if (extended) {
+        return alt ? snprintf(buf, size, "%#.*Lf", prec, val)
+                   : snprintf(buf, size, "%.*Lf", prec, val);
+    }
+    return alt ? snprintf(buf, size, "%#.*f", prec, (double)val)
+               : snprintf(buf, size, "%.*f", prec, (double)val);
+}
+
+// snprintf(buf, size, "%.*e", prec, val)
+static int fmt_snprintf_e(char* buf, size_t size, int prec, long double val,
+                          bool extended) {
+    return extended ? snprintf(buf, size, "%.*Le", prec, val)
+                    : snprintf(buf, size, "%.*e", prec, (double)val);
+}
+
+void handle_float(FloatFormatType format_type, char* format, long double val, bool extended, int scale, char** result, bool use_sign_plus, char rounding_mode) {
     if (format_type == FLOAT_FORMAT_F64) {
-        val = val * pow(10, scale);
         char* float_str = (char*)internal_malloc(64 * sizeof(char));
-        format_double_fortran(float_str, val);
+        format_double_fortran(float_str, (double)val * pow(10, scale));
         *result = append_to_string(*result,float_str);
         internal_free(float_str);
         return;
     } else if (format_type == FLOAT_FORMAT_F32) {
-        val = val * pow(10, scale);
         char* float_str = (char*)internal_malloc(64 * sizeof(char));
-        format_float_fortran(float_str, (float)val);
+        format_float_fortran(float_str, (float)((double)val * pow(10, scale)));
         *result = append_to_string(*result,float_str);
         internal_free(float_str);
         return;
@@ -924,13 +993,13 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
         return;
     }
 
-    val = val * pow(10, scale);
+    val = fmt_mul_pow10(val, scale, extended);
 
     int width = 0, decimal_digits = 0;
     // signbit() keeps the minus sign of a negative zero
     bool is_negative = signbit(val);
-    double integer_part = floor(fabs(val));
-    double decimal_part = fabs(val) - integer_part;
+    long double integer_part = floorl(fabsl(val));
+    long double decimal_part = fabsl(val) - integer_part;
 
     int sign_width = is_negative ? 1 : 0; // Negative sign
     bool sign_plus_exist = (use_sign_plus && !is_negative); // Positive sign
@@ -942,36 +1011,43 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
         width = atoi(format + 1);
     }
 
-    double rounding_factor = pow(10, -decimal_digits);
+    long double scaled = fmt_div_pow10(decimal_part, -decimal_digits, extended);
+    // For a real(10) value, `scaled` + `scaled_error` is exactly
+    // decimal_part * 10^d, so that the rounding below is that of the exact
+    // product; a real(4) or real(8) value is rounded as with double arithmetic.
+    long double scaled_error = 0;
+    if (extended && decimal_digits <= 27) {
+        scaled_error = fmal(decimal_part, powl(10, decimal_digits), -scaled);
+    }
 
     if (rounding_mode == 'u') {
-        double scaled = decimal_part / rounding_factor;
-        decimal_part = (is_negative ? floor(scaled) : ceil(scaled)) * rounding_factor;
+        scaled = is_negative ? fmt_floor_exact(scaled, scaled_error)
+                             : fmt_ceil_exact(scaled, scaled_error);
     } else if (rounding_mode == 'd') {
-        double scaled = decimal_part / rounding_factor;
-        decimal_part = (is_negative ? ceil(scaled) : floor(scaled)) * rounding_factor;
+        scaled = is_negative ? fmt_ceil_exact(scaled, scaled_error)
+                             : fmt_floor_exact(scaled, scaled_error);
     } else if (rounding_mode == 'z') {
-        decimal_part = trunc(decimal_part / rounding_factor) * rounding_factor;
+        // decimal_part is not negative
+        scaled = fmt_floor_exact(scaled, scaled_error);
     } else {
         // Default: round to nearest
-        decimal_part = round(decimal_part / rounding_factor) * rounding_factor;
+        scaled = fmt_round_exact(scaled, scaled_error);
     }
+    decimal_part = fmt_mul_pow10(scaled, -decimal_digits, extended);
 
     if (decimal_part >= 1.0) {
         integer_part += 1.0;
         decimal_part -= 1.0;
     }
 
-    // Size buffers large enough to hold huge(1.0_real64) which has ~309
-    // integer digits.
-    char int_str[512];
-    sprintf(int_str, "%.0f", integer_part);
-    int integer_length = (int)strlen(int_str);
+    // The integer part of a real(10) value can have thousands of digits.
+    int integer_length = fmt_snprintf_f(NULL, 0, false, 0, integer_part, extended);
+    char* int_str = (char*)internal_malloc(integer_length + 1);
+    fmt_snprintf_f(int_str, integer_length + 1, false, 0, integer_part, extended);
 
-    // TODO: This will work for up to `F65.60` but will fail for:
-    // print "(F67.62)", 1.23456789101112e-62_8
-    char dec_str[64];
-    sprintf(dec_str, "%.*f", decimal_digits, decimal_part);
+    int dec_length = fmt_snprintf_f(NULL, 0, false, decimal_digits, decimal_part, extended);
+    char* dec_str = (char*)internal_malloc(dec_length + 1);
+    fmt_snprintf_f(dec_str, dec_length + 1, false, decimal_digits, decimal_part, extended);
     // removing the leading "0." from the formatted decimal part
     memmove(dec_str, dec_str + 2, strlen(dec_str)-1);
 
@@ -992,7 +1068,9 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
         width = total_length;
     }
 
-    char formatted_value[1024] = "";
+    char* formatted_value = (char*)internal_malloc(
+        (width > total_length ? width : total_length) + 2);
+    formatted_value[0] = '\0';
 
     int spaces = width - total_length;
     for (int i = 0; i < spaces; i++) {
@@ -1022,6 +1100,9 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
     } else {
         *result = append_to_string(*result, formatted_value);
     }
+    internal_free(formatted_value);
+    internal_free(dec_str);
+    internal_free(int_str);
 }
 
 void parse_decimal_or_en_format(char* format, int* width_digits, int* decimal_digits, int* exp_digits) {
@@ -1055,7 +1136,7 @@ NOTE: The function allocates memory for the formatted result, which is returned 
 the `result` parameter. It is the responsibility of the caller to free this memory
 using `internal_free(*result)` after it is no longer needed.
 */
-void handle_en(char* format, double val, int scale, char** result, char* c, bool is_signed_plus) {
+void handle_en(char* format, long double val, bool extended, int scale, char** result, char* c, bool is_signed_plus) {
     int width, decimal_digits, exp_digits;
     parse_decimal_or_en_format(format, &width, &decimal_digits, &exp_digits);
 
@@ -1071,7 +1152,10 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     bool sign_plus_exist = (is_signed_plus && !signbit(val)); // SP specifier
 
     char formatted_value[256];
-    double abs_val = fabs(val);
+    long double abs_val = fabsl(val);
+    // Without Ee the exponent has at most three digits; only a real(10)
+    // value can need more, and then it does not fit the field.
+    bool exponent_overflow = false;
 
     // Handle special values (Infinity, NaN) before any log10 calculations
     if (isnan(val) || isinf(val)) {
@@ -1110,48 +1194,50 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     } else if (is_g0_like) {
         // For EN0.0E0, always use engineering notation: scale exponent to multiple of 3
         int exponent = 0;
-        double scaled_val = val;
+        long double scaled_val = val;
         if (abs_val != 0.0) {
-            exponent = (int)floor(log10(abs_val));
+            exponent = fmt_floor_log10(abs_val, extended);
             int remainder = exponent % 3;
             if (remainder < 0) remainder += 3;
             exponent -= remainder;
-            scaled_val = val / pow(10, exponent);
+            scaled_val = fmt_div_pow10(val, exponent, extended);
         }
 
         // For EN0.0E0, format with 0 decimal digits but keep the decimal point
         char val_str[128];
-        snprintf(val_str, sizeof(val_str), "%#.0f", scaled_val);
+        fmt_snprintf_f(val_str, sizeof(val_str), true, 0, scaled_val, extended);
         if (fabs(atof(val_str)) >= 1000.0) {
             exponent += 3;
-            scaled_val = val / pow(10, exponent);
-            snprintf(val_str, sizeof(val_str), "%#.0f", scaled_val);
+            scaled_val = fmt_div_pow10(val, exponent, extended);
+            fmt_snprintf_f(val_str, sizeof(val_str), true, 0, scaled_val, extended);
         }
         snprintf(formatted_value, sizeof(formatted_value),
                 "%s%s%+d", val_str, c, exponent);  // no padding, plain exponent
     } else {
         int exponent = 0;
-        double scaled_val = val;
+        long double scaled_val = val;
         if (abs_val != 0.0) {
-            exponent = (int)floor(log10(abs_val));
+            exponent = fmt_floor_log10(abs_val, extended);
             int remainder = exponent % 3;
             if (remainder < 0) remainder += 3;
             exponent -= remainder;
-            scaled_val = val / pow(10, exponent);
+            scaled_val = fmt_div_pow10(val, exponent, extended);
         }
         
         char val_str[128];
-        snprintf(val_str, sizeof(val_str), "%.*f", decimal_digits, scaled_val);
+        fmt_snprintf_f(val_str, sizeof(val_str), false, decimal_digits, scaled_val, extended);
         if (fabs(atof(val_str)) >= 1000.0) {
             exponent += 3;
-            scaled_val = val / pow(10, exponent);
-            snprintf(val_str, sizeof(val_str), "%.*f", decimal_digits, scaled_val);
+            scaled_val = fmt_div_pow10(val, exponent, extended);
+            fmt_snprintf_f(val_str, sizeof(val_str), false, decimal_digits, scaled_val, extended);
         }
 
         // Adjust exp_digits dynamically if no explicit Ee was given
         if (original_exp_digits <= 0) {
             int abs_exp = (exponent < 0 ? -exponent : exponent);
-            if (abs_exp >= 100) {
+            if (abs_exp >= 1000) {
+                exponent_overflow = true;
+            } else if (abs_exp >= 100) {
                 exp_digits = 3;
             } else if (abs_exp >= 10) {
                 exp_digits = 2;
@@ -1182,7 +1268,7 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     int total_len = strlen(formatted_value);
     if (sign_plus_exist) total_len += 1;
     
-    if (total_len > width) {
+    if (total_len > width || exponent_overflow) {
         // Overflow: fill with '*'
         char* final_result = internal_malloc(width + 1);
         memset(final_result, '*', width);
@@ -1264,7 +1350,7 @@ static long long round_scaled_digits(const char *digits, int drop_digits,
     return quotient + (remainder * 2 >= divisor);
 }
 
-void handle_decimal(char* format, double val, int scale, char** result, char* c,
+void handle_decimal(char* format, long double val, bool extended, int scale, char** result, char* c,
                     bool is_signed_plus, char rounding_mode) {
     // Consider an example: write(*, "(es10.2)") 1.123e+10
     // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
@@ -1315,43 +1401,33 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int sign_width = is_negative ? 1 : 0;
     bool sign_plus_exist = (is_signed_plus && !is_negative); // Positive sign
     // sign_width = 0
-    double integer_part = trunc(val);
-    int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
-    // integer_part = 11230000128, integer_length = 11
     // width = 10, digits = 2
 
     #define MAX_SIZE 512
+    // The significant digits of |val| and its decimal exponent are taken from
+    // the scientific notation. The exponent is then that of the printed
+    // digits: log10 of a value just below a power of ten, such as
+    // 999999999999999.0, rounds up to that power and gives one too many.
     char val_str[MAX_SIZE] = "";
-    int avail_len_decimal_digits = MAX_SIZE - integer_length - sign_width - 2 /* 0.*/;
-    sprintf(val_str, "%.*lf", avail_len_decimal_digits, val);
-    // val_str = "11230000128.00..."
-    int i = strlen(val_str) - 1;
+    int decimal_exponent = 0;
     if (val != 0.0) {
-        while (val_str[i] == '0') {
+        char sci_str[MAX_SIZE + 16];
+        fmt_snprintf_e(sci_str, sizeof(sci_str), MAX_SIZE - 4, fabsl(val), extended);
+        // sci_str = "1.12300001280000000000...e+10"
+        char* e_pos = strchr(sci_str, 'e');
+        decimal_exponent = atoi(e_pos + 1);
+        *e_pos = '\0';
+        val_str[0] = sci_str[0];
+        strcpy(val_str + 1, sci_str + 2);
+        int i = strlen(val_str) - 1;
+        while (i > 0 && val_str[i] == '0') {
             val_str[i] = '\0';
             i--;
         }
     }
-    // val_str = "11230000128."
-
-    char* ptr = strchr(val_str, '.');
-    if (ptr != NULL) {
-        memmove(ptr, ptr + 1, strlen(ptr));
-    }
-    // val_str = "11230000128"
-
-    if (is_negative) {
-        // removes `-` (negative) sign
-        memmove(val_str, val_str + 1, strlen(val_str));
-    }
-
-    int decimal = 1;
-    while (val_str[0] == '0') {
-        // Used for the case: 1.123e-10
-        memmove(val_str, val_str + 1, strlen(val_str));
-        decimal--;
-        // loop end: decimal = -9
-    }
+    // val_str = "1123000128", decimal_exponent = 10
+    int integer_length = (fabsl(val) >= 1.0) ? decimal_exponent + 1 : 1;
+    // integer_length = 11
     bool is_s_format = false;
     if (tolower(format[1]) == 's') {
         is_s_format = true;
@@ -1364,25 +1440,17 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         val_str[digits + scale] = '\0';
         integer_length = 1;
     } else {
-        // Compute exponent based on decimal (stripped zeros) or integer_length
-        // This is more accurate than log10 for values near powers of 10
-        // For val >= 1: exponent = integer_length - scale
-        // For val < 1:  exponent = decimal - scale
-        if (fabs(val) >= 1.0) {
-            exponent_value = integer_length - scale;
-        } else {
-            exponent_value = decimal - scale;
-        }
+        exponent_value = decimal_exponent + 1 - scale;
     }
 
     // For ES format with 0 decimal places, we need to round properly
     // and adjust the exponent if rounding causes overflow
     if (is_s_format && digits == 0 && val != 0.0) {
         // Calculate the mantissa for ES format (scale = 1)
-        double abs_val = fabs(val);
-        double mantissa = abs_val / pow(10, exponent_value);
+        long double abs_val = fabsl(val);
+        long double mantissa = fmt_div_pow10(abs_val, exponent_value, extended);
         // Round to nearest integer
-        double rounded_mantissa = round(mantissa);
+        long double rounded_mantissa = roundl(mantissa);
         // If rounding causes mantissa >= 10, adjust exponent
         if (rounded_mantissa >= 10.0) {
             exponent_value++;
@@ -1440,7 +1508,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int val_str_len = strlen(val_str);
     int zeroes_needed = digits - (val_str_len - integer_length);
     if (zeroes_needed < 0) zeroes_needed = 0;
-    if (zeroes_needed > MAX_SIZE - val_str_len - 1) zeroes_needed = MAX_SIZE - val_str_len - 1;
+    // Keep one byte free for a carry digit inserted by rounding.
+    if (zeroes_needed > MAX_SIZE - val_str_len - 2) zeroes_needed = MAX_SIZE - val_str_len - 2;
 
     for(int i = 0; i < zeroes_needed && val_str_len + i < MAX_SIZE - 1; i++) {
         val_str[val_str_len + i] = '0';
@@ -1496,6 +1565,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
                     }
                     if (carry) {
                         rounding_carry = true;
+                        memmove(val_str + 1, val_str, strlen(val_str)+1);
+                        val_str[0] = '1';
                     }
                 }
                 val_str[digits + scale] = '\0';
@@ -1587,6 +1658,14 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
             strncat(formatted_value, val_str, digits);
             exp_length = new_exp_length;
         }
+    }
+    // Without Ee the exponent has at most three digits; only a real(10)
+    // value can need more, and then it does not fit the field. A rounding
+    // carry can bring the exponent back to three digits, as in 0.1000-999,
+    // so the final exponent is checked.
+    if (exp_digits <= 0 && width_digits != 0 &&
+            (exponent_value < 0 ? -exponent_value : exponent_value) >= 1000) {
+        goto overflow;
     }
 
     // Add 'E' unless dropped for 3+ digit exponents (when no explicit Ee given)
@@ -2182,6 +2261,7 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
             break;
         case FLOAT_32_TYPE:
         case FLOAT_64_TYPE:
+        case FLOAT_80_TYPE:
         case FLOAT_128_TYPE:
             return 'f';
             break;
@@ -2200,7 +2280,7 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
             break;
         default:
             fprintf(stderr,"Compiler Error : Unidentified Type %d\n", primitive_enum);
-            exit(0);
+            exit(1);
     }
 
 }
@@ -3626,10 +3706,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     break;
                 }
             
-                // All formatting functions uses int64 and double.
-                // We have to cast the pointers to int64 or double to avoid accessing beyond bounds.
+                // All formatting functions uses int64 and long double.
+                // We have to cast the pointers to int64 or long double to avoid accessing beyond bounds.
                 int64_t integer_val = 0;
-                double double_val = 0;
+                long double real_val = 0;
+                bool extended = (s_info.current_element_type == FLOAT_80_TYPE);
                 char* char_val = NULL;
                 bool bool_val = false;
                 switch(s_info.current_element_type ){
@@ -3646,15 +3727,23 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         integer_val = (int64_t)*(int8_t*)s_info.current_arg_info.current_arg; 
                         break;
                     case  FLOAT_64_TYPE:
-                        double_val = *(double*)s_info.current_arg_info.current_arg; 
+                        real_val = *(double*)s_info.current_arg_info.current_arg;
                         break;
                     case  FLOAT_32_TYPE:
-                        double_val = (double)*(float*)s_info.current_arg_info.current_arg; 
+                        real_val = *(float*)s_info.current_arg_info.current_arg;
                         break;
                     case FLOAT_128_TYPE: {
                         lf_float128 q128;
                         memcpy(&q128, s_info.current_arg_info.current_arg, 16);
-                        double_val = lf_f128_to_double(q128);
+                        real_val = lf_f128_to_double(q128);
+                        break;
+                    }
+                    case FLOAT_80_TYPE: {
+                        // Same layout as the list-directed `FLOAT_80_TYPE` case:
+                        // the native platform long double.
+                        long double ld;
+                        memcpy(&ld, s_info.current_arg_info.current_arg, sizeof(ld));
+                        real_val = ld;
                         break;
                     }
                     case CHAR_PTR_TYPE:
@@ -3801,13 +3890,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         uval = ((uint64_t)integer_val) & mask;
                     } else if (fmt_type == 'f') {
                         if (s_info.current_element_type == FLOAT_32_TYPE) {
-                            float f = (float)double_val;
+                            float f = (float)real_val;
                             uint32_t bits;
                             memcpy(&bits, &f, sizeof(float));
                             uval = (uint64_t)bits;
                             bit_size = 32;
                         } else if (s_info.current_element_type == FLOAT_64_TYPE) {
-                            double d = double_val;
+                            double d = (double)real_val;
                             memcpy(&uval, &d, sizeof(double));
                             bit_size = 64;
                         }
@@ -3922,12 +4011,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     }
                     char buffer[100];
                     char formatted[100];
-                    if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE) {
-                        if (isnan(double_val)) {
+                    if (s_info.current_element_type == FLOAT_32_TYPE ||
+                            s_info.current_element_type == FLOAT_64_TYPE ||
+                            s_info.current_element_type == FLOAT_80_TYPE) {
+                        if (isnan(real_val)) {
                             snprintf(formatted, sizeof(formatted), "NaN");
-                        } else if (isinf(double_val)) {
-                            const char* inf_long = (double_val < 0) ? "-Infinity" : "Infinity";
-                            const char* inf_short = (double_val < 0) ? "-Inf" : "Inf";
+                        } else if (isinf(real_val)) {
+                            const char* inf_long = (real_val < 0) ? "-Infinity" : "Infinity";
+                            const char* inf_short = (real_val < 0) ? "-Inf" : "Inf";
                             if (width > 0 && (int)strlen(inf_long) > width) {
                                 snprintf(formatted, sizeof(formatted), "%s", inf_short);
                             } else {
@@ -3935,33 +4026,33 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             }
                         } else if (width == 0 && !has_dot) {
                             if (s_info.current_element_type == FLOAT_32_TYPE) {
-                                format_float_fortran(formatted, (float)double_val);
+                                format_float_fortran(formatted, (float)real_val);
+                            } else if (s_info.current_element_type == FLOAT_64_TYPE) {
+                                format_double_fortran(formatted, (double)real_val);
                             } else {
-                                format_double_fortran(formatted, double_val);
+                                format_long_double_fortran(formatted, real_val);
                             }
-                        } else if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
+                        } else if (real_val == 0.0 || (fabsl(real_val) >= 0.1 && fabsl(real_val) < fmt_pow10(precision, extended))) {
                             // G format F-mode: use F(w-n).(d-k) followed by n blanks
                             // where n = e+2 (if e specified) or 4, and k is determined
                             // by the magnitude range [10^(k-1), 10^k)
                             // For zero, the standard defines k=1.
                             int k = 1;
-                            if (double_val != 0.0) {
-                                k = (int)floor(log10(fabs(double_val))) + 1;
+                            if (real_val != 0.0) {
+                                k = fmt_floor_log10(fabsl(real_val), extended) + 1;
                             }
                             int dec_places = precision - k;
                             if (dec_places < 0) dec_places = 0;
-                            char format_spec[20];
-                            snprintf(format_spec, sizeof(format_spec), "%%.%df", dec_places);
-                            snprintf(formatted, sizeof(formatted), format_spec, double_val);
+                            fmt_snprintf_f(formatted, sizeof(formatted), false, dec_places, real_val, extended);
                             // Fortran F format always includes a decimal point
                             if (dec_places == 0 && strchr(formatted, '.') == NULL) {
                                 strcat(formatted, ".");
                             }
                         } else {
                             int exp = 0;
-                            double abs_val = fabs(double_val);
+                            long double abs_val = fabsl(real_val);
                             if (abs_val > 0.0) {
-                                exp = (int)floor(log10(abs_val)) + 1;
+                                exp = fmt_floor_log10(abs_val, extended) + 1;
                             }
                             // Apply Fortran scale factor (kP): shift
                             // mantissa digits and adjust exponent
@@ -3971,10 +4062,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                                 adjusted_precision = precision - scale + 1;
                             }
                             if (adjusted_precision < 0) adjusted_precision = 0;
-                            double norm = pow(10.0, -exp);
-                            double final_val = double_val * norm;
+                            long double final_val = fmt_mul_pow10(real_val, -exp, extended);
                             char mantissa[64], exponent[16];
-                            snprintf(mantissa, sizeof(mantissa), "%.*f", adjusted_precision, final_val);
+                            fmt_snprintf_f(mantissa, sizeof(mantissa), false, adjusted_precision, final_val, extended);
                             if (exp_digits > 0) {
                                 int exp_width = exp_digits + 1;
                                 // Keep width bounded so snprintf target size is provably safe.
@@ -3987,6 +4077,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                                 snprintf(exponent, sizeof(exponent), "E%+d", exp);
                             }
                             snprintf(formatted, sizeof(formatted), "%s%s", mantissa, exponent);
+                            if (exp_digits <= 0 && width > 0 && (exp >= 1000 || exp <= -1000)) {
+                                // Without Ee the exponent has at most three digits;
+                                // only a real(10) value can need more.
+                                int stars = width < (int)sizeof(formatted) ? width : (int)sizeof(formatted) - 1;
+                                memset(formatted, '*', stars);
+                                formatted[stars] = '\0';
+                            }
                             // Strip leading zero if result overflows field width
                             // e.g., "0.85734E+08" (11 chars) -> ".85734E+08" (10 chars)
                             if (width > 0 && (int)strlen(formatted) > width) {
@@ -4067,7 +4164,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 } else if (tolower(value[0]) == 'd') {
                     // D Editing (D[w[.d]])
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
-                    handle_decimal(value, double_val, scale, &temp_buf, "D", is_SP_specifier, rounding_mode);
+                    handle_decimal(value, real_val, extended, scale, &temp_buf, "D", is_SP_specifier, rounding_mode);
                     apply_decimal_edit_mode(temp_buf, decimal_mode);
                     int64_t temp_len = strlen(temp_buf);
                     result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
@@ -4085,9 +4182,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     char format_type = tolower(value[1]);
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
                     if (format_type == 'n') {
-                        handle_en(value, double_val, scale, &temp_buf, "E", is_SP_specifier);
+                        handle_en(value, real_val, extended, scale, &temp_buf, "E", is_SP_specifier);
                     } else {
-                        handle_decimal(value, double_val, scale, &temp_buf, "E", is_SP_specifier, rounding_mode);
+                        handle_decimal(value, real_val, extended, scale, &temp_buf, "E", is_SP_specifier, rounding_mode);
                     }
                     apply_decimal_edit_mode(temp_buf, decimal_mode);
                     int64_t temp_len = strlen(temp_buf);
@@ -4104,7 +4201,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     } else {
                         float_fmt_type = FLOAT_FORMAT_CUSTOM;
                     }
-                    handle_float(float_fmt_type, value, double_val, scale, &temp_buf, is_SP_specifier, rounding_mode);
+                    handle_float(float_fmt_type, value, real_val, extended, scale, &temp_buf, is_SP_specifier, rounding_mode);
                     apply_decimal_edit_mode(temp_buf, decimal_mode);
                     int64_t temp_len = strlen(temp_buf);
                     result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
