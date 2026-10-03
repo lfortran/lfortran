@@ -50,10 +50,10 @@ syntax error: kind 16 is not supported yet.
 227 |     real*16 :: unsupported_kind
     |     ^^^^^^^ 
 
-tokenizer error: Token '?' is not recognized
+tokenizer error: Token '`' is not recognized
    --> tests/errors/continue_compilation_2.f90:233:17
     |
-233 |     integer  :: ? tokenizer_error
+233 |     integer  :: ` tokenizer_error
     |                 ^ token not recognized
 
 tokenizer error: Token '@' is not recognized in `format` statement
@@ -1015,3 +1015,27 @@ semantic error: Dummy argument 'y' of pure function must have INTENT(IN) or VALU
     |
 585 |         integer :: x, y
     |                       ^ 
+
+semantic error: Procedure 'f' requires an argument list
+   --> tests/errors/continue_compilation_2.f90:597:18
+    |
+597 |         print *, f
+    |                  ^ 
+
+semantic error: Procedure 'f' requires an argument list
+   --> tests/errors/continue_compilation_2.f90:598:20
+    |
+598 |         write(*,*) f
+    |                    ^ 
+
+semantic error: Procedure 'f' requires an argument list
+   --> tests/errors/continue_compilation_2.f90:599:19
+    |
+599 |         read(*,*) f
+    |                   ^ 
+
+semantic error: Procedure 'p' requires an argument list
+   --> tests/errors/continue_compilation_2.f90:600:18
+    |
+600 |         print *, p
+    |                  ^ 

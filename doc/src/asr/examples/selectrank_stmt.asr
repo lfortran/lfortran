@@ -24,6 +24,7 @@
                       )
                       :dims []
                       :physical_type :AssumedRankArray
+                      :memory_space :Global
                     )
                     :type_declaration nil
                     :abi :Source
@@ -75,6 +76,7 @@
                     )
                     :dims []
                     :physical_type :AssumedRankArray
+                    :memory_space :Global
                   )
                 ]
                 :return_var_type nil
@@ -88,6 +90,7 @@
                 :static false
                 :restrictions []
                 :is_restriction false
+                :exec_space :Host
               )
               :dependencies []
               :args [
@@ -162,6 +165,7 @@
         :loaded_from_mod false
         :intrinsic false
         :has_submodules false
+        :global_init nil
       )
       "main" (Program
         :symtab (SymbolTable
@@ -171,8 +175,10 @@
         :name "main"
         :dependencies []
         :body []
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

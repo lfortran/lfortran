@@ -149,6 +149,19 @@ public:
         }
     }
 
+    // The name a call spells for procedure `sym`: an import's local name,
+    // which is what the scope of the call declares (`use m, only: g => f`
+    // calls `g`), and the procedure's own name otherwise.
+    std::string call_name(ASR::symbol_t *sym) {
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+            std::string local = ASR::down_cast<ASR::ExternalSymbol_t>(sym)->m_name;
+            // An internal helper is not imported under its own name; see
+            // `visit_ExternalSymbol`.
+            if (local.find('@') == std::string::npos) return local;
+        }
+        return ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sym));
+    }
+
     template <typename T>
     void visit_body(const T &x, std::string &r, bool apply_indent=true) {
         if (apply_indent) {
@@ -163,10 +176,19 @@ public:
         }
     }
 
+    // Break every line of `r` longer than `line_length`, after the last
+    // comma that keeps it within, into continuation lines. A line already
+    // short enough, one an earlier call broke included, is left as it is.
     void handle_line_truncation(std::string &r, int i_level, int line_length=120) {
         size_t current_pos = 0;
         std::string indent = std::string(i_level * indent_spaces, ' ');
-        while (current_pos + line_length < r.length()) {
+        while (current_pos < r.length()) {
+            size_t line_end = r.find('\n', current_pos);
+            if (line_end == std::string::npos) line_end = r.length();
+            if (line_end - current_pos <= (size_t)line_length) {
+                current_pos = line_end + 1;
+                continue;
+            }
             size_t break_pos = r.find_last_of(',', current_pos + line_length);
             if (break_pos == std::string::npos || break_pos <= current_pos) {
                 break_pos = current_pos + line_length - 1;
@@ -358,8 +380,7 @@ public:
 
         tu_functions = "";
         for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)
-                    || is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+            if (is_a<ASR::Function_t>(*item.second)) {
                 visit_symbol(*item.second);
                 tu_functions += src;
                 tu_functions += "\n";
@@ -391,11 +412,18 @@ public:
         }
 
         // Main program
+        bool has_program = false;
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
                 r += src;
+                has_program = true;
             }
+        }
+        // A program contains the external procedures of its file; a file
+        // without one has them on their own.
+        if (!has_program) {
+            r += tu_functions;
         }
         src = r;
     }
@@ -446,12 +474,25 @@ public:
         }
         append_namelist_declarations(x.m_symtab, r);
 
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)
+                    && ASRUtils::is_bare_implicit_interface(
+                        *down_cast<ASR::Function_t>(item.second))) {
+                visit_symbol(*item.second);
+                r += src;
+            }
+        }
+
         visit_body(x, r, false);
 
         bool prepend_contains_keyword = true;
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)
-                    || is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+                    && ASRUtils::is_bare_implicit_interface(
+                        *down_cast<ASR::Function_t>(item.second))) {
+                continue;
+            }
+            if (is_a<ASR::Function_t>(*item.second)) {
                 if (prepend_contains_keyword) {
                     prepend_contains_keyword = false;
                     r += "\n";
@@ -539,14 +580,16 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
+                if (ASRUtils::is_device_kernel(item.second)) {
+                    func_name.push_back(item.first);
+                } else if (ASRUtils::is_bare_implicit_interface(*f)) {
+                    visit_symbol(*item.second);
+                    r += src;
+                } else if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
                     interface_func_name.push_back(item.first);
                 } else {
                     func_name.push_back(item.first);
                 }
-            }
-            if (is_a<ASR::GpuKernelFunction_t>(*item.second)) {
-                func_name.push_back(item.first);
             }
         }
         for (size_t i = 0; i < interface_func_name.size(); i++) {
@@ -583,6 +626,25 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_device_kernel(&x.base)) {
+            visit_device_kernel(x);
+            return;
+        }
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            // `integer, external :: f` — not an interface block and not a
+            // bodiless implementation.
+            std::string r = indent;
+            if (x.m_return_var) {
+                ASR::Variable_t *return_var = ASRUtils::EXPR2VAR(x.m_return_var);
+                r += get_type(return_var->m_type, return_var->m_type_declaration);
+                r += ", ";
+            }
+            r += "external :: ";
+            r.append(x.m_name);
+            r += "\n";
+            src = r;
+            return;
+        }
         std::string r = indent;
         ASR::FunctionType_t *type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
         bool wrap_in_interface = false;
@@ -680,6 +742,18 @@ public:
         r += "\n";
 
         inc_indent();
+        // What the procedure imports itself. A module's own procedure never
+        // imports from that module, which it reaches by host association.
+        if (!is_interface) {
+            ASR::Module_t *own = ASRUtils::get_sym_module0(&x.base);
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (!is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
+                ASR::ExternalSymbol_t *e = down_cast<ASR::ExternalSymbol_t>(item.second);
+                if (own && strcmp(e->m_module_name, own->m_name) == 0) continue;
+                visit_symbol(*item.second);
+                r += src;
+            }
+        }
         {
             std::string variable_declaration;
             std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
@@ -714,7 +788,10 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
+                if (ASRUtils::is_bare_implicit_interface(*f)) {
+                    visit_symbol(*item.second);
+                    r += src;
+                } else if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
                     is_interface = true;
                     r += indent;
                     r += "interface\n";
@@ -765,7 +842,10 @@ public:
         src = r;
     }
 
-    void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
+    // A GPU kernel is subroutine-shaped and its arguments carry no intent
+    // or interface attributes, so it is printed directly rather than through
+    // the general function printer.
+    void visit_device_kernel(const ASR::Function_t &x) {
         std::string r = indent;
         r += "subroutine";
         r += " ";
@@ -871,7 +951,19 @@ public:
             src += "use ";
             src.append(x.m_module_name);
             src += ", only: ";
-            append_import_name(src);
+            std::string import_name;
+            append_import_name(import_name);
+            if (src.size() + import_name.size() > 120) {
+                // Long names do not fit on a line; break it between tokens,
+                // where a continuation needs no leading ampersand.
+                std::string cont = "&\n" + indent + std::string(2 * indent_spaces, ' ');
+                src += cont + x.m_name;
+                if (std::strcmp(x.m_name, x.m_original_name) != 0) {
+                    src += " => " + cont + std::string(x.m_original_name);
+                }
+            } else {
+                src += import_name;
+            }
             src += "\n";
         }
     }
@@ -891,11 +983,17 @@ public:
         if (x.m_is_abstract) {
             r += ", abstract";
         }
+        if (x.m_abi == ASR::abiType::BindC) {
+            r += ", bind(c)";
+        }
         r += " :: ";
         r.append(x.m_name);
         handle_line_truncation(r, 2);
         r += "\n";
         inc_indent();
+        if (x.m_is_sequence) {
+            r += indent + "sequence\n";
+        }
         bool old_in_struct_member_declaration = in_struct_member_declaration;
         in_struct_member_declaration = true;
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
@@ -1012,7 +1110,12 @@ public:
         } else if (x.m_value && !ASR::is_a<ASR::ArrayReshape_t>(*x.m_symbolic_value)) {
             ASR::ttype_t *base_type_value = ASRUtils::type_get_past_allocatable_pointer(x.m_type);
             bool is_c_ptr = ASR::is_a<ASR::CPtr_t>(*base_type_value);
-            if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value) && !is_c_ptr) {
+            // `p => tgt` and `p => null()` are both pointer assignments and
+            // are spelled with an arrow; a c pointer is an ordinary value.
+            bool is_pointer_init = ASRUtils::is_pointer(x.m_type)
+                && ASRUtils::is_pointer_association_initializer(x.m_value);
+            if ((ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value) || is_pointer_init)
+                    && !is_c_ptr) {
                 r += " => ";
             } else {
                 r += " = ";
@@ -1827,8 +1930,10 @@ public:
         if (x.m_dt) {
             visit_expr(*x.m_dt);
             r += src + "%";
+            r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
+        } else {
+            r += call_name(x.m_name);
         }
-        r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         r += "(";
         bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
         size_t start_idx = is_method ? 1 : 0;
@@ -2191,15 +2296,28 @@ public:
 
     /********************************** Expr **********************************/
     void visit_IfExp(const ASR::IfExp_t &x) {
-        std::string r = "";
-        visit_expr(*x.m_test);
-        r += src;
-        r += " ? ";
-        visit_expr(*x.m_body);
-        r += src;
-        r += " : ";
-        visit_expr(*x.m_orelse);
-        r += src;
+        // Fortran 2023 conditional expression, 10.1.2.3 R1002. The enclosing
+        // parentheses are part of the syntax, not decoration, so they must
+        // always be printed. A nested conditional expression in the `orelse`
+        // position is printed flat, as the repeating group of R1002.
+        std::string r = "(";
+        const ASR::IfExp_t *e = &x;
+        while (true) {
+            visit_expr(*e->m_test);
+            r += src;
+            r += " ? ";
+            visit_expr(*e->m_body);
+            r += src;
+            r += " : ";
+            if (ASR::is_a<ASR::IfExp_t>(*e->m_orelse)) {
+                e = ASR::down_cast<ASR::IfExp_t>(e->m_orelse);
+            } else {
+                visit_expr(*e->m_orelse);
+                r += src;
+                break;
+            }
+        }
+        r += ")";
         src = r;
     }
 
@@ -2222,8 +2340,10 @@ public:
             if (x.m_dt) {
                 visit_expr(*x.m_dt);
                 r += src + "%";
+                r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
+            } else {
+                r += call_name(x.m_name);
             }
-            r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         }
         r += "(";
         bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
@@ -2258,6 +2378,7 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(System, "system")
             SET_INTRINSIC_SUBROUTINE_NAME(Sleep, "sleep")
             SET_INTRINSIC_SUBROUTINE_NAME(CoSum, "co_sum")
+            SET_INTRINSIC_SUBROUTINE_NAME(CoBroadcast, "co_broadcast")
             SET_INTRINSIC_SUBROUTINE_NAME(CoMax, "co_max")
             SET_INTRINSIC_SUBROUTINE_NAME(CoMin, "co_min")
             default : {
@@ -2471,6 +2592,18 @@ public:
     void visit_StructConstructor(const ASR::StructConstructor_t &x) {
         std::string r = indent;
         r += ASRUtils::symbol_name(x.m_dt_sym);
+        r += "(";
+        for(size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i].m_value);
+            r += src;
+            if (i < x.n_args - 1) r += ", ";
+        }
+        r += ")";
+        src = r;
+    }
+
+    void visit_StructConstant(const ASR::StructConstant_t &x) {
+        std::string r = ASRUtils::symbol_name(x.m_dt_sym);
         r += "(";
         for(size_t i = 0; i < x.n_args; i++) {
             visit_expr(*x.m_args[i].m_value);
@@ -2828,8 +2961,16 @@ public:
             r += "[" + get_array_constructor_type_spec(x.m_type) + " :: ]";
         } else {
             r += "[";
+            bool use_element_visitor = ASR::is_a<ASR::StructType_t>(*elem_type)
+                || ASR::is_a<ASR::CPtr_t>(*elem_type);
             for(size_t i = 0; i < fixed_size; i++) {
-                r += ASRUtils::fetch_ArrayConstant_value(x, i) + kind_suffix;
+                if (use_element_visitor) {
+                    ASR::expr_t* value = ASRUtils::fetch_ArrayConstant_value(al, x, i);
+                    visit_expr(*value);
+                    r += src;
+                } else {
+                    r += ASRUtils::fetch_ArrayConstant_value(x, i) + kind_suffix;
+                }
                 if (i < fixed_size - 1) r += ", ";
             }
             r += "]";

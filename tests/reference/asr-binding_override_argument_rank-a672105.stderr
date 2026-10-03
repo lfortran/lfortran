@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.binding_override.argument_rank_matches]: Type bound procedure 'meth' overriding 'base_meth', argument 1 'a', must have rank 0
-   --> tests/asr/verify/binding_override_argument_rank.asr:112:27
+   --> tests/asr/verify/binding_override_argument_rank.asr:113:27
     |
-112 |                   "meth" (StructMethodDeclaration
+113 |                   "meth" (StructMethodDeclaration
     |                           ^^^^^^^^^^^^^^^^^^^^^^^ failed here

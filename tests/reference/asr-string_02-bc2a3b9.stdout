@@ -166,7 +166,9 @@
                     (Print
                         (Var 2 greetings)
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

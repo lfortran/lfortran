@@ -90,10 +90,13 @@
             :rec nil
             :pos nil
             :asynchronous nil
+            :decimal nil
           )
         ]
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

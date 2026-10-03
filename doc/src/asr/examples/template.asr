@@ -24,6 +24,8 @@
                           :storage :Default
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :type_declaration nil
                           :abi :Source
@@ -49,6 +51,8 @@
                           :storage :Default
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :type_declaration nil
                           :abi :Source
@@ -71,10 +75,14 @@
                       :arg_types [
                         (TypeParameter
                           :param "t"
+                          :deferred_attr :NonExtensible
+                          :is_class false
                         )
                       ]
                       :return_var_type (TypeParameter
                         :param "t"
+                        :deferred_attr :NonExtensible
+                        :is_class false
                       )
                       :abi :Source
                       :deftype :Implementation
@@ -86,6 +94,7 @@
                       :static false
                       :restrictions []
                       :is_restriction false
+                      :exec_space :Host
                     )
                     :dependencies [
                       "op"
@@ -112,6 +121,8 @@
                           ]
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :value nil
                           :dt nil
@@ -143,6 +154,8 @@
                           :storage :Default
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :type_declaration nil
                           :abi :Source
@@ -168,6 +181,8 @@
                           :storage :Default
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :type_declaration nil
                           :abi :Source
@@ -190,10 +205,14 @@
                       :arg_types [
                         (TypeParameter
                           :param "t"
+                          :deferred_attr :NonExtensible
+                          :is_class false
                         )
                       ]
                       :return_var_type (TypeParameter
                         :param "t"
+                        :deferred_attr :NonExtensible
+                        :is_class false
                       )
                       :abi :Source
                       :deftype :Implementation
@@ -205,6 +224,7 @@
                       :static false
                       :restrictions []
                       :is_restriction false
+                      :exec_space :Host
                     )
                     :dependencies []
                     :args [
@@ -231,6 +251,8 @@
                     :storage :Default
                     :type (TypeParameter
                       :param "t"
+                      :deferred_attr :NonExtensible
+                      :is_class false
                     )
                     :type_declaration nil
                     :abi :Source
@@ -281,6 +303,8 @@
                           :storage :Default
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :type_declaration nil
                           :abi :Source
@@ -306,6 +330,8 @@
                           :storage :Default
                           :type (TypeParameter
                             :param "t"
+                            :deferred_attr :NonExtensible
+                            :is_class false
                           )
                           :type_declaration nil
                           :abi :Source
@@ -328,10 +354,14 @@
                       :arg_types [
                         (TypeParameter
                           :param "t"
+                          :deferred_attr :NonExtensible
+                          :is_class false
                         )
                       ]
                       :return_var_type (TypeParameter
                         :param "t"
+                        :deferred_attr :NonExtensible
+                        :is_class false
                       )
                       :abi :Source
                       :deftype :Implementation
@@ -343,6 +373,7 @@
                       :static false
                       :restrictions []
                       :is_restriction false
+                      :exec_space :Host
                     )
                     :dependencies []
                     :args [
@@ -369,6 +400,8 @@
                     :storage :Default
                     :type (TypeParameter
                       :param "t"
+                      :deferred_attr :NonExtensible
+                      :is_class false
                     )
                     :type_declaration nil
                     :abi :Source
@@ -401,6 +434,7 @@
         :loaded_from_mod false
         :intrinsic false
         :has_submodules false
+        :global_init nil
       )
       "main" (Program
         :symtab (SymbolTable
@@ -410,8 +444,10 @@
         :name "main"
         :dependencies []
         :body []
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

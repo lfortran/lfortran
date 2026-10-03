@@ -740,7 +740,21 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void visit_IfExp(const ASR::IfExp_t &x) {
+        throw CodeGenError("conditional expressions are not supported by the wasm backend",
+            x.base.base.loc);
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        // A translation unit initializer has to run before main, which only
+        // a target with a startup hook of its own can arrange. Nothing that
+        // reaches this backend sets one today — it comes from a saved coarray
+        // of an external procedure — so say so rather than quietly dropping
+        // the initialization on the floor.
+        if (x.m_global_init != nullptr) {
+            throw CodeGenError("a startup initializer of the translation unit "
+                "is not supported by this backend");
+        }
         // All loose statements must be converted to a function, so the items
         // must be empty:
         LCOMPILERS_ASSERT(x.n_items == 0);
@@ -1184,6 +1198,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            return;
+        }
         declare_all_functions(*x.m_symtab);
         if (is_unsupported_function(x)) {
             return;

@@ -125,6 +125,7 @@
                 false
                 []
                 false
+                :Host
               )
               []
               [
@@ -227,6 +228,7 @@
                 false
                 []
                 false
+                :Host
               )
               []
               [
@@ -249,6 +251,7 @@
         false
         false
         false
+        nil
       )
       "generated" (Program
         (SymbolTable
@@ -258,8 +261,10 @@
         "generated"
         []
         []
+        nil
       )
     }
   )
   []
+  nil
 )

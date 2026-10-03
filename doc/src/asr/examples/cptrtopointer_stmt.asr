@@ -14,7 +14,9 @@
               :symbolic_value nil
               :value nil
               :storage :Default
-              :type (CPtr)
+              :type (CPtr
+                :kind :CPtrUnspecified
+              )
               :type_declaration nil
               :abi :Source
               :access :Public
@@ -49,6 +51,7 @@
                     )
                   ]
                   :physical_type :DescriptorArray
+                  :memory_space :Global
                 )
               )
               :type_declaration nil
@@ -96,6 +99,7 @@
                   )
                 ]
                 :physical_type :FixedSizeArray
+                :memory_space :Global
               )
               :type_declaration nil
               :abi :Source
@@ -129,8 +133,10 @@
             :lower_bounds nil
           )
         ]
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

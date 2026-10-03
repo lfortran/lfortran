@@ -61,6 +61,7 @@
                 :static false
                 :restrictions []
                 :is_restriction false
+                :exec_space :Host
               )
               :dependencies []
               :args [
@@ -139,8 +140,10 @@
             :strict_bounds_checking false
           )
         ]
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

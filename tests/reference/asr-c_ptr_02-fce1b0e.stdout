@@ -43,6 +43,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -528,7 +529,9 @@
                                     ()
                                     Default
                                     (StructType
-                                        [(CPtr)]
+                                        [(CPtr
+                                            CPointer
+                                        )]
                                         []
                                         .true.
                                         .false.
@@ -562,6 +565,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -587,8 +591,10 @@
                                     ()
                                     ()
                                     Default
-                                    (CPtr)
-                                    ()
+                                    (CPtr
+                                        CPointer
+                                    )
+                                    2 c_ptr
                                     Source
                                     Public
                                     Required
@@ -611,19 +617,25 @@
                                                 (Variable
                                                     13
                                                     ptr
-                                                    []
+                                                    [c_ptr]
                                                     Local
                                                     (PointerNullConstant
-                                                        (CPtr)
-                                                        ()
+                                                        (CPtr
+                                                            CPointer
+                                                        )
+                                                        (Var 2 c_ptr)
                                                     )
                                                     (PointerNullConstant
-                                                        (CPtr)
-                                                        ()
+                                                        (CPtr
+                                                            CPointer
+                                                        )
+                                                        (Var 2 c_ptr)
                                                     )
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -640,7 +652,9 @@
                                         })
                                     test_obj
                                     (StructType
-                                        [(CPtr)]
+                                        [(CPtr
+                                            CPointer
+                                        )]
                                         []
                                         .true.
                                         .false.
@@ -666,7 +680,9 @@
                         (StructInstanceMember
                             (Var 2 instance)
                             2 1_test_obj_ptr
-                            (CPtr)
+                            (CPtr
+                                CPointer
+                            )
                             ()
                         )
                         ()
@@ -694,6 +710,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ColMajor
                             )
@@ -702,6 +719,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ()
                         )
@@ -719,11 +737,14 @@
                                         [(()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                 )
                                 ()
                             )
-                            (CPtr)
+                            (CPtr
+                                CPointer
+                            )
                             ()
                         )
                         (Var 2 r_ptr)
@@ -735,6 +756,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                 PointerArray
+                                Global
                             )
                             ColMajor
                         )
@@ -784,7 +806,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

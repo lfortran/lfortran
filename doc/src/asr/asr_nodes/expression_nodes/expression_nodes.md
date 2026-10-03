@@ -48,6 +48,7 @@ EnumStaticMember
 EnumValue
 FunctionCall
 FunctionParam
+FunctionPointerCast
 GetPointer
 GpuBlockIndex
 GpuBlockSize

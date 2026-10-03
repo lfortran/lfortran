@@ -91,6 +91,7 @@
                 false
                 []
                 false
+                :Host
               )
               []
               [
@@ -176,6 +177,7 @@
                         )
                       ]
                       :FixedSizeArray
+                      :Global
                     )
                     nil
                     :Source
@@ -219,6 +221,7 @@
                       )
                     ]
                     :FixedSizeArray
+                    :Global
                   )
                 ]
                 nil
@@ -232,6 +235,7 @@
                 false
                 []
                 false
+                :Host
               )
               []
               [
@@ -254,6 +258,7 @@
         false
         false
         false
+        nil
       )
       "generated" (Program
         (SymbolTable
@@ -263,8 +268,10 @@
         "generated"
         []
         []
+        nil
       )
     }
   )
   []
+  nil
 )

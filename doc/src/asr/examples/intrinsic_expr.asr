@@ -37,6 +37,7 @@
                   )
                 ]
                 :physical_type :FixedSizeArray
+                :memory_space :Global
               )
               :type_declaration nil
               :abi :Source
@@ -97,6 +98,7 @@
                     )
                   ]
                   :physical_type :DescriptorArray
+                  :memory_space :Global
                 )
               )
               :type_declaration nil
@@ -250,6 +252,7 @@
                       )
                     ]
                     :physical_type :DescriptorArray
+                    :memory_space :Global
                   )
                   :value nil
                 )
@@ -313,8 +316,10 @@
             :move_allocation false
           )
         ]
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )
