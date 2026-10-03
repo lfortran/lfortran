@@ -13,6 +13,8 @@ set(DETECT_LEAKS no CACHE BOOL "Run tests with --detect-leaks")
 
 set(STD_F23 no CACHE BOOL "Run tests with --std-f23")
 set(LLVM_GOC no CACHE BOOL "Run tests with --separate-compilation")
+set(WITH_ENZYME no CACHE BOOL "Run autodiff integration tests (requires LFORTRAN_ENZYME_PLUGIN path)")
+set(LFORTRAN_ENZYME_PLUGIN "" CACHE STRING "Path to LLVMEnzyme-<ver>.so plugin (required for WITH_ENZYME)")
 
 enable_testing()
 
@@ -5773,3 +5775,23 @@ RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME struct_tbp_codegen LABELS gfortran llvm c)
 RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
+
+# Enzyme-backed automatic differentiation tests (opt-in).
+# Pipeline driver: lfortran --show-llvm | opt --passes=enzyme | lfortran (link)
+if (WITH_ENZYME)
+    if (NOT LFORTRAN_ENZYME_PLUGIN OR NOT EXISTS "${LFORTRAN_ENZYME_PLUGIN}")
+        message(FATAL_ERROR
+            "WITH_ENZYME=ON requires -DLFORTRAN_ENZYME_PLUGIN=<path to LLVMEnzyme-<ver>.so>; "
+            "got '${LFORTRAN_ENZYME_PLUGIN}'")
+    endif()
+    find_program(OPT_EXECUTABLE opt REQUIRED)
+    message(STATUS "Enzyme plugin: ${LFORTRAN_ENZYME_PLUGIN}")
+    message(STATUS "opt          : ${OPT_EXECUTABLE}")
+
+    add_test(NAME autodiff_01_square
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run_autodiff_test.sh
+                ${CMAKE_CURRENT_SOURCE_DIR}/autodiff_01_square.f90)
+    set_tests_properties(autodiff_01_square PROPERTIES
+        LABELS "autodiff"
+        ENVIRONMENT "LFORTRAN=${CMAKE_Fortran_COMPILER};LLVMENZYME_PLUGIN=${LFORTRAN_ENZYME_PLUGIN};OPT=${OPT_EXECUTABLE}")
+endif()
