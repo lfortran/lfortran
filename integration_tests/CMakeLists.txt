@@ -4901,6 +4901,7 @@ RUN(NAME openmp_94 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_95 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_96 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_97 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_98 LABELS gfortran llvm llvm_omp GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
