@@ -3045,6 +3045,76 @@ public:
         return alloc_fun;
     }
 
+    // DEALLOCATE finalizes the array as an entity before freeing its
+    // components. A matching-rank FINAL takes precedence over an elemental
+    // FINAL; a nonelemental scalar FINAL does not apply to an array.
+    void call_array_finalizer(ASR::expr_t* entity, llvm::Value* descriptor,
+            ASR::Struct_t* struct_sym) {
+        if (struct_sym == nullptr || ASRUtils::is_class_type(
+                ASRUtils::extract_type(ASRUtils::expr_type(entity)))) return;
+        int rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(entity));
+        ASR::Function_t* selected = nullptr;
+        ASR::Function_t* elemental = nullptr;
+        for (size_t i = 0; i < struct_sym->n_member_functions; i++) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                struct_sym->m_symtab->parent->get_symbol(
+                    struct_sym->m_member_functions[i]));
+            LCOMPILERS_ASSERT(sym != nullptr);
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
+            if (ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(fn->m_args[0])) == rank) {
+                selected = fn;
+                break;
+            }
+            if (ASRUtils::is_elemental(sym)) elemental = fn;
+        }
+        if (selected == nullptr) selected = elemental;
+        if (selected == nullptr) return;
+        uint32_t hash = get_hash((ASR::asr_t*)selected);
+        LCOMPILERS_ASSERT(llvm_symtab_fn.find(hash) != llvm_symtab_fn.end());
+        llvm::Function* fn = llvm_symtab_fn[hash];
+        llvm::Type* arg_type = fn->getFunctionType()->getParamType(0);
+        if (selected != elemental) {
+            ASR::ttype_t* dummy_type = ASRUtils::expr_type(selected->m_args[0]);
+            llvm::Value* arg = descriptor;
+            if (ASRUtils::extract_physical_type(dummy_type) !=
+                    ASR::array_physical_typeType::DescriptorArray) {
+                llvm::Type* descriptor_type = llvm_utils->get_type_from_ttype_t_util(
+                    entity, ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(entity)), module.get());
+                arg = llvm_utils->create_gep2(descriptor_type, descriptor, 0);
+                llvm::Type* element_type = llvm_utils->get_el_type(entity,
+                    ASRUtils::extract_type(ASRUtils::expr_type(entity)), module.get());
+                arg = llvm_utils->CreateLoad2(element_type->getPointerTo(), arg);
+            }
+            builder->CreateCall(fn, {builder->CreateBitCast(arg, arg_type)});
+            return;
+        }
+        ASR::ttype_t* array_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(entity));
+        llvm::Type* descriptor_type = llvm_utils->get_type_from_ttype_t_util(
+            entity, array_type, module.get());
+        llvm::Type* element_type = llvm_utils->get_el_type(entity,
+            ASRUtils::extract_type(array_type), module.get());
+        llvm::Value* data = llvm_utils->CreateLoad2(element_type->getPointerTo(),
+            llvm_utils->create_gep2(descriptor_type, descriptor, 0));
+        llvm::Value* size = llvm_utils->get_array_size(
+            descriptor, descriptor_type, array_type, this);
+        llvm::Type* index_type = size->getType();
+        llvm::Value* index = llvm_utils->CreateAlloca(*builder, index_type);
+        builder->CreateStore(llvm::ConstantInt::get(index_type, 0), index);
+        llvm_utils->create_loop("final_array_elements", [&]() {
+            return builder->CreateICmpSLT(
+                llvm_utils->CreateLoad2(index_type, index), size);
+        }, [&]() {
+            llvm::Value* i = llvm_utils->CreateLoad2(index_type, index);
+            llvm::Value* element = llvm_utils->create_ptr_gep2(element_type, data, i);
+            builder->CreateCall(fn, {builder->CreateBitCast(element, arg_type)});
+            builder->CreateStore(builder->CreateAdd(i,
+                llvm::ConstantInt::get(index_type, 1)), index);
+        });
+    }
+
     template <typename T>
     void visit_Deallocate(const T& x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
@@ -3190,6 +3260,9 @@ public:
                                 ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(final_proc_name);
                                 if (final_sym) {
                                     final_sym = ASRUtils::symbol_get_past_external(final_sym);
+                                    ASR::Function_t* final_proc = ASR::down_cast<ASR::Function_t>(final_sym);
+                                    if (ASRUtils::extract_n_dims_from_ttype(
+                                            ASRUtils::expr_type(final_proc->m_args[0])) != 0) continue;
                                     uint32_t fh = get_hash((ASR::asr_t*)final_sym);
                                     if (llvm_symtab_fn.find(fh) != llvm_symtab_fn.end()) {
                                         llvm::Function* final_fn = llvm_symtab_fn[fh];
@@ -3239,6 +3312,7 @@ public:
                     llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, element_type, module.get());
                     llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
                     llvm_utils->create_if_else(cond, [=]() {
+                        call_array_finalizer(tmp_expr, tmp, struct_sym);
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
 
                         if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {
