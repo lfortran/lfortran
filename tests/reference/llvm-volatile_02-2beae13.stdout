@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @volatile_02.iota_2 = internal global float 5.000000e-01
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1

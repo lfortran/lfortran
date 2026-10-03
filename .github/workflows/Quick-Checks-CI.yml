@@ -149,16 +149,9 @@ jobs:
         run: |
             ./test_lfortran_cmdline
 
-      # --std=f23 is a compile-flag sweep over the whole suite rather than a
-      # distinct set of tests, and it is not platform specific, so run it on
-      # Linux only where a full pass is ~7x cheaper than on macOS.
-      - name: Test with specific Fortran standard
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            cd ./integration_tests
-            ./run_tests.py -b llvm --std=f23
-            ./run_tests.py -b llvm -f --std=f23 -nf16
+      # --std=f23, llvm -sc, --detect-leaks, llvm_single_invocation, and
+      # ci/test_cpp_version.sh run in Exhaustive checks (release /
+      # debug_outOfSource) on main and on PRs labeled Tests::Run-Exhaustive.
 
       - name: Test Metal GPU backend (macOS)
         shell: bash -e -l {0}
@@ -254,19 +247,6 @@ jobs:
             cd integration_tests
             ./run_tests.py -b gfortran
 
-      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Debug Build Linux
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-        run: |
-            ctest
-            ./run_tests.py
-            ./run_tests.py -vh
-            cd integration_tests
-            ./run_tests.py -m
-            ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f -nf16
-            ./run_tests.py -b llvm_single_invocation
-
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test OpenMP
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
@@ -302,12 +282,6 @@ jobs:
             cd integration_tests
             ./run_tests.py -b cpp c c_nopragma
             ./run_tests.py -b cpp c c_nopragma -f
-
-      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test CPP
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-        run: |
-            shell ci/test_cpp_version.sh
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Show Node Info
         shell: bash -e -l {0}

@@ -203,6 +203,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             derived_types_18_module_1:
                 (Module
@@ -316,7 +317,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

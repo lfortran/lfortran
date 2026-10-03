@@ -102,7 +102,8 @@ namespace LCompilers::LLanguageServer {
                 uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
                 LCompilers::ASR::asr_t* asr =
                     fe.handle_lookup_name(x.result, output_pos);
-                if (ASR::is_a<ASR::symbol_t>(*asr)) {
+                if (ASR::is_a<ASR::symbol_t>(*asr) && !LCompilers::LFortran::is_generated_symbol_name(
+                        ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(asr)))) {
                     ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(asr);
                     std::string symbol_name = ASRUtils::symbol_name( s );
                     LCompilers::document_symbols &loc = symbol_lists.emplace_back();
@@ -160,7 +161,8 @@ namespace LCompilers::LLanguageServer {
                 uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
                 LCompilers::ASR::asr_t* asr =
                     fe.handle_lookup_name(x.result, output_pos);
-                if (ASR::is_a<ASR::symbol_t>(*asr)) {
+                if (ASR::is_a<ASR::symbol_t>(*asr) && !LCompilers::LFortran::is_generated_symbol_name(
+                        ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(asr)))) {
                     std::pair<LCompilers::document_symbols, std::string> &pair =
                         symbol_lists.emplace_back();
 
@@ -218,7 +220,8 @@ namespace LCompilers::LLanguageServer {
                 uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
                 LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, output_pos);
                 LCompilers::document_symbols loc;
-                if (ASR::is_a<ASR::symbol_t>(*asr)) {
+                if (ASR::is_a<ASR::symbol_t>(*asr) && !LCompilers::LFortran::is_generated_symbol_name(
+                        ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(asr)))) {
                     ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(asr);
                     std::string symbol_name = ASRUtils::symbol_name( s );
                     LCompilers::LFortran::OccurenceCollector occ(symbol_name, symbol_lists, lm);

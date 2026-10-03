@@ -33,9 +33,12 @@ anything lowers them, and each region carries the answer to "who runs these
 iterations".
 
 The frontend never picks a target: it writes `ExecAuto` and leaves the
-decision to the `parallel_dispatch` pass, which reads the command line. Every
-lowering below that pass claims only the loops assigned to it, so a loop the
-GPU declines can be handed back to the host threads instead of being lost.
+decision to the `parallel_dispatch` pass, which reads the command line. With a
+GPU backend it assigns a loop to the device unless the loop uses a construct
+on the device's unsupported list (see [GPU offloading](../../../gpu_offloading.md)):
+such a loop is a compile error, or, with `--gpu-allow-cpu-fallback`, is
+assigned to the host with a warning. Every lowering below that pass claims
+only the loops assigned to it.
 
 ## See Also
 

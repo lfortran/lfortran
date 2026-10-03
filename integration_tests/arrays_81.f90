@@ -8,6 +8,7 @@ subroutine sub(simi, d)
     real, intent(in) :: d(:)
     real :: simi_jdrop(size(simi, 2))
 
+    simi_jdrop = 0.0
     simi = outprod(matprod21(simi, d), simi_jdrop)
 
 contains

@@ -151,6 +151,7 @@ progress
 :caption: Developer's Guide
 :hidden:
 design
+gpu_offloading
 developer_tutorial
 ast_and_asr
 interactive_cells

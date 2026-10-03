@@ -187,6 +187,10 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     if infile and not os.path.exists(infile):
         raise RunException("The input file %s does not exist" % (infile))
     outfile = os.path.join(out_dir, basename + "." + "out")
+    # An outfile left over from an earlier run must not be taken for one this
+    # command wrote.
+    if os.path.exists(outfile):
+        os.remove(outfile)
 
     infile = infile.replace("\\\\", "\\").replace("\\", "/")
 
