@@ -700,7 +700,7 @@ bool write_runtime_debug_map(const std::string &binary_path,
   std::vector<DebugMapEntry> entries;
   std::unordered_map<std::string, uint64_t> file_to_id;
 
-  for (const std::unique_ptr<llvm::DWARFUnit> &unit : dwarf_context->compile_units()) {
+  for (const auto &unit : dwarf_context->compile_units()) {
     const llvm::DWARFDebugLine::LineTable *line_table =
         dwarf_context->getLineTableForUnit(unit.get());
     if (line_table == nullptr) {
