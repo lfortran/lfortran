@@ -5,11 +5,11 @@
             f:
                 (Function
                     (SymbolTable
-                        2
+                        3
                         {
                             f1:
                                 (Variable
-                                    2
+                                    3
                                     f1
                                     []
                                     Local
@@ -46,11 +46,12 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
                     [(Assignment
-                        (Var 2 f1)
+                        (Var 3 f1)
                         (IntegerBinOp
                             (IntegerConstant 2 (Integer 4) Decimal)
                             Mul
@@ -107,4 +108,5 @@
                 )
         })
     []
+    ()
 )

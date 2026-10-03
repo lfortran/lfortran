@@ -2,7 +2,6 @@
     [(Program
         main
         ()
-        []
         [(Implicit
             [(ImplicitSpec
                 (AttrType
@@ -49,8 +48,6 @@
             )]
             ()
         )]
-        []
-        []
         []
     )]
 )

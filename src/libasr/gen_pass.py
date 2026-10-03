@@ -36,7 +36,7 @@ passes = [
         "update_array_dim_intrinsic_calls",
         "replace_where",
         "unique_symbols",
-        "insert_deallocate",
+        "intent_out_deallocate",
         "promote_allocatable_to_nonallocatable",
         "replace_with_compile_time_values"
 ]

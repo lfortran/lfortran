@@ -2,12 +2,11 @@
     [(Program
         forallloop_01
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeReal
                 []
@@ -85,8 +84,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             scalar
             10
@@ -202,9 +201,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -289,8 +285,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 N
                 (FuncCallOrArray

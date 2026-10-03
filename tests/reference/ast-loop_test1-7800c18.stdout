@@ -2,8 +2,6 @@
     [(Program
         main
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -53,8 +51,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             kp
             10

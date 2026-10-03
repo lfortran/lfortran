@@ -263,10 +263,10 @@ public:
                 value_n_dims = left_n_dims;
     
                 if (left_array_type->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                     value_type = logical_array_type;
                 } else {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::PointerArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                     value_type = logical_array_type;
                 }
             } else if (ASR::is_a<ASR::Array_t>(*right_type)) {
@@ -277,10 +277,10 @@ public:
                 value_n_dims = right_n_dims;
     
                 if (right_array_type->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                     value_type = logical_array_type;
                 } else {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::PointerArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                     value_type = logical_array_type;
                 }
             }
@@ -481,6 +481,29 @@ public:
                         ASR::expr_t* dim = get_index_constant(loc, i + 1);
                         allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
                             al, loc, ASRUtils::get_past_array_physical_cast(selected_array),
+                            dim, index_type, nullptr));
+                        allocate_dims.push_back(al, allocate_dim);
+                    }
+                }
+                break;
+            }
+            case ASR::exprType::ComplexRe:
+            case ASR::exprType::ComplexIm: {
+                ASR::expr_t* complex_arg = ASR::is_a<ASR::ComplexRe_t>(*value) ?
+                    ASR::down_cast<ASR::ComplexRe_t>(value)->m_arg :
+                    ASR::down_cast<ASR::ComplexIm_t>(value)->m_arg;
+                if ( ASRUtils::is_array(ASRUtils::expr_type(complex_arg)) ) {
+                    size_t rank = ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::expr_type(complex_arg));
+                    allocate_dims.reserve(al, rank);
+                    for( size_t i = 0; i < rank; i++ ) {
+                        ASR::dimension_t allocate_dim;
+                        allocate_dim.loc = loc;
+                        // Assume 1 for Fortran.
+                        allocate_dim.m_start = index_one;
+                        ASR::expr_t* dim = get_index_constant(loc, i + 1);
+                        allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                            al, loc, ASRUtils::get_past_array_physical_cast(complex_arg),
                             dim, index_type, nullptr));
                         allocate_dims.push_back(al, allocate_dim);
                     }
@@ -870,6 +893,8 @@ public:
                     alloc_arg.m_len_expr = len_expr;
                     alloc_arg.m_type = nullptr;
                     alloc_arg.m_sym_subclass = nullptr;
+                    alloc_arg.m_codims = nullptr;
+                    alloc_arg.n_codims = 0;
                     alloc_args.push_back(al, alloc_arg);
                 
                     Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
@@ -991,27 +1016,24 @@ public:
     template <typename T>
     void visit_Call(const T& x, const std::string& name_hint) {
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
-        std::vector<bool> is_arg_intent_out;
-        if ( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_name)) ) {
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
-            ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
-            bool is_func_bind_c = func_type->m_abi == ASR::abiType::BindC;
-            for (size_t i = 0; i < func->n_args; i++ ) {
-                if ( ASR::is_a<ASR::Var_t>(*func->m_args[i]) ) {
-                    ASR::Var_t* var_ = ASR::down_cast<ASR::Var_t>(func->m_args[i]);
-                    if ( ASR::is_a<ASR::Variable_t>(*var_->m_v) ) {
-                        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_->m_v);
-                        is_arg_intent_out.push_back(
-                            var->m_intent == ASR::intentType::Out ||
-                            var->m_intent == ASR::intentType::InOut ||
-                            var->m_intent == ASR::intentType::Unspecified
-                        );
-                    } else {
-                        is_arg_intent_out.push_back(false);
-                    }
-                } else {
-                    is_arg_intent_out.push_back(false);
-                }
+        ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(x.m_name);
+        bool is_procedure_variable = ASR::is_a<ASR::Variable_t>(*callee) &&
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
+                ASR::down_cast<ASR::Variable_t>(callee)->m_type));
+        if ( ASR::is_a<ASR::Function_t>(*callee) || is_procedure_variable ) {
+            // The dummies come from the interface the call goes through: the
+            // procedure itself, or the interface of a procedure variable (for
+            // example the call-site interface of an implicit-interface call).
+            // Without an interface every argument may be modified.
+            ASR::Function_t* func = ASRUtils::get_function(callee);
+            bool is_func_bind_c = ASRUtils::get_FunctionType(callee)->m_abi == ASR::abiType::BindC;
+            std::vector<bool> is_arg_intent_out(x.n_args, func == nullptr);
+            for (size_t i = 0; func && i < func->n_args && i < x.n_args; i++ ) {
+                ASR::Variable_t* var = ASRUtils::expr_to_variable_or_null(func->m_args[i]);
+                is_arg_intent_out[i] = var && (
+                    var->m_intent == ASR::intentType::Out ||
+                    var->m_intent == ASR::intentType::InOut ||
+                    var->m_intent == ASR::intentType::Unspecified);
             }
             traverse_call_args(x_m_args, x.m_args, x.n_args,
                 name_hint + ASRUtils::symbol_name(x.m_name), is_arg_intent_out, is_func_bind_c);

@@ -10,14 +10,14 @@
                             calcfc:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        3
                                         {
-                                            calcfc_arg_0:
+                                            calcfc_return_var_name:
                                                 (Variable
-                                                    7
-                                                    calcfc_arg_0
+                                                    3
+                                                    calcfc_return_var_name
                                                     []
-                                                    Unspecified
+                                                    ReturnVar
                                                     ()
                                                     ()
                                                     Default
@@ -35,38 +35,14 @@
                                                     NotMethod
                                                     ()
                                                     []
-                                                ),
-                                            con:
-                                                (Variable
-                                                    7
-                                                    con
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
                                                 )
                                         })
                                     calcfc
                                     (FunctionType
-                                        [(Real 8)]
-                                        ()
+                                        []
+                                        (Real 8)
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
@@ -75,11 +51,12 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
-                                    [(Var 7 calcfc_arg_0)]
                                     []
-                                    ()
+                                    []
+                                    (Var 3 calcfc_return_var_name)
                                     Public
                                     .false.
                                     .false.
@@ -92,7 +69,7 @@
                             []
                             (Real 8)
                             BindC
-                            Interface
+                            ImplicitInterface
                             ()
                             .false.
                             .false.
@@ -101,6 +78,7 @@
                             .false.
                             []
                             .false.
+                            Host
                         )]
                         ()
                         Source
@@ -113,6 +91,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [cobylb]
                     [(Var 2 calcfc)]
@@ -138,12 +117,67 @@
                             calcfc:
                                 (Function
                                     (SymbolTable
+                                        5
+                                        {
+                                            calcfc_return_var_name:
+                                                (Variable
+                                                    5
+                                                    calcfc_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    calcfc
+                                    (FunctionType
+                                        []
+                                        (Real 8)
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 5 calcfc_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            calcfc~fpcast:
+                                (Function
+                                    (SymbolTable
                                         6
                                         {
-                                            calcfc_arg_0:
+                                            calcfc~arg_0:
                                                 (Variable
                                                     6
-                                                    calcfc_arg_0
+                                                    calcfc~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -163,33 +197,9 @@
                                                     NotMethod
                                                     ()
                                                     []
-                                                ),
-                                            con:
-                                                (Variable
-                                                    6
-                                                    con
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
                                                 )
                                         })
-                                    calcfc
+                                    calcfc~fpcast
                                     (FunctionType
                                         [(Real 8)]
                                         ()
@@ -203,15 +213,56 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
-                                    [(Var 6 calcfc_arg_0)]
+                                    [(Var 6 calcfc~arg_0)]
                                     []
                                     ()
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            calcfc~fpcast_ptr:
+                                (Variable
+                                    4
+                                    calcfc~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Real 8)]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    4 calcfc~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             con:
                                 (Variable
@@ -244,7 +295,7 @@
                             []
                             (Real 8)
                             BindC
-                            Interface
+                            ImplicitInterface
                             ()
                             .false.
                             .false.
@@ -253,6 +304,7 @@
                             .false.
                             []
                             .false.
+                            Host
                         )]
                         ()
                         Source
@@ -265,12 +317,36 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 4 calcfc)]
-                    [(SubroutineCall
+                    [(Associate
+                        (Var 4 calcfc~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 4 calcfc)
+                            4 calcfc~fpcast
+                            (FunctionType
+                                [(Real 8)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        4 calcfc~fpcast_ptr
                         4 calcfc
-                        ()
                         [((Var 4 con))]
                         ()
                         .false.
@@ -284,4 +360,5 @@
                 )
         })
     []
+    ()
 )

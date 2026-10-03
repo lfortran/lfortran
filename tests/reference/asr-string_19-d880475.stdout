@@ -142,6 +142,7 @@
                     [string_19_stdlib_strings
                     string_19_stdlib_string_type]
                     []
+                    ()
                 ),
             string_19_stdlib_string_type:
                 (Module
@@ -263,6 +264,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [len_string]
                                     [(Var 5 string)]
@@ -362,6 +364,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 string)]
@@ -420,6 +423,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
@@ -432,6 +436,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             string_19_stdlib_strings:
                 (Module
@@ -481,6 +486,7 @@
                                                             ()
                                                         ))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -537,6 +543,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         Source
                                         Implementation
@@ -548,6 +555,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 string)]
@@ -626,6 +634,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [compute_lps]
                                     [(Var 8 string)]
@@ -645,6 +654,7 @@
                                                         ()
                                                     ))]
                                                     PointerArray
+                                                    Global
                                                 )
                                                 ()
                                                 ()
@@ -764,6 +774,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 9 string)]
@@ -923,6 +934,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [padl_char_pad_with]
                                     [(Var 12 string)
@@ -1136,6 +1148,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 string)
@@ -1289,6 +1302,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [padl_char_pad_with]
                                     [(Var 10 string)
@@ -1535,6 +1549,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [padl_char_pad_with]
                                     [(Var 11 string)
@@ -1631,7 +1646,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

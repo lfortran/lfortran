@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_offload_metal-gpu_unsupported_07-6cf1b53",
+    "cmd": "lfortran --no-color --gpu=metal -c {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/gpu_unsupported_07.f90",
+    "infile_hash": "bd35c7736e5c89a9418568ecf6a21d7c5316065d0774d2d86f50278d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "gpu_offload_metal-gpu_unsupported_07-6cf1b53.stderr",
+    "stderr_hash": "b870eac94188c0bbfe8471f579af4298afbfdcc558d6429b7b13644a",
+    "returncode": 5
+}

@@ -1,0 +1,275 @@
+#ifndef LIBASR_PASS_GPU_DECLINE_H
+#define LIBASR_PASS_GPU_DECLINE_H
+
+#include <string>
+
+#include <libasr/asr.h>
+#include <libasr/utils.h>
+
+namespace LCompilers {
+
+/*
+Why a parallel loop was not offloaded to the GPU, as a value rather than as a
+sentence. The pass that makes the decision (gpu_offload.cpp) and the pass that
+lays out the launch (device_launch_expand.cpp) both raise these; the wording
+the user sees is built in one place, from the reason and what little it
+quotes, so that the decision and its phrasing cannot drift apart.
+
+A decline is raised by the offloading pipeline, after the unsupported-construct
+check (gpu_unsupported_check.h) has committed the loop to the device, so every
+decline is a compile-time error: a loop the pipeline cannot lower yet is a gap
+in this compiler, whatever the reason.
+*/
+
+// The device dialect a loop is being offloaded to. Nothing outside
+// gpu_device_capabilities() below branches on this: it is the key the
+// capability table is written against, not a thing to test for.
+enum class GpuDevice {
+    None,
+    Metal,
+    Cuda,
+};
+
+// What the selected device can do, in the terms the offload passes need to
+// reason in. Those passes ask what the device is capable of and never which
+// device it is, so that everything a dialect can and cannot do is written
+// down once -- in gpu_device_capabilities() -- and adding a dialect does not
+// mean finding every place that named the old ones.
+struct GpuDeviceCapabilities {
+    // The dialect these answers describe. Nothing outside this struct
+    // branches on it.
+    GpuDevice device = GpuDevice::None;
+
+    // The name a diagnostic calls the device by, such as "Metal".
+    std::string name;
+
+    // Whether a device was selected at all. When none was, the offload
+    // passes have nothing to do.
+    bool device_selected() const { return device != GpuDevice::None; }
+
+    // The widest integer and real kind the device has a scalar type of, in
+    // the kind numbers a Fortran program writes. A buffer reaches the device
+    // as a block of bytes sized from the host element type, so a device
+    // whose widest type is narrower than the host's would stride through
+    // that buffer at the wrong size: it would read and write the wrong
+    // elements, and nothing would say so. A loop touching data wider than
+    // this cannot be offloaded.
+    int max_integer_kind = 8;
+    int max_real_kind = 8;
+
+    // Whether a kernel can bring the program to a halt from a thread. There
+    // is no exit code to deliver either way -- a grid has no status to
+    // return -- but stopping is the part of a Fortran `stop` a device can
+    // honour, and a device that cannot stop can honour none of it.
+    bool device_abort = true;
+
+    // Whether a device function may declare a local array whose extent is
+    // only known once the kernel runs. Where it may not, the pass splices
+    // such a callee into the kernel body instead, so that the local becomes
+    // a kernel-level one and the per-thread workspace machinery can bind it
+    // to a slice of a device buffer.
+    bool device_function_runtime_sized_locals = true;
+
+    // Whether the device has a scalar type of the same in-memory width as
+    // `t`. Every dialect shares a floor -- the widths in
+    // gpu_scalar_width_supported() -- and the kinds above narrow it further.
+    bool has_scalar_type(ASR::ttype_t *t) const;
+
+    // Whether `t` is a width the shared floor has and this device has not.
+    // This is the question "does this device narrow it", which is not the
+    // same as "can this device take it": a type the shared floor already
+    // turns down is nothing this device narrowed.
+    bool narrows_scalar_type(ASR::ttype_t *t) const;
+
+    // Whether this device narrows the shared floor at all. When it does not,
+    // a sweep of every symbol reaching the kernel against this device's type
+    // set would only ask again what the kernel-argument and kernel-local
+    // checks already ask on every device.
+    bool narrows_scalar_types() const;
+
+    // Whether `t` is a real wider than every floating point type this device
+    // has -- `real(8)` on a device with no 64-bit float, or a real wider than
+    // the shared floor on any device. No lowering could give such data a
+    // device representation, which is what sets it apart from every other
+    // type this device turns down.
+    bool lacks_real_width(ASR::ttype_t *t) const;
+
+    // Whether the pass splices device callees into the kernel body for this
+    // device. It does so exactly when a device function may not declare a
+    // run-time sized local. The splice is also what can leave a section of a
+    // section in the body -- an address no device pointer can express -- so
+    // the pass looks for that shape exactly when it splices.
+    bool splices_device_functions() const {
+        return !device_function_runtime_sized_locals;
+    }
+};
+
+enum class GpuDeclineReason {
+    None,
+
+    // --- the shape of the loop itself ---
+    LoopNestShape,
+    LoopNestNotCopyable,
+    // A loop still assigned to the device once the offload pass is done,
+    // which the pass never reached.
+    LoopNotLowered,
+    ReductionClause,
+    LoopWithoutIndex,
+    IncompleteLoopHead,
+    StridedLoop,
+
+    // --- what the pass's own lowering cannot yet do to the body ---
+    StructElementGather,
+    UnsizedLocalArray,
+    AliasTemporaryRuntimeSized,
+    UngatherableStridedSection,
+    // A section passed to a procedure has to be copied into a contiguous
+    // per-thread buffer, but a dimension before its last has an extent that
+    // changes from one iteration to the next, so no buffer the host sizes
+    // can hold it contiguously.
+    SectionLeadingExtentVaries,
+    // A section passed to a procedure has to be copied into a contiguous
+    // per-thread buffer before the statement that makes the call, but no
+    // such copy serves the call (see GpuSectionConflict): a do while
+    // condition or a FORALL evaluates it again after changing a value it
+    // depends on, a condition it is evaluated under calls a procedure that
+    // is not pure, or a construct has no place for the copy (see
+    // GpuSectionSite).
+    SectionCopyNotPlaceable,
+    DeviceFunctionInlining,
+    DeviceFunctionImplementation,
+    RecursiveDeviceFunction,
+    FunctionResultAllocation,
+    NestedArraySection,
+    WorkspaceNotSizeableOnHost,
+
+    // --- what the device has no type for ---
+    LocalTypeWidth,
+    SymbolTypeNotRepresentable,
+    WideTypeNotOnDevice,
+
+    // --- what the device has no way to run ---
+    // These, and every reason below them, name a thing rather than state a
+    // fact, and so read as "the gpu backend does not support <thing>".
+    StatementIo,
+    StatementStop,
+
+    // --- the layout of a kernel argument: derived types ---
+    StructDeclarationUnknown,
+    StructNonDataMember,
+    StructPointerMember,
+    StructAllocatableArrayMember,
+    StructAllocatableScalarMember,
+    StructAssumedShapeArrayMember,
+    StructMemberTypeWidth,
+    StructMemberNotNumeric,
+
+    // --- the layout of a kernel argument: polymorphic arguments ---
+    ClassComponentArrayRank,
+    ClassComponentArrayExtents,
+    ClassDeclarationUnknown,
+    ClassNonDataComponent,
+    ClassAllocatableComponent,
+    UnlimitedPolymorphicArgument,
+    PolymorphicArrayArgument,
+
+    // --- the layout of a kernel argument: everything else ---
+    ArrayElementTypeWidth,
+    ArrayElementNotNumeric,
+    WorkspaceStructElementShape,
+    // A per-thread workspace the launch layout cannot size, found when the
+    // launch is expanded. The host pre-flight in gpu_offload asks the same
+    // question of the loop, but of the loop as it stands before the passes
+    // that create such a workspace have run.
+    LaunchVlaExtentNotRebuildable,
+    KernelArgumentCountMismatch,
+    NestedAllocatableComponent,
+    MissingArgument,
+    ScalarTypeWidth,
+    ScalarNotNumeric,
+    ScalarKindMismatch,
+};
+
+// Where a section passed to a procedure is evaluated, as far as copying it
+// into a contiguous buffer is concerned. `Statement` is the one site where
+// the copy can be placed: right before the statement that makes the call.
+enum class GpuSectionSite {
+    Statement,
+    WhileCondition,
+    ConditionalExpression,
+    ImpliedDo,
+    Forall,
+    Where,
+    SelectType,
+    SelectRank,
+    Construct,
+};
+
+// Why a copy placed before the statement cannot serve a section evaluated
+// at a site other than `Statement`.
+enum class GpuSectionConflict {
+    // The construct has no place for the copy: a WHERE, a SELECT TYPE, a
+    // SELECT RANK, an implied DO or a construct not known to this pass.
+    NoPlace,
+    // The construct changes a value that the section, or a condition it
+    // is evaluated under, depends on before evaluating it again.
+    ValueChanges,
+    // A condition the section is evaluated under calls a procedure that
+    // is not pure, which the copy would have to call again.
+    ImpureCondition,
+};
+
+// Where a section is evaluated, and why no copy before the statement
+// serves it when that site is not `Statement`.
+struct GpuSectionPlace {
+    GpuSectionSite site = GpuSectionSite::Statement;
+    GpuSectionConflict conflict = GpuSectionConflict::NoPlace;
+};
+
+// A decline, with the little the message quotes alongside it.
+struct GpuDecline {
+    GpuDeclineReason reason = GpuDeclineReason::None;
+    // The name the message names: a local, a workspace, a component, or the
+    // routine an unsupported statement was found in.
+    std::string name;
+    // The element type the decline is about, when the reason is about a
+    // type, which the message names.
+    ASR::ttype_t *type = nullptr;
+    // Where the section is evaluated, when the reason is about a section,
+    // and why no copy placed before the statement serves it.
+    GpuSectionSite site = GpuSectionSite::Statement;
+    GpuSectionConflict conflict = GpuSectionConflict::NoPlace;
+
+    GpuDecline() = default;
+    explicit GpuDecline(GpuDeclineReason reason_) : reason(reason_) {}
+    GpuDecline(GpuDeclineReason reason_, const std::string &name_)
+        : reason(reason_), name(name_) {}
+    GpuDecline(GpuDeclineReason reason_, const std::string &name_,
+            ASR::ttype_t *type_)
+        : reason(reason_), name(name_), type(type_) {}
+    GpuDecline(GpuDeclineReason reason_, const std::string &name_,
+            const GpuSectionPlace &place)
+        : reason(reason_), name(name_), site(place.site),
+          conflict(place.conflict) {}
+
+    bool declined() const { return reason != GpuDeclineReason::None; }
+};
+
+// Which device the pass options select, if any.
+GpuDevice gpu_device_selected(const PassOptions &pass_options);
+
+// What that device is capable of. The one place a dialect's name decides
+// anything.
+GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device);
+GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options);
+
+// The whole clause the diagnostic reads, lowercase and naming nothing
+// internal. This is the only place the wording of a decline is written.
+std::string gpu_decline_message(const GpuDecline &decline);
+
+void report_gpu_decline(const PassOptions &options, const Location &where,
+    const GpuDecline &decline);
+
+} // namespace LCompilers
+
+#endif // LIBASR_PASS_GPU_DECLINE_H
