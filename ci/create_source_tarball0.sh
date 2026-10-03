@@ -16,6 +16,11 @@ cmake -E copy_directory doc/man $dest/doc/man
 cmake -E copy_directory doc/src/asr $dest/doc/src/asr
 cmake -E copy_directory tests/asr $dest/tests/asr
 
+# The runtime-header layout CTest needs its driver and Fortran fixture.
+cmake -E copy tests/runtime_header_layout.py "$dest/tests/"
+cmake -E make_directory "$dest/integration_tests"
+cmake -E copy integration_tests/expr_02.f90 "$dest/integration_tests/"
+
 # Copy Files:
 cmake -E copy CMakeLists.txt README.md LICENSE version $dest
 
