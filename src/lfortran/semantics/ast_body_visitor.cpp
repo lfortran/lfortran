@@ -8370,7 +8370,7 @@ public:
         // it, so that a branch to it still reaches the whole thing.
         AST::If_t *selection = AST::down_cast2<AST::If_t>(AST::make_If_t(al,
             x.base.base.loc, x.m_label, nullptr, c->m_test, &calls[0], 1,
-            &calls[1], 1, nullptr, nullptr, nullptr));
+            &calls[1], 1, false, nullptr, nullptr, nullptr));
         this->visit_If(*selection);
         return true;
     }

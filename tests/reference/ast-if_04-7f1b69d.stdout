@@ -71,18 +71,22 @@
                             ()
                         )]
                         []
+                        .true.
                         ()
                         ()
                         ()
                     )]
+                    .true.
                     ()
                     ()
                     ()
                 )]
+                .true.
                 ()
                 ()
                 ()
             )]
+            .false.
             ()
             ()
             (TriviaNode
@@ -137,18 +141,22 @@
                             [(String "Invalid!" ())]
                             ()
                         )]
+                        .true.
                         ()
                         ()
                         ()
                     )]
+                    .true.
                     ()
                     ()
                     ()
                 )]
+                .true.
                 ()
                 ()
                 ()
             )]
+            .false.
             ()
             ()
             (TriviaNode
