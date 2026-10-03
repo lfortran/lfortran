@@ -1,0 +1,5 @@
+warning: this implies single precision, use a kind designator to make it explicit
+ --> tests/../integration_tests/real_dp_01.f90:7:9
+  |
+7 |     v = 1.05
+  |         ^^^^ hint: 1.05 is equal to 1.0499999523162842e+00, use 1.05_8 to make it equal to 1.0500000000000000e+00

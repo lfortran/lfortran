@@ -1,0 +1,11 @@
+warning: this implies single precision, use a kind designator to make it explicit
+  --> tests/format1.f90:15:9
+   |
+15 |     s = 23.5678
+   |         ^^^^^^^ hint: 23.5678 is equal to 2.3567800521850586e+01, use 23.5678_8 to make it equal to 2.3567799999999998e+01
+
+warning: this implies single precision, use a kind designator to make it explicit
+  --> tests/format1.f90:16:9
+   |
+16 |     t = 0.345678
+   |         ^^^^^^^^ hint: 0.345678 is equal to 3.4567800164222717e-01, use 0.345678_8 to make it equal to 3.4567799999999999e-01

@@ -527,6 +527,10 @@ filename = "warnings/format_a_integer_01.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "warnings/precision_real_01.f90"
+asr = true
+
+[[test]]
 filename = "preprocessor1.f90"
 asr_preprocess = true
 
