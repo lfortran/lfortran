@@ -527,21 +527,7 @@
                                                 ((IntrinsicElementalFunction
                                                     Max
                                                     [(StringLen
-                                                        (ArrayItem
-                                                            (Var 4 keywords)
-                                                            [(()
-                                                            (ArrayBound
-                                                                (Var 4 keywords)
-                                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                                (Integer 4)
-                                                                LBound
-                                                                ()
-                                                            )
-                                                            ())]
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                            ColMajor
-                                                            ()
-                                                        )
+                                                        (Var 4 keywords)
                                                         (Integer 4)
                                                         ()
                                                     )
@@ -556,21 +542,7 @@
                                                     [(IntrinsicElementalFunction
                                                         Max
                                                         [(StringLen
-                                                            (ArrayItem
-                                                                (Var 4 keywords)
-                                                                [(()
-                                                                (ArrayBound
-                                                                    (Var 4 keywords)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    LBound
-                                                                    ()
-                                                                )
-                                                                ())]
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                                ColMajor
-                                                                ()
-                                                            )
+                                                            (Var 4 keywords)
                                                             (Integer 4)
                                                             ()
                                                         )
@@ -651,21 +623,7 @@
                                                     ((IntrinsicElementalFunction
                                                         Max
                                                         [(StringLen
-                                                            (ArrayItem
-                                                                (Var 4 keywords)
-                                                                [(()
-                                                                (ArrayBound
-                                                                    (Var 4 keywords)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    LBound
-                                                                    ()
-                                                                )
-                                                                ())]
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                                ColMajor
-                                                                ()
-                                                            )
+                                                            (Var 4 keywords)
                                                             (Integer 4)
                                                             ()
                                                         )
@@ -680,21 +638,7 @@
                                                         [(IntrinsicElementalFunction
                                                             Max
                                                             [(StringLen
-                                                                (ArrayItem
-                                                                    (Var 4 keywords)
-                                                                    [(()
-                                                                    (ArrayBound
-                                                                        (Var 4 keywords)
-                                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Integer 4)
-                                                                        LBound
-                                                                        ()
-                                                                    )
-                                                                    ())]
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                    ColMajor
-                                                                    ()
-                                                                )
+                                                                (Var 4 keywords)
                                                                 (Integer 4)
                                                                 ()
                                                             )
@@ -794,21 +738,7 @@
                                                         [(IntrinsicElementalFunction
                                                             Max
                                                             [(StringLen
-                                                                (ArrayItem
-                                                                    (Var 4 keywords)
-                                                                    [(()
-                                                                    (ArrayBound
-                                                                        (Var 4 keywords)
-                                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Integer 4)
-                                                                        LBound
-                                                                        ()
-                                                                    )
-                                                                    ())]
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                    ColMajor
-                                                                    ()
-                                                                )
+                                                                (Var 4 keywords)
                                                                 (Integer 4)
                                                                 ()
                                                             )
