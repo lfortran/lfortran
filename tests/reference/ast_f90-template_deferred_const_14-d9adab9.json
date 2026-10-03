@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-template_deferred_const_14-d9adab9",
+    "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/../integration_tests/template_deferred_const_14.f90",
+    "infile_hash": "937654ebd84fc1d7125b787a3f8839ef32278df06589dd4752f4da5b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-template_deferred_const_14-d9adab9.stdout",
+    "stdout_hash": "d5a6f1084ed3dae4033e7123bc2abe8d886ff49f5f4c649350c0fd86",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

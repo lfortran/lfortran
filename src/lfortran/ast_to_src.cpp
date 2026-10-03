@@ -1445,13 +1445,7 @@ public:
                     is_a<SimpleAttribute_t>(*x.m_attributes[0]) &&
                     down_cast<SimpleAttribute_t>(x.m_attributes[0])->m_attr ==
                         simple_attributeType::AttrDeferred) {
-                // `deferred <type>, <attrs> :: <entities>` (F2028 R1618) is
-                // parsed as an ordinary Declaration with `deferred` prepended
-                // to the attribute list (see DEFERRED_CONST_DECL in
-                // semantics.h). The parser only accepts `deferred` printed
-                // before the type, not as an attribute after it, so it must
-                // be special-cased here instead of printed in attribute
-                // order like the rest of the list.
+                // `deferred` must be printed before the type
                 r += syn(gr::Type);
                 r.append("deferred");
                 r += syn();

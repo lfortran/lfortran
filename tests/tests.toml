@@ -2087,7 +2087,7 @@ ast = true
 ast_f90 = true
 
 [[test]]
-filename = "fmt_deferred_const_13548.f90"
+filename = "../integration_tests/template_deferred_const_14.f90"
 ast_f90 = true
 
 [[test]]
