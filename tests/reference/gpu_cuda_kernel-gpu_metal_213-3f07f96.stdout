@@ -76,7 +76,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_3 {
-    int j;
     int __dim_m_0;
     int __lb_m_0;
     int __dim_m_1;
@@ -87,13 +86,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     double* m,
     __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
 {
-    int j = __scalar_args.j;
     int __dim_m_0 = __scalar_args.__dim_m_0;
     int __lb_m_0 = __scalar_args.__lb_m_0;
     int __dim_m_1 = __scalar_args.__dim_m_1;
     int __lb_m_1 = __scalar_args.__lb_m_1;
     int __flat_idx;
     int i;
+    int j;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((2 - 1) + 1))) {
         return;
     }

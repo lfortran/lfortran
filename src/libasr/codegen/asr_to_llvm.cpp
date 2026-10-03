@@ -16925,6 +16925,73 @@ public:
         }
     }
 
+    // complex**integer by repeated multiplication (binary exponentiation),
+    // a negative exponent giving 1/z**(-n). A constant exponent is unrolled
+    // here, otherwise the runtime is called. Both use the algorithm of
+    // ASRUtils::fold_binop_constants, so they give identical results.
+    llvm::Value* lfortran_complex_integer_pow(llvm::Value* base,
+            llvm::Value* exponent, ASR::expr_t* exponent_value, int a_kind,
+            llvm::Type* complex_type) {
+        base = convert_complex_vector_to_struct(base, complex_type);
+        int64_t n = 0;
+        if (exponent_value == nullptr ||
+                !ASRUtils::extract_value(exponent_value, n)) {
+            std::string fn_name = (a_kind == 4) ?
+                "_lfortran_complex_pow_int_32" : "_lfortran_complex_pow_int_64";
+            llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+            llvm::Function *fn = module->getFunction(fn_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            complex_type->getPointerTo(), i64_ty,
+                            complex_type->getPointerTo()
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, fn_name, module.get());
+            }
+            llvm::AllocaInst *pbase = llvm_utils->CreateAlloca(complex_type);
+            builder->CreateStore(base, pbase);
+            llvm::AllocaInst *presult = llvm_utils->CreateAlloca(complex_type);
+            builder->CreateCall(fn, {pbase,
+                llvm_utils->convert_kind(exponent, i64_ty), presult});
+            return llvm_utils->CreateLoad2(complex_type, presult);
+        }
+        llvm::Type* real_type = llvm_utils->getFPType(a_kind);
+        auto make_complex = [&](double re, double im) -> llvm::Value* {
+            llvm::Value* c = llvm::UndefValue::get(complex_type);
+            c = builder->CreateInsertValue(c,
+                llvm::ConstantFP::get(real_type, re), {0});
+            return builder->CreateInsertValue(c,
+                llvm::ConstantFP::get(real_type, im), {1});
+        };
+        if (n == 0) {
+            return make_complex(1.0, 0.0);
+        }
+        std::string mul_name = (a_kind == 4) ?
+            "_lfortran_complex_mul_32" : "_lfortran_complex_mul_64";
+        uint64_t u = n < 0 ? -(uint64_t)n : (uint64_t)n;
+        while ((u & 1) == 0) {
+            base = lfortran_complex_bin_op(base, base, mul_name, complex_type);
+            u >>= 1;
+        }
+        llvm::Value* result = base;
+        u >>= 1;
+        while (u != 0) {
+            base = lfortran_complex_bin_op(base, base, mul_name, complex_type);
+            if (u & 1) {
+                result = lfortran_complex_bin_op(result, base, mul_name,
+                    complex_type);
+            }
+            u >>= 1;
+        }
+        if (n < 0) {
+            result = lfortran_complex_bin_op(make_complex(1.0, 0.0), result,
+                (a_kind == 4) ? "_lfortran_complex_div_32"
+                              : "_lfortran_complex_div_64", complex_type);
+        }
+        return result;
+    }
+
     void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -16947,6 +17014,12 @@ public:
             ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_pointer(x.m_type)))->m_kind;
         type = llvm_utils->getComplexType(a_kind);
+        if (x.m_op == ASR::binopType::Pow &&
+                ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
+            tmp = lfortran_complex_integer_pow(left_val, right_val,
+                ASRUtils::expr_value(x.m_right), a_kind, type);
+            return;
+        }
         std::string fn_name;
         switch (x.m_op) {
             case ASR::binopType::Add: {
