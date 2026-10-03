@@ -30,7 +30,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif ()
 
 # xeus does use `dynamic_cast` and thus needs rtti (otherwise it segfaults)
-if (NOT WITH_XEUS)
+if (NOT WITH_XEUS AND NOT XEUS_LFORTRAN_WASM_BUILD)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set(LFORTRAN_CXX_NO_RTTI_FLAG "-fno-rtti")
     elseif (CMAKE_CXX_COMPILER_ID MATCHES Clang)
@@ -38,7 +38,7 @@ if (NOT WITH_XEUS)
     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         set(LFORTRAN_CXX_NO_RTTI_FLAG "/GR-")
     endif ()
-endif(NOT WITH_XEUS)
+endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /bigobj")
@@ -235,6 +235,9 @@ if (WITH_LLVM)
     find_package(LLVM REQUIRED)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
     message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+    if (LLVM_VERSION_MAJOR GREATER_EQUAL 16)
+        list(APPEND LFORTRAN_LLVM_COMPONENTS targetparser)
+    endif()
 
     # LLVM 8 needs the ipo library for PassManagerBuilder
     if (LLVM_VERSION_MAJOR LESS 9)
@@ -329,24 +332,31 @@ if (WITH_LLVM)
     endif()
 endif()
 
+function(configure_lfortran_kernel)
+    if(EMSCRIPTEN)
+        set(prefix "wasm_")
+    else()
+        set(prefix "")
+    endif()
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/fortran/${prefix}kernel.json.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/fortran/kernel.json"
+    )
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/fortran/lfortran-logo.svg"
+        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/fortran/logo-svg.svg"
+        COPYONLY
+    )
+endfunction()
+
 # XEUS (Fortran kernel)
 set(WITH_XEUS no CACHE BOOL "Build with XEUS support")
 if (WITH_XEUS)
-    find_package(xeus 6.0.0 REQUIRED)
-    find_package(xeus-zmq 4.0.0 REQUIRED)
+    find_package(xeus 5.0.0 REQUIRED)
+    find_package(xeus-zmq 3.0.0 REQUIRED)
     set(HAVE_LFORTRAN_XEUS yes)
 
-    # Generate kernel.json with correct paths
-    configure_file (
-        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/fortran/kernel.json.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/fortran/kernel.json"
-    )
-
-    # Generate logo-svg.svg with correct paths
-    configure_file (
-        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/fortran/lfortran-logo.svg"
-        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/fortran/logo-svg.svg"
-    )
+    configure_lfortran_kernel()
 
     # Configuration and data directories for Jupyter and LFortran
     set(XJUPYTER_DATA_DIR "share/jupyter" CACHE STRING "Jupyter data directory")
@@ -356,6 +366,81 @@ if (WITH_XEUS)
     install(DIRECTORY ${XEUS_CALCSPEC_DIR}
             DESTINATION ${XJUPYTER_DATA_DIR}
             PATTERN "*.in" EXCLUDE)
+endif()
+
+# XEUS_LFORTRAN_WASM_BUILD — build xlfortran.js/wasm JupyterLite kernel
+set(XEUS_LFORTRAN_WASM_BUILD no CACHE BOOL "Build xlfortran JupyterLite WASM kernel")
+if (XEUS_LFORTRAN_WASM_BUILD)
+    if (NOT EMSCRIPTEN)
+        message(FATAL_ERROR "XEUS_LFORTRAN_WASM_BUILD requires Emscripten (run via emcmake)")
+    endif()
+
+    find_package(xeus 6.0.0 REQUIRED)
+    find_package(xeus-lite REQUIRED)
+    find_package(LLD REQUIRED CONFIG
+        HINTS "${CMAKE_PREFIX_PATH}/lib/cmake/lld"
+    )
+
+    # WasmBuildOptions.cmake lives alongside xeusConfig.cmake;
+    # xeus_DIR is set by find_package(xeus) above.
+    find_file(WASM_BUILD_OPTIONS_CMAKE WasmBuildOptions.cmake
+        HINTS "${xeus_DIR}"
+    )
+    if (NOT WASM_BUILD_OPTIONS_CMAKE)
+        message(FATAL_ERROR "Could not find WasmBuildOptions.cmake (part of xeus)")
+    endif()
+    include(${WASM_BUILD_OPTIONS_CMAKE})
+
+    set(HAVE_LFORTRAN_XEUS yes)
+
+    configure_lfortran_kernel()
+
+    set(XJUPYTER_DATA_DIR "share/jupyter" CACHE STRING "Jupyter data directory")
+    set(XEUS_CALCSPEC_DIR ${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels)
+    install(DIRECTORY ${XEUS_CALCSPEC_DIR}
+            DESTINATION ${XJUPYTER_DATA_DIR}
+            PATTERN "*.in" EXCLUDE)
+
+    add_executable(xlfortran
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/lfortran/fortran_kernel.cpp
+    )
+    target_include_directories(xlfortran PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_BINARY_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/lfortran
+        ${CMAKE_CURRENT_BINARY_DIR}/src/lfortran
+    )
+    target_link_libraries(xlfortran PRIVATE
+        lfortran_lib
+        xeus-lite
+    )
+    xeus_wasm_compile_options(xlfortran)
+    xeus_wasm_link_options(xlfortran "web,worker")
+
+    # Preload runtime .mod files into the WASM VFS at /lib/
+    file(GLOB LFORTRAN_MOD_FILES CONFIGURE_DEPENDS "${CMAKE_INSTALL_PREFIX}/lib/*.mod")
+    if(NOT LFORTRAN_MOD_FILES)
+        message(FATAL_ERROR
+            "XEUS_LFORTRAN_WASM_BUILD: no runtime .mod files found in "
+            "${CMAKE_INSTALL_PREFIX}/lib. Run wasm-build0.sh first."
+        )
+    endif()
+    foreach(MOD_FILE ${LFORTRAN_MOD_FILES})
+        get_filename_component(MOD_NAME ${MOD_FILE} NAME)
+        target_link_options(xlfortran PRIVATE
+            "SHELL:--preload-file \"${MOD_FILE}@/lib/${MOD_NAME}\""
+        )
+    endforeach()
+    # Track .mod file contents as link dependencies so relinking is
+    # triggered when any preloaded module changes.
+    set_property(TARGET xlfortran APPEND PROPERTY LINK_DEPENDS ${LFORTRAN_MOD_FILES})
+
+    install(FILES
+        "$<TARGET_FILE_DIR:xlfortran>/xlfortran.js"
+        "$<TARGET_FILE_DIR:xlfortran>/xlfortran.wasm"
+        "$<TARGET_FILE_DIR:xlfortran>/xlfortran.data"
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
 endif()
 
 # JSON OR LSP (`conda install rapidjson`)
@@ -476,6 +561,7 @@ if (WITH_RUNTIME_LIBRARY)
     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
     "-DCMAKE_PREFIX_PATH=\"${CMAKE_PREFIX_PATH}\""
     "-DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+    "-DWITH_XEUS=${WITH_XEUS}"
 #    "-DCMAKE_VERBOSE_MAKEFILE:BOOL=${CMAKE_VERBOSE_MAKEFILE}"
     "-DCMAKE_Fortran_COMPILER=${LFORTRAN_PATH}"
     "-DLFORTRAN_NESTED_BUILD=yes"

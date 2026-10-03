@@ -2,8 +2,6 @@
     [(Program
         __xx_main
         ()
-        []
-        []
         [(DerivedType
             test_t
             []
@@ -29,7 +27,6 @@
             )]
             []
         )]
-        []
         []
     )]
 )

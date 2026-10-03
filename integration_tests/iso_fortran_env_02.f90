@@ -46,9 +46,10 @@ program iso_fortran_env_02
     if (integer_kinds(3) /= 4) error stop
     if (integer_kinds(4) /= 8) error stop
 
-    if (size(real_kinds) /= 2) error stop
+    if (size(real_kinds) /= 3) error stop
     if (real_kinds(1) /= 4) error stop
     if (real_kinds(2) /= 8) error stop
+    if (real_kinds(3) /= 16) error stop
 
     if (size(character_kinds) /= 1) error stop
     if (character_kinds(1) /= 1) error stop

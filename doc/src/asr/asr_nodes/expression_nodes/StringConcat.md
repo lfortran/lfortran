@@ -1,70 +1,70 @@
 # StringConcat
 
-String concatenation, an `expr` node.
+Concatenation of two strings.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 StringConcat(expr left, expr right, ttype type, expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`left`   | left string |
-|`right` | right string |
-|`type` | table entry type |
-|`value`| expression value |
+| Argument | Description |
+|----------|-------------|
+| `left` | the left operand. |
+| `right` | the right operand. |
+| `type` | the type of the result. Its length is the sum of the operand lengths when both are known. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the StringConcat represents.
+The value of the expression.
 
 ## Description
 
-**StringConcat** represents string concatenation. Two strings can be combined
-one after the other using this node.
-
-## Types
-
-Only accepts strings.
+`a // b`. The result is a new value; neither operand is modified.
 
 ## Examples
 
-```fortran
-"left"//"right"
+```clojure
+(StringConcat
+  :left (Var
+    :v (SymbolRef 1 "s")
+  )
+  :right (StringConstant
+    :s "!"
+    :type (String
+      :kind 1
+      :len (IntegerConstant
+        :n 1
+        :type (Integer
+          :kind 4
+        )
+        :intboz_type :Decimal
+      )
+      :len_kind :ExpressionLength
+      :physical_type :DescriptorString
+    )
+  )
+  :type (String
+    :kind 1
+    :len nil
+    :len_kind :DeferredLength
+    :physical_type :DescriptorString
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(StringConcat
-        (StringConstant
-            "left"
-            (Character 1 4 () [])
-        )
-        (StringConstant
-            "right"
-            (Character 1 5 () [])
-        )
-        (Character 1 9 () [])
-        (StringConstant
-            "leftright"
-            (Character 1 9 () [])
-        )
-    )]
-)
-
+```{literalinclude} ../../examples/string_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
+[StringRepeat](StringRepeat.md), [StringSection](StringSection.md), [OverloadedStringConcat](OverloadedStringConcat.md)

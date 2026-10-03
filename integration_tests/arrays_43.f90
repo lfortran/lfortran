@@ -1,6 +1,8 @@
 program arrays_43
     integer(8), parameter :: a(4) = [-10, 2, 3, 4]
     real(8), parameter :: x(4) = [-1.0, 2.0, -3.0, 4.0]
+    real, parameter :: y(1) = -[7.5]
+    real(8), parameter :: z(2) = -[2.5_8, -4.0_8]
     logical(4):: b(4), c(4), d(4), e(4)
 
     b = a > 0
@@ -30,5 +32,12 @@ program arrays_43
     if (e(2) .neqv. .false. ) error stop
     if (e(3) .neqv. .true. ) error stop
     if (e(4) .neqv. .false. ) error stop
+
+    print*, y
+    if (abs(y(1) - (-7.5)) > 1e-6) error stop
+
+    print*, z
+    if (abs(z(1) - (-2.5_8)) > 1e-12_8) error stop
+    if (abs(z(2) - 4.0_8) > 1e-12_8) error stop
     
-end program 
+end program

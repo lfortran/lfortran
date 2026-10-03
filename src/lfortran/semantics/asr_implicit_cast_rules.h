@@ -34,6 +34,7 @@ private:
   static const int logical_to_integer = ASR::cast_kindType::LogicalToInteger;
   static const int logical_to_real = ASR::cast_kindType::LogicalToReal;
   static const int logical_to_logical = ASR::cast_kindType::LogicalToLogical;
+  static const int string_to_string = ASR::cast_kindType::StringToString;
 
   //! Stores the variable part of error messages to be passed to SemanticError.
   static constexpr const char *type_names[num_types][2] = {
@@ -72,7 +73,7 @@ private:
 
       // String
       {no_cast_required, no_cast_required, no_cast_required, no_cast_required,
-       no_cast_required, no_cast_required, no_cast_required},
+       string_to_string, no_cast_required, no_cast_required},
 
       // Logical
       {logical_to_integer, no_cast_required, no_cast_required, no_cast_required,
@@ -113,10 +114,23 @@ public:
                                   ASR::ttype_t *source_type,
                                   ASR::ttype_t *dest_type, diag::Diagnostics &diag) {
       if ((ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(source_type))
-           || ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(dest_type)))
-          || ((ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(source_type))
-               || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(dest_type))))) {
-          // No casting supported currently for `StructType` and `FunctionType`
+           || ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(dest_type)))) {
+          // No casting supported currently for `StructType`
+          return;
+      }
+
+      if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(source_type))
+          && ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(dest_type))) {
+          // FunctionType-to-FunctionType reconciliation is handled in
+          // Call_t_body for call arguments.  Do not insert a cast here
+          // because structural comparison of polymorphic class arguments
+          // can give false negatives (anonymous struct vs named class type),
+          // leading to spurious casts and LLVM type mismatches.
+          return;
+      }
+
+      if ((ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(source_type))
+           || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(dest_type)))) {
           return;
       }
       if (ASRUtils::types_equal(source_type, dest_type, nullptr, nullptr, true)) {
@@ -198,8 +212,8 @@ public:
                   }
                   if (new_data) {
                     ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                              array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                    value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
+                                              array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                    value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                             new_data, new_array_type, array->m_storage_format));
                   }
                 }
@@ -212,9 +226,13 @@ public:
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
-                    double rval = static_cast<double>(i->m_n);
-                    value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                                                                 rval, dest_type2);
+                    if (ASRUtils::extract_kind_from_ttype_t(dest_type2) != 16) {
+                        double rval = static_cast<double>(i->m_n);
+                        value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
+                                                                    rval, dest_type2);
+                    } else {
+                        value = nullptr;
+                    }
                 } else {
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
                     ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
@@ -255,9 +273,9 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                                new_data, new_array_type, array->m_storage_format));
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                     }
                 }
             }
@@ -294,9 +312,9 @@ public:
                   }
                   if (new_data) {
                       ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                      value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                              new_data, new_array_type, array->m_storage_format));
+                                                array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                      value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                   }
               }
             }
@@ -342,9 +360,9 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                                new_data, new_array_type, array->m_storage_format));
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                     }
                 }
             }
@@ -447,9 +465,9 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                                new_data, new_array_type, array->m_storage_format));
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                     }
                 }
             }
@@ -503,9 +521,9 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                                new_data, new_array_type, array->m_storage_format));
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                     }
                 }
             }
@@ -545,9 +563,9 @@ public:
 
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                                                new_data, new_array_type, array->m_storage_format));
+                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                     }
                 }
             }
@@ -559,6 +577,21 @@ public:
                     ASR::LogicalConstant_t *l = ASR::down_cast<ASR::LogicalConstant_t>(value);
                     value = (ASR::expr_t *)ASR::make_LogicalConstant_t(al, a_loc,
                         l->m_value, dest_type2);
+                } else if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                    ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array->m_type);
+                    bool *data = (bool*) array->m_data;
+                    size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
+                    bool *new_array = al.allocate<bool>(array_size);
+                    for (size_t i = 0; i < array_size; i++) {
+                        new_array[i] = data[i];
+                    }
+                    ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
+                                                      array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                    // Logical ArrayConstant_t data is stored packed one byte per element (`sizeof(bool) == 1`)
+                    // regardless of Fortran kind, while m_n_data follows the Fortran kind size convention.
+                    value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                                            new_array, new_array_type, array->m_storage_format));
                 }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::LogicalToInteger) {
@@ -607,10 +640,23 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
-                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
-                                                new_data, new_array_type, array->m_storage_format));
+                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
+                            new_data, new_array_type, array->m_storage_format));
                     }
+                }
+            }
+        } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::StringToString) {
+            if (ASRUtils::expr_value(*convert_can)) {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*dest_type2))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
+                value = ASRUtils::expr_value(*convert_can);
+                if( ASR::is_a<ASR::StringConstant_t>(*value) ) {
+                    ASR::StringConstant_t *s = ASR::down_cast<ASR::StringConstant_t>(value);
+                    value = (ASR::expr_t *)ASR::make_StringConstant_t(al, a_loc,
+                        s->m_s, dest_type2);
+                } else {
+                    value = nullptr;
                 }
             }
         }

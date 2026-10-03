@@ -24,6 +24,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_structure_base:
                 (Module
@@ -94,6 +95,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 self)]
@@ -125,6 +127,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     10 toml_structure
@@ -161,6 +164,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -173,6 +177,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_type_array:
                 (Module
@@ -287,6 +292,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 15 self)]
@@ -468,6 +474,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 16 self)]
@@ -547,6 +554,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     2 toml_value
@@ -581,6 +589,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             tomlf_type_value:
                 (Module
@@ -645,6 +654,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 self)]
@@ -714,6 +724,7 @@
                                     Private
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -726,7 +737,9 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

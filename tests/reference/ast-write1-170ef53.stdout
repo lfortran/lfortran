@@ -2,7 +2,6 @@
     [(Program
         write_01
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -10,9 +9,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        []
-        [(Write
+        )
+        (Write
             0
             [(())
             (())]

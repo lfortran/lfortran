@@ -1,74 +1,67 @@
 # IntegerBinOp
 
-Integer Binary Operation expression type. An **expr** node.
+An arithmetic or bitwise operation on integers.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 IntegerBinOp(expr left, binop op, expr right, ttype type, expr? value)
 ```
 
 ### Arguments
 
-`left` and `right` represent expression on the left and right side of operator
-`op`. `type` represents table entry type and `value` represents expression.
+| Argument | Description |
+|----------|-------------|
+| `left` | the left operand. |
+| `op` | the operator; see [binop](../enum_nodes/binop.md). |
+| `right` | the right operand. |
+| `type` | the type of the expression. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the IntegerBinOp represents.
+The value of the expression.
 
 ## Description
 
-**IntegerBinOp** represents integer binary operation expression type. It is an
-ASR expr node. ASR has multiple binary expression types, for example: for Integer,
-real, complex, and logical.
+Both operands and the result have the same integer type: ASR never mixes
+kinds, so `i8 + i4` is an **IntegerBinOp** on two `integer(8)` operands with a
+[Cast](Cast.md) around the second.
 
-If an binary expression is applying binary operator on integer operands,
-`IntegerBinOp` is called which then creates LFortran expression `EXPR` using,
-`ASR::make_IntegerBinOp_t` method call.
-
-The binary operations accept two arguments of the same type. **IntegerBinOp**
-only accepts integers.
-
-## Types
-
-Only accepts integers.
+The bitwise operators (`BitAnd`, `BitOr`, `BitXor`, `BitLShift`, `BitRShift`,
+`LBitRShift`) share this node with the arithmetic ones because they take the
+same operands and produce the same type.
 
 ## Examples
 
-Following example code creates LFortran expression from ASR's `IntegerBinOp`:
-
-```fortran
-(2+3)*5
+```clojure
+(IntegerBinOp
+  :left (Var
+    :v (SymbolRef 1 "i")
+  )
+  :op :Mul
+  :right (IntegerConstant
+    :n 2
+    :type (Integer
+      :kind 4
+    )
+    :intboz_type :Decimal
+  )
+  :type (Integer
+    :kind 4
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(IntegerBinOp
-        (IntegerBinOp
-            (IntegerConstant 2 (Integer 4 []))
-            Add
-            (IntegerConstant 3 (Integer 4 []))
-            (Integer 4 [])
-            (IntegerConstant 5 (Integer 4 []))
-        )
-        Mul
-        (IntegerConstant 5 (Integer 4 []))
-        (Integer 4 [])
-        (IntegerConstant 25 (Integer 4 []))
-    )]
-)
+```{literalinclude} ../../examples/integer_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[RealBinOp](), [ComplexBinOp](), [LogicalBinOp]()
+[binop](../enum_nodes/binop.md), [RealBinOp](RealBinOp.md), [IntegerCompare](IntegerCompare.md), [Cast](Cast.md)

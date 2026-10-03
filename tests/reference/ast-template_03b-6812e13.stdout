@@ -6,14 +6,12 @@
             (EndOfLine)]
             []
         )
-        []
-        []
         [(Requirement
             op
-            [T
-            U
-            V
-            op]
+            [(T)
+            (U)
+            (V)
+            (op)]
             [(DerivedType
                 T
                 []
@@ -43,82 +41,85 @@
                 )]
                 []
                 []
-            )]
-            [(Function
-                op
-                [(a)
-                (b)]
-                [(SimpleAttribute
-                    AttrElemental
-                )]
-                op
+            )
+            (Interface
+                (DeferredInterfaceHeader)
                 ()
-                ()
-                []
-                []
-                []
-                [(Declaration
-                    (AttrType
-                        TypeType
-                        []
+                [(InterfaceProc
+                    (Function
+                        op
+                        [(a)
+                        (b)]
+                        [(SimpleAttribute
+                            AttrElemental
+                        )]
+                        op
                         ()
-                        T
-                        None
-                    )
-                    [(AttrIntent
-                        In
-                    )]
-                    [(a
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Declaration
-                    (AttrType
-                        TypeType
-                        []
                         ()
-                        U
-                        None
-                    )
-                    [(AttrIntent
-                        In
-                    )]
-                    [(b
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Declaration
-                    (AttrType
-                        TypeType
+                        [(Declaration
+                            (AttrType
+                                TypeType
+                                []
+                                ()
+                                T
+                                None
+                            )
+                            [(AttrIntent
+                                In
+                            )]
+                            [(a
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())]
+                            ()
+                        )
+                        (Declaration
+                            (AttrType
+                                TypeType
+                                []
+                                ()
+                                U
+                                None
+                            )
+                            [(AttrIntent
+                                In
+                            )]
+                            [(b
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())]
+                            ()
+                        )
+                        (Declaration
+                            (AttrType
+                                TypeType
+                                []
+                                ()
+                                V
+                                None
+                            )
+                            []
+                            [(op
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())]
+                            ()
+                        )]
                         []
-                        ()
-                        V
-                        None
+                        []
                     )
-                    []
-                    [(op
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
                 )]
-                []
-                []
-                []
             )]
+            []
         )
         (Template
             axpy_tmpl
@@ -145,16 +146,16 @@
             (Require
                 [(UnitRequire
                     op
-                    [(AttrNamelist
+                    [(AttrName
                         V
                     )
-                    (AttrNamelist
+                    (AttrName
                         W
                     )
-                    (AttrNamelist
+                    (AttrName
                         V
                     )
-                    (AttrNamelist
+                    (AttrName
                         plus
                     )]
                 )]
@@ -162,16 +163,16 @@
             (Require
                 [(UnitRequire
                     op
-                    [(AttrNamelist
+                    [(AttrName
                         T
                     )
-                    (AttrNamelist
+                    (AttrName
                         U
                     )
-                    (AttrNamelist
+                    (AttrName
                         W
                     )
-                    (AttrNamelist
+                    (AttrName
                         times
                     )]
                 )]
@@ -184,9 +185,6 @@
                 []
                 ()
                 ()
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -250,8 +248,8 @@
                     None
                     ())]
                     ()
-                )]
-                [(Assignment
+                )
+                (Assignment
                     0
                     y
                     (FuncCallOrArray
@@ -288,8 +286,8 @@
                 []
                 []
             )]
-        )]
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             f
             []
@@ -316,9 +314,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -410,8 +405,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 op
                 (* a b)
@@ -434,9 +429,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -547,8 +539,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 op
                 (+ a b)
@@ -569,9 +561,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -686,8 +675,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 y
                 (FuncCallOrArray
@@ -730,9 +719,6 @@
             []
             ()
             ()
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -885,8 +871,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 a
                 (Real "0.5")

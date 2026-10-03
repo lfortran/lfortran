@@ -100,6 +100,7 @@
                                         ()
                                     ))]
                                     PointerArray
+                                    Global
                                 )
                                 ()
                                 ()
@@ -127,6 +128,7 @@
                                         ()
                                     ))]
                                     PointerArray
+                                    Global
                                 )
                                 ()
                                 ()
@@ -138,6 +140,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             functions_06_m:
                 (Module
@@ -191,6 +194,7 @@
                                                             ()
                                                         ))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -247,6 +251,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         Source
                                         Implementation
@@ -258,6 +263,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 s)]
@@ -341,6 +347,7 @@
                                                             ()
                                                         ))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -397,6 +404,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         Source
                                         Implementation
@@ -408,6 +416,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 s)]
@@ -527,6 +536,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 s)]
@@ -558,7 +568,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

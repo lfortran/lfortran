@@ -12,6 +12,7 @@ typedef enum {
     LFORTRAN_PARSER_ERROR    = 4,
     LFORTRAN_ASSERT_FAILED   = 7,
     LFORTRAN_ASSEMBLER_ERROR = 8,
+    LFORTRAN_ASR_PASS_VERIFY_FAILED = 9,
 } lfortran_exceptions_t;
 
 #ifdef __cplusplus
@@ -130,6 +131,8 @@ public:
                 return "LCompilersException";
             case (lfortran_exceptions_t::LFORTRAN_ASSERT_FAILED) :
                 return "AssertFailed";
+            case (lfortran_exceptions_t::LFORTRAN_ASR_PASS_VERIFY_FAILED) :
+                return "ASRPassVerifyFailure";
             default : return "Unknown Exception";
         }
     }
@@ -137,7 +140,7 @@ public:
     {
         return m_stacktrace_addresses;
     }
-    lfortran_exceptions_t error_code()
+    lfortran_exceptions_t error_code() const
     {
         return ec;
     }

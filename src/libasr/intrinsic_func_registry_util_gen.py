@@ -78,7 +78,7 @@ intrinsic_funcs_args = {
         {
             "args": [("real", "real")],
             "ret_type_arg_idx": 0,
-            "same_kind_arg" : 2
+            "same_type_arg": 2
         }
     ],
     "Trunc": [
@@ -248,7 +248,7 @@ intrinsic_funcs_args = {
         {
             "args": [("int", "int"), ("real", "real")],
             "ret_type_arg_idx": 0,
-            "same_kind_arg": 2
+            "same_type_arg": 2
         },
     ],
     "Radix": [
@@ -595,25 +595,29 @@ intrinsic_funcs_args = {
     "Lgt": [
         {
             "args": [("char", "char")],
-            "return": "logical"
+            "return": "logical",
+            "kind_validation": [{"first":{0: 1}}, {"second":{1: 1}}]
         },
     ],
     "Llt": [
         {
             "args": [("char", "char")],
-            "return": "logical"
+            "return": "logical",
+            "kind_validation": [{"first":{0: 1}}, {"second":{1: 1}}]
         },
     ],
     "Lge": [
         {
             "args": [("char", "char")],
-            "return": "logical"
+            "return": "logical",
+            "kind_validation": [{"first":{0: 1}}, {"second":{1: 1}}]
         },
     ],
     "Lle": [
         {
             "args": [("char", "char")],
-            "return": "logical"
+            "return": "logical",
+            "kind_validation": [{"first":{0: 1}}, {"second":{1: 1}}]
         },
     ],
     "Not": [
@@ -626,7 +630,7 @@ intrinsic_funcs_args = {
         {
             "args": [("int", "int")],
             "ret_type_arg_idx": 0,
-            "same_kind_arg": 2
+            "same_type_arg": 2
         },
     ],
     "And": [
@@ -639,7 +643,7 @@ intrinsic_funcs_args = {
         {
             "args": [("int", "int")],
             "ret_type_arg_idx": 0,
-            "same_kind_arg": 2
+            "same_type_arg": 2
         },
     ],
     "Or": [
@@ -652,7 +656,7 @@ intrinsic_funcs_args = {
         {
             "args": [("int", "int")],
             "ret_type_arg_idx": 0,
-            "same_kind_arg": 2
+            "same_type_arg": 2
         },
     ],
     "Xor": [
@@ -725,7 +729,8 @@ intrinsic_funcs_args = {
     "NewLine": [
         {
             "args": [("char",)],
-            "return": "character(1)"
+            "return": "character(1)",
+            "char_kind_from_arg": 0
         }
     ],
     "Range": [
@@ -805,15 +810,16 @@ intrinsic_funcs_args = {
     ],
     "Merge": [
         {
-            "args": [("any", "any", "bool")],
-            "ret_type_arg_idx": 0
+            "args": [("any_or_type_param", "any_or_type_param", "bool")],
+            "ret_type_arg_idx": 0,
+            "same_type_arg": 2
         }
     ],
     "Mergebits": [
         {
             "args": [("int", "int", "int")],
             "ret_type_arg_idx": 0,
-            "same_kind_arg": 3
+            "same_type_arg": 3
         }
     ],
     "Ishftc": [
@@ -884,7 +890,7 @@ intrinsic_funcs_args = {
        {
            "args": [("int", "int", "int",)],
            "ret_type_arg_idx": 0,
-           "same_kind_arg": 2
+           "same_type_arg": 2
        },
     ],
     "Dshiftr": [
@@ -910,7 +916,8 @@ intrinsic_funcs_args = {
             "args": [("int",), ("real",), ("complex",)],
             "return": "real32",
             "kind_arg": True,
-            "real_32_except_complex": True
+            "real_32_except_complex": True,
+            "valid_kinds": [4, 8, 16]
         },
     ],
     "Int": [
@@ -932,7 +939,8 @@ intrinsic_funcs_args = {
         {
             "args": [("char",)],
             "return" : "allocatable_deferred_string()",
-            "allow_polymorphic_arg": [0]
+            "allow_polymorphic_arg": [0],
+            "char_kind_from_arg": 0
         }
     ],
 }
@@ -960,6 +968,7 @@ compile_time_only_fn = [
 
 type_to_asr_type_check = {
     "any": "!ASR::is_a<ASR::TypeParameter_t>",
+    "any_or_type_param": "",
     "int": "is_integer",
     "uint": "is_unsigned_integer",
     "real": "is_real",
@@ -970,6 +979,10 @@ type_to_asr_type_check = {
     "dict": "ASR::is_a<ASR::Dict_t>",
     "list": "ASR::is_a<ASR::List_t>",
     "tuple": "ASR::is_a<ASR::Tuple_t>"
+}
+
+type_to_msg_name = {
+    "any_or_type_param": "any",
 }
 
 intrinsic_funcs_ret_type = {
@@ -988,11 +1001,6 @@ def compute_arg_types(indent, no_of_args, args_arr):
     for i in range(no_of_args):
         src += indent + f"ASR::ttype_t *arg_type{i} = ASRUtils::expr_type({args_arr}[{i}]);\n"
 
-def compute_arg_kinds(indent, no_of_args):
-    global src
-    for i in range(no_of_args):
-        src += indent + f"int kind{i} = ASRUtils::extract_kind_from_ttype_t(arg_type{i});\n"
-
 def compute_arg_condition(no_of_args, args_lists, allow_polymorphic_arg, args_var):
     condition = []
     cond_in_msg = []
@@ -1001,26 +1009,32 @@ def compute_arg_condition(no_of_args, args_lists, allow_polymorphic_arg, args_va
         subcond_in_msg = []
         for i in range(no_of_args):
             arg = arg_list[i]
-            type_check = f"{type_to_asr_type_check[arg]}(*arg_type{i})"
+            if type_to_asr_type_check[arg]:
+                type_check = f"{type_to_asr_type_check[arg]}(*arg_type{i})"
+            else:
+                type_check = "true"
             # Add unlimited polymorphic check if specified
             if allow_polymorphic_arg and i in allow_polymorphic_arg:
                 type_check = f"({type_check} || (is_unlimited_polymorphic_type({args_var}[{i}])))"
             subcond.append(type_check)
-            subcond_in_msg.append(arg)
+            subcond_in_msg.append(type_to_msg_name.get(arg, arg))
         condition.append(" && ".join(subcond))
         cond_in_msg.append(", ".join(subcond_in_msg))
     return (f"({') || ('.join(condition)})", f"({') or ('.join(cond_in_msg)})")
 
-def compute_kind_condition(no_of_args):
+def compute_type_condition(no_of_args, args_var="args"):
     condition = []
     for i in range(1, no_of_args):
-        condition.append(f"kind0 == kind{i}")
+        condition.append(
+            f"ASRUtils::check_equal_type(ASRUtils::extract_type(arg_type0), "
+            f"ASRUtils::extract_type(arg_type{i}), {args_var}[0], {args_var}[{i}])"
+        )
     return f"({') && ('.join(condition)})"
 
 def add_verify_arg_type_src(func_name):
     global src
     arg_infos = intrinsic_funcs_args[func_name]
-    same_kind_arg = arg_infos[0].get("same_kind_arg", False)
+    same_type_arg = arg_infos[0].get("same_type_arg", False)
     no_of_args_msg = ""
     for i, arg_info in enumerate(arg_infos):
         args_lists = arg_info["args"]
@@ -1034,10 +1048,18 @@ def add_verify_arg_type_src(func_name):
         allow_polymorphic_arg = arg_info.get("allow_polymorphic_arg", None)
         condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists, allow_polymorphic_arg, "x.m_args")
         src += 3 * indent + f'ASRUtils::require_impl({condition}, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", x.base.base.loc, diagnostics);\n'
-        if same_kind_arg:
-            compute_arg_kinds(3 * indent, same_kind_arg)
-            condition = compute_kind_condition(same_kind_arg)
-            src += 3 * indent + f'ASRUtils::require_impl({condition}, "Kind of all the arguments of {func_name} must be the same", x.base.base.loc, diagnostics);\n'
+        if same_type_arg:
+            condition = compute_type_condition(same_type_arg, "x.m_args")
+            src += 3 * indent + f'ASRUtils::require_impl({condition}, "Type and kind of the relevant arguments of {func_name} must be the same", x.base.base.loc, diagnostics);\n'
+        kind_validation_info = arg_info.get("kind_validation", [])
+        if kind_validation_info != []:
+            src += 3 * indent + "int kind = 0;\n"
+        for validation_item in kind_validation_info:
+            for arg_name, arg_spec in validation_item.items():
+                arg_pos = list(arg_spec.keys())[0]
+                required_kind = list(arg_spec.values())[0]
+                src += 3 * indent + f"kind = ASRUtils::extract_kind_from_ttype_t(arg_type{arg_pos});\n"
+                src += 3 * indent + f'ASRUtils::require_impl(kind == {required_kind}, "{arg_name} argument of `{func_name.lower()}` must have kind equal to {required_kind}", x.base.base.loc, diagnostics);\n'
         src += 2 * indent + "}\n"
     src += 2 * indent + "else {\n"
     src += 3 * indent + f'ASRUtils::require_impl(false, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);\n'
@@ -1067,7 +1089,7 @@ def add_create_func_arg_type_src(func_name):
     for i, arg_info in enumerate(arg_infos):
         args_lists = arg_info["args"]
         kind_arg = arg_info.get("kind_arg", False)
-        same_kind_arg = arg_info.get("same_kind_arg", False)
+        same_type_arg = arg_info.get("same_type_arg", False)
         no_of_args = len(args_lists[0])
         no_of_args_msg += " or " if i > 0 else ""
         no_of_args_msg += f"{no_of_args + int(kind_arg)}"
@@ -1080,11 +1102,10 @@ def add_create_func_arg_type_src(func_name):
         src += 4 * indent + f'append_error(diag, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", loc);\n'
         src += 4 * indent + f'return nullptr;\n'
         src += 3 * indent + '}\n'
-        if same_kind_arg:
-            compute_arg_kinds(3 * indent, same_kind_arg)
-            condition = compute_kind_condition(same_kind_arg)
+        if same_type_arg:
+            condition = compute_type_condition(same_type_arg)
             src += 3 * indent + f'if(!({condition}))' + ' {\n'
-            src += 4 * indent + f'append_error(diag, "Kind of all the arguments of {func_name} must be the same", loc);\n'
+            src += 4 * indent + f'append_error(diag, "Type and kind of the relevant arguments of {func_name} must be the same", loc);\n'
             src += 4 * indent + f'return nullptr;\n'
             src += 3 * indent + '}\n'
         kind_validation_info = arg_info.get("kind_validation", [])
@@ -1155,6 +1176,14 @@ def add_create_func_return_src(func_name):
         ret_type = "type_"
     kind_arg = arg_infos[0].get("kind_arg", False)
     src += indent * 2 + f"ASR::ttype_t *return_type = {ret_type};\n"
+    char_kind_from_arg = arg_infos[0].get("char_kind_from_arg", None)
+    if char_kind_from_arg is not None:
+        # The result is a character of the same kind as the argument, not of
+        # the default kind.
+        src += indent * 2 + f"if (is_character(*ASRUtils::expr_type(args[{char_kind_from_arg}]))) {{\n"
+        src += indent * 3 +     "set_kind_to_ttype_t(ASRUtils::extract_type(return_type),\n"
+        src += indent * 4 +         f"ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[{char_kind_from_arg}])));\n"
+        src += indent * 2 + "}\n"
     if kind_arg:
         src += indent * 2 + "if ( args[1] != nullptr ) {\n"
         src += indent * 3 +     "int kind = -1;\n"
@@ -1162,6 +1191,14 @@ def add_create_func_return_src(func_name):
         src += indent * 4 +         f'append_error(diag, "`kind` argument of the `{func_name}` function must be a scalar Integer constant", args[1]->base.loc);\n'
         src += indent * 4 +         "return nullptr;\n"
         src += indent * 3 +     "}\n"
+        valid_kinds = arg_infos[0].get("valid_kinds", None)
+        if valid_kinds:
+            cond = " && ".join(f"kind != {k}" for k in valid_kinds)
+            kinds_str = ", ".join(str(k) for k in valid_kinds)
+            src += indent * 3 +     f"if (ASR::is_a<ASR::IntegerConstant_t>(*args[1]) && ({cond})) {{\n"
+            src += indent * 4 +         f'append_error(diag, "Unsupported {func_name} kind \'" + std::to_string(kind) + "\' in `{func_name.lower()}()`, must be one of: {kinds_str}", args[1]->base.loc);\n'
+            src += indent * 4 +         "return nullptr;\n"
+            src += indent * 3 +     "}\n"
         src += indent * 3 +     "set_kind_to_ttype_t(return_type, kind);\n"
         src += indent * 2 + "}\n"
     real_32_except_complex = arg_infos[0].get("real_32_except_complex", False)
@@ -1223,7 +1260,7 @@ def gen_verify_args(func_name):
     global src
     src += indent + R"static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
     add_verify_arg_type_src(func_name)
-    runtime_fallback_fns = ["SameTypeAs", "ExtendsTypeOf"]
+    runtime_fallback_fns = ["SameTypeAs", "ExtendsTypeOf", "StorageSize"]
     if func_name in compile_time_only_fn and func_name not in runtime_fallback_fns:
         src += indent * 2 + 'ASRUtils::require_impl(x.m_value, '\
             f'"Missing compile time value, `{func_name}` intrinsic output must '\

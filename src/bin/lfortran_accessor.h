@@ -9,6 +9,7 @@
 #include <libasr/exception.h>
 #include <libasr/lsp_interface.h>
 #include <libasr/utils.h>
+#include <lfortran/utils.h>
 
 namespace LCompilers::LLanguageServer {
 
@@ -56,6 +57,9 @@ namespace LCompilers::LLanguageServer {
             int parent_index
         ) -> void {
             for (auto &a : x->m_symtab->get_scope()) {
+                if (LCompilers::LFortran::is_generated_symbol_name(a.first)) {
+                    continue;
+                }
                 std::size_t index = symbol_lists.size();
                 LCompilers::document_symbols &loc = symbol_lists.emplace_back();
                 loc.parent_index = parent_index;

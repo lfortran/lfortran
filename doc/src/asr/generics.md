@@ -13,17 +13,19 @@ From a high-level perspective generics are supported in LFortran by three main e
 Requirements declare deferred types (generic types) and its associated functions, similar to *typeclasses* in Haskell and *traits* in Rust. For example, the signature for a generic monoid of any type can be represented by the following requirement:
 
 ```fortran
-requirement monoid(T, op)
+requirement monoid {T, op}
   ! declaring a deferred type (generic type)
-  type, deferred :: T
-  ! declaring a function associated with the deferred type
-  function op(x, y) result(z)
-    type(T), intent(in) :: x, y
-    type(T) :: z
-  end function
-  function empty() result(z)
-    type(T) :: z
-  end function
+  deferred type :: T
+  ! declaring the functions associated with the deferred type
+  deferred interface
+    function op(x, y) result(z)
+      type(T), intent(in) :: x, y
+      type(T) :: z
+    end function
+    function empty() result(z)
+      type(T) :: z
+    end function
+  end interface
 end requirement
 ```
 
@@ -44,13 +46,13 @@ As a running example, we will consider a generic function for n-times multiplica
 ```fortran
 module generics_example
   ! same requirement as before
-  requirement monoid(T, op, empty)
+  requirement monoid {T, op, empty}
     ...
   end requirement
 
   ! the template starts from here
-  template array_t(S, op_temp, empty_temp)
-    require :: monoid(S, op_temp, empty_temp)
+  template array_t {S, op_temp, empty_temp}
+    require :: monoid {S, op_temp, empty_temp}
   contains
     ! below is the generic function
     function array_sum(arr) result(r)
@@ -72,7 +74,7 @@ end module
 
 The template `array_t` contains the generic function `array_sum` that takes an array `arr` of type `S`. The template later on will be added to the parent symbol table as a `Template` symbol with the name `array_t`.
 
-Typing context has to be obtained to type the parameter `arr` and the addition operation `op_temp(r, arr(i))`. Such typing context can be made available within the scope of the template by using a requirement. Here, the `Require` statement `require :: monoid(S, op_temp, empty_temp)` builds the types of the template's parameters `S`, `op_temp`, and `empty_temp` based on the types of the symbols in `monoid`.
+Typing context has to be obtained to type the parameter `arr` and the addition operation `op_temp(r, arr(i))`. Such typing context can be made available within the scope of the template by using a requirement. Here, the `Require` statement `require :: monoid {S, op_temp, empty_temp}` builds the types of the template's parameters `S`, `op_temp`, and `empty_temp` based on the types of the symbols in `monoid`.
 
 This corresponds to the `visit_UnitRequire` that can be found in `visit_Template` during symbol table visit. Calling a require statement copies the symbols from the requiremement and replaces their names with the argument names given by the require statement. In this case, the symbol `T`, `op`, and `empty` from the requirement `monoid` are replaced by `S`, `op_temp`, and `empty_temp` that are passed as arguments. This replacement is done by the function `rename_symbol`.
 
@@ -81,6 +83,12 @@ Eventually the require statement adds into `array_t`'s symbol table two symbols,
 Symbol table visit checks the variable declarations in `array_sum`. Since `S` is available in the symbol table now, both variables `arr` and `r` can be typed. Later during body visit, with type `S`, `op_temp`, and `empty_temp` in the symbol table, the function call `op_temp(r, arr(i))` in `array_sum` would be checked in the same way as non-generic functions. 
 
 ASR representation of templates are also not compiled into the target language.
+
+Array-operation and intrinsic-function lowering leave these generic definitions
+intact and process their concrete specializations instead. Scalarizing an array
+expression or generating an intrinsic implementation requires the substituted
+element type; an unused template must not create runtime helpers with deferred
+types.
 
 ## Instantiations
 
@@ -106,21 +114,21 @@ end module
 program instantiate_template
 use functions, only: add_integer, empty_integer
 
-instantiate array_t(integer, add_integer, empty_integer), &
+instantiate array_t {integer, add_integer, empty_integer}, &
   only: array_sum_integer => array_sum
 
 ! function argument for basic arithmetic operations can be replaced with an operator
-instantiate array_t(integer, operator(+), empty_integer), &
+instantiate array_t {integer, operator(+), empty_integer}, &
   only: array_sum_integer => array_sum
 
 ! eliding function renaming would instantiating all generic functions with the same name
-instantiate array_t(integer, operator(+), empty_integer)
+instantiate array_t {integer, operator(+), empty_integer}
 end program
 ```
 
 This instantiation statement
 ```
-instantiate array_t(integer, add_integer, empty_integer), only: array_sum_integer => array_sum
+instantiate array_t {integer, add_integer, empty_integer}, only: array_sum_integer => array_sum
 ```
 passes the type `integer`, an integer addition function `add_integer`, and a function describing empty integer value `empty_integer` as arguments to template `array_t`, then instantiates the function `array_sum` as a new function named `array_sum_integer`. This instantiation wants to replace `S` in `array_t` with the type `integer`, `op_temp` function calls with `add_integer` function calls, and `empty_temp` function calls with `empty_integer` function calls.
 
@@ -132,7 +140,7 @@ We will explain this in detail through the instantiation example above. The firs
 
 Now, suppose that we have the following instantiation where instead of `integer`, we pass `real` as an argument: 
 ```
-instantiate array_t(real, add_integer, empty_integer), only: array_sum_integer => array_sum
+instantiate array_t {real, add_integer, empty_integer}, only: array_sum_integer => array_sum
 ```
 Here, the first type argument maps `S` to `real` but the second function argument maps `S` to `integer`, resulting in a contradiction. Hence ending in a type error.
 
@@ -186,6 +194,27 @@ function array_sum_integer(n, a) result(res)
   end do
 end function
 ```
+
+A module's specification part must also visit its `instantiate` declarations
+during body construction, whether the template is defined locally or imported
+with `use`. Instantiation is a declaration, not an executable statement, so
+executable-statement traversal alone leaves the instantiated procedures without
+bodies.
+
+The symbol-table visitor records substitutions only after the entire
+instantiation succeeds. During error recovery (`--continue-compilation`),
+the body visitor skips declarations without this record, even if an earlier
+item in an erroneous `only:` list already created a procedure signature.
+
+Body instantiation also substitutes deferred types in expression results, not
+just in variable declarations and procedure signatures. The generated ASR
+duplicator recursively copies type wrappers, while `BodyInstantiator` replaces
+each `TypeParameter` leaf using `type_subs`. Thus array constructors and
+`reshape` results acquire the concrete element type and kind for each
+instantiation without changing the original template. Array wrappers are
+normalized after substituting their element types: for example, a fixed-size
+array of a deferred type becomes a pointer array when specialized for
+`character`. The duplicated dimensions and memory space are preserved.
 
 ## See Also
 

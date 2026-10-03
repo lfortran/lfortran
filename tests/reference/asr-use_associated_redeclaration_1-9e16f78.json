@@ -1,0 +1,13 @@
+{
+    "basename": "asr-use_associated_redeclaration_1-9e16f78",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/use_associated_redeclaration_1.f90",
+    "infile_hash": "ec9bee8cc880b1ad07eadecce3c04e14644922ae5584b4123bb16de5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-use_associated_redeclaration_1-9e16f78.stderr",
+    "stderr_hash": "e41ac22cb8bf655c2aae34cb2dcfd4e8f42c0fa7f1c1beaf8258b347",
+    "returncode": 2
+}
