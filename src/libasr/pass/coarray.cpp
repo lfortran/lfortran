@@ -2084,6 +2084,11 @@ class PRIFInterface {
             int64_t corank = var->n_codims;
             Vec<ASR::expr_t*> lco_elems; lco_elems.reserve(al, corank);
             Vec<ASR::expr_t*> uco_elems; uco_elems.reserve(al, corank > 1 ? corank - 1 : 0);
+            // The cobounds are copied rather than shared: the call may land
+            // in another procedure (a startup initializer), and a later pass
+            // that rewrites a variable reference there must not rewrite the
+            // declaration's codimensions along with it.
+            ASRUtils::ExprStmtDuplicator duplicator(al);
             for (int64_t ci = 0; ci < corank; ci++) {
                 ASR::expr_t *lb_expr = nullptr;
                 ASR::expr_t *ub_expr = nullptr;
@@ -2097,7 +2102,8 @@ class PRIFInterface {
                 }
 
                 if (lb_expr) {
-                    lco_elems.push_back(al, b.i2i_t(lb_expr, i64));
+                    lco_elems.push_back(al,
+                        b.i2i_t(duplicator.duplicate_expr(lb_expr), i64));
                 } else {
                     lco_elems.push_back(al, b.i64(1));
                 }
@@ -2106,7 +2112,8 @@ class PRIFInterface {
                     LCOMPILERS_ASSERT(ub_expr == nullptr);
                 } else {
                     LCOMPILERS_ASSERT(ub_expr);
-                    uco_elems.push_back(al, b.i2i_t(ub_expr, i64));
+                    uco_elems.push_back(al,
+                        b.i2i_t(duplicator.duplicate_expr(ub_expr), i64));
                 }
             }
             
