@@ -3053,28 +3053,14 @@ public:
         if (struct_sym == nullptr || ASRUtils::is_class_type(
                 ASRUtils::extract_type(ASRUtils::expr_type(entity)))) return;
         int rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(entity));
-        ASR::Function_t* selected = nullptr;
-        ASR::Function_t* elemental = nullptr;
-        for (size_t i = 0; i < struct_sym->n_member_functions; i++) {
-            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                struct_sym->m_symtab->parent->get_symbol(
-                    struct_sym->m_member_functions[i]));
-            LCOMPILERS_ASSERT(sym != nullptr);
-            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
-            if (ASRUtils::extract_n_dims_from_ttype(
-                    ASRUtils::expr_type(fn->m_args[0])) == rank) {
-                selected = fn;
-                break;
-            }
-            if (ASRUtils::is_elemental(sym)) elemental = fn;
-        }
-        if (selected == nullptr) selected = elemental;
+        ASR::Function_t* selected = select_final_procedure(struct_sym, rank);
         if (selected == nullptr) return;
         uint32_t hash = get_hash((ASR::asr_t*)selected);
         LCOMPILERS_ASSERT(llvm_symtab_fn.find(hash) != llvm_symtab_fn.end());
         llvm::Function* fn = llvm_symtab_fn[hash];
         llvm::Type* arg_type = fn->getFunctionType()->getParamType(0);
-        if (selected != elemental) {
+        if (ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(selected->m_args[0])) == rank) {
             ASR::ttype_t* dummy_type = ASRUtils::expr_type(selected->m_args[0]);
             llvm::Value* arg = descriptor;
             if (ASRUtils::extract_physical_type(dummy_type) !=
@@ -3255,28 +3241,22 @@ public:
                     llvm_utils->create_if_else(cond, [=]() {
                         // Call user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
                         if (struct_sym != nullptr && struct_sym->n_member_functions > 0) {
-                            for (size_t fi = 0; fi < struct_sym->n_member_functions; fi++) {
-                                std::string final_proc_name = struct_sym->m_member_functions[fi];
-                                ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(final_proc_name);
-                                if (final_sym) {
-                                    final_sym = ASRUtils::symbol_get_past_external(final_sym);
-                                    ASR::Function_t* final_proc = ASR::down_cast<ASR::Function_t>(final_sym);
-                                    if (ASRUtils::extract_n_dims_from_ttype(
-                                            ASRUtils::expr_type(final_proc->m_args[0])) != 0) continue;
-                                    uint32_t fh = get_hash((ASR::asr_t*)final_sym);
-                                    if (llvm_symtab_fn.find(fh) != llvm_symtab_fn.end()) {
-                                        llvm::Function* final_fn = llvm_symtab_fn[fh];
-                                        // Finalizers take type(T), not class(T). For class
-                                        // variables, load the concrete data pointer (field 1)
-                                        // from the class wrapper {vptr, data*}.
-                                        llvm::Value* final_arg = tmp;
-                                        if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
-                                            llvm::Value* data_field = llvm_utils->create_gep2(llvm_data_type, tmp, 1);
-                                            llvm::Type* expected_type = final_fn->getFunctionType()->getParamType(0);
-                                            final_arg = llvm_utils->CreateLoad2(expected_type, data_field);
-                                        }
-                                        builder->CreateCall(final_fn, {final_arg});
+                            ASR::Function_t *final_proc = select_final_procedure(struct_sym, 0);
+                            if (final_proc) {
+                                ASR::symbol_t* final_sym = &final_proc->base;
+                                uint32_t fh = get_hash((ASR::asr_t*)final_sym);
+                                if (llvm_symtab_fn.find(fh) != llvm_symtab_fn.end()) {
+                                    llvm::Function* final_fn = llvm_symtab_fn[fh];
+                                    // Finalizers take type(T), not class(T). For class
+                                    // variables, load the concrete data pointer (field 1)
+                                    // from the class wrapper {vptr, data*}.
+                                    llvm::Value* final_arg = tmp;
+                                    if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
+                                        llvm::Value* data_field = llvm_utils->create_gep2(llvm_data_type, tmp, 1);
+                                        llvm::Type* expected_type = final_fn->getFunctionType()->getParamType(0);
+                                        final_arg = llvm_utils->CreateLoad2(expected_type, data_field);
                                     }
+                                    builder->CreateCall(final_fn, {final_arg});
                                 }
                             }
                         }
