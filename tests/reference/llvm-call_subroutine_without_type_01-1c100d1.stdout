@@ -4,13 +4,13 @@ target datalayout = "..."
 
 %module_call_subroutine_without_type_01.mytype.3_class = type <{ i32 (...)**, %module_call_subroutine_without_type_01.mytype.3* }>
 %module_call_subroutine_without_type_01.mytype.3 = type { float }
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self = global %module_call_subroutine_without_type_01.mytype.3_class* null
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [15 x i8] c"S-DESC-K1-4,R4\00", align 1
 @string_const_data = private constant [4 x i8] c"r = "
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data, i32 0, i32 0), i64 4 }>
+@string_const = private global %string_descriptor { i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data, i32 0, i32 0), i64 4 }
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
