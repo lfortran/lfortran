@@ -52,7 +52,7 @@ Makefile
 CTestTestfile.cmake
 cmake_install.cmake
 install_manifest.txt
-Testing/Temporary
+**/Testing/Temporary/
 CPackConfig.cmake
 CPackSourceConfig.cmake
 _CPack_Packages

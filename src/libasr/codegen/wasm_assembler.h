@@ -59,7 +59,9 @@ void save_js_glue_wasi(std::string filename) {
 R"(async function main() {
     const fs = require("fs");
     const { WASI } = require("wasi");
-    const wasi = new WASI({ version: 'preview1' });
+    // `returnOnExit` makes `start()` return the status the program passed to
+    // `proc_exit`, which is then the status of this process.
+    const wasi = new WASI({ version: 'preview1', returnOnExit: true });
     const importObject = {
         wasi_snapshot_preview1: wasi.wasiImport,
         js: {
@@ -68,7 +70,10 @@ R"(async function main() {
     };
     const wasm = await WebAssembly.compile(fs.readFileSync(")" + filename + R"("));
     const instance = await WebAssembly.instantiate(wasm, importObject);
-    wasi.start(instance);
+    const status = wasi.start(instance);
+    if (status !== undefined) {
+        process.exitCode = status;
+    }
 }
 main();
 )";

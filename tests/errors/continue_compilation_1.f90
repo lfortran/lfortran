@@ -1982,3 +1982,110 @@ contains
         end subroutine
     end subroutine
 end module
+
+subroutine inherited_parent_component_keyword_conflicts()
+    implicit none
+    type :: ipck_base_t
+        integer :: b1
+    end type
+    type, extends(ipck_base_t) :: ipck_der_t
+        integer :: d1
+    end type
+    type, extends(ipck_der_t) :: ipck_der2_t
+        integer :: e1
+    end type
+    type(ipck_der2_t) :: e
+    e = ipck_der2_t(ipck_base_t=ipck_base_t(1), ipck_der_t=ipck_der_t(2, 3), e1=4)  ! {Error} component 'b1' is already specified, it cannot also be given by the parent component 'ipck_der_t'
+    e = ipck_der2_t(ipck_der_t=ipck_der_t(2, 3), ipck_base_t=ipck_base_t(1), e1=4)  ! {Error} component 'b1' is already specified, it cannot also be given by the parent component 'ipck_base_t'
+    e = ipck_der2_t(ipck_base_t=ipck_base_t(1), b1=2, d1=3, e1=4)  ! {Error} component 'b1' is already specified by the parent component 'ipck_base_t'
+    e = ipck_der2_t(b1=2, ipck_base_t=ipck_base_t(1), d1=3, e1=4)  ! {Error} component 'b1' is already specified, it cannot also be given by the parent component 'ipck_base_t'
+    e = ipck_der2_t(ipck_der_t=1.0, ipck_base_t=ipck_base_t(1), e1=3)  ! {Error} type mismatch in structure constructor: the parent component 'ipck_der_t' requires a scalar value of type type(ipck_der_t), not real(4)
+end subroutine
+
+! An EXIT statement without a construct name belongs to the innermost enclosing
+! DO construct; a BLOCK or IF construct does not count, and it may not leave a
+! DO CONCURRENT construct.
+subroutine exit_without_construct_name_1()
+    implicit none
+    integer :: i, n
+    n = 0
+    block
+        if (n == 0) exit  ! {Error} `exit` statements without a construct name cannot be outside of loops
+        n = 1
+    end block
+    do concurrent (i = 1:3)
+        block
+            if (i == 2) exit  ! {Error} `exit` statements cannot leave a `do concurrent` loop
+        end block
+    end do
+    do concurrent (i = 1:3)
+        do n = 1, 3
+            if (n == i) exit
+        end do
+    end do
+end subroutine
+
+module inline_intrinsic_template_arg_1
+    implicit none
+contains
+    template function iita_g{f, t}(x, y) result(r)
+        deferred type :: t
+        interface
+            pure elemental function f(a, b) result(c)
+                import :: t
+                type(t), intent(in) :: a, b
+                type(t) :: c
+            end function
+        end interface
+        type(t), intent(in) :: x, y
+        type(t) :: r
+        r = f(x, y)
+    end function
+
+    template function iita_h{f}(x, y) result(r)
+        interface
+            pure elemental function f(a, b) result(c)
+                integer, intent(in) :: a, b
+                logical :: c
+            end function
+        end interface
+        integer, intent(in) :: x, y
+        logical :: r
+        r = f(x, y)
+    end function
+end module
+
+subroutine inline_intrinsic_template_arg_errors()
+    use inline_intrinsic_template_arg_1
+    implicit none
+    print *, iita_g{max, logical}(.true., .false.)  ! {Error} Arguments to max0 must be of real, integer or character type
+    print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
+    print *, iita_g{max, integer}(1, 2)
+end subroutine
+
+! The OPTIONAL and VALUE check also applies to a BIND(C) procedure that has
+! internal procedures.
+subroutine bindc_optional_value_contains(x) bind(c)  ! {Error} Variable `x` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value_contains` is BIND(C)
+    implicit none
+    integer, optional, value :: x
+contains
+    subroutine inner()
+    end subroutine
+end subroutine
+
+module derived_type_nonconst_bound_in_continue_compilation_1_m
+    implicit none
+    integer :: dtncb_m = 3
+    type :: dtncb_t
+        ! `dtncb_m` is not a named constant, so `dtncb_m*2` is not constant
+        integer :: b(dtncb_m*2)  ! {Error} Explicit shaped array with nonconstant bounds
+    end type
+end module
+
+subroutine parameter_nonconstant_init()
+    implicit none
+    integer :: pnc_bla
+    integer, parameter :: pnc_y1 = abs(pnc_bla)  ! {Error} Initialization of `pnc_y1` must reduce to a compile time constant.
+    integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
+    print *, pnc_y1, pnc_y2
+end subroutine

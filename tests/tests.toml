@@ -59,6 +59,10 @@ filename = "../integration_tests/template_add_04.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_access_01.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_nested.f90"
 ast = true
 asr = true
@@ -3940,6 +3944,11 @@ asr_disable_warnings = true
 asr_disable_style_suggestion_and_warnings = true
 
 [[test]]
+filename = "save5.f90"
+asr = true
+
+
+[[test]]
 filename = "style1.f90"
 asr_disable_warnings = true
 asr_enable_style_suggestion = true
@@ -5114,6 +5123,14 @@ filename = "warnings/sizeof_01.f90"
 asr = true
 
 [[test]]
+filename = "warnings/structure_constructor_parent_01.f90"
+asr = true
+
+[[test]]
+filename = "warnings/structure_constructor_parent_02.f90"
+asr = true
+
+[[test]]
 filename = "warnings/bindc_char_len_01.f90"
 asr = true
 
@@ -6172,3 +6189,17 @@ filename = "../integration_tests/global_init_07.f90"
 # from the initializer it knows while the storage is sized from the value the
 # generated code has at that point.
 pass = "global_init"
+
+# A pass that rejects the program: `--show-asr` reports its error and prints
+# no ASR.
+[[test]]
+filename = "show_pass_error_01.f90"
+pass = "parallel_canonicalize,parallel_dispatch"
+options = "--gpu=metal"
+
+# The same with `--show-fortran`, which prints no Fortran.
+[[test]]
+filename = "show_pass_error_02.f90"
+fortran = true
+pass = "parallel_canonicalize,parallel_dispatch"
+options = "--gpu=metal"
