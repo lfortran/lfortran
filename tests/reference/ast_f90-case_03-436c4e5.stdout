@@ -8,10 +8,10 @@ marks = 94
 
 select case (marks)
 
-    case (40 + b:)
+    case ((40 + b):)
         print *, "Pass!"
 
-    case (:39 - a)
+    case (:(39 - a))
         print *, "Failed!"
 
     case default
@@ -24,10 +24,10 @@ marks = -1
 
 select case (marks)
 
-    case (40 + b:)
+    case ((40 + b):)
         print *, "Pass!"
 
-    case (0:39 - a)
+    case (0:(39 - a))
         print *, "Failed!"
 
     case default

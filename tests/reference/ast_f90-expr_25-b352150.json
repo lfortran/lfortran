@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-expr_25-b352150",
+    "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/../integration_tests/expr_25.f90",
+    "infile_hash": "be8499440aeb730edda0699acd9593fcaf2b308b2bfe7fdb6277b881",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-expr_25-b352150.stdout",
+    "stdout_hash": "d6a819b06fa30f668d6adc9eaeac3ba5f4a2aedca54a59130d64c1a3",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

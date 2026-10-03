@@ -69,10 +69,10 @@ TEST_CASE("Symbolic expressions") {
     Allocator al(4*1024);
 
     CHECK(P("2*x")   == "(* 2 x)");
-    CHECK(P("(2*x)") == "(* 2 x)");
+    CHECK(P("(2*x)") == "(Parenthesis (* 2 x))");
     CHECK(P("3*x**y") == "(* 3 (** x y))");
     CHECK(P("a+b*c") == "(+ a (* b c))");
-    CHECK(P("(a+b)*c") == "(* (+ a b) c)");
+    CHECK(P("(a+b)*c") == "(* (Parenthesis (+ a b)) c)");
 
     CHECK_THROWS_AS(P("2*"), ParserError0);
     CHECK_THROWS_AS(P("(2*x"), ParserError0);
@@ -136,7 +136,7 @@ TEST_CASE("Comparison") {
     // These are not valid Fortran, but we test that the parser follows the
     // precedence rules correctly
     CHECK(P("1 == 2 + 3 == 2") == "(== (== 1 (+ 2 3)) 2)");
-    CHECK(P("(1 == 2) + 3") == "(+ (== 1 2) 3)");
+    CHECK(P("(1 == 2) + 3") == "(+ (Parenthesis (== 1 2)) 3)");
 }
 
 
