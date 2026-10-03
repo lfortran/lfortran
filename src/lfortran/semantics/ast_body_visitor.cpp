@@ -2496,6 +2496,7 @@ public:
             }
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
+            check_io_item_not_function(expr);
             // For READ: expand implied-do loops to individual elements or array section
             if (_type == AST::decl_stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                 expand_implied_do_for_read(
@@ -8731,8 +8732,11 @@ public:
                         args_with_mdt.push_back(al, args[i]);
                     }
                 }
+                // A generic interface of a template block is only visible
+                // inside the template and cannot be imported.
                 if( !ASR::is_a<ASR::Module_t>(*original_sym_owner) &&
-                    !ASR::is_a<ASR::Program_t>(*original_sym_owner) ) {
+                    !ASR::is_a<ASR::Program_t>(*original_sym_owner) &&
+                    !ASR::is_a<ASR::Template_t>(*original_sym_owner) ) {
                     std::string s_name = "1_" + std::string(p->m_name);
                     std::string original_sym_owner_name = ASRUtils::symbol_name(original_sym_owner);
                     if( current_scope->resolve_symbol(original_sym_owner_name) == nullptr ) {
@@ -9231,6 +9235,23 @@ public:
             nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr, true, nullptr, nullptr, nullptr, nullptr, nullptr);
     }
 
+    void check_io_item_not_function(ASR::expr_t *expr) {
+        ASR::ttype_t *t = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(expr));
+        if (!ASR::is_a<ASR::FunctionType_t>(*t)) {
+            return;
+        }
+        std::string name;
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            name = " '" + std::string(ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v)) + "'";
+        }
+        diag.add(Diagnostic("Procedure" + name + " requires an argument list",
+            Level::Error, Stage::Semantic, {
+            Label("", {expr->base.loc})
+        }));
+        throw SemanticAbort();
+    }
+
     void visit_Print(const AST::Print_t &x) {
         mark_IO_side_effect();
         Vec<ASR::expr_t*> body;
@@ -9285,6 +9306,7 @@ public:
         for (size_t i=0; i<x.n_values; i++) {
             this->visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            check_io_item_not_function(expr);
             if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
                 ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(expr);
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v->m_v);

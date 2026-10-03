@@ -1,6 +1,7 @@
 #ifndef LFORTRAN_LLVM_ARR_UTILS_H
 #define LFORTRAN_LLVM_ARR_UTILS_H
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -378,6 +379,18 @@ namespace LCompilers {
                     llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
 
+                /*
+                * Calls `body` for each element of a potentially-strided
+                * descriptor array, in array element order, with the
+                * element's 0-based position in that order and a pointer
+                * to the element (respecting the descriptor's strides).
+                */
+                virtual
+                void for_each_element_of_descriptor(
+                    llvm::Type* desc_llvm_type, llvm::Value* desc,
+                    llvm::Type* elem_type, int rank, const std::string& loop_name,
+                    const std::function<void(llvm::Value*, llvm::Value*)>& body) = 0;
+
                 // CFI interop: convert internal descriptor to CFI layout
                 virtual
                 llvm::StructType* get_cfi_type(llvm::Type* el_type, int n_dims) = 0;
@@ -651,6 +664,12 @@ namespace LCompilers {
                     llvm::Value* source_data,
                     llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module);
+
+                virtual
+                void for_each_element_of_descriptor(
+                    llvm::Type* desc_llvm_type, llvm::Value* desc,
+                    llvm::Type* elem_type, int rank, const std::string& loop_name,
+                    const std::function<void(llvm::Value*, llvm::Value*)>& body);
 
                 // CFI field indices (C-interop layout, no offset field)
                 static constexpr int CFI_FIELD_BASE_ADDR   = 0;
