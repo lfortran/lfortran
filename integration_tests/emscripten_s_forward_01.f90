@@ -1,4 +1,4 @@
-program emscripten_modularize_01
+program emscripten_s_forward_01
     integer :: i, s
     s = 0
     do i = 1, 10

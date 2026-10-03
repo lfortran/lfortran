@@ -2020,7 +2020,7 @@ int link_executable(const std::vector<std::string> &infiles,
 #endif
 
     if (!compiler_options.emcc_settings.empty()
-            && ((backend != Backend::llvm && backend != Backend::mlir)
+            && (((backend != Backend::llvm) && (backend != Backend::mlir))
                 || !LCompilers::endswith(t, "emscripten"))) {
         std::cerr << "warning: -s Emscripten settings are only used when "
             "linking with --target=wasm32-unknown-emscripten" << std::endl;
@@ -2071,19 +2071,12 @@ int link_executable(const std::vector<std::string> &infiles,
                 runtime_lib = "lfortran_runtime_wasm_wasi.o";
                 compile_cmd = CC + options + " -o " + outfile + " ";
             } else if (LCompilers::endswith(t, "emscripten")) {
-                // Locate the emcc driver: an explicit LFORTRAN_EMCC wins,
-                // then the emsdk checkout layout from EMSDK_PATH, and
-                // otherwise plain `emcc` from $PATH (Homebrew, apt, pip),
-                // which the shell resolves for us when the command runs.
-                char *env_emcc = std::getenv("LFORTRAN_EMCC");
-                char *emsdk_path = std::getenv("EMSDK_PATH");
-                if (env_emcc != nullptr && env_emcc[0] != '\0') {
-                    CC = env_emcc;
-                } else if (emsdk_path != nullptr && emsdk_path[0] != '\0') {
-                    CC = std::string(emsdk_path) + "/upstream/emscripten/emcc";
-                } else {
-                    CC = "emcc";
+                char* emsdk_path = std::getenv("EMSDK_PATH");
+                if (emsdk_path == nullptr) {
+                    std::cerr << "EMSDK_PATH must be defined to use llvm->wasm\n";
+                    return 11;
                 }
+                CC = std::string(emsdk_path) + "/upstream/emscripten/emcc";
                 options = " --target=wasm32-unknown-emscripten -sSTACK_SIZE=50mb -sINITIAL_MEMORY=256mb";
                 if (!compiler_options.emcc_embed.empty()) {
                     options += " --embed-file " + compiler_options.emcc_embed;
@@ -2091,8 +2084,8 @@ int link_executable(const std::vector<std::string> &infiles,
                 // User-supplied -s settings are appended last so that they
                 // override the defaults above (emcc applies settings left to
                 // right); tolerate the full `-sFOO` spelling as a value and
-                // normalize the `-s=FOO` spelling, which emcc would otherwise
-                // silently ignore.
+                // normalize the `-s=FOO` spelling, which raw emcc rejects
+                // with `unknown argument`.
                 for (auto &s : compiler_options.emcc_settings) {
                     std::string setting = s;
                     if (!setting.empty() && setting.front() == '=') {
