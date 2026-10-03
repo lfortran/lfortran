@@ -1,5 +1,3 @@
-#include <array>
-#include <cstring>
 #include <fstream>
 #include <set>
 
@@ -46,23 +44,23 @@ namespace LCompilers {
 namespace LCompilers {
 
 class StringDescriptor {
-    std::array<unsigned char, sizeof(char *) + sizeof(int64_t)> storage{};
+    struct Storage {
+        char *data;
+        int64_t length;
+    };
+    Storage storage{};
 
 public:
     void *pointer() {
-        return storage.data();
+        return &storage;
     }
 
     char *data() const {
-        char *data;
-        std::memcpy(&data, storage.data(), sizeof(data));
-        return data;
+        return storage.data;
     }
 
     int64_t length() const {
-        int64_t length;
-        std::memcpy(&length, storage.data() + sizeof(char *), sizeof(length));
-        return length;
+        return storage.length;
     }
 };
 
@@ -627,7 +625,7 @@ SymbolTable* FortranEvaluator::copy_cell_scope(SymbolTable *scope,
     SymbolTable *parent, const Location &loc)
 {
     SymbolTable* copy = al.make_new<SymbolTable>(parent);
-    ASR::asr_t* owner = ASR::make_TranslationUnit_t(al, loc, copy, nullptr, 0);
+    ASR::asr_t* owner = ASR::make_TranslationUnit_t(al, loc, copy, nullptr, 0, nullptr);
     copy->asr_owner = owner;
     ASRUtils::SymbolDuplicator duplicator(al);
     for (auto &item : scope->get_scope()) {
@@ -936,12 +934,13 @@ Result<std::string> FortranEvaluator::get_gpu_kernel_source(
     if (!pass_manager.has_user_defined_passes()) {
         pass_manager.use_default_passes();
     }
-    // Showing the kernels is how a user finds out which loops the backend
-    // can take and which it declines, so a declined loop is reported here
-    // rather than made fatal: the kernels built for the loops that were
-    // accepted are exactly what was asked for.
-    compiler_options.po.gpu_allow_cpu_fallback = true;
+    // A loop that uses a construct on the unsupported list is shown as a
+    // loop that runs on the CPU rather than made fatal, so that the kernels
+    // of the other loops are still shown. A loop the offloading pipeline
+    // fails on is an error here as everywhere else.
+    compiler_options.po.gpu_kernel_source_only = true;
     pass_manager.apply_passes(al, &asr, compiler_options.po, diagnostics);
+    if (diagnostics.has_error()) return Error();
     if (compiler_options.gpu_backend == "cuda") {
         return asr_to_cuda(al, asr, diagnostics, compiler_options, false);
     } else if (compiler_options.gpu_backend == "metal") {
@@ -1016,7 +1015,13 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
         if (!pass_manager.has_user_defined_passes()) {
             pass_manager.use_fortran_passes();
         }
+        // A pass reports a hard error by adding it to the diagnostics, and
+        // then there is no program to print.
+        bool had_error_before_passes = diagnostics.has_error();
         pass_manager.apply_passes(al, asr.result, compiler_options.po, diagnostics);
+        if (!had_error_before_passes && diagnostics.has_error()) {
+            return Error();
+        }
         return asr_to_fortran(*asr.result, diagnostics, false, 4);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())

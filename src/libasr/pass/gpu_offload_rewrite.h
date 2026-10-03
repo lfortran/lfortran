@@ -2,6 +2,7 @@
 #define LIBASR_PASS_GPU_OFFLOAD_REWRITE_H
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
@@ -15,6 +16,20 @@
 #include <libasr/pass/gpu_offload_preflight.h>
 
 namespace LCompilers {
+
+class GpuIterationVaryingSymbols;
+
+// What `body` changes from one iteration of the loop it is the body of to
+// the next (see GpuIterationVaryingSymbols), and whether an expression reads
+// any of it.
+std::shared_ptr<GpuIterationVaryingSymbols> gpu_symbols_changed_in(
+    ASR::stmt_t **body, size_t n_body);
+// A symbol in `ignored` does not count as changed.
+bool gpu_reads_changed(const GpuIterationVaryingSymbols &changed,
+    ASR::expr_t *e, const std::set<ASR::symbol_t*> *ignored = nullptr);
+// Whether the statements write `s`, as a whole or only a part of it.
+bool gpu_writes_symbol(const GpuIterationVaryingSymbols &changed,
+    ASR::symbol_t *s);
 
 // A new variable named `name` in `scope`, added to it.
 //
@@ -121,6 +136,28 @@ public:
         if (new_mem) {
             x->m_m = new_mem;
         }
+        rebind_member_to_base_type(x);
+    }
+
+    // The component has to belong to the derived type its base now names.
+    // A body spliced in from a procedure names its components through that
+    // procedure's own symbols, which the kernel scope has no entry for, so
+    // the lookup by name above leaves them on the host's copy of the type
+    // while the base has already moved to the kernel's copy. Take the
+    // component from the base's type instead.
+    static void rebind_member_to_base_type(ASR::StructInstanceMember_t *x) {
+        ASR::symbol_t *member = ASRUtils::symbol_get_past_external(x->m_m);
+        if (!ASR::is_a<ASR::Variable_t>(*member)) return;
+        ASR::symbol_t *base_type = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(x->m_v));
+        if (!base_type || !ASR::is_a<ASR::Struct_t>(*base_type)) return;
+        std::string name = ASR::is_a<ASR::ExternalSymbol_t>(*x->m_m)
+            ? std::string(ASR::down_cast<ASR::ExternalSymbol_t>(
+                  x->m_m)->m_original_name)
+            : std::string(ASRUtils::symbol_name(member));
+        ASR::symbol_t *own = gpu_struct_lookup_member(base_type, name);
+        if (!own || own == member) return;
+        x->m_m = own;
     }
 
     // A structure constructor names the derived type it builds. Left
@@ -215,10 +252,6 @@ public:
     // Kernel parameter and the host expression that supplies its value,
     // in the order the parameters were created.
     std::vector<std::pair<ASR::symbol_t*, ASR::expr_t*>> &added;
-    // Every slot overwritten, so the loop can be put back as it was. The
-    // rewrite reaches the types of a BLOCK's locals, and a BLOCK is shared
-    // with the host rather than copied for the kernel.
-    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> undo;
     std::map<std::string, ASR::symbol_t*> by_key;
 
     GpuStructArrayMemberExtent(Allocator &al_, SymbolTable *orig_scope_,
@@ -327,7 +360,6 @@ public:
             added.push_back({sym, host_size});
             by_key[key] = sym;
         }
-        undo.push_back({current_expr, *current_expr});
         *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
         return true;
     }
@@ -536,26 +568,21 @@ struct GpuStructElementGather {
     bool scatter = false;
 };
 
-// Replaces each collected designator with a reference to its temporary,
-// recording every slot it overwrites so the substitution can be undone
-// when the loop turns out not to be offloadable after all.
+// Replaces each collected designator with a reference to its temporary.
 class GpuStructElementGatherReplacer :
         public ASR::BaseExprReplacer<GpuStructElementGatherReplacer> {
 public:
     Allocator &al;
     const std::vector<GpuStructElementGather> &gathers;
-    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo;
 
     GpuStructElementGatherReplacer(Allocator &al_,
-            const std::vector<GpuStructElementGather> &gathers_,
-            std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo_)
-        : al(al_), gathers(gathers_), undo(undo_) {}
+            const std::vector<GpuStructElementGather> &gathers_)
+        : al(al_), gathers(gathers_) {}
 
     void replace_ArrayItem(ASR::ArrayItem_t *x) {
         ASR::expr_t *e = ASRUtils::EXPR((ASR::asr_t*)x);
         for (const GpuStructElementGather &g : gathers) {
             if (!gpu_same_designator(g.chain, e)) continue;
-            undo.push_back({current_expr, *current_expr});
             *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
                 x->base.base.loc, g.temp));
             return;
@@ -572,9 +599,8 @@ public:
     GpuStructElementGatherReplacer replacer;
 
     GpuStructElementGatherVisitor(Allocator &al,
-            const std::vector<GpuStructElementGather> &gathers,
-            std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo)
-        : replacer(al, gathers, undo) {}
+            const std::vector<GpuStructElementGather> &gathers)
+        : replacer(al, gathers) {}
 
     void call_replacer() {
         replacer.current_expr = current_expr;

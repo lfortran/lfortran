@@ -861,6 +861,214 @@ namespace IntrinsicElementalFunctionRegistry {
         return std::get<0>(get_intrinsic_function_by_id_db().at(id));
     }
 
+    // The function that computes the compile-time value of the intrinsic
+    // `id` from the values of its arguments (`m_args` of its
+    // IntrinsicElementalFunction) and its type; nullptr for the intrinsics
+    // without one.
+    static inline eval_intrinsic_function get_eval_function(int64_t id) {
+        switch (static_cast<IntrinsicElementalFunctions>(id)) {
+            case IntrinsicElementalFunctions::ObjectType: return &ObjectType::eval_ObjectType;
+            case IntrinsicElementalFunctions::Kind: return &Kind::eval_Kind;
+            case IntrinsicElementalFunctions::Mod: return &Mod::eval_Mod;
+            case IntrinsicElementalFunctions::Sin: return &Sin::eval_Sin;
+            case IntrinsicElementalFunctions::Cos: return &Cos::eval_Cos;
+            case IntrinsicElementalFunctions::Tan: return &Tan::eval_Tan;
+            case IntrinsicElementalFunctions::Asin: return &Asin::eval_Asin;
+            case IntrinsicElementalFunctions::Acos: return &Acos::eval_Acos;
+            case IntrinsicElementalFunctions::Atan: return &Atan::eval_Atan;
+            case IntrinsicElementalFunctions::Sinh: return &Sinh::eval_Sinh;
+            case IntrinsicElementalFunctions::Cosh: return &Cosh::eval_Cosh;
+            case IntrinsicElementalFunctions::Tanh: return &Tanh::eval_Tanh;
+            case IntrinsicElementalFunctions::Atan2: return &Atan2::eval_Atan2;
+            case IntrinsicElementalFunctions::Atan2d: return &Atan2d::eval_Atan2d;
+            case IntrinsicElementalFunctions::Asinh: return &Asinh::eval_Asinh;
+            case IntrinsicElementalFunctions::Sind: return &Sind::eval_Sind;
+            case IntrinsicElementalFunctions::Cosd: return &Cosd::eval_Cosd;
+            case IntrinsicElementalFunctions::Tand: return &Tand::eval_Tand;
+            case IntrinsicElementalFunctions::Asind: return &Asind::eval_Asind;
+            case IntrinsicElementalFunctions::Acosd: return &Acosd::eval_Acosd;
+            case IntrinsicElementalFunctions::Atand: return &Atand::eval_Atand;
+            case IntrinsicElementalFunctions::Acosh: return &Acosh::eval_Acosh;
+            case IntrinsicElementalFunctions::Atanh: return &Atanh::eval_Atanh;
+            case IntrinsicElementalFunctions::Sinpi: return &Sinpi::eval_Sinpi;
+            case IntrinsicElementalFunctions::Cospi: return &Cospi::eval_Cospi;
+            case IntrinsicElementalFunctions::Tanpi: return &Tanpi::eval_Tanpi;
+            case IntrinsicElementalFunctions::Asinpi: return &Asinpi::eval_Asinpi;
+            case IntrinsicElementalFunctions::Acospi: return &Acospi::eval_Acospi;
+            case IntrinsicElementalFunctions::Atanpi: return &Atanpi::eval_Atanpi;
+            case IntrinsicElementalFunctions::Atan2pi: return &Atan2pi::eval_Atan2pi;
+            case IntrinsicElementalFunctions::Erf: return &Erf::eval_Erf;
+            case IntrinsicElementalFunctions::Erfc: return &Erfc::eval_Erfc;
+            case IntrinsicElementalFunctions::ErfcScaled: return &ErfcScaled::eval_ErfcScaled;
+            case IntrinsicElementalFunctions::Gamma: return &Gamma::eval_Gamma;
+            case IntrinsicElementalFunctions::Log: return &Log::eval_Log;
+            case IntrinsicElementalFunctions::Log10: return &Log10::eval_Log10;
+            case IntrinsicElementalFunctions::LogGamma: return &LogGamma::eval_LogGamma;
+            case IntrinsicElementalFunctions::Trunc: return &Trunc::eval_Trunc;
+            case IntrinsicElementalFunctions::Fix: return &Fix::eval_Fix;
+            case IntrinsicElementalFunctions::Abs: return &Abs::eval_Abs;
+            case IntrinsicElementalFunctions::Aimag: return &Aimag::eval_Aimag;
+            case IntrinsicElementalFunctions::Dreal: return &Dreal::eval_Dreal;
+            case IntrinsicElementalFunctions::Exp: return &Exp::eval_Exp;
+            case IntrinsicElementalFunctions::Exp2: return &Exp2::eval_Exp2;
+            case IntrinsicElementalFunctions::Expm1: return &Expm1::eval_Expm1;
+            case IntrinsicElementalFunctions::FMA: return &FMA::eval_FMA;
+            case IntrinsicElementalFunctions::FlipSign: return &FlipSign::eval_FlipSign;
+            case IntrinsicElementalFunctions::Trailz: return &Trailz::eval_Trailz;
+            case IntrinsicElementalFunctions::Isnan: return &Isnan::eval_Isnan;
+            case IntrinsicElementalFunctions::Nearest: return &Nearest::eval_Nearest;
+            case IntrinsicElementalFunctions::Spacing: return &Spacing::eval_Spacing;
+            case IntrinsicElementalFunctions::Modulo: return &Modulo::eval_Modulo;
+            case IntrinsicElementalFunctions::BesselJ0: return &BesselJ0::eval_BesselJ0;
+            case IntrinsicElementalFunctions::BesselJ1: return &BesselJ1::eval_BesselJ1;
+            case IntrinsicElementalFunctions::BesselJN: return &BesselJN::eval_BesselJN;
+            case IntrinsicElementalFunctions::BesselY0: return &BesselY0::eval_BesselY0;
+            case IntrinsicElementalFunctions::BesselY1: return &BesselY1::eval_BesselY1;
+            case IntrinsicElementalFunctions::BesselYN: return &BesselYN::eval_BesselYN;
+            case IntrinsicElementalFunctions::SameTypeAs: return &SameTypeAs::eval_SameTypeAs;
+            case IntrinsicElementalFunctions::ExtendsTypeOf: return &ExtendsTypeOf::eval_ExtendsTypeOf;
+            case IntrinsicElementalFunctions::Merge: return &Merge::eval_Merge;
+            case IntrinsicElementalFunctions::Mergebits: return &Mergebits::eval_Mergebits;
+            case IntrinsicElementalFunctions::Shiftr: return &Shiftr::eval_Shiftr;
+            case IntrinsicElementalFunctions::Rshift: return &Rshift::eval_Rshift;
+            case IntrinsicElementalFunctions::Shiftl: return &Shiftl::eval_Shiftl;
+            case IntrinsicElementalFunctions::Dshiftl: return &Dshiftl::eval_Dshiftl;
+            case IntrinsicElementalFunctions::Dshiftr: return &Dshiftr::eval_Dshiftr;
+            case IntrinsicElementalFunctions::Ishft: return &Ishft::eval_Ishft;
+            case IntrinsicElementalFunctions::OutOfRange: return &OutOfRange::eval_OutOfRange;
+            case IntrinsicElementalFunctions::Bgt: return &Bgt::eval_Bgt;
+            case IntrinsicElementalFunctions::Blt: return &Blt::eval_Blt;
+            case IntrinsicElementalFunctions::Bge: return &Bge::eval_Bge;
+            case IntrinsicElementalFunctions::Ble: return &Ble::eval_Ble;
+            case IntrinsicElementalFunctions::Lgt: return &Lgt::eval_Lgt;
+            case IntrinsicElementalFunctions::Llt: return &Llt::eval_Llt;
+            case IntrinsicElementalFunctions::Lge: return &Lge::eval_Lge;
+            case IntrinsicElementalFunctions::Lle: return &Lle::eval_Lle;
+            case IntrinsicElementalFunctions::Exponent: return &Exponent::eval_Exponent;
+            case IntrinsicElementalFunctions::Fraction: return &Fraction::eval_Fraction;
+            case IntrinsicElementalFunctions::SetExponent: return &SetExponent::eval_SetExponent;
+            case IntrinsicElementalFunctions::Not: return &Not::eval_Not;
+            case IntrinsicElementalFunctions::Iand: return &Iand::eval_Iand;
+            case IntrinsicElementalFunctions::Ior: return &Ior::eval_Ior;
+            case IntrinsicElementalFunctions::Ieor: return &Ieor::eval_Ieor;
+            case IntrinsicElementalFunctions::Ibclr: return &Ibclr::eval_Ibclr;
+            case IntrinsicElementalFunctions::Ibset: return &Ibset::eval_Ibset;
+            case IntrinsicElementalFunctions::Btest: return &Btest::eval_Btest;
+            case IntrinsicElementalFunctions::Ibits: return &Ibits::eval_Ibits;
+            case IntrinsicElementalFunctions::Leadz: return &Leadz::eval_Leadz;
+            case IntrinsicElementalFunctions::ToLowerCase: return &ToLowerCase::eval_ToLowerCase;
+            case IntrinsicElementalFunctions::Digits: return &Digits::eval_Digits;
+            case IntrinsicElementalFunctions::Rrspacing: return &Rrspacing::eval_Rrspacing;
+            case IntrinsicElementalFunctions::Repeat: return &Repeat::eval_Repeat;
+            case IntrinsicElementalFunctions::StringContainsSet: return &StringContainsSet::eval_StringContainsSet;
+            case IntrinsicElementalFunctions::StringFindSet: return &StringFindSet::eval_StringFindSet;
+            case IntrinsicElementalFunctions::SubstrIndex: return &SubstrIndex::eval_SubstrIndex;
+            case IntrinsicElementalFunctions::Hypot: return &Hypot::eval_Hypot;
+            case IntrinsicElementalFunctions::SelectedIntKind: return &SelectedIntKind::eval_SelectedIntKind;
+            case IntrinsicElementalFunctions::SelectedRealKind: return &SelectedRealKind::eval_SelectedRealKind;
+            case IntrinsicElementalFunctions::SelectedCharKind: return &SelectedCharKind::eval_SelectedCharKind;
+            case IntrinsicElementalFunctions::SelectedLogicalKind: return &SelectedLogicalKind::eval_SelectedLogicalKind;
+            case IntrinsicElementalFunctions::Adjustl: return &Adjustl::eval_Adjustl;
+            case IntrinsicElementalFunctions::Adjustr: return &Adjustr::eval_Adjustr;
+            case IntrinsicElementalFunctions::StringConcat: return &StringConcat::eval_StringConcat;
+            case IntrinsicElementalFunctions::StringLenTrim: return &StringLenTrim::eval_StringLenTrim;
+            case IntrinsicElementalFunctions::StringTrim: return &StringTrim::eval_StringTrim;
+            case IntrinsicElementalFunctions::Ichar: return &Ichar::eval_Ichar;
+            case IntrinsicElementalFunctions::Char: return &Char::eval_Char;
+            case IntrinsicElementalFunctions::Achar: return &Achar::eval_Achar;
+            case IntrinsicElementalFunctions::Iachar: return &Iachar::eval_Iachar;
+            case IntrinsicElementalFunctions::MinExponent: return &MinExponent::eval_MinExponent;
+            case IntrinsicElementalFunctions::MaxExponent: return &MaxExponent::eval_MaxExponent;
+            case IntrinsicElementalFunctions::FloorDiv: return &FloorDiv::eval_FloorDiv;
+            case IntrinsicElementalFunctions::ListReverse: return &ListReverse::eval_ListReverse;
+            case IntrinsicElementalFunctions::ListReserve: return &ListReserve::eval_ListReserve;
+            case IntrinsicElementalFunctions::Max: return &Max::eval_Max;
+            case IntrinsicElementalFunctions::Min: return &Min::eval_Min;
+            case IntrinsicElementalFunctions::Radix: return &Radix::eval_Radix;
+            case IntrinsicElementalFunctions::StorageSize: return &StorageSize::eval_StorageSize;
+            case IntrinsicElementalFunctions::Scale: return &Scale::eval_Scale;
+            case IntrinsicElementalFunctions::Dprod: return &Dprod::eval_Dprod;
+            case IntrinsicElementalFunctions::Range: return &Range::eval_Range;
+            case IntrinsicElementalFunctions::Sign: return &Sign::eval_Sign;
+            case IntrinsicElementalFunctions::CompilerVersion: return &CompilerVersion::eval_CompilerVersion;
+            case IntrinsicElementalFunctions::ThisImage: return &ThisImage::eval_ThisImage;
+            case IntrinsicElementalFunctions::NumImages: return &NumImages::eval_NumImages;
+            case IntrinsicElementalFunctions::LCoBound: return &LCoBound::eval_LCoBound;
+            case IntrinsicElementalFunctions::UCoBound: return &UCoBound::eval_UCoBound;
+            case IntrinsicElementalFunctions::SignFromValue: return &SignFromValue::eval_SignFromValue;
+            case IntrinsicElementalFunctions::Logical: return &Logical::eval_Logical;
+            case IntrinsicElementalFunctions::Nint: return &Nint::eval_Nint;
+            case IntrinsicElementalFunctions::Idnint: return &Idnint::eval_Idnint;
+            case IntrinsicElementalFunctions::Aint: return &Aint::eval_Aint;
+            case IntrinsicElementalFunctions::Anint: return &Anint::eval_Anint;
+            case IntrinsicElementalFunctions::Dim: return &Dim::eval_Dim;
+            case IntrinsicElementalFunctions::Sqrt: return &Sqrt::eval_Sqrt;
+            case IntrinsicElementalFunctions::Sngl: return &Sngl::eval_Sngl;
+            case IntrinsicElementalFunctions::Ifix: return &Ifix::eval_Ifix;
+            case IntrinsicElementalFunctions::Idint: return &Idint::eval_Idint;
+            case IntrinsicElementalFunctions::Floor: return &Floor::eval_Floor;
+            case IntrinsicElementalFunctions::Ceiling: return &Ceiling::eval_Ceiling;
+            case IntrinsicElementalFunctions::Ishftc: return &Ishftc::eval_Ishftc;
+            case IntrinsicElementalFunctions::Maskr: return &Maskr::eval_Maskr;
+            case IntrinsicElementalFunctions::Maskl: return &Maskl::eval_Maskl;
+            case IntrinsicElementalFunctions::Epsilon: return &Epsilon::eval_Epsilon;
+            case IntrinsicElementalFunctions::Precision: return &Precision::eval_Precision;
+            case IntrinsicElementalFunctions::Tiny: return &Tiny::eval_Tiny;
+            case IntrinsicElementalFunctions::BitSize: return &BitSize::eval_BitSize;
+            case IntrinsicElementalFunctions::NewLine: return &NewLine::eval_NewLine;
+            case IntrinsicElementalFunctions::Conjg: return &Conjg::eval_Conjg;
+            case IntrinsicElementalFunctions::Huge: return &Huge::eval_Huge;
+            case IntrinsicElementalFunctions::Loc: return &Loc::eval_Loc;
+            case IntrinsicElementalFunctions::Popcnt: return &Popcnt::eval_Popcnt;
+            case IntrinsicElementalFunctions::Poppar: return &Poppar::eval_Poppar;
+            case IntrinsicElementalFunctions::Real: return &Real::eval_Real;
+            case IntrinsicElementalFunctions::Cmplx: return &Cmplx::eval_Cmplx;
+            case IntrinsicElementalFunctions::SymbolicSymbol: return &SymbolicSymbol::eval_SymbolicSymbol;
+            case IntrinsicElementalFunctions::SymbolicAdd: return &SymbolicAdd::eval_SymbolicAdd;
+            case IntrinsicElementalFunctions::SymbolicSub: return &SymbolicSub::eval_SymbolicSub;
+            case IntrinsicElementalFunctions::SymbolicMul: return &SymbolicMul::eval_SymbolicMul;
+            case IntrinsicElementalFunctions::SymbolicDiv: return &SymbolicDiv::eval_SymbolicDiv;
+            case IntrinsicElementalFunctions::SymbolicPow: return &SymbolicPow::eval_SymbolicPow;
+            case IntrinsicElementalFunctions::SymbolicPi: return &SymbolicPi::eval_SymbolicPi;
+            case IntrinsicElementalFunctions::SymbolicE: return &SymbolicE::eval_SymbolicE;
+            case IntrinsicElementalFunctions::SymbolicInteger: return &SymbolicInteger::eval_SymbolicInteger;
+            case IntrinsicElementalFunctions::SymbolicDiff: return &SymbolicDiff::eval_SymbolicDiff;
+            case IntrinsicElementalFunctions::SymbolicExpand: return &SymbolicExpand::eval_SymbolicExpand;
+            case IntrinsicElementalFunctions::SymbolicSin: return &SymbolicSin::eval_SymbolicSin;
+            case IntrinsicElementalFunctions::SymbolicCos: return &SymbolicCos::eval_SymbolicCos;
+            case IntrinsicElementalFunctions::SymbolicLog: return &SymbolicLog::eval_SymbolicLog;
+            case IntrinsicElementalFunctions::SymbolicExp: return &SymbolicExp::eval_SymbolicExp;
+            case IntrinsicElementalFunctions::SymbolicAbs: return &SymbolicAbs::eval_SymbolicAbs;
+            case IntrinsicElementalFunctions::SymbolicHasSymbolQ: return &SymbolicHasSymbolQ::eval_SymbolicHasSymbolQ;
+            case IntrinsicElementalFunctions::SymbolicAddQ: return &SymbolicAddQ::eval_SymbolicAddQ;
+            case IntrinsicElementalFunctions::SymbolicMulQ: return &SymbolicMulQ::eval_SymbolicMulQ;
+            case IntrinsicElementalFunctions::SymbolicPowQ: return &SymbolicPowQ::eval_SymbolicPowQ;
+            case IntrinsicElementalFunctions::SymbolicLogQ: return &SymbolicLogQ::eval_SymbolicLogQ;
+            case IntrinsicElementalFunctions::SymbolicSinQ: return &SymbolicSinQ::eval_SymbolicSinQ;
+            case IntrinsicElementalFunctions::SymbolicGetArgument: return &SymbolicGetArgument::eval_SymbolicGetArgument;
+            case IntrinsicElementalFunctions::Int: return &Int::eval_Int;
+            case IntrinsicElementalFunctions::Present: return &Present::eval_Present;
+            case IntrinsicElementalFunctions::And: return &And::eval_And;
+            case IntrinsicElementalFunctions::Or: return &Or::eval_Or;
+            case IntrinsicElementalFunctions::Xor: return &Xor::eval_Xor;
+            case IntrinsicElementalFunctions::ListIndex:
+            case IntrinsicElementalFunctions::Partition:
+            case IntrinsicElementalFunctions::ListPop:
+            case IntrinsicElementalFunctions::DictKeys:
+            case IntrinsicElementalFunctions::DictValues:
+            case IntrinsicElementalFunctions::SetAdd:
+            case IntrinsicElementalFunctions::SetRemove:
+            case IntrinsicElementalFunctions::IsContiguous:
+            case IntrinsicElementalFunctions::CommandArgumentCount:
+            case IntrinsicElementalFunctions::Rand:
+                return nullptr;
+            default: {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
+        }
+    }
+
     static inline std::string get_intrinsic_function_name(int64_t id) {
         // Use switch statement instead of lazy map for zero runtime overhead
         return get_intrinsic_name(id);

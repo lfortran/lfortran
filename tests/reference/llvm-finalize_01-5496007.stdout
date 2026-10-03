@@ -4,7 +4,7 @@ target datalayout = "..."
 
 %array.1 = type { i32*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %dimension_descriptor = type { i64, i64, i64 }
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 %array.2 = type { float*, i64, i32, i8, i8, i8, i8, i64, [2 x %dimension_descriptor] }
 
 @0 = private unnamed_addr constant [4 x i8] c"arr\00", align 1
@@ -199,7 +199,7 @@ define i32 @main(i32 %0, i8** %1) {
   %10 = getelementptr %array.1, %array.1* %arr_desc, i32 0, i32 0
   store i32* null, i32** %10, align 8
   store %array.1* %arr_desc, %array.1** %arr, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %str, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %str, align 8
   %11 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
   %12 = load i8*, i8** %11, align 8
   %13 = icmp ne i8* %12, null
@@ -275,7 +275,7 @@ define void @internal_sub() {
   %12 = getelementptr %array.2, %array.2* %arr_desc, i32 0, i32 0
   store float* null, float** %12, align 8
   store %array.2* %arr_desc, %array.2** %arr_real, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %str, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %str, align 8
   br label %bl.start
 
 bl.start:                                         ; preds = %.entry
@@ -299,50 +299,59 @@ bl.start:                                         ; preds = %.entry
   br label %bl.end
 
 unreachable_after_exit:                           ; No predecessors!
-  br label %return
-
-unreachable_after_return:                         ; No predecessors!
-  br label %bl.end
-
-bl.end:                                           ; preds = %unreachable_after_return, %bl.start
   br label %FINALIZE_SYMTABLE_bl
 
-FINALIZE_SYMTABLE_bl:                             ; preds = %bl.end
+FINALIZE_SYMTABLE_bl:                             ; preds = %unreachable_after_exit
   br label %Finalize_Variable_arr_in_block
 
 Finalize_Variable_arr_in_block:                   ; preds = %FINALIZE_SYMTABLE_bl
   %22 = load %array.1*, %array.1** %arr_in_block, align 8
   call void @finalize_allocatable__Array_1_i32(%array.1* %22)
   call void @llvm.stackrestore(i8* %13)
+  br label %return
+
+unreachable_after_return:                         ; No predecessors!
+  br label %bl.end
+
+bl.end:                                           ; preds = %unreachable_after_return, %bl.start
+  br label %FINALIZE_SYMTABLE_bl2
+
+FINALIZE_SYMTABLE_bl2:                            ; preds = %bl.end
+  br label %Finalize_Variable_arr_in_block3
+
+Finalize_Variable_arr_in_block3:                  ; preds = %FINALIZE_SYMTABLE_bl2
+  %23 = load %array.1*, %array.1** %arr_in_block, align 8
+  call void @finalize_allocatable__Array_1_i32(%array.1* %23)
+  call void @llvm.stackrestore(i8* %13)
   br label %loop.head
 
-loop.head:                                        ; preds = %unreachable_after_return2, %Finalize_Variable_arr_in_block
+loop.head:                                        ; preds = %unreachable_after_return4, %Finalize_Variable_arr_in_block3
   br i1 true, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
   br label %return
 
-unreachable_after_return2:                        ; No predecessors!
+unreachable_after_return4:                        ; No predecessors!
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
   br label %return
 
-return:                                           ; preds = %loop.end, %loop.body, %unreachable_after_exit
+return:                                           ; preds = %loop.end, %loop.body, %Finalize_Variable_arr_in_block
   br label %FINALIZE_SYMTABLE_internal_sub
 
 FINALIZE_SYMTABLE_internal_sub:                   ; preds = %return
   br label %Finalize_Variable_arr_real
 
 Finalize_Variable_arr_real:                       ; preds = %FINALIZE_SYMTABLE_internal_sub
-  %23 = load %array.2*, %array.2** %arr_real, align 8
-  call void @finalize_allocatable__Array_2_r32(%array.2* %23)
+  %24 = load %array.2*, %array.2** %arr_real, align 8
+  call void @finalize_allocatable__Array_2_r32(%array.2* %24)
   br label %Finalize_Variable_str
 
 Finalize_Variable_str:                            ; preds = %Finalize_Variable_arr_real
-  %24 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
-  %25 = load i8*, i8** %24, align 8
-  call void @_lfortran_free_alloc(i8* %0, i8* %25)
+  %25 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
+  %26 = load i8*, i8** %25, align 8
+  call void @_lfortran_free_alloc(i8* %0, i8* %26)
   ret void
 }
 

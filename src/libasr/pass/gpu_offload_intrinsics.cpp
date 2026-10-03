@@ -5,7 +5,6 @@
 #include <libasr/containers.h>
 #include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
-#include <libasr/pass/gpu_offload_undo.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 

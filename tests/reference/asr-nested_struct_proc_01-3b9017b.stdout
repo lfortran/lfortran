@@ -1269,6 +1269,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
@@ -1902,7 +1903,9 @@
                             (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )
